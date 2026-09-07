@@ -4,7 +4,7 @@
 
 **Goal:** Initialize and govern the workspace-root Git repository with GitHub Flow, then freeze a traceable `v0.1.0-mvp.20260907` engineering baseline without committing secrets, model weights, dependencies, caches, or temporary test output.
 
-**Architecture:** Keep one monorepo at the workspace root so code, architecture, tests, evidence, and shared project facts share the same immutable history. Bootstrap the repository on `main`, perform baseline implementation on `docs/release-baseline-20260907` in an isolated worktree, locally squash-merge because no remote exists, and tag the verified result. Treat source/config hashes, local Docker image IDs, and registry RepoDigests as different evidence types.
+**Architecture:** Keep one monorepo at the workspace root so code, architecture, tests, evidence, and shared project facts share the same immutable history. Bootstrap the repository on `main`, then switch the primary checkout to `docs/release-baseline-20260907` because the pre-existing project files are still untracked and therefore cannot appear in a Git worktree. After the first baseline is imported, later branches use isolated worktrees. Treat source/config hashes, local Docker image IDs, and registry RepoDigests as different evidence types.
 
 **Tech Stack:** Git 2.x, GitHub Flow, GitHub Actions, PowerShell, Python 3.11 with uv, Next.js/Node.js 20, Docker Compose, Markdown, JSON, SHA-256.
 
@@ -23,7 +23,7 @@
 
 ---
 
-### Task 1: Bootstrap worktree safety and create the isolated GitHub Flow branch
+### Task 1: Bootstrap worktree safety and create the first GitHub Flow branch
 
 **Files:**
 - Modify: `.gitignore`
@@ -32,7 +32,7 @@
 
 **Interfaces:**
 - Consumes: bootstrap commit `49a1c4d` on `main`.
-- Produces: a clean `main` with `.worktrees/` ignored and an isolated `docs/release-baseline-20260907` worktree.
+- Produces: a clean `main` with `.worktrees/` ignored and the primary checkout on `docs/release-baseline-20260907` for the one-time import of pre-existing untracked files.
 
 - [ ] **Step 1: Confirm the specification status is `已确认` and the plan contains no placeholders**
 
@@ -65,16 +65,16 @@ git commit -m "docs: plan GitHub Flow release baseline"
 
 Expected: one commit on `main`; no other workspace file is staged.
 
-- [ ] **Step 4: Create the isolated implementation worktree**
+- [ ] **Step 4: Create the implementation branch in the primary checkout**
 
 Run:
 
 ```powershell
-git worktree add .worktrees/release-baseline-20260907 -b docs/release-baseline-20260907
-git -C .worktrees/release-baseline-20260907 branch --show-current
+git switch -c docs/release-baseline-20260907
+git branch --show-current
 ```
 
-Expected: branch output is `docs/release-baseline-20260907`.
+Expected: branch output is `docs/release-baseline-20260907`. This one-time fallback is required because the existing project files are not yet tracked; after the baseline lands on `main`, normal feature branches use `.worktrees/`.
 
 ### Task 2: Establish repository ignore, text, PR, and CI controls
 
