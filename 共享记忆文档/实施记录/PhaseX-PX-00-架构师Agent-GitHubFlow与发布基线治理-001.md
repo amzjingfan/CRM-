@@ -130,7 +130,7 @@
 | frontend 镜像 | `docker build -f Dockerfile.frontend.prod ...` | 生成可摘要镜像 | 外部网络/OAuth 和 npm 安装停滞，未产生镜像 | 失败 |
 | 前端依赖审计 | `npm audit --registry=https://registry.npmjs.org --audit-level=high --json` | 无 High | 3 个 High，修复建议涉及 Next.js 16 Major | 失败 |
 | GitHub 远程与 PR | SSH 推送、GitHub REST API | 远程分支与 PR 可用 | `main`、功能分支已推送；PR #1 已创建 | 通过 |
-| GitHub Actions 首轮 | PR #1 的 `CI` workflow | 后端、前端门禁通过 | 前端通过；后端发现 OAuth 单测依赖本机 `.env`，已在当前分支修复并待复跑 | 待复跑 |
+| GitHub Actions 首轮与修复复跑 | PR #1 的 `CI` workflow | 后端、前端门禁通过 | 首轮定位 OAuth 单测依赖本机 `.env`；修复提交 `dbfb6b2` 的后端、前端门禁均为 `success` | 通过 |
 | main 分支保护 | GitHub Branch Protection API | 禁止直推并要求 PR/CI | 当前私有仓库套餐返回 403，需升级 GitHub 套餐或改为公开仓库 | 阻塞 |
 
 ## 8. 实施结果
