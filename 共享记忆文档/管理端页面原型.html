@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Agent · 智能客服平台</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <style>
+        /* ===================== 全局变量与重置 ===================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #4f6ef7;
+            --primary-dark: #3b5de7;
+            --primary-light: #eef1ff;
+            --primary-gradient: linear-gradient(135deg, #4f6ef7, #7c3aed);
+            --sidebar-width: 240px;
+            --topbar-height: 60px;
+            --statusbar-height: 36px;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --radius: 12px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 12px 30px rgba(0,0,0,0.08);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===================== 顶部栏 ===================== */
+        .topbar {
+            height: var(--topbar-height);
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226,232,240,0.6);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+        .topbar .logo {
+            font-weight: 700;
+            font-size: 18px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: var(--sidebar-width);
+            flex-shrink: 0;
+        }
+        .topbar .logo i { font-size: 22px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .topbar .search { flex: 1; max-width: 360px; position: relative; margin: 0 20px; }
+        .topbar .search input {
+            width: 100%; padding: 7px 14px 7px 38px; border-radius: 40px; border: 1px solid var(--gray-200);
+            background: white; font-size: 13px; outline: none; transition: var(--transition);
+        }
+        .topbar .search input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.12); }
+        .topbar .search i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 14px; }
+        .topbar .actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .topbar .actions .icon-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent;
+            color: var(--gray-500); font-size: 16px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: var(--transition); position: relative;
+        }
+        .topbar .actions .icon-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+        .topbar .actions .badge {
+            position: absolute; top: 2px; right: 2px; background: #ef4444; color: white;
+            font-size: 9px; width: 16px; height: 16px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-weight: 600;
+        }
+        .topbar .actions .user-avatar {
+            width: 34px; height: 34px; border-radius: 50%; background: var(--primary-gradient);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 14px; cursor: pointer;
+        }
+
+        /* ===================== 主体布局 ===================== */
+        .app-body { display: flex; flex: 1; overflow: hidden; }
+
+        /* ===================== 侧边栏 ===================== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--gray-200);
+            padding: 12px 0;
+            overflow-y: auto;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .sidebar .nav { flex: 1; }
+        .sidebar .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 9px 20px;
+            margin: 1px 12px; border-radius: 8px; color: var(--gray-500);
+            font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition);
+            position: relative;
+        }
+        .sidebar .nav-item i { width: 18px; text-align: center; font-size: 15px; }
+        .sidebar .nav-item:hover { background: var(--gray-100); color: var(--gray-700); }
+        .sidebar .nav-item.active {
+            background: var(--primary-light); color: var(--primary); font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--primary);
+        }
+        .sidebar .nav-item .badge {
+            margin-left: auto; background: var(--gray-200); color: var(--gray-600);
+            font-size: 10px; padding: 0 7px; border-radius: 20px; line-height: 18px; font-weight: 600;
+        }
+        .sidebar .nav-item.active .badge { background: var(--primary); color: white; }
+        .sidebar .nav-divider { height: 1px; background: var(--gray-200); margin: 8px 20px; }
+        .sidebar .nav-bottom { margin-top: auto; border-top: 1px solid var(--gray-200); padding-top: 8px; }
+
+        /* ===================== 内容区域 ===================== */
+        .main-content { flex: 1; overflow-y: auto; padding: 20px 24px; background: var(--gray-50); }
+        .page-section { display: none; animation: fadeIn 0.25s ease; }
+        .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .page-header h2 { font-size: 20px; font-weight: 700; }
+        .page-header .sub { font-size: 14px; color: var(--gray-500); font-weight: 400; }
+
+        /* ===================== 底部状态栏 ===================== */
+        .statusbar {
+            height: var(--statusbar-height);
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            font-size: 12px;
+            color: var(--gray-500);
+            flex-shrink: 0;
+            gap: 20px;
+        }
+        .statusbar .status-item { display: flex; align-items: center; gap: 5px; }
+        .statusbar .status-item .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .statusbar .status-item .dot.green { background: #22c55e; }
+        .statusbar .status-item .dot.orange { background: #f59e0b; }
+
+        /* ===================== 通用组件 ===================== */
+        .card {
+            background: white; border-radius: var(--radius); box-shadow: var(--shadow-sm);
+            padding: 18px 20px; border: 1px solid var(--gray-200); transition: var(--transition);
+        }
+        .card:hover { box-shadow: var(--shadow-md); }
+        .card-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+        .metric-card {
+            padding: 16px 18px; background: white; border-radius: var(--radius);
+            box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+            border-top: 3px solid var(--primary); transition: var(--transition);
+        }
+        .metric-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .metric-card .label { font-size: 12px; color: var(--gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+        .metric-card .value { font-size: 24px; font-weight: 700; margin: 4px 0 2px; color: var(--gray-900); }
+        .metric-card .change { font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+        .metric-card .change.up { color: #22c55e; }
+        .metric-card .change.down { color: #ef4444; }
+
+        .btn-primary {
+            padding: 7px 18px; background: var(--primary-gradient); color: white;
+            border: none; border-radius: 40px; font-weight: 600; font-size: 13px;
+            cursor: pointer; transition: var(--transition);
+        }
+        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(79,110,247,0.35); }
+        .btn-outline {
+            padding: 6px 16px; background: white; color: var(--gray-600);
+            border: 1px solid var(--gray-200); border-radius: 40px; font-weight: 500; font-size: 12px;
+            cursor: pointer; transition: var(--transition);
+        }
+        .btn-outline:hover { background: var(--gray-50); border-color: var(--gray-300); }
+
+        .tag {
+            display: inline-block; padding: 2px 10px; border-radius: 40px;
+            font-size: 11px; font-weight: 500;
+        }
+        .tag-primary { background: var(--primary-light); color: var(--primary); }
+        .tag-green { background: #dcfce7; color: #16a34a; }
+        .tag-orange { background: #fef3c7; color: #d97706; }
+        .tag-red { background: #fee2e2; color: #dc2626; }
+
+        .chart-placeholder {
+            height: 160px; background: var(--gray-50); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--gray-400); font-size: 13px; border: 1px dashed var(--gray-200);
+        }
+
+        /* ===================== 客服工作台（三栏布局） ===================== */
+        .workspace-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            gap: 0;
+            height: calc(100vh - var(--topbar-height) - var(--statusbar-height) - 40px - 48px);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: white;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+        }
+        .workspace-layout .col { padding: 14px; overflow-y: auto; border-right: 1px solid var(--gray-200); }
+        .workspace-layout .col:last-child { border-right: none; }
+
+        /* 左栏 - 会话列表 */
+        .session-item {
+            padding: 8px 10px; border-radius: 8px; margin-bottom: 3px;
+            cursor: pointer; transition: var(--transition); display: flex;
+            align-items: center; gap: 10px; border-left: 3px solid transparent;
+        }
+        .session-item:hover { background: var(--gray-100); }
+        .session-item.active { background: var(--primary-light); border-left-color: var(--primary); }
+        .session-item .avatar {
+            width: 34px; height: 34px; border-radius: 50%; background: var(--primary-gradient);
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 13px; color: white;
+        }
+        .session-item .info { flex: 1; min-width: 0; }
+        .session-item .info .name { font-weight: 600; font-size: 13px; }
+        .session-item .info .msg { font-size: 12px; color: var(--gray-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .session-item .time { font-size: 10px; color: var(--gray-400); flex-shrink: 0; }
+        .session-item .unread {
+            background: var(--primary); color: white; font-size: 10px; width: 18px; height: 18px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 600;
+        }
+
+        .filter-chip {
+            padding: 3px 12px; border-radius: 40px; border: 1px solid var(--gray-200);
+            background: white; font-size: 11px; font-weight: 500; cursor: pointer;
+            transition: var(--transition); color: var(--gray-500);
+        }
+        .filter-chip:hover { background: var(--gray-100); }
+        .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* 中栏 - 聊天 */
+        .chat-area { display: flex; flex-direction: column; height: 100%; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 12px 0; display: flex; flex-direction: column; gap: 8px; }
+        .chat-messages .msg {
+            max-width: 80%; padding: 8px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5;
+            box-shadow: var(--shadow-sm);
+        }
+        .chat-messages .msg.incoming { background: var(--gray-100); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .chat-messages .msg.outgoing { background: var(--primary-gradient); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-input { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--gray-200); }
+        .chat-input input { flex: 1; padding: 8px 16px; border: 1px solid var(--gray-200); border-radius: 40px; outline: none; font-size: 13px; }
+        .chat-input input:focus { border-color: var(--primary); }
+        .chat-input button { padding: 7px 18px; background: var(--primary-gradient); color: white; border: none; border-radius: 40px; font-weight: 600; cursor: pointer; }
+
+        /* 右栏 - 智能辅助 */
+        .right-panel .info-row { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+        .ai-suggestion {
+            background: var(--gray-50); border-radius: 8px; padding: 12px; margin-top: 10px;
+            border: 1px solid var(--gray-200); border-left: 3px solid var(--primary);
+        }
+        .ai-suggestion .label { font-size: 10px; color: var(--gray-400); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .ai-suggestion .text { margin: 4px 0; font-size: 13px; color: var(--gray-700); }
+        .ai-suggestion .actions { display: flex; gap: 6px; margin-top: 6px; }
+        .ai-suggestion .actions button { padding: 3px 12px; border-radius: 40px; border: 1px solid var(--gray-300); background: white; font-size: 11px; cursor: pointer; }
+        .ai-suggestion .actions button.primary { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .quick-action {
+            padding: 4px 14px; border-radius: 40px; border: 1px solid var(--gray-200);
+            background: white; font-size: 12px; font-weight: 500; color: var(--gray-600);
+            cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 5px;
+        }
+        .quick-action:hover { background: var(--primary-light); border-color: var(--primary); }
+
+        /* ===================== Agent卡片 ===================== */
+        .agent-card {
+            border: 1px solid var(--gray-200); border-radius: var(--radius);
+            padding: 16px 18px; background: white; transition: var(--transition);
+            cursor: default; box-shadow: var(--shadow-sm);
+        }
+        .agent-card:hover { box-shadow: var(--shadow-md); border-color: var(--primary); }
+        .agent-card .header { display: flex; align-items: center; justify-content: space-between; }
+        .agent-card .stats { display: flex; gap: 16px; margin: 8px 0 6px; font-size: 13px; color: var(--gray-500); }
+
+        /* ===================== 知识库树 ===================== */
+        .kb-tree .tree-item {
+            padding: 5px 10px; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-size: 13px; transition: var(--transition);
+        }
+        .kb-tree .tree-item:hover { background: var(--gray-100); }
+        .kb-tree .tree-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+        .kb-tree .tree-item .icon { width: 16px; color: var(--gray-400); }
+
+        /* ===================== 营销卡片 ===================== */
+        .flow-card {
+            border: 1px solid var(--gray-200); border-radius: var(--radius);
+            padding: 14px 16px; background: white; transition: var(--transition);
+        }
+        .flow-card:hover { box-shadow: var(--shadow-md); }
+        .flow-card .header { display: flex; justify-content: space-between; align-items: center; }
+
+        /* ===================== 响应式 ===================== */
+        @media (max-width: 1200px) {
+            .grid-4 { grid-template-columns: 1fr 1fr; }
+            .workspace-layout { grid-template-columns: 1fr; height: auto; }
+            .workspace-layout .col { border-right: none; border-bottom: 1px solid var(--gray-200); }
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar .nav-item span { display: none; }
+            .topbar .search { max-width: 120px; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr 1fr; }
+            .workspace-layout { grid-template-columns: 1fr; }
+        }
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: var(--gray-100); }
+        ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- ===================== 顶部栏 ===================== -->
+    <header class="topbar">
+        <div class="logo"><i class="fas fa-robot"></i> AI Agent · 智能客服</div>
+        <div class="search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="搜索订单、客户、会话..." />
+        </div>
+        <div class="actions">
+            <button class="icon-btn"><i class="fas fa-bell"></i><span class="badge">3</span></button>
+            <button class="icon-btn"><i class="fas fa-globe"></i></button>
+            <div class="user-avatar">张</div>
+        </div>
+    </header>
+
+    <!-- ===================== 主体 ===================== -->
+    <div class="app-body">
+
+        <!-- ===== 侧边栏 ===== -->
+        <aside class="sidebar">
+            <nav class="nav">
+                <div class="nav-item active" data-page="dashboard"><i class="fas fa-chart-pie"></i> <span>数据看板</span></div>
+                <div class="nav-item" data-page="workspace"><i class="fas fa-headset"></i> <span>客服工作台</span><span class="badge">12</span></div>
+                <div class="nav-item" data-page="sessions"><i class="fas fa-comments"></i> <span>会话管理</span></div>
+                <div class="nav-item" data-page="knowledge"><i class="fas fa-database"></i> <span>知识库</span></div>
+                <div class="nav-item" data-page="marketing"><i class="fas fa-bullhorn"></i> <span>智能营销</span></div>
+                <div class="nav-item" data-page="agents"><i class="fas fa-robot"></i> <span>Agent 管理</span></div>
+                <div class="nav-divider"></div>
+                <div class="nav-item" data-page="settings"><i class="fas fa-cog"></i> <span>系统配置</span></div>
+            </nav>
+            <div class="nav-bottom">
+                <div class="nav-item" style="color:var(--gray-400);font-size:12px;"><i class="fas fa-circle" style="color:#22c55e;font-size:8px;"></i> <span>系统运行中 v2.1</span></div>
+            </div>
+        </aside>
+
+        <!-- ===== 主内容 ===== -->
+        <main class="main-content">
+
+            <!-- ===== 页面：数据看板 ===== -->
+            <section id="page-dashboard" class="page-section active">
+                <div class="page-header">
+                    <h2>📊 数据看板 <span class="sub">近7天运营总览</span></h2>
+                    <span style="font-size:13px;color:var(--gray-400);">更新于 2026-08-17 14:32</span>
+                </div>
+                <div class="grid-4">
+                    <div class="metric-card" style="border-top-color:#4f6ef7;">
+                        <div class="label">会话量</div>
+                        <div class="value">1,284</div>
+                        <div class="change up"><i class="fas fa-arrow-up"></i> 12.3%</div>
+                    </div>
+                    <div class="metric-card" style="border-top-color:#22c55e;">
+                        <div class="label">转人工率</div>
+                        <div class="value">18.5%</div>
+                        <div class="change down"><i class="fas fa-arrow-down"></i> 2.1%</div>
+                    </div>
+                    <div class="metric-card" style="border-top-color:#f59e0b;">
+                        <div class="label">平均响应</div>
+                        <div class="value">8.3s</div>
+                        <div class="change up"><i class="fas fa-arrow-up"></i> 1.2s</div>
+                    </div>
+                    <div class="metric-card" style="border-top-color:#ef4444;">
+                        <div class="label">挽回 GMV</div>
+                        <div class="value">¥12,456</div>
+                        <div class="change up"><i class="fas fa-arrow-up"></i> 23.5%</div>
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top:16px;">
+                    <div class="card">
+                        <div class="card-title">会话趋势 <span class="tag tag-primary">近7天</span></div>
+                        <div class="chart-placeholder"><i class="fas fa-chart-line" style="margin-right:8px;"></i> 趋势图 (Chart.js)</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">渠道分布 <span class="tag tag-primary">各平台占比</span></div>
+                        <div class="chart-placeholder"><i class="fas fa-chart-pie" style="margin-right:8px;"></i> 饼图 (Chart.js)</div>
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top:16px;">
+                    <div class="card">
+                        <div class="card-title">🚨 待处理预警</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gray-100);">
+                                <span>退款申请 <span class="tag tag-orange">3笔</span></span>
+                                <span style="color:var(--gray-400);">超时1笔</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gray-100);">
+                                <span>中差评跟进 <span class="tag tag-red">2条</span></span>
+                                <span style="color:var(--gray-400);">黄金窗口</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                                <span>弃单挽回 <span class="tag tag-green">5单</span></span>
+                                <span style="color:var(--gray-400);">价值 ¥3,200</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">📈 热门咨询 TOP5</div>
+                        <ol style="padding-left:18px;margin:0;font-size:13px;line-height:2;">
+                            <li>物流时效查询 <span style="color:var(--gray-400);font-size:12px;">32次</span></li>
+                            <li>退换货政策 <span style="color:var(--gray-400);font-size:12px;">28次</span></li>
+                            <li>产品尺码推荐 <span style="color:var(--gray-400);font-size:12px;">25次</span></li>
+                            <li>优惠券使用 <span style="color:var(--gray-400);font-size:12px;">18次</span></li>
+                            <li>订单取消 <span style="color:var(--gray-400);font-size:12px;">12次</span></li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 页面：客服工作台 ===== -->
+            <section id="page-workspace" class="page-section">
+                <div class="workspace-layout">
+                    <!-- 左栏：会话列表 -->
+                    <div class="col">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <span style="font-weight:600;font-size:14px;">会话列表</span>
+                            <span style="font-size:12px;color:var(--gray-400);">12 未读</span>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+                            <span class="filter-chip active">全部</span>
+                            <span class="filter-chip">未读</span>
+                            <span class="filter-chip">我的</span>
+                            <span class="filter-chip">TikTok</span>
+                            <span class="filter-chip">Shopee</span>
+                            <span class="filter-chip">Amazon</span>
+                        </div>
+                        <div class="session-item active">
+                            <div class="avatar">张</div>
+                            <div class="info"><div class="name">张女士 <span style="font-size:10px;color:var(--gray-400);">TikTok</span></div><div class="msg">我的订单显示已签收...</div></div>
+                            <div class="time">14:30</div>
+                            <div class="unread">2</div>
+                        </div>
+                        <div class="session-item">
+                            <div class="avatar">李</div>
+                            <div class="info"><div class="name">李先生 <span style="font-size:10px;color:var(--gray-400);">Shopee</span></div><div class="msg">请问这个尺码怎么选？</div></div>
+                            <div class="time">14:15</div>
+                            <div class="unread">1</div>
+                        </div>
+                        <div class="session-item">
+                            <div class="avatar">王</div>
+                            <div class="info"><div class="name">王先生 <span style="font-size:10px;color:var(--gray-400);">Amazon</span></div><div class="msg">收到货有破损，要退货</div></div>
+                            <div class="time">13:50</div>
+                            <div class="unread">3</div>
+                        </div>
+                        <div class="session-item">
+                            <div class="avatar">赵</div>
+                            <div class="info"><div class="name">赵小姐 <span style="font-size:10px;color:var(--gray-400);">TikTok</span></div><div class="msg">什么时候发货呀</div></div>
+                            <div class="time">13:20</div>
+                        </div>
+                        <div class="session-item">
+                            <div class="avatar">刘</div>
+                            <div class="info"><div class="name">刘先生 <span style="font-size:10px;color:var(--gray-400);">Shopee</span></div><div class="msg">想要优惠券</div></div>
+                            <div class="time">12:45</div>
+                        </div>
+                    </div>
+
+                    <!-- 中栏：聊天 -->
+                    <div class="col" style="padding:0;display:flex;flex-direction:column;">
+                        <div class="chat-area" style="padding:14px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--gray-200);">
+                                <div><strong style="font-size:14px;">张女士</strong> <span style="font-size:12px;color:var(--gray-400);">TikTok · 订单 #ORD-20260816-001</span></div>
+                                <span class="tag tag-primary">VIP</span>
+                            </div>
+                            <div class="chat-messages">
+                                <div class="msg incoming">你好，我的订单显示已签收，但我还没收到，能帮我查下吗？</div>
+                                <div class="msg outgoing">张女士您好，非常抱歉给您带来不便。我马上为您核实物流信息。</div>
+                                <div class="msg incoming">好的，谢谢。麻烦快一点，家里急着用。</div>
+                                <div class="msg incoming" style="background:#f1f5f9;color:#1e293b;border:1px solid var(--gray-200);border-bottom-left-radius:4px;">
+                                    <i class="fas fa-spinner fa-pulse"></i> 正在查询物流...
+                                </div>
+                            </div>
+                            <div class="chat-input">
+                                <input type="text" placeholder="输入消息..." />
+                                <button><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右栏：智能辅助 -->
+                    <div class="col right-panel" style="background:var(--gray-50);">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:10px;">🧠 智能辅助</div>
+
+                        <div class="card" style="padding:12px 14px;">
+                            <div style="font-size:11px;color:var(--gray-400);text-transform:uppercase;font-weight:600;">客户画像</div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0;">
+                                <span style="font-weight:600;font-size:14px;">张女士</span>
+                                <span class="tag tag-primary">VIP</span>
+                            </div>
+                            <div class="info-row">
+                                <span><i class="far fa-clock"></i> 会员 2年</span>
+                                <span><i class="fas fa-shopping-bag"></i> 23单</span>
+                                <span><i class="fas fa-yen-sign"></i> ¥458</span>
+                            </div>
+                        </div>
+
+                        <div class="ai-suggestion">
+                            <div class="label"><i class="fas fa-lightbulb"></i> AI 建议回复</div>
+                            <div class="text">非常抱歉给您带来困扰，我正在为您查询物流信息，稍后将为您发送详细的物流轨迹。</div>
+                            <div class="actions">
+                                <button class="primary">使用</button>
+                                <button>修改</button>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:12px;">
+                            <div style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.3px;">⚡ 快捷操作</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                                <button class="quick-action"><i class="fas fa-box"></i> 查订单</button>
+                                <button class="quick-action"><i class="fas fa-map-pin"></i> 改地址</button>
+                                <button class="quick-action"><i class="fas fa-ticket-alt"></i> 发优惠券</button>
+                                <button class="quick-action"><i class="fas fa-user-friends"></i> 转人工</button>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:12px;border-top:1px solid var(--gray-200);padding-top:10px;">
+                            <div style="font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;">📋 会话摘要</div>
+                            <ul style="list-style:none;padding:0;margin:4px 0 0;font-size:13px;line-height:1.6;">
+                                <li>· 客户诉求: 未收到货</li>
+                                <li>· AI置信度: 94% <i class="fas fa-check-circle" style="color:#22c55e;font-size:12px;"></i></li>
+                                <li>· 建议动作: 查物流</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 页面：会话管理 ===== -->
+            <section id="page-sessions" class="page-section">
+                <div class="page-header">
+                    <h2>💬 会话管理 <span class="sub">所有会话统一视图</span></h2>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <span class="filter-chip active">全部</span>
+                        <span class="filter-chip">未读</span>
+                        <span class="filter-chip">进行中</span>
+                        <span class="filter-chip">已解决</span>
+                        <span class="filter-chip">已转人工</span>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div class="card" style="display:flex;align-items:center;gap:14px;padding:12px 16px;cursor:pointer;">
+                        <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-gradient);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;flex-shrink:0;">张</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;font-size:14px;">张女士 <span style="font-weight:400;font-size:12px;color:var(--gray-400);">TikTok · 店铺A</span></div>
+                            <div style="font-size:13px;color:var(--gray-500);">我的订单显示已签收，但我还没收到...</div>
+                            <div style="font-size:11px;color:var(--gray-400);margin-top:2px;"><span class="tag tag-orange">进行中</span> · 2条未读</div>
+                        </div>
+                        <div style="font-size:12px;color:var(--gray-400);flex-shrink:0;">14:30</div>
+                    </div>
+                    <div class="card" style="display:flex;align-items:center;gap:14px;padding:12px 16px;cursor:pointer;">
+                        <div style="width:36px;height:36px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;flex-shrink:0;">李</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;font-size:14px;">李先生 <span style="font-weight:400;font-size:12px;color:var(--gray-400);">Shopee · 店铺B</span></div>
+                            <div style="font-size:13px;color:var(--gray-500);">请问这个尺码怎么选？</div>
+                            <div style="font-size:11px;color:var(--gray-400);margin-top:2px;"><span class="tag tag-green">已解决</span> · 1条未读</div>
+                        </div>
+                        <div style="font-size:12px;color:var(--gray-400);flex-shrink:0;">14:15</div>
+                    </div>
+                    <div class="card" style="display:flex;align-items:center;gap:14px;padding:12px 16px;cursor:pointer;">
+                        <div style="width:36px;height:36px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;flex-shrink:0;">王</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;font-size:14px;">王先生 <span style="font-weight:400;font-size:12px;color:var(--gray-400);">Amazon · 店铺A</span></div>
+                            <div style="font-size:13px;color:var(--gray-500);">收到货有破损，要退货</div>
+                            <div style="font-size:11px;color:var(--gray-400);margin-top:2px;"><span class="tag tag-red">已转人工</span> · 3条未读</div>
+                        </div>
+                        <div style="font-size:12px;color:var(--gray-400);flex-shrink:0;">13:50</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 页面：知识库 ===== -->
+            <section id="page-knowledge" class="page-section">
+                <div class="page-header">
+                    <h2>📚 知识库 <span class="sub">FAQ · 产品 · 物流政策</span></h2>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn-outline"><i class="fas fa-upload"></i> 批量导入</button>
+                        <button class="btn-primary"><i class="fas fa-plus"></i> 新增知识</button>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;">
+                    <div class="card kb-tree" style="padding:12px;">
+                        <div class="tree-item active"><i class="fas fa-folder icon"></i> A层 · 原始数据</div>
+                        <div style="padding-left:20px;">
+                            <div class="tree-item"><i class="fas fa-file-alt icon"></i> 产品库</div>
+                            <div class="tree-item"><i class="fas fa-truck icon"></i> 物流商</div>
+                            <div class="tree-item"><i class="fas fa-gavel icon"></i> 政策库</div>
+                        </div>
+                        <div class="tree-item"><i class="fas fa-folder icon"></i> B层 · 业务规则</div>
+                        <div class="tree-item"><i class="fas fa-folder icon"></i> C层 · 决策逻辑</div>
+                        <div class="tree-item"><i class="fas fa-folder icon"></i> D层 · 案例库</div>
+                    </div>
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div><strong>📄 产品规格说明</strong> <span style="font-size:12px;color:var(--gray-400);">更新: 2026-08-10</span></div>
+                            <span style="font-size:12px;color:var(--gray-400);"><i class="fas fa-edit"></i> 编辑</span>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <div style="font-weight:500;font-size:14px;">❓ iPhone 15 Pro Max 支持快充吗？</div>
+                            <div style="background:var(--gray-50);padding:10px;border-radius:6px;margin:6px 0;font-size:13px;">💡 支持最高27W有线快充和15W MagSafe无线充电，需使用20W以上充电头。</div>
+                            <div style="font-size:12px;color:var(--gray-400);">📎 来源: 商品详情页 · 使用 156次 · 满意度 4.8/5.0</div>
+                            <div style="display:flex;gap:6px;margin-top:6px;">
+                                <span class="tag tag-primary">#快充</span>
+                                <span class="tag tag-primary">#iPhone</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 页面：智能营销 ===== -->
+            <section id="page-marketing" class="page-section">
+                <div class="page-header">
+                    <h2>📈 智能营销 <span class="sub">主动触达 · 自动化流程</span></h2>
+                    <button class="btn-primary"><i class="fas fa-plus"></i> 新建流程</button>
+                </div>
+                <div class="grid-2">
+                    <div class="flow-card">
+                        <div class="header">
+                            <span style="font-weight:600;"><i class="fas fa-shopping-cart" style="color:var(--primary);"></i> 弃单挽回</span>
+                            <span class="tag tag-green"><i class="fas fa-circle" style="font-size:8px;"></i> 运行中</span>
+                        </div>
+                        <div style="font-size:13px;margin:4px 0;color:var(--gray-500);">触发: 取消/退款申请 · 动作: 5min内发优惠券</div>
+                        <div style="display:flex;gap:12px;font-size:13px;color:var(--gray-500);"><span>今日: 8单 挽回3单</span></div>
+                        <div style="display:flex;gap:6px;margin-top:6px;">
+                            <button class="btn-outline" style="font-size:11px;padding:3px 12px;">编辑</button>
+                            <button class="btn-outline" style="font-size:11px;padding:3px 12px;">暂停</button>
+                            <button class="btn-outline" style="font-size:11px;padding:3px 12px;">查看</button>
+                        </div>
+                    </div>
+                    <div class="flow-card">
+                        <div class="header">
+                            <span style="font-weight:600;"><i class="fas fa-star" style="color:#f59e0b;"></i> 中差评挖回</span>
+                            <span class="tag tag-green"><i class="fas fa-circle" style="font-size:8px;"></i> 运行中</span>
+                        </div>
+                        <div style="font-size:13px;margin:4px 0;color:var(--gray-500);">触发: 中差评出现 · 动作: 5min内发补偿</div>
+                        <div style="display:flex;gap:12px;font-size:13px;color:var(--gray-500);"><span>今日: 2条 挖回1条</span></div>
+                        <div style="display:flex;gap:6px;margin-top:6px;">
+                            <button class="btn-outline" style="font-size:11px;padding:3px 12px;">编辑</button>
+                            <button class="btn-outline" style="font-size:11px;padding:3px 12px;">暂停</button>
+                            <button class="btn-outline" style="font-size:11px;padding:3px 12px;">查看</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-title">触达效果报表 <span class="tag tag-primary">近30天</span></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;">
+                        <div><span style="font-size:12px;color:var(--gray-400);">触达量</span><div style="font-size:20px;font-weight:700;">1,234</div></div>
+                        <div><span style="font-size:12px;color:var(--gray-400);">转化率</span><div style="font-size:20px;font-weight:700;">18.3% <span class="change up"><i class="fas fa-arrow-up"></i> 2.1%</span></div></div>
+                        <div><span style="font-size:12px;color:var(--gray-400);">挽回GMV</span><div style="font-size:20px;font-weight:700;">¥45,678 <span class="change up"><i class="fas fa-arrow-up"></i> 12.3%</span></div></div>
+                        <div><span style="font-size:12px;color:var(--gray-400);">挖回成功率</span><div style="font-size:20px;font-weight:700;">15.2% <span class="change up"><i class="fas fa-arrow-up"></i> 3.4%</span></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 页面：Agent 管理 ===== -->
+            <section id="page-agents" class="page-section">
+                <div class="page-header">
+                    <h2>🧠 Agent 管理 <span class="sub">多智能体协同 · 3个运行中</span></h2>
+                    <button class="btn-primary"><i class="fas fa-plus"></i> 创建 Agent</button>
+                </div>
+                <div class="grid-3">
+                    <div class="agent-card">
+                        <div class="header">
+                            <span style="font-weight:600;"><i class="fas fa-headset" style="color:var(--primary);"></i> 服务 Agent</span>
+                            <span class="tag tag-green"><i class="fas fa-circle" style="font-size:8px;"></i> 运行中</span>
+                        </div>
+                        <div class="stats"><span><i class="fas fa-comment"></i> 156 会话</span><span><i class="fas fa-user-slash"></i> 8% 转人工</span></div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-outline" style="font-size:11px;padding:2px 12px;">配置</button>
+                            <button class="btn-outline" style="font-size:11px;padding:2px 12px;">日志</button>
+                        </div>
+                    </div>
+                    <div class="agent-card">
+                        <div class="header">
+                            <span style="font-weight:600;"><i class="fas fa-chart-line" style="color:#f59e0b;"></i> 经营 Agent</span>
+                            <span class="tag tag-green"><i class="fas fa-circle" style="font-size:8px;"></i> 运行中</span>
+                        </div>
+                        <div class="stats"><span><i class="fas fa-exclamation-triangle"></i> 23 异常</span><span><i class="fas fa-shield-alt"></i> 5 风险</span></div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-outline" style="font-size:11px;padding:2px 12px;">配置</button>
+                            <button class="btn-outline" style="font-size:11px;padding:2px 12px;">日志</button>
+                        </div>
+                    </div>
+                    <div class="agent-card">
+                        <div class="header">
+                            <span style="font-weight:600;"><i class="fas fa-rocket" style="color:#22c55e;"></i> 增长 Agent</span>
+                            <span class="tag tag-green"><i class="fas fa-circle" style="font-size:8px;"></i> 运行中</span>
+                        </div>
+                        <div class="stats"><span><i class="fas fa-bullhorn"></i> 89 触达</span><span><i class="fas fa-percent"></i> 18% 转化</span></div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-outline" style="font-size:11px;padding:2px 12px;">配置</button>
+                            <button class="btn-outline" style="font-size:11px;padding:2px 12px;">日志</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top:16px;">
+                    <div style="font-weight:600;font-size:14px;margin-bottom:10px;">配置详情 - 服务 Agent</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+                        <div>
+                            <div style="color:var(--gray-400);font-size:12px;">📌 技能配置</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+                                <span class="tag tag-primary">✓ 物流查询</span>
+                                <span class="tag tag-primary">✓ 订单查询</span>
+                                <span class="tag tag-primary">✓ 退换货处理</span>
+                                <span class="tag" style="background:var(--gray-100);color:var(--gray-400);">投诉处理</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color:var(--gray-400);font-size:12px;">📚 知识库绑定</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+                                <span class="tag tag-primary">✓ 物流知识库</span>
+                                <span class="tag tag-primary">✓ 产品知识库</span>
+                                <span class="tag" style="background:var(--gray-100);color:var(--gray-400);">售后政策库</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 页面：系统配置 ===== -->
+            <section id="page-settings" class="page-section">
+                <div class="page-header">
+                    <h2>⚙️ 系统配置 <span class="sub">店铺接入 · 员工权限 · 通用设置</span></h2>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">📱 渠道接入</div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-100);">
+                                <span><i class="fab fa-tiktok" style="color:#000;"></i> TikTok Shop</span>
+                                <span class="tag tag-green">已连接</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-100);">
+                                <span><i class="fas fa-store" style="color:#ee4d2d;"></i> Shopee</span>
+                                <span class="tag tag-green">已连接</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-100);">
+                                <span><i class="fab fa-amazon" style="color:#ff9900;"></i> Amazon</span>
+                                <span class="tag tag-orange">配置中</span>
+                            </div>
+                            <button class="btn-outline" style="margin-top:4px;font-size:12px;"><i class="fas fa-plus"></i> 添加店铺</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">👥 团队管理</div>
+                        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gray-100);">
+                                <span>张经理 <span class="tag tag-primary">管理员</span></span>
+                                <span style="color:var(--gray-400);">在线</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gray-100);">
+                                <span>李主管 <span class="tag tag-orange">客服主管</span></span>
+                                <span style="color:var(--gray-400);">在线</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gray-100);">
+                                <span>王小明 <span class="tag" style="background:var(--gray-100);color:var(--gray-500);">客服</span></span>
+                                <span style="color:var(--gray-400);">离线</span>
+                            </div>
+                            <button class="btn-outline" style="margin-top:4px;font-size:12px;"><i class="fas fa-user-plus"></i> 添加成员</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ===================== 底部状态栏 ===================== -->
+    <footer class="statusbar">
+        <div class="status-item"><span class="dot green"></span> 在线客服 3</div>
+        <div class="status-item"><i class="fas fa-envelope"></i> 未读消息 12</div>
+        <div class="status-item"><i class="fas fa-shopping-bag"></i> 今日订单 156</div>
+        <div class="status-item" style="margin-left:auto;"><i class="fas fa-circle" style="color:#22c55e;font-size:8px;"></i> 系统运行正常</div>
+    </footer>
+
+    <!-- ===================== JavaScript ===================== -->
+    <script>
+        // ===== 导航切换 =====
+        const navItems = document.querySelectorAll('.nav-item[data-page]');
+        const pageMap = {
+            dashboard: document.getElementById('page-dashboard'),
+            workspace: document.getElementById('page-workspace'),
+            sessions: document.getElementById('page-sessions'),
+            knowledge: document.getElementById('page-knowledge'),
+            marketing: document.getElementById('page-marketing'),
+            agents: document.getElementById('page-agents'),
+            settings: document.getElementById('page-settings')
+        };
+
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const pageId = this.dataset.page;
+                navItems.forEach(n => n.classList.remove('active'));
+                this.classList.add('active');
+                Object.values(pageMap).forEach(el => { if (el) el.classList.remove('active'); });
+                const target = pageMap[pageId];
+                if (target) target.classList.add('active');
+            });
+        });
+
+        // ===== 筛选芯片交互 =====
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                const parent = this.closest('div');
+                parent.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // ===== 会话列表点击 =====
+        document.querySelectorAll('.session-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.session-item').forEach(s => s.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // ===== AI建议按钮 =====
+        document.querySelectorAll('.ai-suggestion .actions button.primary').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const text = this.closest('.ai-suggestion').querySelector('.text').textContent;
+                const input = document.querySelector('.chat-input input');
+                if (input) input.value = text;
+            });
+        });
+
+        // ===== 快捷操作 =====
+        document.querySelectorAll('.quick-action').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const label = this.textContent.trim();
+                const input = document.querySelector('.chat-input input');
+                if (input) input.value = `[${label}] 执行中...`;
+            });
+        });
+
+        console.log('🚀 AI Agent 智能客服平台已加载 (PRD V1.0 MVP)');
+    </script>
+
+</body>
+</html>

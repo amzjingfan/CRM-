@@ -1,0 +1,11 @@
+services:
+  retrieval-model-service:
+    # GPU 是可选运行面。基础 Compose 保持 CPU 可启动；确认 Docker Desktop
+    # 已启用 WSL2 NVIDIA GPU 后，叠加本文件让模型服务独占一张 GPU。
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

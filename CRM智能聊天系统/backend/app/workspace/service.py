@@ -1,0 +1,383 @@
+"""工作台会话、人工发送和状态流转服务。"""
+
+import uuid
+from datetime import UTC, datetime
+from typing import Literal
+
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.audit.models import AuditLog
+from app.auth.store_access import allowed_store_ids, ensure_store_access
+from app.conversations.models import Conversation, Message
+from app.customers.models import Customer
+from app.integrations.tiktok_write import TIKTOK_TEXT_MAX_LENGTH
+from app.orders.models import Order
+from app.shared.config.settings import get_settings
+from app.shared.database.base import User, user_roles
+from app.shared.exceptions.errors import AppError, ErrorCode
+from app.tools.contracts import ToolExecutionContext, ToolInvocation
+from app.tools.executor import SqlAlchemyToolExecutor
+from app.tools.models import ToolCall
+from app.tools.repository import begin_tool_call, finish_tool_call
+from app.workspace.repository import (
+    find_conversation,
+    find_order,
+    list_conversations,
+    list_messages,
+    recent_orders,
+)
+from app.workspace.schemas import (
+    CustomerSummary,
+    MessageView,
+    OrderSummary,
+    PageMeta,
+    SessionListData,
+    SessionMessagesData,
+    SessionSummary,
+    TransferResult,
+)
+
+
+def _customer_view(customer: Customer) -> CustomerSummary:
+    return CustomerSummary.model_validate(customer, from_attributes=True)
+
+
+def _session_view(conversation: Conversation, customer: Customer, last: Message | None) -> SessionSummary:
+    return SessionSummary(
+        id=conversation.id,
+        store_id=conversation.store_id,
+        platform=conversation.platform,
+        status=conversation.status,
+        unread_count=conversation.unread_count,
+        assigned_user_id=conversation.assigned_user_id,
+        last_message_at=conversation.last_message_at,
+        last_message=last.content if last else None,
+        customer=_customer_view(customer),
+    )
+
+
+def _order_view(order: Order) -> OrderSummary:
+    return OrderSummary.model_validate(order, from_attributes=True)
+
+
+def _message_view(message: Message) -> MessageView:
+    """转换消息并从低敏运行元数据中提取交付模式。"""
+    delivery_mode: Literal["inbound", "mock", "real", "unknown"]
+    if message.direction == "inbound":
+        delivery_mode = "inbound"
+    else:
+        raw_mode = message.raw_payload.get("delivery_mode")
+        if raw_mode == "mock":
+            delivery_mode = "mock"
+        elif raw_mode == "real":
+            delivery_mode = "real"
+        else:
+            delivery_mode = "unknown"
+    return MessageView(
+        id=message.id,
+        role=message.role,
+        content=message.content,
+        status=message.status,
+        created_at=message.created_at,
+        error_code=message.error_code,
+        delivery_mode=delivery_mode,
+    )
+
+
+def _message_send_mode(platform: str) -> Literal["disabled", "mock", "real"]:
+    """返回当前进程对指定平台的人工消息运行模式。"""
+    settings = get_settings()
+    if platform == "tiktok" and settings.real_tiktok_message_write_enabled:
+        return "real"
+    if settings.allow_mock_platform_adapters:
+        return "mock"
+    return "disabled"
+
+
+async def get_session_list(
+    session: AsyncSession,
+    user: User,
+    filter_name: str,
+    platform: str | None,
+    store_id: uuid.UUID | None,
+    status: str | None,
+    page: int,
+    page_size: int,
+) -> SessionListData:
+    """查询租户隔离的会话列表。"""
+    store_ids = await allowed_store_ids(session, user)
+    if store_id and store_id not in store_ids:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
+    rows, total = await list_conversations(
+        session, store_ids, user.id, filter_name, platform, store_id, status, page, page_size
+    )
+    return SessionListData(
+        items=[_session_view(conversation, customer, message) for conversation, customer, message in rows],
+        pagination=PageMeta(page=page, page_size=page_size, total=total),
+    )
+
+
+async def get_session_messages(
+    session: AsyncSession, user: User, session_id: uuid.UUID, page: int, page_size: int
+) -> SessionMessagesData:
+    """查询会话详情，GET 不隐式修改未读数。"""
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    customer = await session.get(Customer, conversation.customer_id)
+    if customer is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "客户不存在", 404)
+    messages, total = await list_messages(session, conversation.id, page, page_size)
+    orders = await recent_orders(session, customer.id)
+    last = await session.get(Message, conversation.last_message_id) if conversation.last_message_id else None
+    return SessionMessagesData(
+        session=_session_view(conversation, customer, last),
+        messages=[_message_view(item) for item in messages],
+        customer=_customer_view(customer),
+        recent_orders=[_order_view(item) for item in orders],
+        pagination=PageMeta(page=page, page_size=page_size, total=total),
+        send_mode=_message_send_mode(conversation.platform),
+    )
+
+
+async def send_agent_message(
+    session: AsyncSession,
+    user: User,
+    session_id: uuid.UUID,
+    content: str,
+    idempotency_key: str,
+    *,
+    confirmed: bool,
+) -> MessageView:
+    """把已人工确认的消息交给统一工具执行层并返回持久化终态。"""
+    if not confirmed:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if _message_send_mode(conversation.platform) == "real" and len(content) > TIKTOK_TEXT_MAX_LENGTH:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 普通文本不能超过 2000 字符", 422)
+    result = await SqlAlchemyToolExecutor(session).execute(
+        ToolInvocation(
+            tool_name="send_platform_message",
+            idempotency_key=idempotency_key,
+            arguments={"conversation_id": str(conversation.id), "content": content},
+            context=ToolExecutionContext(
+                store_id=conversation.store_id,
+                actor_type="user",
+                actor_id=user.id,
+                permissions={"workspace.reply"},
+                human_confirmed=True,
+            ),
+        )
+    )
+    if result.error_code == "TOOL_IDEMPOTENCY_CONFLICT":
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于不同请求或仍在执行", 409)
+    if result.error_code == "TOOL_RECONCILIATION_REQUIRED":
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前店铺存在发送结果未知的消息，请先完成人工对账", 409)
+    existing = await session.scalar(
+        select(Message).where(
+            Message.store_id == conversation.store_id,
+            Message.idempotency_key == idempotency_key,
+        )
+    )
+    if existing is not None:
+        if existing.content != content:
+            raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于不同消息", 409)
+        return _message_view(existing)
+    if result.error_code == "TOOL_RESOURCE_NOT_FOUND":
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    raise AppError(ErrorCode.THIRD_PARTY_ERROR, "消息发送未创建可追踪记录", 503)
+
+
+async def reconcile_unknown_message(
+    session: AsyncSession,
+    user: User,
+    message_id: uuid.UUID,
+    resolution: Literal["sent", "failed"],
+    external_message_id: str | None,
+) -> MessageView:
+    """按管理员已核对的平台事实关闭 unknown，并解除店铺发送熔断。"""
+    store_ids = await allowed_store_ids(session, user)
+    message = await session.scalar(
+        select(Message).where(
+            Message.id == message_id,
+            Message.store_id.in_(store_ids),
+            Message.direction == "outbound",
+        )
+    )
+    if message is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "消息不存在", 404)
+    if message.status != "unknown" or not message.idempotency_key:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "消息不处于待人工对账状态", 409)
+    tool_call = await session.scalar(
+        select(ToolCall).where(
+            ToolCall.store_id == message.store_id,
+            ToolCall.idempotency_key == message.idempotency_key,
+            ToolCall.tool_name == "send_platform_message",
+            ToolCall.status == "unknown",
+        )
+    )
+    if tool_call is None:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "消息缺少待对账工具记录", 409)
+    if external_message_id is not None:
+        duplicate = await session.scalar(
+            select(Message.id).where(
+                Message.platform == message.platform,
+                Message.external_message_id == external_message_id,
+                Message.id != message.id,
+            )
+        )
+        if duplicate is not None:
+            raise AppError(ErrorCode.RESOURCE_CONFLICT, "平台消息 ID 已被其他消息使用", 409)
+
+    previous_error = message.error_code
+    message.status = resolution
+    message.error_code = None if resolution == "sent" else "MANUALLY_CONFIRMED_FAILED"
+    message.sent_at = datetime.now(UTC) if resolution == "sent" else None
+    message.raw_payload = {"delivery_mode": "real", "reconciled": True}
+    if external_message_id is not None:
+        message.external_message_id = external_message_id
+    tool_call.status = "succeeded" if resolution == "sent" else "failed"
+    tool_call.error_code = message.error_code
+    tool_call.output_summary = {
+        "message_id": str(message.id),
+        "status": resolution,
+        "mocked": False,
+    }
+    session.add(
+        AuditLog(
+            store_id=message.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action="message.reconcile",
+            resource_type="message",
+            resource_id=message.id,
+            before_data={"status": "unknown", "error_code": previous_error},
+            after_data={"status": resolution, "platform": message.platform},
+            result="succeeded",
+        )
+    )
+    try:
+        await session.commit()
+    except IntegrityError as error:
+        await session.rollback()
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "平台消息 ID 已被其他消息使用", 409) from error
+    await session.refresh(message)
+    return _message_view(message)
+
+
+async def mark_read(session: AsyncSession, user: User, session_id: uuid.UUID) -> int:
+    """显式清零会话未读数。"""
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    conversation.unread_count = 0
+    await session.commit()
+    return 0
+
+
+async def assign_session(
+    session: AsyncSession, actor: User, session_id: uuid.UUID, assignee_id: uuid.UUID
+) -> Conversation:
+    """分配前验证目标客服确实拥有该店铺角色。"""
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    assignment = await session.scalar(
+        select(user_roles.c.id).where(
+            user_roles.c.user_id == assignee_id,
+            user_roles.c.store_id == conversation.store_id,
+        )
+    )
+    if assignment is None:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "目标客服未获得该店铺权限", 422)
+    conversation.assigned_user_id = assignee_id
+    session.add(
+        AuditLog(
+            store_id=conversation.store_id,
+            actor_type="user",
+            actor_id=actor.id,
+            action="conversation.assign",
+            resource_type="conversation",
+            resource_id=conversation.id,
+            after_data={"assigned_user_id": str(assignee_id)},
+            result="succeeded",
+        )
+    )
+    await session.commit()
+    await session.refresh(conversation)
+    return conversation
+
+
+async def transfer_session(
+    session: AsyncSession,
+    actor: User,
+    session_id: uuid.UUID,
+    reason: str,
+    assign_to: uuid.UUID | None,
+    idempotency_key: str,
+) -> TransferResult:
+    """集中执行转人工状态流转并以审计 ID 作为 transfer_id。"""
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    tool_call, replayed, started = await begin_tool_call(
+        session,
+        conversation.store_id,
+        "user",
+        actor.id,
+        "transfer_to_human",
+        idempotency_key,
+        {"conversation_id": str(conversation.id), "reason": reason, "assign_to": str(assign_to) if assign_to else None},
+        {"conversation_id": str(conversation.id), "has_assignee": assign_to is not None},
+    )
+    if replayed:
+        transfer_id = (tool_call.output_summary or {}).get("transfer_id")
+        if isinstance(transfer_id, str):
+            return TransferResult(transfer_id=uuid.UUID(transfer_id), status="transferred")
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "转人工历史结果不可重放", 409)
+    if assign_to:
+        assignment = await session.scalar(
+            select(user_roles.c.id).where(
+                user_roles.c.user_id == assign_to,
+                user_roles.c.store_id == conversation.store_id,
+            )
+        )
+        if assignment is None:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "目标客服未获得该店铺权限", 422)
+    conversation.status = "transferred"
+    conversation.transfer_reason = reason
+    conversation.assigned_user_id = assign_to
+    audit = AuditLog(
+        store_id=conversation.store_id,
+        actor_type="user",
+        actor_id=actor.id,
+        action="conversation.transfer",
+        resource_type="conversation",
+        resource_id=conversation.id,
+        after_data={"assigned_user_id": str(assign_to) if assign_to else None},
+        result="succeeded",
+    )
+    session.add(audit)
+    await session.flush()
+    await finish_tool_call(
+        session,
+        tool_call,
+        started,
+        "succeeded",
+        {"transfer_id": str(audit.id), "status": "transferred"},
+        False,
+    )
+    return TransferResult(transfer_id=audit.id, status="transferred")
+
+
+async def get_order(session: AsyncSession, user: User, order_id: str) -> OrderSummary:
+    """按内部或平台订单号查询租户内订单。"""
+    order = await find_order(session, order_id, await allowed_store_ids(session, user))
+    if order is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在", 404)
+    await ensure_store_access(session, user, order.store_id)
+    return _order_view(order)

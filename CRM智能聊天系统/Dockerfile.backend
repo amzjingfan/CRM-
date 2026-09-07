@@ -1,0 +1,29 @@
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache \
+    UV_CACHE_DIR=/tmp/uv-cache \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+
+RUN groupadd --system crm && useradd --system --gid crm --home-dir /app crm \
+    && mkdir -p /opt/venv /opt/tiktoken-cache \
+    && chown -R crm:crm /app /opt/venv /opt/tiktoken-cache
+
+COPY --chown=crm:crm pyproject.toml uv.lock ./
+USER crm
+RUN uv sync --frozen --no-dev
+
+# 在镜像构建阶段预热固定 tokenizer，避免生产 Worker 首次处理 FAQ 时
+# 才访问编码表下载地址。缓存内容不包含客户数据或任何模型密钥。
+RUN python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
+
+COPY --chown=crm:crm . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,43 @@
+services:
+  backend:
+    environment:
+      EMBEDDING_ENABLED: "true"
+      EMBEDDING_PROVIDER: local_bge
+      EMBEDDING_MODEL: BAAI/bge-m3
+      EMBEDDING_DIMENSIONS: "1024"
+      RETRIEVAL_MODEL_SERVICE_URL: http://retrieval-model-service:8010
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:-}
+    depends_on:
+      retrieval-model-service:
+        condition: service_healthy
+
+  jobs:
+    environment:
+      EMBEDDING_ENABLED: "true"
+      EMBEDDING_PROVIDER: local_bge
+      EMBEDDING_MODEL: BAAI/bge-m3
+      EMBEDDING_DIMENSIONS: "1024"
+      RETRIEVAL_MODEL_SERVICE_URL: http://retrieval-model-service:8010
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:-}
+    depends_on:
+      retrieval-model-service:
+        condition: service_healthy
+
+  agent-worker:
+    environment:
+      EMBEDDING_ENABLED: "true"
+      EMBEDDING_PROVIDER: local_bge
+      EMBEDDING_MODEL: BAAI/bge-m3
+      EMBEDDING_DIMENSIONS: "1024"
+      RETRIEVAL_MODEL_SERVICE_URL: http://retrieval-model-service:8010
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:-}
+    depends_on:
+      retrieval-model-service:
+        condition: service_healthy
+
+  retrieval-model-service:
+    environment:
+      EMBEDDING_PROVIDER: local_bge
+      EMBEDDING_MODEL: BAAI/bge-m3
+      EMBEDDING_DIMENSIONS: "1024"
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:-}

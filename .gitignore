@@ -22,6 +22,7 @@ env/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest*/
 .mypy_cache/
 .ruff_cache/
 .uv-cache/
@@ -41,6 +42,7 @@ build/
 coverage/
 
 # Browser and test temporary output.
+.test-artifacts/
 .tmp/
 tmp/
 temp/

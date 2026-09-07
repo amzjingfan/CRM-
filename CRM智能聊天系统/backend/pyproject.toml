@@ -1,0 +1,65 @@
+[project]
+name = "crm-chat-backend"
+version = "0.1.0"
+description = "CRM 智能聊天系统 FastAPI 后端"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "alembic>=1.13,<2.0",
+    "asyncpg>=0.29,<1.0",
+    "fastapi>=0.115,<1.0",
+    "httpx>=0.27,<1.0",
+    "minio>=7.2,<8.0",
+    "openpyxl>=3.1,<4.0",
+    "openai>=2.51,<3",
+    "anthropic>=0.120,<0.121",
+    "langgraph>=1.2.9,<1.3",
+    "passlib[argon2]>=1.7,<2.0",
+    "pydantic-settings>=2.6,<3.0",
+    "pgvector>=0.3,<1.0",
+    "python-multipart>=0.0.20,<1.0",
+    "pycryptodome>=3.23,<4.0",
+    "PyJWT>=2.9,<3.0",
+    "email-validator>=2.2,<3.0",
+    "redis>=5.2,<6.0",
+    "tzdata>=2025.2,<2027",
+    "sqlalchemy[asyncio]>=2.0,<3.0",
+    "tiktoken>=0.13,<0.14",
+    "uvicorn[standard]>=0.32,<1.0",
+]
+
+[project.optional-dependencies]
+# 仅内部 retrieval-model-service 镜像安装重型推理依赖；backend 与 jobs
+# 继续通过 HTTP 契约调用，避免重复加载约 4.5 GB 权重。
+retrieval-model = [
+    # 安全基线：Torch 2.13 修复可升级处置的运行时公告；Transformers
+    # 5.10.4 修复 CVE-2026-9856，并避开已撤回的 5.10.0。上界用于避免
+    # 未评审的后续功能版本漂移。
+    "torch>=2.13,<2.14",
+    "transformers>=5.10.4,<5.11",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13,<2.0",
+    "pytest>=9.0.3,<10.0",
+    "pytest-asyncio>=1.2,<2.0",
+    "ruff>=0.8,<1.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [".uv-cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests", "../tests/integration"]
+pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true

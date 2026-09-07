@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-09-07T15:01:40+08:00",
+  "baseline": {
+    "application_version": "0.1.0",
+    "name": "MVP engineering prerelease baseline",
+    "release_tag": "v0.1.0-mvp.20260907",
+    "release_tag_type": "annotated",
+    "source_binding": "The annotated release tag is the authoritative immutable commit binding; resolve it with git rev-list -n 1 v0.1.0-mvp.20260907 after the reviewed branch is integrated.",
+    "repository_root": ".",
+    "workflow": "GitHub Flow",
+    "production_release": false
+  },
+  "database": {
+    "migration_head": "023_marketing_review_idempotency",
+    "migration_path": "CRM智能聊天系统/backend/migrations/versions/023_marketing_review_idempotency.py",
+    "migration_sha256": "5f22678a52640163bb413e598bf054f91b15081d97a3f27d775890caa014ea82",
+    "down_revision": "022_ai_marketing_review"
+  },
+  "configuration": [
+    {
+      "path": ".gitignore",
+      "sha256": "8f28ea918ed93f102433ec899b3f9df54bfd340b82f20ef29d5bec63dddfa8c1"
+    },
+    {
+      "path": ".gitattributes",
+      "sha256": "d3a8a70c5a831c6466387a2708b1096a060fc833072c33c2cb16a077eef637da"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "c95d53dbddb5b6b0fe8090df9bc2fcf6c3e3264a486d65e62509be815ba56e05"
+    },
+    {
+      "path": "CRM智能聊天系统/.env.example",
+      "sha256": "b64d4a83e093f65eadd1981f8cb8a0206412520f71046f7886281c6399a8081a"
+    },
+    {
+      "path": "CRM智能聊天系统/docker-compose.yml",
+      "sha256": "eb6985cdeee750c6f9ab21d466da0992868a804aed32656920443627d50fae8f"
+    },
+    {
+      "path": "CRM智能聊天系统/docker-compose.ai.yml",
+      "sha256": "7f71254aa9a911ff88f64e0d0e505d15274a7d19ee2601d923b249e2da751479"
+    },
+    {
+      "path": "CRM智能聊天系统/docker-compose.deepseek-sse.yml",
+      "sha256": "856d9690f8648abc78375954bb6a04f91dad3412e610684dcaeb17f50837ed5c"
+    },
+    {
+      "path": "CRM智能聊天系统/docker-compose.gpu.yml",
+      "sha256": "9847256a1b954f6cae5a160dbd32ef9a76b907d79a35b633e0c995fcb3bc2200"
+    },
+    {
+      "path": "CRM智能聊天系统/docker-compose.prod.yml",
+      "sha256": "4201babd55766598f792a574e23a371a4096406fd4c6bfbe3849901e95cd03c1"
+    },
+    {
+      "path": "CRM智能聊天系统/docker-compose.sse-load-test.yml",
+      "sha256": "f092284c6ca058cf9f50d7722b4271fca781da9dfc28870c53e9136b9f03895e"
+    },
+    {
+      "path": "CRM智能聊天系统/docker-compose.tiktok-manual.yml",
+      "sha256": "bff1acd146ffa2a2b1446e197c5febb26a6150349ee0b779c3dce3c1d5630933"
+    },
+    {
+      "path": "CRM智能聊天系统/Dockerfile.backend",
+      "sha256": "bf0c4defe9902536fc83d3359bf15652333ddc26641c2e6f0b1a37de9b7f9b14"
+    },
+    {
+      "path": "CRM智能聊天系统/Dockerfile.frontend",
+      "sha256": "9c25530173fed546dee0549a3070946deebafec01d35a2c2300bb777f061d2b6"
+    },
+    {
+      "path": "CRM智能聊天系统/Dockerfile.frontend.prod",
+      "sha256": "81dab22264d4c1d0762dfd013a5b8ae1c0b856804c9d1d9d35377c743cd7bd66"
+    },
+    {
+      "path": "CRM智能聊天系统/Dockerfile.model-service",
+      "sha256": "4f91522624bb2141bdc236b3c20b857c9cf1253ffb27303fb7b5a346b01fa0a0"
+    },
+    {
+      "path": "CRM智能聊天系统/backend/pyproject.toml",
+      "sha256": "0c5af76e82886b988a7c73f368de8aed6d64af9c42cfb760a434d9c03ba8bd9f"
+    },
+    {
+      "path": "CRM智能聊天系统/backend/uv.lock",
+      "sha256": "b5c854bf97326b0ecf6d42ae361d1c6ca58ed8dfb4c1f056d796960c0f13eb58"
+    },
+    {
+      "path": "CRM智能聊天系统/frontend/package.json",
+      "sha256": "5dcf3bb22e3fa44a66c996a1f2689545e6ffbbc1cac3486331fd07b2251c38bc"
+    },
+    {
+      "path": "CRM智能聊天系统/frontend/package-lock.json",
+      "sha256": "7a8d1e26f2f115bc840d53ec67d0c4af85c5bdb13274bff0697062aed2d6076f"
+    }
+  ],
+  "evaluation": {
+    "dataset_version": "real-model-independent-v1.0.0",
+    "dataset_path": "测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.jsonl",
+    "dataset_sha256": "7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94",
+    "dataset_manifest_path": "测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.manifest.json",
+    "dataset_manifest_file_sha256": "232f52a3fa5f5c33622f25a87456128aa9c553a5c00da682bbce2cb8cb3d6905",
+    "dataset_manifest_canonical_sha256": "20daad15afdea810c35129f2d9dbac3054f901d5fcd2d0866f477eed534c5146",
+    "result_path": "CRM智能聊天系统/backend/evals/results/real-model-independent-v1.0.0-deepseek-20260905-001.json",
+    "result_sha256": "1c5dcf97d6af9a7741b1130172016c1ce00241d9edc3126014d718125dd6e02c",
+    "product_candidate_aggregate_sha256": "7370d9c269e4d09c4afffc8f9d8da6ec3de07bea8d380b70665e2b16e891c354",
+    "provider": "deepseek",
+    "model": "deepseek-v4-flash",
+    "prompt_version": "real-model-eval-v1.2.2",
+    "dlp_prompt_version": "prompt-dlp-v1.3.0",
+    "run_id": "bac638b3-5eba-4efd-bdee-8ee52496b47c",
+    "passed_cases": 32,
+    "total_cases": 36,
+    "pass_rate_percent": 88.89,
+    "production_translation_proven": false
+  },
+  "images": {
+    "application": [
+      {
+        "service": "backend",
+        "reference": "crm-backend:0.1.0-mvp.20260907",
+        "build_status": "passed",
+        "platform": "linux/amd64",
+        "local_image_id": "sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf",
+        "local_repo_digest": "crm-backend@sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf",
+        "published_registry_digest": null,
+        "base_image": "ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36"
+      },
+      {
+        "service": "frontend",
+        "reference": "crm-frontend:0.1.0-mvp.20260907",
+        "build_status": "blocked",
+        "platform": "linux/amd64",
+        "local_image_id": null,
+        "local_repo_digest": null,
+        "published_registry_digest": null,
+        "attempted_base_image": "node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293",
+        "build_arg_next_public_api_base_url": "http://localhost:8000/v1",
+        "failure_reason": "The pinned Dockerfile base image could not fetch a Docker Hub OAuth token; retrying with the local node:20-alpine image then stalled in npm ci and was terminated after more than two minutes.",
+        "historical_reference_only": "crm-frontend:phase4-prod@sha256:c2739b9b5be8aa084bb477ee84cb3a098bc52de3f86b6004694da2b87fb987d2"
+      }
+    ],
+    "external_references_from_production_compose": [
+      "pgvector/pgvector:0.8.0-pg16",
+      "redis:7.4.2-alpine",
+      "minio/minio:RELEASE.2025-04-22T22-12-26Z",
+      "nginx:1.27.5-alpine"
+    ],
+    "external_registry_digests_locked": false,
+    "retrieval_model_service_built": false,
+    "retrieval_model_service_reason": "Excluded because its build and runtime require local model weights, which are intentionally outside Git and this baseline."
+  },
+  "open_gates": [
+    "Frontend baseline image must be rebuilt successfully and assigned a published registry digest.",
+    "Production external image references must be pinned to immutable registry digests.",
+    "Repository remote, protected main branch and required CI checks are not configured because no GitHub remote was supplied.",
+    "Three high-severity frontend dependency vulnerabilities remain open.",
+    "Structured log event semantics still collapse to unstructured_log_redacted.",
+    "REAL-AI-05 proves only a fixed aggregate quality gate, not production translation behavior.",
+    "Secret rotation, backup recovery drill and production rollback drill remain incomplete."
+  ]
+}
