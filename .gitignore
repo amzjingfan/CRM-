@@ -1,0 +1,2 @@
+# Git worktree 必须排除，避免隔离工作区被父仓库再次跟踪。
+/.worktrees/
