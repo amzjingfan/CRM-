@@ -67,6 +67,12 @@ POSTGRES_DB
 POSTGRES_USER
 POSTGRES_PASSWORD
 TLS_CERT_DIR
+BACKEND_IMAGE
+FRONTEND_IMAGE
+POSTGRES_IMAGE
+REDIS_IMAGE
+MINIO_IMAGE
+NGINX_IMAGE
 ```
 
 生产基础 Compose 的所有能力开关保持：
@@ -83,6 +89,28 @@ AI_TRANSLATION_ENABLED=false
 AI_MARKETING_ENABLED=false
 AUTO_REPLY_ENABLED=false
 ```
+
+### 不可变镜像供应链
+
+生产 Compose 不再在目标主机临时构建 backend、worker、jobs、agent-worker 或 frontend，
+而是要求 `BACKEND_IMAGE`、`FRONTEND_IMAGE` 使用完整的
+`repository@sha256:<64 hex>`。PostgreSQL、Redis、MinIO 和 Nginx 的默认引用也已固定
+Docker Hub 多架构清单摘要；仓库外环境文件如覆盖这些变量，同样必须使用完整摘要。
+
+应用镜像由 `.github/workflows/publish-images.yml` 发布到：
+
+```text
+ghcr.io/cp11-gh/crm-backend
+ghcr.io/cp11-gh/crm-frontend
+```
+
+工作流只允许在 `main` 上手工触发，并要求输入完整 Git commit SHA。它不会推送 `latest`，
+而是生成与提交绑定的候选标签、真实 RepoDigest 和 30 天低敏 JSON 证据制品。首次分支候选
+构建证据位于 `release/images/mvp-production-gates.json`；正式部署前必须再次从最终 `main`
+运行工作流，并把最终 RepoDigest 更新到仓库外 staging 配置。
+
+前端镜像把 `NEXT_PUBLIC_API_BASE_URL` 固定为同源 `/v1`，因此同一不可变镜像可通过反向代理
+部署到 staging 和生产域名，不需要为不同域名重新构建。
 
 完成 OAuth、真实只读和 Webhook 门禁后，人工消息灰度只能显式叠加
 `docker-compose.tiktok-manual.yml`。该叠加文件只允许 backend 读取
@@ -221,3 +249,35 @@ uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\ss
 - DeepSeek 草稿异常时先将 `LLM_ENABLED=false`，移除 `docker-compose.deepseek-sse.yml` 叠加并重建 backend；本操作不修改 Agent 运行历史，也不打开 Mock、翻译、营销或自动回复。
 - 基础生产 Compose 的四个真实 TikTok 开关都为 false。人工发送异常时优先把 `REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false` 并重启 backend；`unknown` 消息不得重试，必须在 TikTok 后台人工对账。高风险写入和自动回复即使出现在外部环境文件中也会被叠加文件及应用启动门禁拒绝。
 - 恢复后依次验证迁移 head、`/v1/health/ready`、店铺隔离、审计链路和任务积压。
+
+### staging 门禁和镜像回滚脚本
+
+GitHub 仓库已经建立 `staging` Environment，并把可部署来源限制为 `main`。实际运行前，
+运维仍需连接带 `self-hosted, linux, x64, crm-staging` 标签的专用 runner，并在 Environment 中设置：
+
+```text
+Secret: CRM_STAGING_ENV_FILE   # runner 上仓库外环境文件的绝对路径
+Variable: CRM_STAGING_BASE_URL # staging 的 HTTPS 基础地址
+```
+
+不得把环境文件正文保存成 GitHub Secret、提交到仓库或贴入工作流输入。配置完成后，通过
+`Staging production gates` 手工工作流依次执行 `validate`、`deploy`；回滚必须另行提供
+候选和上一版本的四个完整应用镜像摘要。工作流和脚本都拒绝 `production`。
+
+目标主机也可以直接执行静态预检：
+
+```powershell
+.\scripts\Test-StagingProductionGates.ps1 `
+  -Environment staging `
+  -EnvFile D:\secure\crm-staging.env `
+  -BackendImage ghcr.io/cp11-gh/crm-backend@sha256:{64-hex} `
+  -FrontendImage ghcr.io/cp11-gh/crm-frontend@sha256:{64-hex} `
+  -BaseUrl https://staging.example.com `
+  -EvidenceFile D:\secure\evidence\preflight.json `
+  -ConfirmTarget staging `
+  -ValidateOnly
+```
+
+真实回滚由 `Invoke-StagingRollbackDrill.ps1 -Execute` 完成，固定顺序是：先强制关闭全部真实
+能力，再切换上一版本 RepoDigest，最后复核三个健康端点。`-ValidateOnly` 只验证计划和输入，
+不能作为真实部署或回滚通过证据。

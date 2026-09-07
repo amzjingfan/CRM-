@@ -102,6 +102,8 @@ test("GHCR publisher uses least privilege and immutable GitHub Actions", async (
   assert.match(workflow, /contents: read/);
   assert.match(workflow, /ghcr\.io\/cp11-gh\/crm-backend/);
   assert.match(workflow, /ghcr\.io\/cp11-gh\/crm-frontend/);
+  assert.match(workflow, /git fetch --no-tags --depth=1 origin main/);
+  assert.match(workflow, /"\$SOURCE_SHA" != "\$main_sha"/);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@(v\d+|main|master)\s*$/m);
   for (const line of workflow.match(/^\s*uses:\s+.*$/gm) ?? []) {
     assert.match(line, /@[0-9a-f]{40}(?:\s+#.*)?$/);
@@ -120,4 +122,24 @@ test("staging workflow cannot target production or a generic hosted runner", asy
   assert.match(workflow, /\["ConfirmTarget"\]\s*=\s*"staging"/);
   assert.doesNotMatch(workflow, /ubuntu-latest/);
   assert.doesNotMatch(workflow, /environment:\s+production/);
+});
+
+test("published image evidence binds both GHCR RepoDigests to one source commit", async () => {
+  const evidence = JSON.parse(
+    await readFile(
+      new URL("../../../release/images/mvp-production-gates.json", import.meta.url),
+      "utf8",
+    ),
+  );
+
+  assert.match(evidence.source_sha, /^[0-9a-f]{40}$/);
+  assert.match(
+    evidence.application_images.backend.reference,
+    /^ghcr\.io\/cp11-gh\/crm-backend@sha256:[0-9a-f]{64}$/,
+  );
+  assert.match(
+    evidence.application_images.frontend.reference,
+    /^ghcr\.io\/cp11-gh\/crm-frontend@sha256:[0-9a-f]{64}$/,
+  );
+  assert.equal(evidence.production_release, false);
 });

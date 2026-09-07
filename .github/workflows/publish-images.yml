@@ -7,17 +7,6 @@ on:
         description: Full Git commit SHA to build
         required: true
         type: string
-  # 仅用于首次在默认分支落地工作流前取得候选 RepoDigest。
-  # 候选摘要写回分支后必须删除此 push 触发器。
-  push:
-    branches:
-      - fix/mvp-production-gates
-    paths:
-      - .github/workflows/publish-images.yml
-      - CRM智能聊天系统/Dockerfile.backend
-      - CRM智能聊天系统/Dockerfile.frontend.prod
-      - CRM智能聊天系统/backend/**
-      - CRM智能聊天系统/frontend/**
 
 permissions:
   contents: read
@@ -52,6 +41,12 @@ jobs:
         run: |
           if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "source_sha must be a full lowercase Git commit SHA" >&2
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin main
+          main_sha="$(git rev-parse FETCH_HEAD)"
+          if [[ "$SOURCE_SHA" != "$main_sha" ]]; then
+            echo "source_sha must equal the current main commit" >&2
             exit 1
           fi
           echo "tag=candidate-$(printf '%s' "$SOURCE_SHA" | cut -c1-12)" >> "$GITHUB_OUTPUT"
@@ -98,6 +93,12 @@ jobs:
         run: |
           if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "source_sha must be a full lowercase Git commit SHA" >&2
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin main
+          main_sha="$(git rev-parse FETCH_HEAD)"
+          if [[ "$SOURCE_SHA" != "$main_sha" ]]; then
+            echo "source_sha must equal the current main commit" >&2
             exit 1
           fi
           echo "tag=candidate-$(printf '%s' "$SOURCE_SHA" | cut -c1-12)" >> "$GITHUB_OUTPUT"
