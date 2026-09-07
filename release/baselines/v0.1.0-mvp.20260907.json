@@ -24,7 +24,7 @@
     },
     {
       "path": ".gitattributes",
-      "sha256": "d3a8a70c5a831c6466387a2708b1096a060fc833072c33c2cb16a077eef637da"
+      "sha256": "e1351928e5a8249f7bd60695251fff4830e2b05c625cc319d7ae61e59dfe88c5"
     },
     {
       "path": ".github/workflows/ci.yml",
