@@ -1,0 +1,19 @@
+# 默认使用官方 Node 20 LTS 镜像；受限网络可通过 Compose 构建参数切换到
+# 企业镜像仓库或可信镜像加速地址，避免把环境差异硬编码到项目中。
+ARG NODE_IMAGE=node:20-alpine
+FROM ${NODE_IMAGE}
+
+# npm registry 同样允许由构建环境覆盖。默认仍使用官方源，生产构建应优先
+# 使用经过组织审核的内部代理仓库，以保证依赖来源和审计能力。
+ARG NPM_REGISTRY=https://registry.npmjs.org
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --registry=${NPM_REGISTRY}
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

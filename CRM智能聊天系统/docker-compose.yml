@@ -1,0 +1,275 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: crm
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-test:
+    profiles: ["test"]
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: crm_test
+      POSTGRES_USER: crm_test
+      POSTGRES_PASSWORD: crm_test
+    ports:
+      - "5433:5432"
+    # 测试库只保存自动化测试生成的临时数据。使用 tmpfs 可以保证容器删除后
+    # 不遗留客户或开发数据，也避免测试误用正式 postgres_data 卷。
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm_test -d crm_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: change-me-minio-password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ${BACKEND_IMAGE:-crm-backend:local}
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: change-me-minio-password
+      # 真实模型评测是一次性外部数据出境任务，常驻 API 服务必须显式关闭。
+      LLM_LIVE_EVAL: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/health', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  worker:
+    image: ${BACKEND_IMAGE:-crm-backend:local}
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: change-me-minio-password
+      # Webhook Worker 不参与离线模型评测，避免根环境文件误开启外部调用。
+      LLM_LIVE_EVAL: "false"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python -m app.integrations.worker
+
+  jobs:
+    image: ${BACKEND_IMAGE:-crm-backend:local}
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: change-me-minio-password
+      # Jobs 仅按业务开关生成草稿，不复用 REAL-AI-05 离线评测开关。
+      LLM_LIVE_EVAL: "false"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: python -m app.jobs.worker
+
+  agent-worker:
+    image: ${BACKEND_IMAGE:-crm-backend:local}
+    profiles: ["ai"]
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: change-me-minio-password
+      # Agent Worker 是常驻业务进程，真实评测只能由隔离 CLI 显式启用。
+      LLM_LIVE_EVAL: "false"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python -m app.chat.worker
+
+  retrieval-model-service:
+    profiles: ["ai"]
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.model-service
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      EMBEDDING_ENABLED: "true"
+      EMBEDDING_PROVIDER: local_bge
+      EMBEDDING_MODEL: BAAI/bge-m3
+      EMBEDDING_DIMENSIONS: "1024"
+      # 本地向量服务不应继承一次性外部模型评测授权。
+      LLM_LIVE_EVAL: "false"
+      BGE_M3_MODEL_PATH: /models/bge-m3
+      BGE_RERANKER_MODEL_PATH: /models/bge-reranker-large
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:-}
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - ./deploy/models:/models:ro
+    expose:
+      - "8010"
+    command:
+      [
+        "uvicorn",
+        "app.retrieval_model_service.main:create_configured_app",
+        "--factory",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8010",
+        "--workers",
+        "1",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/internal/health', timeout=5)",
+        ]
+      interval: 15s
+      timeout: 8s
+      retries: 20
+      start_period: 180s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+      args:
+        # 默认走官方源；Docker Hub 受限时可在 .env 中切换到内部仓库或可信镜像加速地址。
+        NODE_IMAGE: ${FRONTEND_NODE_IMAGE:-node:20-alpine}
+        NPM_REGISTRY: ${FRONTEND_NPM_REGISTRY:-https://registry.npmjs.org}
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/v1}
+      INTERNAL_API_BASE_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      # Next.js 开发容器必须使用独立构建目录。否则宿主机执行 npm run build
+      # 会覆盖同一份 .next，导致运行中的 next dev 引用到不一致的 chunk。
+      - frontend_next_cache:/app/.next
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: npm run dev
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/login').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  frontend_node_modules:
+  frontend_next_cache:

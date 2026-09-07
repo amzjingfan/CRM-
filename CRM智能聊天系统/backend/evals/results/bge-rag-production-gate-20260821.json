@@ -1,0 +1,118 @@
+{
+  "dataset": "faq-rag-v1.0.0.jsonl",
+  "provider": "local_bge",
+  "model": "BAAI/bge-m3",
+  "grounded_cases": 50,
+  "rejection_cases": 20,
+  "dense_recall_at_20": 1.0,
+  "rerank_recall_at_5": 1.0,
+  "mrr": 1.0,
+  "ndcg_at_5": 1.0,
+  "rejection_rate": 0.85,
+  "citation_legality": 1.0,
+  "input_tokens": 1714,
+  "embedding_latency_ms": 2075,
+  "reranker_latency_ms": 3432,
+  "failed_case_ids": [
+    {
+      "case_id": "reject-005",
+      "expected_document_key": null,
+      "dense_keys": [
+        "general-account-email",
+        "general-care",
+        "general-service-hours",
+        "logistics-tracking-location",
+        "logistics-tracking-delay",
+        "return-refund-time",
+        "size-garment",
+        "logistics-dispatch",
+        "return-condition",
+        "price-bulk",
+        "size-between",
+        "logistics-customs",
+        "logistics-business-days",
+        "size-shoes",
+        "size-chest",
+        "price-coupon-stack",
+        "price-promotion-period",
+        "general-restock",
+        "return-exclusions",
+        "general-presale"
+      ],
+      "reranked_keys": [
+        "general-account-email",
+        "general-restock",
+        "general-care",
+        "general-service-hours",
+        "logistics-tracking-delay"
+      ]
+    },
+    {
+      "case_id": "reject-009",
+      "expected_document_key": null,
+      "dense_keys": [
+        "logistics-tracking-delay",
+        "logistics-tracking-location",
+        "general-care",
+        "logistics-dispatch",
+        "general-service-hours",
+        "general-restock",
+        "return-condition",
+        "return-refund-time",
+        "price-bulk",
+        "size-garment",
+        "logistics-customs",
+        "general-presale",
+        "general-account-email",
+        "price-cart-difference",
+        "return-window",
+        "return-shipping-fee",
+        "logistics-business-days",
+        "return-exclusions",
+        "price-promotion-period",
+        "size-between"
+      ],
+      "reranked_keys": [
+        "general-restock",
+        "general-account-email",
+        "return-refund-time",
+        "general-service-hours",
+        "return-window"
+      ]
+    },
+    {
+      "case_id": "reject-020",
+      "expected_document_key": null,
+      "dense_keys": [
+        "general-service-hours",
+        "general-care",
+        "size-between",
+        "size-garment",
+        "logistics-tracking-location",
+        "logistics-tracking-delay",
+        "logistics-dispatch",
+        "logistics-customs",
+        "general-restock",
+        "general-presale",
+        "general-account-email",
+        "price-cart-difference",
+        "price-bulk",
+        "return-refund-time",
+        "return-exclusions",
+        "size-chest",
+        "return-condition",
+        "return-window",
+        "size-tolerance",
+        "logistics-business-days"
+      ],
+      "reranked_keys": [
+        "general-care",
+        "size-garment",
+        "logistics-tracking-delay",
+        "logistics-dispatch",
+        "logistics-customs"
+      ]
+    }
+  ],
+  "passed": false
+}
