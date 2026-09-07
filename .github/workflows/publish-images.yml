@@ -176,4 +176,3 @@ jobs:
           path: image-evidence/repo-digests.json
           if-no-files-found: error
           retention-days: 30
-
