@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-09-07T15:01:40+08:00",
+  "generated_at": "2026-09-07T16:26:04+08:00",
   "baseline": {
     "application_version": "0.1.0",
     "name": "MVP engineering prerelease baseline",
@@ -154,7 +154,7 @@
   "open_gates": [
     "Frontend baseline image must be rebuilt successfully and assigned a published registry digest.",
     "Production external image references must be pinned to immutable registry digests.",
-    "Repository remote, protected main branch and required CI checks are not configured because no GitHub remote was supplied.",
+    "GitHub remote and baseline Pull Request are configured; required CI enforcement and protected main remain unavailable for this private repository on the current GitHub plan.",
     "Three high-severity frontend dependency vulnerabilities remain open.",
     "Structured log event semantics still collapse to unstructured_log_redacted.",
     "REAL-AI-05 proves only a fixed aggregate quality gate, not production translation behavior.",

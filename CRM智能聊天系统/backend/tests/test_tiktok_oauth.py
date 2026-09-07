@@ -444,7 +444,13 @@ async def test_complete_oauth_rejects_replay_and_unavailable_initiator(monkeypat
     session = FakeSession()
     monkeypatch.setattr(oauth_service, "consume_tiktok_oauth_state", _async_result(None))
     with pytest.raises(AppError) as missing:
-        await oauth_service.complete_tiktok_oauth(session, "used-state", "code", None)  # type: ignore[arg-type]
+        await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+            session,
+            "used-state",
+            "code",
+            None,
+            oauth_settings(),
+        )
     assert missing.value.code == ErrorCode.VALIDATION_ERROR
 
     user_id = uuid.uuid4()
@@ -456,7 +462,13 @@ async def test_complete_oauth_rejects_replay_and_unavailable_initiator(monkeypat
     monkeypatch.setattr(oauth_service, "consume_tiktok_oauth_state", _async_result(payload))
     monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(None))
     with pytest.raises(AppError) as unavailable:
-        await oauth_service.complete_tiktok_oauth(session, "valid-state", "code", None)  # type: ignore[arg-type]
+        await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+            session,
+            "valid-state",
+            "code",
+            None,
+            oauth_settings(),
+        )
     assert unavailable.value.code == ErrorCode.PERMISSION_DENIED
 
 

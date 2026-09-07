@@ -44,7 +44,7 @@
 
 - 不修复既有产品缺陷，不升级 Next.js Major，不修改 API、数据库结构、Prompt 或功能开关。
 - 不提交 `.env`、真实凭证、客户数据、模型权重、虚拟环境、依赖目录、缓存或测试临时目录。
-- 未提供 GitHub 仓库地址前，不擅自创建远程、推送或配置分支保护。
+- 不在 Pull Request 审阅、CI 和合并完成前创建发布标签，也不把远程接入等同于生产放行。
 - 本次工程预发布基线不等同生产放行。
 
 ## 4. 实施前确认
@@ -75,7 +75,7 @@
 | 首次导入混入秘密或大文件 | 泄密、仓库膨胀 | 先审计 824 个候选文件，再暂存；补充 `.pytest*/`、`.test-artifacts/` 规则后复核禁入项和大文件均为 0 |
 | 清单摘要与实际文件漂移 | 基线不可复现 | 对 23 个冻结文件逐一重算 SHA-256 并与 JSON 比对 |
 | 镜像构建受外网影响 | 摘要不完整 | 后端成功即记录真实摘要；前端失败保持 blocked，不复用历史镜像冒充本次产物 |
-| Git 远程未知 | 无法推送和配置保护 | 只完成本地治理；等待用户提供远程后另行执行 |
+| 远程写入凭证泄漏 | 仓库可能被未授权修改 | 使用仅绑定 `CP11-gh/CRM` 的可写 Deploy Key；私钥只保存在本地 `.git/deploy-keys/`，不纳入版本控制 |
 | 工程基线被误解为生产放行 | 提前开启真实能力 | README、架构、清单和验收表均保留 `production_release=false` 与阻断项 |
 
 ## 6. 实际变更
@@ -93,6 +93,7 @@
 | `测试工程师/Phase4-P4-00-全栈开发工程师Agent-M00-真实环境配置与基础设施-综合测试-005.md` | 新增 | 按现存索引和可验证证据恢复缺失报告，明确不是伪造历史原件 | 架构师Agent |
 | `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-环境变量注释完善-001.md` | 新增 | 恢复索引所指向的缺失实施记录 | 架构师Agent |
 | `共享记忆文档/测试报告索引.md`、`共享记忆文档/实施记录索引.md` | 修改 | 修复断链并登记本次治理记录 | 架构师Agent |
+| `CRM智能聊天系统/backend/tests/test_tiktok_oauth.py` | 修改 | 为 OAuth 回放/发起用户异常用例显式注入假配置，消除对开发机 `.env` 的隐式依赖 | 架构师Agent |
 | 工作区 7 个一级责任目录 | 纳入版本控制 | 737 个正式文件首次导入同一提交历史 | 架构师Agent |
 
 ### 6.2 接口、数据和配置变更
@@ -105,6 +106,8 @@
 ### 6.3 关键实现说明
 
 - 初始化提交：`49a1c4d`、`d00fe71`、`3ac86a5`；治理提交：`5911d30`、`501478a`、`e28df7c`、`3442e23`；首次全项目安全导入：`62c65df`。
+- 已配置 `origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git`，推送 `main` 与 `docs/release-baseline-20260907`，并创建 [Pull Request #1](https://github.com/CP11-gh/CRM/pull/1)。
+- 仓库级可写 Deploy Key 编号为 `162515972`，公钥指纹为 `SHA256:D2TRU58ouqzIdYsRJ2N2gjqRG6st8dGKrjyC984OEQ4`；私钥位于本地 `.git/deploy-keys/CP11-gh-CRM-20260907`，未被跟踪。
 - 后端本次镜像构建成功：`crm-backend@sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf`，基础镜像为 `ghcr.io/astral-sh/uv@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36`。
 - 前端固定基础镜像首次因 Docker Hub OAuth 超时失败；使用本地 `node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293` 后，分别使用 npm 官方源和项目镜像源重试，两次都停滞于容器内 `npm ci` 超过两分钟并终止，未产生本次前端镜像。
 - 历史 `crm-frontend:phase4-prod` 只在清单中标记为参考，不作为当前源码的冻结产物。
@@ -126,19 +129,22 @@
 | backend 镜像 | `docker build -f Dockerfile.backend ...` | 生成可摘要镜像 | 构建成功并取得 `sha256:a07b...` | 通过 |
 | frontend 镜像 | `docker build -f Dockerfile.frontend.prod ...` | 生成可摘要镜像 | 外部网络/OAuth 和 npm 安装停滞，未产生镜像 | 失败 |
 | 前端依赖审计 | `npm audit --registry=https://registry.npmjs.org --audit-level=high --json` | 无 High | 3 个 High，修复建议涉及 Next.js 16 Major | 失败 |
+| GitHub 远程与 PR | SSH 推送、GitHub REST API | 远程分支与 PR 可用 | `main`、功能分支已推送；PR #1 已创建 | 通过 |
+| GitHub Actions 首轮 | PR #1 的 `CI` workflow | 后端、前端门禁通过 | 前端通过；后端发现 OAuth 单测依赖本机 `.env`，已在当前分支修复并待复跑 | 待复跑 |
+| main 分支保护 | GitHub Branch Protection API | 禁止直推并要求 PR/CI | 当前私有仓库套餐返回 403，需升级 GitHub 套餐或改为公开仓库 | 阻塞 |
 
 ## 8. 实施结果
 
-- 完成项：根仓库、GitHub Flow、CI/PR、全项目安全导入、迁移/配置/评测 SHA-256、后端镜像摘要、README/架构/清单/两个索引同步、两份缺失证据恢复、默认质量门禁验证。
-- 未完成项：前端本次镜像、应用与外部镜像的受控仓库 RepoDigest、GitHub remote/PR/分支保护、最终分支整合与带注释标签。
+- 完成项：根仓库、GitHub Flow、CI/PR、全项目安全导入、迁移/配置/评测 SHA-256、后端镜像摘要、README/架构/清单/两个索引同步、两份缺失证据恢复、默认质量门禁验证、GitHub 远程接入与 PR #1 创建。
+- 未完成项：前端本次镜像、应用与外部镜像的受控仓库 RepoDigest、受套餐限制的 main 分支保护与 required checks、最终分支整合与带注释标签。
 - 与原方案差异：首次导入未使用 worktree，原因是 737 个既有文件在初始化时未跟踪；前端镜像因外部网络无法完成。
-- 当前状态：本地 source/config/evaluation/backend-image 工程基线已形成，但完整镜像闭环和远程 GitHub Flow 尚未形成，因此记录为“部分完成”，生产保持不放行。
+- 当前状态：source/config/evaluation/backend-image 工程基线已形成并进入远程 GitHub Flow，PR #1 已打开；完整镜像闭环、分支保护、合并与标签尚未完成，因此记录为“部分完成”，生产保持不放行。
 
 ## 9. 遗留问题与风险
 
 | 编号 | 问题或风险 | 优先级 | 负责 Agent | 计划处理 Phase/任务 |
 | --- | --- | --- | --- | --- |
-| RB-GIT-001 | 未提供 GitHub 远程，无法配置 PR、required checks 和 main 保护 | P1 | 架构师Agent | 下一次仓库接入任务 |
+| RB-GIT-001 | 当前 GitHub 套餐不支持私有仓库分支保护，无法在服务端强制 PR 和 required checks | P1 | 架构师Agent | 升级套餐或评估转为公开仓库后配置 |
 | RB-IMG-001 | 前端新镜像未构建，外部镜像未固定受控仓库 RepoDigest | P1 | 全栈开发工程师Agent | REAL-FS-01/G0 |
 | DEF-REAL-FS01-005 | 前端依赖仍有 3 个 High，自动建议为 Next.js 16 Major | P1 | 全栈开发工程师Agent | REAL-FS-01 独立修复分支 |
 | DEF-REAL-FS01-006 | 关键日志事件语义折叠 | P2 | 全栈开发工程师Agent | REAL-FS-01 独立修复分支 |
@@ -147,7 +153,7 @@
 ## 10. 交接事项
 
 - 交接给：架构师Agent、全栈开发工程师Agent、测试工程师Agent。
-- 后续任务：先完成当前分支集成选择；取得 GitHub URL 后配置 remote/PR/分支保护；随后独立修复 G0 P1/P2，并完成前端与外部镜像摘要闭环。
+- 后续任务：等待 PR #1 的修复后 CI 复跑和人工审阅；确认通过后 squash merge，再在 `main` 创建带注释标签；分支保护需先升级 GitHub 套餐或评估转为公开仓库，随后独立修复 G0 P1/P2，并完成前端与外部镜像摘要闭环。
 - 必须注意：`v0.1.0-mvp.20260907` 只能表示工程预发布基线；不得据此开启真实平台写入、自动回复、AI 翻译或 AI 营销。
 
 ## 11. 文档同步
