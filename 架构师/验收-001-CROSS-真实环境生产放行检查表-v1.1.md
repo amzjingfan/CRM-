@@ -12,7 +12,7 @@
 
 | 门禁 | 当前状态 | 当前结论 |
 | --- | --- | --- |
-| G0 基线与密钥 | 实施中 | 根 Git、GitHub Flow 和 source/config 基线正在冻结；前端 3 High、日志语义折叠、RepoDigest、密钥轮换、备份恢复和回滚证据未完成 |
+| G0 基线与密钥 | 实施中 | 根 Git、GitHub Flow、source/config 和后端本地镜像基线已形成；前端新镜像、前端 3 High、日志语义折叠、受控仓库 RepoDigest、密钥轮换、备份恢复和回滚证据未完成 |
 | G1 TikTok OAuth/只读 | 实施中 | 确定性工程有条件通过；真实店铺 OAuth、Scope、Token 刷新和只读冒烟未执行 |
 | G2 TikTok Webhook | 实施中 | 验签、幂等、Worker 和契约测试通过；Partner Center 真实投递未执行 |
 | G3 人工消息写入 | 实施中 | 确定性工程有条件通过；真实单店铺发送、unknown 对账和回滚未执行 |
@@ -28,7 +28,8 @@
 - [x] Alembic head 固定为 `023_marketing_review_idempotency`，迁移和配置 SHA-256 进入机器可读基线清单。
 - [x] 根 `.gitignore` 排除 `.env`、权重、虚拟环境、依赖、缓存、日志、测试临时目录和 worktree。
 - [x] GitHub Flow、PR 模板和后端/前端 CI 已定义。
-- [ ] 应用镜像已获得并复核本地 image ID。
+- [x] 后端本地镜像已构建并复核 image ID：`sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf`。
+- [ ] 前端本地基线镜像已构建并复核 image ID；本次因 Docker Hub OAuth 超时和容器内 `npm ci` 网络停滞未完成。
 - [ ] 生产镜像已推送到受控仓库并固定 RepoDigest。
 - [ ] `DEF-REAL-FS01-005` 前端 3 个 High 已修复并独立复测关闭。
 - [ ] `DEF-REAL-FS01-006` 关键日志事件语义折叠已修复并独立复测关闭。
