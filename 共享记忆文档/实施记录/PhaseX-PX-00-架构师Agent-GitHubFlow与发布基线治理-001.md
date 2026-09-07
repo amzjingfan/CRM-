@@ -73,7 +73,7 @@
 | 风险 | 影响 | 应对措施 |
 | --- | --- | --- |
 | 首次导入混入秘密或大文件 | 泄密、仓库膨胀 | 先审计 824 个候选文件，再暂存；补充 `.pytest*/`、`.test-artifacts/` 规则后复核禁入项和大文件均为 0 |
-| 清单摘要与实际文件漂移 | 基线不可复现 | 对 23 个冻结文件逐一重算 SHA-256 并与 JSON 比对 |
+| 清单摘要与实际文件漂移 | 基线不可复现 | 对 25 个冻结文件逐一重算 SHA-256 并与 JSON 比对 |
 | 镜像构建受外网影响 | 摘要不完整 | 后端成功即记录真实摘要；前端失败保持 blocked，不复用历史镜像冒充本次产物 |
 | 远程写入凭证泄漏 | 仓库可能被未授权修改 | 使用仅绑定 `CP11-gh/CRM` 的可写 Deploy Key；私钥只保存在本地 `.git/deploy-keys/`，不纳入版本控制 |
 | 工程基线被误解为生产放行 | 提前开启真实能力 | README、架构、清单和验收表均保留 `production_release=false` 与阻断项 |
@@ -108,9 +108,10 @@
 - 初始化提交：`49a1c4d`、`d00fe71`、`3ac86a5`；治理提交：`5911d30`、`501478a`、`e28df7c`、`3442e23`；首次全项目安全导入：`62c65df`。
 - 已配置 `origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git`，推送 `main` 与 `docs/release-baseline-20260907`，并创建 [Pull Request #1](https://github.com/CP11-gh/CRM/pull/1)。
 - 仓库级可写 Deploy Key 编号为 `162515972`，公钥指纹为 `SHA256:D2TRU58ouqzIdYsRJ2N2gjqRG6st8dGKrjyC984OEQ4`；私钥位于本地 `.git/deploy-keys/CP11-gh-CRM-20260907`，未被跟踪。
-- 后端本次镜像构建成功：`crm-backend@sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf`，基础镜像为 `ghcr.io/astral-sh/uv@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36`。
+- 后端本次镜像使用固定基础镜像重新构建成功，本地 image ID 为 `sha256:def6eec93b6277bdc1a6bfc1db6117ee4b6e5d1cc0f0ba077368be8cc8ac6b83`；尚未推送受控仓库，因此 RepoDigest 保持 `null`。基础镜像固定为 `ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36`。
 - 前端固定基础镜像首次因 Docker Hub OAuth 超时失败；使用本地 `node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293` 后，分别使用 npm 官方源和项目镜像源重试，两次都停滞于容器内 `npm ci` 超过两分钟并终止，未产生本次前端镜像。
 - 历史 `crm-frontend:phase4-prod` 只在清单中标记为参考，不作为当前源码的冻结产物。
+- 合并前独立审阅识别出镜像证据语义、TypeScript 构建缓存、CODEOWNERS 缺失和 MCP 浮动版本四项 Important；当前分支已按实际证据修正、删除缓存、补齐所有权规则并将 `chrome-devtools-mcp` 固定为 `1.8.0`。
 
 ## 7. 验证记录
 
@@ -118,7 +119,7 @@
 | --- | --- | --- | --- | --- |
 | Git 候选安全审计 | `git ls-files --others --exclude-standard` + 路径/大小规则 | 禁入和大文件为 0 | 最终 737 个、7.11 MiB；禁入 0、大文件 0、未处理 0 | 通过 |
 | Git 忽略验证 | `git check-ignore`、ignored 文件枚举 | 临时与秘密文件不入库 | 102 个 `.pytest-*` 和 2 个 `.test-artifacts` 文件被排除 | 通过 |
-| 基线 JSON 与 SHA-256 | `ConvertFrom-Json` + `Get-FileHash` | JSON 有效且摘要一致 | 23 个冻结文件全部匹配，迁移元数据一致 | 通过 |
+| 基线 JSON 与 SHA-256 | `ConvertFrom-Json` + `Get-FileHash` | JSON 有效且摘要一致 | 25 个冻结文件全部匹配，迁移元数据一致 | 通过 |
 | Python 锁文件 | `uv lock --check` | 锁文件有效 | 125 个包解析通过 | 通过 |
 | Ruff | `uv run ruff check .`、`uv run ruff format --check .` | 无静态与格式错误 | 全部通过，235 个文件已格式化 | 通过 |
 | mypy | `uv run mypy app scripts` | 无类型错误 | 166 个源文件无问题 | 通过 |
@@ -126,7 +127,7 @@
 | pytest 环境异常复核 | 默认 `uv run pytest` 后改用项目内 basetemp | 区分测试失败与环境失败 | 默认运行在系统 Temp 清理 `pytest-current` 时 WinError 5；项目内 basetemp 后退出码 0 | 通过 |
 | 前端测试 | `npm run test` | 测试通过 | 32 passed、0 failed | 通过 |
 | 前端宿主机构建 | `npm run build` | 生产构建成功 | Next.js 15.5.23 编译成功，14 个页面生成 | 通过 |
-| backend 镜像 | `docker build -f Dockerfile.backend ...` | 生成可摘要镜像 | 构建成功并取得 `sha256:a07b...` | 通过 |
+| backend 镜像 | `docker build -f Dockerfile.backend ...` | 使用固定基础镜像生成可摘要镜像 | 构建成功并取得本地 image ID `sha256:def6...`；版本烟测输出 `crm-chat-system\|0.1.0` | 通过 |
 | frontend 镜像 | `docker build -f Dockerfile.frontend.prod ...` | 生成可摘要镜像 | 外部网络/OAuth 和 npm 安装停滞，未产生镜像 | 失败 |
 | 前端依赖审计 | `npm audit --registry=https://registry.npmjs.org --audit-level=high --json` | 无 High | 3 个 High，修复建议涉及 Next.js 16 Major | 失败 |
 | GitHub 远程与 PR | SSH 推送、GitHub REST API | 远程分支与 PR 可用 | `main`、功能分支已推送；PR #1 已创建 | 通过 |
@@ -145,7 +146,7 @@
 | 编号 | 问题或风险 | 优先级 | 负责 Agent | 计划处理 Phase/任务 |
 | --- | --- | --- | --- | --- |
 | RB-GIT-001 | 当前 GitHub 套餐不支持私有仓库分支保护，无法在服务端强制 PR 和 required checks | P1 | 架构师Agent | 升级套餐或评估转为公开仓库后配置 |
-| RB-IMG-001 | 前端新镜像未构建，外部镜像未固定受控仓库 RepoDigest | P1 | 全栈开发工程师Agent | REAL-FS-01/G0 |
+| RB-IMG-001 | 后端只有本地 image ID，前端新镜像未构建，应用与外部镜像均未固定受控仓库 RepoDigest | P1 | 全栈开发工程师Agent | REAL-FS-01/G0 |
 | DEF-REAL-FS01-005 | 前端依赖仍有 3 个 High，自动建议为 Next.js 16 Major | P1 | 全栈开发工程师Agent | REAL-FS-01 独立修复分支 |
 | DEF-REAL-FS01-006 | 关键日志事件语义折叠 | P2 | 全栈开发工程师Agent | REAL-FS-01 独立修复分支 |
 | RB-PROD-001 | 真实店铺、真实 SSE、五日稳定性、密钥轮换、备份恢复和回滚未完成 | P1 | 架构师Agent | G1～G8 |

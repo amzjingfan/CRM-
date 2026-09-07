@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-09-07T16:26:04+08:00",
+  "generated_at": "2026-09-07T17:15:53+08:00",
   "baseline": {
     "application_version": "0.1.0",
     "name": "MVP engineering prerelease baseline",
@@ -20,11 +20,15 @@
   "configuration": [
     {
       "path": ".gitignore",
-      "sha256": "8f28ea918ed93f102433ec899b3f9df54bfd340b82f20ef29d5bec63dddfa8c1"
+      "sha256": "84b4443bba204b7f1edd02628cd228257aa0e0deba70620a21b652d1b30dc986"
     },
     {
       "path": ".gitattributes",
       "sha256": "e1351928e5a8249f7bd60695251fff4830e2b05c625cc319d7ae61e59dfe88c5"
+    },
+    {
+      "path": ".github/CODEOWNERS",
+      "sha256": "2ce33a23eec9c193a49c48710600f1dfc988c5ed54cbf87ffa354c1640ae957f"
     },
     {
       "path": ".github/workflows/ci.yml",
@@ -33,6 +37,10 @@
     {
       "path": "CRM智能聊天系统/.env.example",
       "sha256": "b64d4a83e093f65eadd1981f8cb8a0206412520f71046f7886281c6399a8081a"
+    },
+    {
+      "path": "CRM智能聊天系统/.mcp.json",
+      "sha256": "cd3e80e30b5e85a3fa7abbe1313d3926300d23545beba501c517e23800a1aa16"
     },
     {
       "path": "CRM智能聊天系统/docker-compose.yml",
@@ -64,7 +72,7 @@
     },
     {
       "path": "CRM智能聊天系统/Dockerfile.backend",
-      "sha256": "bf0c4defe9902536fc83d3359bf15652333ddc26641c2e6f0b1a37de9b7f9b14"
+      "sha256": "48e84772c88eaadac2eac8982d9d3db9a559d33323658894a4fd01429999ffe7"
     },
     {
       "path": "CRM智能聊天系统/Dockerfile.frontend",
@@ -122,8 +130,8 @@
         "reference": "crm-backend:0.1.0-mvp.20260907",
         "build_status": "passed",
         "platform": "linux/amd64",
-        "local_image_id": "sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf",
-        "local_repo_digest": "crm-backend@sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf",
+        "local_image_id": "sha256:def6eec93b6277bdc1a6bfc1db6117ee4b6e5d1cc0f0ba077368be8cc8ac6b83",
+        "local_repo_digest": null,
         "published_registry_digest": null,
         "base_image": "ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36"
       },
@@ -152,6 +160,7 @@
     "retrieval_model_service_reason": "Excluded because its build and runtime require local model weights, which are intentionally outside Git and this baseline."
   },
   "open_gates": [
+    "Backend baseline image must be published to a controlled registry and assigned a registry RepoDigest.",
     "Frontend baseline image must be rebuilt successfully and assigned a published registry digest.",
     "Production external image references must be pinned to immutable registry digests.",
     "GitHub remote and baseline Pull Request are configured; required CI enforcement and protected main remain unavailable for this private repository on the current GitHub plan.",

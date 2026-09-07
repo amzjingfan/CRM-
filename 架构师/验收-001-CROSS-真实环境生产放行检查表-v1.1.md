@@ -28,7 +28,7 @@
 - [x] Alembic head 固定为 `023_marketing_review_idempotency`，迁移和配置 SHA-256 进入机器可读基线清单。
 - [x] 根 `.gitignore` 排除 `.env`、权重、虚拟环境、依赖、缓存、日志、测试临时目录和 worktree。
 - [x] GitHub Flow、PR 模板和后端/前端 CI 已定义。
-- [x] 后端本地镜像已构建并复核 image ID：`sha256:a07b580c40b7ba6bd32f82b5231df17a38c25d471cb9af9049b28bce135c47bf`。
+- [x] 后端使用固定基础镜像构建并复核本地 image ID：`sha256:def6eec93b6277bdc1a6bfc1db6117ee4b6e5d1cc0f0ba077368be8cc8ac6b83`。
 - [ ] 前端本地基线镜像已构建并复核 image ID；本次因 Docker Hub OAuth 超时和容器内 `npm ci` 网络停滞未完成。
 - [ ] 生产镜像已推送到受控仓库并固定 RepoDigest。
 - [ ] `DEF-REAL-FS01-005` 前端 3 个 High 已修复并独立复测关闭。
