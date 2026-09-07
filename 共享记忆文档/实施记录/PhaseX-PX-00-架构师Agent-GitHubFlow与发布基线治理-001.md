@@ -9,9 +9,9 @@
 | 模块编号 | 跨模块治理 |
 | 主责 Agent | 架构师Agent |
 | 协作 Agent | 无 |
-| 实施状态 | 部分完成 |
+| 实施状态 | 已完成（工程预发布基线治理） |
 | 开始日期 | 2026-09-07 |
-| 完成日期 | 未完成 |
+| 完成日期 | 2026-09-07 |
 | 代码位置 | 不涉及产品代码；治理文件位于工作区根目录及各文档责任目录 |
 
 ## 2. 需求与依据
@@ -106,7 +106,7 @@
 ### 6.3 关键实现说明
 
 - 初始化提交：`49a1c4d`、`d00fe71`、`3ac86a5`；治理提交：`5911d30`、`501478a`、`e28df7c`、`3442e23`；首次全项目安全导入：`62c65df`。
-- 已配置 `origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git`，推送 `main` 与 `docs/release-baseline-20260907`，并创建 [Pull Request #1](https://github.com/CP11-gh/CRM/pull/1)。
+- 已配置 `origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git`，推送 `main` 与 `docs/release-baseline-20260907`。PR #1 在最终审阅修复提交进入前被合并为 `3c24aee`，随后由 PR #2 回退为 `051d398`；包含全部审阅修复的 [Pull Request #3](https://github.com/CP11-gh/CRM/pull/3) 已通过独立人工复核和两项 GitHub Actions 门禁，并 squash merge 为 `190adf4`。
 - 仓库级可写 Deploy Key 编号为 `162515972`，公钥指纹为 `SHA256:D2TRU58ouqzIdYsRJ2N2gjqRG6st8dGKrjyC984OEQ4`；私钥位于本地 `.git/deploy-keys/CP11-gh-CRM-20260907`，未被跟踪。
 - 后端本次镜像使用固定基础镜像重新构建成功，本地 image ID 为 `sha256:def6eec93b6277bdc1a6bfc1db6117ee4b6e5d1cc0f0ba077368be8cc8ac6b83`；尚未推送受控仓库，因此 RepoDigest 保持 `null`。基础镜像固定为 `ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36`。
 - 前端固定基础镜像首次因 Docker Hub OAuth 超时失败；使用本地 `node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293` 后，分别使用 npm 官方源和项目镜像源重试，两次都停滞于容器内 `npm ci` 超过两分钟并终止，未产生本次前端镜像。
@@ -130,16 +130,18 @@
 | backend 镜像 | `docker build -f Dockerfile.backend ...` | 使用固定基础镜像生成可摘要镜像 | 构建成功并取得本地 image ID `sha256:def6...`；版本烟测输出 `crm-chat-system\|0.1.0` | 通过 |
 | frontend 镜像 | `docker build -f Dockerfile.frontend.prod ...` | 生成可摘要镜像 | 外部网络/OAuth 和 npm 安装停滞，未产生镜像 | 失败 |
 | 前端依赖审计 | `npm audit --registry=https://registry.npmjs.org --audit-level=high --json` | 无 High | 3 个 High，修复建议涉及 Next.js 16 Major | 失败 |
-| GitHub 远程与 PR | SSH 推送、GitHub REST API | 远程分支与 PR 可用 | `main`、功能分支已推送；PR #1 已创建 | 通过 |
-| GitHub Actions 首轮与修复复跑 | PR #1 的 `CI` workflow | 后端、前端门禁通过 | 首轮定位 OAuth 单测依赖本机 `.env`；修复提交 `dbfb6b2` 的后端、前端门禁均为 `success` | 通过 |
+| GitHub 远程、PR 与 squash merge | SSH 推送、GitHub REST API | 远程分支、审阅和整合链路可用 | PR #1 的提前整合由 PR #2 回退；最终 PR #3 已人工审阅并 squash merge 为 `190adf4` | 通过 |
+| GitHub Actions 首轮与最终复跑 | PR #1、PR #3 的 `CI` workflow | 后端、前端门禁通过 | 首轮定位 OAuth 单测依赖本机 `.env`；PR #3 最终提交 `7af04d4` 的 `Backend quality gates`、`Frontend quality gates` 均为 `success` | 通过 |
+| 合并后回归验证 | 在 `main@190adf4` 运行后端与前端测试 | 合并树与审阅树一致，测试无回归 | Git tree 均为 `d006cbb0290d3aae9153c277d4387466611abc8b`；后端 1321 passed、12 skipped，前端 32 passed、0 failed | 通过 |
 | main 分支保护 | GitHub Branch Protection API | 禁止直推并要求 PR/CI | 当前私有仓库套餐返回 403，需升级 GitHub 套餐或改为公开仓库 | 阻塞 |
 
 ## 8. 实施结果
 
-- 完成项：根仓库、GitHub Flow、CI/PR、全项目安全导入、迁移/配置/评测 SHA-256、后端镜像摘要、README/架构/清单/两个索引同步、两份缺失证据恢复、默认质量门禁验证、GitHub 远程接入与 PR #1 创建。
-- 未完成项：前端本次镜像、应用与外部镜像的受控仓库 RepoDigest、受套餐限制的 main 分支保护与 required checks、最终分支整合与带注释标签。
+- 完成项：根仓库、GitHub Flow、CI/PR、全项目安全导入、迁移/配置/评测 SHA-256、后端本地镜像证据、README/架构/清单/两个索引同步、两份缺失证据恢复、默认质量门禁验证、独立人工审阅、PR #3 squash merge，以及合并后回归验证。
+- 最终版本绑定：本记录所在 `main` 提交以带注释标签 `v0.1.0-mvp.20260907` 标记；标签只表示工程预发布基线，`production_release=false`。
+- 未完成项：前端本次镜像、应用与外部镜像的受控仓库 RepoDigest、受套餐限制的 main 分支保护与 required checks，以及 G1～G8 真实环境与回滚验证；这些事项不属于本次工程预发布基线治理的完成条件，继续阻断生产放行。
 - 与原方案差异：首次导入未使用 worktree，原因是 737 个既有文件在初始化时未跟踪；前端镜像因外部网络无法完成。
-- 当前状态：source/config/evaluation/backend-image 工程基线已形成并进入远程 GitHub Flow，PR #1 已打开；完整镜像闭环、分支保护、合并与标签尚未完成，因此记录为“部分完成”，生产保持不放行。
+- 当前状态：source/config/evaluation/backend-image 工程基线已形成，最终审阅树已通过 PR #3 进入 `main`，工程预发布基线治理完成；完整镜像闭环、分支保护和真实环境门禁仍未完成，生产保持不放行。
 
 ## 9. 遗留问题与风险
 
@@ -154,7 +156,7 @@
 ## 10. 交接事项
 
 - 交接给：架构师Agent、全栈开发工程师Agent、测试工程师Agent。
-- 后续任务：等待 PR #1 的修复后 CI 复跑和人工审阅；确认通过后 squash merge，再在 `main` 创建带注释标签；分支保护需先升级 GitHub 套餐或评估转为公开仓库，随后独立修复 G0 P1/P2，并完成前端与外部镜像摘要闭环。
+- 后续任务：在本记录进入 `main` 后创建并核验带注释标签 `v0.1.0-mvp.20260907`；随后从最新 `main` 新建独立短期分支，处理 3 个 High 前端依赖风险、前端与外部镜像 RepoDigest、真实环境及回滚验证。分支保护需先升级 GitHub 套餐或评估转为公开仓库。
 - 必须注意：`v0.1.0-mvp.20260907` 只能表示工程预发布基线；不得据此开启真实平台写入、自动回复、AI 翻译或 AI 营销。
 
 ## 11. 文档同步
