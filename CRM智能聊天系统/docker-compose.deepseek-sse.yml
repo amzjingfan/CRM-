@@ -1,0 +1,27 @@
+# REAL-FS-05 受控叠加：只允许后端按需生成内部草稿，不开放自动回复、翻译或营销。
+# 使用时必须同时叠加 docker-compose.prod.yml 与 docker-compose.ai.yml，且由密钥系统注入真实值。
+services:
+  backend:
+    environment:
+      LLM_ENABLED: ${LLM_ENABLED:-false}
+      LLM_LIVE_EVAL: "false"
+      AI_TRANSLATION_ENABLED: "false"
+      AI_MARKETING_ENABLED: "false"
+      AUTO_REPLY_ENABLED: "false"
+      CHAT_STREAM_TIMEOUT_SECONDS: ${CHAT_STREAM_TIMEOUT_SECONDS:-180}
+      CHAT_SSE_HEARTBEAT_SECONDS: ${CHAT_SSE_HEARTBEAT_SECONDS:-15}
+
+  # 后台任务不参与本阶段真实模型草稿链路，防止配置扩散为自动生成或发送。
+  jobs:
+    environment:
+      LLM_ENABLED: "false"
+      AI_TRANSLATION_ENABLED: "false"
+      AI_MARKETING_ENABLED: "false"
+      AUTO_REPLY_ENABLED: "false"
+
+  agent-worker:
+    environment:
+      LLM_ENABLED: "false"
+      AI_TRANSLATION_ENABLED: "false"
+      AI_MARKETING_ENABLED: "false"
+      AUTO_REPLY_ENABLED: "false"

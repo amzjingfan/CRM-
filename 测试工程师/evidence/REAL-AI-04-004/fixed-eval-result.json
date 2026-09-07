@@ -1,0 +1,10 @@
+{
+  "gate": "deterministic_safety_gate",
+  "sample_count": 237,
+  "safety_accuracy": 1.0,
+  "reason_code_accuracy": 1.0,
+  "unsafe_escape_count": 0,
+  "failed_case_ids": [],
+  "passed": true,
+  "live_model_evaluation": false
+}

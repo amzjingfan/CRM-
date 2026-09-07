@@ -1,2 +1,82 @@
-# Git worktree 必须排除，避免隔离工作区被父仓库再次跟踪。
+# Secret and environment files. Only sanitized examples belong in Git.
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*-credentials.json
+credentials*.json
+
+# Local platform and tunnel state.
+.cloudflared/
+**/sse-load-credentials*.json
+
+# Python environments, caches, and reports.
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest*/
+.mypy_cache/
+.ruff_cache/
+.uv-cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Node.js dependencies, package caches, and build output.
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/cache/
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Browser and test temporary output.
+.test-artifacts/
+.tmp/
+tmp/
+temp/
+test-results/
+playwright-report/
+blob-report/
+/outputs/
+
+# Logs, runtime data, and local databases.
+*.log
+logs/
+*.pid
+*.db
+*.sqlite
+*.sqlite3
+
+# Local model weights. Metadata, licenses, and manifests remain trackable.
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.gguf
+**/deploy/models/**/.cache/
+
+# Editors and operating-system metadata.
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Project-local Git worktrees must never be tracked by the parent repository.
 /.worktrees/
