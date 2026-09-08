@@ -33,6 +33,11 @@ docker-compose -f docker-compose.yml -f docker-compose.ai.yml --profile ai up -d
 
 开发环境真实权重冒烟已验证 1024 维有限向量和重排序顺序，但该结果不等同于正式质量或性能结论。
 
+生产或 staging 不直接挂载本仓库目录。服务器使用仓库外 `RETRIEVAL_MODEL_ASSET_DIR`
+（推荐 `/srv/crm/models`）保存相同的两个模型目录，生产 Compose 只读挂载到 `/models`，
+并在启动时强制执行固定权重 SHA-256 校验。目录准备和门禁说明见
+`deploy/production/README.md`。
+
 2026-08-21 的 OSV 审计对锁定的 PyTorch/Transformers 报告已知漏洞。生产启用前必须完成安全版本兼容评估与测试工程师复核；固定 Revision、哈希、离线模式和非 root 运行不能替代依赖修复。
 
 ## 校验

@@ -8,6 +8,7 @@
 - 云主机、安全组或负载均衡器只对公网开放 80/443；PostgreSQL、Redis、MinIO、backend 和 frontend 不直接暴露。
 - 为服务器或 NAT 网关分配固定公网出口 IP，将其作为 `TIKTOK_EGRESS_IP`，后续加入 TikTok IP 白名单。
 - TLS 证书目录位于仓库外，包含 `fullchain.pem`、`privkey.pem`，仅部署账户可读。
+- BGE 模型目录位于仓库外，例如 `/srv/crm/models`；只读挂载给模型服务，不随 Git checkout 或应用镜像更新。
 - 真实密钥由主机环境、CI/CD Secret 或云密钥管理系统注入，不写入仓库和命令历史。
 - 生产 Compose 会重置基础服务的开发 `.env` 注入；TikTok/DeepSeek 凭据只通过
   显式环境映射进入服务。Compose 插值必须使用仓库外生产文件或 CI 环境，不能依赖仓库 `.env`。
@@ -67,6 +68,7 @@ POSTGRES_DB
 POSTGRES_USER
 POSTGRES_PASSWORD
 TLS_CERT_DIR
+RETRIEVAL_MODEL_ASSET_DIR
 BACKEND_IMAGE
 FRONTEND_IMAGE
 RETRIEVAL_MODEL_SERVICE_IMAGE
@@ -75,6 +77,30 @@ REDIS_IMAGE
 MINIO_IMAGE
 NGINX_IMAGE
 ```
+
+服务器模型目录必须具有以下固定结构：
+
+```text
+/srv/crm/models/
+├─ bge-m3/
+│  ├─ config.json
+│  ├─ pytorch_model.bin
+│  └─ tokenizer.json
+└─ bge-reranker-large/
+   ├─ config.json
+   ├─ model.safetensors
+   └─ tokenizer.json
+```
+
+权重通过受控文件传输或服务器资产管理流程放入该目录，不通过 Git、GHCR 应用镜像或
+GitHub Secret 传输。仓库外环境文件设置 `RETRIEVAL_MODEL_ASSET_DIR=/srv/crm/models`；
+staging 门禁会拒绝相对路径、Git checkout 内路径、路径链或六个文件中的符号链接/reparse point，
+以及缺少任一必需模型运行文件的目录。生产 Compose
+只读挂载该目录到 `/models`，并固定启用 `RETRIEVAL_MODEL_VERIFY_HASHES=true`；模型服务
+启动时会按代码内固定 SHA-256 复核约 4.5 GB 权重，因此首次启动时间会相应增加。
+门禁通过 `git rev-parse --show-toplevel` 识别整个 checkout 边界，嵌套产品目录不能把同一
+工作树中的兄弟目录误判为仓库外资产；服务器模型目录及其必需文件必须是普通目录/文件，
+不能通过符号链接或 Windows Junction 指回 checkout。
 
 生产基础 Compose 的所有能力开关保持：
 
@@ -117,12 +143,16 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 前端镜像把 `NEXT_PUBLIC_API_BASE_URL` 固定为同源 `/v1`，因此同一不可变镜像可通过反向代理
 部署到 staging 和生产域名，不需要为不同域名重新构建。
 
+`Staging production gates` 使用工作流自带的 `GITHUB_TOKEN` 登录 GHCR，权限固定为
+`contents: read` 和 `packages: read`。如 GHCR 包保持私有，必须确保三个容器包允许
+`CP11-gh/CRM` 仓库的 Actions 读取；不在服务器环境文件中保存 GitHub 个人访问令牌。
+
 完成 OAuth、真实只读和 Webhook 门禁后，人工消息灰度只能显式叠加
 `docker-compose.tiktok-manual.yml`。该叠加文件只允许 backend 读取
 `REAL_TIKTOK_MESSAGE_WRITE_ENABLED`，Worker、自动回复和高风险写入仍固定关闭：
 
 ```powershell
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tiktok-manual.yml config --services
+docker compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tiktok-manual.yml config --services
 ```
 
 首次灰度固定为单店铺、单渠道、单操作人。开启顺序为只读、Webhook、人工普通消息；
@@ -150,9 +180,9 @@ AUTO_REPLY_ENABLED=false
 必须使用 `ai` profile 和两个受控叠加文件；配置检查只输出服务名：
 
 ```powershell
-docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml config --services
-docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml pull backend retrieval-model-service
-docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml up -d --no-build backend retrieval-model-service
+docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml config --services
+docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml pull backend retrieval-model-service
+docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml up -d --no-build --wait --wait-timeout 600 backend retrieval-model-service
 ```
 
 `docker-compose.deepseek-sse.yml` 只允许 backend 读取 `LLM_ENABLED`；jobs 和 agent-worker
@@ -191,7 +221,7 @@ Jobs Worker 按 `TIKTOK_TOKEN_REFRESH_POLL_SECONDS` 扫描即将过期的 TikTok
 会替代默认 `.env` 的 Compose 插值来源；配置检查只输出服务名，避免展开敏感值：
 
 ```powershell
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml config --services
+docker compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml config --services
 ```
 
 CI/CD 场景可直接注入同名环境变量，且环境变量优先于 `--env-file`。禁止执行会打印
@@ -240,7 +270,7 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 50 个授权客户端压测必须使用仓库外凭证池，并把低敏结果写到仓库外证据目录。50 个不同用户仍共享压测机来源 IP，因此只能在隔离的 integration/staging 测试窗口叠加专用限流文件；日常生产不得长期使用该叠加：
 
 ```powershell
-docker-compose --profile ai --env-file C:\secure\crm-integration.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml -f docker-compose.sse-load-test.yml up -d backend
+docker compose --profile ai --env-file C:\secure\crm-integration.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml -f docker-compose.sse-load-test.yml up -d --wait --wait-timeout 600 backend
 Set-Location backend
 uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --first-delta-p99-limit-ms 3000 --total-p99-limit-ms 5000 --output D:\secure-test-data\sse-evidence.json
 ```
@@ -290,4 +320,7 @@ Variable: CRM_STAGING_BASE_URL # staging 的 HTTPS 基础地址
 
 真实回滚由 `Invoke-StagingRollbackDrill.ps1 -Execute` 完成，固定顺序是：先强制关闭全部真实
 能力，再切换上一版本 RepoDigest，最后复核三个健康端点。`-ValidateOnly` 只验证计划和输入，
-不能作为真实部署或回滚通过证据。
+不能作为真实部署或回滚通过证据。目标机必须安装 Docker CLI 和 Compose v2 插件；两个实时
+脚本的每次 `docker compose up` 都使用 `--wait --wait-timeout 600`，只有包括
+`retrieval-model-service` 在内的容器达到 running/healthy 后才继续外部健康检查并写入
+`passed` 证据。

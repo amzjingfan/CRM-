@@ -49,6 +49,7 @@ $RequiredVariables = @(
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
     "TLS_CERT_DIR",
+    "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
     "POSTGRES_IMAGE",
     "REDIS_IMAGE",
@@ -132,15 +133,91 @@ function Assert-EnvironmentContract {
     }
 }
 
-function Resolve-ComposeCommand {
-    $standalone = Get-Command "docker-compose" -ErrorAction SilentlyContinue
-    if ($null -ne $standalone) {
-        return [PSCustomObject]@{ Executable = $standalone.Source; Prefix = @() }
+function Assert-NoReparsePointInPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $currentPath = [System.IO.Path]::GetFullPath($Path)
+    while ($true) {
+        $item = Get-Item -LiteralPath $currentPath -Force
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "External model asset paths must not contain a symbolic link or reparse point."
+        }
+        $parent = [System.IO.Directory]::GetParent($currentPath)
+        if ($null -eq $parent) {
+            break
+        }
+        $currentPath = $parent.FullName
+    }
+}
+
+function Assert-ExternalModelAssets {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$GitCheckoutRoot
+    )
+
+    if (-not [System.IO.Path]::IsPathRooted($Path)) {
+        throw "RETRIEVAL_MODEL_ASSET_DIR must be an absolute server path."
+    }
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        throw "RETRIEVAL_MODEL_ASSET_DIR does not exist or is not a directory."
+    }
+    Assert-NoReparsePointInPath -Path $Path
+
+    $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+    $resolvedGitCheckoutRoot = (Resolve-Path -LiteralPath $GitCheckoutRoot).Path
+    $checkoutPrefix = $resolvedGitCheckoutRoot.TrimEnd(
+        [System.IO.Path]::DirectorySeparatorChar,
+        [System.IO.Path]::AltDirectorySeparatorChar
+    ) + [System.IO.Path]::DirectorySeparatorChar
+    if ($resolvedPath.Equals($resolvedGitCheckoutRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        $resolvedPath.StartsWith($checkoutPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "RETRIEVAL_MODEL_ASSET_DIR must be outside the Git checkout."
     }
 
+    foreach ($relativePath in @(
+        "bge-m3/config.json",
+        "bge-m3/pytorch_model.bin",
+        "bge-m3/tokenizer.json",
+        "bge-reranker-large/config.json",
+        "bge-reranker-large/model.safetensors",
+        "bge-reranker-large/tokenizer.json"
+    )) {
+        $assetPath = Join-Path $resolvedPath $relativePath
+        if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) {
+            throw "External model asset directory is missing a required model asset file."
+        }
+        Assert-NoReparsePointInPath -Path $assetPath
+    }
+    return $resolvedPath
+}
+
+function Resolve-GitCheckoutRoot {
+    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
+
+    $git = Get-Command "git" -ErrorAction SilentlyContinue
+    if ($null -eq $git) {
+        throw "Git is required to resolve the staging checkout boundary."
+    }
+    $rootLines = & $git.Source -C $ProjectRoot rev-parse --show-toplevel
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to resolve the staging Git checkout root."
+    }
+    $root = ($rootLines -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($root) -or -not (Test-Path -LiteralPath $root -PathType Container)) {
+        throw "Git returned an invalid staging checkout root."
+    }
+    return (Resolve-Path -LiteralPath $root).Path
+}
+
+function Resolve-ComposeCommand {
     $docker = Get-Command "docker" -ErrorAction SilentlyContinue
     if ($null -eq $docker) {
-        throw "Docker Compose is required for a live staging run."
+        throw "Docker CLI with the Compose v2 plugin is required for a staging run."
+    }
+    & $docker.Source compose version *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose v2 plugin is required for health-aware staging deployment."
     }
     return [PSCustomObject]@{ Executable = $docker.Source; Prefix = @("compose") }
 }
@@ -172,7 +249,8 @@ function Get-ProductionComposeConfig {
 function Assert-ProductionComposeContract {
     param(
         [Parameter(Mandatory = $true)]$Config,
-        [Parameter(Mandatory = $true)][hashtable]$ExpectedImages
+        [Parameter(Mandatory = $true)][hashtable]$ExpectedImages,
+        [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir
     )
 
     foreach ($serviceName in $ExpectedImages.Keys) {
@@ -188,6 +266,16 @@ function Assert-ProductionComposeContract {
         if ($null -ne $buildProperty -and $null -ne $buildProperty.Value) {
             throw "Production Compose must not retain a local build for service: $serviceName"
         }
+    }
+
+    $retrievalService = $Config.services.PSObject.Properties["retrieval-model-service"].Value
+    $modelMount = @($retrievalService.volumes) | Where-Object { [string]$_.target -eq "/models" }
+    if ($modelMount.Count -ne 1 -or [string]$modelMount[0].type -ne "bind" -or
+        [string]$modelMount[0].source -ne $ExpectedModelAssetDir -or $modelMount[0].read_only -ne $true) {
+        throw "Production Compose must mount the reviewed external model directory read-only at /models."
+    }
+    if ([string]$retrievalService.environment.RETRIEVAL_MODEL_VERIFY_HASHES -ne "true") {
+        throw "Production retrieval model service must enable startup weight hash verification."
     }
 }
 
@@ -235,6 +323,7 @@ function Write-Evidence {
         backend_image = $BackendImage
         frontend_image = $FrontendImage
         retrieval_model_image = $RetrievalModelImage
+        external_model_assets_validated = $true
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
         health_checks = $HealthChecks
     }
@@ -254,6 +343,10 @@ if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $bas
 
 $environmentValues = Read-EnvironmentFile -Path $EnvFile
 Assert-EnvironmentContract -Values $environmentValues
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$gitCheckoutRoot = Resolve-GitCheckoutRoot -ProjectRoot $projectRoot
+$modelAssetDir = Assert-ExternalModelAssets -Path $environmentValues["RETRIEVAL_MODEL_ASSET_DIR"] `
+    -GitCheckoutRoot $gitCheckoutRoot
 $externalImageRepositories = @{
     "POSTGRES_IMAGE" = "pgvector/pgvector"
     "REDIS_IMAGE" = "redis"
@@ -272,7 +365,6 @@ if ($retrievalModelImage -ne $RetrievalModelImage) {
     throw "RETRIEVAL_MODEL_SERVICE_IMAGE must equal the reviewed RetrievalModelImage input."
 }
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
 $compose = Resolve-ComposeCommand
 $composeArguments = @(
     "--profile", "ai",
@@ -282,13 +374,19 @@ $composeArguments = @(
 )
 
 $savedEnvironment = @{}
-foreach ($name in @($DisabledCapabilityVariables + @("BACKEND_IMAGE", "FRONTEND_IMAGE", "RETRIEVAL_MODEL_SERVICE_IMAGE"))) {
+foreach ($name in @($DisabledCapabilityVariables + @(
+    "BACKEND_IMAGE",
+    "FRONTEND_IMAGE",
+    "RETRIEVAL_MODEL_ASSET_DIR",
+    "RETRIEVAL_MODEL_SERVICE_IMAGE"
+))) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
 try {
     Set-DisabledCapabilities
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
+    $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
     $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $retrievalModelImage
 
     $config = Get-ProductionComposeConfig -Command $compose -Arguments $composeArguments
@@ -304,7 +402,8 @@ try {
         "frontend" = $FrontendImage
         "proxy" = $validatedExternalImages["NGINX_IMAGE"]
     }
-    Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages
+    Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages `
+        -ExpectedModelAssetDir $modelAssetDir
 
     if ($ValidateOnly) {
         Write-Evidence -Status "validated" -HealthChecks @()
@@ -325,8 +424,8 @@ try {
         "pull", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
     ))
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker", "frontend", "proxy",
-        "retrieval-model-service"
+        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "backend", "worker", "jobs", "agent-worker",
+        "frontend", "proxy", "retrieval-model-service"
     ))
 }
 finally {
