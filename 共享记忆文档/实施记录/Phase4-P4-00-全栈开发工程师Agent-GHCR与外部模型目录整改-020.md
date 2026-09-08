@@ -105,7 +105,7 @@ workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只�
 | TDD 红灯 | 运行脚本和 workflow 聚焦测试 | 缺少目录门禁和 GHCR 登录时失败 | 后端 5 项、前端 1 项按预期失败 | 通过 |
 | 脚本聚焦绿灯 | `pytest tests/test_production_gate_scripts.py -q --basetemp {系统临时目录}` | 全部通过 | 15 passed | 通过 |
 | Compose/workflow 聚焦绿灯 | `node frontend/tests/compose.test.mjs` | 全部通过 | 10 passed | 通过 |
-| 后端完整工程门禁 | `ruff check .`、`ruff format --check .`、`mypy app scripts`、`pytest -q --basetemp {仓库外临时目录}` | 全部通过 | Ruff 与格式通过；mypy 166 个源文件通过；1355 passed、14 skipped、2 个既有依赖弃用警告 | 通过 |
+| 后端完整工程门禁 | `ruff check .`、`ruff format --check .`、`mypy app scripts`、`pytest -q --basetemp {仓库外临时目录}` | 全部通过 | 合入最新 `main` 后复验：Ruff 与格式通过；mypy 166 个源文件通过；1367 passed、14 skipped、2 个既有依赖弃用警告 | 通过 |
 | 前端完整工程门禁 | `npm test`、`npm run typecheck`、`npm run lint`、`npm run build` | 全部通过 | 40 tests passed；类型检查通过；lint 0 error、2 个既有导航警告；生产构建成功并生成 12 个路由 | 通过 |
 | Windows 脚本兼容性 | Windows PowerShell 5.1 解析两个门禁脚本 | 均可解析 | 两个脚本均 parse OK | 通过 |
 | 审阅补充红灯 | 运行 Git 根、六文件、Compose 健康等待和链接绕过行为测试 | 原实现应暴露四类缺口 | 首轮 16 failed；链接测试另确认 2 failed，分别命中两个脚本 | 通过 |
