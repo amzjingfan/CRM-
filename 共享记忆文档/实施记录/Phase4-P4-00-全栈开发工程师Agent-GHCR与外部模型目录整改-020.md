@@ -81,7 +81,7 @@ workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只�
 | `CRM智能聊天系统/docker-compose.prod.yml` | 修改 | 只读挂载服务器外部模型并开启哈希校验 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1` | 修改 | 校验真实 Git 根、六文件资产和合并 Compose 契约，等待容器健康 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1` | 修改 | 回滚前执行同等模型资产门禁和 Compose 健康等待 | 全栈开发工程师Agent |
-| `CRM智能聊天系统/backend/tests/test_production_gate_scripts.py` | 修改 | 新增两个脚本的目录边界、六文件、健康失败关闭测试，并归一化跨平台 PowerShell ANSI 错误输出 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/tests/test_production_gate_scripts.py` | 修改 | 新增两个脚本的目录边界、六文件、健康失败关闭测试，并归一化跨平台 PowerShell ANSI 与自动换行栏输出 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/frontend/tests/compose.test.mjs` | 修改 | 新增 staging GHCR 工作流契约测试 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/.env.example`、`deploy/production/README.md`、`deploy/models/README.md` | 修改 | 补充脱敏配置和服务器准备说明 | 全栈开发工程师Agent |
 | `共享记忆文档/实施记录索引.md` | 修改 | 登记本实施记录 | 共享记忆文档Agent |

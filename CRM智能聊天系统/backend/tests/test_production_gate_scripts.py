@@ -32,6 +32,8 @@ REQUIRED_MODEL_FILES = (
     "bge-reranker-large/tokenizer.json",
 )
 ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+POWERSHELL_GUTTER_PATTERN = re.compile(r"\r?\n\s*\|\s*")
+WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
 def run_powershell(
@@ -55,17 +57,19 @@ def run_powershell(
 
 
 def normalized_process_output(result: subprocess.CompletedProcess[str]) -> str:
-    """移除 PowerShell 7 在非 Windows 平台错误流中插入的 ANSI 样式码。"""
-    return ANSI_ESCAPE_PATTERN.sub("", result.stdout + result.stderr).lower()
+    """归一化 PowerShell 7 在非 Windows 平台渲染的样式码和换行栏。"""
+    output = ANSI_ESCAPE_PATTERN.sub("", result.stdout + result.stderr)
+    output = POWERSHELL_GUTTER_PATTERN.sub(" ", output)
+    return WHITESPACE_PATTERN.sub(" ", output).strip().lower()
 
 
-def test_normalized_process_output_removes_split_ansi_sequences() -> None:
-    """Ubuntu PowerShell 的样式码不得拆断门禁错误语义断言。"""
+def test_normalized_process_output_removes_ansi_and_line_gutters() -> None:
+    """Ubuntu PowerShell 的样式码和自动换行栏不得拆断门禁错误语义。"""
     result = subprocess.CompletedProcess(
         args=["pwsh"],
         returncode=1,
         stdout="",
-        stderr="\x1b[31;1mreparse \x1b[0m\x1b[31;1mpoint.\x1b[0m",
+        stderr="\x1b[31;1mreparse\x1b[0m\n | \x1b[31;1mpoint.\x1b[0m",
     )
 
     assert normalized_process_output(result) == "reparse point."
