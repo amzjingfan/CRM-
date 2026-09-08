@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -157,7 +158,7 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
             "volumes": [
                 {
                     "type": "bind",
-                    "source": str(model_asset_dir.resolve()),
+                    "source": str(model_asset_dir.absolute()),
                     "target": "/models",
                     "read_only": True,
                 }
@@ -186,14 +187,51 @@ sys.exit(0)
 """,
         encoding="utf-8",
     )
-    wrapper = f'@echo off\r\n"{sys.executable}" "{fake_runtime}" %*\r\n'
-    (fake_bin / "docker.cmd").write_text(wrapper, encoding="utf-8")
-    (fake_bin / "docker-compose.cmd").write_text(wrapper, encoding="utf-8")
     environment = os.environ.copy()
+    environment["FAKE_DOCKER_PYTHON"] = sys.executable
+    environment["FAKE_DOCKER_SCRIPT"] = str(fake_runtime)
+    if os.name == "nt":
+        wrapper = '@echo off\r\n"%FAKE_DOCKER_PYTHON%" "%FAKE_DOCKER_SCRIPT%" %*\r\n'
+        (fake_bin / "docker.cmd").write_text(wrapper, encoding="utf-8")
+    else:
+        wrapper_path = fake_bin / "docker"
+        wrapper_path.write_text(
+            '#!/bin/sh\nexec "$FAKE_DOCKER_PYTHON" "$FAKE_DOCKER_SCRIPT" "$@"\n',
+            encoding="utf-8",
+        )
+        wrapper_path.chmod(0o755)
     environment["PATH"] = str(fake_bin) + os.pathsep + environment.get("PATH", "")
     environment["FAKE_DOCKER_LOG"] = str(command_log)
     environment["FAKE_DOCKER_CONFIG"] = str(config_path)
     return environment, command_log
+
+
+def create_directory_link(link_path: Path, target_path: Path) -> None:
+    """创建目录符号链接；Windows 无权限时使用无需管理员权限的 Junction。"""
+    try:
+        link_path.symlink_to(target_path, target_is_directory=True)
+        return
+    except (NotImplementedError, OSError):
+        if os.name != "nt":
+            pytest.skip("directory symlinks are unavailable on this runner")
+    result = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(link_path), str(target_path)],
+        capture_output=True,
+        check=False,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0:
+        pytest.skip("directory junctions are unavailable on this Windows runner")
+
+
+def create_file_link(link_path: Path, target_path: Path) -> None:
+    """创建文件符号链接；不支持时跳过该平台专用分支。"""
+    try:
+        link_path.symlink_to(target_path)
+    except (NotImplementedError, OSError):
+        pytest.skip("file symlinks are unavailable on this runner")
 
 
 def test_preflight_rejects_production_environment(tmp_path: Path) -> None:
@@ -460,6 +498,96 @@ def test_gate_scripts_reject_model_assets_anywhere_inside_git_checkout(
 
     assert result.returncode != 0
     assert "outside" in (result.stdout + result.stderr).lower()
+    assert not evidence_file.exists()
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+def test_gate_scripts_reject_external_link_pointing_into_git_checkout(
+    script: Path,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """仓库外符号链接或 Junction 不得把仓库内资产伪装成外部目录。"""
+    with tempfile.TemporaryDirectory(prefix=".model-link-target-", dir=PROJECT_ROOT / "backend") as directory:
+        internal_target = Path(directory)
+        for relative_path in REQUIRED_MODEL_FILES:
+            asset_path = internal_target / relative_path
+            asset_path.parent.mkdir(parents=True, exist_ok=True)
+            asset_path.write_bytes(f"test:{relative_path}".encode())
+        link_path = tmp_path / "linked-model-assets"
+        create_directory_link(link_path, internal_target)
+        try:
+            replace_environment_value(staging_env_file, "RETRIEVAL_MODEL_ASSET_DIR", str(link_path))
+            environment, _ = write_fake_compose_runtime(tmp_path, link_path)
+            evidence_file = tmp_path / f"{script.stem}-linked-assets.json"
+            result = run_powershell(
+                script,
+                "-Environment",
+                "staging",
+                "-EnvFile",
+                str(staging_env_file),
+                *validation_image_arguments(script),
+                "-BaseUrl",
+                "https://staging.example.com",
+                "-EvidenceFile",
+                str(evidence_file),
+                "-ConfirmTarget",
+                "staging",
+                "-ValidateOnly",
+                environment=environment,
+            )
+        finally:
+            if link_path.exists() or link_path.is_symlink():
+                if os.name == "nt":
+                    os.rmdir(link_path)
+                else:
+                    link_path.unlink()
+
+    assert result.returncode != 0
+    assert "reparse point" in (result.stdout + result.stderr).lower()
+    assert not evidence_file.exists()
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+def test_gate_scripts_reject_linked_model_runtime_file(
+    script: Path,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """正常外部目录中的六个必需文件也不能是符号链接。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    linked_asset = model_asset_dir / "bge-m3" / "config.json"
+    linked_asset.unlink()
+    link_target = tmp_path / "linked-config-target.json"
+    link_target.write_bytes(b"test:linked-config")
+    create_file_link(linked_asset, link_target)
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    evidence_file = tmp_path / f"{script.stem}-linked-file.json"
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+        environment=environment,
+    )
+
+    assert result.returncode != 0
+    assert "reparse point" in (result.stdout + result.stderr).lower()
     assert not evidence_file.exists()
 
 

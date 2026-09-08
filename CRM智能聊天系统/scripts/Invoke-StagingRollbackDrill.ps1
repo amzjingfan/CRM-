@@ -132,6 +132,23 @@ function Assert-EnvironmentContract {
     }
 }
 
+function Assert-NoReparsePointInPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $currentPath = [System.IO.Path]::GetFullPath($Path)
+    while ($true) {
+        $item = Get-Item -LiteralPath $currentPath -Force
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "External model asset paths must not contain a symbolic link or reparse point."
+        }
+        $parent = [System.IO.Directory]::GetParent($currentPath)
+        if ($null -eq $parent) {
+            break
+        }
+        $currentPath = $parent.FullName
+    }
+}
+
 function Assert-ExternalModelAssets {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -144,6 +161,7 @@ function Assert-ExternalModelAssets {
     if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
         throw "RETRIEVAL_MODEL_ASSET_DIR does not exist or is not a directory."
     }
+    Assert-NoReparsePointInPath -Path $Path
 
     $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
     $resolvedGitCheckoutRoot = (Resolve-Path -LiteralPath $GitCheckoutRoot).Path
@@ -168,6 +186,7 @@ function Assert-ExternalModelAssets {
         if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) {
             throw "External model asset directory is missing a required model asset file."
         }
+        Assert-NoReparsePointInPath -Path $assetPath
     }
     return $resolvedPath
 }

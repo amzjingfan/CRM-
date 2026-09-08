@@ -10,6 +10,7 @@
 | 主责 Agent | 全栈开发工程师Agent |
 | 协作 Agent | 架构师Agent、测试工程师Agent |
 | 实施状态 | 已完成 |
+| 验收边界 | 仅工程整改已完成；真实服务器部署、回滚和 G0 仍待验证 |
 | 开始日期 | 2026-09-08 |
 | 完成日期 | 2026-09-08 |
 | 代码位置 | `CRM智能聊天系统/`、`.github/workflows/` |
@@ -53,7 +54,7 @@
 
 ### 5.1 方案说明
 
-workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只授予 `packages: read`。外部环境文件新增 `RETRIEVAL_MODEL_ASSET_DIR`，门禁要求其为存在的绝对路径、位于完整 Git checkout 外并包含推理引擎所需六个固定文件。生产 Compose 将该目录只读挂载为 `/models`，模型服务固定开启 SHA-256 校验；实时部署和回滚使用 Compose v2 健康等待后才进入外部探针与证据写入。
+workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只授予 `packages: read`。外部环境文件新增 `RETRIEVAL_MODEL_ASSET_DIR`，门禁要求其为存在的绝对路径、位于完整 Git checkout 外、不含符号链接/reparse point，并包含推理引擎所需六个固定普通文件。生产 Compose 将该目录只读挂载为 `/models`，模型服务固定开启 SHA-256 校验；实时部署和回滚使用 Compose v2 健康等待后才进入外部探针与证据写入。
 
 ### 5.2 依赖关系
 
@@ -104,11 +105,11 @@ workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只�
 | TDD 红灯 | 运行脚本和 workflow 聚焦测试 | 缺少目录门禁和 GHCR 登录时失败 | 后端 5 项、前端 1 项按预期失败 | 通过 |
 | 脚本聚焦绿灯 | `pytest tests/test_production_gate_scripts.py -q --basetemp {系统临时目录}` | 全部通过 | 15 passed | 通过 |
 | Compose/workflow 聚焦绿灯 | `node frontend/tests/compose.test.mjs` | 全部通过 | 10 passed | 通过 |
-| 后端完整工程门禁 | `ruff check .`、`ruff format --check .`、`mypy app scripts`、`pytest -q --basetemp {仓库外临时目录}` | 全部通过 | Ruff 与格式通过；mypy 166 个源文件通过；1352 passed、12 skipped、2 个既有依赖弃用警告 | 通过 |
+| 后端完整工程门禁 | `ruff check .`、`ruff format --check .`、`mypy app scripts`、`pytest -q --basetemp {仓库外临时目录}` | 全部通过 | Ruff 与格式通过；mypy 166 个源文件通过；1354 passed、14 skipped、2 个既有依赖弃用警告 | 通过 |
 | 前端完整工程门禁 | `npm test`、`npm run typecheck`、`npm run lint`、`npm run build` | 全部通过 | 40 tests passed；类型检查通过；lint 0 error、2 个既有导航警告；生产构建成功并生成 12 个路由 | 通过 |
 | Windows 脚本兼容性 | Windows PowerShell 5.1 解析两个门禁脚本 | 均可解析 | 两个脚本均 parse OK | 通过 |
-| 审阅补充红灯 | 运行 Git 根、六文件和 Compose 健康等待行为测试 | 原实现应暴露三类缺口 | 16 failed，分别命中两个脚本 | 通过 |
-| 审阅补充绿灯 | `pytest tests/test_production_gate_scripts.py -q` | 两个脚本的失败关闭契约全部通过 | 31 passed | 通过 |
+| 审阅补充红灯 | 运行 Git 根、六文件、Compose 健康等待和链接绕过行为测试 | 原实现应暴露四类缺口 | 首轮 16 failed；链接测试另确认 2 failed，分别命中两个脚本 | 通过 |
+| 审阅补充绿灯 | `pytest tests/test_production_gate_scripts.py -q` | 两个脚本的失败关闭契约全部通过 | 33 passed、2 个 Windows 文件符号链接能力跳过；Ubuntu CI 将执行该分支 | 通过 |
 
 ## 8. 实施结果
 

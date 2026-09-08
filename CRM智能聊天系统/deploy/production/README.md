@@ -94,11 +94,13 @@ NGINX_IMAGE
 
 权重通过受控文件传输或服务器资产管理流程放入该目录，不通过 Git、GHCR 应用镜像或
 GitHub Secret 传输。仓库外环境文件设置 `RETRIEVAL_MODEL_ASSET_DIR=/srv/crm/models`；
-staging 门禁会拒绝相对路径、Git checkout 内路径和缺少固定权重文件的目录。生产 Compose
+staging 门禁会拒绝相对路径、Git checkout 内路径、路径链或六个文件中的符号链接/reparse point，
+以及缺少任一必需模型运行文件的目录。生产 Compose
 只读挂载该目录到 `/models`，并固定启用 `RETRIEVAL_MODEL_VERIFY_HASHES=true`；模型服务
 启动时会按代码内固定 SHA-256 复核约 4.5 GB 权重，因此首次启动时间会相应增加。
 门禁通过 `git rev-parse --show-toplevel` 识别整个 checkout 边界，嵌套产品目录不能把同一
-工作树中的兄弟目录误判为仓库外资产。
+工作树中的兄弟目录误判为仓库外资产；服务器模型目录及其必需文件必须是普通目录/文件，
+不能通过符号链接或 Windows Junction 指回 checkout。
 
 生产基础 Compose 的所有能力开关保持：
 
