@@ -136,7 +136,7 @@ function Assert-EnvironmentContract {
 function Assert-ExternalModelAssets {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][string]$ProjectRoot
+        [Parameter(Mandatory = $true)][string]$GitCheckoutRoot
     )
 
     if (-not [System.IO.Path]::IsPathRooted($Path)) {
@@ -147,37 +147,58 @@ function Assert-ExternalModelAssets {
     }
 
     $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
-    $resolvedProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
-    $projectPrefix = $resolvedProjectRoot.TrimEnd(
+    $resolvedGitCheckoutRoot = (Resolve-Path -LiteralPath $GitCheckoutRoot).Path
+    $checkoutPrefix = $resolvedGitCheckoutRoot.TrimEnd(
         [System.IO.Path]::DirectorySeparatorChar,
         [System.IO.Path]::AltDirectorySeparatorChar
     ) + [System.IO.Path]::DirectorySeparatorChar
-    if ($resolvedPath.Equals($resolvedProjectRoot, [StringComparison]::OrdinalIgnoreCase) -or
-        $resolvedPath.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    if ($resolvedPath.Equals($resolvedGitCheckoutRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        $resolvedPath.StartsWith($checkoutPrefix, [StringComparison]::OrdinalIgnoreCase)) {
         throw "RETRIEVAL_MODEL_ASSET_DIR must be outside the Git checkout."
     }
 
     foreach ($relativePath in @(
+        "bge-m3/config.json",
         "bge-m3/pytorch_model.bin",
-        "bge-reranker-large/model.safetensors"
+        "bge-m3/tokenizer.json",
+        "bge-reranker-large/config.json",
+        "bge-reranker-large/model.safetensors",
+        "bge-reranker-large/tokenizer.json"
     )) {
-        $weightPath = Join-Path $resolvedPath $relativePath
-        if (-not (Test-Path -LiteralPath $weightPath -PathType Leaf)) {
-            throw "External model asset directory is missing a required weight file."
+        $assetPath = Join-Path $resolvedPath $relativePath
+        if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) {
+            throw "External model asset directory is missing a required model asset file."
         }
     }
     return $resolvedPath
 }
 
-function Resolve-ComposeCommand {
-    $standalone = Get-Command "docker-compose" -ErrorAction SilentlyContinue
-    if ($null -ne $standalone) {
-        return [PSCustomObject]@{ Executable = $standalone.Source; Prefix = @() }
-    }
+function Resolve-GitCheckoutRoot {
+    param([Parameter(Mandatory = $true)][string]$ProjectRoot)
 
+    $git = Get-Command "git" -ErrorAction SilentlyContinue
+    if ($null -eq $git) {
+        throw "Git is required to resolve the staging checkout boundary."
+    }
+    $rootLines = & $git.Source -C $ProjectRoot rev-parse --show-toplevel
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to resolve the staging Git checkout root."
+    }
+    $root = ($rootLines -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($root) -or -not (Test-Path -LiteralPath $root -PathType Container)) {
+        throw "Git returned an invalid staging checkout root."
+    }
+    return (Resolve-Path -LiteralPath $root).Path
+}
+
+function Resolve-ComposeCommand {
     $docker = Get-Command "docker" -ErrorAction SilentlyContinue
     if ($null -eq $docker) {
-        throw "Docker Compose is required for a live staging run."
+        throw "Docker CLI with the Compose v2 plugin is required for a staging run."
+    }
+    & $docker.Source compose version *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose v2 plugin is required for health-aware staging deployment."
     }
     return [PSCustomObject]@{ Executable = $docker.Source; Prefix = @("compose") }
 }
@@ -304,8 +325,9 @@ if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $bas
 $environmentValues = Read-EnvironmentFile -Path $EnvFile
 Assert-EnvironmentContract -Values $environmentValues
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$gitCheckoutRoot = Resolve-GitCheckoutRoot -ProjectRoot $projectRoot
 $modelAssetDir = Assert-ExternalModelAssets -Path $environmentValues["RETRIEVAL_MODEL_ASSET_DIR"] `
-    -ProjectRoot $projectRoot
+    -GitCheckoutRoot $gitCheckoutRoot
 $externalImageRepositories = @{
     "POSTGRES_IMAGE" = "pgvector/pgvector"
     "REDIS_IMAGE" = "redis"
@@ -383,8 +405,8 @@ try {
         "pull", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
     ))
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker", "frontend", "proxy",
-        "retrieval-model-service"
+        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "backend", "worker", "jobs", "agent-worker",
+        "frontend", "proxy", "retrieval-model-service"
     ))
 }
 finally {

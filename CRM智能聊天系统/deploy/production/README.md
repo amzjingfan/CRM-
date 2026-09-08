@@ -83,9 +83,13 @@ NGINX_IMAGE
 ```text
 /srv/crm/models/
 ├─ bge-m3/
-│  └─ pytorch_model.bin
+│  ├─ config.json
+│  ├─ pytorch_model.bin
+│  └─ tokenizer.json
 └─ bge-reranker-large/
-   └─ model.safetensors
+   ├─ config.json
+   ├─ model.safetensors
+   └─ tokenizer.json
 ```
 
 权重通过受控文件传输或服务器资产管理流程放入该目录，不通过 Git、GHCR 应用镜像或
@@ -93,6 +97,8 @@ GitHub Secret 传输。仓库外环境文件设置 `RETRIEVAL_MODEL_ASSET_DIR=/s
 staging 门禁会拒绝相对路径、Git checkout 内路径和缺少固定权重文件的目录。生产 Compose
 只读挂载该目录到 `/models`，并固定启用 `RETRIEVAL_MODEL_VERIFY_HASHES=true`；模型服务
 启动时会按代码内固定 SHA-256 复核约 4.5 GB 权重，因此首次启动时间会相应增加。
+门禁通过 `git rev-parse --show-toplevel` 识别整个 checkout 边界，嵌套产品目录不能把同一
+工作树中的兄弟目录误判为仓库外资产。
 
 生产基础 Compose 的所有能力开关保持：
 
@@ -144,7 +150,7 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 `REAL_TIKTOK_MESSAGE_WRITE_ENABLED`，Worker、自动回复和高风险写入仍固定关闭：
 
 ```powershell
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tiktok-manual.yml config --services
+docker compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tiktok-manual.yml config --services
 ```
 
 首次灰度固定为单店铺、单渠道、单操作人。开启顺序为只读、Webhook、人工普通消息；
@@ -172,9 +178,9 @@ AUTO_REPLY_ENABLED=false
 必须使用 `ai` profile 和两个受控叠加文件；配置检查只输出服务名：
 
 ```powershell
-docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml config --services
-docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml pull backend retrieval-model-service
-docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml up -d --no-build backend retrieval-model-service
+docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml config --services
+docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml pull backend retrieval-model-service
+docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml up -d --no-build --wait --wait-timeout 600 backend retrieval-model-service
 ```
 
 `docker-compose.deepseek-sse.yml` 只允许 backend 读取 `LLM_ENABLED`；jobs 和 agent-worker
@@ -213,7 +219,7 @@ Jobs Worker 按 `TIKTOK_TOKEN_REFRESH_POLL_SECONDS` 扫描即将过期的 TikTok
 会替代默认 `.env` 的 Compose 插值来源；配置检查只输出服务名，避免展开敏感值：
 
 ```powershell
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml config --services
+docker compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml config --services
 ```
 
 CI/CD 场景可直接注入同名环境变量，且环境变量优先于 `--env-file`。禁止执行会打印
@@ -260,7 +266,7 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 50 个授权客户端压测必须使用仓库外凭证池，并把低敏结果写到仓库外证据目录。50 个不同用户仍共享压测机来源 IP，因此只能在隔离的 integration/staging 测试窗口叠加专用限流文件；日常生产不得长期使用该叠加：
 
 ```powershell
-docker-compose --profile ai --env-file C:\secure\crm-integration.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml -f docker-compose.sse-load-test.yml up -d backend
+docker compose --profile ai --env-file C:\secure\crm-integration.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml -f docker-compose.sse-load-test.yml up -d --wait --wait-timeout 600 backend
 Set-Location backend
 uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --first-delta-p99-limit-ms 3000 --total-p99-limit-ms 5000 --output D:\secure-test-data\sse-evidence.json
 ```
@@ -310,4 +316,7 @@ Variable: CRM_STAGING_BASE_URL # staging 的 HTTPS 基础地址
 
 真实回滚由 `Invoke-StagingRollbackDrill.ps1 -Execute` 完成，固定顺序是：先强制关闭全部真实
 能力，再切换上一版本 RepoDigest，最后复核三个健康端点。`-ValidateOnly` 只验证计划和输入，
-不能作为真实部署或回滚通过证据。
+不能作为真实部署或回滚通过证据。目标机必须安装 Docker CLI 和 Compose v2 插件；两个实时
+脚本的每次 `docker compose up` 都使用 `--wait --wait-timeout 600`，只有包括
+`retrieval-model-service` 在内的容器达到 running/healthy 后才继续外部健康检查并写入
+`passed` 证据。

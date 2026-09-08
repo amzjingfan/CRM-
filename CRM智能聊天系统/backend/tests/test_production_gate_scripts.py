@@ -1,8 +1,10 @@
 """staging 生产门禁和回滚脚本的失败关闭契约测试。"""
 
 import json
+import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,9 +21,21 @@ PREVIOUS_FRONTEND_IMAGE = "ghcr.io/cp11-gh/crm-frontend@sha256:" + "d" * 64
 RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "e" * 64
 PREVIOUS_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "f" * 64
 SECRET_SENTINEL = "must-not-appear-in-command-output-or-evidence"
+REQUIRED_MODEL_FILES = (
+    "bge-m3/config.json",
+    "bge-m3/pytorch_model.bin",
+    "bge-m3/tokenizer.json",
+    "bge-reranker-large/config.json",
+    "bge-reranker-large/model.safetensors",
+    "bge-reranker-large/tokenizer.json",
+)
 
 
-def run_powershell(script: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+def run_powershell(
+    script: Path,
+    *arguments: str,
+    environment: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     """使用当前平台可用的 PowerShell 执行脚本并捕获低敏输出。"""
     assert POWERSHELL is not None, "PowerShell is required for production gate tests"
     assert script.exists(), f"missing production gate script: {script}"
@@ -33,6 +47,7 @@ def run_powershell(script: Path, *arguments: str) -> subprocess.CompletedProcess
         errors="replace",
         text=True,
         timeout=30,
+        env=environment,
     )
 
 
@@ -42,8 +57,8 @@ def staging_env_file(tmp_path: Path) -> Path:
     model_asset_dir = tmp_path / "model-assets"
     (model_asset_dir / "bge-m3").mkdir(parents=True)
     (model_asset_dir / "bge-reranker-large").mkdir()
-    (model_asset_dir / "bge-m3" / "pytorch_model.bin").write_bytes(b"test-bge-m3")
-    (model_asset_dir / "bge-reranker-large" / "model.safetensors").write_bytes(b"test-reranker")
+    for relative_path in REQUIRED_MODEL_FILES:
+        (model_asset_dir / relative_path).write_bytes(f"test:{relative_path}".encode())
     env_file = tmp_path / "crm-staging.env"
     env_file.write_text(
         "\n".join(
@@ -94,6 +109,91 @@ def replace_environment_value(env_file: Path, name: str, value: str | None) -> N
     if replacement is None:
         updated = [line for line in updated if line is not None]
     env_file.write_text("\n".join(updated), encoding="utf-8")
+
+
+def validation_image_arguments(script: Path) -> tuple[str, ...]:
+    """返回预检或回滚脚本共用的不可变镜像参数。"""
+    if script == PREFLIGHT_SCRIPT:
+        return (
+            "-BackendImage",
+            BACKEND_IMAGE,
+            "-FrontendImage",
+            FRONTEND_IMAGE,
+            "-RetrievalModelImage",
+            RETRIEVAL_MODEL_IMAGE,
+        )
+    return (
+        "-CandidateBackendImage",
+        BACKEND_IMAGE,
+        "-CandidateFrontendImage",
+        FRONTEND_IMAGE,
+        "-CandidateRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-PreviousBackendImage",
+        PREVIOUS_BACKEND_IMAGE,
+        "-PreviousFrontendImage",
+        PREVIOUS_FRONTEND_IMAGE,
+        "-PreviousRetrievalModelImage",
+        PREVIOUS_RETRIEVAL_MODEL_IMAGE,
+    )
+
+
+def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[dict[str, str], Path]:
+    """创建受控 Compose 替身，记录命令且让健康等待失败关闭。"""
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir()
+    command_log = tmp_path / "fake-compose-commands.jsonl"
+    config_path = tmp_path / "fake-compose-config.json"
+    services = {
+        "postgres": {"image": "pgvector/pgvector:0.8.0-pg16@sha256:" + "1" * 64},
+        "redis": {"image": "redis:7.4.2-alpine@sha256:" + "2" * 64},
+        "minio": {"image": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:" + "3" * 64},
+        "backend": {"image": BACKEND_IMAGE},
+        "worker": {"image": BACKEND_IMAGE},
+        "jobs": {"image": BACKEND_IMAGE},
+        "agent-worker": {"image": BACKEND_IMAGE},
+        "retrieval-model-service": {
+            "image": RETRIEVAL_MODEL_IMAGE,
+            "volumes": [
+                {
+                    "type": "bind",
+                    "source": str(model_asset_dir.resolve()),
+                    "target": "/models",
+                    "read_only": True,
+                }
+            ],
+            "environment": {"RETRIEVAL_MODEL_VERIFY_HASHES": "true"},
+        },
+        "frontend": {"image": FRONTEND_IMAGE},
+        "proxy": {"image": "nginx:1.27.5-alpine@sha256:" + "4" * 64},
+    }
+    config_path.write_text(json.dumps({"services": services}), encoding="utf-8")
+    fake_runtime = tmp_path / "fake_docker.py"
+    fake_runtime.write_text(
+        """import json
+import os
+import sys
+from pathlib import Path
+
+arguments = sys.argv[1:]
+with Path(os.environ["FAKE_DOCKER_LOG"]).open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps(arguments) + "\\n")
+if "config" in arguments:
+    print(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
+if "up" in arguments and "--wait" in arguments:
+    sys.exit(42)
+sys.exit(0)
+""",
+        encoding="utf-8",
+    )
+    wrapper = f'@echo off\r\n"{sys.executable}" "{fake_runtime}" %*\r\n'
+    (fake_bin / "docker.cmd").write_text(wrapper, encoding="utf-8")
+    (fake_bin / "docker-compose.cmd").write_text(wrapper, encoding="utf-8")
+    environment = os.environ.copy()
+    environment["PATH"] = str(fake_bin) + os.pathsep + environment.get("PATH", "")
+    environment["FAKE_DOCKER_LOG"] = str(command_log)
+    environment["FAKE_DOCKER_CONFIG"] = str(config_path)
+    return environment, command_log
 
 
 def test_preflight_rejects_production_environment(tmp_path: Path) -> None:
@@ -193,6 +293,14 @@ def test_validate_only_writes_redacted_preflight_evidence(
 ) -> None:
     """静态预检证据只能包含变量名和摘要，不能回显环境值。"""
     evidence_file = tmp_path / "preflight-evidence.json"
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
     result = run_powershell(
         PREFLIGHT_SCRIPT,
         "-Environment",
@@ -212,6 +320,7 @@ def test_validate_only_writes_redacted_preflight_evidence(
         "-ConfirmTarget",
         "staging",
         "-ValidateOnly",
+        environment=environment,
     )
 
     combined_output = result.stdout + result.stderr
@@ -324,6 +433,77 @@ def test_preflight_rejects_model_asset_directory_inside_checkout(
     assert "outside" in (result.stdout + result.stderr).lower()
 
 
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+def test_gate_scripts_reject_model_assets_anywhere_inside_git_checkout(
+    script: Path,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """嵌套产品目录不能让工作树根目录内的权重绕过仓库外门禁。"""
+    replace_environment_value(staging_env_file, "RETRIEVAL_MODEL_ASSET_DIR", str(PROJECT_ROOT.parent))
+    evidence_file = tmp_path / f"{script.stem}-git-root-evidence.json"
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert "outside" in (result.stdout + result.stderr).lower()
+    assert not evidence_file.exists()
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+@pytest.mark.parametrize("relative_path", REQUIRED_MODEL_FILES)
+def test_gate_scripts_require_every_model_runtime_file(
+    script: Path,
+    relative_path: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """两个门禁脚本必须与推理引擎保持相同的六文件启动契约。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    (model_asset_dir / relative_path).unlink()
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    evidence_file = tmp_path / f"{script.stem}-{relative_path.replace('/', '-')}.json"
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+        environment=environment,
+    )
+
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert "required model asset file" in (result.stdout + result.stderr).lower()
+    assert not evidence_file.exists()
+
+
 def test_preflight_rejects_external_model_directory_without_required_weights(
     staging_env_file: Path,
     tmp_path: Path,
@@ -355,7 +535,7 @@ def test_preflight_rejects_external_model_directory_without_required_weights(
     )
 
     assert result.returncode != 0
-    assert "weight" in (result.stdout + result.stderr).lower()
+    assert "required model asset file" in (result.stdout + result.stderr).lower()
 
 
 def test_preflight_rejects_floating_external_image(
@@ -419,6 +599,14 @@ def test_rollback_plan_disables_capabilities_before_switching_images(
 ) -> None:
     """回滚计划必须先紧急关闭真实能力，再切换历史镜像摘要。"""
     evidence_file = tmp_path / "rollback-evidence.json"
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
     result = run_powershell(
         ROLLBACK_SCRIPT,
         "-Environment",
@@ -444,6 +632,7 @@ def test_rollback_plan_disables_capabilities_before_switching_images(
         "-ConfirmTarget",
         "staging",
         "-ValidateOnly",
+        environment=environment,
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
@@ -545,6 +734,14 @@ def test_whatif_never_records_passed_evidence(
 ) -> None:
     """WhatIf 未执行部署或回滚时只能记录 not_executed。"""
     evidence_file = tmp_path / f"{script.stem}-whatif.json"
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
     result = run_powershell(
         script,
         "-Environment",
@@ -560,6 +757,7 @@ def test_whatif_never_records_passed_evidence(
         "staging",
         mode,
         "-WhatIf",
+        environment=environment,
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
@@ -569,3 +767,53 @@ def test_whatif_never_records_passed_evidence(
         evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
         assert evidence["status"] == "not_executed"
         assert evidence["production_release"] is False
+
+
+@pytest.mark.parametrize(
+    ("script", "mode"),
+    [(PREFLIGHT_SCRIPT, "-Deploy"), (ROLLBACK_SCRIPT, "-Execute")],
+)
+def test_live_gate_waits_for_compose_health_before_writing_passed_evidence(
+    script: Path,
+    mode: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """Compose 健康等待失败时，部署和回滚都必须失败关闭且不能写 passed。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    evidence_file = tmp_path / f"{script.stem}-unhealthy.json"
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        mode,
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    assert command_log.exists(), result.stdout + result.stderr
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    up_commands = [arguments for arguments in commands if "up" in arguments]
+    assert result.returncode != 0
+    assert up_commands
+    assert all("--wait" in arguments for arguments in up_commands)
+    assert all("--wait-timeout" in arguments for arguments in up_commands)
+    assert all("600" in arguments for arguments in up_commands)
+    if evidence_file.exists():
+        assert json.loads(evidence_file.read_text(encoding="utf-8-sig"))["status"] != "passed"

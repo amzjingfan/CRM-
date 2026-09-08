@@ -9,7 +9,7 @@
 | 模块编号 | M00 |
 | 主责 Agent | 全栈开发工程师Agent |
 | 协作 Agent | 架构师Agent、测试工程师Agent |
-| 实施状态 | 已完成；工程门禁通过，真实服务器部署与回滚未执行 |
+| 实施状态 | 已完成 |
 | 开始日期 | 2026-09-08 |
 | 完成日期 | 2026-09-08 |
 | 代码位置 | `CRM智能聊天系统/`、`.github/workflows/` |
@@ -53,7 +53,7 @@
 
 ### 5.1 方案说明
 
-workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只授予 `packages: read`。外部环境文件新增 `RETRIEVAL_MODEL_ASSET_DIR`，门禁要求其为存在的绝对路径、位于 checkout 外并包含两个固定权重。生产 Compose 将该目录只读挂载为 `/models`，模型服务固定开启 SHA-256 校验。
+workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只授予 `packages: read`。外部环境文件新增 `RETRIEVAL_MODEL_ASSET_DIR`，门禁要求其为存在的绝对路径、位于完整 Git checkout 外并包含推理引擎所需六个固定文件。生产 Compose 将该目录只读挂载为 `/models`，模型服务固定开启 SHA-256 校验；实时部署和回滚使用 Compose v2 健康等待后才进入外部探针与证据写入。
 
 ### 5.2 依赖关系
 
@@ -68,6 +68,7 @@ workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只�
 | checkout 更新丢失权重 | RAG 服务无法启动 | 模型目录必须为仓库外绝对路径 |
 | 权重被替换或损坏 | 推理供应链风险 | 只读挂载并在每次生产启动时强制 SHA-256 校验 |
 | 路径或权重缺失后仍部署 | 部署中途失败 | 预检和回滚脚本在 Compose 启动前失败关闭 |
+| 模型服务尚未 healthy 就写通过证据 | 假阳性放行 | 每次 `docker compose up` 使用 `--wait --wait-timeout 600` |
 
 ## 6. 实际变更
 
@@ -77,12 +78,13 @@ workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只�
 | --- | --- | --- | --- |
 | `.github/workflows/staging-gates.yml` | 修改 | 增加最小 GHCR 拉取权限和固定 action 登录 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/docker-compose.prod.yml` | 修改 | 只读挂载服务器外部模型并开启哈希校验 | 全栈开发工程师Agent |
-| `CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1` | 修改 | 校验外部目录、权重和合并 Compose 契约 | 全栈开发工程师Agent |
-| `CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1` | 修改 | 回滚前执行相同模型资产门禁 | 全栈开发工程师Agent |
-| `CRM智能聊天系统/backend/tests/test_production_gate_scripts.py` | 修改 | 新增目录失败关闭和低敏证据测试 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1` | 修改 | 校验真实 Git 根、六文件资产和合并 Compose 契约，等待容器健康 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1` | 修改 | 回滚前执行同等模型资产门禁和 Compose 健康等待 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/tests/test_production_gate_scripts.py` | 修改 | 新增两个脚本的目录边界、六文件和健康失败关闭测试 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/frontend/tests/compose.test.mjs` | 修改 | 新增 staging GHCR 工作流契约测试 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/.env.example`、`deploy/production/README.md`、`deploy/models/README.md` | 修改 | 补充脱敏配置和服务器准备说明 | 全栈开发工程师Agent |
 | `共享记忆文档/实施记录索引.md` | 修改 | 登记本实施记录 | 共享记忆文档Agent |
+| `共享记忆文档/实施记录/Phase4-P4-00-全栈开发工程师Agent-GHCR与外部模型目录整改-020.md` | 修改 | 补充审阅整改、验证和遗留状态 | 全栈开发工程师Agent |
 
 ### 6.2 接口、数据和配置变更
 
@@ -93,7 +95,7 @@ workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只�
 
 ### 6.3 关键实现说明
 
-低敏证据只记录 `external_model_assets_validated=true` 和变量名，不记录服务器绝对路径。工作流不保存个人访问令牌；其 `GITHUB_TOKEN` 只在当前 job 用于 GHCR 登录。
+低敏证据只记录 `external_model_assets_validated=true` 和变量名，不记录服务器绝对路径。脚本通过 `git rev-parse --show-toplevel` 和规范化路径识别完整 checkout，而不是只检查嵌套产品目录。工作流不保存个人访问令牌；其 `GITHUB_TOKEN` 只在当前 job 用于 GHCR 登录。
 
 ## 7. 验证记录
 
@@ -102,15 +104,17 @@ workflow 使用 GitHub Actions 提供的短期 `GITHUB_TOKEN` 登录 GHCR，只�
 | TDD 红灯 | 运行脚本和 workflow 聚焦测试 | 缺少目录门禁和 GHCR 登录时失败 | 后端 5 项、前端 1 项按预期失败 | 通过 |
 | 脚本聚焦绿灯 | `pytest tests/test_production_gate_scripts.py -q --basetemp {系统临时目录}` | 全部通过 | 15 passed | 通过 |
 | Compose/workflow 聚焦绿灯 | `node frontend/tests/compose.test.mjs` | 全部通过 | 10 passed | 通过 |
-| 后端完整工程门禁 | `ruff check .`、`ruff format --check .`、`mypy app scripts`、`pytest -q --basetemp {系统临时目录}` | 全部通过 | Ruff 与格式通过；mypy 166 个源文件通过；1336 passed、12 skipped、2 个既有依赖弃用警告 | 通过 |
+| 后端完整工程门禁 | `ruff check .`、`ruff format --check .`、`mypy app scripts`、`pytest -q --basetemp {仓库外临时目录}` | 全部通过 | Ruff 与格式通过；mypy 166 个源文件通过；1352 passed、12 skipped、2 个既有依赖弃用警告 | 通过 |
 | 前端完整工程门禁 | `npm test`、`npm run typecheck`、`npm run lint`、`npm run build` | 全部通过 | 40 tests passed；类型检查通过；lint 0 error、2 个既有导航警告；生产构建成功并生成 12 个路由 | 通过 |
 | Windows 脚本兼容性 | Windows PowerShell 5.1 解析两个门禁脚本 | 均可解析 | 两个脚本均 parse OK | 通过 |
+| 审阅补充红灯 | 运行 Git 根、六文件和 Compose 健康等待行为测试 | 原实现应暴露三类缺口 | 16 failed，分别命中两个脚本 | 通过 |
+| 审阅补充绿灯 | `pytest tests/test_production_gate_scripts.py -q` | 两个脚本的失败关闭契约全部通过 | 31 passed | 通过 |
 
 ## 8. 实施结果
 
-- 完成项：GHCR runner 登录、外部模型路径、权重存在性、只读挂载和启动哈希验证均完成工程整改。
+- 完成项：GHCR runner 登录、完整 Git checkout 外模型路径、六个运行文件、只读挂载、启动哈希和 Compose 健康等待均完成工程整改。
 - 未完成项：目标服务器目录创建、模型传输、GHCR 包访问权确认和真实部署/回滚。
-- 与原方案差异：门禁额外检查两个固定权重文件存在，避免只验证空目录。
+- 与原方案差异：审阅后把两权重存在性检查扩展为与引擎一致的六文件契约，并要求 Compose v2 健康等待。
 - 当前状态：工程整改已完成，真实 G0 仍待服务器证据。
 
 ## 9. 遗留问题与风险
