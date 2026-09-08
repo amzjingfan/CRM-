@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "evidence_status": "candidate_images_published",
+  "source_sha": "58129211766a13013e7754c69d6548f1dd80618e",
+  "platform": "linux/amd64",
+  "application_images": {
+    "backend": {
+      "candidate_tag": "ghcr.io/cp11-gh/crm-backend:candidate-58129211766a",
+      "reference": "ghcr.io/cp11-gh/crm-backend@sha256:b7c4e0679613049323d57e1b0e5ad741d6785e0dd0eb92cfd46fb7ac84c5aff5"
+    },
+    "frontend": {
+      "candidate_tag": "ghcr.io/cp11-gh/crm-frontend:candidate-58129211766a",
+      "reference": "ghcr.io/cp11-gh/crm-frontend@sha256:c616b24b77d06faf48753986e9a17e504bdb8a511417d44b4a75ba2ba3170712"
+    },
+    "retrieval_model": {
+      "candidate_tag": null,
+      "reference": null,
+      "status": "not_published_by_bootstrap_run"
+    }
+  },
+  "external_images": {
+    "uv_model_build_base": "ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36",
+    "postgres": "pgvector/pgvector:0.8.0-pg16@sha256:a132765ec351c65111b5b675928a3a0515a466a40f97277329db8b8209ad8bc9",
+    "redis": "redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
+    "minio": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e",
+    "nginx": "nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10"
+  },
+  "build_evidence": {
+    "workflow_run_id": 34112919503,
+    "workflow_url": "https://github.com/CP11-gh/CRM/actions/runs/34112919503",
+    "artifact_id": 10015103904,
+    "artifact_name": "image-repo-digests-58129211766a13013e7754c69d6548f1dd80618e",
+    "backend_job": "success",
+    "frontend_job": "success",
+    "digest_evidence_job": "success",
+    "digest_source": "docker/build-push-action pushed digest outputs recorded by the workflow artifact",
+    "packages_api_cross_check": "not_available_to_local_oauth_token_without_read_packages_scope"
+  },
+  "frontend_security": {
+    "next": "16.3.4",
+    "postcss_from_next": "8.5.23",
+    "sharp": "0.35.4",
+    "npm_audit_high": 0,
+    "npm_audit_critical": 0
+  },
+  "staging_execution": {
+    "tooling_status": "implemented_and_validate_only_tested",
+    "live_status": "not_executed",
+    "blocked_by": [
+      "crm-staging self-hosted runner is not connected",
+      "GitHub Environment staging secret CRM_STAGING_ENV_FILE is not configured",
+      "GitHub Environment staging variable CRM_STAGING_BASE_URL is not configured",
+      "previous immutable backend, frontend, and retrieval model image digests are not yet supplied"
+    ]
+  },
+  "publishing_environment": {
+    "name": "image-publishing",
+    "allowed_branch": "main",
+    "custom_branch_policies": true
+  },
+  "final_main_publish_required": true,
+  "production_release": false
+}

@@ -59,7 +59,7 @@ x-production-model: &production-model
 
 services:
   postgres:
-    image: ${POSTGRES_IMAGE:-pgvector/pgvector:0.8.0-pg16}
+    image: ${POSTGRES_IMAGE:-pgvector/pgvector:0.8.0-pg16@sha256:a132765ec351c65111b5b675928a3a0515a466a40f97277329db8b8209ad8bc9}
     ports: !reset []
     restart: unless-stopped
     environment:
@@ -70,12 +70,12 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
 
   redis:
-    image: ${REDIS_IMAGE:-redis:7.4.2-alpine}
+    image: ${REDIS_IMAGE:-redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952}
     ports: !reset []
     restart: unless-stopped
 
   minio:
-    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-04-22T22-12-26Z}
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e}
     ports: !reset []
     restart: unless-stopped
     environment:
@@ -83,6 +83,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY is required}
 
   backend:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must use an immutable repository@sha256 digest}
+    build: !reset null
     env_file: !reset []
     ports: !reset []
     expose:
@@ -106,6 +108,8 @@ services:
       <<: [*production-runtime, *production-platform, *production-model]
 
   worker:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must use an immutable repository@sha256 digest}
+    build: !reset null
     env_file: !reset []
     volumes: !reset []
     restart: unless-stopped
@@ -113,6 +117,8 @@ services:
       <<: [*production-runtime, *production-platform]
 
   jobs:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must use an immutable repository@sha256 digest}
+    build: !reset null
     env_file: !reset []
     volumes: !reset []
     restart: unless-stopped
@@ -120,6 +126,8 @@ services:
       <<: [*production-runtime, *production-platform, *production-model]
 
   agent-worker:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must use an immutable repository@sha256 digest}
+    build: !reset null
     env_file: !reset []
     volumes: !reset []
     restart: unless-stopped
@@ -127,22 +135,19 @@ services:
       <<: [*production-runtime, *production-model]
 
   retrieval-model-service:
+    image: ${RETRIEVAL_MODEL_SERVICE_IMAGE:?RETRIEVAL_MODEL_SERVICE_IMAGE must use an immutable repository@sha256 digest}
+    build: !reset null
     # 基础 Compose 的开发 .env 可能包含 TikTok、DeepSeek、JWT、数据库和
     # MinIO 凭据；生产检索容器只保留显式的本地模型配置与服务 Token。
     env_file: !reset []
     restart: unless-stopped
 
   frontend:
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE must use an immutable repository@sha256 digest}
+    build: !reset null
     ports: !reset []
     expose:
       - "3000"
-    build:
-      context: ./frontend
-      dockerfile: ../Dockerfile.frontend.prod
-      args:
-        NODE_IMAGE: ${FRONTEND_NODE_IMAGE:-node:20.19.4-alpine3.22}
-        NPM_REGISTRY: ${FRONTEND_NPM_REGISTRY:-https://registry.npmjs.org}
-        NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:?PUBLIC_API_BASE_URL is required}
     volumes: !reset []
     command: ["node", "server.js"]
     restart: unless-stopped
@@ -150,7 +155,7 @@ services:
       NODE_ENV: production
 
   proxy:
-    image: ${NGINX_IMAGE:-nginx:1.27.5-alpine}
+    image: ${NGINX_IMAGE:-nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10}
     restart: unless-stopped
     ports:
       - "80:80"

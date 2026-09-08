@@ -1,0 +1,367 @@
+﻿#requires -Version 5.1
+
+[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = "High")]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$Environment,
+
+    [Parameter(Mandatory = $true)]
+    [string]$EnvFile,
+
+    [Parameter(Mandatory = $true)]
+    [string]$CandidateBackendImage,
+
+    [Parameter(Mandatory = $true)]
+    [string]$CandidateFrontendImage,
+
+    [Parameter(Mandatory = $true)]
+    [string]$CandidateRetrievalModelImage,
+
+    [Parameter(Mandatory = $true)]
+    [string]$PreviousBackendImage,
+
+    [Parameter(Mandatory = $true)]
+    [string]$PreviousFrontendImage,
+
+    [Parameter(Mandatory = $true)]
+    [string]$PreviousRetrievalModelImage,
+
+    [Parameter(Mandatory = $true)]
+    [string]$BaseUrl,
+
+    [Parameter(Mandatory = $true)]
+    [string]$EvidenceFile,
+
+    [Parameter(Mandatory = $true)]
+    [string]$ConfirmTarget,
+
+    [switch]$ValidateOnly,
+    [switch]$Execute
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+$RequiredEnvironmentVariables = @(
+    "RETRIEVAL_MODEL_SERVICE_IMAGE",
+    "POSTGRES_IMAGE",
+    "REDIS_IMAGE",
+    "MINIO_IMAGE",
+    "NGINX_IMAGE"
+)
+$DisabledCapabilityVariables = @(
+    "ALLOW_MOCK_PLATFORM_ADAPTERS",
+    "REAL_TIKTOK_READ_ENABLED",
+    "REAL_TIKTOK_WEBHOOK_ENABLED",
+    "REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
+    "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
+    "LLM_ENABLED",
+    "LLM_LIVE_EVAL",
+    "AI_TRANSLATION_ENABLED",
+    "AI_MARKETING_ENABLED",
+    "AUTO_REPLY_ENABLED"
+)
+$PlannedSteps = @(
+    "disable_real_capabilities",
+    "deploy_previous_image_digests",
+    "verify_health"
+)
+
+function Assert-StagingTarget {
+    if ($Environment -ne "staging" -or $ConfirmTarget -ne "staging") {
+        throw "This rollback command is staging-only; Environment and ConfirmTarget must both equal staging."
+    }
+}
+
+function Assert-ImmutableImage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $true)]
+        [string]$Reference,
+        [Parameter(Mandatory = $true)]
+        [string]$Repository,
+        [switch]$AllowTag
+    )
+
+    $tagPattern = if ($AllowTag) { "(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?" } else { "" }
+    $pattern = "^$([Regex]::Escape($Repository))$tagPattern@sha256:[0-9a-f]{64}$"
+    if ($Reference -match "[^\x21-\x7e]" -or $Reference -notmatch $pattern) {
+        throw "$Name must use the approved repository and an immutable sha256 digest."
+    }
+    return $Reference
+}
+
+function Read-EnvironmentFile {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "The staging environment file does not exist."
+    }
+
+    $values = @{}
+    foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith("#")) {
+            continue
+        }
+        $separator = $trimmed.IndexOf("=")
+        if ($separator -le 0) {
+            throw "The staging environment file contains an invalid assignment."
+        }
+        $key = $trimmed.Substring(0, $separator).Trim()
+        $value = $trimmed.Substring($separator + 1)
+        $values[$key] = $value
+    }
+    return $values
+}
+
+function Assert-EnvironmentContract {
+    param([Parameter(Mandatory = $true)][hashtable]$Values)
+
+    foreach ($name in $RequiredEnvironmentVariables) {
+        if (-not $Values.ContainsKey($name) -or [string]::IsNullOrWhiteSpace($Values[$name])) {
+            throw "Required staging variable is missing: $name"
+        }
+    }
+    foreach ($name in $DisabledCapabilityVariables) {
+        if (-not $Values.ContainsKey($name) -or $Values[$name].Trim().ToLowerInvariant() -ne "false") {
+            throw "Staging rollback requires $name=false."
+        }
+    }
+}
+
+function Resolve-ComposeCommand {
+    $standalone = Get-Command "docker-compose" -ErrorAction SilentlyContinue
+    if ($null -ne $standalone) {
+        return [PSCustomObject]@{ Executable = $standalone.Source; Prefix = @() }
+    }
+
+    $docker = Get-Command "docker" -ErrorAction SilentlyContinue
+    if ($null -eq $docker) {
+        throw "Docker Compose is required for a live staging rollback."
+    }
+    return [PSCustomObject]@{ Executable = $docker.Source; Prefix = @("compose") }
+}
+
+function Invoke-Compose {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    & $Command.Executable @($Command.Prefix + $Arguments)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose command failed with exit code $LASTEXITCODE."
+    }
+}
+
+function Set-DisabledCapabilities {
+    foreach ($name in $DisabledCapabilityVariables) {
+        [Environment]::SetEnvironmentVariable($name, "false", "Process")
+    }
+}
+
+function Get-ProductionComposeConfig {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    $jsonLines = & $Command.Executable @($Command.Prefix + $Arguments + @("config", "--format", "json"))
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose config validation failed with exit code $LASTEXITCODE."
+    }
+    try {
+        return ($jsonLines -join [Environment]::NewLine) | ConvertFrom-Json
+    }
+    catch {
+        throw "Docker Compose config did not return valid JSON."
+    }
+}
+
+function Assert-ProductionComposeContract {
+    param(
+        [Parameter(Mandatory = $true)]$Config,
+        [Parameter(Mandatory = $true)][hashtable]$ExpectedImages
+    )
+
+    foreach ($serviceName in $ExpectedImages.Keys) {
+        $serviceProperty = $Config.services.PSObject.Properties[$serviceName]
+        if ($null -eq $serviceProperty) {
+            throw "Production Compose is missing required service: $serviceName"
+        }
+        $service = $serviceProperty.Value
+        if ([string]$service.image -ne $ExpectedImages[$serviceName]) {
+            throw "Production Compose resolved an unexpected image for service: $serviceName"
+        }
+        $buildProperty = $service.PSObject.Properties["build"]
+        if ($null -ne $buildProperty -and $null -ne $buildProperty.Value) {
+            throw "Production Compose must not retain a local build for service: $serviceName"
+        }
+    }
+}
+
+function Test-HealthEndpoint {
+    param([Parameter(Mandatory = $true)][string]$Uri)
+
+    $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 20
+    if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
+        throw "Health endpoint returned a non-success status."
+    }
+    return [int]$response.StatusCode
+}
+
+function Write-Evidence {
+    param(
+        [Parameter(Mandatory = $true)][string]$Status,
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [string[]]$CompletedSteps,
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [object[]]$HealthChecks
+    )
+
+    $parent = Split-Path -Parent $EvidenceFile
+    if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+    $evidence = [ordered]@{
+        schema_version = 1
+        evidence_type = "staging_rollback_drill"
+        generated_at_utc = [DateTime]::UtcNow.ToString("o")
+        environment = "staging"
+        status = $Status
+        production_release = $false
+        candidate_backend_image = $CandidateBackendImage
+        candidate_frontend_image = $CandidateFrontendImage
+        candidate_retrieval_model_image = $CandidateRetrievalModelImage
+        previous_backend_image = $PreviousBackendImage
+        previous_frontend_image = $PreviousFrontendImage
+        previous_retrieval_model_image = $PreviousRetrievalModelImage
+        planned_steps = $PlannedSteps
+        completed_steps = $CompletedSteps
+        health_checks = $HealthChecks
+    }
+    $evidence | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $EvidenceFile -Encoding UTF8
+}
+
+Assert-StagingTarget
+$CandidateBackendImage = Assert-ImmutableImage -Name "CandidateBackendImage" -Reference $CandidateBackendImage `
+    -Repository "ghcr.io/cp11-gh/crm-backend"
+$CandidateFrontendImage = Assert-ImmutableImage -Name "CandidateFrontendImage" -Reference $CandidateFrontendImage `
+    -Repository "ghcr.io/cp11-gh/crm-frontend"
+$CandidateRetrievalModelImage = Assert-ImmutableImage -Name "CandidateRetrievalModelImage" `
+    -Reference $CandidateRetrievalModelImage -Repository "ghcr.io/cp11-gh/crm-retrieval-model-service"
+$PreviousBackendImage = Assert-ImmutableImage -Name "PreviousBackendImage" -Reference $PreviousBackendImage `
+    -Repository "ghcr.io/cp11-gh/crm-backend"
+$PreviousFrontendImage = Assert-ImmutableImage -Name "PreviousFrontendImage" -Reference $PreviousFrontendImage `
+    -Repository "ghcr.io/cp11-gh/crm-frontend"
+$PreviousRetrievalModelImage = Assert-ImmutableImage -Name "PreviousRetrievalModelImage" `
+    -Reference $PreviousRetrievalModelImage -Repository "ghcr.io/cp11-gh/crm-retrieval-model-service"
+if ($CandidateBackendImage -eq $PreviousBackendImage -or
+    $CandidateFrontendImage -eq $PreviousFrontendImage -or
+    $CandidateRetrievalModelImage -eq $PreviousRetrievalModelImage) {
+    throw "Rollback images must differ from the candidate image digests."
+}
+
+$environmentValues = Read-EnvironmentFile -Path $EnvFile
+Assert-EnvironmentContract -Values $environmentValues
+$externalImageRepositories = @{
+    "POSTGRES_IMAGE" = "pgvector/pgvector"
+    "REDIS_IMAGE" = "redis"
+    "MINIO_IMAGE" = "minio/minio"
+    "NGINX_IMAGE" = "nginx"
+}
+$validatedExternalImages = @{}
+foreach ($name in $externalImageRepositories.Keys) {
+    $validatedExternalImages[$name] = Assert-ImmutableImage -Name $name -Reference $environmentValues[$name] `
+        -Repository $externalImageRepositories[$name] -AllowTag
+}
+
+$baseUri = $null
+if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $baseUri.Scheme -ne "https") {
+    throw "BaseUrl must be an absolute HTTPS URL."
+}
+
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$compose = Resolve-ComposeCommand
+$composeArguments = @(
+    "--profile", "ai",
+    "--env-file", (Resolve-Path -LiteralPath $EnvFile).Path,
+    "-f", (Join-Path $projectRoot "docker-compose.yml"),
+    "-f", (Join-Path $projectRoot "docker-compose.prod.yml")
+)
+$savedEnvironment = @{}
+foreach ($name in @($DisabledCapabilityVariables + @("BACKEND_IMAGE", "FRONTEND_IMAGE", "RETRIEVAL_MODEL_SERVICE_IMAGE"))) {
+    $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+}
+
+$completedSteps = @()
+try {
+    Set-DisabledCapabilities
+    $env:BACKEND_IMAGE = $CandidateBackendImage
+    $env:FRONTEND_IMAGE = $CandidateFrontendImage
+    $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $CandidateRetrievalModelImage
+
+    $config = Get-ProductionComposeConfig -Command $compose -Arguments $composeArguments
+    $expectedImages = @{
+        "postgres" = $validatedExternalImages["POSTGRES_IMAGE"]
+        "redis" = $validatedExternalImages["REDIS_IMAGE"]
+        "minio" = $validatedExternalImages["MINIO_IMAGE"]
+        "backend" = $CandidateBackendImage
+        "worker" = $CandidateBackendImage
+        "jobs" = $CandidateBackendImage
+        "agent-worker" = $CandidateBackendImage
+        "retrieval-model-service" = $CandidateRetrievalModelImage
+        "frontend" = $CandidateFrontendImage
+        "proxy" = $validatedExternalImages["NGINX_IMAGE"]
+    }
+    Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages
+
+    if ($ValidateOnly) {
+        Write-Evidence -Status "validated" -CompletedSteps @() -HealthChecks @()
+        Write-Output "Staging rollback inputs and merged Compose config validated; production_release=false."
+        return
+    }
+    if (-not $Execute) {
+        throw "A live rollback requires -Execute; use -ValidateOnly for a non-mutating plan check."
+    }
+    if (-not $PSCmdlet.ShouldProcess("staging", "disable real capabilities and deploy previous immutable images")) {
+        Write-Evidence -Status "not_executed" -CompletedSteps @() -HealthChecks @()
+        Write-Output "Staging rollback was not executed; production_release=false."
+        return
+    }
+
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker"
+    ))
+    $completedSteps += "disable_real_capabilities"
+
+    $env:BACKEND_IMAGE = $PreviousBackendImage
+    $env:FRONTEND_IMAGE = $PreviousFrontendImage
+    $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $PreviousRetrievalModelImage
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "pull", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
+    ))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker", "frontend", "proxy",
+        "retrieval-model-service"
+    ))
+    $completedSteps += "deploy_previous_image_digests"
+}
+finally {
+    foreach ($name in $savedEnvironment.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], "Process")
+    }
+}
+
+$healthChecks = @(
+    [ordered]@{ path = "/healthz"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/healthz") },
+    [ordered]@{ path = "/v1/health"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health") },
+    [ordered]@{ path = "/v1/health/ready"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health/ready") }
+)
+$completedSteps += "verify_health"
+Write-Evidence -Status "passed" -CompletedSteps $completedSteps -HealthChecks $healthChecks
+Write-Output "Staging rollback drill passed; production_release=false."

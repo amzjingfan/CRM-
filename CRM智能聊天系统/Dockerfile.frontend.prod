@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=node:20.19.4-alpine3.22
+ARG NODE_IMAGE=node:20.19.4-alpine3.22@sha256:df02558528d3d3d0d621f112e232611aecfee7cbc654f6b375765f72bb262799
 FROM ${NODE_IMAGE} AS dependencies
 ARG NPM_REGISTRY=https://registry.npmjs.org
 WORKDIR /app
@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm ci --registry=${NPM_REGISTRY}
 
 FROM dependencies AS builder
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/v1
+ARG NEXT_PUBLIC_API_BASE_URL=/v1
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL} NEXT_TELEMETRY_DISABLED=1
 COPY . .
 RUN mkdir -p public && npm run build

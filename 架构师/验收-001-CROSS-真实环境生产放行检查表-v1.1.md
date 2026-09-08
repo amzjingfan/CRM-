@@ -12,7 +12,7 @@
 
 | 门禁 | 当前状态 | 当前结论 |
 | --- | --- | --- |
-| G0 基线与密钥 | 实施中 | 根 Git、GitHub Flow、source/config 和后端本地镜像基线已形成；前端新镜像、前端 3 High、日志语义折叠、受控仓库 RepoDigest、密钥轮换、备份恢复和回滚证据未完成 |
+| G0 基线与密钥 | 实施中 | 前端 3 High 已完成工程修复，前后端候选镜像和外部镜像已取得 RepoDigest；最终 main 镜像、独立复测、日志语义折叠、真实密钥轮换、备份恢复和实际回滚证据未完成 |
 | G1 TikTok OAuth/只读 | 实施中 | 确定性工程有条件通过；真实店铺 OAuth、Scope、Token 刷新和只读冒烟未执行 |
 | G2 TikTok Webhook | 实施中 | 验签、幂等、Worker 和契约测试通过；Partner Center 真实投递未执行 |
 | G3 人工消息写入 | 实施中 | 确定性工程有条件通过；真实单店铺发送、unknown 对账和回滚未执行 |
@@ -29,15 +29,16 @@
 - [x] 根 `.gitignore` 排除 `.env`、权重、虚拟环境、依赖、缓存、日志、测试临时目录和 worktree。
 - [x] GitHub Flow、PR 模板和后端/前端 CI 已定义。
 - [x] 后端使用固定基础镜像构建并复核本地 image ID：`sha256:def6eec93b6277bdc1a6bfc1db6117ee4b6e5d1cc0f0ba077368be8cc8ac6b83`。
-- [ ] 前端本地基线镜像已构建并复核 image ID；本次因 Docker Hub OAuth 超时和容器内 `npm ci` 网络停滞未完成。
-- [ ] 生产镜像已推送到受控仓库并固定 RepoDigest。
-- [ ] `DEF-REAL-FS01-005` 前端 3 个 High 已修复并独立复测关闭。
+- [x] 前端分支候选镜像已由 GitHub Actions 构建并推送 GHCR，RepoDigest 为 `sha256:c616b24b77d06faf48753986e9a17e504bdb8a511417d44b4a75ba2ba3170712`。
+- [x] 后端分支候选镜像已推送 GHCR，RepoDigest 为 `sha256:b7c4e0679613049323d57e1b0e5ad741d6785e0dd0eb92cfd46fb7ac84c5aff5`；四个生产外部镜像也已固定完整摘要。
+- [ ] 最终 `main` 的 backend、frontend、retrieval model service 镜像已发布并将最终 RepoDigest 写入 staging 配置；当前证据仍只有绑定分支提交 `5812921` 的 backend/frontend 候选。
+- [ ] `DEF-REAL-FS01-005` 前端 3 个 High 已由 Next.js 16.3.4 完成工程修复，`npm audit` 为 0 High/0 Critical；待测试工程师独立复测后关闭。
 - [ ] `DEF-REAL-FS01-006` 关键日志事件语义折叠已修复并独立复测关闭。
 - [ ] TikTok、DeepSeek、JWT、Cookie、CSRF 和内部 Token 完成分环境真实密钥注入与轮换演练。
 - [ ] PostgreSQL、Redis、MinIO 备份与恢复演练通过。
-- [ ] 单个功能开关回滚和全部真实能力紧急关闭演练通过。
+- [ ] 单个功能开关回滚和全部真实能力紧急关闭演练通过；staging-only 脚本与 dry-run 测试已完成，真实 runner 演练未执行。
 
-当前结论：Git/source/config 预发布基线可以形成，但 G0 不能标记通过。
+当前结论：G0 的依赖与镜像工程整改已形成可审阅证据，但最终 main 镜像、独立复测和真实恢复/回滚仍未完成，G0 不能标记通过。
 
 ## 4. G1 TikTok OAuth 与只读
 
@@ -107,7 +108,7 @@
 
 | 角色 | 结论 | 证据路径/说明 | 日期 |
 | --- | --- | --- | --- |
-| 全栈开发工程师Agent | 未提交生产签署 | REAL-FS-01 的 P1/P2 和真实店铺门禁未关闭 | 未完成 |
+| 全栈开发工程师Agent | 未提交生产签署 | 3 High 与镜像工程整改已完成；最终 main 镜像、独立复测、日志语义和真实 staging/店铺门禁未关闭 | 未完成 |
 | AIAgent开发工程师Agent | 未提交生产签署 | 固定评测有条件通过，生产翻译/SSE/营销未完成 | 未完成 |
 | 测试工程师Agent | 不建议生产验收 | 最新正式报告仍列出生产阻断和未执行项 | 2026-09-07 |
 | 架构师Agent | 不放行 | G0～G6 未全部通过，G7/G8 阻塞 | 2026-09-07 |

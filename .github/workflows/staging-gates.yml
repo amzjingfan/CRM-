@@ -1,0 +1,139 @@
+name: Staging production gates
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Validate, deploy, or roll back the staging candidate
+        required: true
+        type: choice
+        options:
+          - validate
+          - deploy
+          - rollback
+      confirm_target:
+        description: Type staging to authorize this staging-only operation
+        required: true
+        type: string
+      backend_image:
+        description: Candidate backend repository@sha256 digest
+        required: true
+        type: string
+      frontend_image:
+        description: Candidate frontend repository@sha256 digest
+        required: true
+        type: string
+      retrieval_model_image:
+        description: Candidate retrieval model service repository@sha256 digest
+        required: true
+        type: string
+      previous_backend_image:
+        description: Previous backend digest; required for rollback
+        required: false
+        type: string
+      previous_frontend_image:
+        description: Previous frontend digest; required for rollback
+        required: false
+        type: string
+      previous_retrieval_model_image:
+        description: Previous retrieval model service digest; required for rollback
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-staging-production-gates
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    name: Run staging-only gate
+    environment: staging
+    runs-on: [self-hosted, linux, x64, crm-staging]
+    timeout-minutes: 45
+    steps:
+      - name: Check out reviewed main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+
+      - name: Run the selected staging gate
+        shell: pwsh
+        env:
+          OPERATION: ${{ inputs.operation }}
+          CONFIRM_TARGET: ${{ inputs.confirm_target }}
+          BACKEND_IMAGE_INPUT: ${{ inputs.backend_image }}
+          FRONTEND_IMAGE_INPUT: ${{ inputs.frontend_image }}
+          RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.retrieval_model_image }}
+          PREVIOUS_BACKEND_IMAGE_INPUT: ${{ inputs.previous_backend_image }}
+          PREVIOUS_FRONTEND_IMAGE_INPUT: ${{ inputs.previous_frontend_image }}
+          PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.previous_retrieval_model_image }}
+          CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
+          CRM_STAGING_BASE_URL: ${{ vars.CRM_STAGING_BASE_URL }}
+        run: |
+          if ($env:CONFIRM_TARGET -ne "staging") {
+            throw "confirm_target must equal staging"
+          }
+          if ([string]::IsNullOrWhiteSpace($env:CRM_STAGING_ENV_FILE)) {
+            throw "The staging Environment secret CRM_STAGING_ENV_FILE is not configured"
+          }
+          if ([string]::IsNullOrWhiteSpace($env:CRM_STAGING_BASE_URL)) {
+            throw "The staging Environment variable CRM_STAGING_BASE_URL is not configured"
+          }
+
+          $evidence = Join-Path $env:RUNNER_TEMP "crm-staging-$env:OPERATION-evidence.json"
+          $common = @{
+            Environment = "staging"
+            EnvFile = $env:CRM_STAGING_ENV_FILE
+            BaseUrl = $env:CRM_STAGING_BASE_URL
+            EvidenceFile = $evidence
+          }
+
+          switch ($env:OPERATION) {
+            "validate" {
+              $parameters = $common.Clone()
+              $parameters["BackendImage"] = $env:BACKEND_IMAGE_INPUT
+              $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
+              $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
+              $parameters["ConfirmTarget"] = "staging"
+              & ./CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1 @parameters -ValidateOnly
+            }
+            "deploy" {
+              $parameters = $common.Clone()
+              $parameters["BackendImage"] = $env:BACKEND_IMAGE_INPUT
+              $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
+              $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
+              $parameters["ConfirmTarget"] = "staging"
+              & ./CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1 @parameters -Deploy -Confirm:$false
+            }
+            "rollback" {
+              if ([string]::IsNullOrWhiteSpace($env:PREVIOUS_BACKEND_IMAGE_INPUT) -or
+                  [string]::IsNullOrWhiteSpace($env:PREVIOUS_FRONTEND_IMAGE_INPUT) -or
+                  [string]::IsNullOrWhiteSpace($env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT)) {
+                throw "Rollback requires all previous application image digests"
+              }
+              $parameters = $common.Clone()
+              $parameters["CandidateBackendImage"] = $env:BACKEND_IMAGE_INPUT
+              $parameters["CandidateFrontendImage"] = $env:FRONTEND_IMAGE_INPUT
+              $parameters["CandidateRetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
+              $parameters["PreviousBackendImage"] = $env:PREVIOUS_BACKEND_IMAGE_INPUT
+              $parameters["PreviousFrontendImage"] = $env:PREVIOUS_FRONTEND_IMAGE_INPUT
+              $parameters["PreviousRetrievalModelImage"] = $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
+              $parameters["ConfirmTarget"] = "staging"
+              & ./CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1 @parameters -Execute -Confirm:$false
+            }
+            default {
+              throw "Unsupported staging operation"
+            }
+          }
+
+      - name: Upload low-sensitive staging evidence
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: staging-${{ inputs.operation }}-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/crm-staging-${{ inputs.operation }}-evidence.json
+          if-no-files-found: error
+          retention-days: 30
