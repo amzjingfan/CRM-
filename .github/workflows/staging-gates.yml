@@ -23,12 +23,20 @@ on:
         description: Candidate frontend repository@sha256 digest
         required: true
         type: string
+      retrieval_model_image:
+        description: Candidate retrieval model service repository@sha256 digest
+        required: true
+        type: string
       previous_backend_image:
         description: Previous backend digest; required for rollback
         required: false
         type: string
       previous_frontend_image:
         description: Previous frontend digest; required for rollback
+        required: false
+        type: string
+      previous_retrieval_model_image:
+        description: Previous retrieval model service digest; required for rollback
         required: false
         type: string
 
@@ -58,8 +66,10 @@ jobs:
           CONFIRM_TARGET: ${{ inputs.confirm_target }}
           BACKEND_IMAGE_INPUT: ${{ inputs.backend_image }}
           FRONTEND_IMAGE_INPUT: ${{ inputs.frontend_image }}
+          RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.retrieval_model_image }}
           PREVIOUS_BACKEND_IMAGE_INPUT: ${{ inputs.previous_backend_image }}
           PREVIOUS_FRONTEND_IMAGE_INPUT: ${{ inputs.previous_frontend_image }}
+          PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.previous_retrieval_model_image }}
           CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
           CRM_STAGING_BASE_URL: ${{ vars.CRM_STAGING_BASE_URL }}
         run: |
@@ -86,6 +96,7 @@ jobs:
               $parameters = $common.Clone()
               $parameters["BackendImage"] = $env:BACKEND_IMAGE_INPUT
               $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
+              $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
               & ./CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1 @parameters -ValidateOnly
             }
@@ -93,19 +104,23 @@ jobs:
               $parameters = $common.Clone()
               $parameters["BackendImage"] = $env:BACKEND_IMAGE_INPUT
               $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
+              $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
               & ./CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1 @parameters -Deploy -Confirm:$false
             }
             "rollback" {
               if ([string]::IsNullOrWhiteSpace($env:PREVIOUS_BACKEND_IMAGE_INPUT) -or
-                  [string]::IsNullOrWhiteSpace($env:PREVIOUS_FRONTEND_IMAGE_INPUT)) {
-                throw "Rollback requires both previous image digests"
+                  [string]::IsNullOrWhiteSpace($env:PREVIOUS_FRONTEND_IMAGE_INPUT) -or
+                  [string]::IsNullOrWhiteSpace($env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT)) {
+                throw "Rollback requires all previous application image digests"
               }
               $parameters = $common.Clone()
               $parameters["CandidateBackendImage"] = $env:BACKEND_IMAGE_INPUT
               $parameters["CandidateFrontendImage"] = $env:FRONTEND_IMAGE_INPUT
+              $parameters["CandidateRetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["PreviousBackendImage"] = $env:PREVIOUS_BACKEND_IMAGE_INPUT
               $parameters["PreviousFrontendImage"] = $env:PREVIOUS_FRONTEND_IMAGE_INPUT
+              $parameters["PreviousRetrievalModelImage"] = $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
               & ./CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1 @parameters -Execute -Confirm:$false
             }

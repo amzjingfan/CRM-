@@ -15,6 +15,9 @@ param(
     [string]$FrontendImage,
 
     [Parameter(Mandatory = $true)]
+    [string]$RetrievalModelImage,
+
+    [Parameter(Mandatory = $true)]
     [string]$BaseUrl,
 
     [Parameter(Mandatory = $true)]
@@ -30,7 +33,6 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$DigestPattern = "^.+@sha256:[0-9a-f]{64}$"
 $RequiredVariables = @(
     "DATABASE_URL",
     "REDIS_URL",
@@ -47,6 +49,7 @@ $RequiredVariables = @(
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
     "TLS_CERT_DIR",
+    "RETRIEVAL_MODEL_SERVICE_IMAGE",
     "POSTGRES_IMAGE",
     "REDIS_IMAGE",
     "MINIO_IMAGE",
@@ -76,12 +79,18 @@ function Assert-ImmutableImage {
         [Parameter(Mandatory = $true)]
         [string]$Name,
         [Parameter(Mandatory = $true)]
-        [string]$Reference
+        [string]$Reference,
+        [Parameter(Mandatory = $true)]
+        [string]$Repository,
+        [switch]$AllowTag
     )
 
-    if ($Reference -notmatch $DigestPattern) {
-        throw "$Name must use an immutable repository@sha256 digest."
+    $tagPattern = if ($AllowTag) { "(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?" } else { "" }
+    $pattern = "^$([Regex]::Escape($Repository))$tagPattern@sha256:[0-9a-f]{64}$"
+    if ($Reference -match "[^\x21-\x7e]" -or $Reference -notmatch $pattern) {
+        throw "$Name must use the approved repository and an immutable sha256 digest."
     }
+    return $Reference
 }
 
 function Read-EnvironmentFile {
@@ -138,7 +147,47 @@ function Resolve-ComposeCommand {
 
 function Set-DisabledCapabilities {
     foreach ($name in $DisabledCapabilityVariables) {
-        Set-Item -LiteralPath "Env:$name" -Value "false"
+        [Environment]::SetEnvironmentVariable($name, "false", "Process")
+    }
+}
+
+function Get-ProductionComposeConfig {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    $jsonLines = & $Command.Executable @($Command.Prefix + $Arguments + @("config", "--format", "json"))
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose config validation failed with exit code $LASTEXITCODE."
+    }
+    try {
+        return ($jsonLines -join [Environment]::NewLine) | ConvertFrom-Json
+    }
+    catch {
+        throw "Docker Compose config did not return valid JSON."
+    }
+}
+
+function Assert-ProductionComposeContract {
+    param(
+        [Parameter(Mandatory = $true)]$Config,
+        [Parameter(Mandatory = $true)][hashtable]$ExpectedImages
+    )
+
+    foreach ($serviceName in $ExpectedImages.Keys) {
+        $serviceProperty = $Config.services.PSObject.Properties[$serviceName]
+        if ($null -eq $serviceProperty) {
+            throw "Production Compose is missing required service: $serviceName"
+        }
+        $service = $serviceProperty.Value
+        if ([string]$service.image -ne $ExpectedImages[$serviceName]) {
+            throw "Production Compose resolved an unexpected image for service: $serviceName"
+        }
+        $buildProperty = $service.PSObject.Properties["build"]
+        if ($null -ne $buildProperty -and $null -ne $buildProperty.Value) {
+            throw "Production Compose must not retain a local build for service: $serviceName"
+        }
     }
 }
 
@@ -185,6 +234,7 @@ function Write-Evidence {
         production_release = $false
         backend_image = $BackendImage
         frontend_image = $FrontendImage
+        retrieval_model_image = $RetrievalModelImage
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
         health_checks = $HealthChecks
     }
@@ -192,8 +242,10 @@ function Write-Evidence {
 }
 
 Assert-StagingTarget
-Assert-ImmutableImage -Name "BackendImage" -Reference $BackendImage
-Assert-ImmutableImage -Name "FrontendImage" -Reference $FrontendImage
+$BackendImage = Assert-ImmutableImage -Name "BackendImage" -Reference $BackendImage -Repository "ghcr.io/cp11-gh/crm-backend"
+$FrontendImage = Assert-ImmutableImage -Name "FrontendImage" -Reference $FrontendImage -Repository "ghcr.io/cp11-gh/crm-frontend"
+$RetrievalModelImage = Assert-ImmutableImage -Name "RetrievalModelImage" -Reference $RetrievalModelImage `
+    -Repository "ghcr.io/cp11-gh/crm-retrieval-model-service"
 
 $baseUri = $null
 if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $baseUri.Scheme -ne "https") {
@@ -202,46 +254,79 @@ if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $bas
 
 $environmentValues = Read-EnvironmentFile -Path $EnvFile
 Assert-EnvironmentContract -Values $environmentValues
-foreach ($name in @("POSTGRES_IMAGE", "REDIS_IMAGE", "MINIO_IMAGE", "NGINX_IMAGE")) {
-    Assert-ImmutableImage -Name $name -Reference $environmentValues[$name]
+$externalImageRepositories = @{
+    "POSTGRES_IMAGE" = "pgvector/pgvector"
+    "REDIS_IMAGE" = "redis"
+    "MINIO_IMAGE" = "minio/minio"
+    "NGINX_IMAGE" = "nginx"
 }
-
-if ($ValidateOnly) {
-    Write-Evidence -Status "validated" -HealthChecks @()
-    Write-Output "Staging production gate inputs validated; production_release=false."
-    exit 0
+$validatedExternalImages = @{}
+foreach ($name in $externalImageRepositories.Keys) {
+    $validatedExternalImages[$name] = Assert-ImmutableImage -Name $name -Reference $environmentValues[$name] `
+        -Repository $externalImageRepositories[$name] -AllowTag
 }
-
-if (-not $Deploy) {
-    throw "A live run requires -Deploy; use -ValidateOnly for a non-mutating preflight."
+$retrievalModelImage = Assert-ImmutableImage -Name "RETRIEVAL_MODEL_SERVICE_IMAGE" `
+    -Reference $environmentValues["RETRIEVAL_MODEL_SERVICE_IMAGE"] `
+    -Repository "ghcr.io/cp11-gh/crm-retrieval-model-service"
+if ($retrievalModelImage -ne $RetrievalModelImage) {
+    throw "RETRIEVAL_MODEL_SERVICE_IMAGE must equal the reviewed RetrievalModelImage input."
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $compose = Resolve-ComposeCommand
 $composeArguments = @(
+    "--profile", "ai",
     "--env-file", (Resolve-Path -LiteralPath $EnvFile).Path,
     "-f", (Join-Path $projectRoot "docker-compose.yml"),
     "-f", (Join-Path $projectRoot "docker-compose.prod.yml")
 )
 
 $savedEnvironment = @{}
-foreach ($name in @($DisabledCapabilityVariables + @("BACKEND_IMAGE", "FRONTEND_IMAGE"))) {
+foreach ($name in @($DisabledCapabilityVariables + @("BACKEND_IMAGE", "FRONTEND_IMAGE", "RETRIEVAL_MODEL_SERVICE_IMAGE"))) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
 try {
     Set-DisabledCapabilities
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
+    $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $retrievalModelImage
 
-    Invoke-Compose -Command $compose -Arguments ($composeArguments + @("config", "--services"))
-    if ($PSCmdlet.ShouldProcess("staging", "deploy immutable application image digests")) {
-        Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-            "pull", "backend", "worker", "jobs", "agent-worker", "frontend"
-        ))
-        Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-            "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker", "frontend", "proxy"
-        ))
+    $config = Get-ProductionComposeConfig -Command $compose -Arguments $composeArguments
+    $expectedImages = @{
+        "postgres" = $validatedExternalImages["POSTGRES_IMAGE"]
+        "redis" = $validatedExternalImages["REDIS_IMAGE"]
+        "minio" = $validatedExternalImages["MINIO_IMAGE"]
+        "backend" = $BackendImage
+        "worker" = $BackendImage
+        "jobs" = $BackendImage
+        "agent-worker" = $BackendImage
+        "retrieval-model-service" = $retrievalModelImage
+        "frontend" = $FrontendImage
+        "proxy" = $validatedExternalImages["NGINX_IMAGE"]
     }
+    Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages
+
+    if ($ValidateOnly) {
+        Write-Evidence -Status "validated" -HealthChecks @()
+        Write-Output "Staging production gate inputs and merged Compose config validated; production_release=false."
+        return
+    }
+
+    if (-not $Deploy) {
+        throw "A live run requires -Deploy; use -ValidateOnly for a non-mutating preflight."
+    }
+
+    if (-not $PSCmdlet.ShouldProcess("staging", "deploy immutable application image digests")) {
+        Write-Evidence -Status "not_executed" -HealthChecks @()
+        Write-Output "Staging deployment was not executed; production_release=false."
+        return
+    }
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "pull", "backend", "worker", "jobs", "agent-worker", "frontend"
+    ))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker", "frontend", "proxy"
+    ))
 }
 finally {
     foreach ($name in $savedEnvironment.Keys) {

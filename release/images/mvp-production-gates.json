@@ -11,9 +11,15 @@
     "frontend": {
       "candidate_tag": "ghcr.io/cp11-gh/crm-frontend:candidate-58129211766a",
       "reference": "ghcr.io/cp11-gh/crm-frontend@sha256:c616b24b77d06faf48753986e9a17e504bdb8a511417d44b4a75ba2ba3170712"
+    },
+    "retrieval_model": {
+      "candidate_tag": null,
+      "reference": null,
+      "status": "not_published_by_bootstrap_run"
     }
   },
   "external_images": {
+    "uv_model_build_base": "ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36",
     "postgres": "pgvector/pgvector:0.8.0-pg16@sha256:a132765ec351c65111b5b675928a3a0515a466a40f97277329db8b8209ad8bc9",
     "redis": "redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
     "minio": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e",
@@ -44,8 +50,13 @@
       "crm-staging self-hosted runner is not connected",
       "GitHub Environment staging secret CRM_STAGING_ENV_FILE is not configured",
       "GitHub Environment staging variable CRM_STAGING_BASE_URL is not configured",
-      "previous immutable application image digests are not yet supplied"
+      "previous immutable backend, frontend, and retrieval model image digests are not yet supplied"
     ]
+  },
+  "publishing_environment": {
+    "name": "image-publishing",
+    "allowed_branch": "main",
+    "custom_branch_policies": true
   },
   "final_main_publish_required": true,
   "production_release": false

@@ -31,7 +31,7 @@
 - [x] 后端使用固定基础镜像构建并复核本地 image ID：`sha256:def6eec93b6277bdc1a6bfc1db6117ee4b6e5d1cc0f0ba077368be8cc8ac6b83`。
 - [x] 前端分支候选镜像已由 GitHub Actions 构建并推送 GHCR，RepoDigest 为 `sha256:c616b24b77d06faf48753986e9a17e504bdb8a511417d44b4a75ba2ba3170712`。
 - [x] 后端分支候选镜像已推送 GHCR，RepoDigest 为 `sha256:b7c4e0679613049323d57e1b0e5ad741d6785e0dd0eb92cfd46fb7ac84c5aff5`；四个生产外部镜像也已固定完整摘要。
-- [ ] 最终 `main` 应用镜像已发布并将最终 RepoDigest 写入 staging 配置；当前证据仍绑定分支提交 `5812921`。
+- [ ] 最终 `main` 的 backend、frontend、retrieval model service 镜像已发布并将最终 RepoDigest 写入 staging 配置；当前证据仍只有绑定分支提交 `5812921` 的 backend/frontend 候选。
 - [ ] `DEF-REAL-FS01-005` 前端 3 个 High 已由 Next.js 16.3.4 完成工程修复，`npm audit` 为 0 High/0 Critical；待测试工程师独立复测后关闭。
 - [ ] `DEF-REAL-FS01-006` 关键日志事件语义折叠已修复并独立复测关闭。
 - [ ] TikTok、DeepSeek、JWT、Cookie、CSRF 和内部 Token 完成分环境真实密钥注入与轮换演练。

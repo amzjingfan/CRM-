@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: publish-images-${{ github.ref }}
@@ -20,12 +19,18 @@ env:
   SOURCE_SHA: ${{ inputs.source_sha || github.sha }}
   BACKEND_IMAGE: ghcr.io/cp11-gh/crm-backend
   FRONTEND_IMAGE: ghcr.io/cp11-gh/crm-frontend
+  RETRIEVAL_MODEL_IMAGE: ghcr.io/cp11-gh/crm-retrieval-model-service
 
 jobs:
   backend:
     name: Publish backend image
+    if: github.ref == 'refs/heads/main'
+    environment: image-publishing
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
       tag: ${{ steps.metadata.outputs.tag }}
@@ -76,8 +81,13 @@ jobs:
 
   frontend:
     name: Publish frontend image
+    if: github.ref == 'refs/heads/main'
+    environment: image-publishing
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
       tag: ${{ steps.metadata.outputs.tag }}
@@ -129,11 +139,69 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ env.SOURCE_SHA }}
 
+  retrieval-model:
+    name: Publish retrieval model service image
+    if: github.ref == 'refs/heads/main'
+    environment: image-publishing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      tag: ${{ steps.metadata.outputs.tag }}
+    steps:
+      - name: Check out requested source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+
+      - name: Validate source and create immutable candidate tag
+        id: metadata
+        shell: bash
+        run: |
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "source_sha must be a full lowercase Git commit SHA" >&2
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin main
+          main_sha="$(git rev-parse FETCH_HEAD)"
+          if [[ "$SOURCE_SHA" != "$main_sha" ]]; then
+            echo "source_sha must equal the current main commit" >&2
+            exit 1
+          fi
+          echo "tag=candidate-$(printf '%s' "$SOURCE_SHA" | cut -c1-12)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push retrieval model service
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: CRM智能聊天系统/backend
+          file: CRM智能聊天系统/Dockerfile.model-service
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.RETRIEVAL_MODEL_IMAGE }}:${{ steps.metadata.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ env.SOURCE_SHA }}
+
   evidence:
     name: Record published RepoDigests
     needs:
       - backend
       - frontend
+      - retrieval-model
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -145,6 +213,8 @@ jobs:
           BACKEND_TAG: ${{ needs.backend.outputs.tag }}
           FRONTEND_DIGEST: ${{ needs.frontend.outputs.digest }}
           FRONTEND_TAG: ${{ needs.frontend.outputs.tag }}
+          RETRIEVAL_MODEL_DIGEST: ${{ needs.retrieval-model.outputs.digest }}
+          RETRIEVAL_MODEL_TAG: ${{ needs.retrieval-model.outputs.tag }}
         run: |
           mkdir -p image-evidence
           jq -n \
@@ -153,12 +223,15 @@ jobs:
             --arg backend_tag "$BACKEND_IMAGE:$BACKEND_TAG" \
             --arg frontend "$FRONTEND_IMAGE@$FRONTEND_DIGEST" \
             --arg frontend_tag "$FRONTEND_IMAGE:$FRONTEND_TAG" \
+            --arg retrieval_model "$RETRIEVAL_MODEL_IMAGE@$RETRIEVAL_MODEL_DIGEST" \
+            --arg retrieval_model_tag "$RETRIEVAL_MODEL_IMAGE:$RETRIEVAL_MODEL_TAG" \
             '{
               schema_version: 1,
               source_sha: $source_sha,
               platform: "linux/amd64",
               backend: {reference: $backend, candidate_tag: $backend_tag},
               frontend: {reference: $frontend, candidate_tag: $frontend_tag},
+              retrieval_model: {reference: $retrieval_model, candidate_tag: $retrieval_model_tag},
               production_release: false
             }' > image-evidence/repo-digests.json
           {
@@ -167,6 +240,7 @@ jobs:
             echo "- Source: `$SOURCE_SHA`"
             echo "- Backend: `$BACKEND_IMAGE@$BACKEND_DIGEST`"
             echo "- Frontend: `$FRONTEND_IMAGE@$FRONTEND_DIGEST`"
+            echo "- Retrieval model: `$RETRIEVAL_MODEL_IMAGE@$RETRIEVAL_MODEL_DIGEST`"
             echo "- production_release=false"
           } >> "$GITHUB_STEP_SUMMARY"
 

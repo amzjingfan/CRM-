@@ -33,12 +33,13 @@
 
 **文件：**
 - 修改：`CRM智能聊天系统/Dockerfile.frontend.prod`
+- 修改：`CRM智能聊天系统/Dockerfile.model-service`
 - 修改：`CRM智能聊天系统/docker-compose.prod.yml`
 - 修改：`CRM智能聊天系统/.env.example`
 - 修改：相应契约测试
 
-1. 固定 Node 多架构摘要和四个外部镜像摘要。
-2. 生产后端/Worker/Jobs/Agent Worker/前端只接受 `repository@sha256:...`。
+1. 固定 Node、uv 多架构摘要和四个运行时外部镜像摘要。
+2. 生产后端/Worker/Jobs/Agent Worker/前端/检索模型服务只接受 `repository@sha256:...`。
 3. 重置生产应用服务继承的 `build`，避免目标主机构建。
 4. 运行 Compose 契约测试和 `docker compose config --services`。
 
@@ -50,7 +51,7 @@
 
 1. 添加仅需 `contents: read`、`packages: write` 的 Buildx 工作流；固定第三方 Action 版本。
 2. 首次加入受限分支触发器，推送已通过本地验证的候选提交。
-3. 从成功运行的输出/制品取得后端和前端 RepoDigest，核对 GHCR API 后写入证据文件和生产示例配置。
+3. 从成功运行的输出/制品取得应用 RepoDigest；bootstrap 先记录后端和前端，最终 main 再补齐检索模型服务并写回证据。
 4. 删除一次性分支触发器，正式保留 `workflow_dispatch`。
 
 ## Task 5：实现 staging 预检与回滚演练
@@ -62,8 +63,8 @@
 - 修改：`CRM智能聊天系统/deploy/production/README.md`
 
 1. 让 Task 1 的失败测试覆盖输入校验和秘密不回显。
-2. 实现 staging-only 参数、摘要校验、服务结构检查、低敏健康检查和 JSON 证据。
-3. 实现先关闭能力再切换上一版本摘要的回滚顺序。
+2. 实现 staging-only 参数、严格仓库白名单、合并 Compose image/build 结构检查、低敏健康检查和 JSON 证据。
+3. 实现先关闭能力再切换三类上一版本摘要的回滚顺序；WhatIf/拒绝确认只允许 `not_executed`。
 4. 通过 Windows PowerShell 5.1 与 PowerShell 7 语法检查和 dry-run 测试。
 
 ## Task 6：同步项目证据并走 GitHub Flow
@@ -78,4 +79,3 @@
 2. 运行完整后端、前端、审计、Compose 和文档一致性验证。
 3. 提交、推送、创建 PR；等待 CI 与独立人工审阅。
 4. squash merge 后再从 `main` 手工触发正式 GHCR 发布；如最终 digest 与候选不同，使用独立证据 PR 固定最终值。
-

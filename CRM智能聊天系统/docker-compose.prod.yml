@@ -135,6 +135,8 @@ services:
       <<: [*production-runtime, *production-model]
 
   retrieval-model-service:
+    image: ${RETRIEVAL_MODEL_SERVICE_IMAGE:?RETRIEVAL_MODEL_SERVICE_IMAGE must use an immutable repository@sha256 digest}
+    build: !reset null
     # 基础 Compose 的开发 .env 可能包含 TikTok、DeepSeek、JWT、数据库和
     # MinIO 凭据；生产检索容器只保留显式的本地模型配置与服务 Token。
     env_file: !reset []

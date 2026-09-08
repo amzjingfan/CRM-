@@ -176,7 +176,8 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 
 ```powershell
 docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml config --services
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml pull
+docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
 ```
 
 生产环境文件必须位于仓库外，不能复用开发 `.env`。生产所需变量、HTTPS、固定出口 IP、密钥注入、日志告警和回滚说明见 `deploy/production/README.md`；备份恢复说明见 `deploy/postgres/README.md`。项目 PowerShell 脚本使用 UTF-8 BOM，并声明兼容 Windows PowerShell 5.1 与 PowerShell 7；提交前应使用两种解析器执行语法检查。

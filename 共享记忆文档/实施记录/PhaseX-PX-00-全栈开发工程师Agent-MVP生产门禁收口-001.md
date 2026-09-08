@@ -17,7 +17,7 @@
 ## 2. 目标与边界
 
 - 使用上游支持版本关闭前端 3 个 High，不用跨主版本依赖覆盖规避审计。
-- 发布前后端候选镜像到 GHCR，固定生产外部镜像 RepoDigest。
+- 发布 backend、frontend、retrieval model service 镜像到 GHCR，固定全部生产基础镜像 RepoDigest。
 - 提供只允许 staging 的预检、部署和回滚演练脚本及 GitHub Actions 入口。
 - 不开启真实 TikTok、DeepSeek、翻译、营销或自动回复，不把 dry-run 视为真实门禁证据。
 
@@ -32,6 +32,7 @@
 - Next.js 内置传递依赖更新为 PostCSS `8.5.23`、Sharp `0.35.4`。
 - ESLint 改用 Next.js 16 原生 flat config；保留现有异步加载行为，暂不在安全修复中重构页面 effect。
 - Node.js 生产基础镜像固定为 `node:20.19.4-alpine3.22@sha256:df025...2799`，满足 Next.js 16 的 Node 20.9+ 要求。
+- 检索模型构建基础镜像固定为 `ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d...bb36`。
 
 ### 3.2 镜像与生产 Compose
 
@@ -39,14 +40,17 @@
 - workflow run `34112919503` 已成功发布分支候选：
   - backend：`ghcr.io/cp11-gh/crm-backend@sha256:b7c4e0679613049323d57e1b0e5ad741d6785e0dd0eb92cfd46fb7ac84c5aff5`；
   - frontend：`ghcr.io/cp11-gh/crm-frontend@sha256:c616b24b77d06faf48753986e9a17e504bdb8a511417d44b4a75ba2ba3170712`。
+- bootstrap run 未包含 retrieval model service；最终 `main` 工作流已增加第三个发布 job，正式摘要待合并后产生。
 - PostgreSQL、Redis、MinIO、Nginx 已固定 Docker Hub 官方多架构清单摘要。
-- 生产 Compose 的后端进程和前端重置本机构建配置，只消费显式应用 RepoDigest。
+- 生产 Compose 的后端进程、前端和检索模型服务全部重置本机构建配置，只消费显式应用 RepoDigest。
+- 发布 job 使用 main-only `image-publishing` Environment、`github.ref` 校验和 job 级 `packages: write`。
 - 机器可读证据：`release/images/mvp-production-gates.json`。
 
 ### 3.3 staging 与回滚
 
-- `Test-StagingProductionGates.ps1` 校验 staging 双确认、仓库外环境文件、全部镜像摘要、安全关闭开关，并支持候选部署和低敏健康证据。
-- `Invoke-StagingRollbackDrill.ps1` 固定执行顺序为“关闭全部真实能力→切换历史摘要→健康复核”。
+- `Test-StagingProductionGates.ps1` 校验 staging 双确认、严格仓库白名单、仓库外环境文件、全部镜像摘要、安全关闭开关和合并后的 Compose image/build 结构，并支持候选部署和低敏健康证据。
+- `Invoke-StagingRollbackDrill.ps1` 同样校验外部镜像与 Compose 契约，固定执行顺序为“关闭全部真实能力→切换三类历史应用摘要→健康复核”。
+- 两个脚本在 `WhatIf` 或操作人拒绝 `ShouldProcess` 时只报告 `not_executed`，不会执行健康检查或写 `passed`。
 - `staging-gates.yml` 只在带 `crm-staging` 标签的自托管 Linux runner 上运行，并使用 GitHub `staging` Environment。
 - GitHub `staging` Environment 已创建，部署分支策略只允许 `main`。
 
@@ -56,11 +60,11 @@
 | --- | --- | --- |
 | npm 官方安全审计 | 0 High、0 Critical、0 total | 通过 |
 | 前端 ESLint/TypeScript | 0 error；2 个既有导航 warning；typecheck 通过 | 通过 |
-| 前端 Node 测试 | 39 passed | 通过 |
+| 前端 Node 测试 | 40 passed | 通过 |
 | Next.js 16 生产构建 | 12 条应用路由及 `_not-found` 构建完成 | 通过 |
 | 后端 Ruff/格式/mypy | 236 files formatted；166 source files 无类型错误 | 通过 |
-| 后端完整测试 | 1325 passed、12 skipped、2 warnings | 通过 |
-| 脚本行为测试 | 6 passed；拒绝 production/浮动摘要，证据不含 secret sentinel | 通过 |
+| 后端完整测试 | 1331 passed、12 skipped、2 warnings | 通过 |
+| 脚本行为测试 | 10 passed；拒绝 production/浮动摘要/凭据型引用，WhatIf 不伪造通过 | 通过 |
 | PowerShell 兼容性 | Windows PowerShell 5.1 与 PowerShell 7 解析通过；UTF-8 BOM | 通过 |
 | Compose 结构 | 合并配置 `config --services` 成功，应用 build 已重置 | 通过 |
 | GHCR 候选发布 | backend、frontend、evidence 三个 job 均 success | 通过 |
@@ -68,10 +72,10 @@
 
 ## 5. 遗留风险与交接
 
-1. PR squash merge 后必须从最终 `main` 手工运行 `Publish immutable application images`，并用最终摘要替换分支候选证据。
+1. PR squash merge 后必须从最终 `main` 手工运行 `Publish immutable application images`，发布三类应用镜像并用最终摘要替换分支候选证据。
 2. 测试工程师需独立复测 `DEF-REAL-FS01-005`，当前不能自行标记 Closed。
 3. 运维需连接 `crm-staging` 自托管 runner，在 GitHub Environment 配置 `CRM_STAGING_ENV_FILE` 和 `CRM_STAGING_BASE_URL`；环境文件正文不得进入 GitHub 或仓库。
-4. 真实回滚还需要一组上一版本应用 RepoDigest。未提供上述资源前只能完成 `-ValidateOnly`，不得勾选真实演练通过。
+4. 真实回滚还需要上一版本 backend、frontend、retrieval model service RepoDigest。未提供上述资源前只能完成 `-ValidateOnly`，不得勾选真实演练通过。
 5. `DEF-REAL-FS01-006` 日志事件语义折叠、真实店铺、真实模型、五日稳定性及 G7/G8 仍阻断生产放行。
 
 ## 6. 文档同步

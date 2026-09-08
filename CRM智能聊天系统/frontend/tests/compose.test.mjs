@@ -22,6 +22,10 @@ const productionFrontendDockerfile = await readFile(
   new URL("../../Dockerfile.frontend.prod", import.meta.url),
   "utf8",
 );
+const productionReadmeSource = await readFile(
+  new URL("../../deploy/production/README.md", import.meta.url),
+  "utf8",
+);
 const packageJson = JSON.parse(
   await readFile(new URL("../package.json", import.meta.url), "utf8"),
 );
@@ -64,6 +68,13 @@ test("production frontend build pins the Node image manifest digest", () => {
   );
 });
 
+test("retrieval model build pins the uv base image manifest digest", () => {
+  assert.match(
+    modelDockerfile,
+    /^FROM ghcr\.io\/astral-sh\/uv:python3\.11-bookworm-slim@sha256:[0-9a-f]{64}$/m,
+  );
+});
+
 test("production infrastructure images use immutable registry digests", () => {
   const expectedReferences = [
     "pgvector/pgvector:0.8.0-pg16@sha256:a132765ec351c65111b5b675928a3a0515a466a40f97277329db8b8209ad8bc9",
@@ -90,6 +101,14 @@ test("production application services consume published images without local bui
   const frontendBlock = composeServiceBlock(productionComposeSource, "frontend");
   assert.match(frontendBlock, /image: \$\{FRONTEND_IMAGE:\?/);
   assert.match(frontendBlock, /build: !reset null/);
+
+  const retrievalBlock = composeServiceBlock(
+    productionComposeSource,
+    "retrieval-model-service",
+  );
+  assert.match(retrievalBlock, /image: \$\{RETRIEVAL_MODEL_SERVICE_IMAGE:\?/);
+  assert.match(retrievalBlock, /build: !reset null/);
+  assert.doesNotMatch(productionReadmeSource, /up -d --build/);
 });
 
 test("GHCR publisher uses least privilege and immutable GitHub Actions", async () => {
@@ -102,6 +121,10 @@ test("GHCR publisher uses least privilege and immutable GitHub Actions", async (
   assert.match(workflow, /contents: read/);
   assert.match(workflow, /ghcr\.io\/cp11-gh\/crm-backend/);
   assert.match(workflow, /ghcr\.io\/cp11-gh\/crm-frontend/);
+  assert.match(workflow, /ghcr\.io\/cp11-gh\/crm-retrieval-model-service/);
+  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(workflow, /environment:\s+image-publishing/);
+  assert.doesNotMatch(workflow, /^permissions:[\s\S]{0,80}packages: write/m);
   assert.match(workflow, /git fetch --no-tags --depth=1 origin main/);
   assert.match(workflow, /"\$SOURCE_SHA" != "\$main_sha"/);
   assert.doesNotMatch(workflow, /uses:\s+[^\s]+@(v\d+|main|master)\s*$/m);
@@ -120,11 +143,13 @@ test("staging workflow cannot target production or a generic hosted runner", asy
   assert.match(workflow, /runs-on:\s*\[self-hosted, linux, x64, crm-staging\]/);
   assert.match(workflow, /CONFIRM_TARGET -ne "staging"/);
   assert.match(workflow, /\["ConfirmTarget"\]\s*=\s*"staging"/);
+  assert.match(workflow, /CandidateRetrievalModelImage/);
+  assert.match(workflow, /PreviousRetrievalModelImage/);
   assert.doesNotMatch(workflow, /ubuntu-latest/);
   assert.doesNotMatch(workflow, /environment:\s+production/);
 });
 
-test("published image evidence binds both GHCR RepoDigests to one source commit", async () => {
+test("published image evidence binds available GHCR RepoDigests to one source commit", async () => {
   const evidence = JSON.parse(
     await readFile(
       new URL("../../../release/images/mvp-production-gates.json", import.meta.url),
@@ -140,6 +165,11 @@ test("published image evidence binds both GHCR RepoDigests to one source commit"
   assert.match(
     evidence.application_images.frontend.reference,
     /^ghcr\.io\/cp11-gh\/crm-frontend@sha256:[0-9a-f]{64}$/,
+  );
+  assert.equal(evidence.application_images.retrieval_model.reference, null);
+  assert.equal(
+    evidence.application_images.retrieval_model.status,
+    "not_published_by_bootstrap_run",
   );
   assert.equal(evidence.production_release, false);
 });

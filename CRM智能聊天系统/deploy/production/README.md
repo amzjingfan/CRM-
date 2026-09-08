@@ -69,6 +69,7 @@ POSTGRES_PASSWORD
 TLS_CERT_DIR
 BACKEND_IMAGE
 FRONTEND_IMAGE
+RETRIEVAL_MODEL_SERVICE_IMAGE
 POSTGRES_IMAGE
 REDIS_IMAGE
 MINIO_IMAGE
@@ -92,8 +93,9 @@ AUTO_REPLY_ENABLED=false
 
 ### 不可变镜像供应链
 
-生产 Compose 不再在目标主机临时构建 backend、worker、jobs、agent-worker 或 frontend，
-而是要求 `BACKEND_IMAGE`、`FRONTEND_IMAGE` 使用完整的
+生产 Compose 不再在目标主机临时构建 backend、worker、jobs、agent-worker、frontend 或
+retrieval-model-service，而是要求 `BACKEND_IMAGE`、`FRONTEND_IMAGE`、
+`RETRIEVAL_MODEL_SERVICE_IMAGE` 使用完整的
 `repository@sha256:<64 hex>`。PostgreSQL、Redis、MinIO 和 Nginx 的默认引用也已固定
 Docker Hub 多架构清单摘要；仓库外环境文件如覆盖这些变量，同样必须使用完整摘要。
 
@@ -102,12 +104,15 @@ Docker Hub 多架构清单摘要；仓库外环境文件如覆盖这些变量，
 ```text
 ghcr.io/cp11-gh/crm-backend
 ghcr.io/cp11-gh/crm-frontend
+ghcr.io/cp11-gh/crm-retrieval-model-service
 ```
 
-工作流只允许在 `main` 上手工触发，并要求输入完整 Git commit SHA。它不会推送 `latest`，
+三个发布 job 均绑定 main-only 的 GitHub `image-publishing` Environment，同时检查
+`github.ref` 和当前远端 `main` SHA。工作流要求输入完整 Git commit SHA，不会推送 `latest`，
 而是生成与提交绑定的候选标签、真实 RepoDigest 和 30 天低敏 JSON 证据制品。首次分支候选
-构建证据位于 `release/images/mvp-production-gates.json`；正式部署前必须再次从最终 `main`
-运行工作流，并把最终 RepoDigest 更新到仓库外 staging 配置。
+构建证据位于 `release/images/mvp-production-gates.json`；首次 bootstrap run 尚未包含检索模型镜像。
+正式部署前必须再次从最终 `main` 运行工作流，取得三个应用 RepoDigest，并把它们更新到仓库外
+staging 配置。
 
 前端镜像把 `NEXT_PUBLIC_API_BASE_URL` 固定为同源 `/v1`，因此同一不可变镜像可通过反向代理
 部署到 staging 和生产域名，不需要为不同域名重新构建。
@@ -146,7 +151,8 @@ AUTO_REPLY_ENABLED=false
 
 ```powershell
 docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml config --services
-docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml up -d --build backend retrieval-model-service
+docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml pull backend retrieval-model-service
+docker-compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml up -d --no-build backend retrieval-model-service
 ```
 
 `docker-compose.deepseek-sse.yml` 只允许 backend 读取 `LLM_ENABLED`；jobs 和 agent-worker
@@ -262,7 +268,8 @@ Variable: CRM_STAGING_BASE_URL # staging 的 HTTPS 基础地址
 
 不得把环境文件正文保存成 GitHub Secret、提交到仓库或贴入工作流输入。配置完成后，通过
 `Staging production gates` 手工工作流依次执行 `validate`、`deploy`；回滚必须另行提供
-候选和上一版本的四个完整应用镜像摘要。工作流和脚本都拒绝 `production`。
+候选和上一版本的六个完整应用镜像摘要（backend、frontend、retrieval model 各一组）。
+工作流和脚本都拒绝 `production`。
 
 目标主机也可以直接执行静态预检：
 
@@ -272,6 +279,7 @@ Variable: CRM_STAGING_BASE_URL # staging 的 HTTPS 基础地址
   -EnvFile D:\secure\crm-staging.env `
   -BackendImage ghcr.io/cp11-gh/crm-backend@sha256:{64-hex} `
   -FrontendImage ghcr.io/cp11-gh/crm-frontend@sha256:{64-hex} `
+  -RetrievalModelImage ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:{64-hex} `
   -BaseUrl https://staging.example.com `
   -EvidenceFile D:\secure\evidence\preflight.json `
   -ConfirmTarget staging `

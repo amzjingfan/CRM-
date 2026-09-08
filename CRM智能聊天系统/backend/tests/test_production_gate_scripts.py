@@ -16,6 +16,8 @@ BACKEND_IMAGE = "ghcr.io/cp11-gh/crm-backend@sha256:" + "a" * 64
 FRONTEND_IMAGE = "ghcr.io/cp11-gh/crm-frontend@sha256:" + "b" * 64
 PREVIOUS_BACKEND_IMAGE = "ghcr.io/cp11-gh/crm-backend@sha256:" + "c" * 64
 PREVIOUS_FRONTEND_IMAGE = "ghcr.io/cp11-gh/crm-frontend@sha256:" + "d" * 64
+RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "e" * 64
+PREVIOUS_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "f" * 64
 SECRET_SENTINEL = "must-not-appear-in-command-output-or-evidence"
 
 
@@ -56,6 +58,7 @@ def staging_env_file(tmp_path: Path) -> Path:
                 "POSTGRES_USER=crm",
                 "POSTGRES_PASSWORD=test-postgres-password",
                 "TLS_CERT_DIR=/secure/test-certs",
+                f"RETRIEVAL_MODEL_SERVICE_IMAGE={RETRIEVAL_MODEL_IMAGE}",
                 "POSTGRES_IMAGE=pgvector/pgvector:0.8.0-pg16@sha256:" + "1" * 64,
                 "REDIS_IMAGE=redis:7.4.2-alpine@sha256:" + "2" * 64,
                 "MINIO_IMAGE=minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:" + "3" * 64,
@@ -89,6 +92,8 @@ def test_preflight_rejects_production_environment(tmp_path: Path) -> None:
         BACKEND_IMAGE,
         "-FrontendImage",
         FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
         "-BaseUrl",
         "https://production.example.com",
         "-EvidenceFile",
@@ -117,6 +122,8 @@ def test_preflight_rejects_floating_application_image(
         "ghcr.io/cp11-gh/crm-backend:latest",
         "-FrontendImage",
         FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
         "-BaseUrl",
         "https://staging.example.com",
         "-EvidenceFile",
@@ -128,6 +135,40 @@ def test_preflight_rejects_floating_application_image(
 
     assert result.returncode != 0
     assert "digest" in (result.stdout + result.stderr).lower()
+
+
+def test_preflight_rejects_credential_bearing_image_reference(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """镜像引用不得借任意前缀把凭据或控制内容写入低敏证据。"""
+    marker = "credential-must-not-be-recorded"
+    malicious_image = f"https://user:{marker}@ghcr.io/cp11-gh/crm-backend@sha256:" + "a" * 64
+    evidence_file = tmp_path / "evidence.json"
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        malicious_image,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert marker not in (result.stdout + result.stderr)
+    assert not evidence_file.exists()
 
 
 def test_validate_only_writes_redacted_preflight_evidence(
@@ -146,6 +187,8 @@ def test_validate_only_writes_redacted_preflight_evidence(
         BACKEND_IMAGE,
         "-FrontendImage",
         FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
         "-BaseUrl",
         "https://staging.example.com",
         "-EvidenceFile",
@@ -187,6 +230,8 @@ def test_preflight_rejects_floating_external_image(
         BACKEND_IMAGE,
         "-FrontendImage",
         FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
         "-BaseUrl",
         "https://staging.example.com",
         "-EvidenceFile",
@@ -225,10 +270,14 @@ def test_rollback_plan_disables_capabilities_before_switching_images(
         BACKEND_IMAGE,
         "-CandidateFrontendImage",
         FRONTEND_IMAGE,
+        "-CandidateRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
         "-PreviousBackendImage",
         PREVIOUS_BACKEND_IMAGE,
         "-PreviousFrontendImage",
         PREVIOUS_FRONTEND_IMAGE,
+        "-PreviousRetrievalModelImage",
+        PREVIOUS_RETRIEVAL_MODEL_IMAGE,
         "-BaseUrl",
         "https://staging.example.com",
         "-EvidenceFile",
@@ -247,3 +296,117 @@ def test_rollback_plan_disables_capabilities_before_switching_images(
         "verify_health",
     ]
     assert evidence["production_release"] is False
+
+
+def test_rollback_rejects_floating_external_image(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """回滚也必须在任何 Compose 调用前拒绝浮动外部镜像。"""
+    source = staging_env_file.read_text(encoding="utf-8")
+    staging_env_file.write_text(
+        source.replace(
+            "REDIS_IMAGE=redis:7.4.2-alpine@sha256:" + "2" * 64,
+            "REDIS_IMAGE=redis:latest",
+        ),
+        encoding="utf-8",
+    )
+    result = run_powershell(
+        ROLLBACK_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-CandidateBackendImage",
+        BACKEND_IMAGE,
+        "-CandidateFrontendImage",
+        FRONTEND_IMAGE,
+        "-CandidateRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-PreviousBackendImage",
+        PREVIOUS_BACKEND_IMAGE,
+        "-PreviousFrontendImage",
+        PREVIOUS_FRONTEND_IMAGE,
+        "-PreviousRetrievalModelImage",
+        PREVIOUS_RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(tmp_path / "rollback-evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert "digest" in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.parametrize(
+    ("script", "mode", "image_arguments"),
+    [
+        (
+            PREFLIGHT_SCRIPT,
+            "-Deploy",
+            (
+                "-BackendImage",
+                BACKEND_IMAGE,
+                "-FrontendImage",
+                FRONTEND_IMAGE,
+                "-RetrievalModelImage",
+                RETRIEVAL_MODEL_IMAGE,
+            ),
+        ),
+        (
+            ROLLBACK_SCRIPT,
+            "-Execute",
+            (
+                "-CandidateBackendImage",
+                BACKEND_IMAGE,
+                "-CandidateFrontendImage",
+                FRONTEND_IMAGE,
+                "-CandidateRetrievalModelImage",
+                RETRIEVAL_MODEL_IMAGE,
+                "-PreviousBackendImage",
+                PREVIOUS_BACKEND_IMAGE,
+                "-PreviousFrontendImage",
+                PREVIOUS_FRONTEND_IMAGE,
+                "-PreviousRetrievalModelImage",
+                PREVIOUS_RETRIEVAL_MODEL_IMAGE,
+            ),
+        ),
+    ],
+)
+def test_whatif_never_records_passed_evidence(
+    script: Path,
+    mode: str,
+    image_arguments: tuple[str, ...],
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """WhatIf 未执行部署或回滚时只能记录 not_executed。"""
+    evidence_file = tmp_path / f"{script.stem}-whatif.json"
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *image_arguments,
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        mode,
+        "-WhatIf",
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    combined_output = result.stdout + result.stderr
+    assert "not executed" in combined_output.lower()
+    if evidence_file.exists():
+        evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
+        assert evidence["status"] == "not_executed"
+        assert evidence["production_release"] is False
