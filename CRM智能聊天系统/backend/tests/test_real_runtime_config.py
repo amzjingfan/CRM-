@@ -446,6 +446,41 @@ def test_json_formatter_drops_unstructured_sensitive_message() -> None:
 
 
 @pytest.mark.parametrize(
+    ("logger_name", "expected_event"),
+    [
+        ("httpx", "http_client_request"),
+        ("httpcore.http11", "http_client_transport"),
+        ("uvicorn.access", "http_server_access"),
+        ("uvicorn.error", "http_server_runtime"),
+        ("sqlalchemy.engine.Engine", "database_engine_event"),
+        ("alembic.runtime.migration", "database_migration_event"),
+    ],
+)
+def test_json_formatter_maps_known_framework_loggers_without_exposing_message(
+    logger_name: str,
+    expected_event: str,
+) -> None:
+    """已知框架日志应保留稳定事件语义，同时继续丢弃不可信自由文本。"""
+    sentinel = "customer-message-and-access-token-sentinel"
+    record = logging.LogRecord(
+        name=logger_name,
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg=f"request failed: {sentinel}",
+        args=(),
+        exc_info=None,
+    )
+
+    payload = json.loads(JsonFormatter().format(record))
+    rendered = json.dumps(payload)
+
+    assert payload["event"] == expected_event
+    assert payload["message"] == expected_event
+    assert sentinel not in rendered
+
+
+@pytest.mark.parametrize(
     ("field_name", "unsafe_value"),
     [
         ("trace_id", "客户要求寄到北京市朝阳区建国路88号"),

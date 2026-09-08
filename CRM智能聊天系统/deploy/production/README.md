@@ -228,6 +228,7 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 生产日志平台至少对以下事件告警：
 
 - `not_ready` 持续 2 分钟；
+- `http_client_request`、`http_client_transport`、`http_server_access`、`http_server_runtime`、`database_engine_event` 和 `database_migration_event` 异常增长；这些事件只由受控 logger 命名空间映射，不包含原始 URL、SQL 或消息正文；
 - 认证失败、Webhook 验签失败或第三方错误突增；
 - 日志出现脱敏标记异常增长；
 - Worker 连续重启；
