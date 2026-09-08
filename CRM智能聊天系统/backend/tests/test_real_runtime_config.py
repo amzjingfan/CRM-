@@ -3,6 +3,8 @@
 import hashlib
 import json
 import logging
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -443,6 +445,61 @@ def test_json_formatter_drops_unstructured_sensitive_message() -> None:
     assert payload["message"] == "unstructured_log_redacted"
     assert "secret-value" not in json.dumps(payload)
     assert "private-message" not in json.dumps(payload)
+
+
+@pytest.mark.parametrize(
+    ("logger_name", "expected_event"),
+    [
+        ("httpx", "http_client_request"),
+        ("httpcore.http11", "http_client_transport"),
+        ("uvicorn.access", "http_server_access"),
+        ("uvicorn.error", "http_server_runtime"),
+        ("sqlalchemy.engine.Engine", "database_engine_event"),
+        ("alembic.runtime.migration", "database_migration_event"),
+    ],
+)
+def test_json_formatter_maps_known_framework_loggers_without_exposing_message(
+    logger_name: str,
+    expected_event: str,
+) -> None:
+    """已知框架日志应保留稳定事件语义，同时继续丢弃不可信自由文本。"""
+    sentinel = "customer-message-and-access-token-sentinel"
+    record = logging.LogRecord(
+        name=logger_name,
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg=f"request failed: {sentinel}",
+        args=(),
+        exc_info=None,
+    )
+
+    payload = json.loads(JsonFormatter().format(record))
+    rendered = json.dumps(payload)
+
+    assert payload["event"] == expected_event
+    assert payload["message"] == expected_event
+    assert sentinel not in rendered
+
+
+def test_alembic_offline_command_uses_unified_json_logging() -> None:
+    """Alembic 真实入口在 ``fileConfig`` 后仍必须输出统一低敏 JSON。"""
+    backend_root = PROJECT_ROOT / "backend"
+    completed = subprocess.run(
+        [sys.executable, "-m", "alembic", "-c", "alembic.ini", "upgrade", "base", "--sql"],
+        cwd=backend_root,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    log_lines = [line for line in completed.stderr.splitlines() if line.strip()]
+    assert log_lines
+    payloads = [json.loads(line) for line in log_lines]
+    assert {payload["event"] for payload in payloads} == {"database_migration_event"}
+    assert all(payload["message"] == "database_migration_event" for payload in payloads)
 
 
 @pytest.mark.parametrize(
