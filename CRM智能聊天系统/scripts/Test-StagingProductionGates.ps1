@@ -49,6 +49,7 @@ $RequiredVariables = @(
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
     "TLS_CERT_DIR",
+    "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
     "POSTGRES_IMAGE",
     "REDIS_IMAGE",
@@ -132,6 +133,42 @@ function Assert-EnvironmentContract {
     }
 }
 
+function Assert-ExternalModelAssets {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$ProjectRoot
+    )
+
+    if (-not [System.IO.Path]::IsPathRooted($Path)) {
+        throw "RETRIEVAL_MODEL_ASSET_DIR must be an absolute server path."
+    }
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        throw "RETRIEVAL_MODEL_ASSET_DIR does not exist or is not a directory."
+    }
+
+    $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+    $resolvedProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+    $projectPrefix = $resolvedProjectRoot.TrimEnd(
+        [System.IO.Path]::DirectorySeparatorChar,
+        [System.IO.Path]::AltDirectorySeparatorChar
+    ) + [System.IO.Path]::DirectorySeparatorChar
+    if ($resolvedPath.Equals($resolvedProjectRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        $resolvedPath.StartsWith($projectPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "RETRIEVAL_MODEL_ASSET_DIR must be outside the Git checkout."
+    }
+
+    foreach ($relativePath in @(
+        "bge-m3/pytorch_model.bin",
+        "bge-reranker-large/model.safetensors"
+    )) {
+        $weightPath = Join-Path $resolvedPath $relativePath
+        if (-not (Test-Path -LiteralPath $weightPath -PathType Leaf)) {
+            throw "External model asset directory is missing a required weight file."
+        }
+    }
+    return $resolvedPath
+}
+
 function Resolve-ComposeCommand {
     $standalone = Get-Command "docker-compose" -ErrorAction SilentlyContinue
     if ($null -ne $standalone) {
@@ -172,7 +209,8 @@ function Get-ProductionComposeConfig {
 function Assert-ProductionComposeContract {
     param(
         [Parameter(Mandatory = $true)]$Config,
-        [Parameter(Mandatory = $true)][hashtable]$ExpectedImages
+        [Parameter(Mandatory = $true)][hashtable]$ExpectedImages,
+        [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir
     )
 
     foreach ($serviceName in $ExpectedImages.Keys) {
@@ -188,6 +226,16 @@ function Assert-ProductionComposeContract {
         if ($null -ne $buildProperty -and $null -ne $buildProperty.Value) {
             throw "Production Compose must not retain a local build for service: $serviceName"
         }
+    }
+
+    $retrievalService = $Config.services.PSObject.Properties["retrieval-model-service"].Value
+    $modelMount = @($retrievalService.volumes) | Where-Object { [string]$_.target -eq "/models" }
+    if ($modelMount.Count -ne 1 -or [string]$modelMount[0].type -ne "bind" -or
+        [string]$modelMount[0].source -ne $ExpectedModelAssetDir -or $modelMount[0].read_only -ne $true) {
+        throw "Production Compose must mount the reviewed external model directory read-only at /models."
+    }
+    if ([string]$retrievalService.environment.RETRIEVAL_MODEL_VERIFY_HASHES -ne "true") {
+        throw "Production retrieval model service must enable startup weight hash verification."
     }
 }
 
@@ -235,6 +283,7 @@ function Write-Evidence {
         backend_image = $BackendImage
         frontend_image = $FrontendImage
         retrieval_model_image = $RetrievalModelImage
+        external_model_assets_validated = $true
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
         health_checks = $HealthChecks
     }
@@ -254,6 +303,9 @@ if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $bas
 
 $environmentValues = Read-EnvironmentFile -Path $EnvFile
 Assert-EnvironmentContract -Values $environmentValues
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$modelAssetDir = Assert-ExternalModelAssets -Path $environmentValues["RETRIEVAL_MODEL_ASSET_DIR"] `
+    -ProjectRoot $projectRoot
 $externalImageRepositories = @{
     "POSTGRES_IMAGE" = "pgvector/pgvector"
     "REDIS_IMAGE" = "redis"
@@ -272,7 +324,6 @@ if ($retrievalModelImage -ne $RetrievalModelImage) {
     throw "RETRIEVAL_MODEL_SERVICE_IMAGE must equal the reviewed RetrievalModelImage input."
 }
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
 $compose = Resolve-ComposeCommand
 $composeArguments = @(
     "--profile", "ai",
@@ -282,13 +333,19 @@ $composeArguments = @(
 )
 
 $savedEnvironment = @{}
-foreach ($name in @($DisabledCapabilityVariables + @("BACKEND_IMAGE", "FRONTEND_IMAGE", "RETRIEVAL_MODEL_SERVICE_IMAGE"))) {
+foreach ($name in @($DisabledCapabilityVariables + @(
+    "BACKEND_IMAGE",
+    "FRONTEND_IMAGE",
+    "RETRIEVAL_MODEL_ASSET_DIR",
+    "RETRIEVAL_MODEL_SERVICE_IMAGE"
+))) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
 try {
     Set-DisabledCapabilities
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
+    $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
     $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $retrievalModelImage
 
     $config = Get-ProductionComposeConfig -Command $compose -Arguments $composeArguments
@@ -304,7 +361,8 @@ try {
         "frontend" = $FrontendImage
         "proxy" = $validatedExternalImages["NGINX_IMAGE"]
     }
-    Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages
+    Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages `
+        -ExpectedModelAssetDir $modelAssetDir
 
     if ($ValidateOnly) {
         Write-Evidence -Status "validated" -HealthChecks @()

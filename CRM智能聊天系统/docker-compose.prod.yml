@@ -141,6 +141,14 @@ services:
     # MinIO 凭据；生产检索容器只保留显式的本地模型配置与服务 Token。
     env_file: !reset []
     restart: unless-stopped
+    environment:
+      # 生产权重来自仓库外只读目录；每次容器启动都按代码内固定摘要复核约 4.5 GB 权重。
+      RETRIEVAL_MODEL_VERIFY_HASHES: "true"
+    volumes:
+      - type: bind
+        source: ${RETRIEVAL_MODEL_ASSET_DIR:?RETRIEVAL_MODEL_ASSET_DIR is required}
+        target: /models
+        read_only: true
 
   frontend:
     image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE must use an immutable repository@sha256 digest}

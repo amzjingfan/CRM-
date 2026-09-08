@@ -8,6 +8,7 @@
 - 云主机、安全组或负载均衡器只对公网开放 80/443；PostgreSQL、Redis、MinIO、backend 和 frontend 不直接暴露。
 - 为服务器或 NAT 网关分配固定公网出口 IP，将其作为 `TIKTOK_EGRESS_IP`，后续加入 TikTok IP 白名单。
 - TLS 证书目录位于仓库外，包含 `fullchain.pem`、`privkey.pem`，仅部署账户可读。
+- BGE 模型目录位于仓库外，例如 `/srv/crm/models`；只读挂载给模型服务，不随 Git checkout 或应用镜像更新。
 - 真实密钥由主机环境、CI/CD Secret 或云密钥管理系统注入，不写入仓库和命令历史。
 - 生产 Compose 会重置基础服务的开发 `.env` 注入；TikTok/DeepSeek 凭据只通过
   显式环境映射进入服务。Compose 插值必须使用仓库外生产文件或 CI 环境，不能依赖仓库 `.env`。
@@ -67,6 +68,7 @@ POSTGRES_DB
 POSTGRES_USER
 POSTGRES_PASSWORD
 TLS_CERT_DIR
+RETRIEVAL_MODEL_ASSET_DIR
 BACKEND_IMAGE
 FRONTEND_IMAGE
 RETRIEVAL_MODEL_SERVICE_IMAGE
@@ -75,6 +77,22 @@ REDIS_IMAGE
 MINIO_IMAGE
 NGINX_IMAGE
 ```
+
+服务器模型目录必须具有以下固定结构：
+
+```text
+/srv/crm/models/
+├─ bge-m3/
+│  └─ pytorch_model.bin
+└─ bge-reranker-large/
+   └─ model.safetensors
+```
+
+权重通过受控文件传输或服务器资产管理流程放入该目录，不通过 Git、GHCR 应用镜像或
+GitHub Secret 传输。仓库外环境文件设置 `RETRIEVAL_MODEL_ASSET_DIR=/srv/crm/models`；
+staging 门禁会拒绝相对路径、Git checkout 内路径和缺少固定权重文件的目录。生产 Compose
+只读挂载该目录到 `/models`，并固定启用 `RETRIEVAL_MODEL_VERIFY_HASHES=true`；模型服务
+启动时会按代码内固定 SHA-256 复核约 4.5 GB 权重，因此首次启动时间会相应增加。
 
 生产基础 Compose 的所有能力开关保持：
 
@@ -116,6 +134,10 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 
 前端镜像把 `NEXT_PUBLIC_API_BASE_URL` 固定为同源 `/v1`，因此同一不可变镜像可通过反向代理
 部署到 staging 和生产域名，不需要为不同域名重新构建。
+
+`Staging production gates` 使用工作流自带的 `GITHUB_TOKEN` 登录 GHCR，权限固定为
+`contents: read` 和 `packages: read`。如 GHCR 包保持私有，必须确保三个容器包允许
+`CP11-gh/CRM` 仓库的 Actions 读取；不在服务器环境文件中保存 GitHub 个人访问令牌。
 
 完成 OAuth、真实只读和 Webhook 门禁后，人工消息灰度只能显式叠加
 `docker-compose.tiktok-manual.yml`。该叠加文件只允许 backend 读取

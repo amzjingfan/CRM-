@@ -39,6 +39,11 @@ def run_powershell(script: Path, *arguments: str) -> subprocess.CompletedProcess
 @pytest.fixture
 def staging_env_file(tmp_path: Path) -> Path:
     """创建只含测试值的仓库外环境文件样本，不使用开发机真实配置。"""
+    model_asset_dir = tmp_path / "model-assets"
+    (model_asset_dir / "bge-m3").mkdir(parents=True)
+    (model_asset_dir / "bge-reranker-large").mkdir()
+    (model_asset_dir / "bge-m3" / "pytorch_model.bin").write_bytes(b"test-bge-m3")
+    (model_asset_dir / "bge-reranker-large" / "model.safetensors").write_bytes(b"test-reranker")
     env_file = tmp_path / "crm-staging.env"
     env_file.write_text(
         "\n".join(
@@ -58,6 +63,7 @@ def staging_env_file(tmp_path: Path) -> Path:
                 "POSTGRES_USER=crm",
                 "POSTGRES_PASSWORD=test-postgres-password",
                 "TLS_CERT_DIR=/secure/test-certs",
+                f"RETRIEVAL_MODEL_ASSET_DIR={model_asset_dir}",
                 f"RETRIEVAL_MODEL_SERVICE_IMAGE={RETRIEVAL_MODEL_IMAGE}",
                 "POSTGRES_IMAGE=pgvector/pgvector:0.8.0-pg16@sha256:" + "1" * 64,
                 "REDIS_IMAGE=redis:7.4.2-alpine@sha256:" + "2" * 64,
@@ -78,6 +84,16 @@ def staging_env_file(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return env_file
+
+
+def replace_environment_value(env_file: Path, name: str, value: str | None) -> None:
+    """替换或删除测试环境变量，不读取开发机真实配置。"""
+    lines = env_file.read_text(encoding="utf-8").splitlines()
+    replacement = f"{name}={value}" if value is not None else None
+    updated = [replacement if line.startswith(f"{name}=") else line for line in lines]
+    if replacement is None:
+        updated = [line for line in updated if line is not None]
+    env_file.write_text("\n".join(updated), encoding="utf-8")
 
 
 def test_preflight_rejects_production_environment(tmp_path: Path) -> None:
@@ -205,6 +221,141 @@ def test_validate_only_writes_redacted_preflight_evidence(
     evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
     assert evidence["status"] == "validated"
     assert evidence["production_release"] is False
+    assert evidence["external_model_assets_validated"] is True
+
+
+def test_preflight_rejects_missing_external_model_asset_directory(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """staging 环境必须显式提供服务器仓库外模型目录。"""
+    replace_environment_value(staging_env_file, "RETRIEVAL_MODEL_ASSET_DIR", None)
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert "RETRIEVAL_MODEL_ASSET_DIR" in (result.stdout + result.stderr)
+
+
+def test_preflight_rejects_relative_model_asset_directory(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """模型目录必须是服务器绝对路径，不能随 checkout 位置漂移。"""
+    replace_environment_value(staging_env_file, "RETRIEVAL_MODEL_ASSET_DIR", "./deploy/models")
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert "absolute" in (result.stdout + result.stderr).lower()
+
+
+def test_preflight_rejects_model_asset_directory_inside_checkout(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """生产权重不得回退到 Git checkout 内的开发模型目录。"""
+    replace_environment_value(
+        staging_env_file,
+        "RETRIEVAL_MODEL_ASSET_DIR",
+        str(PROJECT_ROOT / "deploy" / "models"),
+    )
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert "outside" in (result.stdout + result.stderr).lower()
+
+
+def test_preflight_rejects_external_model_directory_without_required_weights(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """外部目录缺少任一固定权重时必须在 Compose 启动前失败。"""
+    empty_model_dir = tmp_path / "empty-model-assets"
+    empty_model_dir.mkdir()
+    replace_environment_value(staging_env_file, "RETRIEVAL_MODEL_ASSET_DIR", str(empty_model_dir))
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert "weight" in (result.stdout + result.stderr).lower()
 
 
 def test_preflight_rejects_floating_external_image(
