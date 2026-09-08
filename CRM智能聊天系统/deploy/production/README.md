@@ -109,10 +109,10 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 
 三个发布 job 均绑定 main-only 的 GitHub `image-publishing` Environment，同时检查
 `github.ref` 和当前远端 `main` SHA。工作流要求输入完整 Git commit SHA，不会推送 `latest`，
-而是生成与提交绑定的候选标签、真实 RepoDigest 和 30 天低敏 JSON 证据制品。首次分支候选
-构建证据位于 `release/images/mvp-production-gates.json`；首次 bootstrap run 尚未包含检索模型镜像。
-正式部署前必须再次从最终 `main` 运行工作流，取得三个应用 RepoDigest，并把它们更新到仓库外
-staging 配置。
+而是生成与提交绑定的候选标签、真实 RepoDigest 和 30 天低敏 JSON 证据制品。最终
+`main@f7c0f9f9dd9a8c7b36a07145c053db7df23a15b8` 的三类应用镜像已由 run
+`34178017173` 发布，完整摘要记录在 `release/images/mvp-production-gates.json`。正式部署前
+仍必须把这三条摘要同步到仓库外 staging 配置并由操作人复核；仓库示例值不是目标机配置证据。
 
 前端镜像把 `NEXT_PUBLIC_API_BASE_URL` 固定为同源 `/v1`，因此同一不可变镜像可通过反向代理
 部署到 staging 和生产域名，不需要为不同域名重新构建。
