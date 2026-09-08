@@ -31,6 +31,18 @@ SAFE_EVENT_PATTERN = re.compile(r"^[a-z][a-z0-9_.-]{0,99}$")
 SAFE_LOG_METADATA_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/,-]{0,99}$")
 INVALID_LOG_METADATA = "[INVALID_LOG_METADATA]"
 
+# 第三方框架通常只提供自由文本 message，没有业务代码使用的结构化 event。
+# 这里只按受控 logger 命名空间映射固定低敏事件；不得从自由文本猜测事件类型，
+# 否则 URL、SQL、客户正文或凭证可能重新进入生产日志。
+FRAMEWORK_LOGGER_EVENTS = (
+    ("httpx", "http_client_request"),
+    ("httpcore", "http_client_transport"),
+    ("uvicorn.access", "http_server_access"),
+    ("uvicorn.error", "http_server_runtime"),
+    ("sqlalchemy.engine", "database_engine_event"),
+    ("alembic.runtime.migration", "database_migration_event"),
+)
+
 # 只有这些不含客户正文和凭证的运行元数据可以进入生产 JSON 日志。
 # 严禁加入 content、message、prompt、reasoning_content 或地址类字段。
 LOW_SENSITIVITY_LOG_FIELDS = (
@@ -105,6 +117,19 @@ def fingerprint_log_identifier(value: object) -> str:
     return f"sha256:{hashlib.sha256(text.encode('utf-8')).hexdigest()}"
 
 
+def resolve_log_event(record: logging.LogRecord) -> str:
+    """解析安全事件名，保留业务事件并为已知框架提供稳定语义。"""
+    raw_event = getattr(record, "event", None)
+    event_candidate = raw_event if isinstance(raw_event, str) else ""
+    if SAFE_EVENT_PATTERN.fullmatch(event_candidate):
+        return event_candidate
+
+    for logger_prefix, event in FRAMEWORK_LOGGER_EVENTS:
+        if record.name == logger_prefix or record.name.startswith(f"{logger_prefix}."):
+            return event
+    return "unstructured_log_redacted"
+
+
 class TraceIdFilter(logging.Filter):
     """为没有显式 trace_id 的框架日志提供安全默认值。"""
 
@@ -118,11 +143,9 @@ class JsonFormatter(logging.Formatter):
     """将框架与业务日志统一为低敏、单行 JSON。"""
 
     def format(self, record: logging.LogRecord) -> str:
-        raw_event = getattr(record, "event", None)
-        event_candidate = raw_event if isinstance(raw_event, str) else ""
         # 任意自由文本日志都可能包含没有字段名的 Prompt、客户正文或凭证，无法靠
-        # 正则可靠识别。生产出口只接受稳定事件名，诊断信息必须走下方低敏白名单。
-        event = event_candidate if SAFE_EVENT_PATTERN.fullmatch(event_candidate) else "unstructured_log_redacted"
+        # 正则可靠识别。事件只来自显式业务字段或受控框架映射，诊断信息必须走低敏白名单。
+        event = resolve_log_event(record)
         payload: dict[str, object] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,

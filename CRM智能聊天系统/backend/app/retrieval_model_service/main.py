@@ -19,6 +19,7 @@ from app.agent.retrieval_models import (
 )
 from app.retrieval_model_service.engine import RetrievalEngine, RetrievalEngineError, TransformersBgeEngine
 from app.shared.config.settings import Settings, get_settings
+from app.shared.logging.setup import configure_logging
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,10 @@ def create_model_service_app(*, engine: RetrievalEngine, internal_token: str) ->
         try:
             await asyncio.to_thread(engine.load)
         except RetrievalEngineError as error:
-            logger.error("retrieval_model_service_load_failed", extra={"error_code": str(error)})
+            logger.error(
+                "retrieval_model_service_load_failed",
+                extra={"event": "retrieval_model_service_load_failed", "error_code": str(error)},
+            )
             raise
         yield
 
@@ -68,7 +72,10 @@ def create_model_service_app(*, engine: RetrievalEngine, internal_token: str) ->
         try:
             result = await asyncio.to_thread(engine.embed, request.texts)
         except RetrievalEngineError as error:
-            logger.warning("retrieval_embedding_failed", extra={"request_id": request_id, "error_code": str(error)})
+            logger.warning(
+                "retrieval_embedding_failed",
+                extra={"event": "retrieval_embedding_failed", "request_id": request_id, "error_code": str(error)},
+            )
             raise HTTPException(status_code=503, detail="MODEL_SERVICE_UNAVAILABLE") from error
         return EmbeddingServiceResponse(
             provider="local_bge",
@@ -97,7 +104,10 @@ def create_model_service_app(*, engine: RetrievalEngine, internal_token: str) ->
                 [candidate.text for candidate in request.candidates],
             )
         except RetrievalEngineError as error:
-            logger.warning("retrieval_rerank_failed", extra={"request_id": request_id, "error_code": str(error)})
+            logger.warning(
+                "retrieval_rerank_failed",
+                extra={"event": "retrieval_rerank_failed", "request_id": request_id, "error_code": str(error)},
+            )
             raise HTTPException(status_code=503, detail="MODEL_SERVICE_UNAVAILABLE") from error
         return RerankServiceResponse(
             provider="local_bge",
@@ -137,4 +147,6 @@ def build_app(settings: Settings) -> FastAPI:
 
 def create_configured_app() -> FastAPI:
     """供 Uvicorn ``--factory`` 使用，避免普通后端导入时加载本地模型。"""
-    return build_app(get_settings())
+    settings = get_settings()
+    configure_logging(settings.log_level)
+    return build_app(settings)
