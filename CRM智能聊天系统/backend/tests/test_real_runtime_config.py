@@ -3,6 +3,8 @@
 import hashlib
 import json
 import logging
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -478,6 +480,26 @@ def test_json_formatter_maps_known_framework_loggers_without_exposing_message(
     assert payload["event"] == expected_event
     assert payload["message"] == expected_event
     assert sentinel not in rendered
+
+
+def test_alembic_offline_command_uses_unified_json_logging() -> None:
+    """Alembic 真实入口在 ``fileConfig`` 后仍必须输出统一低敏 JSON。"""
+    backend_root = PROJECT_ROOT / "backend"
+    completed = subprocess.run(
+        [sys.executable, "-m", "alembic", "-c", "alembic.ini", "upgrade", "base", "--sql"],
+        cwd=backend_root,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    log_lines = [line for line in completed.stderr.splitlines() if line.strip()]
+    assert log_lines
+    payloads = [json.loads(line) for line in log_lines]
+    assert {payload["event"] for payload in payloads} == {"database_migration_event"}
+    assert all(payload["message"] == "database_migration_event" for payload in payloads)
 
 
 @pytest.mark.parametrize(
