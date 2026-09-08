@@ -12,7 +12,7 @@
 | 实施状态 | 部分完成；工程实现完成，真实 staging 与独立复测待执行 |
 | 开始日期 | 2026-09-07 |
 | 完成日期 | 未完成 |
-| 分支 | `fix/mvp-production-gates` |
+| 分支 | `fix/mvp-production-gates`；最终证据 `docs/final-image-digests` |
 
 ## 2. 目标与边界
 
@@ -40,7 +40,11 @@
 - workflow run `34112919503` 已成功发布分支候选：
   - backend：`ghcr.io/cp11-gh/crm-backend@sha256:b7c4e0679613049323d57e1b0e5ad741d6785e0dd0eb92cfd46fb7ac84c5aff5`；
   - frontend：`ghcr.io/cp11-gh/crm-frontend@sha256:c616b24b77d06faf48753986e9a17e504bdb8a511417d44b4a75ba2ba3170712`。
-- bootstrap run 未包含 retrieval model service；最终 `main` 工作流已增加第三个发布 job，正式摘要待合并后产生。
+- 最终 `main@f7c0f9f9dd9a8c7b36a07145c053db7df23a15b8` 已由 workflow run `34178017173` 发布三类应用镜像：
+  - backend：`ghcr.io/cp11-gh/crm-backend@sha256:30f3a6816f718a92cd241330458124ea8b7b5407aafb1f533bcd0044e56914a9`；
+  - frontend：`ghcr.io/cp11-gh/crm-frontend@sha256:c24b385250d61729667f372da1f63397a1b564019969d5bf424fff0682a910a0`；
+  - retrieval model service：`ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:e13818dfad09cfa565a6764024628a262e48a9089a37b6f8b517fb81997a1fcf`。
+- 最终低敏 JSON 制品 id 为 `10037989028`；三类 build 和 evidence job 均为 `success`。
 - PostgreSQL、Redis、MinIO、Nginx 已固定 Docker Hub 官方多架构清单摘要。
 - 生产 Compose 的后端进程、前端和检索模型服务全部重置本机构建配置，只消费显式应用 RepoDigest。
 - 发布 job 使用 main-only `image-publishing` Environment、`github.ref` 校验和 job 级 `packages: write`。
@@ -67,16 +71,15 @@
 | 脚本行为测试 | 11 passed；拒绝 production/浮动摘要/凭据型引用，WhatIf 不伪造通过，候选部署包含检索模型服务 | 通过 |
 | PowerShell 兼容性 | Windows PowerShell 5.1 与 PowerShell 7 解析通过；UTF-8 BOM | 通过 |
 | Compose 结构 | 合并配置 `config --services` 成功，应用 build 已重置 | 通过 |
-| GHCR 候选发布 | backend、frontend、evidence 三个 job 均 success | 通过 |
+| GHCR 最终 main 发布 | backend、frontend、retrieval model、evidence 四个 job 均 success | 通过 |
 | staging 真实部署/回滚 | runner、环境文件路径、staging URL 和历史摘要未提供 | 未执行 |
 
 ## 5. 遗留风险与交接
 
-1. PR squash merge 后必须从最终 `main` 手工运行 `Publish immutable application images`，发布三类应用镜像并用最终摘要替换分支候选证据。
-2. 测试工程师需独立复测 `DEF-REAL-FS01-005`，当前不能自行标记 Closed。
-3. 运维需连接 `crm-staging` 自托管 runner，在 GitHub Environment 配置 `CRM_STAGING_ENV_FILE` 和 `CRM_STAGING_BASE_URL`；环境文件正文不得进入 GitHub 或仓库。
-4. 真实回滚还需要上一版本 backend、frontend、retrieval model service RepoDigest。未提供上述资源前只能完成 `-ValidateOnly`，不得勾选真实演练通过。
-5. `DEF-REAL-FS01-006` 日志事件语义折叠、真实店铺、真实模型、五日稳定性及 G7/G8 仍阻断生产放行。
+1. 测试工程师需独立复测 `DEF-REAL-FS01-005`，当前不能自行标记 Closed。
+2. 运维需连接 `crm-staging` 自托管 runner，在 GitHub Environment 配置 `CRM_STAGING_ENV_FILE` 和 `CRM_STAGING_BASE_URL`，并把三条最终摘要同步到仓库外环境文件；环境文件正文不得进入 GitHub 或仓库。
+3. 真实回滚还需要上一版本 backend、frontend、retrieval model service RepoDigest。未提供上述资源前只能完成 `-ValidateOnly`，不得勾选真实演练通过。
+4. `DEF-REAL-FS01-006` 日志事件语义折叠、真实店铺、真实模型、五日稳定性及 G7/G8 仍阻断生产放行。
 
 ## 6. 文档同步
 

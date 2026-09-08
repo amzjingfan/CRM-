@@ -1,21 +1,20 @@
 {
   "schema_version": 1,
-  "evidence_status": "candidate_images_published",
-  "source_sha": "58129211766a13013e7754c69d6548f1dd80618e",
+  "evidence_status": "final_main_images_published",
+  "source_sha": "f7c0f9f9dd9a8c7b36a07145c053db7df23a15b8",
   "platform": "linux/amd64",
   "application_images": {
     "backend": {
-      "candidate_tag": "ghcr.io/cp11-gh/crm-backend:candidate-58129211766a",
-      "reference": "ghcr.io/cp11-gh/crm-backend@sha256:b7c4e0679613049323d57e1b0e5ad741d6785e0dd0eb92cfd46fb7ac84c5aff5"
+      "candidate_tag": "ghcr.io/cp11-gh/crm-backend:candidate-f7c0f9f9dd9a",
+      "reference": "ghcr.io/cp11-gh/crm-backend@sha256:30f3a6816f718a92cd241330458124ea8b7b5407aafb1f533bcd0044e56914a9"
     },
     "frontend": {
-      "candidate_tag": "ghcr.io/cp11-gh/crm-frontend:candidate-58129211766a",
-      "reference": "ghcr.io/cp11-gh/crm-frontend@sha256:c616b24b77d06faf48753986e9a17e504bdb8a511417d44b4a75ba2ba3170712"
+      "candidate_tag": "ghcr.io/cp11-gh/crm-frontend:candidate-f7c0f9f9dd9a",
+      "reference": "ghcr.io/cp11-gh/crm-frontend@sha256:c24b385250d61729667f372da1f63397a1b564019969d5bf424fff0682a910a0"
     },
     "retrieval_model": {
-      "candidate_tag": null,
-      "reference": null,
-      "status": "not_published_by_bootstrap_run"
+      "candidate_tag": "ghcr.io/cp11-gh/crm-retrieval-model-service:candidate-f7c0f9f9dd9a",
+      "reference": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:e13818dfad09cfa565a6764024628a262e48a9089a37b6f8b517fb81997a1fcf"
     }
   },
   "external_images": {
@@ -26,12 +25,13 @@
     "nginx": "nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10"
   },
   "build_evidence": {
-    "workflow_run_id": 34112919503,
-    "workflow_url": "https://github.com/CP11-gh/CRM/actions/runs/34112919503",
-    "artifact_id": 10015103904,
-    "artifact_name": "image-repo-digests-58129211766a13013e7754c69d6548f1dd80618e",
+    "workflow_run_id": 34178017173,
+    "workflow_url": "https://github.com/CP11-gh/CRM/actions/runs/34178017173",
+    "artifact_id": 10037989028,
+    "artifact_name": "image-repo-digests-f7c0f9f9dd9a8c7b36a07145c053db7df23a15b8",
     "backend_job": "success",
     "frontend_job": "success",
+    "retrieval_model_job": "success",
     "digest_evidence_job": "success",
     "digest_source": "docker/build-push-action pushed digest outputs recorded by the workflow artifact",
     "packages_api_cross_check": "not_available_to_local_oauth_token_without_read_packages_scope"
@@ -58,6 +58,6 @@
     "allowed_branch": "main",
     "custom_branch_policies": true
   },
-  "final_main_publish_required": true,
+  "final_main_publish_required": false,
   "production_release": false
 }

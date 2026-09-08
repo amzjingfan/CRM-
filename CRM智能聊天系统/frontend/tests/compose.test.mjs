@@ -166,10 +166,11 @@ test("published image evidence binds available GHCR RepoDigests to one source co
     evidence.application_images.frontend.reference,
     /^ghcr\.io\/cp11-gh\/crm-frontend@sha256:[0-9a-f]{64}$/,
   );
-  assert.equal(evidence.application_images.retrieval_model.reference, null);
-  assert.equal(
-    evidence.application_images.retrieval_model.status,
-    "not_published_by_bootstrap_run",
+  assert.match(
+    evidence.application_images.retrieval_model.reference,
+    /^ghcr\.io\/cp11-gh\/crm-retrieval-model-service@sha256:[0-9a-f]{64}$/,
   );
+  assert.equal(evidence.evidence_status, "final_main_images_published");
+  assert.equal(evidence.final_main_publish_required, false);
   assert.equal(evidence.production_release, false);
 });
