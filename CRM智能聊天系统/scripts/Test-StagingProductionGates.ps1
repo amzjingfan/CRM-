@@ -322,10 +322,11 @@ try {
         return
     }
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "pull", "backend", "worker", "jobs", "agent-worker", "frontend"
+        "pull", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
     ))
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker", "frontend", "proxy"
+        "up", "-d", "--no-build", "backend", "worker", "jobs", "agent-worker", "frontend", "proxy",
+        "retrieval-model-service"
     ))
 }
 finally {

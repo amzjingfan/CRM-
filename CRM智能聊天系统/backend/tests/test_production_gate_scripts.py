@@ -254,6 +254,14 @@ def test_preflight_live_path_forces_capabilities_off_before_deploy() -> None:
     assert live_path.index("Set-DisabledCapabilities") < live_path.index("$env:BACKEND_IMAGE = $BackendImage")
 
 
+def test_preflight_deploys_the_validated_retrieval_model_image() -> None:
+    """候选部署必须实际拉取并启动刚通过摘要校验的检索模型镜像。"""
+    source = PREFLIGHT_SCRIPT.read_text(encoding="utf-8-sig")
+    deploy_path = source[source.index('if (-not $PSCmdlet.ShouldProcess("staging"') :]
+
+    assert deploy_path.count('"retrieval-model-service"') >= 2
+
+
 def test_rollback_plan_disables_capabilities_before_switching_images(
     staging_env_file: Path,
     tmp_path: Path,

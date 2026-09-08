@@ -63,8 +63,8 @@
 | 前端 Node 测试 | 40 passed | 通过 |
 | Next.js 16 生产构建 | 12 条应用路由及 `_not-found` 构建完成 | 通过 |
 | 后端 Ruff/格式/mypy | 236 files formatted；166 source files 无类型错误 | 通过 |
-| 后端完整测试 | 1331 passed、12 skipped、2 warnings | 通过 |
-| 脚本行为测试 | 10 passed；拒绝 production/浮动摘要/凭据型引用，WhatIf 不伪造通过 | 通过 |
+| 后端完整测试 | 1332 passed、12 skipped、2 warnings | 通过 |
+| 脚本行为测试 | 11 passed；拒绝 production/浮动摘要/凭据型引用，WhatIf 不伪造通过，候选部署包含检索模型服务 | 通过 |
 | PowerShell 兼容性 | Windows PowerShell 5.1 与 PowerShell 7 解析通过；UTF-8 BOM | 通过 |
 | Compose 结构 | 合并配置 `config --services` 成功，应用 build 已重置 | 通过 |
 | GHCR 候选发布 | backend、frontend、evidence 三个 job 均 success | 通过 |
