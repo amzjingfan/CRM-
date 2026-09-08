@@ -206,9 +206,7 @@ def test_preflight_live_path_forces_capabilities_off_before_deploy() -> None:
     live_path = source[source.index("$savedEnvironment") :]
 
     assert "Set-DisabledCapabilities" in live_path
-    assert live_path.index("Set-DisabledCapabilities") < live_path.index(
-        "$env:BACKEND_IMAGE = $BackendImage"
-    )
+    assert live_path.index("Set-DisabledCapabilities") < live_path.index("$env:BACKEND_IMAGE = $BackendImage")
 
 
 def test_rollback_plan_disables_capabilities_before_switching_images(
