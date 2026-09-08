@@ -125,17 +125,21 @@ async def process_one(settings: Settings) -> bool:
         try:
             await process_task(session, task, settings)
         except Exception as exc:
+            error_code = type(exc).__name__[:100]
             await session.rollback()
             failed = await session.get(AgentTask, task_id, with_for_update=True)
             if failed is not None:
                 failed.status = "failed"
-                failed.error_code = type(exc).__name__[:100]
+                failed.error_code = error_code
                 if failed.attempt_count < settings.auto_reply_max_attempts:
                     failed.next_attempt_at = datetime.now(UTC) + timedelta(seconds=30)
                 else:
                     failed.processed_at = datetime.now(UTC)
                 await session.commit()
-            logger.exception("Agent 自动任务失败", extra={"trace_id": task.trace_id})
+            logger.exception(
+                "Agent 自动任务失败",
+                extra={"trace_id": task.trace_id, "event": "agent_task_failed", "error_code": error_code},
+            )
         return True
 
 

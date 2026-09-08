@@ -10,18 +10,21 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.shared.config.settings import get_settings
 from app.shared.database import models as _models  # noqa: F401
 from app.shared.database.base import Base
+from app.shared.logging.setup import configure_logging
 
 config = context.config
-config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
+settings = get_settings()
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+configure_logging(settings.log_level)
 
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
     """以离线 SQL 模式生成迁移语句。"""
-    context.configure(url=get_settings().database_url, target_metadata=target_metadata, literal_binds=True)
+    context.configure(url=settings.database_url, target_metadata=target_metadata, literal_binds=True)
     with context.begin_transaction():
         context.run_migrations()
 
