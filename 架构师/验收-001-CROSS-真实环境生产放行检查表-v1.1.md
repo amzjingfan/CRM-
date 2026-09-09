@@ -26,6 +26,24 @@ v0.1 的真实发布范围以 `架构师/ADR-006-CROSS-TikTok人工辅助首版�
 
 ## 3. G0 基线、安全和恢复
 
+2026-09-09 Rootless staging 工程增量：ADR-007 已确认临时使用 `/home/crmdeploy` 的 Rootless Docker，固定项目 `crm-staging`，独立 staging 域名及环境回调；production 运行方案未决定。以下四个状态独立判定，前项不推导后项：
+
+| 运行阶段 | 状态 | 证据边界 |
+| --- | --- | --- |
+| 基础运行面就绪 | 未开始 | 仓库脚本和契约自测已提供；Ubuntu Rootless/security options/数据路径/公司容器不变实测未执行 |
+| 失败关闭部署通过 | 未开始 | DNS、TLS、外部模型、runner、新 main 镜像部署、公开健康、恢复/兼容回滚未执行 |
+| G1～G6 真实门禁通过 | 未执行（本次 staging） | 保留下文既有确定性/历史离线证据；本次 staging 真实平台、AI、SSE、五日门禁未执行 |
+| production 放行 | 阻塞 | 运行方案与 G8 签署未批准 |
+
+工程报告：`测试工程师/Phase4-P4-00-全栈开发工程师Agent-M00-Rootless-Staging运行面-综合测试-007.md`；独立测试结论待测试工程师复核。本次不改变既有缺陷正式状态。
+
+- [ ] Task 8 实证系统公司容器五字段前后不变，Rootless socket 为 `/run/user/1004/docker.sock`、数据在 `/home/crmdeploy`，无 Docker TCP API。
+- [ ] Task 9 实证专用用户 runner、工具链、短期 GHCR 拉取认证正常。
+- [ ] Task 10 实证独立 DNS、公信 TLS、仓库外配置、六文件模型材料及可信摘要。
+- [ ] Task 11 实证入口仅 80/443 转发至回环 10080/10443、全部能力关闭、公开健康、恢复与兼容版本回滚。
+
+系统 Docker 与公司容器在任务边界外；快照差异是硬停点，不能通过修复/重启公司容器继续。历史 `f7c0f9f9` 镜像不包含 staging 回调变更，不能直接当作本次新候选或兼容回滚成功证据。
+
 - [x] 工作区根目录已建立 Git 提交历史，基线约定通过带注释标签 `v0.1.0-mvp.20260907` 解析最终提交。
 - [x] Alembic head 固定为 `023_marketing_review_idempotency`，迁移和配置 SHA-256 进入机器可读基线清单。
 - [x] 根 `.gitignore` 排除 `.env`、权重、虚拟环境、依赖、缓存、日志、测试临时目录和 worktree。

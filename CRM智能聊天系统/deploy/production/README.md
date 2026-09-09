@@ -2,6 +2,8 @@
 
 本目录说明 REAL-FS-01～04 的安全运行面。OAuth、真实只读、Webhook 和人工确认普通消息已具备工程实现，但尚未完成真实店铺正式验收，因此所有 `REAL_TIKTOK_*` 开关默认保持 `false`；高风险写入和自动回复必须固定关闭。
 
+2026-09-09：当前 staging 采用 `/home/crmdeploy` 下 Rootless Docker，独立域名为 `staging.hophorsefit.com`。唯一操作手册见 [`../staging/rootless/README.md`](../staging/rootless/README.md)，架构边界见 ADR-007。本文的 production 地址和 Compose 示例保留作为生产契约；production 最终运行方式尚未决定，不能直接套用到公司系统 Docker。系统 Docker 与现有公司容器禁止停止、重启、迁移、修复或接管。
+
 ## 1. 外部基础设施前置条件
 
 - 域名 `www.hophorsefit.com` 的 A/AAAA 记录指向部署入口。
@@ -138,7 +140,9 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 而是生成与提交绑定的候选标签、真实 RepoDigest 和 30 天低敏 JSON 证据制品。最终
 `main@f7c0f9f9dd9a8c7b36a07145c053db7df23a15b8` 的三类应用镜像已由 run
 `34178017173` 发布，完整摘要记录在 `release/images/mvp-production-gates.json`。正式部署前
-仍必须把这三条摘要同步到仓库外 staging 配置并由操作人复核；仓库示例值不是目标机配置证据。
+历史版本的部署需把对应摘要同步到仓库外配置并由操作人复核；本次 Rootless staging 候选要求见下段。仓库示例值不是目标机配置证据。
+
+上述 `f7c0f9f9` 是历史发布基线。本次 Rootless staging 改动必须在合并 main 后重新发布三个应用镜像，并将完整 main SHA 与三条 `repository@sha256:<64-hex>` 关联到机器可读发布证据；历史清单不能证明包含新代码。历史镜像的 staging OAuth 仍校验 www 地址，上一版回滚必须先确认兼容性。当前没有新候选发布或真实回滚成功证据。
 
 前端镜像把 `NEXT_PUBLIC_API_BASE_URL` 固定为同源 `/v1`，因此同一不可变镜像可通过反向代理
 部署到 staging 和生产域名，不需要为不同域名重新构建。
@@ -201,8 +205,10 @@ TikTok 应用后台的重定向地址必须与 `TIKTOK_OAUTH_REDIRECT_URI` 完�
 https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback
 ```
 
-生产 Compose 要求显式提供该变量；应用在 integration、staging 和 production
-启动时会校验其为上述固定值，OAuth start/callback 还会再次校验。HTTP、其他主机、
+生产 Compose 要求显式提供该变量；应用在 integration 和 production
+启动时会校验其为上述固定值。staging 则精确要求
+`https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。
+OAuth start/callback 还会再次校验。HTTP、其他主机、
 其他路径、query 和 fragment 均会在跳转 TikTok 前失败关闭。该变量是应用对
 Partner Center 外部配置的部署断言，不作为 TikTok 授权 URL 参数发送；发布人员仍须
 在 Partner Center 的应用配置页逐字核对实际 Redirect URL，并保留发布截图或审批证据。
@@ -303,24 +309,27 @@ Variable: CRM_STAGING_BASE_URL # staging 的 HTTPS 基础地址
 候选和上一版本的六个完整应用镜像摘要（backend、frontend、retrieval model 各一组）。
 工作流和脚本都拒绝 `production`。
 
-目标主机也可以直接执行静态预检：
+Rootless staging 的固定参数为：
 
-```powershell
-.\scripts\Test-StagingProductionGates.ps1 `
-  -Environment staging `
-  -EnvFile D:\secure\crm-staging.env `
-  -BackendImage ghcr.io/cp11-gh/crm-backend@sha256:{64-hex} `
-  -FrontendImage ghcr.io/cp11-gh/crm-frontend@sha256:{64-hex} `
-  -RetrievalModelImage ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:{64-hex} `
-  -BaseUrl https://staging.example.com `
-  -EvidenceFile D:\secure\evidence\preflight.json `
-  -ConfirmTarget staging `
-  -ValidateOnly
+```text
+DOCKER_HOST=unix:///run/user/1004/docker.sock
+COMPOSE_PROJECT_NAME=crm-staging
+CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
+CRM_STAGING_BASE_URL=https://staging.hophorsefit.com
 ```
+
+两个门禁脚本必须传入 `-DockerHost unix:///run/user/1004/docker.sock`，内部清除继承的
+`DOCKER_CONTEXT` 并固定叠加 `docker-compose.rootless-staging.yml`，高端口只绑定回环。
+直接预检、部署、入口撤除和回滚命令统一见 Rootless staging 运行手册；不要沿用旧 Windows
+主机路径或 `staging.example.com` 示例。全部真实能力强制关闭的基础脚本不能用来直接开启 G1～G6。
 
 真实回滚由 `Invoke-StagingRollbackDrill.ps1 -Execute` 完成，固定顺序是：先强制关闭全部真实
 能力，再切换上一版本 RepoDigest，最后复核三个健康端点。`-ValidateOnly` 只验证计划和输入，
-不能作为真实部署或回滚通过证据。目标机必须安装 Docker CLI 和 Compose v2 插件；两个实时
+不能作为真实部署或回滚通过证据。目标机必须安装 Docker CLI 和 Compose 插件（本次目标 5.3.1，待实测）；两个实时
 脚本的每次 `docker compose up` 都使用 `--wait --wait-timeout 600`，只有包括
 `retrieval-model-service` 在内的容器达到 running/healthy 后才继续外部健康检查并写入
 `passed` 证据。
+
+`基础运行面就绪`、`失败关闭部署通过`、`G1～G6 真实门禁通过` 与 `production 放行`
+是独立结论，任何前项不推导后项。当前 DNS、TLS、模型、runner、公开健康、备份恢复与回滚
+仍待真实验证；生产签署继续阻塞。
