@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+# bash -a 或继承的 SHELLOPTS 会自动导出后续赋值；读取注册凭证前必须关闭。
+set +a
 # 拒绝外部 bash -x 调用；在读取任何注册凭证之前结束，避免调试输出泄密。
 [[ $- != *x* ]] || exit 1
 umask 077

@@ -2,7 +2,10 @@
 
 import configparser
 import json
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -254,6 +257,52 @@ def test_runner_token_cannot_inherit_export_attribute() -> None:
     source = (ROOTLESS_DIR / "install-runner.sh").read_text(encoding="utf-8")
     before_assignment = source.split("runner_token=", 1)[0]
     assert "unset runner_token" in before_assignment
+
+
+@pytest.mark.parametrize("allexport_source", ["argument", "environment"])
+def test_runner_token_stays_out_of_child_environment_with_allexport(allexport_source: str) -> None:
+    """执行实际凭证初始化/读取片段，捕获 bash -a 与 SHELLOPTS 自动导出泄漏。"""
+    bash = shutil.which("bash")
+    if os.name == "nt":
+        # Windows 的系统 bash 通常只是 WSL 启动器；使用已有 Git for Windows 的真实 Bash。
+        git = shutil.which("git")
+        git_bash = Path(git).resolve().parents[1] / "bin" / "bash.exe" if git else None
+        bash = str(git_bash) if git_bash and git_bash.is_file() else None
+    if bash is None:
+        pytest.skip("Bash is required to verify runner token process-environment isolation")
+
+    source = (ROOTLESS_DIR / "install-runner.sh").read_text(encoding="utf-8")
+    preamble = source.split("[[ $(id -un)", 1)[0]
+    credential_setup = source.split("unset runner_token\n", 1)[1].split("# 仅解释 JSON", 1)[0]
+    token_read = next(line.strip() for line in source.splitlines() if "IFS= read -r -s runner_token" in line)
+    # 只执行生产初始化和 read，随后真实启动子 Bash 检查环境；不执行下载、注册或 systemd。
+    probe = (
+        preamble
+        + "unset runner_token\n"
+        + credential_setup
+        + token_read
+        + "\n/usr/bin/bash --noprofile --norc -c '[[ ! ${runner_token+x} ]]'\n"
+    )
+    environment = os.environ.copy()
+    environment.pop("BASH_ENV", None)
+    environment.pop("SHELLOPTS", None)
+    environment["runner_token"] = "FAKE_INHERITED_TOKEN"
+    arguments = [bash, "--noprofile", "--norc"]
+    if allexport_source == "argument":
+        arguments.append("-a")
+    else:
+        environment["SHELLOPTS"] = "allexport"
+    result = subprocess.run(
+        [*arguments, "-c", probe],
+        input="FAKE_REVIEW_TOKEN\n",
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 0, "registration token was exported into the child process environment"
+    assert result.stdout == ""
 
 
 def test_runner_rerun_preserves_managed_install_and_checks_registered_identity() -> None:
