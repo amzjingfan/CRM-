@@ -40,8 +40,12 @@ check_port() {
     listeners=$(ss -H -lntp "sport = :$port") || fail "Cannot inspect port $port"
     [[ -n "$listeners" ]] || return 0
     systemctl is-active --quiet "$prefix.socket" || fail "Port $port is occupied by a foreign listener"
-    [[ $(systemctl show "$prefix.socket" --property=SubState --value) == listening ]] ||
-        fail "Expected socket is not listening on port $port"
+    # Accept=no 的 socket 激活 service 后正常进入 running，重跑安装仍应保持幂等。
+    # 仅接受这两种活动子状态；端口、精确 unit 与 PID 归属继续由下方检查验证。
+    case $(systemctl show "$prefix.socket" --property=SubState --value) in
+        listening|running) ;;
+        *) fail "Expected socket has an invalid substate on port $port" ;;
+    esac
     # 所有同端口的 systemd socket 都必须属于精确单元，不能仅因为监听 PID 是 1 就放行。
     socket_rows=$(systemctl list-sockets --all --no-legend --no-pager) || fail "Cannot inspect socket ownership"
     printf '%s\n' "$socket_rows" | awk -v port="$port" -v expected="$prefix.socket" '

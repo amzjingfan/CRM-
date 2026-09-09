@@ -1,6 +1,7 @@
 """Rootless 主机资产静态契约；真实 Bash/端口/失败注入由 Ubuntu Task 8 验证。"""
 
 import configparser
+import re
 from pathlib import Path
 
 import pytest
@@ -127,6 +128,33 @@ def test_installer_rechecks_port_ownership_after_socket_activation() -> None:
     activated = source.split("systemctl enable --now crm-staging-http.socket crm-staging-https.socket", 1)[1]
     assert "check_port 80 crm-staging-http" in activated
     assert "check_port 443 crm-staging-https" in activated
+
+
+@pytest.mark.parametrize(
+    "substate,accepted",
+    [("listening", True), ("running", True), ("dead", False), ("failed", False), ("start-pre", False), ("", False)],
+)
+def test_installer_substate_contract_accepts_only_listening_or_running(substate: str, accepted: bool) -> None:
+    """静态解析实际 case 白名单；Bash 执行和首个连接后的幂等验证仍归 Task 8。"""
+    source = (ROOTLESS_DIR / "install-entry-proxy.sh").read_text(encoding="utf-8")
+    state_branch = re.search(
+        r'case \$\(systemctl show "\$prefix\.socket" --property=SubState --value\) in\s+'
+        r"([a-z|]+)\) ;;\s+\*\) fail [^\n]+ ;;\s+esac",
+        source,
+    )
+    assert state_branch is not None, "SubState must use an explicit allowlist and a failing default branch"
+    allowed_states = state_branch.group(1).split("|")
+    assert set(allowed_states) == {"listening", "running"}
+    assert (substate in allowed_states) is accepted
+
+
+@pytest.mark.parametrize("extension", ["service", "socket"])
+def test_systemd_units_have_lf_checkout_contract(extension: str) -> None:
+    """固定 Git 检出换行，避免 Windows 资产与 Linux 已安装单元 cmp 不一致。"""
+    attributes = (PROJECT_ROOT.parent / ".gitattributes").read_text(encoding="utf-8")
+    assert f"*.{extension} text eol=lf" in attributes.splitlines()
+    for unit in SYSTEMD_DIR.glob(f"*.{extension}"):
+        assert b"\r" not in unit.read_bytes()
 
 
 @pytest.mark.parametrize("name", ["bootstrap-host.sh", "install-entry-proxy.sh"])
