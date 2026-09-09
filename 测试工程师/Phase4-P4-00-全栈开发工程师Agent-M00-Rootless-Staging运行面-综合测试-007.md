@@ -109,6 +109,8 @@ G1 OAuth/只读、G2 Webhook、G3 人工消息、G4 AI/RAG、G5 真实 SSE、G6 
 
 建议：可进入 Task 7 分支全量工程复核；不建议真实运行验收或 production 放行。`基础运行面就绪`、`失败关闭部署通过`、`G1～G6 真实门禁通过`、`production 放行` 必须分别取证和签署。
 
+2026-09-09 Task 6 审阅修复：原 runner 传递命令在 Windows PowerShell 5.1 的原生管道产生 CRLF，本地 Bash `read -r -s` 与安装器相同的严格正则返回 24（RED）。仅修正 runbook 的 SSH 命令，远端 `tr -d '\r'` 规范化并用 `bash -o pipefail` 保留失败。执行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .superpowers/sdd/2026-09-09-rootless-staging-deployment/task-6-crlf-check.ps1`，并在 PowerShell 7.6.5 执行同一脚本：两环境各验证正常读取 exit 0 与安装替身失败 exit 37，共 4 个聚焦断言通过，本地 Token 引用两路径均清空。命令从 runbook 提取，仅替换 SSH 网络与注册副作用为本地 Git Bash/严格读取替身；未执行真实 SSH、注册或 Ubuntu 验证，未打印 Token 值，安装器未修改。
+
 ## 8. 后续现场证据（Task 12）
 
 未执行。待追加 UTC 时间、完整提交、候选/上一版 RepoDigest、overlay/配置 SHA-256、OS/Rootless 数据路径、系统容器保护比较、健康/迁移、备份恢复、兼容回滚、workflow run ID 和独立复核人。不得预填成功值或伪造现场摘要。

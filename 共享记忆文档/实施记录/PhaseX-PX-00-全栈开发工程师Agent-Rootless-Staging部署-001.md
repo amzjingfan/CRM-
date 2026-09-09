@@ -143,6 +143,7 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 | Tasks 1～5 工程交接 | 逐份报告与 git log 对照 | 提交/数量可追溯 | 八个实现/修复提交均存在；最终四套回归 193 passed、2 skipped（开发自测） | 通过 |
 | 公网地址 | 两次 `git grep -n` 精确回调 | 保留生产，staging 仅环境语境 | www 27 行、staging 15 行；历史跨环境说法已加架构批准勘误，历史测试报告不改写 | 通过 |
 | 文档空白 | `git diff --check`、`git diff --cached --check` | 无输出、exit 0 | 两项均无输出、exit 0 | 通过 |
+| Task 6 审阅修复 | Windows PowerShell 5.1/PowerShell 7.6.5 原生管道 → 本地 Bash 严格读取替身 | CRLF 转 LF；非零退出和 finally 清理保留 | 原命令 RED；文档规范化后两环境共 4 个聚焦断言通过，详见 007 报告；安装器代码和服务器均未变更 | 通过 |
 | 索引/镜像/低敏 | 路径存在、清单比对、变更扫描及人工复核 | 无缺文件/摘要漂移/真实凭据 | 测试索引 92 路径、实施索引 122 路径均存在；3/3 镜像逐字符合清单；高置信凭据模式零命中，无新增真实凭据或现场摘要 | 通过 |
 | Ubuntu/现场 | Tasks 8～11 | 隔离、健康、恢复与回滚可证 | 无现场执行；DNS/TLS/模型/配置/runner 待提供 | 未执行 |
 

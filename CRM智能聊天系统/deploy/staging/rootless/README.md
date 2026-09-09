@@ -103,7 +103,7 @@ bootstrap 只显式安装 `uidmap`，`NEEDRESTART_MODE=l`；启用 linger 和用
 
 安装器固定官方归档 URL/SHA-256，先校验再解压到 `/home/crmdeploy`，不安装 OS 包。PowerShell 基线 7.6.5、Runner 基线 2.336.0；已登记同名 runner 可保留 GitHub 的认证自动更新。原生依赖缺失、摘要不符、非本安装器目录或身份不符均停止，不运行 runner 的系统依赖自动安装脚本。
 
-本地 PowerShell 先确认仓库 runner 管理权限，再将一小时注册 Token 仅经 stdin 传递；不要启用命令转录/调试或打印变量：
+本地 PowerShell 先确认仓库 runner 管理权限，再将一小时注册 Token 仅经 stdin 传递。Windows 原生管道产生 CRLF，远端 `tr` 删除 CR、保留 LF。命令中的 POSIX 单引号转义用于让 Windows PowerShell 5.1/PowerShell 7 都保留 `\r`，不要简化引号。`pipefail` 将规范化或安装失败传回 SSH，安装器严格字符校验保持不变。Token 不拼入 SSH 命令参数、不写临时文件；不要启用命令转录/调试或打印变量：
 
 ```powershell
 gh api repos/CP11-gh/CRM/actions/runners --jq '.total_count'
@@ -112,7 +112,7 @@ $runnerToken = $null
 try {
   $runnerToken = gh api -X POST repos/CP11-gh/CRM/actions/runners/registration-token --jq '.token'
   if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($runnerToken)) { throw 'No registration token returned' }
-  $runnerToken | ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 'bash /home/crmdeploy/src/rootless-staging-bootstrap/install-runner.sh'
+  $runnerToken | ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 "bash -o pipefail -c 'tr -d '\''\r'\'' | bash /home/crmdeploy/src/rootless-staging-bootstrap/install-runner.sh'"
   if ($LASTEXITCODE -ne 0) { throw 'Runner install failed' }
 } finally { $runnerToken = $null }
 gh api repos/CP11-gh/CRM/actions/runners --jq '.runners[] | select(.name=="crm-staging-192-168-110-210") | {name,status,busy,labels:[.labels[].name]}'
