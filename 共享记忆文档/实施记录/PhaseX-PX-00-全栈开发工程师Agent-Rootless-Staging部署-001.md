@@ -150,10 +150,10 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 
 ## 8. 实施结果
 
-2026-09-09 Task 7 聚焦修复补充：首次全量复核发现的两处旧 staging 测试输入已修正，提交主题为 `test: align staging runtime fixtures`（完整 SHA 通过该主题的 `git log` 解析）。没有修改产品校验或 integration/production 回调。两个原失败案例与环境映射/SSE 模块回归、静态质量检查已有新证据，详见 007 报告 §7.1；控制器仍负责修复后的全量后端复核。当前实施和现场验收状态不变。
+2026-09-09 Task 7 聚焦修复与全量验证补充：首次全量复核发现的两处旧 staging 测试输入已修正，提交为 `6323316f35560b6f9c755c5e46966f3ac5da27cb`（`test: align staging runtime fixtures`）。没有修改产品校验或 integration/production 回调。控制器在该修复后使用仓库外 basetemp 完成后端全量复核：`1422 passed, 14 skipped, 2 warnings in 30.00s`，exit 0；较早的新聚焦回归为 `193 passed, 2 skipped in 25.61s`，exit 0。两条依赖弃用警告与跳过项、原失败案例及静态质量证据详见 007 报告 §7.1。本次还将唯一误跟踪的 SDD `task-1-report.md` 移出 Git 索引，保留本地被忽略的原始证据。当前实施和现场验收状态不变。
 
 - 完成项：Tasks 1～5 工程资产及修复；Task 6 文档/ADR/示例/报告/索引同步。
-- 未完成项：Task 7 全量复核及远端集成；Tasks 8～12 现场部署与证据；G1～G6；production。
+- 未完成项：Task 7 其余分支复核及远端集成；Tasks 8～12 现场部署与证据；G1～G6；production。
 - 与原方案差异：架构师批准在共享接口、产品 README 和全栈 PLAN-002 各追加一条 dated 勘误，不重写历史或修改接口结构；若不修正会导致运行配置与共享接口权威冲突，并让操作人沿用错误 staging 回调。入口 socket 先于首次 deploy 监听以满足脚本公网探针，监听不等于健康；已识别历史回滚版本回调不兼容、辅助模型摘要不足，均列为停点。
 - 当前状态：部分完成。仓库工程交付不构成基础运行面、失败关闭部署、真实门禁或生产签署通过。
 

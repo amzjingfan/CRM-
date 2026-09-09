@@ -125,7 +125,9 @@ G1 OAuth/只读、G2 Webhook、G3 人工消息、G4 AI/RAG、G5 真实 SSE、G6 
 | 环境映射及完整 SSE 模块 | `python -m pytest tests/test_real_runtime_config.py tests/test_real_fs05_sse_runtime.py -q -p no:cacheprovider --basetemp='C:\Users\Administrator\AppData\Local\Temp\crm-rootless-task7-fix1-regression-20260909'` | 106 passed in 2.40s |
 | 修改文件静态质量 | `python -m ruff check tests/test_real_fs05_sse_runtime.py`；`python -m ruff format --check tests/test_real_fs05_sse_runtime.py`；`git diff --check` | All checks passed；1 file already formatted；无空白错误 |
 
-两个 basetemp 均位于仓库外。全量后端复核仍由控制器执行，以上聚焦结果不替代全量复核。现场部署、G1～G6、独立验收及 production 状态不变。
+两个 basetemp 均位于仓库外。控制器随后在修复提交 `6323316f35560b6f9c755c5e46966f3ac5da27cb` 完成仓库外 basetemp 的后端全量复核，准确结果为 `1422 passed, 14 skipped, 2 warnings in 30.00s`，exit 0；两条 warning 为依赖弃用警告，不计作测试失败。控制器较早的新一轮聚焦回归结果为 `193 passed, 2 skipped in 25.61s`，exit 0。以上两项为控制器运行结果，本次文档更新未重复执行；跳过项不计为通过。现场部署、G1～G6、独立验收及 production 状态不变。
+
+Task 7 仓库卫生检查发现唯一误跟踪的 SDD 临时证据 `.superpowers/sdd/2026-09-09-rootless-staging-deployment/task-1-report.md`，本次仅从 Git 索引移除，保留本地原文件并由既有 `.superpowers/sdd/.gitignore` 忽略。正式证据继续保留于本报告，不将临时调度记录作为版本化交付物。
 
 ## 8. 后续现场证据（Task 12）
 
