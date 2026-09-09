@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PREFLIGHT_SCRIPT = PROJECT_ROOT / "scripts" / "Test-StagingProductionGates.ps1"
@@ -35,6 +36,51 @@ REQUIRED_MODEL_FILES = (
 ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 POWERSHELL_GUTTER_PATTERN = re.compile(r"\r?\n\s*\|\s*")
 WHITESPACE_PATTERN = re.compile(r"\s+")
+
+
+def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -> None:
+    """工作流必须把调用者 UID 交给脚本的 1004 门禁，且 GHCR 不依赖长期 PAT。"""
+    workflow = yaml.safe_load((PROJECT_ROOT.parent / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    assert workflow["permissions"] == {"contents": "read", "packages": "read"}
+    steps = workflow["jobs"]["staging"]["steps"]
+    login = next(step for step in steps if step.get("uses", "").startswith("docker/login-action@"))
+    assert login["with"]["password"] == "${{ secrets.GITHUB_TOKEN }}"
+    gate = next(step["run"] for step in steps if step["name"] == "Run the selected staging gate")
+    assert "$runnerUid = (& id -u).Trim()" in gate
+    assert "$LASTEXITCODE -ne 0" in gate
+    assert "$runnerUid -notmatch '^[1-9][0-9]*$'" in gate
+    assert '$dockerHost = "unix:///run/user/$runnerUid/docker.sock"' in gate
+    assert '$common["DockerHost"] = $dockerHost' in gate
+    assert gate.index("$runnerUid =") < gate.index("$common =") < gate.index("switch ($env:OPERATION)")
+
+
+@pytest.mark.parametrize(
+    "base_url,accepted",
+    [
+        ("https://staging.hophorsefit.com", True),
+        ("", False),
+        ("https://www.hophorsefit.com", False),
+        ("https://staging.hophorsefit.com/", False),
+        ("https://staging.hophorsefit.com.evil.invalid", False),
+        ("https://staging.hophorsefit.com/v1", False),
+        ("https://STAGING.hophorsefit.com", False),
+    ],
+)
+def test_workflow_rejects_nonexact_base_url_before_mutation(tmp_path: Path, base_url: str, accepted: bool) -> None:
+    """执行真实工作流预检片段，防止生产地址、前缀匹配或路径误配置被放行。"""
+    workflow = yaml.safe_load((PROJECT_ROOT.parent / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    steps = workflow["jobs"]["staging"]["steps"]
+    guards = [step for step in steps if step["name"] == "Validate staging target"]
+    assert len(guards) == 1, "exact staging URL guard must precede credential or deployment steps"
+    guard = guards[0]
+    login_index = next(index for index, step in enumerate(steps) if "GHCR" in step["name"])
+    assert steps.index(guard) < login_index
+    script = tmp_path / "workflow-target-guard.ps1"
+    script.write_text(guard["run"], encoding="utf-8")
+    environment = os.environ.copy()
+    environment["CRM_STAGING_BASE_URL"] = base_url
+    result = run_powershell(script, environment=environment)
+    assert (result.returncode == 0) is accepted
 
 
 def run_powershell(
@@ -452,8 +498,7 @@ def test_gate_scripts_clear_and_restore_inherited_docker_context(
     assert (result.returncode == 0) is expect_success, result.stdout + result.stderr
     assert f"__DOCKER_CONTEXT_AFTER={inherited_context}" in result.stdout
     context_values = [
-        json.loads(line)
-        for line in (tmp_path / "fake-docker-context.jsonl").read_text(encoding="utf-8").splitlines()
+        json.loads(line) for line in (tmp_path / "fake-docker-context.jsonl").read_text(encoding="utf-8").splitlines()
     ]
     assert context_values
     assert context_values == [""] * len(context_values)

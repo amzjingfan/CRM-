@@ -1,6 +1,7 @@
 """Rootless 主机资产静态契约；真实 Bash/端口/失败注入由 Ubuntu Task 8 验证。"""
 
 import configparser
+import json
 import re
 from pathlib import Path
 
@@ -170,3 +171,100 @@ def test_shell_assets_use_lf_and_no_utf8_bom(name: str) -> None:
     content = (ROOTLESS_DIR / name).read_bytes()
     assert content.startswith(b"#!/usr/bin/env bash\n")
     assert b"\r" not in content
+
+
+def test_runner_manifest_pins_verified_official_archives() -> None:
+    """供应链版本、平台或摘要漂移必须重新审核，不能静默下载 latest。"""
+    path = ROOTLESS_DIR / "toolchain-manifest.json"
+    assert path.is_file(), "checksum-pinned toolchain manifest is missing"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    assert manifest == {
+        "schema_version": 1,
+        "platform": "linux-x64",
+        "runner": {
+            "version": "2.336.0",
+            "url": "https://github.com/actions/runner/releases/download/v2.336.0/"
+            "actions-runner-linux-x64-2.336.0.tar.gz",
+            "sha256": "04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d",
+        },
+        "powershell": {
+            "version": "7.6.5",
+            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.5/"
+            "powershell-7.6.5-linux-x64.tar.gz",
+            "sha256": "b34ab3b19acac1d3d4d0d3cfdb02acf62f457b0b6a962ff008132033f7566844",
+        },
+    }
+
+
+def test_runner_installer_guards_identity_credentials_and_extraction_order() -> None:
+    """静态契约覆盖安装入口；真实 Bash、断点恢复和注册留给 Ubuntu 门禁。"""
+    path = ROOTLESS_DIR / "install-runner.sh"
+    assert path.is_file(), "runner installer is missing"
+    source = path.read_text(encoding="utf-8")
+    for required in (
+        "set -Eeuo pipefail",
+        "umask 077",
+        "id -un",
+        "crmdeploy",
+        "id -u",
+        "1004",
+        "realpath -e",
+        "/home/crmdeploy/.cache/crm-toolchain",
+        "/home/crmdeploy/runner",
+        "/home/crmdeploy/tools/powershell",
+        "toolchain-manifest.json",
+        "read -r -s runner_token",
+        "trap cleanup EXIT",
+        "unset runner_token",
+        "sha256sum -c",
+        'cd "$runner_dir"',
+        './config.sh --unattended --url https://github.com/CP11-gh/CRM --token "$runner_token"',
+        "--name crm-staging-192-168-110-210 --labels crm-staging",
+        "--work /home/crmdeploy/runner/_work --replace",
+        "systemctl --user daemon-reload",
+        "systemctl --user enable --now crm-staging-runner.service",
+        "flock",
+    ):
+        assert required in source
+    assert "set -x" not in source
+    assert "export runner_token" not in source
+    assert source.index("sha256sum -c") < source.index("tar -xzf")
+    config_tail = source.split("./config.sh --unattended", 1)[1]
+    assert config_tail.index("unset runner_token") < config_tail.index("systemctl --user daemon-reload")
+    assert b"\r" not in path.read_bytes()
+
+
+def test_runner_user_service_uses_home_tools_and_rootless_socket() -> None:
+    """Runner 不得借系统级 User 配置或默认 Docker socket 越过用户隔离。"""
+    path = SYSTEMD_DIR / "user" / "crm-staging-runner.service"
+    assert path.is_file(), "runner user unit is missing"
+    unit = configparser.ConfigParser(interpolation=None)
+    unit.read_string(path.read_text(encoding="utf-8"))
+    service = unit["Service"]
+    assert "User" not in service
+    assert service["ExecStart"] == "/home/crmdeploy/runner/run.sh"
+    assert service["WorkingDirectory"] == "/home/crmdeploy/runner"
+    assert "DOCKER_HOST=unix:///run/user/1004/docker.sock" in service["Environment"]
+    assert "PATH=/home/crmdeploy/tools/powershell:" in service["Environment"]
+    assert unit["Install"]["WantedBy"] == "default.target"
+
+
+def test_runner_token_cannot_inherit_export_attribute() -> None:
+    """Bash 已导出的同名变量在赋值后仍会导出，读凭证前必须先 unset。"""
+    source = (ROOTLESS_DIR / "install-runner.sh").read_text(encoding="utf-8")
+    before_assignment = source.split("runner_token=", 1)[0]
+    assert "unset runner_token" in before_assignment
+
+
+def test_runner_rerun_preserves_managed_install_and_checks_registered_identity() -> None:
+    """重复安装不覆盖自动更新后的 Runner，也不接管其他仓库已注册的身份。"""
+    source = (ROOTLESS_DIR / "install-runner.sh").read_text(encoding="utf-8")
+    for required in (
+        ".crm-toolchain-sha256",
+        'cmp -s "$unit_source" "$unit_target"',
+        "[[ -e .runner || -L .runner ]]",
+        '"gitHubUrl": "https://github.com/CP11-gh/CRM"',
+        '"agentName": "crm-staging-192-168-110-210"',
+        '"workFolder": "/home/crmdeploy/runner/_work"',
+    ):
+        assert required in source

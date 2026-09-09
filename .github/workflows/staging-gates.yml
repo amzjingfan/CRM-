@@ -60,6 +60,15 @@ jobs:
         with:
           ref: main
 
+      - name: Validate staging target
+        shell: pwsh
+        env:
+          CRM_STAGING_BASE_URL: ${{ vars.CRM_STAGING_BASE_URL }}
+        run: |
+          if ($env:CRM_STAGING_BASE_URL -cne "https://staging.hophorsefit.com") {
+            throw "CRM_STAGING_BASE_URL must exactly equal https://staging.hophorsefit.com"
+          }
+
       - name: Log in to GHCR for immutable image pulls
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
@@ -92,12 +101,18 @@ jobs:
           }
 
           $evidence = Join-Path $env:RUNNER_TEMP "crm-staging-$env:OPERATION-evidence.json"
+          $runnerUid = (& id -u).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runnerUid -notmatch '^[1-9][0-9]*$') {
+            throw "Unable to resolve the self-hosted runner UID"
+          }
+          $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
           $common = @{
             Environment = "staging"
             EnvFile = $env:CRM_STAGING_ENV_FILE
             BaseUrl = $env:CRM_STAGING_BASE_URL
             EvidenceFile = $evidence
           }
+          $common["DockerHost"] = $dockerHost
 
           switch ($env:OPERATION) {
             "validate" {

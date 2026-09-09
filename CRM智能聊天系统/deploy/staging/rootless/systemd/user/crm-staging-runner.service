@@ -1,0 +1,17 @@
+[Unit]
+Description=CRM staging GitHub Actions Runner
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=/home/crmdeploy/runner
+Environment="DOCKER_HOST=unix:///run/user/1004/docker.sock" "PATH=/home/crmdeploy/tools/powershell:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/crmdeploy/runner/run.sh
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=120
+KillSignal=SIGINT
+UMask=0077
+
+[Install]
+WantedBy=default.target
