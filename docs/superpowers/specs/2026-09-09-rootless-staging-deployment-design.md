@@ -1,8 +1,8 @@
 # Rootless Docker Staging 部署设计
 
-日期：2026-09-09  
-状态：待用户审阅  
-目标环境：`staging`  
+日期：2026-09-09
+状态：已批准
+目标环境：`staging`
 目标域名：`staging.hophorsefit.com`
 
 ## 1. 目标
