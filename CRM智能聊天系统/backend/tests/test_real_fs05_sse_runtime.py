@@ -147,6 +147,15 @@ def test_sse_load_profile_requires_fifty_request_ip_capacity() -> None:
         _env_file=None,
         APP_ENV="staging",
         TIKTOK_OAUTH_REDIRECT_URI=("https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback"),
+        # staging 压测仍须满足公网基础安全；这些虚构凭据不启用任何真实平台能力。
+        AUTH_COOKIE_SECURE=True,
+        ALLOW_MOCK_PLATFORM_ADAPTERS=False,
+        JWT_SECRET_KEY="unit-test-jwt-secret-with-at-least-32-characters",
+        MINIO_SECRET_KEY="unit-test-minio-secret",
+        DATABASE_URL="postgresql+asyncpg://crm:unit-test-password@localhost:5432/crm",
+        PUBLIC_BASE_URL="https://staging.hophorsefit.com",
+        CORS_ORIGINS="https://staging.hophorsefit.com",
+        TIKTOK_EGRESS_IP="203.0.113.10",
         SSE_LOAD_TEST_ENABLED=True,
         CHAT_QUERY_LIMIT=60,
     )

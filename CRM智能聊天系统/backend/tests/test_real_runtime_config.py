@@ -65,6 +65,65 @@ def test_production_rejects_mock_platform_adapters() -> None:
         production_settings(ALLOW_MOCK_PLATFORM_ADAPTERS=True)
 
 
+@pytest.mark.parametrize("app_env", ["staging", "production"])
+@pytest.mark.parametrize(
+    ("field", "unsafe_value", "error_pattern"),
+    [
+        ("ALLOW_MOCK_PLATFORM_ADAPTERS", True, "契约级 Mock"),
+        ("AUTH_COOKIE_SECURE", False, "Secure 认证 Cookie"),
+        ("JWT_SECRET_KEY", "x" * 31, "JWT_SECRET_KEY"),
+        ("JWT_SECRET_KEY", "example-CHANGE-ME-secret-with-32-characters", "JWT_SECRET_KEY"),
+        ("MINIO_SECRET_KEY", "x" * 15, "MINIO_SECRET_KEY"),
+        ("MINIO_SECRET_KEY", "example-CHANGE-ME-secret", "MINIO_SECRET_KEY"),
+        ("DATABASE_URL", "postgresql+asyncpg://crm:crm@postgres:5432/crm", "DATABASE_URL"),
+        ("PUBLIC_BASE_URL", None, "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "http://staging.example.com", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "https://user:secret@staging.example.com", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "https://staging.example.com?next=other", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "https://staging.example.com#other", "PUBLIC_BASE_URL"),
+        ("CORS_ORIGINS", "", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "*", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "http://staging.example.com", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://user:secret@staging.example.com", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com/path", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com?next=other", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com#other", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://*.example.com", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com:invalid", "CORS_ORIGINS"),
+        ("TIKTOK_EGRESS_IP", None, "TIKTOK_EGRESS_IP"),
+        ("TIKTOK_EGRESS_IP", "invalid-ip", "TIKTOK_EGRESS_IP"),
+    ],
+)
+def test_deployed_security_baseline_rejects_unsafe_configuration(
+    app_env: str, field: str, unsafe_value: object, error_pattern: str
+) -> None:
+    """恢复 production-only guard 会让 staging 的每种不安全配置绕过启动门禁。"""
+    callback = TIKTOK_OAUTH_STAGING_REDIRECT_URI if app_env == "staging" else TIKTOK_OAUTH_FIXED_REDIRECT_URI
+    with pytest.raises(ValidationError, match=error_pattern):
+        production_settings(APP_ENV=app_env, TIKTOK_OAUTH_REDIRECT_URI=callback, **{field: unsafe_value})
+
+
+@pytest.mark.parametrize("app_env", ["development", "test", "integration"])
+def test_deployed_security_baseline_preserves_local_fixture_configuration(app_env: str) -> None:
+    """开发、测试、集成夹具不强制使用部署级基础凭证，但仍受独立真实能力门禁保护。"""
+    settings = Settings(
+        _env_file=None,
+        APP_ENV=app_env,
+        TIKTOK_OAUTH_REDIRECT_URI=TIKTOK_OAUTH_FIXED_REDIRECT_URI,
+        ALLOW_MOCK_PLATFORM_ADAPTERS=True,
+        AUTH_COOKIE_SECURE=False,
+        JWT_SECRET_KEY="fixture",
+        MINIO_SECRET_KEY="change-me",
+        DATABASE_URL="postgresql+asyncpg://crm:crm@localhost:5432/crm",
+        PUBLIC_BASE_URL="http://localhost:3000",
+        CORS_ORIGINS="*",
+        TIKTOK_EGRESS_IP=None,
+    )
+    assert settings.app_env == app_env
+    assert settings.allow_mock_platform_adapters is True
+
+
 def test_real_tiktok_read_and_webhook_can_start_with_complete_prerequisites() -> None:
     """REAL-FS-03 完成后，只读与 Webhook 可以独立于平台写能力启用。"""
     settings = production_settings(

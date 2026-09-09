@@ -129,6 +129,27 @@ G1 OAuth/只读、G2 Webhook、G3 人工消息、G4 AI/RAG、G5 真实 SSE、G6 
 
 Task 7 仓库卫生检查发现唯一误跟踪的 SDD 临时证据 `.superpowers/sdd/2026-09-09-rootless-staging-deployment/task-1-report.md`，本次仅从 Git 索引移除，保留本地原文件并由既有 `.superpowers/sdd/.gitignore` 忽略。正式证据继续保留于本报告，不将临时调度记录作为版本化交付物。
 
+### 7.2 Task 7 staging 应用安全边界修复（2026-09-09）
+
+分支审阅在 `a6457e8488858c7631a5ff58472ae33929b163df` 确认两个 P1 合并阻断：基础安全仅对 production 生效；Shopee/Amazon resolver 及 Mock defensive send 在非 production 忽略 `ALLOW_MOCK_PLATFORM_ADAPTERS=false`。本轮先增加真实 Settings/adapter 行为测试并运行 RED，再最小修复；不依赖源码文本断言、不调用网络/数据库/真实平台。
+
+修复将 staging 纳入既有基础校验，保留 development/test/integration 夹具行为以及独立的 SSE/真实 LLM 门禁。三个 Mock guard 直接以显式开关为准，所有环境关闭时均失败关闭。TikTok 真实能力 resolver 条件和三平台 UI 不变。原 staging SSE 正常路径测试补齐虚构安全配置，原压测容量断言保留。
+
+修复提交主题为 `fix: enforce staging application security`；完整 SHA 使用 `git log --all --format='%H %s' --grep='^fix: enforce staging application security$'` 解析，避免提交自身摘要的循环。以下命令均在 `CRM智能聊天系统/backend` 执行，`python` 对应第 3 节的既有 venv：
+
+| 验证项 | 命令 | 准确结果 |
+| --- | --- | --- |
+| 新行为 RED（产品代码未修改） | `python -m pytest tests/test_real_runtime_config.py tests/test_platform_adapters.py -k 'deployed_security_baseline or disabled_mock or enabled_mock_contract' -q --tb=short -p no:cacheprovider --basetemp='C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-fix2-red-20260909'` | 52 failed, 50 passed, 85 deselected in 0.88s，exit 1 |
+| 同一选择集 GREEN | 同上，basetemp 改为 `C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-fix2-green-20260909` | 102 passed, 85 deselected in 0.54s，exit 0 |
+| 首次完整模块检查 | `python -m pytest tests/test_real_runtime_config.py tests/test_real_fs05_sse_runtime.py tests/test_platform_adapters.py -q --tb=short -p no:cacheprovider --basetemp='C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-fix2-modules-20260909'` | 1 failed, 212 passed in 2.96s；旧 SSE staging 夹具因未启用 Secure Cookie 被正确拒绝 |
+| 完整模块 GREEN | 同上，basetemp 改为 `C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-fix2-modules-green-20260909` | 213 passed in 2.63s，exit 0 |
+| TikTok 邻接回归 | `python -m pytest tests/test_tiktok_oauth.py tests/test_tiktok_read.py tests/test_tiktok_write.py -q --tb=short -p no:cacheprovider --basetemp='C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-fix2-tiktok-20260909'` | 64 passed in 1.70s，exit 0 |
+| 静态质量 | `python -m ruff check app/shared/config/settings.py app/integrations/adapters.py tests/test_real_runtime_config.py tests/test_real_fs05_sse_runtime.py tests/test_platform_adapters.py`；相同路径的 `python -m ruff format --check`；`git diff --check` | All checks passed；5 files already formatted；无空白错误 |
+
+RED 的 52 个失败均为目标行为缺失：24 个 staging 不安全配置未抛 ValidationError，16 个 Shopee/Amazon resolver 未抛 AppError，12 个直接 Mock 发送返回 sent 而非 failed。生产拒绝、TikTok resolver 拒绝及显式开启开发/测试 Mock 的对照组均通过。修改 guard 回 production-only 会重新触发这些失败。
+
+上述为开发修复自测。§7.1 的全量结果早于本次产品修复，不能作为本次最终全量通过证据；控制器必须重新运行后端全套并完成独立审阅。Tasks 8～12、现场部署、G1～G6 和 production 均待执行，不更新为通过。
+
 ## 8. 后续现场证据（Task 12）
 
 未执行。待追加 UTC 时间、完整提交、候选/上一版 RepoDigest、overlay/配置 SHA-256、OS/Rootless 数据路径、系统容器保护比较、健康/迁移、备份恢复、兼容回滚、workflow run ID 和独立复核人。不得预填成功值或伪造现场摘要。

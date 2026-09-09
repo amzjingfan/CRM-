@@ -19,12 +19,8 @@ PROJECT_ENV_FILE = Path(__file__).resolve().parents[4] / ".env"
 # 不允许通过环境变量改变域名或路径；测试环境只允许替换主机，便于使用假凭证验证流程。
 TIKTOK_OAUTH_CALLBACK_ROUTE = "/integrations/tiktok/oauth/callback"
 TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH = f"/v1{TIKTOK_OAUTH_CALLBACK_ROUTE}"
-TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI = (
-    f"https://www.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
-)
-TIKTOK_OAUTH_STAGING_REDIRECT_URI = (
-    f"https://staging.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
-)
+TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI = f"https://www.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
+TIKTOK_OAUTH_STAGING_REDIRECT_URI = f"https://staging.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
 # 兼容仍导入旧常量的生产调用方；新代码应按 app_env 使用映射常量。
 TIKTOK_OAUTH_FIXED_REDIRECT_URI = TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI
 TIKTOK_OAUTH_FIXED_REDIRECT_URIS = {
@@ -297,7 +293,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_runtime(self) -> Self:
-        """在进程启动前校验生产密钥、HTTPS 和真实平台能力门禁。
+        """在进程启动前校验 staging/production 基础安全和真实平台能力门禁。
 
         业务边界：REAL-FS-04 只放行人工确认的普通消息；高风险写入和
         自动回复仍属于后续阶段，配置为 true 时必须在启动阶段失败关闭。
@@ -365,26 +361,29 @@ class Settings(BaseSettings):
         if self.app_env in REAL_DEPLOYMENT_ENVIRONMENTS and self.llm_enabled:
             self._validate_production_llm()
 
-        if self.app_env != "production":
+        # staging 公网部署与 production 使用相同基础安全要求；integration
+        # 保留合成夹具能力，其真实平台、LLM 和压测开关仍受上方独立门禁约束。
+        if self.app_env not in {"staging", "production"}:
             return self
+        environment_label = "生产环境" if self.app_env == "production" else "预发布环境"
         if self.allow_mock_platform_adapters:
-            raise ValueError("生产环境禁止启用契约级 Mock 平台适配器")
+            raise ValueError(f"{environment_label}禁止启用契约级 Mock 平台适配器")
         if not self.auth_cookie_secure:
-            raise ValueError("生产环境必须启用 Secure 认证 Cookie")
+            raise ValueError(f"{environment_label}必须启用 Secure 认证 Cookie")
         if len(self.jwt_secret_key) < 32 or "change-me" in self.jwt_secret_key.lower():
-            raise ValueError("生产环境 JWT_SECRET_KEY 必须使用至少 32 字符的非示例密钥")
+            raise ValueError(f"{environment_label} JWT_SECRET_KEY 必须使用至少 32 字符的非示例密钥")
         if len(self.minio_secret_key) < 16 or "change-me" in self.minio_secret_key.lower():
-            raise ValueError("生产环境 MINIO_SECRET_KEY 必须使用非示例密钥")
+            raise ValueError(f"{environment_label} MINIO_SECRET_KEY 必须使用非示例密钥")
         if "crm:crm@" in self.database_url.lower():
-            raise ValueError("生产环境 DATABASE_URL 不得使用开发默认凭证")
+            raise ValueError(f"{environment_label} DATABASE_URL 不得使用开发默认凭证")
         self._validate_https_url(self.public_base_url, "PUBLIC_BASE_URL")
         origins = self.cors_origin_list
         if not origins:
-            raise ValueError("生产环境 CORS_ORIGINS 必须只包含明确的 HTTPS 来源")
+            raise ValueError(f"{environment_label} CORS_ORIGINS 必须只包含明确的 HTTPS 来源")
         for origin in origins:
             self._validate_cors_origin(origin)
         if not self.tiktok_egress_ip:
-            raise ValueError("生产环境必须声明已分配的 TIKTOK_EGRESS_IP")
+            raise ValueError(f"{environment_label}必须声明已分配的 TIKTOK_EGRESS_IP")
         try:
             ip_address(self.tiktok_egress_ip)
         except ValueError as error:
@@ -438,10 +437,7 @@ class Settings(BaseSettings):
         parsed = urlsplit(value)
         if parsed.path != TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH:
             raise ValueError("TIKTOK_OAUTH_REDIRECT_URI 必须使用固定 OAuth 回调路径")
-        if (
-            self.app_env in REAL_DEPLOYMENT_ENVIRONMENTS
-            and value != TIKTOK_OAUTH_FIXED_REDIRECT_URIS[self.app_env]
-        ):
+        if self.app_env in REAL_DEPLOYMENT_ENVIRONMENTS and value != TIKTOK_OAUTH_FIXED_REDIRECT_URIS[self.app_env]:
             raise ValueError("TIKTOK_OAUTH_REDIRECT_URI 必须与真实环境固定回调地址完全一致")
 
     @staticmethod
@@ -457,16 +453,16 @@ class Settings(BaseSettings):
 
     @staticmethod
     def _validate_cors_origin(origin: str) -> None:
-        """按浏览器 Origin 语法校验生产跨域来源。
+        """按浏览器 Origin 语法校验真实部署环境跨域来源。
 
         Origin 只允许协议、主机和可选端口。路径、凭证、查询参数或片段
-        都不是合法来源，若被接受会让配置错误绕过生产启动门禁。
+        都不是合法来源，若被接受会让配置错误绕过部署启动门禁。
         """
         try:
             parsed = urlsplit(origin)
             port = parsed.port
         except ValueError as error:
-            raise ValueError("生产环境 CORS_ORIGINS 包含无效来源") from error
+            raise ValueError("真实部署环境 CORS_ORIGINS 包含无效来源") from error
         if (
             origin == "*"
             or origin != origin.strip()
@@ -480,7 +476,7 @@ class Settings(BaseSettings):
             or parsed.fragment
             or (port is not None and not 1 <= port <= 65535)
         ):
-            raise ValueError("生产环境 CORS_ORIGINS 必须只包含明确的 HTTPS 来源")
+            raise ValueError("真实部署环境 CORS_ORIGINS 必须只包含明确的 HTTPS 来源")
 
     @model_validator(mode="after")
     def validate_enabled_local_bge(self) -> Self:

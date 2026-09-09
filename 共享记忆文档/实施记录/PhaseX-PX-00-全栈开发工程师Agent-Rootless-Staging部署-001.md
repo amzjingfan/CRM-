@@ -76,8 +76,10 @@ Rootless 用户固定 UID/GID 1004、home `/home/crmdeploy`、socket `unix:///ru
 
 | 文件路径 | 变更类型 | 变更说明 | 负责 Agent |
 | --- | --- | --- | --- |
-| `CRM智能聊天系统/backend/app/shared/config/settings.py` | 修改 | 按环境固定 OAuth | 全栈开发工程师Agent |
-| `CRM智能聊天系统/backend/tests/test_real_runtime_config.py` | 修改 | 回调/overlay 契约 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/app/shared/config/settings.py` | 修改 | 按环境固定 OAuth；Task 7 将 staging 纳入部署基础安全校验 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/app/integrations/adapters.py` | 修改 | Task 7 在所有环境按显式 Mock 开关失败关闭 resolver 与 defensive send | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/tests/test_platform_adapters.py` | 修改 | Task 7 真实 resolver/send 行为测试，覆盖关闭与开发/测试显式开启对照 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/tests/test_real_runtime_config.py` | 修改 | 回调/overlay 契约；Task 7 staging/production 基础安全矩阵及夹具环境对照 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/backend/tests/test_real_fs05_sse_runtime.py` | 修改 | Task 7 修正两处旧 staging 回调测试输入，保留 SSE/DeepSeek 原断言 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/docker-compose.rootless-staging.yml` | 新增 | 回环端口与四服务关闭能力 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1` | 修改 | Rootless validate/deploy | 全栈开发工程师Agent |
@@ -149,6 +151,8 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 | Ubuntu/现场 | Tasks 8～11 | 隔离、健康、恢复与回滚可证 | 无现场执行；DNS/TLS/模型/配置/runner 待提供 | 未执行 |
 
 ## 8. 实施结果
+
+2026-09-09 Task 7 应用安全修复：基础配置校验扩展至 staging/production；Mock resolver 与直接发送以 `ALLOW_MOCK_PLATFORM_ADAPTERS` 为授权依据，关闭时所有环境均失败关闭。development/test/integration 基础夹具以及单独的 SSE/LLM 门禁保留，三平台 UI 和真实 TikTok 能力条件不变。新增行为先 RED（52 failed、50 passed），修复后同集 GREEN（102 passed）；完整 settings/SSE/adapter 模块 213 passed，TikTok 邻接模块 64 passed，Ruff/format/diff 检查通过。准确命令、失败分解、夹具修复和时间只维护于 007 报告 §7.2。提交主题 `fix: enforce staging application security`，完整 SHA 通过 `git log --all --format='%H %s' --grep='^fix: enforce staging application security$'` 解析。本次产品修复后的控制器全量复核和独立审阅待执行，以下先前全量结果保留历史语义，不能代替本轮全量验证；Tasks 8～12、现场及 G1～G6 仍待执行。
 
 2026-09-09 Task 7 聚焦修复与全量验证补充：首次全量复核发现的两处旧 staging 测试输入已修正，提交为 `6323316f35560b6f9c755c5e46966f3ac5da27cb`（`test: align staging runtime fixtures`）。没有修改产品校验或 integration/production 回调。控制器在该修复后使用仓库外 basetemp 完成后端全量复核：`1422 passed, 14 skipped, 2 warnings in 30.00s`，exit 0；较早的新聚焦回归为 `193 passed, 2 skipped in 25.61s`，exit 0。两条依赖弃用警告与跳过项、原失败案例及静态质量证据详见 007 报告 §7.1。本次还将唯一误跟踪的 SDD `task-1-report.md` 移出 Git 索引，保留本地被忽略的原始证据。当前实施和现场验收状态不变。
 

@@ -57,7 +57,8 @@ class PlatformAdapter(ABC):
     async def send_message(self, channel_account: ChannelAccount, command: SendMessageCommand) -> SendMessageResult:
         """Phase 2 返回可识别的契约级 Mock 发送结果。"""
         settings = get_settings()
-        if settings.app_env == "production" and not settings.allow_mock_platform_adapters:
+        # 显式开关是 Mock 能力的唯一授权来源；直接调用也不得绕过 resolver。
+        if not settings.allow_mock_platform_adapters:
             return SendMessageResult(
                 external_message_id=f"mock-disabled-{uuid.uuid4()}",
                 status="failed",
@@ -239,8 +240,8 @@ def get_platform_adapter(platform: str) -> PlatformAdapter:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok Webhook 与 Mock 适配器均未启用", 503)
         return TikTokAdapter(settings)
     if platform in {"shopee", "amazon"}:
-        if settings.app_env == "production" and not settings.allow_mock_platform_adapters:
-            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "生产环境未启用 Mock 平台适配器", 503)
+        if not settings.allow_mock_platform_adapters:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "未启用 Mock 平台适配器", 503)
         secret = settings.shopee_webhook_secret if platform == "shopee" else settings.amazon_webhook_secret
         return MockHmacAdapter(platform, secret)
     raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "不支持的平台", 404)
@@ -254,8 +255,8 @@ def get_message_adapter(platform: str) -> PlatformAdapter:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 普通消息发送未启用", 503)
         return TikTokAdapter(settings)
     if platform in {"shopee", "amazon"}:
-        if settings.app_env == "production" and not settings.allow_mock_platform_adapters:
-            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "生产环境未启用该平台消息适配器", 503)
+        if not settings.allow_mock_platform_adapters:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "未启用该平台消息适配器", 503)
         secret = settings.shopee_webhook_secret if platform == "shopee" else settings.amazon_webhook_secret
         return MockHmacAdapter(platform, secret)
     raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "不支持的平台", 404)
