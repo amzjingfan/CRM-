@@ -19,7 +19,19 @@ PROJECT_ENV_FILE = Path(__file__).resolve().parents[4] / ".env"
 # 不允许通过环境变量改变域名或路径；测试环境只允许替换主机，便于使用假凭证验证流程。
 TIKTOK_OAUTH_CALLBACK_ROUTE = "/integrations/tiktok/oauth/callback"
 TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH = f"/v1{TIKTOK_OAUTH_CALLBACK_ROUTE}"
-TIKTOK_OAUTH_FIXED_REDIRECT_URI = f"https://www.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
+TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI = (
+    f"https://www.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
+)
+TIKTOK_OAUTH_STAGING_REDIRECT_URI = (
+    f"https://staging.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
+)
+# 兼容仍导入旧常量的生产调用方；新代码应按 app_env 使用映射常量。
+TIKTOK_OAUTH_FIXED_REDIRECT_URI = TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI
+TIKTOK_OAUTH_FIXED_REDIRECT_URIS = {
+    "integration": TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI,
+    "staging": TIKTOK_OAUTH_STAGING_REDIRECT_URI,
+    "production": TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI,
+}
 REAL_DEPLOYMENT_ENVIRONMENTS = {"integration", "staging", "production"}
 TIKTOK_REAL_READ_SCOPES = {
     "seller.authorization.info",
@@ -426,7 +438,10 @@ class Settings(BaseSettings):
         parsed = urlsplit(value)
         if parsed.path != TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH:
             raise ValueError("TIKTOK_OAUTH_REDIRECT_URI 必须使用固定 OAuth 回调路径")
-        if self.app_env in REAL_DEPLOYMENT_ENVIRONMENTS and value != TIKTOK_OAUTH_FIXED_REDIRECT_URI:
+        if (
+            self.app_env in REAL_DEPLOYMENT_ENVIRONMENTS
+            and value != TIKTOK_OAUTH_FIXED_REDIRECT_URIS[self.app_env]
+        ):
             raise ValueError("TIKTOK_OAUTH_REDIRECT_URI 必须与真实环境固定回调地址完全一致")
 
     @staticmethod

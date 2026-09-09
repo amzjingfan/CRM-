@@ -10,7 +10,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from app.shared.config.settings import TIKTOK_OAUTH_FIXED_REDIRECT_URI, Settings
+from app.shared.config.settings import (
+    TIKTOK_OAUTH_FIXED_REDIRECT_URI,
+    TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI,
+    TIKTOK_OAUTH_STAGING_REDIRECT_URI,
+    Settings,
+)
 from app.shared.logging.setup import JsonFormatter, redact_log_text
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -166,12 +171,43 @@ def test_real_environments_reject_oauth_redirect_configuration_drift(
         )
 
 
-@pytest.mark.parametrize("app_env", ["integration", "staging", "production"])
-def test_real_environments_accept_only_fixed_oauth_redirect_uri(app_env: str) -> None:
-    """集成、预发布和生产环境共享同一架构固定回调地址。"""
-    settings = production_settings(APP_ENV=app_env)
+@pytest.mark.parametrize(
+    ("app_env", "redirect_uri"),
+    [
+        ("integration", TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI),
+        ("staging", TIKTOK_OAUTH_STAGING_REDIRECT_URI),
+        ("production", TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI),
+    ],
+)
+def test_real_environments_accept_only_their_fixed_oauth_redirect_uri(
+    app_env: str,
+    redirect_uri: str,
+) -> None:
+    """集成、预发布和生产环境只接受各自固定的 OAuth 回调地址。"""
+    settings = production_settings(
+        APP_ENV=app_env,
+        TIKTOK_OAUTH_REDIRECT_URI=redirect_uri,
+    )
+    assert settings.tiktok_oauth_redirect_uri == redirect_uri
 
-    assert settings.tiktok_oauth_redirect_uri == TIKTOK_OAUTH_FIXED_REDIRECT_URI
+
+@pytest.mark.parametrize(
+    ("app_env", "redirect_uri"),
+    [
+        ("staging", TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI),
+        ("production", TIKTOK_OAUTH_STAGING_REDIRECT_URI),
+    ],
+)
+def test_real_environments_reject_another_environments_oauth_redirect(
+    app_env: str,
+    redirect_uri: str,
+) -> None:
+    """真实环境拒绝其他环境的 OAuth 回调地址，避免凭据与回调错配。"""
+    with pytest.raises(ValidationError, match="TIKTOK_OAUTH_REDIRECT_URI"):
+        production_settings(
+            APP_ENV=app_env,
+            TIKTOK_OAUTH_REDIRECT_URI=redirect_uri,
+        )
 
 
 def test_tiktok_webhook_secret_is_hidden_from_settings_repr() -> None:
