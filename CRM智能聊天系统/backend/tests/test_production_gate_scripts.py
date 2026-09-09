@@ -57,6 +57,49 @@ def run_powershell(
     )
 
 
+def run_powershell_with_context_probe(
+    script: Path,
+    tmp_path: Path,
+    *arguments: str,
+    environment: dict[str, str],
+) -> subprocess.CompletedProcess[str]:
+    """在同一 PowerShell 进程中调用脚本并输出恢复后的 Docker context。"""
+    assert POWERSHELL is not None, "PowerShell is required for production gate tests"
+    wrapper_script = tmp_path / "run-gate-with-context-probe.ps1"
+    wrapper_script.write_text(
+        """$targetScript = $args[0]
+$targetArguments = @()
+if ($args.Count -gt 1) {
+    $targetArguments = $args[1..($args.Count - 1)]
+}
+$exitCode = 0
+try {
+    & $targetScript @targetArguments
+}
+catch {
+    Write-Error $_
+    $exitCode = 1
+}
+if ($LASTEXITCODE -ne 0) {
+    $exitCode = $LASTEXITCODE
+}
+Write-Output "__DOCKER_CONTEXT_AFTER=$([Environment]::GetEnvironmentVariable('DOCKER_CONTEXT', 'Process'))"
+exit $exitCode
+""",
+        encoding="utf-8",
+    )
+    return subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-File", str(wrapper_script), str(script), *arguments],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+        text=True,
+        timeout=30,
+        env=environment,
+    )
+
+
 def normalized_process_output(result: subprocess.CompletedProcess[str]) -> str:
     """归一化 PowerShell 7 在非 Windows 平台渲染的样式码和换行栏。"""
     output = ANSI_ESCAPE_PATTERN.sub("", result.stdout + result.stderr)
@@ -222,8 +265,11 @@ from pathlib import Path
 arguments = sys.argv[1:]
 with Path(os.environ["FAKE_DOCKER_LOG"]).open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(arguments) + "\\n")
+with Path(os.environ["FAKE_DOCKER_CONTEXT_LOG"]).open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps(os.environ.get("DOCKER_CONTEXT")) + "\\n")
 if "config" in arguments:
     print(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
+    sys.exit(int(os.environ.get("FAKE_DOCKER_CONFIG_EXIT_CODE", "0")))
 if "up" in arguments and "--wait" in arguments:
     sys.exit(42)
 sys.exit(0)
@@ -245,6 +291,7 @@ sys.exit(0)
         wrapper_path.chmod(0o755)
     environment["PATH"] = str(fake_bin) + os.pathsep + environment.get("PATH", "")
     environment["FAKE_DOCKER_LOG"] = str(command_log)
+    environment["FAKE_DOCKER_CONTEXT_LOG"] = str(tmp_path / "fake-docker-context.jsonl")
     environment["FAKE_DOCKER_CONFIG"] = str(config_path)
     return environment, command_log
 
@@ -351,6 +398,65 @@ def test_gate_scripts_fix_project_and_rootless_overlay_before_compose_operations
     compose_path = source[source.index("$rootlessOverlay") :]
     for operation in ("Get-ProductionComposeConfig", '"pull"', '"up"'):
         assert compose_path.index("docker-compose.rootless-staging.yml") < compose_path.index(operation)
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+@pytest.mark.parametrize(
+    ("path", "expect_success"),
+    [("validate_only", True), ("whatif", True), ("config_failure", False)],
+)
+def test_gate_scripts_clear_and_restore_inherited_docker_context(
+    script: Path,
+    path: str,
+    expect_success: bool,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """Docker context 必须在所有门禁路径中对 CLI 清空，且在调用进程中恢复。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    inherited_context = "inherited-system-docker-context"
+    environment["DOCKER_CONTEXT"] = inherited_context
+    mode_arguments: tuple[str, ...] = ("-ValidateOnly",)
+    if path == "whatif":
+        mode_arguments = ("-Deploy", "-WhatIf") if script == PREFLIGHT_SCRIPT else ("-Execute", "-WhatIf")
+    elif path == "config_failure":
+        environment["FAKE_DOCKER_CONFIG_EXIT_CODE"] = "41"
+
+    result = run_powershell_with_context_probe(
+        script,
+        tmp_path,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://staging.hophorsefit.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        *mode_arguments,
+        environment=environment,
+    )
+
+    assert (result.returncode == 0) is expect_success, result.stdout + result.stderr
+    assert f"__DOCKER_CONTEXT_AFTER={inherited_context}" in result.stdout
+    context_values = [
+        json.loads(line)
+        for line in (tmp_path / "fake-docker-context.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert context_values
+    assert context_values == [""] * len(context_values)
 
 
 def test_preflight_rejects_floating_application_image(

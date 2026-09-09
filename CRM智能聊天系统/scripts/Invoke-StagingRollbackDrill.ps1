@@ -435,15 +435,17 @@ foreach ($name in @($DisabledCapabilityVariables + @(
     "FRONTEND_IMAGE",
     "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
-    "DOCKER_HOST"
+    "DOCKER_HOST",
+    "DOCKER_CONTEXT"
 ))) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
 
 $completedSteps = @()
 try {
-    # 在解析 Compose 前固定传输层，使 config、WhatIf、回滚及健康检查同属一个 daemon 边界。
+    # DOCKER_CONTEXT 的优先级高于 DOCKER_HOST，必须在所有 Docker 调用前清空。
     $env:DOCKER_HOST = $DockerHost
+    [Environment]::SetEnvironmentVariable("DOCKER_CONTEXT", $null, "Process")
     $compose = Resolve-ComposeCommand
     $composeArguments = @(
         "--project-name", "crm-staging",
