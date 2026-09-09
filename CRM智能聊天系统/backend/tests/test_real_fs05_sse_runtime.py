@@ -146,7 +146,7 @@ def test_sse_load_profile_requires_fifty_request_ip_capacity() -> None:
     settings = Settings(
         _env_file=None,
         APP_ENV="staging",
-        TIKTOK_OAUTH_REDIRECT_URI=("https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback"),
+        TIKTOK_OAUTH_REDIRECT_URI=("https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback"),
         SSE_LOAD_TEST_ENABLED=True,
         CHAT_QUERY_LIMIT=60,
     )
@@ -192,7 +192,7 @@ def test_real_environment_deepseek_rejects_insecure_base_url() -> None:
         Settings(
             _env_file=None,
             APP_ENV="staging",
-            TIKTOK_OAUTH_REDIRECT_URI=("https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback"),
+            TIKTOK_OAUTH_REDIRECT_URI=("https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback"),
             LLM_ENABLED=True,
             LLM_PRIMARY_PROVIDER="deepseek",
             LLM_PRIMARY_MODEL="test-model",

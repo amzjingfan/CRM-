@@ -78,6 +78,7 @@ Rootless 用户固定 UID/GID 1004、home `/home/crmdeploy`、socket `unix:///ru
 | --- | --- | --- | --- |
 | `CRM智能聊天系统/backend/app/shared/config/settings.py` | 修改 | 按环境固定 OAuth | 全栈开发工程师Agent |
 | `CRM智能聊天系统/backend/tests/test_real_runtime_config.py` | 修改 | 回调/overlay 契约 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/tests/test_real_fs05_sse_runtime.py` | 修改 | Task 7 修正两处旧 staging 回调测试输入，保留 SSE/DeepSeek 原断言 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/docker-compose.rootless-staging.yml` | 新增 | 回环端口与四服务关闭能力 | 全栈开发工程师Agent |
 | `CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1` | 修改 | Rootless validate/deploy | 全栈开发工程师Agent |
 | `CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1` | 修改 | Rootless 回滚门禁 | 全栈开发工程师Agent |
@@ -148,6 +149,8 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 | Ubuntu/现场 | Tasks 8～11 | 隔离、健康、恢复与回滚可证 | 无现场执行；DNS/TLS/模型/配置/runner 待提供 | 未执行 |
 
 ## 8. 实施结果
+
+2026-09-09 Task 7 聚焦修复补充：首次全量复核发现的两处旧 staging 测试输入已修正，提交主题为 `test: align staging runtime fixtures`（完整 SHA 通过该主题的 `git log` 解析）。没有修改产品校验或 integration/production 回调。两个原失败案例与环境映射/SSE 模块回归、静态质量检查已有新证据，详见 007 报告 §7.1；控制器仍负责修复后的全量后端复核。当前实施和现场验收状态不变。
 
 - 完成项：Tasks 1～5 工程资产及修复；Task 6 文档/ADR/示例/报告/索引同步。
 - 未完成项：Task 7 全量复核及远端集成；Tasks 8～12 现场部署与证据；G1～G6；production。

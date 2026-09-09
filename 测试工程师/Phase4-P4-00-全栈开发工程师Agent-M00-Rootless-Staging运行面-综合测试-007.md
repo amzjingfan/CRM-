@@ -111,6 +111,22 @@ G1 OAuth/只读、G2 Webhook、G3 人工消息、G4 AI/RAG、G5 真实 SSE、G6 
 
 2026-09-09 Task 6 审阅修复：原 runner 传递命令在 Windows PowerShell 5.1 的原生管道产生 CRLF，本地 Bash `read -r -s` 与安装器相同的严格正则返回 24（RED）。仅修正 runbook 的 SSH 命令，远端 `tr -d '\r'` 规范化并用 `bash -o pipefail` 保留失败。执行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .superpowers/sdd/2026-09-09-rootless-staging-deployment/task-6-crlf-check.ps1`，并在 PowerShell 7.6.5 执行同一脚本：两环境各验证正常读取 exit 0 与安装替身失败 exit 37，共 4 个聚焦断言通过，本地 Token 引用两路径均清空。命令从 runbook 提取，仅替换 SSH 网络与注册副作用为本地 Git Bash/严格读取替身；未执行真实 SSH、注册或 Ubuntu 验证，未打印 Token 值，安装器未修改。
 
+### 7.1 Task 7 全量复核发现的测试输入修复（2026-09-09）
+
+控制器在 `d6c72ce73441cc28ab5c5b647d84c29bc8d611a2` 的首次后端全量复核得到 `2 failed, 1420 passed, 14 skipped`（RED）。失败均位于 `tests/test_real_fs05_sse_runtime.py`：`test_sse_load_profile_requires_fifty_request_ip_capacity` 和 `test_real_environment_deepseek_rejects_insecure_base_url` 的 staging 输入仍使用 www 回调，导致 Settings 在 SSE 容量或 DeepSeek HTTPS 断言之前按预期拒绝错误配置。
+
+修复只将上述两处输入改为 staging 专用回调；保留测试名、原断言和 integration/production 地址，不修改生产代码或放宽校验。修复提交主题为 `test: align staging runtime fixtures`，可通过 `git log --all --format='%H %s' --grep='^test: align staging runtime fixtures$'` 解析完整提交，避免记录自身摘要。
+
+以下为修复执行者新运行的 GREEN；运行目录为 `CRM智能聊天系统/backend`，`python` 对应第 3 节的既有 venv：
+
+| 验证项 | 命令 | 准确结果 |
+| --- | --- | --- |
+| 两个原失败案例 | `python -m pytest tests/test_real_fs05_sse_runtime.py::test_sse_load_profile_requires_fifty_request_ip_capacity tests/test_real_fs05_sse_runtime.py::test_real_environment_deepseek_rejects_insecure_base_url -q -p no:cacheprovider --basetemp='C:\Users\Administrator\AppData\Local\Temp\crm-rootless-task7-fix1-focused-20260909'` | 2 passed in 1.71s |
+| 环境映射及完整 SSE 模块 | `python -m pytest tests/test_real_runtime_config.py tests/test_real_fs05_sse_runtime.py -q -p no:cacheprovider --basetemp='C:\Users\Administrator\AppData\Local\Temp\crm-rootless-task7-fix1-regression-20260909'` | 106 passed in 2.40s |
+| 修改文件静态质量 | `python -m ruff check tests/test_real_fs05_sse_runtime.py`；`python -m ruff format --check tests/test_real_fs05_sse_runtime.py`；`git diff --check` | All checks passed；1 file already formatted；无空白错误 |
+
+两个 basetemp 均位于仓库外。全量后端复核仍由控制器执行，以上聚焦结果不替代全量复核。现场部署、G1～G6、独立验收及 production 状态不变。
+
 ## 8. 后续现场证据（Task 12）
 
 未执行。待追加 UTC 时间、完整提交、候选/上一版 RepoDigest、overlay/配置 SHA-256、OS/Rootless 数据路径、系统容器保护比较、健康/迁移、备份恢复、兼容回滚、workflow run ID 和独立复核人。不得预填成功值或伪造现场摘要。
