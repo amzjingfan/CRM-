@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PREFLIGHT_SCRIPT = PROJECT_ROOT / "scripts" / "Test-StagingProductionGates.ps1"
@@ -23,6 +24,7 @@ PREVIOUS_FRONTEND_IMAGE = "ghcr.io/cp11-gh/crm-frontend@sha256:" + "d" * 64
 RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "e" * 64
 PREVIOUS_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "f" * 64
 SECRET_SENTINEL = "must-not-appear-in-command-output-or-evidence"
+ROOTLESS_DOCKER_HOST = "unix:///run/user/1004/docker.sock"
 REQUIRED_MODEL_FILES = (
     "bge-m3/config.json",
     "bge-m3/pytorch_model.bin",
@@ -36,6 +38,51 @@ POWERSHELL_GUTTER_PATTERN = re.compile(r"\r?\n\s*\|\s*")
 WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
+def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -> None:
+    """工作流必须把调用者 UID 交给脚本的 1004 门禁，且 GHCR 不依赖长期 PAT。"""
+    workflow = yaml.safe_load((PROJECT_ROOT.parent / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    assert workflow["permissions"] == {"contents": "read", "packages": "read"}
+    steps = workflow["jobs"]["staging"]["steps"]
+    login = next(step for step in steps if step.get("uses", "").startswith("docker/login-action@"))
+    assert login["with"]["password"] == "${{ secrets.GITHUB_TOKEN }}"
+    gate = next(step["run"] for step in steps if step["name"] == "Run the selected staging gate")
+    assert "$runnerUid = (& id -u).Trim()" in gate
+    assert "$LASTEXITCODE -ne 0" in gate
+    assert "$runnerUid -notmatch '^[1-9][0-9]*$'" in gate
+    assert '$dockerHost = "unix:///run/user/$runnerUid/docker.sock"' in gate
+    assert '$common["DockerHost"] = $dockerHost' in gate
+    assert gate.index("$runnerUid =") < gate.index("$common =") < gate.index("switch ($env:OPERATION)")
+
+
+@pytest.mark.parametrize(
+    "base_url,accepted",
+    [
+        ("https://staging.hophorsefit.com", True),
+        ("", False),
+        ("https://www.hophorsefit.com", False),
+        ("https://staging.hophorsefit.com/", False),
+        ("https://staging.hophorsefit.com.evil.invalid", False),
+        ("https://staging.hophorsefit.com/v1", False),
+        ("https://STAGING.hophorsefit.com", False),
+    ],
+)
+def test_workflow_rejects_nonexact_base_url_before_mutation(tmp_path: Path, base_url: str, accepted: bool) -> None:
+    """执行真实工作流预检片段，防止生产地址、前缀匹配或路径误配置被放行。"""
+    workflow = yaml.safe_load((PROJECT_ROOT.parent / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    steps = workflow["jobs"]["staging"]["steps"]
+    guards = [step for step in steps if step["name"] == "Validate staging target"]
+    assert len(guards) == 1, "exact staging URL guard must precede credential or deployment steps"
+    guard = guards[0]
+    login_index = next(index for index, step in enumerate(steps) if "GHCR" in step["name"])
+    assert steps.index(guard) < login_index
+    script = tmp_path / "workflow-target-guard.ps1"
+    script.write_text(guard["run"], encoding="utf-8")
+    environment = os.environ.copy()
+    environment["CRM_STAGING_BASE_URL"] = base_url
+    result = run_powershell(script, environment=environment)
+    assert (result.returncode == 0) is accepted
+
+
 def run_powershell(
     script: Path,
     *arguments: str,
@@ -46,6 +93,49 @@ def run_powershell(
     assert script.exists(), f"missing production gate script: {script}"
     return subprocess.run(
         [POWERSHELL, "-NoLogo", "-NoProfile", "-File", str(script), *arguments],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+        text=True,
+        timeout=30,
+        env=environment,
+    )
+
+
+def run_powershell_with_context_probe(
+    script: Path,
+    tmp_path: Path,
+    *arguments: str,
+    environment: dict[str, str],
+) -> subprocess.CompletedProcess[str]:
+    """在同一 PowerShell 进程中调用脚本并输出恢复后的 Docker context。"""
+    assert POWERSHELL is not None, "PowerShell is required for production gate tests"
+    wrapper_script = tmp_path / "run-gate-with-context-probe.ps1"
+    wrapper_script.write_text(
+        """$targetScript = $args[0]
+$targetArguments = @()
+if ($args.Count -gt 1) {
+    $targetArguments = $args[1..($args.Count - 1)]
+}
+$exitCode = 0
+try {
+    & $targetScript @targetArguments
+}
+catch {
+    Write-Error $_
+    $exitCode = 1
+}
+if ($LASTEXITCODE -ne 0) {
+    $exitCode = $LASTEXITCODE
+}
+Write-Output "__DOCKER_CONTEXT_AFTER=$([Environment]::GetEnvironmentVariable('DOCKER_CONTEXT', 'Process'))"
+exit $exitCode
+""",
+        encoding="utf-8",
+    )
+    return subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-File", str(wrapper_script), str(script), *arguments],
         capture_output=True,
         check=False,
         encoding="utf-8",
@@ -93,11 +183,11 @@ def staging_env_file(tmp_path: Path) -> Path:
                 "MINIO_ACCESS_KEY=test-access",
                 f"MINIO_SECRET_KEY={SECRET_SENTINEL}",
                 "JWT_SECRET_KEY=test-jwt-key-with-at-least-32-characters",
-                "CORS_ORIGINS=https://staging.example.com",
-                "PUBLIC_BASE_URL=https://staging.example.com",
-                "PUBLIC_API_BASE_URL=https://staging.example.com/v1",
+                "CORS_ORIGINS=https://staging.hophorsefit.com",
+                "PUBLIC_BASE_URL=https://staging.hophorsefit.com",
+                "PUBLIC_API_BASE_URL=https://staging.hophorsefit.com/v1",
                 "TIKTOK_EGRESS_IP=203.0.113.10",
-                "TIKTOK_OAUTH_REDIRECT_URI=https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback",
+                "TIKTOK_OAUTH_REDIRECT_URI=https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback",
                 "POSTGRES_DB=crm",
                 "POSTGRES_USER=crm",
                 "POSTGRES_PASSWORD=test-postgres-password",
@@ -168,14 +258,27 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
     fake_bin.mkdir()
     command_log = tmp_path / "fake-compose-commands.jsonl"
     config_path = tmp_path / "fake-compose-config.json"
+    application_environment = {
+        "APP_ENV": "staging",
+        "ALLOW_MOCK_PLATFORM_ADAPTERS": "false",
+        "REAL_TIKTOK_READ_ENABLED": "false",
+        "REAL_TIKTOK_WEBHOOK_ENABLED": "false",
+        "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": "false",
+        "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": "false",
+        "LLM_ENABLED": "false",
+        "LLM_LIVE_EVAL": "false",
+        "AI_TRANSLATION_ENABLED": "false",
+        "AI_MARKETING_ENABLED": "false",
+        "AUTO_REPLY_ENABLED": "false",
+    }
     services = {
         "postgres": {"image": "pgvector/pgvector:0.8.0-pg16@sha256:" + "1" * 64},
         "redis": {"image": "redis:7.4.2-alpine@sha256:" + "2" * 64},
         "minio": {"image": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:" + "3" * 64},
-        "backend": {"image": BACKEND_IMAGE},
-        "worker": {"image": BACKEND_IMAGE},
-        "jobs": {"image": BACKEND_IMAGE},
-        "agent-worker": {"image": BACKEND_IMAGE},
+        "backend": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
+        "worker": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
+        "jobs": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
+        "agent-worker": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
         "retrieval-model-service": {
             "image": RETRIEVAL_MODEL_IMAGE,
             "volumes": [
@@ -189,7 +292,13 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
             "environment": {"RETRIEVAL_MODEL_VERIFY_HASHES": "true"},
         },
         "frontend": {"image": FRONTEND_IMAGE},
-        "proxy": {"image": "nginx:1.27.5-alpine@sha256:" + "4" * 64},
+        "proxy": {
+            "image": "nginx:1.27.5-alpine@sha256:" + "4" * 64,
+            "ports": [
+                {"host_ip": "127.0.0.1", "published": "10080", "target": "80"},
+                {"host_ip": "127.0.0.1", "published": "10443", "target": "443"},
+            ],
+        },
     }
     config_path.write_text(json.dumps({"services": services}), encoding="utf-8")
     fake_runtime = tmp_path / "fake_docker.py"
@@ -202,8 +311,11 @@ from pathlib import Path
 arguments = sys.argv[1:]
 with Path(os.environ["FAKE_DOCKER_LOG"]).open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(arguments) + "\\n")
+with Path(os.environ["FAKE_DOCKER_CONTEXT_LOG"]).open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps(os.environ.get("DOCKER_CONTEXT")) + "\\n")
 if "config" in arguments:
     print(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
+    sys.exit(int(os.environ.get("FAKE_DOCKER_CONFIG_EXIT_CODE", "0")))
 if "up" in arguments and "--wait" in arguments:
     sys.exit(42)
 sys.exit(0)
@@ -225,6 +337,7 @@ sys.exit(0)
         wrapper_path.chmod(0o755)
     environment["PATH"] = str(fake_bin) + os.pathsep + environment.get("PATH", "")
     environment["FAKE_DOCKER_LOG"] = str(command_log)
+    environment["FAKE_DOCKER_CONTEXT_LOG"] = str(tmp_path / "fake-docker-context.jsonl")
     environment["FAKE_DOCKER_CONFIG"] = str(config_path)
     return environment, command_log
 
@@ -247,6 +360,26 @@ def create_directory_link(link_path: Path, target_path: Path) -> None:
     )
     if result.returncode != 0:
         pytest.skip("directory junctions are unavailable on this Windows runner")
+
+
+def assert_compose_invocations_use_fixed_staging_target(command_log: Path) -> None:
+    """校验真正交给 CLI 的每个操作参数，捕获项目名、profile 或任一覆盖层丢失。"""
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    # CLI 探测 compose version 不接收项目配置；其余 config/pull/up 均必须隔离。
+    operations = [arguments for arguments in commands if arguments[:2] != ["compose", "version"]]
+    assert operations, "gate must reach a real Compose operation"
+    for arguments in operations:
+        assert arguments[0] == "compose"
+        assert arguments.count("--project-name") == 1
+        assert arguments[arguments.index("--project-name") + 1] == "crm-staging"
+        assert arguments.count("--profile") == 1
+        assert arguments[arguments.index("--profile") + 1] == "ai"
+        compose_files = [Path(arguments[index + 1]) for index, value in enumerate(arguments) if value == "-f"]
+        assert compose_files == [
+            PROJECT_ROOT / "docker-compose.yml",
+            PROJECT_ROOT / "docker-compose.prod.yml",
+            PROJECT_ROOT / "docker-compose.rootless-staging.yml",
+        ]
 
 
 def create_file_link(link_path: Path, target_path: Path) -> None:
@@ -277,11 +410,119 @@ def test_preflight_rejects_production_environment(tmp_path: Path) -> None:
         str(tmp_path / "evidence.json"),
         "-ConfirmTarget",
         "production",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
     assert result.returncode != 0
     assert "staging" in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+@pytest.mark.parametrize(
+    "docker_host",
+    ["tcp://127.0.0.1:2375", "unix:///var/run/docker.sock", "unix:///run/user/1005/docker.sock", ""],
+)
+def test_gate_scripts_reject_non_rootless_docker_hosts(
+    script: Path,
+    docker_host: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """门禁只允许 crmdeploy 的固定 Rootless Docker socket。"""
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://staging.hophorsefit.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        docker_host,
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert "rootless docker host" in normalized_process_output(result)
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+def test_gate_scripts_fix_project_and_rootless_overlay_before_compose_operations(script: Path) -> None:
+    """config、pull、up 必须共享固定项目名和 Rootless staging 覆盖层。"""
+    source = script.read_text(encoding="utf-8-sig")
+
+    assert "--project-name" in source
+    assert "crm-staging" in source
+    assert "docker-compose.rootless-staging.yml" in source
+    compose_path = source[source.index("$rootlessOverlay") :]
+    for operation in ("Get-ProductionComposeConfig", '"pull"', '"up"'):
+        assert compose_path.index("docker-compose.rootless-staging.yml") < compose_path.index(operation)
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+@pytest.mark.parametrize(
+    ("path", "expect_success"),
+    [("validate_only", True), ("whatif", True), ("config_failure", False)],
+)
+def test_gate_scripts_clear_and_restore_inherited_docker_context(
+    script: Path,
+    path: str,
+    expect_success: bool,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """Docker context 必须在所有门禁路径中对 CLI 清空，且在调用进程中恢复。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    inherited_context = "inherited-system-docker-context"
+    environment["DOCKER_CONTEXT"] = inherited_context
+    mode_arguments: tuple[str, ...] = ("-ValidateOnly",)
+    if path == "whatif":
+        mode_arguments = ("-Deploy", "-WhatIf") if script == PREFLIGHT_SCRIPT else ("-Execute", "-WhatIf")
+    elif path == "config_failure":
+        environment["FAKE_DOCKER_CONFIG_EXIT_CODE"] = "41"
+
+    result = run_powershell_with_context_probe(
+        script,
+        tmp_path,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://staging.hophorsefit.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        *mode_arguments,
+        environment=environment,
+    )
+
+    assert (result.returncode == 0) is expect_success, result.stdout + result.stderr
+    assert f"__DOCKER_CONTEXT_AFTER={inherited_context}" in result.stdout
+    context_values = [
+        json.loads(line) for line in (tmp_path / "fake-docker-context.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert context_values
+    assert context_values == [""] * len(context_values)
+    assert_compose_invocations_use_fixed_staging_target(command_log)
 
 
 def test_preflight_rejects_floating_application_image(
@@ -307,6 +548,8 @@ def test_preflight_rejects_floating_application_image(
         str(tmp_path / "evidence.json"),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -340,6 +583,8 @@ def test_preflight_rejects_credential_bearing_image_reference(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -380,6 +625,8 @@ def test_validate_only_writes_redacted_preflight_evidence(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
         environment=environment,
     )
@@ -392,6 +639,73 @@ def test_validate_only_writes_redacted_preflight_evidence(
     assert evidence["status"] == "validated"
     assert evidence["production_release"] is False
     assert evidence["external_model_assets_validated"] is True
+    assert evidence["compose_project"] == "crm-staging"
+    assert evidence["docker_transport"] == "rootless_unix_socket"
+    assert len(evidence["rootless_overlay_sha256"]) == 64
+    assert ROOTLESS_DOCKER_HOST not in evidence_file.read_text(encoding="utf-8-sig")
+
+
+@pytest.mark.parametrize(
+    ("configure", "expected_error"),
+    [
+        (
+            lambda config: config["services"]["backend"]["environment"].update({"LLM_ENABLED": "true"}),
+            "capability",
+        ),
+        (
+            lambda config: config["services"]["proxy"]["ports"].append(
+                {"host_ip": "0.0.0.0", "published": "10081", "target": "80"}
+            ),
+            "loopback ports",
+        ),
+    ],
+)
+def test_preflight_rejects_merged_compose_capability_or_port_regressions(
+    configure: object,
+    expected_error: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """Rootless overlay 后的合并配置不得重新开启能力或暴露额外端口。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    configure(config)
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.hophorsefit.com",
+        "-EvidenceFile",
+        str(tmp_path / "evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+        environment=environment,
+    )
+
+    assert result.returncode != 0
+    assert expected_error in normalized_process_output(result)
 
 
 def test_preflight_rejects_missing_external_model_asset_directory(
@@ -419,6 +733,8 @@ def test_preflight_rejects_missing_external_model_asset_directory(
         str(tmp_path / "evidence.json"),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -451,6 +767,8 @@ def test_preflight_rejects_relative_model_asset_directory(
         str(tmp_path / "evidence.json"),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -487,6 +805,8 @@ def test_preflight_rejects_model_asset_directory_inside_checkout(
         str(tmp_path / "evidence.json"),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -516,6 +836,8 @@ def test_gate_scripts_reject_model_assets_anywhere_inside_git_checkout(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -556,6 +878,8 @@ def test_gate_scripts_reject_external_link_pointing_into_git_checkout(
                 str(evidence_file),
                 "-ConfirmTarget",
                 "staging",
+                "-DockerHost",
+                ROOTLESS_DOCKER_HOST,
                 "-ValidateOnly",
                 environment=environment,
             )
@@ -605,6 +929,8 @@ def test_gate_scripts_reject_linked_model_runtime_file(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
         environment=environment,
     )
@@ -646,6 +972,8 @@ def test_gate_scripts_require_every_model_runtime_file(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
         environment=environment,
     )
@@ -682,6 +1010,8 @@ def test_preflight_rejects_external_model_directory_without_required_weights(
         str(tmp_path / "evidence.json"),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -720,6 +1050,8 @@ def test_preflight_rejects_floating_external_image(
         str(tmp_path / "evidence.json"),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -782,6 +1114,8 @@ def test_rollback_plan_disables_capabilities_before_switching_images(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
         environment=environment,
     )
@@ -834,6 +1168,8 @@ def test_rollback_rejects_floating_external_image(
         str(tmp_path / "rollback-evidence.json"),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         "-ValidateOnly",
     )
 
@@ -906,6 +1242,8 @@ def test_whatif_never_records_passed_evidence(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         mode,
         "-WhatIf",
         environment=environment,
@@ -953,12 +1291,15 @@ def test_live_gate_waits_for_compose_health_before_writing_passed_evidence(
         str(evidence_file),
         "-ConfirmTarget",
         "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
         mode,
         "-Confirm:$false",
         environment=environment,
     )
 
     assert command_log.exists(), result.stdout + result.stderr
+    assert_compose_invocations_use_fixed_staging_target(command_log)
     commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
     up_commands = [arguments for arguments in commands if "up" in arguments]
     assert result.returncode != 0

@@ -95,12 +95,14 @@ POST /v1/workspace/sessions/{session_id}/messages
 POST /v1/chat/query
 ```
 
-固定外部地址：
+固定外部地址（2026-09-09 按 ADR-007 增加 staging 专用域名，production 不变）：
 
-```text
-OAuth callback: https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback
-Webhook:        https://www.hophorsefit.com/v1/webhooks/tiktok
-```
+| 环境 | OAuth callback | Webhook |
+| --- | --- | --- |
+| staging | `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback` | `https://staging.hophorsefit.com/v1/webhooks/tiktok` |
+| production | `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback` | `https://www.hophorsefit.com/v1/webhooks/tiktok` |
+
+integration 保留 production 固定回调契约。APP_ENV 对应回调须精确匹配；staging 暂用 `/home` 下 Rootless Docker，production 运行方式仍待评审。系统 Docker 与公司容器不在项目边界内。以上域名契约不表示 DNS、TLS、Partner Center 或真实店铺门禁通过。
 
 OAuth `start` 只允许具有渠道管理权限且具有目标店铺访问权的用户调用。后端生成一次性 `state` 并写入 Redis；callback 校验并消费 `state` 后才能交换 Token。响应和重定向不得包含 Token 或平台原始错误详情。
 

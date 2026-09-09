@@ -142,6 +142,8 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 - Jobs Worker 默认每 5 分钟扫描一次，并在 Access Token 到期前 24 小时采用 `FOR UPDATE SKIP LOCKED` 提前刷新。刷新结果必须保持 `open_id` 和已授权店铺连续；不一致或失败时状态变为 `expired` 并要求重新授权，不覆盖为成功凭证。
 - TikTok 应用后台重定向地址固定为 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/staging/production 启动以及 OAuth start/callback 都会失败关闭 HTTP、错误主机、错误路径、query 或 fragment，真实密钥只从服务端安全配置注入。
 
+> 2026-09-09 勘误：上述跨环境相同回调约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `deploy/staging/rootless/README.md`，真实运行验收仍待执行。
+
 ## Phase 3 业务能力
 
 - FAQ 支持分类、草稿、发布、归档，以及最大 10 MiB/5000 行的 CSV、XLSX 异步导入。

@@ -35,6 +35,10 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ConfirmTarget,
 
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyString()]
+    [string]$DockerHost,
+
     [switch]$ValidateOnly,
     [switch]$Execute
 )
@@ -71,6 +75,15 @@ $PlannedSteps = @(
 function Assert-StagingTarget {
     if ($Environment -ne "staging" -or $ConfirmTarget -ne "staging") {
         throw "This rollback command is staging-only; Environment and ConfirmTarget must both equal staging."
+    }
+}
+
+function Assert-RootlessDockerHost {
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$Value)
+
+    # Staging 只能通过 crmdeploy 用户的 Rootless daemon，不能回退到系统或 TCP Docker。
+    if ($Value -cne "unix:///run/user/1004/docker.sock") {
+        throw "DockerHost must identify the crmdeploy rootless Docker host."
     }
 }
 
@@ -288,6 +301,36 @@ function Assert-ProductionComposeContract {
     if ([string]$retrievalService.environment.RETRIEVAL_MODEL_VERIFY_HASHES -ne "true") {
         throw "Production retrieval model service must enable startup weight hash verification."
     }
+
+    foreach ($serviceName in @("backend", "worker", "jobs", "agent-worker")) {
+        $applicationEnvironment = $Config.services.PSObject.Properties[$serviceName].Value.environment
+        if ([string]$applicationEnvironment.APP_ENV -ne "staging") {
+            throw "Production Compose must set APP_ENV=staging for service: $serviceName"
+        }
+        foreach ($capabilityName in $DisabledCapabilityVariables) {
+            if ([string]$applicationEnvironment.$capabilityName -ne "false") {
+                throw "Production Compose must fail closed for capability: $capabilityName"
+            }
+        }
+    }
+
+    $proxyService = $Config.services.PSObject.Properties["proxy"].Value
+    if (@($proxyService.ports).Count -ne 2) {
+        throw "Production Compose proxy must bind only the required loopback ports."
+    }
+    foreach ($expectedBinding in @(
+        @{ host_ip = "127.0.0.1"; published = "10080"; target = "80" },
+        @{ host_ip = "127.0.0.1"; published = "10443"; target = "443" }
+    )) {
+        $matchingBinding = @($proxyService.ports | Where-Object {
+            [string]$_.host_ip -eq $expectedBinding.host_ip -and
+            [string]$_.published -eq $expectedBinding.published -and
+            [string]$_.target -eq $expectedBinding.target
+        })
+        if ($matchingBinding.Count -ne 1) {
+            throw "Production Compose proxy must bind only the required loopback ports."
+        }
+    }
 }
 
 function Test-HealthEndpoint {
@@ -329,6 +372,9 @@ function Write-Evidence {
         previous_frontend_image = $PreviousFrontendImage
         previous_retrieval_model_image = $PreviousRetrievalModelImage
         external_model_assets_validated = $true
+        compose_project = "crm-staging"
+        docker_transport = "rootless_unix_socket"
+        rootless_overlay_sha256 = (Get-FileHash -LiteralPath $rootlessOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         planned_steps = $PlannedSteps
         completed_steps = $CompletedSteps
         health_checks = $HealthChecks
@@ -337,6 +383,7 @@ function Write-Evidence {
 }
 
 Assert-StagingTarget
+Assert-RootlessDockerHost -Value $DockerHost
 $CandidateBackendImage = Assert-ImmutableImage -Name "CandidateBackendImage" -Reference $CandidateBackendImage `
     -Repository "ghcr.io/cp11-gh/crm-backend"
 $CandidateFrontendImage = Assert-ImmutableImage -Name "CandidateFrontendImage" -Reference $CandidateFrontendImage `
@@ -378,25 +425,36 @@ if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $bas
     throw "BaseUrl must be an absolute HTTPS URL."
 }
 
-$compose = Resolve-ComposeCommand
-$composeArguments = @(
-    "--profile", "ai",
-    "--env-file", (Resolve-Path -LiteralPath $EnvFile).Path,
-    "-f", (Join-Path $projectRoot "docker-compose.yml"),
-    "-f", (Join-Path $projectRoot "docker-compose.prod.yml")
-)
+$rootlessOverlay = Join-Path $projectRoot "docker-compose.rootless-staging.yml"
+if (-not (Test-Path -LiteralPath $rootlessOverlay -PathType Leaf)) {
+    throw "The repository-fixed Rootless staging overlay does not exist."
+}
 $savedEnvironment = @{}
 foreach ($name in @($DisabledCapabilityVariables + @(
     "BACKEND_IMAGE",
     "FRONTEND_IMAGE",
     "RETRIEVAL_MODEL_ASSET_DIR",
-    "RETRIEVAL_MODEL_SERVICE_IMAGE"
+    "RETRIEVAL_MODEL_SERVICE_IMAGE",
+    "DOCKER_HOST",
+    "DOCKER_CONTEXT"
 ))) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
 
 $completedSteps = @()
 try {
+    # DOCKER_CONTEXT 的优先级高于 DOCKER_HOST，必须在所有 Docker 调用前清空。
+    $env:DOCKER_HOST = $DockerHost
+    [Environment]::SetEnvironmentVariable("DOCKER_CONTEXT", $null, "Process")
+    $compose = Resolve-ComposeCommand
+    $composeArguments = @(
+        "--project-name", "crm-staging",
+        "--profile", "ai",
+        "--env-file", (Resolve-Path -LiteralPath $EnvFile).Path,
+        "-f", (Join-Path $projectRoot "docker-compose.yml"),
+        "-f", (Join-Path $projectRoot "docker-compose.prod.yml"),
+        "-f", (Resolve-Path -LiteralPath $rootlessOverlay).Path
+    )
     Set-DisabledCapabilities
     $env:BACKEND_IMAGE = $CandidateBackendImage
     $env:FRONTEND_IMAGE = $CandidateFrontendImage
@@ -449,18 +507,18 @@ try {
         "frontend", "proxy", "retrieval-model-service"
     ))
     $completedSteps += "deploy_previous_image_digests"
+
+    $healthChecks = @(
+        [ordered]@{ path = "/healthz"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/healthz") },
+        [ordered]@{ path = "/v1/health"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health") },
+        [ordered]@{ path = "/v1/health/ready"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health/ready") }
+    )
+    $completedSteps += "verify_health"
+    Write-Evidence -Status "passed" -CompletedSteps $completedSteps -HealthChecks $healthChecks
+    Write-Output "Staging rollback drill passed; production_release=false."
 }
 finally {
     foreach ($name in $savedEnvironment.Keys) {
         [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], "Process")
     }
 }
-
-$healthChecks = @(
-    [ordered]@{ path = "/healthz"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/healthz") },
-    [ordered]@{ path = "/v1/health"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health") },
-    [ordered]@{ path = "/v1/health/ready"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health/ready") }
-)
-$completedSteps += "verify_health"
-Write-Evidence -Status "passed" -CompletedSteps $completedSteps -HealthChecks $healthChecks
-Write-Output "Staging rollback drill passed; production_release=false."

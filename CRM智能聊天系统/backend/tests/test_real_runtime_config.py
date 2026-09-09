@@ -10,7 +10,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from app.shared.config.settings import TIKTOK_OAUTH_FIXED_REDIRECT_URI, Settings
+from app.shared.config.settings import (
+    TIKTOK_OAUTH_FIXED_REDIRECT_URI,
+    TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI,
+    TIKTOK_OAUTH_STAGING_REDIRECT_URI,
+    Settings,
+)
 from app.shared.logging.setup import JsonFormatter, redact_log_text
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +63,65 @@ def test_production_rejects_mock_platform_adapters() -> None:
     """生产环境不得通过打开 Mock 开关绕过真实平台门禁。"""
     with pytest.raises(ValidationError, match="生产环境禁止启用契约级 Mock"):
         production_settings(ALLOW_MOCK_PLATFORM_ADAPTERS=True)
+
+
+@pytest.mark.parametrize("app_env", ["staging", "production"])
+@pytest.mark.parametrize(
+    ("field", "unsafe_value", "error_pattern"),
+    [
+        ("ALLOW_MOCK_PLATFORM_ADAPTERS", True, "契约级 Mock"),
+        ("AUTH_COOKIE_SECURE", False, "Secure 认证 Cookie"),
+        ("JWT_SECRET_KEY", "x" * 31, "JWT_SECRET_KEY"),
+        ("JWT_SECRET_KEY", "example-CHANGE-ME-secret-with-32-characters", "JWT_SECRET_KEY"),
+        ("MINIO_SECRET_KEY", "x" * 15, "MINIO_SECRET_KEY"),
+        ("MINIO_SECRET_KEY", "example-CHANGE-ME-secret", "MINIO_SECRET_KEY"),
+        ("DATABASE_URL", "postgresql+asyncpg://crm:crm@postgres:5432/crm", "DATABASE_URL"),
+        ("PUBLIC_BASE_URL", None, "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "http://staging.example.com", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "https://user:secret@staging.example.com", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "https://staging.example.com?next=other", "PUBLIC_BASE_URL"),
+        ("PUBLIC_BASE_URL", "https://staging.example.com#other", "PUBLIC_BASE_URL"),
+        ("CORS_ORIGINS", "", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "*", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "http://staging.example.com", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://user:secret@staging.example.com", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com/path", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com?next=other", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com#other", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://*.example.com", "CORS_ORIGINS"),
+        ("CORS_ORIGINS", "https://staging.example.com:invalid", "CORS_ORIGINS"),
+        ("TIKTOK_EGRESS_IP", None, "TIKTOK_EGRESS_IP"),
+        ("TIKTOK_EGRESS_IP", "invalid-ip", "TIKTOK_EGRESS_IP"),
+    ],
+)
+def test_deployed_security_baseline_rejects_unsafe_configuration(
+    app_env: str, field: str, unsafe_value: object, error_pattern: str
+) -> None:
+    """恢复 production-only guard 会让 staging 的每种不安全配置绕过启动门禁。"""
+    callback = TIKTOK_OAUTH_STAGING_REDIRECT_URI if app_env == "staging" else TIKTOK_OAUTH_FIXED_REDIRECT_URI
+    with pytest.raises(ValidationError, match=error_pattern):
+        production_settings(APP_ENV=app_env, TIKTOK_OAUTH_REDIRECT_URI=callback, **{field: unsafe_value})
+
+
+@pytest.mark.parametrize("app_env", ["development", "test", "integration"])
+def test_deployed_security_baseline_preserves_local_fixture_configuration(app_env: str) -> None:
+    """开发、测试、集成夹具不强制使用部署级基础凭证，但仍受独立真实能力门禁保护。"""
+    settings = Settings(
+        _env_file=None,
+        APP_ENV=app_env,
+        TIKTOK_OAUTH_REDIRECT_URI=TIKTOK_OAUTH_FIXED_REDIRECT_URI,
+        ALLOW_MOCK_PLATFORM_ADAPTERS=True,
+        AUTH_COOKIE_SECURE=False,
+        JWT_SECRET_KEY="fixture",
+        MINIO_SECRET_KEY="change-me",
+        DATABASE_URL="postgresql+asyncpg://crm:crm@localhost:5432/crm",
+        PUBLIC_BASE_URL="http://localhost:3000",
+        CORS_ORIGINS="*",
+        TIKTOK_EGRESS_IP=None,
+    )
+    assert settings.app_env == app_env
+    assert settings.allow_mock_platform_adapters is True
 
 
 def test_real_tiktok_read_and_webhook_can_start_with_complete_prerequisites() -> None:
@@ -166,12 +230,44 @@ def test_real_environments_reject_oauth_redirect_configuration_drift(
         )
 
 
-@pytest.mark.parametrize("app_env", ["integration", "staging", "production"])
-def test_real_environments_accept_only_fixed_oauth_redirect_uri(app_env: str) -> None:
-    """集成、预发布和生产环境共享同一架构固定回调地址。"""
-    settings = production_settings(APP_ENV=app_env)
+@pytest.mark.parametrize(
+    ("app_env", "redirect_uri"),
+    [
+        ("integration", TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI),
+        ("staging", TIKTOK_OAUTH_STAGING_REDIRECT_URI),
+        ("production", TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI),
+    ],
+)
+def test_real_environments_accept_only_their_fixed_oauth_redirect_uri(
+    app_env: str,
+    redirect_uri: str,
+) -> None:
+    """集成、预发布和生产环境只接受各自固定的 OAuth 回调地址。"""
+    settings = production_settings(
+        APP_ENV=app_env,
+        TIKTOK_OAUTH_REDIRECT_URI=redirect_uri,
+    )
+    assert settings.tiktok_oauth_redirect_uri == redirect_uri
 
-    assert settings.tiktok_oauth_redirect_uri == TIKTOK_OAUTH_FIXED_REDIRECT_URI
+
+@pytest.mark.parametrize(
+    ("app_env", "redirect_uri"),
+    [
+        ("integration", TIKTOK_OAUTH_STAGING_REDIRECT_URI),
+        ("staging", TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI),
+        ("production", TIKTOK_OAUTH_STAGING_REDIRECT_URI),
+    ],
+)
+def test_real_environments_reject_another_environments_oauth_redirect(
+    app_env: str,
+    redirect_uri: str,
+) -> None:
+    """真实环境拒绝其他环境的 OAuth 回调地址，避免凭据与回调错配。"""
+    with pytest.raises(ValidationError, match="TIKTOK_OAUTH_REDIRECT_URI"):
+        production_settings(
+            APP_ENV=app_env,
+            TIKTOK_OAUTH_REDIRECT_URI=redirect_uri,
+        )
 
 
 def test_tiktok_webhook_secret_is_hidden_from_settings_repr() -> None:
@@ -415,6 +511,37 @@ def test_tiktok_manual_overlay_limits_real_write_to_backend() -> None:
     assert 'AUTO_REPLY_ENABLED: "false"' in backend
     assert 'REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "false"' in worker
     assert 'REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"' in worker
+
+
+def test_rootless_staging_overlay_is_loopback_only_and_fail_closed() -> None:
+    """预发布覆盖层必须限制代理到回环地址并集中关闭真实能力。"""
+    overlay = (PROJECT_ROOT / "docker-compose.rootless-staging.yml").read_text(encoding="utf-8")
+
+    assert "x-rootless-staging-runtime: &rootless-staging-runtime" in overlay
+    assert 'APP_ENV: "staging"' in overlay.split("services:", 1)[0]
+    for name in (
+        "REAL_TIKTOK_READ_ENABLED",
+        "REAL_TIKTOK_WEBHOOK_ENABLED",
+        "REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
+        "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
+        "LLM_ENABLED",
+        "LLM_LIVE_EVAL",
+        "AI_TRANSLATION_ENABLED",
+        "AI_MARKETING_ENABLED",
+        "AUTO_REPLY_ENABLED",
+        "ALLOW_MOCK_PLATFORM_ADAPTERS",
+    ):
+        assert f'{name}: "false"' in overlay.split("services:", 1)[0]
+
+    for service_name in ("backend", "worker", "jobs", "agent-worker"):
+        service_block = compose_service_block(overlay, service_name)
+        assert "<<: *rootless-staging-runtime" in service_block
+        assert 'APP_ENV: "staging"' not in service_block
+
+    assert '"127.0.0.1:10080:80"' in overlay
+    assert '"127.0.0.1:10443:443"' in overlay
+    assert '"0.0.0.0:10080:80"' not in overlay
+    assert '"0.0.0.0:10443:443"' not in overlay
 
 
 def test_nginx_access_log_format_excludes_query_string() -> None:
