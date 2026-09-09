@@ -453,6 +453,37 @@ def test_tiktok_manual_overlay_limits_real_write_to_backend() -> None:
     assert 'REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"' in worker
 
 
+def test_rootless_staging_overlay_is_loopback_only_and_fail_closed() -> None:
+    """预发布覆盖层必须限制代理到回环地址并集中关闭真实能力。"""
+    overlay = (PROJECT_ROOT / "docker-compose.rootless-staging.yml").read_text(encoding="utf-8")
+
+    assert "x-rootless-staging-runtime: &rootless-staging-runtime" in overlay
+    assert 'APP_ENV: "staging"' in overlay.split("services:", 1)[0]
+    for name in (
+        "REAL_TIKTOK_READ_ENABLED",
+        "REAL_TIKTOK_WEBHOOK_ENABLED",
+        "REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
+        "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
+        "LLM_ENABLED",
+        "LLM_LIVE_EVAL",
+        "AI_TRANSLATION_ENABLED",
+        "AI_MARKETING_ENABLED",
+        "AUTO_REPLY_ENABLED",
+        "ALLOW_MOCK_PLATFORM_ADAPTERS",
+    ):
+        assert f'{name}: "false"' in overlay.split("services:", 1)[0]
+
+    for service_name in ("backend", "worker", "jobs", "agent-worker"):
+        service_block = compose_service_block(overlay, service_name)
+        assert "<<: *rootless-staging-runtime" in service_block
+        assert 'APP_ENV: "staging"' not in service_block
+
+    assert '"127.0.0.1:10080:80"' in overlay
+    assert '"127.0.0.1:10443:443"' in overlay
+    assert '"0.0.0.0:10080:80"' not in overlay
+    assert '"0.0.0.0:10443:443"' not in overlay
+
+
 def test_nginx_access_log_format_excludes_query_string() -> None:
     """代理日志不得在正常或上游错误路径记录 OAuth 查询参数。"""
     nginx_text = (PROJECT_ROOT / "deploy" / "nginx" / "nginx.conf").read_text(encoding="utf-8")
