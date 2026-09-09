@@ -49,6 +49,42 @@ def test_disabled_mock_resolvers_fail_closed_in_every_environment(
     assert error.value.status_code == 503
 
 
+@pytest.mark.parametrize("webhook_enabled", [True, False])
+def test_tiktok_real_capabilities_resolve_independently_when_mock_disabled(
+    monkeypatch: pytest.MonkeyPatch, webhook_enabled: bool
+) -> None:
+    """误用另一个真实能力开关会造成错误授权或拒绝，两个 resolver 必须交叉隔离。"""
+    settings = Settings(
+        _env_file=None,
+        APP_ENV="staging",
+        ALLOW_MOCK_PLATFORM_ADAPTERS=False,
+        AUTH_COOKIE_SECURE=True,
+        JWT_SECRET_KEY="unit-test-jwt-secret-with-at-least-32-characters",
+        MINIO_SECRET_KEY="unit-test-minio-secret",
+        DATABASE_URL="postgresql+asyncpg://crm:unit-test-password@localhost:5432/crm",
+        PUBLIC_BASE_URL="https://staging.hophorsefit.com",
+        CORS_ORIGINS="https://staging.hophorsefit.com",
+        TIKTOK_EGRESS_IP="203.0.113.10",
+        TIKTOK_OAUTH_REDIRECT_URI="https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback",
+        REAL_TIKTOK_READ_ENABLED=True,
+        REAL_TIKTOK_WEBHOOK_ENABLED=webhook_enabled,
+        REAL_TIKTOK_MESSAGE_WRITE_ENABLED=not webhook_enabled,
+        TIKTOK_APP_KEY="unit-test-real-app",
+        TIKTOK_SERVICE_ID="unit-test-service",
+        TIKTOK_APP_SECRET="unit-test-app-secret",
+        TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+    )
+    monkeypatch.setattr(adapters, "get_settings", lambda: settings)
+    enabled_resolver = adapters.get_platform_adapter if webhook_enabled else adapters.get_message_adapter
+    disabled_resolver = adapters.get_message_adapter if webhook_enabled else adapters.get_platform_adapter
+
+    assert isinstance(enabled_resolver("tiktok"), TikTokAdapter)
+    with pytest.raises(AppError) as error:
+        disabled_resolver("tiktok")
+    assert error.value.code == ErrorCode.THIRD_PARTY_ERROR
+    assert error.value.status_code == 503
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("app_env", ["development", "test", "integration", "staging", "production"])
 @pytest.mark.parametrize("platform", ["tiktok", "shopee", "amazon"])

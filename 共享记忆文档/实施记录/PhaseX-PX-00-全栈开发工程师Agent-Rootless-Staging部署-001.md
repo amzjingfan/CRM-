@@ -152,6 +152,8 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 
 ## 8. 实施结果
 
+2026-09-09 Task 7 审阅覆盖补充：新增 integration 拒绝 staging 回调、TikTok 真实能力交叉隔离，并用 fake Docker 实际命令日志检验两个脚本各可达 Compose 操作的固定项目/profile/三层文件参数。没有修改生产代码或重写先前安全修复提交。最终聚焦 13 passed，三个完整模块 250 passed、2 skipped；Ruff/format/diff 通过。详细命令与边界在 007 报告 §7.3；提交主题 `test: harden staging boundary regressions`，完整 SHA 可按该精确主题查询。控制器最终全量、独立审阅和 Tasks 8～12/现场/G1～G6 仍待执行。
+
 2026-09-09 Task 7 应用安全修复：基础配置校验扩展至 staging/production；Mock resolver 与直接发送以 `ALLOW_MOCK_PLATFORM_ADAPTERS` 为授权依据，关闭时所有环境均失败关闭。development/test/integration 基础夹具以及单独的 SSE/LLM 门禁保留，三平台 UI 和真实 TikTok 能力条件不变。新增行为先 RED（52 failed、50 passed），修复后同集 GREEN（102 passed）；完整 settings/SSE/adapter 模块 213 passed，TikTok 邻接模块 64 passed，Ruff/format/diff 检查通过。准确命令、失败分解、夹具修复和时间只维护于 007 报告 §7.2。提交主题 `fix: enforce staging application security`，完整 SHA 通过 `git log --all --format='%H %s' --grep='^fix: enforce staging application security$'` 解析。本次产品修复后的控制器全量复核和独立审阅待执行，以下先前全量结果保留历史语义，不能代替本轮全量验证；Tasks 8～12、现场及 G1～G6 仍待执行。
 
 2026-09-09 Task 7 聚焦修复与全量验证补充：首次全量复核发现的两处旧 staging 测试输入已修正，提交为 `6323316f35560b6f9c755c5e46966f3ac5da27cb`（`test: align staging runtime fixtures`）。没有修改产品校验或 integration/production 回调。控制器在该修复后使用仓库外 basetemp 完成后端全量复核：`1422 passed, 14 skipped, 2 warnings in 30.00s`，exit 0；较早的新聚焦回归为 `193 passed, 2 skipped in 25.61s`，exit 0。两条依赖弃用警告与跳过项、原失败案例及静态质量证据详见 007 报告 §7.1。本次还将唯一误跟踪的 SDD `task-1-report.md` 移出 Git 索引，保留本地被忽略的原始证据。当前实施和现场验收状态不变。

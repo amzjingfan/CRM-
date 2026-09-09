@@ -253,6 +253,7 @@ def test_real_environments_accept_only_their_fixed_oauth_redirect_uri(
 @pytest.mark.parametrize(
     ("app_env", "redirect_uri"),
     [
+        ("integration", TIKTOK_OAUTH_STAGING_REDIRECT_URI),
         ("staging", TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI),
         ("production", TIKTOK_OAUTH_STAGING_REDIRECT_URI),
     ],

@@ -150,6 +150,22 @@ RED 的 52 个失败均为目标行为缺失：24 个 staging 不安全配置未
 
 上述为开发修复自测。§7.1 的全量结果早于本次产品修复，不能作为本次最终全量通过证据；控制器必须重新运行后端全套并完成独立审阅。Tasks 8～12、现场部署、G1～G6 和 production 均待执行，不更新为通过。
 
+### 7.3 Task 7 审阅覆盖补充（2026-09-09）
+
+在 `fc1d0d269b2fab1c353f7eafd945ca974739442f` 后补充三个 Minor 覆盖建议，未修改生产代码：integration 明确拒绝 staging 回调（既有 exact www 正向继续保留）；Mock=false 的 TikTok Webhook/普通消息两个开关交叉隔离；fake Docker 命令日志逐次断言 `--project-name crm-staging`、`--profile ai` 以及按顺序的 base/prod/rootless-staging 三个 `-f`。该三层契约经控制器核对，不额外加入 `docker-compose.ai.yml`。
+
+命令参数断言覆盖两个脚本的 ValidateOnly、WhatIf、config 失败和健康等待失败路径中实际可达的全部 config/pull/up 调用；只排除不接受项目参数的 `compose version` 探测。它检查 CLI 实参而非源码片段；fake Docker 不启动容器。
+
+提交主题 `test: harden staging boundary regressions`；完整 SHA 可通过 `git log --all --format='%H %s' --grep='^test: harden staging boundary regressions$'` 解析。以下均在 backend 执行，使用第 3 节 Python：
+
+| 验证项 | 命令 | 准确结果 |
+| --- | --- | --- |
+| 最终聚焦 | `python -m pytest tests/test_real_runtime_config.py tests/test_platform_adapters.py tests/test_production_gate_scripts.py -k 'another_environments or real_capabilities_resolve or clear_and_restore_inherited or live_gate_waits' -q --tb=short -p no:cacheprovider --basetemp='C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-coverage-focused-final-20260909'` | 13 passed, 239 deselected in 5.63s，exit 0 |
+| 三个完整模块 | `python -m pytest tests/test_real_runtime_config.py tests/test_platform_adapters.py tests/test_production_gate_scripts.py -q --tb=short -p no:cacheprovider --basetemp='C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-coverage-modules-20260909'` | 250 passed, 2 skipped in 25.75s，exit 0 |
+| 静态质量 | `python -m ruff check tests/test_real_runtime_config.py tests/test_platform_adapters.py tests/test_production_gate_scripts.py`；同路径 `python -m ruff format --check`；`git diff --check` | All checks passed；3 files already formatted；无空白错误 |
+
+两个跳过项仍为既有 Windows 文件 symlink 案例，不计通过。本次为现有行为的补充回归，首次执行即通过，不声明 RED 或新功能实现。控制器最终后端全量复核、独立验收、Tasks 8～12 现场和 G1～G6 均待执行。
+
 ## 8. 后续现场证据（Task 12）
 
 未执行。待追加 UTC 时间、完整提交、候选/上一版 RepoDigest、overlay/配置 SHA-256、OS/Rootless 数据路径、系统容器保护比较、健康/迁移、备份恢复、兼容回滚、workflow run ID 和独立复核人。不得预填成功值或伪造现场摘要。

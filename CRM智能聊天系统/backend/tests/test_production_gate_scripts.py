@@ -362,6 +362,26 @@ def create_directory_link(link_path: Path, target_path: Path) -> None:
         pytest.skip("directory junctions are unavailable on this Windows runner")
 
 
+def assert_compose_invocations_use_fixed_staging_target(command_log: Path) -> None:
+    """校验真正交给 CLI 的每个操作参数，捕获项目名、profile 或任一覆盖层丢失。"""
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    # CLI 探测 compose version 不接收项目配置；其余 config/pull/up 均必须隔离。
+    operations = [arguments for arguments in commands if arguments[:2] != ["compose", "version"]]
+    assert operations, "gate must reach a real Compose operation"
+    for arguments in operations:
+        assert arguments[0] == "compose"
+        assert arguments.count("--project-name") == 1
+        assert arguments[arguments.index("--project-name") + 1] == "crm-staging"
+        assert arguments.count("--profile") == 1
+        assert arguments[arguments.index("--profile") + 1] == "ai"
+        compose_files = [Path(arguments[index + 1]) for index, value in enumerate(arguments) if value == "-f"]
+        assert compose_files == [
+            PROJECT_ROOT / "docker-compose.yml",
+            PROJECT_ROOT / "docker-compose.prod.yml",
+            PROJECT_ROOT / "docker-compose.rootless-staging.yml",
+        ]
+
+
 def create_file_link(link_path: Path, target_path: Path) -> None:
     """创建文件符号链接；不支持时跳过该平台专用分支。"""
     try:
@@ -466,7 +486,7 @@ def test_gate_scripts_clear_and_restore_inherited_docker_context(
             if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
         )
     )
-    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
     inherited_context = "inherited-system-docker-context"
     environment["DOCKER_CONTEXT"] = inherited_context
     mode_arguments: tuple[str, ...] = ("-ValidateOnly",)
@@ -502,6 +522,7 @@ def test_gate_scripts_clear_and_restore_inherited_docker_context(
     ]
     assert context_values
     assert context_values == [""] * len(context_values)
+    assert_compose_invocations_use_fixed_staging_target(command_log)
 
 
 def test_preflight_rejects_floating_application_image(
@@ -1278,6 +1299,7 @@ def test_live_gate_waits_for_compose_health_before_writing_passed_evidence(
     )
 
     assert command_log.exists(), result.stdout + result.stderr
+    assert_compose_invocations_use_fixed_staging_target(command_log)
     commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
     up_commands = [arguments for arguments in commands if "up" in arguments]
     assert result.returncode != 0
