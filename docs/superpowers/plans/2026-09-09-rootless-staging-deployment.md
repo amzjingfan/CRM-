@@ -977,9 +977,13 @@ Expected: SAN contains exactly or includes `DNS:staging.hophorsefit.com`, certif
 
 - [ ] **Step 3: Validate and transfer the six BGE files**
 
-Use `CRM智能聊天系统/deploy/models/model-manifest.json` as the only hash authority. Transfer the six regular
-files to `/home/crmdeploy/assets/models`, reject symlinks, then run SHA-256 verification on the server. Expected:
-all six hashes match before any model container starts.
+Transfer the six regular BGE files to `/home/crmdeploy/assets/models` and reject symlinks, including parent
+path components. The current `CRM智能聊天系统/deploy/models/model-manifest.json` authoritatively records only
+the two weight SHA-256 values; verify those two first. It does not contain hashes for the four auxiliary
+`config.json`/`tokenizer.json` files. Obtain their authoritative hashes from trusted sources and add them to
+a reviewed machine-readable authority before starting any model container, unless an architect explicitly
+approves a reduced requirement. Missing auxiliary hash evidence is a hard stop; do not claim that six hashes
+match. This 2026-09-09 correction supersedes the original six-hash assumption; live verification is pending.
 
 - [ ] **Step 4: Create the fail-closed staging environment file**
 
@@ -1021,14 +1025,17 @@ changed.
 
 - [ ] **Step 1: Install the public entry proxy**
 
-After Rootless proxy readiness on `127.0.0.1:10080/10443`, run as root:
+Before the first deploy, install the socket entry as root; backend readiness on
+`127.0.0.1:10080/10443` is not a prerequisite for this installation:
 
 ```bash
-/home/crmdeploy/src/rootless-staging-bootstrap/install-entry-proxy.sh
+bash /home/crmdeploy/src/rootless-staging-bootstrap/install-entry-proxy.sh
 ```
 
-Expected: systemd owns public `80/443`, forwards only to loopback high ports, and company containers remain
-unchanged.
+At this stage verify only systemd listening/ownership of public `80/443` and the configured forwarding targets
+`127.0.0.1:10080/10443`; listening does not prove backend readiness or forwarding success. Company containers
+must remain unchanged; any difference is a hard stop, not authorization to repair them. After deploy succeeds,
+Step 3 proves actual connections/public health and repeats the installer to verify activated-socket idempotency.
 
 - [ ] **Step 2: Deploy with all capabilities forced off**
 
@@ -1048,6 +1055,12 @@ curl.exe --fail --proto '=https' https://staging.hophorsefit.com/v1/health/ready
 
 Expected: HTTP 2xx; responses contain no database URL, Redis URL, model path, token, secret or raw exception.
 
+Establish actual connections to both public `80/443`, including the HTTPS checks above, then rerun the same
+`bash /home/crmdeploy/src/rootless-staging-bootstrap/install-entry-proxy.sh`
+as root. Verify `listening` → `running` activation, forwarding to the Rootless loopback targets and repeat-install
+idempotency, while company containers remain unchanged. These are pending live checks, not results inferred
+from the pre-deploy listeners.
+
 - [ ] **Step 4: Prove capability fail-closed state**
 
 Inspect only selected environment variable names/boolean values inside backend, worker, jobs and agent-worker.
@@ -1062,10 +1075,16 @@ checksums, then remove only the temporary verification target after explicit pat
 
 - [ ] **Step 6: Execute the immutable image rollback drill**
 
-Use the merged-main images as candidate and the exact previous `f7c0f9f9` references from
-`release/images/mvp-production-gates.json` as the previous set. Dispatch `operation=rollback`. Expected order:
-disable capabilities, deploy previous digests, pass three health checks. Then redeploy the merged-main candidate
-with a separate `deploy` run.
+Use the merged-main images as candidate. Require a reviewed previous backend/frontend/retrieval three-digest
+set, each immutable and different from its candidate counterpart, compatible with the staging callback,
+migration `023_marketing_review_idempotency` and the configuration. Without such a compatible set, the real
+rollback is blocked. Historical `f7c0f9f9` references in `release/images/mvp-production-gates.json` support only
+the www callback and are incompatible evidence, not an approved successful rollback target. Do not change
+staging to the production domain or claim rollback passed to bypass this prerequisite.
+
+Only after compatibility approval, dispatch `operation=rollback`. Expected order: disable capabilities,
+deploy the approved previous digests and pass three health checks; then redeploy the merged-main candidate
+with a separate `deploy` run. These outcomes remain pending actual execution.
 
 - [ ] **Step 7: Reconfirm existing system Docker containers and disk isolation**
 
