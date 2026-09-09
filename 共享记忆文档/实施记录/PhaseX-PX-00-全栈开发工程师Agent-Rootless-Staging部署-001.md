@@ -152,6 +152,8 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 
 ## 8. 实施结果
 
+2026-09-09 Task 7 最终控制器复核：在 `0eb399c763928586276f8c7aa6746f95f663608d` 上，计划要求的四文件聚焦结果为 `245 passed, 2 skipped in 26.69s`，后端全量为 `1527 passed, 14 skipped, 2 warnings in 35.18s`，两项 exit 0。两条 warning 是既有 Starlette/httpx 与 passlib/argon2 依赖弃用警告；跳过项不计通过。来源为控制器新运行结果，本次仅记录，详见 007 报告 §7.4。本地仓库实现验证通过，以下历史段落的“控制器全量待执行”已由本轮完成；远端集成和正式独立验收仍待后续，所有 Tasks 8～12/服务器/现场/G1～G6/production 门禁保持待执行。
+
 2026-09-09 Task 6 最终审阅计划勘误：修改 `docs/superpowers/plans/2026-09-09-rootless-staging-deployment.md` 的 Task 10 模型摘要门槛、Task 11 入口安装/部署后激活验证顺序及兼容上一版三摘要要求，并同步既有 007 报告。当前仅两个权重摘要有清单权威，四个辅助摘要缺失则硬停；历史 `f7c0f9f9` 不直接用于成功回滚。提交主题 `docs: correct rootless live execution plan`，完整 SHA 可按精确主题查询；只校正文档，无服务器变更，live/G1～G6 仍待执行。
 
 2026-09-09 Task 7 审阅覆盖补充：新增 integration 拒绝 staging 回调、TikTok 真实能力交叉隔离，并用 fake Docker 实际命令日志检验两个脚本各可达 Compose 操作的固定项目/profile/三层文件参数。没有修改生产代码或重写先前安全修复提交。最终聚焦 13 passed，三个完整模块 250 passed、2 skipped；Ruff/format/diff 通过。详细命令与边界在 007 报告 §7.3；提交主题 `test: harden staging boundary regressions`，完整 SHA 可按该精确主题查询。控制器最终全量、独立审阅和 Tasks 8～12/现场/G1～G6 仍待执行。
@@ -160,7 +162,7 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 
 2026-09-09 Task 7 聚焦修复与全量验证补充：首次全量复核发现的两处旧 staging 测试输入已修正，提交为 `6323316f35560b6f9c755c5e46966f3ac5da27cb`（`test: align staging runtime fixtures`）。没有修改产品校验或 integration/production 回调。控制器在该修复后使用仓库外 basetemp 完成后端全量复核：`1422 passed, 14 skipped, 2 warnings in 30.00s`，exit 0；较早的新聚焦回归为 `193 passed, 2 skipped in 25.61s`，exit 0。两条依赖弃用警告与跳过项、原失败案例及静态质量证据详见 007 报告 §7.1。本次还将唯一误跟踪的 SDD `task-1-report.md` 移出 Git 索引，保留本地被忽略的原始证据。当前实施和现场验收状态不变。
 
-- 完成项：Tasks 1～5 工程资产及修复；Task 6 文档/ADR/示例/报告/索引同步。
+- 完成项：Tasks 1～5 工程资产及修复；Task 6 文档/ADR/示例/报告/索引同步；Task 7 本地仓库实现验证通过。
 - 未完成项：Task 7 其余分支复核及远端集成；Tasks 8～12 现场部署与证据；G1～G6；production。
 - 与原方案差异：架构师批准在共享接口、产品 README 和全栈 PLAN-002 各追加一条 dated 勘误，不重写历史或修改接口结构；若不修正会导致运行配置与共享接口权威冲突，并让操作人沿用错误 staging 回调。入口 socket 先于首次 deploy 监听以满足脚本公网探针，监听不等于健康；已识别历史回滚版本回调不兼容、辅助模型摘要不足，均列为停点。
 - 当前状态：部分完成。仓库工程交付不构成基础运行面、失败关闭部署、真实门禁或生产签署通过。
