@@ -42,6 +42,14 @@ Rootless socket 固定 `unix:///run/user/1004/docker.sock`，Compose 项目名�
 
 `基础运行面就绪`、`失败关闭部署通过`、`G1～G6 真实门禁通过`、`production 放行` 是四个独立结论，前者不推导后者。真实能力逐项开启需要另行受控配置与测试批准。
 
+### 3.4 Runner 离线可信缓存
+
+当 staging 主机无法稳定下载 GitHub Release 归档时，允许操作人在受控本地环境中仅从 `toolchain-manifest.json` 登记的官方 GitHub HTTPS URL 下载，先按清单 SHA-256 校验，再通过受保护 SSH/SCP 通道传入 `/home/crmdeploy/.cache/crm-toolchain/sealed-<manifest filename>`。该方式是官方制品的经验证转运，不是第三方镜像。
+
+安装器必须从同一已校验清单导出官方文件名，并在解压前重新校验 `/home/crmdeploy` 及安装路径遍历到的每一个既有目录均为 UID 1004 拥有、非符号链接的目录且不可被组/其他用户写入；新建目录继续受 `umask 077` 约束。缓存文件还必须是 UID 1004 拥有、不可被组/其他用户写入的非符号链接普通文件，并与清单 SHA-256 一致。路径存在但任一检查失败时必须硬停，禁止退回网络绕过；只有路径完全不存在时，才可使用原官方 URL 的直连下载流程。无论来源，都必须走“摘要通过 → 私有临时目录解压 → 原子提升”的唯一路径。
+
+Runner 注册所用安装器、工具清单和用户 unit 必须来自干净 `main` 的同一 40 位合并 HEAD。三项资产先传入唯一临时目录，逐文件完成类型、链接、UID 1004、组/其他写权限、本地/远端 SHA-256 和 Bash 语法校验，再原子提升为带 HEAD 的版本目录。每个 bootstrap/cache 的 prepare、verify/promote SSH 调用都必须重新验证所依赖父路径和临时/目标路径，不依赖前一进程检查，也不得依赖 `install -d -m` 修正既有不安全权限。Token 阶段重新推导 HEAD、重算三项本地摘要，并在申请短期 Token 前完成一次同等强度的远端最终复验；携带 Token 的 SSH 还必须在同一个远端进程内先再次执行完整复验，全部成功后才从 stdin 规范化 Token 并调用该版本安装器。Token 不得进入命令参数、文件、环境或输出，且禁止依赖前一个 SSH 的检查结果。
+
 ## 4. 影响与后果
 
 - 镜像和数据消耗 `/home`，系统 Docker 不承载 CRM；Rootless 自身的网络/cgroup、原生依赖和性能仍需 Ubuntu 现场验证。
