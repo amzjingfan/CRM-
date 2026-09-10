@@ -16,7 +16,7 @@ from app.stores.models import ChannelAccount
 
 def adapter_settings(app_env: str, *, allow_mock: bool) -> Settings:
     """使用真实 Settings 和虚构安全凭据，避免启动校验掩盖适配器门禁。"""
-    host = "staging.hophorsefit.com" if app_env == "staging" else "www.hophorsefit.com"
+    host = "staging.overselfx.com" if app_env == "staging" else "www.hophorsefit.com"
     return Settings(
         _env_file=None,
         APP_ENV=app_env,
@@ -62,10 +62,10 @@ def test_tiktok_real_capabilities_resolve_independently_when_mock_disabled(
         JWT_SECRET_KEY="unit-test-jwt-secret-with-at-least-32-characters",
         MINIO_SECRET_KEY="unit-test-minio-secret",
         DATABASE_URL="postgresql+asyncpg://crm:unit-test-password@localhost:5432/crm",
-        PUBLIC_BASE_URL="https://staging.hophorsefit.com",
-        CORS_ORIGINS="https://staging.hophorsefit.com",
+        PUBLIC_BASE_URL="https://staging.overselfx.com",
+        CORS_ORIGINS="https://staging.overselfx.com",
         TIKTOK_EGRESS_IP="203.0.113.10",
-        TIKTOK_OAUTH_REDIRECT_URI="https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback",
+        TIKTOK_OAUTH_REDIRECT_URI="https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback",
         REAL_TIKTOK_READ_ENABLED=True,
         REAL_TIKTOK_WEBHOOK_ENABLED=webhook_enabled,
         REAL_TIKTOK_MESSAGE_WRITE_ENABLED=not webhook_enabled,

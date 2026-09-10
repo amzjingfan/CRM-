@@ -5,20 +5,20 @@
 | 项目 | 内容 |
 | --- | --- |
 | Phase | Phase4 |
-| 任务编号 | P4-00；关联 P4-11、REAL-FS-01/G0；Rootless 实施计划 Tasks 1～9 |
+| 任务编号 | P4-00；关联 P4-11、REAL-FS-01/G0；Rootless 实施计划 Tasks 1～9 与 Task 10 域名前置 |
 | 模块编号 | M00 |
 | 模块名称 | Rootless Staging 运行面 |
 | 被测主责 Agent | 全栈开发工程师Agent |
 | 被测协作 Agent | 架构师Agent、共享记忆文档Agent |
 | 测试执行 Agent | 测试工程师Agent（Task 9 已独立现场只读复核） |
 | 关联实施记录 | `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-Rootless-Staging部署-001.md` |
-| 测试类型 | 综合测试、静态契约、无网络脚本回归、文档一致性、Ubuntu 基础设施现场验收 |
+| 测试类型 | 综合测试、静态契约、无网络脚本回归、文档一致性、域名契约回归、Ubuntu 基础设施现场验收 |
 | 执行日期 | 2026-09-09～2026-09-10 |
-| 测试结论 | Tasks 8/9 基础设施运行面已就绪；Task 10/11、G1～G6 和 production 仍阻塞 |
+| 测试结论 | Tasks 8/9 基础设施运行面已就绪；新 staging 域名工程契约通过开发侧回归；Task 10 公网/TLS 剩余项、Task 11、G1～G6 和 production 仍阻塞 |
 
 独立测试结论：Task 9 READY；Critical/Important/Minor 均为 0
 
-本文是该运行面的单一工程/现场证据记录。Task 12 在本文件继续追加带日期、SHA 与 run ID 的现场证据，保留各工程阶段记录，不覆盖历史测试结果，不另建第二份竞争结论。当前已有服务器、Rootless Docker 与 runner 的真实证据；尚无 DNS/TLS、六文件模型、应用部署、公开健康、恢复/回滚或 G1～G6 成功声明，`production_release=false`。
+本文是该运行面的单一工程/现场证据记录。Task 12 在本文件继续追加带日期、SHA 与 run ID 的现场证据，保留各工程阶段记录，不覆盖历史测试结果，不另建第二份竞争结论。当前已有服务器、Rootless Docker、runner 和新域名 DNS A 记录的真实证据；NAT 仅有用户配置确认，尚无入口监听后的公网 TCP、公信 TLS、六文件模型、应用部署、公开健康、恢复/回滚或 G1～G6 成功声明，`production_release=false`。
 
 ## 2. 范围、环境与证据来源
 
@@ -192,4 +192,16 @@ RED 的 52 个失败均为目标行为缺失：24 个 staging 不安全配置未
 - 失败关闭：首次 Windows SCP 产生 `0664` 时流程在权限门禁退出，未提升、未取 Token、未安装。两项顺序缺陷通过 PR #14/#15 修复；首次失败 incoming 与两个历史 partial 的两次独立元数据快照完全一致，均未覆盖或删除。
 - 独立复核：测试工程师Agent 以只读 SSH/GitHub 查询逐项重验，结论 READY，Critical/Important/Minor 均为 0；未读取凭据内容或改变本地、服务器及 GitHub 状态。
 
-Task 9 已关闭。Task 10 仍需 DNS/TLS、六文件模型可信摘要、外部配置与候选镜像 RepoDigest；Task 11 仍需应用部署、健康、迁移 023、恢复和兼容回滚；Task 12 还需汇总候选/上一版摘要及 G1～G6。不得把本节解释为 staging 应用或 production 放行。
+Task 9 已关闭。Task 10 的 DNS A 记录已经确认，仍需入口监听后的公网 80/443 复验、公信 TLS、六文件模型可信摘要、外部配置与候选镜像 RepoDigest；Task 11 仍需应用部署、健康、迁移 023、恢复和兼容回滚；Task 12 还需汇总候选/上一版摘要及 G1～G6。不得把本节解释为 staging 应用或 production 放行。
+
+### 8.2 Staging 域名切换工程证据（2026-09-10）
+
+- 决策与范围：用户批准当前 staging 从 `staging.hophorsefit.com` 切换为 `staging.overselfx.com`。production `www.hophorsefit.com` 不变；旧 staging 域名仅保留在历史记录和拒绝测试中。
+- 外部现状：系统解析器返回 `staging.overselfx.com → 183.158.225.78`，TTL 601；用户确认公网 80/443 已映射到 `192.168.110.210:80/443`。入口尚未监听时两端口的外部 TCP 探测失败，因此 NAT 仍需部署后复验，不据此判定成功或失败。
+- TDD RED：只修改新旧域名行为测试后，聚焦集得到 `3 failed, 6 passed`，失败准确表现为运行配置和工作流仍接受旧域名、拒绝新域名。
+- TDD GREEN：更新 Settings 与工作流后，同一聚焦集得到 `9 passed in 3.66s`。
+- 受影响模块回归：`test_real_runtime_config.py`、`test_platform_adapters.py`、`test_production_gate_scripts.py`、`test_real_fs05_sse_runtime.py` 共 `278 passed, 2 skipped in 44.80s`，exit 0。
+- 后端全量回归：`1552 passed, 16 skipped, 2 warnings in 48.29s`，exit 0。两条 warning 仍是 Starlette/httpx 和 passlib/argon2 的既有依赖弃用告警；跳过项不计通过。
+- 静态质量：5 个变更 Python 文件的 Ruff check 与 format check 通过。公开配置、运行手册、ADR、接口说明、工作流和测试夹具均已指向新域名；旧域名保持失败关闭。
+
+以上为开发侧仓库验证，不替代测试工程师对合并 main、GitHub Actions 和真实公网/TLS 的独立复核。Task 10/11、G1～G6 与 production 状态不变。

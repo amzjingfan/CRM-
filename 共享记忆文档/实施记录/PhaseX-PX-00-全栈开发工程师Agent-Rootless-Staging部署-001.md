@@ -5,7 +5,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | Phase | PhaseX |
-| 任务编号 | PX-00（跨阶段部署治理编号，正式专项编号待补充）；关联 P4-11、REAL-FS-01/G0，Rootless 计划 Tasks 1～9 |
+| 任务编号 | PX-00（跨阶段部署治理编号，正式专项编号待补充）；关联 P4-11、REAL-FS-01/G0，Rootless 计划 Tasks 1～9 与 Task 10 域名前置 |
 | 模块编号 | M00 |
 | 主责 Agent | 全栈开发工程师Agent |
 | 协作 Agent | 架构师Agent、共享记忆文档Agent、测试工程师Agent |
@@ -13,7 +13,7 @@
 | 开始日期 | 2026-09-09 |
 | 完成日期 | 未完成（Tasks 8/9 基础设施现场完成，应用部署待执行） |
 | 代码位置 | `CRM智能聊天系统/`；根工作流/属性和跨角色文档 |
-| 分支/工作树 | `feature/rootless-staging` / `.worktrees/rootless-staging` |
+| 分支/工作树 | 初始 `feature/rootless-staging` / `.worktrees/rootless-staging`；域名切换 `fix/staging-domain-overselfx` / `.worktrees/staging-domain-overselfx` |
 | 服务器变更 | 有；`/home/crmdeploy` Rootless 运行面及 GitHub Runner，系统 Docker 与公司容器未变更 |
 
 ## 2. 需求与依据
@@ -33,7 +33,7 @@
 
 ### 3.2 实施范围
 
-精确回调、Compose overlay、staging 脚本、主机/入口资产、runner 工具链、工作流、配置示例、ADR/运行手册/报告及索引。当前记录已追加 Tasks 8/9 基础设施现场事实；Task 12 将继续汇总后续部署与门禁证据。
+精确回调、Compose overlay、staging 脚本、主机/入口资产、runner 工具链、工作流、配置示例、ADR/运行手册/报告及索引。当前记录已追加 Tasks 8/9 基础设施现场事实和 2026-09-10 staging 域名切换；Task 12 将继续汇总后续部署与门禁证据。
 
 ### 3.3 非目标
 
@@ -137,6 +137,14 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 
 精确回调和固定环境阻止跨环境误配；门禁把 DockerHost/context 纳入环境快照并恢复。入口安装器验证逐字 unit/权限/端口/PID，失败撤销本次新增变化。Runner 在读取 Token 前关闭 allexport 并清理导出属性，摘要验证后才解压，用户服务不具 root 权限。复杂分支已在代码中保留中文注释。
 
+### 6.4 2026-09-10 域名切换文件范围
+
+- 运行行为与 CI：`.github/workflows/staging-gates.yml`、`CRM智能聊天系统/backend/app/shared/config/settings.py`。
+- 测试与夹具：`test_real_runtime_config.py`、`test_platform_adapters.py`、`test_production_gate_scripts.py`、`test_real_fs05_sse_runtime.py`。
+- 配置与运行文档：`CRM智能聊天系统/.env.example`、产品/production/Rootless README、Rootless design 与 implementation plan、全栈 PLAN-002。
+- 权威契约与证据：ADR-004、ADR-007、管理端接口文档、本实施记录、007 测试报告以及实施/测试两个索引。
+- 未变更：API 请求/响应、数据库迁移、production 域名、产品/UI 三平台定义、AI/RAG 行为和服务器运行状态。
+
 ## 7. 验证记录
 
 完整命令、RED/GREEN 历史、准确数量和边界只在 007 报告维护；本记录不复制完整测试结论。
@@ -144,12 +152,12 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 | 验证项 | 命令或方法 | 预期结果 | 实际结果 | 状态 |
 | --- | --- | --- | --- | --- |
 | Tasks 1～5 工程交接 | 逐份报告与 git log 对照 | 提交/数量可追溯 | 八个实现/修复提交均存在；最终四套回归 193 passed、2 skipped（开发自测） | 通过 |
-| 公网地址 | 两次 `git grep -n` 精确回调 | 保留生产，staging 仅环境语境 | www 27 行、staging 15 行；历史跨环境说法已加架构批准勘误，历史测试报告不改写 | 通过 |
+| 公网地址 | 新旧域名行为测试与精确文本审计 | 保留 production；新 staging 精确接受，旧 staging 失败关闭 | 2026-09-10 新域名聚焦 9 passed，受影响模块 278 passed、2 skipped；历史测试事实未改写 | 通过 |
 | 文档空白 | `git diff --check`、`git diff --cached --check` | 无输出、exit 0 | 两项均无输出、exit 0 | 通过 |
 | Task 6 审阅修复 | Windows PowerShell 5.1/PowerShell 7.6.5 原生管道 → 本地 Bash 严格读取替身 | CRLF 转 LF；非零退出和 finally 清理保留 | 原命令 RED；文档规范化后两环境共 4 个聚焦断言通过，详见 007 报告；安装器代码和服务器均未变更 | 通过 |
 | 索引/镜像/低敏 | 路径存在、清单比对、变更扫描及人工复核 | 无缺文件/摘要漂移/真实凭据 | 测试索引 92 路径、实施索引 122 路径均存在；3/3 镜像逐字符合清单；高置信凭据模式零命中，无新增真实凭据或现场摘要 | 通过 |
 | Task 8/9 Ubuntu 基础设施 | 主责取证及测试工程师Agent 独立只读复核 | Rootless/Runner 可用且系统 Docker 不变 | Rootless active/enabled、数据根正确、容器 0；Runner `2.336.0` online；系统 Docker 14/12 和五字段摘要不变 | 通过 |
-| Task 10/11 应用现场 | 外部材料、部署、健康、迁移、恢复与回滚 | 真实应用运行面可证 | DNS/TLS/六文件模型/配置/镜像/部署/恢复/回滚待执行 | 未执行 |
+| Task 10/11 应用现场 | 外部材料、部署、健康、迁移、恢复与回滚 | 真实应用运行面可证 | 新域名 DNS A 已确认；公网监听/TLS/六文件模型/配置/镜像/部署/恢复/回滚待执行 | 部分完成 |
 
 ## 8. 实施结果
 
@@ -165,6 +173,8 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 
 2026-09-10 Tasks 8/9 基础设施现场补充：`crmdeploy` UID/GID 1004 的 Rootless Docker active/enabled，数据根 `/home/crmdeploy/.local/share/docker`，容器 0；Runner 工具链从清单官方 URL 经 SHA-256 密封缓存安装，PowerShell `7.6.5`、Runner.Listener `2.336.0`，用户服务 active/enabled/running。GitHub 唯一 runner `crm-staging-192-168-110-210` online、busy=false、四个标签完整。系统 Docker 仍为 `/var/lib/docker`、14 个/运行中 12 个，五字段 SHA-256 `d807427f814e97ffb27ed16a5c6409ab732def8b27841fe209a9b47880226cdb` 与基线一致。测试工程师Agent 独立只读现场复核 READY，Critical/Important/Minor 均为 0。完整归档、版本资产、PR/CI 和失败关闭证据见 007 报告 §8.1 与 Runner 001 报告。
 
+2026-09-10 staging 域名切换补充：经用户批准，当前 staging 公共地址、OAuth callback、Webhook、TLS 目录、GitHub Actions 精确门禁及活动运行文档统一切换到 `staging.overselfx.com`；production 地址保持 `www.hophorsefit.com`。测试先 RED（3 failed、6 passed），修复后聚焦 9 passed，四个受影响模块 278 passed、2 skipped，后端全量 1552 passed、16 skipped、2 个既有依赖 warning，Ruff check/format 通过。当前执行环境的系统解析器已将 DNS A 记录解析到 `183.158.225.78`；NAT 为用户确认，需入口监听后复验，TLS 和其余 Task 10/11 材料仍未完成。完整证据见 007 报告 §8.2。
+
 - 完成项：Tasks 1～7 仓库工程及文档；Task 8 Rootless 主机基础运行面；Task 9 Runner 官方工具链、用户服务和 GitHub online 现场验收。
 - 未完成项：Task 10 外部材料、Task 11 应用部署/恢复/回滚、Task 12 后续汇总；G1～G6；production。
 - 与原方案差异：架构师批准在共享接口、产品 README 和全栈 PLAN-002 各追加一条 dated 勘误，不重写历史或修改接口结构；若不修正会导致运行配置与共享接口权威冲突，并让操作人沿用错误 staging 回调。入口 socket 先于首次 deploy 监听以满足脚本公网探针，监听不等于健康；已识别历史回滚版本回调不兼容、辅助模型摘要不足，均列为停点。
@@ -175,7 +185,7 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 | 编号 | 问题或风险 | 优先级 | 负责 Agent | 计划处理 Phase/任务 |
 | --- | --- | --- | --- | --- |
 | R-RLS-001 | Ubuntu 主机、Rootless、Runner 原生依赖和 systemd 动态行为（Tasks 8/9 现场及独立只读复核通过） | Closed | 全栈开发工程师Agent/测试工程师Agent | Task 8～9 |
-| R-RLS-002 | DNS/TLS/真实配置/外部模型及新 main 镜像尚未取得 | P1 | 全栈开发工程师Agent | Task 7/10 |
+| R-RLS-002 | DNS A 已确认；入口监听后的公网 TCP、公信 TLS、真实配置、外部模型及新 main 镜像尚未取得 | P1 | 全栈开发工程师Agent | Task 10 |
 | R-RLS-003 | 历史 f7c0f9f9 不接受 staging 专用回调，回滚兼容性阻断 | P1 | 架构师Agent | Task 11 前 |
 | R-RLS-004 | 四个辅助模型 JSON 缺少清单 SHA-256；只有两份权重已登记 | P2 | AIAgent开发工程师Agent/架构师Agent | Task 10 |
 | R-RLS-005 | 独立日志复测及 G1～G6 真实验证未完成 | P1 | 测试工程师Agent | G0～G6 |
@@ -183,7 +193,7 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 ## 10. 交接事项
 
 - 交接给：架构师Agent、测试工程师Agent、后续部署执行者。
-- 后续任务：按已批准计划准备 Task 10 外部材料并 validate，通过后执行 Task 11 应用部署/恢复/回滚；Task 12 继续追加低敏现场记录。
+- 后续任务：按已批准计划继续准备 Task 10 TLS、模型、配置与候选镜像材料，入口监听后复验公网 NAT 并 validate；通过后执行 Task 11 应用部署/恢复/回滚，Task 12 继续追加低敏现场记录。
 - 必须注意：任何系统容器五字段变化都硬停；旧版本回调与模型辅助摘要问题先确认；原始配置、Token、私钥、模型和业务数据不得进入报告或 Git；数据删除需要单独明确批准。
 
 ## 11. 文档同步

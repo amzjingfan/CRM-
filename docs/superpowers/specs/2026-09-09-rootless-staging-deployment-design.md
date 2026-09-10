@@ -1,9 +1,9 @@
 # Rootless Docker Staging 部署设计
 
-日期：2026-09-09
+日期：2026-09-09；2026-09-10 更新 staging 域名
 状态：已批准
 目标环境：`staging`
-目标域名：`staging.hophorsefit.com`
+目标域名：`staging.overselfx.com`
 
 ## 1. 目标
 
@@ -39,7 +39,7 @@
   仅缺少 `uidmap`。
 - 宿主机 `80/443` 和 `10080/10443` 当前未被占用；公司现有代理使用其他端口。
 - 防火墙已允许 `80/443`；Rootless 高端口将只绑定回环地址，不直接暴露公网。
-- `staging.hophorsefit.com` 当前尚未配置 DNS 解析。
+- `staging.overselfx.com` 已解析到 `183.158.225.78`；用户确认上游 NAT 已配置，公网 TCP/TLS 待入口监听后复验。
 
 ## 4. 方案选择
 
@@ -47,7 +47,7 @@
 
 ```text
 Internet
-  → staging.hophorsefit.com:80/443
+  → staging.overselfx.com:80/443
   → root 管理的 systemd socket/proxy
   → 127.0.0.1:10080/10443
   → crmdeploy Rootless Docker proxy 容器
@@ -89,7 +89,7 @@ HTTPS 公网地址。
 ├── src/CRM/                     # GitHub Actions checkout 或受控源码副本
 ├── config/crm-staging.env       # 0600，仓库外，仅保存 staging 配置
 ├── assets/models/               # BGE 六个固定文件，仓库外，只读挂载
-├── secrets/tls/staging.hophorsefit.com/
+├── secrets/tls/staging.overselfx.com/
 │   ├── fullchain.pem
 │   └── privkey.pem
 ├── evidence/                    # 低敏门禁证据
@@ -103,19 +103,19 @@ GitHub Secret 或 Actions 制品传输。
 
 ## 6. 域名、TLS 与 TikTok 外部契约
 
-- DNS A 记录：`staging.hophorsefit.com → 183.158.225.78`。
-- TLS 证书必须覆盖 `staging.hophorsefit.com`，证书放在仓库外目录。
+- DNS A 记录：`staging.overselfx.com → 183.158.225.78`。
+- TLS 证书必须覆盖 `staging.overselfx.com`，证书放在仓库外目录。
 - staging 公共配置：
 
 ```text
-PUBLIC_BASE_URL=https://staging.hophorsefit.com
-PUBLIC_API_BASE_URL=https://staging.hophorsefit.com/v1
-CORS_ORIGINS=https://staging.hophorsefit.com
-TIKTOK_OAUTH_REDIRECT_URI=https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback
+PUBLIC_BASE_URL=https://staging.overselfx.com
+PUBLIC_API_BASE_URL=https://staging.overselfx.com/v1
+CORS_ORIGINS=https://staging.overselfx.com
+TIKTOK_OAUTH_REDIRECT_URI=https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback
 ```
 
 - Partner Center Webhook：
-  `https://staging.hophorsefit.com/v1/webhooks/tiktok`。
+  `https://staging.overselfx.com/v1/webhooks/tiktok`。
 - production 继续只接受 `https://www.hophorsefit.com/...`，不放宽为任意主机。
 - 应用按 `APP_ENV` 对 staging 和 production 分别执行精确 scheme、host、path 校验，拒绝
   HTTP、任意子域、query、fragment 和错误路径。
@@ -230,8 +230,8 @@ TIKTOK_OAUTH_REDIRECT_URI=https://staging.hophorsefit.com/v1/integrations/tiktok
 
 实施过程中需要用户或系统管理员完成：
 
-- 将 `staging.hophorsefit.com` A 记录指向 `183.158.225.78`，并确认上游 NAT/安全组允许
-  公网 `80/443`；
+- 维持 `staging.overselfx.com` A 记录指向 `183.158.225.78`，并在入口监听后从外部网络
+  复验用户已配置的公网 `80/443` NAT/安全组链路；
 - 通过安全渠道把 staging TLS、TikTok、DeepSeek 和应用密钥放入服务器仓库外配置；
 - 把 BGE 六个固定模型文件放入 `/home/crmdeploy/assets/models`；
 - 在 TikTok Partner Center 配置 staging Redirect URL、Webhook、Scope 和白名单；

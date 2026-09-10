@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在不影响公司现有系统 Docker 的前提下，为 `staging.hophorsefit.com` 建立可审计、可回滚的 Rootless Docker staging 运行面，并完成失败关闭部署证据。
+**Goal:** 在不影响公司现有系统 Docker 的前提下，为 `staging.overselfx.com` 建立可审计、可回滚的 Rootless Docker staging 运行面，并完成失败关闭部署证据。
 
 **Architecture:** `crmdeploy` 的 Rootless Docker 只在回环地址发布 `10080/10443`，root 管理的 systemd socket proxy 将公网 `80/443` 转发到这些端口。仓库通过精确环境域名契约、Rootless Compose overlay 和 staging-only 门禁脚本支持该运行面；GitHub Actions self-hosted runner 以 `crmdeploy` 身份使用 Rootless socket 和不可变 GHCR RepoDigest。
 
@@ -17,8 +17,8 @@
 - Rootless 用户固定为 `crmdeploy`，UID/GID 为 `1004`，数据必须位于 `/home/crmdeploy`。
 - Rootless Docker socket 固定为 `unix:///run/user/1004/docker.sock`，禁止 Docker API TCP 监听。
 - Rootless proxy 只绑定 `127.0.0.1:10080` 和 `127.0.0.1:10443`；公网只开放 `80/443`。
-- staging 域名固定为 `staging.hophorsefit.com`；production 域名继续固定为 `www.hophorsefit.com`。
-- staging OAuth callback 固定为 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。
+- staging 域名固定为 `staging.overselfx.com`；production 域名继续固定为 `www.hophorsefit.com`。
+- staging OAuth callback 固定为 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`。
 - production OAuth callback 固定为 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。
 - staging Compose 项目名固定为 `crm-staging`。
 - 初次部署时 `ALLOW_MOCK_PLATFORM_ADAPTERS`、全部 `REAL_TIKTOK_*`、`LLM_ENABLED`、`LLM_LIVE_EVAL`、`AI_TRANSLATION_ENABLED`、`AI_MARKETING_ENABLED` 和 `AUTO_REPLY_ENABLED` 必须为 `false`。
@@ -120,7 +120,7 @@ Expected: FAIL because staging still only accepts `www.hophorsefit.com`.
 
 ```python
 TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI = f"https://www.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
-TIKTOK_OAUTH_STAGING_REDIRECT_URI = f"https://staging.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
+TIKTOK_OAUTH_STAGING_REDIRECT_URI = f"https://staging.overselfx.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
 TIKTOK_OAUTH_FIXED_REDIRECT_URI = TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI
 TIKTOK_OAUTH_FIXED_REDIRECT_URIS = {
     "integration": TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI,
@@ -272,10 +272,10 @@ git commit -m "build: add rootless staging compose overlay"
 Change the test fixture public values to:
 
 ```python
-"CORS_ORIGINS=https://staging.hophorsefit.com",
-"PUBLIC_BASE_URL=https://staging.hophorsefit.com",
-"PUBLIC_API_BASE_URL=https://staging.hophorsefit.com/v1",
-"TIKTOK_OAUTH_REDIRECT_URI=https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback",
+"CORS_ORIGINS=https://staging.overselfx.com",
+"PUBLIC_BASE_URL=https://staging.overselfx.com",
+"PUBLIC_API_BASE_URL=https://staging.overselfx.com/v1",
+"TIKTOK_OAUTH_REDIRECT_URI=https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback",
 ```
 
 Add `-DockerHost`, `unix:///run/user/1004/docker.sock` to every valid script invocation and add:
@@ -294,7 +294,7 @@ def test_staging_gates_reject_non_rootless_docker_hosts(
         "-BackendImage", BACKEND_IMAGE,
         "-FrontendImage", FRONTEND_IMAGE,
         "-RetrievalModelImage", RETRIEVAL_MODEL_IMAGE,
-        "-BaseUrl", "https://staging.hophorsefit.com",
+        "-BaseUrl", "https://staging.overselfx.com",
         "-EvidenceFile", str(tmp_path / "evidence.json"),
         "-ConfirmTarget", "staging",
         "-DockerHost", docker_host,
@@ -549,7 +549,7 @@ def test_runner_service_uses_rootless_socket_and_home_toolchain() -> None:
 ```
 
 Add a workflow source test requiring `id -u`, `unix:///run/user/`, `-DockerHost`, and an exact
-`https://staging.hophorsefit.com` base URL guard.
+`https://staging.overselfx.com` base URL guard.
 
 - [ ] **Step 2: Run tests and verify they fail**
 
@@ -608,7 +608,7 @@ $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
 ```
 
 Set `$common["DockerHost"] = $dockerHost`, and require
-`CRM_STAGING_BASE_URL == "https://staging.hophorsefit.com"`. Keep GHCR login on the short-lived
+`CRM_STAGING_BASE_URL == "https://staging.overselfx.com"`. Keep GHCR login on the short-lived
 `${{ secrets.GITHUB_TOKEN }}` with only `contents: read` and `packages: read`.
 
 - [ ] **Step 6: Run tests**
@@ -656,7 +656,7 @@ The runbook must include:
 DOCKER_HOST=unix:///run/user/1004/docker.sock
 COMPOSE_PROJECT_NAME=crm-staging
 CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
-CRM_STAGING_BASE_URL=https://staging.hophorsefit.com
+CRM_STAGING_BASE_URL=https://staging.overselfx.com
 ```
 
 It must explicitly separate `基础运行面就绪`, `失败关闭部署通过`, `G1～G6 真实门禁通过`, and
@@ -697,7 +697,7 @@ Run:
 
 ```powershell
 git grep -n 'www.hophorsefit.com/v1/integrations/tiktok/oauth/callback'
-git grep -n 'staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback'
+git grep -n 'staging.overselfx.com/v1/integrations/tiktok/oauth/callback'
 git diff --check
 ```
 
@@ -921,7 +921,7 @@ Expected: `status=online`, `busy=false`, and label `crm-staging` present.
 **Files:**
 - Server-only: `/home/crmdeploy/config/crm-staging.env`
 - Server-only: `/home/crmdeploy/assets/models/`
-- Server-only: `/home/crmdeploy/secrets/tls/staging.hophorsefit.com/`
+- Server-only: `/home/crmdeploy/secrets/tls/staging.overselfx.com/`
 
 **Interfaces:**
 - Consumes: user-controlled DNS/TLS/TikTok/DeepSeek inputs and six approved BGE files.
@@ -929,13 +929,14 @@ Expected: `status=online`, `busy=false`, and label `crm-staging` present.
 
 - [ ] **Step 1: Verify DNS and public routing**
 
-The user must create the A record `staging.hophorsefit.com → 183.158.225.78`. Then run from a network outside
-the server LAN:
+The A record `staging.overselfx.com → 183.158.225.78` was resolved by the current environment's system resolver on 2026-09-10 and the user
+reported the upstream NAT mapping configured. Re-run from a network outside the server LAN after the entry
+listener is active:
 
 ```powershell
-Resolve-DnsName staging.hophorsefit.com -Type A
-Test-NetConnection staging.hophorsefit.com -Port 80
-Test-NetConnection staging.hophorsefit.com -Port 443
+Resolve-DnsName staging.overselfx.com -Type A
+Test-NetConnection staging.overselfx.com -Port 80
+Test-NetConnection staging.overselfx.com -Port 443
 ```
 
 Expected: the A record returns `183.158.225.78` and both TCP ports are reachable. If not, stop before TikTok
@@ -949,30 +950,30 @@ automated by this repository because DNS account control and CA account ownershi
 boundaries.
 
 ```text
-/home/crmdeploy/secrets/tls/staging.hophorsefit.com/fullchain.pem
-/home/crmdeploy/secrets/tls/staging.hophorsefit.com/privkey.pem
+/home/crmdeploy/secrets/tls/staging.overselfx.com/fullchain.pem
+/home/crmdeploy/secrets/tls/staging.overselfx.com/privkey.pem
 ```
 
 As root, set the exact ownership and modes, then verify without printing the private key:
 
 ```bash
-chown root:crmdeploy /home/crmdeploy/secrets/tls/staging.hophorsefit.com
-chown root:crmdeploy /home/crmdeploy/secrets/tls/staging.hophorsefit.com/fullchain.pem
-chown root:crmdeploy /home/crmdeploy/secrets/tls/staging.hophorsefit.com/privkey.pem
-chmod 0750 /home/crmdeploy/secrets/tls/staging.hophorsefit.com
-chmod 0640 /home/crmdeploy/secrets/tls/staging.hophorsefit.com/fullchain.pem
-chmod 0640 /home/crmdeploy/secrets/tls/staging.hophorsefit.com/privkey.pem
-test ! -L /home/crmdeploy/secrets/tls/staging.hophorsefit.com/fullchain.pem
-test ! -L /home/crmdeploy/secrets/tls/staging.hophorsefit.com/privkey.pem
+chown root:crmdeploy /home/crmdeploy/secrets/tls/staging.overselfx.com
+chown root:crmdeploy /home/crmdeploy/secrets/tls/staging.overselfx.com/fullchain.pem
+chown root:crmdeploy /home/crmdeploy/secrets/tls/staging.overselfx.com/privkey.pem
+chmod 0750 /home/crmdeploy/secrets/tls/staging.overselfx.com
+chmod 0640 /home/crmdeploy/secrets/tls/staging.overselfx.com/fullchain.pem
+chmod 0640 /home/crmdeploy/secrets/tls/staging.overselfx.com/privkey.pem
+test ! -L /home/crmdeploy/secrets/tls/staging.overselfx.com/fullchain.pem
+test ! -L /home/crmdeploy/secrets/tls/staging.overselfx.com/privkey.pem
 ```
 
 Verify the public certificate with:
 
 ```bash
-openssl x509 -in /home/crmdeploy/secrets/tls/staging.hophorsefit.com/fullchain.pem -noout -subject -issuer -dates -ext subjectAltName
+openssl x509 -in /home/crmdeploy/secrets/tls/staging.overselfx.com/fullchain.pem -noout -subject -issuer -dates -ext subjectAltName
 ```
 
-Expected: SAN contains exactly or includes `DNS:staging.hophorsefit.com`, certificate is not expired, and
+Expected: SAN contains exactly or includes `DNS:staging.overselfx.com`, certificate is not expired, and
 `crmdeploy` can read but not modify the private key.
 
 - [ ] **Step 3: Validate and transfer the six BGE files**
@@ -999,7 +1000,7 @@ Set only:
 
 ```text
 Secret CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
-Variable CRM_STAGING_BASE_URL=https://staging.hophorsefit.com
+Variable CRM_STAGING_BASE_URL=https://staging.overselfx.com
 ```
 
 The secret is a path, not the file content. Confirm the Environment deployment branch remains restricted to
@@ -1048,9 +1049,9 @@ PASS, Compose project `crm-staging`, no host build, all services running/healthy
 Run:
 
 ```powershell
-curl.exe --fail --proto '=https' https://staging.hophorsefit.com/healthz
-curl.exe --fail --proto '=https' https://staging.hophorsefit.com/v1/health
-curl.exe --fail --proto '=https' https://staging.hophorsefit.com/v1/health/ready
+curl.exe --fail --proto '=https' https://staging.overselfx.com/healthz
+curl.exe --fail --proto '=https' https://staging.overselfx.com/v1/health
+curl.exe --fail --proto '=https' https://staging.overselfx.com/v1/health/ready
 ```
 
 Expected: HTTP 2xx; responses contain no database URL, Redis URL, model path, token, secret or raw exception.
@@ -1151,7 +1152,7 @@ calendar days and 99.5% availability.
 - [ ] Existing company container IDs and start times are unchanged across host bootstrap and deployment.
 - [ ] Rootless Docker reports `rootless`, uses `/home/crmdeploy`, and exposes no TCP Docker API.
 - [ ] Public `80/443` are owned only by the CRM systemd socket proxy; high ports bind only to loopback.
-- [ ] `staging.hophorsefit.com` resolves to `183.158.225.78` and presents a trusted matching certificate.
+- [ ] `staging.overselfx.com` resolves to `183.158.225.78` and presents a trusted matching certificate.
 - [ ] All staging services are healthy using immutable RepoDigests; no application image was built on the host.
 - [ ] Backup/restore and previous-image rollback completed with low-sensitive evidence.
 - [ ] Initial capability state is entirely fail-closed.

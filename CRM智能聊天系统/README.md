@@ -144,6 +144,8 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 
 > 2026-09-09 勘误：上述跨环境相同回调约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `deploy/staging/rootless/README.md`，真实运行验收仍待执行。
 
+> 2026-09-10 更新：经用户批准，当前 staging 回调改为 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；旧 `staging.hophorsefit.com` 仅保留为历史记录，不再接受。integration/production 地址不变。
+
 ## Phase 3 业务能力
 
 - FAQ 支持分类、草稿、发布、归档，以及最大 10 MiB/5000 行的 CSV、XLSX 异步导入。

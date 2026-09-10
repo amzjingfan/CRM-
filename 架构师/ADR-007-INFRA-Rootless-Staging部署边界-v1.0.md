@@ -1,7 +1,7 @@
 # Rootless Staging 部署边界
 
-状态：已确认（设计）；真实运行验收待执行
-日期：2026-09-09
+状态：已确认（设计）；Tasks 8/9 基础设施已就绪，应用真实运行验收待执行
+日期：2026-09-09；2026-09-10 更新 staging 域名
 
 ## 1. 决策摘要
 
@@ -14,7 +14,7 @@ staging 暂时使用 `/home` 下的 Rootless Docker，由 `crmdeploy`（UID/GID 
 - 已有公司系统 Docker 负载运行，用户无权停止现有容器或迁移 Docker data-root；根盘空间有限，`/home` 有独立容量。
 - 既有检查登记 Ubuntu 26.04 x86_64、Docker 29.6.2、Compose 5.3.1、systemd 259；这些是设计输入，实施当日必须重新预检。
 - 专用用户已存在；root 只负责最小主机依赖、linger 和标准端口入口，不将用户加入 docker/sudo 组。
-- 独立 staging 域名获准，但 DNS、公信 TLS、服务器模型和环境配置均尚未取得实际部署证据。
+- 独立 staging 域名获准；当前执行环境的系统解析器已将 `staging.overselfx.com` 解析到 `183.158.225.78`，上游 NAT 由用户确认已配置，但入口尚未监听，公网 TCP/TLS 仍待应用部署阶段复验。公信 TLS、服务器模型和环境配置尚未取得实际部署证据。
 - 仅覆盖 ADR-006 的 TikTok 人工辅助首版运行面。产品/UI 三平台概念保持，Shopee/Amazon 真实接入不在本次范围。
 
 ## 3. 架构决策
@@ -31,10 +31,10 @@ Rootless socket 固定 `unix:///run/user/1004/docker.sock`，Compose 项目名�
 
 | 环境 | 公共地址 | OAuth callback |
 | --- | --- | --- |
-| staging | `https://staging.hophorsefit.com` | `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback` |
+| staging | `https://staging.overselfx.com` | `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback` |
 | production（integration 保留相同回调契约） | `https://www.hophorsefit.com` | `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback` |
 
-回调必须按 APP_ENV 精确匹配，不接受其他 scheme、主机、路径、query 或 fragment。Partner Center 的 staging Webhook 为 `https://staging.hophorsefit.com/v1/webhooks/tiktok`，配置和真实投递仍待后续门禁。
+回调必须按 APP_ENV 精确匹配，不接受其他 scheme、主机、路径、query 或 fragment。Partner Center 的 staging Webhook 为 `https://staging.overselfx.com/v1/webhooks/tiktok`，配置和真实投递仍待后续门禁。2026-09-10 起旧 `staging.hophorsefit.com` 失败关闭，production 契约保持不变。
 
 ### 3.3 供应链和能力边界
 
@@ -76,4 +76,4 @@ Runner 注册所用安装器、工具清单和用户 unit 必须来自干净 `ma
 - 测试工程师Agent：Ubuntu 运行、失败路径、公司容器不变、健康、恢复/回滚及 G1～G6 独立复核。
 - 共享记忆文档Agent：单一报告、实施记录和两个索引的一致性。
 
-截至本文落盘只存在仓库工程自测；服务器、DNS、TLS、模型、runner、公开健康、恢复/回滚和 G1～G6 均待验证。production 未放行。
+截至 2026-09-10，Tasks 8/9 的 Rootless 主机与 runner 已通过独立只读复核，DNS A 记录已解析到目标公网 IP；TLS、模型、配置、候选镜像、公开健康、恢复/回滚和 G1～G6 仍待验证。production 未放行。

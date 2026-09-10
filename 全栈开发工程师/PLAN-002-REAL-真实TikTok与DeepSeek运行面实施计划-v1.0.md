@@ -175,6 +175,8 @@ ALLOW_MOCK_PLATFORM_ADAPTERS=false
 
 > 2026-09-09 勘误：此条历史跨环境相同地址约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 仅接受 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 继续仅接受 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。接口结构和其余失败关闭规则不变，真实门禁待执行。
 
+> 2026-09-10 更新：经用户批准，当前 staging 仅接受 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；旧 staging 域名不再有效，integration/production 契约保持不变。
+
 - 生产 Compose 已将 `TIKTOK_OAUTH_REDIRECT_URI` 改为必填，部署文档明确其是 Partner Center 外部配置断言，仍需发布人员人工核对平台后台实际值。
 - 所有真实 TikTok、平台写入、公开 AI 回复、营销和自动回复开关继续保持关闭；未执行真实店铺授权或 REAL-FS-03。
 - 开发验证证据将记录于 `共享记忆文档/实施记录/Phase4-P4-00-全栈开发工程师Agent-TikTokOAuth固定回调缺陷修复-009.md`；缺陷正式关闭必须等待测试工程师第三次独立复测。

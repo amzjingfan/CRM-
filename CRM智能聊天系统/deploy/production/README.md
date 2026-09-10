@@ -2,7 +2,7 @@
 
 本目录说明 REAL-FS-01～04 的安全运行面。OAuth、真实只读、Webhook 和人工确认普通消息已具备工程实现，但尚未完成真实店铺正式验收，因此所有 `REAL_TIKTOK_*` 开关默认保持 `false`；高风险写入和自动回复必须固定关闭。
 
-2026-09-09：当前 staging 采用 `/home/crmdeploy` 下 Rootless Docker，独立域名为 `staging.hophorsefit.com`。唯一操作手册见 [`../staging/rootless/README.md`](../staging/rootless/README.md)，架构边界见 ADR-007。本文的 production 地址和 Compose 示例保留作为生产契约；production 最终运行方式尚未决定，不能直接套用到公司系统 Docker。系统 Docker 与现有公司容器禁止停止、重启、迁移、修复或接管。
+2026-09-09：当前 staging 采用 `/home/crmdeploy` 下 Rootless Docker。2026-09-10 经用户批准，独立域名切换为 `staging.overselfx.com`，旧 `staging.hophorsefit.com` 不再用于当前 staging。唯一操作手册见 [`../staging/rootless/README.md`](../staging/rootless/README.md)，架构边界见 ADR-007。本文的 production 地址和 Compose 示例保留作为生产契约；production 最终运行方式尚未决定，不能直接套用到公司系统 Docker。系统 Docker 与现有公司容器禁止停止、重启、迁移、修复或接管。
 
 ## 1. 外部基础设施前置条件
 
@@ -207,7 +207,7 @@ https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback
 
 生产 Compose 要求显式提供该变量；应用在 integration 和 production
 启动时会校验其为上述固定值。staging 则精确要求
-`https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。
+`https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`。
 OAuth start/callback 还会再次校验。HTTP、其他主机、
 其他路径、query 和 fragment 均会在跳转 TikTok 前失败关闭。该变量是应用对
 Partner Center 外部配置的部署断言，不作为 TikTok 授权 URL 参数发送；发布人员仍须
@@ -315,7 +315,7 @@ Rootless staging 的固定参数为：
 DOCKER_HOST=unix:///run/user/1004/docker.sock
 COMPOSE_PROJECT_NAME=crm-staging
 CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
-CRM_STAGING_BASE_URL=https://staging.hophorsefit.com
+CRM_STAGING_BASE_URL=https://staging.overselfx.com
 ```
 
 两个门禁脚本必须传入 `-DockerHost unix:///run/user/1004/docker.sock`，内部清除继承的

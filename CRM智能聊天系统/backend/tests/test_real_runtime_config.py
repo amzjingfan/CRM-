@@ -250,6 +250,24 @@ def test_real_environments_accept_only_their_fixed_oauth_redirect_uri(
     assert settings.tiktok_oauth_redirect_uri == redirect_uri
 
 
+def test_staging_oauth_redirect_uses_overselfx_domain_and_rejects_superseded_domain() -> None:
+    """staging 域名切换后只能接受新回调，旧域名必须立即失败关闭。"""
+    expected_redirect_uri = "https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback"
+    assert TIKTOK_OAUTH_STAGING_REDIRECT_URI == expected_redirect_uri
+
+    settings = production_settings(
+        APP_ENV="staging",
+        TIKTOK_OAUTH_REDIRECT_URI=expected_redirect_uri,
+    )
+    assert settings.tiktok_oauth_redirect_uri == expected_redirect_uri
+
+    with pytest.raises(ValidationError, match="TIKTOK_OAUTH_REDIRECT_URI"):
+        production_settings(
+            APP_ENV="staging",
+            TIKTOK_OAUTH_REDIRECT_URI="https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback",
+        )
+
+
 @pytest.mark.parametrize(
     ("app_env", "redirect_uri"),
     [
