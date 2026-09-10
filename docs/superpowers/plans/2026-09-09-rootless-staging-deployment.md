@@ -979,12 +979,12 @@ Expected: SAN contains exactly or includes `DNS:staging.overselfx.com`, certific
 - [ ] **Step 3: Validate and transfer the six BGE files**
 
 Transfer the six regular BGE files to `/home/crmdeploy/assets/models` and reject symlinks, including parent
-path components. The current `CRM智能聊天系统/deploy/models/model-manifest.json` authoritatively records only
-the two weight SHA-256 values; verify those two first. It does not contain hashes for the four auxiliary
-`config.json`/`tokenizer.json` files. Obtain their authoritative hashes from trusted sources and add them to
-a reviewed machine-readable authority before starting any model container, unless an architect explicitly
-approves a reduced requirement. Missing auxiliary hash evidence is a hard stop; do not claim that six hashes
-match. This 2026-09-09 correction supersedes the original six-hash assumption; live verification is pending.
+path components. `CRM智能聊天系统/deploy/models/model-manifest.json` records the size and SHA-256 of all six
+runtime files. The two tokenizer hashes must agree with the fixed-Revision official Xet pointers; the two
+configuration files must first match their fixed-Revision download-metadata Git blob SHA-1 values before their
+SHA-256 values are admitted to the reviewed manifest. Verify all six files locally and again after transfer.
+With `RETRIEVAL_MODEL_VERIFY_HASHES=true`, the retrieval model service must reject any mismatch before loading
+either model. Missing or mismatched hash evidence remains a hard stop.
 
 - [ ] **Step 4: Create the fail-closed staging environment file**
 

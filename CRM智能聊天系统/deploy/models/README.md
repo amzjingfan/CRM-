@@ -35,11 +35,11 @@ docker-compose -f docker-compose.yml -f docker-compose.ai.yml --profile ai up -d
 
 生产或 staging 不直接挂载本仓库目录。服务器使用仓库外 `RETRIEVAL_MODEL_ASSET_DIR`
 （推荐 `/srv/crm/models`）保存相同的两个模型目录，生产 Compose 只读挂载到 `/models`，
-并在启动时强制执行固定权重 SHA-256 校验。目录准备和门禁说明见
+并在启动时强制执行六个运行文件的固定 SHA-256 校验。目录准备和门禁说明见
 `deploy/production/README.md`。
 
 2026-08-21 的 OSV 审计对锁定的 PyTorch/Transformers 报告已知漏洞。生产启用前必须完成安全版本兼容评估与测试工程师复核；固定 Revision、哈希、离线模式和非 root 运行不能替代依赖修复。
 
 ## 校验
 
-权重文件、固定提交、大小和 SHA-256 见 `model-manifest.json`。下载与复核流程见项目 AI 工程师目录中的 `AI-003-MODEL-BGE本地模型下载与校验指南-v1.0.md`。
+配置、分词器、权重、固定提交、大小和 SHA-256 见 `model-manifest.json`。两个分词器摘要由固定 Revision 的官方 Xet 指针复核；两个配置文件先以下载元数据中的 Git blob SHA-1 核验官方固定 Revision 字节，再登记本地 SHA-256。下载与复核流程见项目 AI 工程师目录中的 `AI-003-MODEL-BGE本地模型下载与校验指南-v1.0.md`。
