@@ -5,16 +5,16 @@
 | 项目 | 内容 |
 | --- | --- |
 | Phase | PhaseX |
-| 任务编号 | PX-00（跨阶段部署治理编号，正式专项编号待补充）；关联 P4-11、REAL-FS-01/G0，Rootless 计划 Tasks 1～6 |
+| 任务编号 | PX-00（跨阶段部署治理编号，正式专项编号待补充）；关联 P4-11、REAL-FS-01/G0，Rootless 计划 Tasks 1～9 |
 | 模块编号 | M00 |
 | 主责 Agent | 全栈开发工程师Agent |
-| 协作 Agent | 架构师Agent、共享记忆文档Agent；测试工程师Agent待独立复核 |
+| 协作 Agent | 架构师Agent、共享记忆文档Agent、测试工程师Agent |
 | 实施状态 | 部分完成 |
 | 开始日期 | 2026-09-09 |
-| 完成日期 | 未完成（仓库工程已交付，真实部署待执行） |
+| 完成日期 | 未完成（Tasks 8/9 基础设施现场完成，应用部署待执行） |
 | 代码位置 | `CRM智能聊天系统/`；根工作流/属性和跨角色文档 |
 | 分支/工作树 | `feature/rootless-staging` / `.worktrees/rootless-staging` |
-| 服务器变更 | 无 |
+| 服务器变更 | 有；`/home/crmdeploy` Rootless 运行面及 GitHub Runner，系统 Docker 与公司容器未变更 |
 
 ## 2. 需求与依据
 
@@ -33,11 +33,11 @@
 
 ### 3.2 实施范围
 
-精确回调、Compose overlay、staging 脚本、主机/入口资产、runner 工具链、工作流、配置示例、ADR/运行手册/报告及索引。当前记录截至 Task 6；Task 12 在此追加现场事实。
+精确回调、Compose overlay、staging 脚本、主机/入口资产、runner 工具链、工作流、配置示例、ADR/运行手册/报告及索引。当前记录已追加 Tasks 8/9 基础设施现场事实；Task 12 将继续汇总后续部署与门禁证据。
 
 ### 3.3 非目标
 
-本轮无服务器安装/连接、DNS/TLS 操作、模型复制、runner 注册、GHCR 发布/拉取、部署/恢复/回滚或真实店铺/模型调用。系统 Docker 与公司容器不停止、不重启、不迁移、不修复、不接管。production 方案未决定，不实现其他两平台或自动发送。
+Tasks 8/9 仅建立 `/home/crmdeploy` Rootless 运行面与 GitHub Runner，不执行 DNS/TLS、模型复制、GHCR 应用镜像拉取、应用部署/恢复/回滚或真实店铺/模型调用。系统 Docker 与公司容器不停止、不重启、不迁移、不修复、不接管。production 方案未决定，不实现其他两平台或自动发送。
 
 ## 4. 实施前确认
 
@@ -56,7 +56,7 @@ Rootless 用户固定 UID/GID 1004、home `/home/crmdeploy`、socket `unix:///ru
 ### 5.2 依赖关系
 
 - 前置：既有 main `433b3e5`、设计 `7bac358`、计划 `b5a639f`、用户批准方式 1。
-- 后续：Task 7 工程复核/CI/PR；Tasks 8～11 主机、runner、外部材料、真实部署与恢复；Task 12 现场证据；之后 G1～G6。
+- 后续：Tasks 8/9 已完成基础设施现场；下一步为 Task 10 外部材料、Task 11 真实部署与恢复、Task 12 汇总证据，之后 G1～G6。
 
 ### 5.3 风险控制
 
@@ -66,7 +66,7 @@ Rootless 用户固定 UID/GID 1004、home `/home/crmdeploy`、socket `unix:///ru
 | 公司负载变化 | 越界或错误归因 | 五字段前后快照，差异立即硬停，不自动修复 |
 | 空间/身份/路径漂移 | 数据落错磁盘 | 最小包安装、根盘 1.5 GiB 门槛、实际 Rootless 数据路径校验 |
 | 凭据或供应链泄露 | 服务器/仓库风险 | 官方摘要、短期 stdin Token、关闭 Bash allexport、低敏输出 |
-| 本地测试被误当现场通过 | 提前放行 | 四阶段独立结论；当前现场项全部待执行 |
+| 基础设施通过被误当应用通过 | 提前放行 | Tasks 8/9 与 Task 10/11、G1～G6、production 分别结论 |
 
 ## 6. 实际变更
 
@@ -148,30 +148,33 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 | 文档空白 | `git diff --check`、`git diff --cached --check` | 无输出、exit 0 | 两项均无输出、exit 0 | 通过 |
 | Task 6 审阅修复 | Windows PowerShell 5.1/PowerShell 7.6.5 原生管道 → 本地 Bash 严格读取替身 | CRLF 转 LF；非零退出和 finally 清理保留 | 原命令 RED；文档规范化后两环境共 4 个聚焦断言通过，详见 007 报告；安装器代码和服务器均未变更 | 通过 |
 | 索引/镜像/低敏 | 路径存在、清单比对、变更扫描及人工复核 | 无缺文件/摘要漂移/真实凭据 | 测试索引 92 路径、实施索引 122 路径均存在；3/3 镜像逐字符合清单；高置信凭据模式零命中，无新增真实凭据或现场摘要 | 通过 |
-| Ubuntu/现场 | Tasks 8～11 | 隔离、健康、恢复与回滚可证 | 无现场执行；DNS/TLS/模型/配置/runner 待提供 | 未执行 |
+| Task 8/9 Ubuntu 基础设施 | 主责取证及测试工程师Agent 独立只读复核 | Rootless/Runner 可用且系统 Docker 不变 | Rootless active/enabled、数据根正确、容器 0；Runner `2.336.0` online；系统 Docker 14/12 和五字段摘要不变 | 通过 |
+| Task 10/11 应用现场 | 外部材料、部署、健康、迁移、恢复与回滚 | 真实应用运行面可证 | DNS/TLS/六文件模型/配置/镜像/部署/恢复/回滚待执行 | 未执行 |
 
 ## 8. 实施结果
 
-2026-09-09 Task 7 最终控制器复核：在 `0eb399c763928586276f8c7aa6746f95f663608d` 上，计划要求的四文件聚焦结果为 `245 passed, 2 skipped in 26.69s`，后端全量为 `1527 passed, 14 skipped, 2 warnings in 35.18s`，两项 exit 0。两条 warning 是既有 Starlette/httpx 与 passlib/argon2 依赖弃用警告；跳过项不计通过。来源为控制器新运行结果，本次仅记录，详见 007 报告 §7.4。本地仓库实现验证通过，以下历史段落的“控制器全量待执行”已由本轮完成；远端集成和正式独立验收仍待后续，所有 Tasks 8～12/服务器/现场/G1～G6/production 门禁保持待执行。
+2026-09-09 Task 7 最终控制器复核：在 `0eb399c763928586276f8c7aa6746f95f663608d` 上，计划要求的四文件聚焦结果为 `245 passed, 2 skipped in 26.69s`，后端全量为 `1527 passed, 14 skipped, 2 warnings in 35.18s`，两项 exit 0。两条 warning 是既有 Starlette/httpx 与 passlib/argon2 依赖弃用警告；跳过项不计通过。来源为控制器新运行结果，本次仅记录，详见 007 报告 §7.4。本地仓库实现验证通过。该段保留 Task 7 结束时状态；Tasks 8/9 的后续现场结论见下方 2026-09-10 补充，Task 10～12、G1～G6 和 production 仍待执行。
 
 2026-09-09 Task 6 最终审阅计划勘误：修改 `docs/superpowers/plans/2026-09-09-rootless-staging-deployment.md` 的 Task 10 模型摘要门槛、Task 11 入口安装/部署后激活验证顺序及兼容上一版三摘要要求，并同步既有 007 报告。当前仅两个权重摘要有清单权威，四个辅助摘要缺失则硬停；历史 `f7c0f9f9` 不直接用于成功回滚。提交主题 `docs: correct rootless live execution plan`，完整 SHA 可按精确主题查询；只校正文档，无服务器变更，live/G1～G6 仍待执行。
 
-2026-09-09 Task 7 审阅覆盖补充：新增 integration 拒绝 staging 回调、TikTok 真实能力交叉隔离，并用 fake Docker 实际命令日志检验两个脚本各可达 Compose 操作的固定项目/profile/三层文件参数。没有修改生产代码或重写先前安全修复提交。最终聚焦 13 passed，三个完整模块 250 passed、2 skipped；Ruff/format/diff 通过。详细命令与边界在 007 报告 §7.3；提交主题 `test: harden staging boundary regressions`，完整 SHA 可按该精确主题查询。控制器最终全量、独立审阅和 Tasks 8～12/现场/G1～G6 仍待执行。
+2026-09-09 Task 7 审阅覆盖补充：新增 integration 拒绝 staging 回调、TikTok 真实能力交叉隔离，并用 fake Docker 实际命令日志检验两个脚本各可达 Compose 操作的固定项目/profile/三层文件参数。没有修改生产代码或重写先前安全修复提交。最终聚焦 13 passed，三个完整模块 250 passed、2 skipped；Ruff/format/diff 通过。详细命令与边界在 007 报告 §7.3；提交主题 `test: harden staging boundary regressions`，完整 SHA 可按该精确主题查询。该段保留当时状态；后续控制器全量及 Tasks 8/9 结论已补充，Task 10～12/G1～G6 仍待执行。
 
-2026-09-09 Task 7 应用安全修复：基础配置校验扩展至 staging/production；Mock resolver 与直接发送以 `ALLOW_MOCK_PLATFORM_ADAPTERS` 为授权依据，关闭时所有环境均失败关闭。development/test/integration 基础夹具以及单独的 SSE/LLM 门禁保留，三平台 UI 和真实 TikTok 能力条件不变。新增行为先 RED（52 failed、50 passed），修复后同集 GREEN（102 passed）；完整 settings/SSE/adapter 模块 213 passed，TikTok 邻接模块 64 passed，Ruff/format/diff 检查通过。准确命令、失败分解、夹具修复和时间只维护于 007 报告 §7.2。提交主题 `fix: enforce staging application security`，完整 SHA 通过 `git log --all --format='%H %s' --grep='^fix: enforce staging application security$'` 解析。本次产品修复后的控制器全量复核和独立审阅待执行，以下先前全量结果保留历史语义，不能代替本轮全量验证；Tasks 8～12、现场及 G1～G6 仍待执行。
+2026-09-09 Task 7 应用安全修复：基础配置校验扩展至 staging/production；Mock resolver 与直接发送以 `ALLOW_MOCK_PLATFORM_ADAPTERS` 为授权依据，关闭时所有环境均失败关闭。development/test/integration 基础夹具以及单独的 SSE/LLM 门禁保留，三平台 UI 和真实 TikTok 能力条件不变。新增行为先 RED（52 failed、50 passed），修复后同集 GREEN（102 passed）；完整 settings/SSE/adapter 模块 213 passed，TikTok 邻接模块 64 passed，Ruff/format/diff 检查通过。准确命令、失败分解、夹具修复和时间只维护于 007 报告 §7.2。提交主题 `fix: enforce staging application security`，完整 SHA 通过 `git log --all --format='%H %s' --grep='^fix: enforce staging application security$'` 解析。该段保留产品修复当时状态；控制器全量和 Tasks 8/9 后续已补充，Task 10～12 与 G1～G6 仍待执行。
 
 2026-09-09 Task 7 聚焦修复与全量验证补充：首次全量复核发现的两处旧 staging 测试输入已修正，提交为 `6323316f35560b6f9c755c5e46966f3ac5da27cb`（`test: align staging runtime fixtures`）。没有修改产品校验或 integration/production 回调。控制器在该修复后使用仓库外 basetemp 完成后端全量复核：`1422 passed, 14 skipped, 2 warnings in 30.00s`，exit 0；较早的新聚焦回归为 `193 passed, 2 skipped in 25.61s`，exit 0。两条依赖弃用警告与跳过项、原失败案例及静态质量证据详见 007 报告 §7.1。本次还将唯一误跟踪的 SDD `task-1-report.md` 移出 Git 索引，保留本地被忽略的原始证据。当前实施和现场验收状态不变。
 
-- 完成项：Tasks 1～5 工程资产及修复；Task 6 文档/ADR/示例/报告/索引同步；Task 7 本地仓库实现验证通过。
-- 未完成项：Task 7 其余分支复核及远端集成；Tasks 8～12 现场部署与证据；G1～G6；production。
+2026-09-10 Tasks 8/9 基础设施现场补充：`crmdeploy` UID/GID 1004 的 Rootless Docker active/enabled，数据根 `/home/crmdeploy/.local/share/docker`，容器 0；Runner 工具链从清单官方 URL 经 SHA-256 密封缓存安装，PowerShell `7.6.5`、Runner.Listener `2.336.0`，用户服务 active/enabled/running。GitHub 唯一 runner `crm-staging-192-168-110-210` online、busy=false、四个标签完整。系统 Docker 仍为 `/var/lib/docker`、14 个/运行中 12 个，五字段 SHA-256 `d807427f814e97ffb27ed16a5c6409ab732def8b27841fe209a9b47880226cdb` 与基线一致。测试工程师Agent 独立只读现场复核 READY，Critical/Important/Minor 均为 0。完整归档、版本资产、PR/CI 和失败关闭证据见 007 报告 §8.1 与 Runner 001 报告。
+
+- 完成项：Tasks 1～7 仓库工程及文档；Task 8 Rootless 主机基础运行面；Task 9 Runner 官方工具链、用户服务和 GitHub online 现场验收。
+- 未完成项：Task 10 外部材料、Task 11 应用部署/恢复/回滚、Task 12 后续汇总；G1～G6；production。
 - 与原方案差异：架构师批准在共享接口、产品 README 和全栈 PLAN-002 各追加一条 dated 勘误，不重写历史或修改接口结构；若不修正会导致运行配置与共享接口权威冲突，并让操作人沿用错误 staging 回调。入口 socket 先于首次 deploy 监听以满足脚本公网探针，监听不等于健康；已识别历史回滚版本回调不兼容、辅助模型摘要不足，均列为停点。
-- 当前状态：部分完成。仓库工程交付不构成基础运行面、失败关闭部署、真实门禁或生产签署通过。
+- 当前状态：部分完成。Tasks 8/9 基础设施运行面就绪；尚不构成 staging 应用可用、G1～G6 或 production 签署通过。
 
 ## 9. 遗留问题与风险
 
 | 编号 | 问题或风险 | 优先级 | 负责 Agent | 计划处理 Phase/任务 |
 | --- | --- | --- | --- | --- |
-| R-RLS-001 | Ubuntu 原生依赖、主机状态和 systemd 动态行为未验证 | P1 | 全栈开发工程师Agent/测试工程师Agent | Task 8～9 |
+| R-RLS-001 | Ubuntu 主机、Rootless、Runner 原生依赖和 systemd 动态行为（Tasks 8/9 现场及独立只读复核通过） | Closed | 全栈开发工程师Agent/测试工程师Agent | Task 8～9 |
 | R-RLS-002 | DNS/TLS/真实配置/外部模型及新 main 镜像尚未取得 | P1 | 全栈开发工程师Agent | Task 7/10 |
 | R-RLS-003 | 历史 f7c0f9f9 不接受 staging 专用回调，回滚兼容性阻断 | P1 | 架构师Agent | Task 11 前 |
 | R-RLS-004 | 四个辅助模型 JSON 缺少清单 SHA-256；只有两份权重已登记 | P2 | AIAgent开发工程师Agent/架构师Agent | Task 10 |
@@ -180,7 +183,7 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 ## 10. 交接事项
 
 - 交接给：架构师Agent、测试工程师Agent、后续部署执行者。
-- 后续任务：Task 7 分支复核后按已批准计划逐项执行；Task 12 追加低敏现场记录。
+- 后续任务：按已批准计划准备 Task 10 外部材料并 validate，通过后执行 Task 11 应用部署/恢复/回滚；Task 12 继续追加低敏现场记录。
 - 必须注意：任何系统容器五字段变化都硬停；旧版本回调与模型辅助摘要问题先确认；原始配置、Token、私钥、模型和业务数据不得进入报告或 Git；数据删除需要单独明确批准。
 
 ## 11. 文档同步
@@ -188,5 +191,5 @@ Task 6 文档提交主题固定 `docs: document rootless staging operations`；�
 - [x] 已同步接口变化（§11.7 勘误，不改接口结构）。
 - [x] 已同步架构决策 ADR-007/ADR-004。
 - [x] 已同步任务状态到本记录和两个索引，保持部分完成。
-- [x] 已在 007 报告列明测试工程师待覆盖范围。
-- [x] 测试报告索引已登记工程证据与“独立测试结论待复核”，正式现场复核后再更新。
+- [x] 已在 007 报告追加 Task 9 主责和独立现场证据，并保留 Task 10～12/G1～G6 边界。
+- [x] 测试报告索引已更新 Tasks 8/9 基础设施结论，production 状态保持未放行。

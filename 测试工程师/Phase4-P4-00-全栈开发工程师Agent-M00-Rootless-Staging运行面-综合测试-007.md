@@ -5,20 +5,20 @@
 | 项目 | 内容 |
 | --- | --- |
 | Phase | Phase4 |
-| 任务编号 | P4-00；关联 P4-11、REAL-FS-01/G0；Rootless 实施计划 Tasks 1～6 |
+| 任务编号 | P4-00；关联 P4-11、REAL-FS-01/G0；Rootless 实施计划 Tasks 1～9 |
 | 模块编号 | M00 |
 | 模块名称 | Rootless Staging 运行面 |
 | 被测主责 Agent | 全栈开发工程师Agent |
 | 被测协作 Agent | 架构师Agent、共享记忆文档Agent |
-| 测试执行 Agent | 测试工程师 Agent（独立复核待执行；当前为开发自测证据汇编） |
+| 测试执行 Agent | 测试工程师Agent（Task 9 已独立现场只读复核） |
 | 关联实施记录 | `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-Rootless-Staging部署-001.md` |
-| 测试类型 | 综合测试、静态契约、无网络脚本回归、文档一致性 |
-| 执行日期 | 2026-09-09 |
-| 测试结论 | 阻塞真实运行验收；仓库工程自测记录已提供，独立复核待执行 |
+| 测试类型 | 综合测试、静态契约、无网络脚本回归、文档一致性、Ubuntu 基础设施现场验收 |
+| 执行日期 | 2026-09-09～2026-09-10 |
+| 测试结论 | Tasks 8/9 基础设施运行面已就绪；Task 10/11、G1～G6 和 production 仍阻塞 |
 
-独立测试结论：待测试工程师复核
+独立测试结论：Task 9 READY；Critical/Important/Minor 均为 0
 
-本文是该运行面的单一工程/现场证据记录。Task 12 在本文件追加带日期、SHA 与 run ID 的现场证据，保留此工程阶段记录，不覆盖历史测试结果，不另建第二份竞争结论。当前没有服务器、DNS、TLS、模型、runner、公开健康、恢复/回滚或 G1～G6 成功声明，`production_release=false`。
+本文是该运行面的单一工程/现场证据记录。Task 12 在本文件继续追加带日期、SHA 与 run ID 的现场证据，保留各工程阶段记录，不覆盖历史测试结果，不另建第二份竞争结论。当前已有服务器、Rootless Docker 与 runner 的真实证据；尚无 DNS/TLS、六文件模型、应用部署、公开健康、恢复/回滚或 G1～G6 成功声明，`production_release=false`。
 
 ## 2. 范围、环境与证据来源
 
@@ -89,13 +89,13 @@ Task 2 使用 standalone `docker-compose.exe v5.3.1` 的 `--profile ai ... confi
 
 本报告不关闭 `DEF-REAL-FS01-006` 或其他既有正式缺陷，不替代前端漏洞独立复测 006 号报告。
 
-## 6. Tasks 8～11 待执行清单
+## 6. Tasks 8～11 现场状态
 
-| 任务 | 未执行现场检查 | 停止条件 |
+| 任务 | 现场检查与状态 | 停止条件 |
 | --- | --- | --- |
-| 8 主机 | Ubuntu/Bash 语法、systemd verify、身份/subuid/subgid、根盘门槛、自定义用户配置检查、最小 uidmap/linger、Rootless 安全选项/数据根/cgroup、无 TCP API、五字段前后快照 | 未知配置、权限/路径不符、取证失败或公司容器任何变化 |
-| 8 失败/幂等 | 在隔离安全替身验证 apt/Rootless 失败、外来端口、外来 unit/drop-in、第二 socket 失败局部回退；目标机建立连接后重跑入口安装 | 禁止拿公司容器做故障注入；安装/重跑不一致 |
-| 9 runner | 官方归档校验、Ubuntu 原生依赖、首次/重复安装、一小时注册、GitHub online/标签、用户服务、短期 GHCR 读取和清理 | 403、归档/身份/目录不符、缺原生依赖、runner 离线 |
+| 8 主机 | 基础设施已建立；Task 9 前后复核 `crmdeploy` UID/GID 1004、Rootless active/enabled、数据根 `/home/crmdeploy/.local/share/docker`、容器 0，系统 Docker `/var/lib/docker` 与公司容器五字段摘要不变 | 未知配置、权限/路径不符、取证失败或公司容器任何变化 |
+| 8 失败/幂等 | 既有工程失败关闭/幂等证据保留；本轮未对公司容器做故障注入 | 禁止拿公司容器做故障注入；安装/重跑不一致 |
+| 9 runner | 已通过；官方归档双端验签、Ubuntu 原生安装、用户服务、GitHub online/标签和 Docker 隔离均有主责及独立只读证据 | 后续若归档/身份/目录漂移、runner 离线则重新阻塞 |
 | 10 外部材料 | DNS A/NAT/公网 TCP、公信 TLS/匹配私钥/权限、六模型文件与可信摘要、外部配置权限/轮换、Environment main 限制、合并 main 三摘要 | 任一缺失，不进入 deploy |
 | 10 validate | 真实 checkout/仓库外路径、完整三层 Compose、固定 socket、无敏感输出、validated 制品 | validate 非零或无合格证据 |
 | 11 部署 | 入口 socket 归属、高端口回环、不可变 pull/up/健康等待、首页和三个健康端点、四服务十开关 false、迁移 023 | 健康失败、外部暴露、能力偏离或系统容器改变 |
@@ -148,7 +148,7 @@ Task 7 仓库卫生检查发现唯一误跟踪的 SDD 临时证据 `.superpowers
 
 RED 的 52 个失败均为目标行为缺失：24 个 staging 不安全配置未抛 ValidationError，16 个 Shopee/Amazon resolver 未抛 AppError，12 个直接 Mock 发送返回 sent 而非 failed。生产拒绝、TikTok resolver 拒绝及显式开启开发/测试 Mock 的对照组均通过。修改 guard 回 production-only 会重新触发这些失败。
 
-上述为开发修复自测。§7.1 的全量结果早于本次产品修复，不能作为本次最终全量通过证据；控制器必须重新运行后端全套并完成独立审阅。Tasks 8～12、现场部署、G1～G6 和 production 均待执行，不更新为通过。
+上述为开发修复自测。§7.1 的全量结果早于本次产品修复，不能作为本次最终全量通过证据；控制器必须重新运行后端全套并完成独立审阅。该段记录的是 2026-09-09 当时状态；Tasks 8/9 的后续现场结论见 §8.1，Task 10～12、G1～G6 和 production 仍待执行。
 
 ### 7.3 Task 7 审阅覆盖补充（2026-09-09）
 
@@ -164,7 +164,7 @@ RED 的 52 个失败均为目标行为缺失：24 个 staging 不安全配置未
 | 三个完整模块 | `python -m pytest tests/test_real_runtime_config.py tests/test_platform_adapters.py tests/test_production_gate_scripts.py -q --tb=short -p no:cacheprovider --basetemp='C:/Users/Administrator/AppData/Local/Temp/crm-rootless-task7-coverage-modules-20260909'` | 250 passed, 2 skipped in 25.75s，exit 0 |
 | 静态质量 | `python -m ruff check tests/test_real_runtime_config.py tests/test_platform_adapters.py tests/test_production_gate_scripts.py`；同路径 `python -m ruff format --check`；`git diff --check` | All checks passed；3 files already formatted；无空白错误 |
 
-两个跳过项仍为既有 Windows 文件 symlink 案例，不计通过。本次为现有行为的补充回归，首次执行即通过，不声明 RED 或新功能实现。控制器最终后端全量复核、独立验收、Tasks 8～12 现场和 G1～G6 均待执行。
+两个跳过项仍为既有 Windows 文件 symlink 案例，不计通过。本次为现有行为的补充回归，首次执行即通过，不声明 RED 或新功能实现。该段记录的是 2026-09-09 当时状态；控制器后续全量结果见 §7.4，Tasks 8/9 现场见 §8.1，Task 10～12 和 G1～G6 仍待执行。
 
 ### 7.4 Task 7 最终控制器复核（2026-09-09）
 
@@ -175,10 +175,21 @@ RED 的 52 个失败均为目标行为缺失：24 个 staging 不安全配置未
 | 计划要求的四文件聚焦回归 | 245 passed, 2 skipped in 26.69s | exit 0 |
 | 后端全量 | 1527 passed, 14 skipped, 2 warnings in 35.18s | exit 0 |
 
-两条 warning 为既有 Starlette/httpx 与 passlib/argon2 依赖弃用警告，不是测试失败；跳过项不计为通过。本轮结果完成 §7.2～7.3 所要求的修复后控制器全量复核，本地仓库实现验证通过。Task 7 的远端集成及正式独立验收仍按流程完成；Tasks 8～12、所有服务器/现场操作、G1～G6 和 production 门禁全部待执行，`production_release=false`。
+两条 warning 为既有 Starlette/httpx 与 passlib/argon2 依赖弃用警告，不是测试失败；跳过项不计为通过。本轮结果完成 §7.2～7.3 所要求的修复后控制器全量复核，本地仓库实现验证通过。该段记录的是 Task 7 结束时状态；Tasks 8/9 的后续现场结论见 §8.1，Task 10～12、G1～G6 和 production 门禁仍待执行，`production_release=false`。
 
 ## 8. 后续现场证据（Task 12）
 
 2026-09-09 Task 6 最终审阅计划勘误：Task 10 明确模型清单仅登记两个权重摘要，四个辅助文件需可信摘要和审阅后的机器可读权威（或架构明确降低要求），缺失时禁止启动；Task 11 明确先安装/核对 socket 监听与配置，deploy 后真实连接/健康并重跑安装器验证激活幂等；上一版必须是与候选不同且兼容 staging 回调、迁移 023 和配置的已审阅三摘要，历史 `f7c0f9f9` 不可直接作为成功回滚目标。仅校正计划并检查文档差异，未运行模型、主机、健康或回滚验证，live 与 G1～G6 仍待执行。
 
-未执行。待追加 UTC 时间、完整提交、候选/上一版 RepoDigest、overlay/配置 SHA-256、OS/Rootless 数据路径、系统容器保护比较、健康/迁移、备份恢复、兼容回滚、workflow run ID 和独立复核人。不得预填成功值或伪造现场摘要。
+### 8.1 Task 9 Runner 现场证据（2026-09-10）
+
+- 执行基线：clean main `bf5640acc0c9f2918de9831f30097951a985bd3b`。相关供应链修复经 PR #13/#14/#15 squash merge；PR #13 的初始 Linux 动态证据 run `34429552119` 和最终 head run `34432014630`、PR #14 run `34437014325`、PR #15 run `34439346391` 的后端/前端门禁均通过。
+- 版本资产：安装器、清单、user unit 摘要分别为 `a3c617dd3295abdc99013668f0373b378a7ad253d9ee862e1f9236ac38da1bc3`、`decdd9666720e1d24daca210ff874ac7372cf4e08e7a4bafc4783936d1277742`、`4a2ed0d68218ea49460efb2c356a5bd6bed6f1137c20b85c015c4215ede4199a`；本地、incoming 和最终版本目录复验一致。
+- 工具归档：Runner `2.336.0` 为 226035903 字节、SHA-256 `04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d`；PowerShell `7.6.5` 为 73393424 字节、SHA-256 `b34ab3b19acac1d3d4d0d3cfdb02acf62f457b0b6a962ff008132033f7566844`。二者均从清单官方 URL 获取，经本地和远端完整验签后成为 UID 1004、mode `0600` 的非链接密封文件。
+- 安装与注册：PowerShell `7.6.5`、Runner.Listener `2.336.0`；`crm-staging-runner.service` active/enabled/running、ExecMainStatus `0`。GitHub 唯一 runner `crm-staging-192-168-110-210` online、busy=false，标签为 `self-hosted`、`Linux`、`X64`、`crm-staging`。
+- 凭据边界：`.runner`、`.credentials`、`.credentials_rsaparams` 和用户 unit 仅检查元数据，均为 UID/GID 1004、mode `0600` 的普通非链接文件；注册 Token 仅在同一远端进程中经 stdin 使用，未输出、落盘、导出或进入 argv。
+- 隔离结果：Rootless Docker active/enabled、数据根 `/home/crmdeploy/.local/share/docker`、容器 0；系统 Docker 数据根 `/var/lib/docker`、容器 14 个/运行中 12 个，按 `Id|Name|Image|StartedAt|Running` 排序的 SHA-256 为 `d807427f814e97ffb27ed16a5c6409ab732def8b27841fe209a9b47880226cdb`，与基线一致。
+- 失败关闭：首次 Windows SCP 产生 `0664` 时流程在权限门禁退出，未提升、未取 Token、未安装。两项顺序缺陷通过 PR #14/#15 修复；首次失败 incoming 与两个历史 partial 的两次独立元数据快照完全一致，均未覆盖或删除。
+- 独立复核：测试工程师Agent 以只读 SSH/GitHub 查询逐项重验，结论 READY，Critical/Important/Minor 均为 0；未读取凭据内容或改变本地、服务器及 GitHub 状态。
+
+Task 9 已关闭。Task 10 仍需 DNS/TLS、六文件模型可信摘要、外部配置与候选镜像 RepoDigest；Task 11 仍需应用部署、健康、迁移 023、恢复和兼容回滚；Task 12 还需汇总候选/上一版摘要及 G1～G6。不得把本节解释为 staging 应用或 production 放行。
