@@ -63,6 +63,14 @@ class TransformersBgeEngine:
     reranker_model = "BAAI/bge-reranker-large"
     reranker_revision = "55611d7bca2a7133960a6d3b71e083071bbfc312"
     dimensions = 1024
+    _EXPECTED_ASSET_HASHES = {
+        "bge-m3/config.json": "26159e7ad065073448460117eb24b7a4572f6f4e78eadff65dc0a11c052449fa",
+        "bge-m3/pytorch_model.bin": "b5e0ce3470abf5ef3831aa1bd5553b486803e83251590ab7ff35a117cf6aad38",
+        "bge-m3/tokenizer.json": "21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08",
+        "bge-reranker-large/config.json": ("25dda0319f57e9de243c32eb7ecefa0768271afac6b5d8a94ba7f779198ab102"),
+        "bge-reranker-large/model.safetensors": ("c5ae4e262c60ed2fb507ec587358285377ec36ee0a2e6da029f0534272b06d36"),
+        "bge-reranker-large/tokenizer.json": ("9eb652ac4e40cc093272bbbe0f55d521cf67570060227109b5cdc20945a4489e"),
+    }
 
     def __init__(
         self,
@@ -199,27 +207,19 @@ class TransformersBgeEngine:
             raise RetrievalEngineError("MODEL_NOT_LOADED")
 
     def _verify_assets(self) -> None:
-        """验证固定关键文件；可选完整哈希用于部署启动门禁。"""
-        required_files = (
-            self.embedding_path / "config.json",
-            self.embedding_path / "pytorch_model.bin",
-            self.embedding_path / "tokenizer.json",
-            self.reranker_path / "config.json",
-            self.reranker_path / "model.safetensors",
-            self.reranker_path / "tokenizer.json",
-        )
-        if any(not path.is_file() for path in required_files):
+        """验证固定六文件；启用完整哈希时任何配置、分词器或权重篡改均失败关闭。"""
+        model_roots = {
+            "bge-m3": self.embedding_path,
+            "bge-reranker-large": self.reranker_path,
+        }
+        expected_hashes: dict[Path, str] = {}
+        for relative_path, expected_hash in self._EXPECTED_ASSET_HASHES.items():
+            model_name, filename = relative_path.split("/", maxsplit=1)
+            expected_hashes[model_roots[model_name] / filename] = expected_hash
+        if any(not path.is_file() for path in expected_hashes):
             raise RetrievalEngineError("MODEL_ASSET_MISSING")
         if not self.verify_hashes:
             return
-        expected_hashes = {
-            self.embedding_path / "pytorch_model.bin": (
-                "b5e0ce3470abf5ef3831aa1bd5553b486803e83251590ab7ff35a117cf6aad38"
-            ),
-            self.reranker_path / "model.safetensors": (
-                "c5ae4e262c60ed2fb507ec587358285377ec36ee0a2e6da029f0534272b06d36"
-            ),
-        }
         for path, expected_hash in expected_hashes.items():
             digest = hashlib.sha256()
             with path.open("rb") as file_handle:

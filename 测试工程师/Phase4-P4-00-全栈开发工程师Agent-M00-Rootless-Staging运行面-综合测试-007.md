@@ -12,13 +12,13 @@
 | 被测协作 Agent | 架构师Agent、共享记忆文档Agent |
 | 测试执行 Agent | 测试工程师Agent（Task 9 已独立现场只读复核） |
 | 关联实施记录 | `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-Rootless-Staging部署-001.md` |
-| 测试类型 | 综合测试、静态契约、无网络脚本回归、文档一致性、域名契约回归、Ubuntu 基础设施现场验收 |
+| 测试类型 | 综合测试、静态契约、无网络脚本回归、文档一致性、域名契约回归、模型资产完整性、Ubuntu 基础设施现场验收 |
 | 执行日期 | 2026-09-09～2026-09-10 |
-| 测试结论 | Tasks 8/9 基础设施运行面已就绪；新 staging 域名工程契约通过开发侧回归；Task 10 公网/TLS 剩余项、Task 11、G1～G6 和 production 仍阻塞 |
+| 测试结论 | Tasks 8/9 基础设施运行面已就绪；新 staging 域名工程契约和 Task 10 六文件模型前置已通过；Task 10 TLS/配置/候选镜像/validate 与公网复验、Task 11、G1～G6 和 production 仍阻塞 |
 
 独立测试结论：Task 9 READY；Critical/Important/Minor 均为 0
 
-本文是该运行面的单一工程/现场证据记录。Task 12 在本文件继续追加带日期、SHA 与 run ID 的现场证据，保留各工程阶段记录，不覆盖历史测试结果，不另建第二份竞争结论。当前已有服务器、Rootless Docker、runner 和新域名 DNS A 记录的真实证据；NAT 仅有用户配置确认，尚无入口监听后的公网 TCP、公信 TLS、六文件模型、应用部署、公开健康、恢复/回滚或 G1～G6 成功声明，`production_release=false`。
+本文是该运行面的单一工程/现场证据记录。Task 12 在本文件继续追加带日期、SHA 与 run ID 的现场证据，保留各工程阶段记录，不覆盖历史测试结果，不另建第二份竞争结论。当前已有服务器、Rootless Docker、runner、新域名 DNS A 记录和六文件模型资产的真实证据；NAT 仅有用户配置确认，尚无入口监听后的公网 TCP、公信 TLS、外部配置/候选镜像 validate、应用部署、公开健康、恢复/回滚或 G1～G6 成功声明，`production_release=false`。
 
 ## 2. 范围、环境与证据来源
 
@@ -85,7 +85,7 @@ Task 2 使用 standalone `docker-compose.exe v5.3.1` 的 `--profile ai ... confi
 | Accept=no socket 激活后 running 被拒绝 | 工程审阅 P1，已修复 | 静态输入 running 命中旧失败条件；改白名单并保留端口/归属验证，19 项通过，真实状态待 Ubuntu |
 | Bash -a/SHELLOPTS 自动导出 runner Token | 工程审阅问题，已修复 | 本地 Git Bash 两种启动模式令假 Token 进入子进程；`set +a` 修复后 2/2 通过 |
 | 上一版镜像与 staging callback 不兼容 | 待架构确认/现场回滚阻断 | 历史 `f7c0f9f9` 仅接受 www；本次配置用 staging。不得直接执行并预判成功 |
-| 模型四个辅助文件缺少清单 SHA-256 | 待 Task 10 补齐 | 清单只登记两个 weight_sha256；不能宣称六文件摘要已核验 |
+| 模型四个辅助文件缺少清单 SHA-256 | 已关闭（Task 10） | 固定 Revision 下载元数据/Xet 指针与本地字节交叉核验，六文件大小/SHA-256 已进入机器可读清单；服务启动校验扩展至六文件 |
 
 本报告不关闭 `DEF-REAL-FS01-006` 或其他既有正式缺陷，不替代前端漏洞独立复测 006 号报告。
 
@@ -96,7 +96,7 @@ Task 2 使用 standalone `docker-compose.exe v5.3.1` 的 `--profile ai ... confi
 | 8 主机 | 基础设施已建立；Task 9 前后复核 `crmdeploy` UID/GID 1004、Rootless active/enabled、数据根 `/home/crmdeploy/.local/share/docker`、容器 0，系统 Docker `/var/lib/docker` 与公司容器五字段摘要不变 | 未知配置、权限/路径不符、取证失败或公司容器任何变化 |
 | 8 失败/幂等 | 既有工程失败关闭/幂等证据保留；本轮未对公司容器做故障注入 | 禁止拿公司容器做故障注入；安装/重跑不一致 |
 | 9 runner | 已通过；官方归档双端验签、Ubuntu 原生安装、用户服务、GitHub online/标签和 Docker 隔离均有主责及独立只读证据 | 后续若归档/身份/目录漂移、runner 离线则重新阻塞 |
-| 10 外部材料 | DNS A/NAT/公网 TCP、公信 TLS/匹配私钥/权限、六模型文件与可信摘要、外部配置权限/轮换、Environment main 限制、合并 main 三摘要 | 任一缺失，不进入 deploy |
+| 10 外部材料 | DNS A 已确认；六模型普通文件、可信摘要及服务器只读落位已通过。NAT 公网 TCP、公信 TLS/匹配私钥/权限、外部配置权限/轮换、Environment main 限制、合并 main 三摘要仍待完成 | 任一剩余项缺失，不进入 deploy |
 | 10 validate | 真实 checkout/仓库外路径、完整三层 Compose、固定 socket、无敏感输出、validated 制品 | validate 非零或无合格证据 |
 | 11 部署 | 入口 socket 归属、高端口回环、不可变 pull/up/健康等待、首页和三个健康端点、四服务十开关 false、迁移 023 | 健康失败、外部暴露、能力偏离或系统容器改变 |
 | 11 恢复/回滚 | PostgreSQL/MinIO 隔离恢复、对象与审计、兼容上一版三摘要、回滚再切回候选、容量和公司快照复核 | 未确定恢复目标/兼容上一版或任何实际恢复失败 |
@@ -192,7 +192,7 @@ RED 的 52 个失败均为目标行为缺失：24 个 staging 不安全配置未
 - 失败关闭：首次 Windows SCP 产生 `0664` 时流程在权限门禁退出，未提升、未取 Token、未安装。两项顺序缺陷通过 PR #14/#15 修复；首次失败 incoming 与两个历史 partial 的两次独立元数据快照完全一致，均未覆盖或删除。
 - 独立复核：测试工程师Agent 以只读 SSH/GitHub 查询逐项重验，结论 READY，Critical/Important/Minor 均为 0；未读取凭据内容或改变本地、服务器及 GitHub 状态。
 
-Task 9 已关闭。Task 10 的 DNS A 记录已经确认，仍需入口监听后的公网 80/443 复验、公信 TLS、六文件模型可信摘要、外部配置与候选镜像 RepoDigest；Task 11 仍需应用部署、健康、迁移 023、恢复和兼容回滚；Task 12 还需汇总候选/上一版摘要及 G1～G6。不得把本节解释为 staging 应用或 production 放行。
+Task 9 已关闭。Task 10 的 DNS A 记录和六文件模型前置已经确认，仍需入口监听后的公网 80/443 复验、公信 TLS、外部配置与候选镜像 RepoDigest/validate；Task 11 仍需应用部署、健康、迁移 023、恢复和兼容回滚；Task 12 还需汇总候选/上一版摘要及 G1～G6。不得把本节解释为 staging 应用或 production 放行。
 
 ### 8.2 Staging 域名切换工程证据（2026-09-10）
 
@@ -204,4 +204,15 @@ Task 9 已关闭。Task 10 的 DNS A 记录已经确认，仍需入口监听后�
 - 后端全量回归：`1552 passed, 16 skipped, 2 warnings in 48.29s`，exit 0。两条 warning 仍是 Starlette/httpx 和 passlib/argon2 的既有依赖弃用告警；跳过项不计通过。
 - 静态质量：5 个变更 Python 文件的 Ruff check 与 format check 通过。公开配置、运行手册、ADR、接口说明、工作流和测试夹具均已指向新域名；旧域名保持失败关闭。
 
-以上为开发侧仓库验证，不替代测试工程师对合并 main、GitHub Actions 和真实公网/TLS 的独立复核。Task 10/11、G1～G6 与 production 状态不变。
+以上为域名切换时点的开发侧仓库验证，不替代测试工程师对合并 main、GitHub Actions 和真实公网/TLS 的独立复核；后续模型前置进展见 §8.3。
+
+### 8.3 Task 10 六文件模型完整性与服务器落位（2026-09-10）
+
+- 可信来源：两模型继续固定 `BAAI/bge-m3@5617a9f61b028005a4858fdac845db406aefb181` 与 `BAAI/bge-reranker-large@55611d7bca2a7133960a6d3b71e083071bbfc312`。两个 `tokenizer.json` 的本地 SHA-256 分别与官方 Xet 指针 `21106b…dd08`、`9eb652…a4489e` 一致；两个 `config.json` 的 Git blob SHA-1 分别与固定 Revision 下载元数据 `e6eda1…a7ad`、`bb100d…8947` 一致，再对相同字节登记 SHA-256 `26159e…449fa`、`25dda0…ab102`。
+- 机器可读权威：`deploy/models/model-manifest.json` 新增六个运行文件的相对路径、字节数和完整 SHA-256；模型服务在 `RETRIEVAL_MODEL_VERIFY_HASHES=true` 时从原先两权重校验扩展为配置、分词器、权重共六文件校验，任一篡改抛出 `MODEL_ASSET_HASH_MISMATCH` 后停止加载。
+- TDD：新行为测试在产品代码修改前得到 `1 failed`，失败原因为实现忽略六文件受控哈希映射并命中旧权重摘要；最小实现后新测试 `2 passed`。逐项篡改六个文件都由真实文件读取和 `hashlib.sha256` 路径拒绝，另校验运行时哈希集合与版本化清单完全一致。
+- 回归：相关四套测试使用仓库外 basetemp 得到 `119 passed, 4 skipped, 1 warning`；后端全量得到 `1554 passed, 16 skipped, 2 warnings`。两条全量 warning 为既有 Starlette/httpx 与 passlib/argon2 弃用告警；跳过项不计通过。Ruff check/format 通过。
+- 现场传输：本机六文件在传输前按版本化清单逐项核验。服务器使用独立 incoming 目录接收约 4.55 GB，仅在远端六次 `sha256sum -c` 全部 `OK` 后替换原先只含两个空子目录的 `/home/crmdeploy/assets/models`。最终六文件均为普通非链接文件、`root:crmdeploy`、mode `0444`；三个模型目录 mode `0555`，Rootless Compose 后续只读挂载。
+- 隔离：本次未调用任一 Docker daemon，未停止、重启或修改公司容器；系统 Docker 既有 14 个容器的基线边界继续有效。TLS、环境文件、候选镜像、GitHub Environment、validate、公网监听与应用部署均未在本节声称完成。
+
+Task 10 Step 3 已完成，但本次代码/清单必须经 PR、CI 与 squash merge 后，才能从新的合并 `main` 发布三个候选应用镜像。Task 10 整体仍未完成。

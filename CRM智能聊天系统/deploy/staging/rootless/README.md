@@ -48,7 +48,7 @@ AI_MARKETING_ENABLED=false
 AUTO_REPLY_ENABLED=false
 ```
 
-数据库、MinIO、JWT、检索服务 Token 等由安全渠道生成/注入；TikTok 与 DeepSeek 凭据在各自真实门禁窗口前留空。模型六个普通文件必须在 checkout 外：`bge-m3/{config.json,pytorch_model.bin,tokenizer.json}`、`bge-reranker-large/{config.json,model.safetensors,tokenizer.json}`，拒绝路径链上的符号链接。`deploy/models/model-manifest.json` 当前只登记两份权重的 SHA-256；启动时验证这两份权重。四个辅助 JSON 文件的逐文件摘要来源仍需 Task 10 补齐，不能声称已完成六文件哈希验证。
+数据库、MinIO、JWT、检索服务 Token 等由安全渠道生成/注入；TikTok 与 DeepSeek 凭据在各自真实门禁窗口前留空。模型六个普通文件必须在 checkout 外：`bge-m3/{config.json,pytorch_model.bin,tokenizer.json}`、`bge-reranker-large/{config.json,model.safetensors,tokenizer.json}`，拒绝路径链上的符号链接。`deploy/models/model-manifest.json` 已登记六个运行文件的大小和 SHA-256；启用 `RETRIEVAL_MODEL_VERIFY_HASHES=true` 时，模型服务会在加载前逐一校验配置、分词器和权重，任一文件不匹配即失败关闭。
 
 `BACKEND_IMAGE`、`FRONTEND_IMAGE`、`RETRIEVAL_MODEL_SERVICE_IMAGE` 必须来自本分支合并后完整 main SHA 的发布制品，均为 `repository@sha256:<64-hex>`；不得使用标签替代摘要或在主机 build。`release/images/mvp-production-gates.json` 的 `f7c0f9f9` 是历史已发布版本，不包含本次 staging 回调改动，不能当成本次候选。四个外部运行镜像的摘要继续取该清单 `external_images`。候选发布、配置同步和真实拉取均待执行。
 
