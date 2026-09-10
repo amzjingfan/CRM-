@@ -78,8 +78,8 @@
 | 文件路径 | 变更类型 | 变更说明 | 负责 Agent |
 | --- | --- | --- | --- |
 | `CRM智能聊天系统/deploy/staging/rootless/install-runner.sh` | 修改 | 增加 Home/全部既有目录及密封归档的类型、属主、权限和摘要检查 | 全栈开发工程师Agent |
-| `CRM智能聊天系统/backend/tests/test_rootless_staging_assets.py` | 修改 | 增加目录行为、跨 SSH 重验、Token 前最终复验、权限、坏摘要和版本资产调用回归 | 全栈开发工程师Agent |
-| `CRM智能聊天系统/deploy/staging/rootless/README.md` | 修改 | 补充每个 SSH 边界父路径重验、Token 前本地重哈希和远端最终复验，以及精确 chmod | 全栈开发工程师Agent |
+| `CRM智能聊天系统/backend/tests/test_rootless_staging_assets.py` | 修改 | 增加目录行为、跨 SSH 重验、Token 前最终复验、权限、坏摘要、版本资产调用及 Windows SCP `0664` 规范化顺序回归 | 全栈开发工程师Agent |
+| `CRM智能聊天系统/deploy/staging/rootless/README.md` | 修改 | 补充每个 SSH 边界父路径重验、Token 前本地重哈希和远端最终复验；在唯一 `0700` incoming 目录内先拒绝链接/错属主，再逐文件精确收紧权限 | 全栈开发工程师Agent |
 | `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` | 修改 | 记录离线可信缓存供应链边界 | 架构师Agent/全栈开发工程师Agent |
 | `共享记忆文档/实施记录/Phase4-P4-11-全栈开发工程师Agent-Runner离线可信缓存-001.md` | 新增 | 本实施记录 | 全栈开发工程师Agent |
 | `测试工程师/Phase4-P4-11-全栈开发工程师Agent-M00-Runner离线可信缓存-综合测试-001.md` | 新增 | 独立测试工程师最终复测报告，显式保留 Task 9 现场门禁 | 测试工程师Agent/全栈开发工程师Agent |
@@ -116,15 +116,18 @@
 | 最终复审双文件回归 | `pytest test_rootless_staging_assets.py test_production_gate_scripts.py` | 当前树相关回归无失败 | 首轮 `1 failed, 106 passed, 4 skipped` 暴露旧静态断言仍要求内联安装器；修正断言并单测 `1 passed` 后，以新 basetemp 重跑得到 `107 passed, 4 skipped in 32.40s`、exit 0 | 通过（开发自测） |
 | 2026-09-10 最终独立 QA | 测试工程师Agent 使用新仓库外 basetemp 独立执行双文件回归与同进程复验静态检查 | 最终树无失败，Windows skip 不冒充通过 | session `74210` 完成至 `[100%]`、exit 0，精确 `107 passed, 4 skipped`；`$invokeVerifiedRunner` 同进程复验顺序、Ruff、Bash 和 PowerShell AST 均通过 | 通过（仓库工程范围） |
 | PR #13 Linux CI | GitHub Actions run `34429552119` 后端/前端质量门禁 | Ubuntu 动态覆盖本地跳过案例，完整工程无回归 | 后端 `1552 passed, 12 skipped, 3 warnings`；Rootless 资产测试无 skip；前端门禁通过 | 通过 |
+| Task 9 首次版本资产传输 | 目标 Ubuntu 26.04；合并 SHA `d5d45ef1d0a513b54d3cf4cffbf34dad72fd0393` | 不安全模式必须失败关闭，不得提升或申请 Token | Windows SCP 将三文件落为 `0664`，旧 strict check 在 chmod 前拒绝；三个 SHA 和 `bash -n` 正确，版本目标未生成，Token 未申请，Runner 未安装 | 失败关闭（缺陷已定位） |
+| SCP 模式修复 TDD | 新增规范化顺序测试后执行单测、单文件和双文件回归 | 先 regular/non-link/UID 1004，再精确 chmod/strict check/SHA/原子提升 | RED `1 failed`；GREEN 单测 `1 passed`、单文件 `48 passed, 2 skipped`、双文件 `108 passed, 4 skipped in 34.95s` | 通过（开发自测） |
+| SCP 模式修复独立 QA/审阅 | 独立测试与安全审阅只读复核 | 无 Critical/Important/Minor，跨平台流程可继续进入 CI | 双文件 `108 passed, 4 skipped`、Ruff/Bash/8 个 PowerShell AST/diff/凭据检查通过；两位审阅者均 READY | 通过（仓库工程范围） |
 | Bash/Ruff/静态检查 | `bash -n install-runner.sh`；Ruff check/format；README PowerShell AST 解析；`git diff --check` | 语法、格式和手册代码块无错误 | Bash exit 0；Ruff 通过；8 个 PowerShell 块零解析错误；diff 通过 | 通过 |
-| Task 9 现场 | 合并后服务器安装、GitHub online/标签及公司容器不变复核 | 全部现场门禁取证 | 本任务未执行 | 未执行 |
+| Task 9 现场 | 合并后服务器安装、GitHub online/标签及公司容器不变复核 | 全部现场门禁取证 | 本地官方下载/验签完成；版本资产首次 SCP 失败关闭；远端归档、安装、注册与事后复核未执行 | 部分执行 |
 
 ## 8. 实施结果
 
 - 完成项：仓库代码、自动化行为测试、运维流程、架构边界和可追溯文档已实施。
-- 未完成项：Task 9 真实现场（不在仓库工程验证范围）；PR #13 最终合并状态以 GitHub 为准。
+- 未完成项：Task 9 归档上传、原生安装、注册和 online 现场仍待 SCP 模式修复合并后继续。
 - 与原方案差异：无生产行为差异；Windows 动态符号链接案例跳过，保留静态契约并要求 Linux 复测。
-- 当前状态：2026-09-10 最终独立 QA 得到 `107 passed, 4 skipped`、exit 0；PR #13 Linux CI 得到后端 `1552 passed, 12 skipped` 且 Rootless 资产测试无 skip，前端门禁通过；最终审阅 Critical/Important/Minor 均为 0。仓库工程范围有条件通过，Task 9 真实现场继续阻塞，不构成 G1～G6 或 production 放行。
+- 当前状态：PR #13 已 squash merge 为 `d5d45ef1d0a513b54d3cf4cffbf34dad72fd0393`。Task 9 首次版本资产传输因 Windows SCP `0664` 被旧门禁正确阻止；修复后独立 QA 得到 `108 passed, 4 skipped`、两位审阅者均 READY。补丁待 GitHub Flow CI/合并，Task 9 未完成，不构成 G1～G6 或 production 放行。
 
 ## 9. 遗留问题与风险
 
@@ -136,7 +139,7 @@
 ## 10. 交接事项
 
 - 交接给：测试工程师Agent、代码审阅者、Task 9 执行者。
-- 后续任务：完成 PR #13 squash merge；随后按运行手册执行 Task 9。
+- 后续任务：合并 SCP 模式修复短分支；随后从已合并 main 重新建立唯一版本资产目录并继续 Task 9。
 - 必须注意：任何损坏密封归档都必须硬停；不得为绕过错误删除/改名缓存后让安装器自行联网。
 
 ## 11. 文档同步
@@ -146,3 +149,11 @@
 - [x] 已同步 P4-11 仓库工程状态。
 - [x] 已保留最后变更前的独立复测证据，并将当前修订标为待测试工程师Agent 再次独立复测。
 - [x] 已更新测试报告索引和实施记录索引。
+
+## 12. Task 9 现场缺陷补充（2026-09-10）
+
+- 现场前置核对：Rootless Docker `active/enabled`、数据根 `/home/crmdeploy/.local/share/docker`、Rootless 容器 0；系统 Docker 数据根 `/var/lib/docker`，公司容器 14 个/运行中 12 个，规范五字段 SHA-256 仍为 `d807427f814e97ffb27ed16a5c6409ab732def8b27841fe209a9b47880226cdb`。
+- 本地官方材料：Runner 2.336.0（226035903 字节）与 PowerShell 7.6.5（73393424 字节）均从清单 GitHub 官方 URL 下载，并分别通过 `04cf0be1...05d5d`、`b34ab3b1...6844` 完整 SHA-256。
+- 失败关闭：首次三文件 SCP 后实际模式为 `0664`；旧 `$verifyBootstrap` 在任何 chmod、摘要提升、Token 请求或安装动作前退出。目标版本目录、Runner、PowerShell、user unit 和 GitHub Runner 均保持不存在。
+- 修复策略：唯一 incoming 目录继续为 `0700`；`normalize_bootstrap_file` 对三个精确路径先执行普通文件、非链接、UID 1004 检查，再分别收紧到 `0700/0600/0600`，随后复用 strict file guard，最后才做 SHA-256、`bash -n` 和 `mv -T`。
+- 现场边界：失败后唯一 incoming 目录作为低敏故障证据暂留；未覆盖或删除。修复合并前不继续使用该目录，也不申请注册 Token。

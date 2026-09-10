@@ -133,6 +133,14 @@ GitHub Actions run `34429552119` 在 Ubuntu / Python 3.11.16 上完成后端与�
 
 CI 运行页：`https://github.com/CP11-gh/CRM/actions/runs/34429552119`。该证据验证的是 PR 工程树，不替代目标 Ubuntu 主机、真实归档或 Runner 注册现场。
 
+### 6.5 Task 9 首次现场与 Windows SCP 模式修复
+
+PR #13 squash merge 后以 clean `main` 完整 SHA `d5d45ef1d0a513b54d3cf4cffbf34dad72fd0393` 启动 Task 9。服务器只读预检确认 Ubuntu 26.04 x86_64、`crmdeploy` UID/GID 1004、Rootless Docker active/enabled、Rootless 容器 0；系统 Docker 数据根仍为 `/var/lib/docker`，公司容器 14 个/运行中 12 个，规范五字段 SHA-256 与历史证据同为 `d807427f814e97ffb27ed16a5c6409ab732def8b27841fe209a9b47880226cdb`。
+
+三项版本资产经 SCP 进入唯一 `0700` incoming 目录后，目标 Ubuntu 上的文件模式实际为 `0664`。旧流程在逐文件 chmod 之前调用 strict file guard，因此按失败关闭原则退出；三个文件的本地/远端 SHA-256 一致且 `bash -n` 通过，但没有原子提升版本目标，没有申请 Token，也没有安装 Runner、PowerShell 或 user unit。该现场结果证明旧手册无法直接兼容 Windows OpenSSH/SCP 的权限映射，不能通过人工绕过门禁继续。
+
+修复以 TDD 实施：新增测试先得到 `1 failed`，随后引入 `normalize_bootstrap_file`，在唯一私有目录内按普通文件、非链接、UID 1004、精确 chmod、strict file check 的顺序处理三个固定路径，再执行摘要、Bash 语法和原子提升。开发单文件回归 `48 passed, 2 skipped`，与生产门禁联合回归 `108 passed, 4 skipped in 34.95s`。独立 QA 复跑联合回归得到 `108 passed, 4 skipped`、exit 0；Ruff、Bash、8 个 PowerShell 代码块 AST、差异与高置信凭据检查均通过。独立安全审阅 Critical/Important/Minor 均为 0，结论 READY。4 个 skip 仍是 Windows 权限限制的既有动态链接案例，PR Linux CI 必须再次补证。
+
 ## 7. 失败项、缺陷与回归
 
 | 项目 | 优先级/状态 | 复现与处理 |
@@ -140,6 +148,7 @@ CI 运行页：`https://github.com/CP11-gh/CRM/actions/runs/34429552119`。该�
 | 旧安装器无密封缓存入口 | P1，开发修复已验证 | RED 四个案例均因函数缺失失败；最小实现后 GREEN |
 | Windows PATH 命令替身未截获 curl/stat | 测试装置，已关闭 | 本机受限联网使案例显式失败；改为局部 Bash 函数替身，不改生产行为 |
 | 动态符号链接/目录联接案例 | 已关闭（Linux 工程环境） | Windows 最终独立回归的 4 项 skip 不计通过；PR #13 Linux CI 已执行相关测试且 `test_rootless_staging_assets.py` 无 skip |
+| Windows SCP 产生 `0664`，旧流程在精确 chmod 前失败 | P1 运维缺陷，仓库修复待 CI/合并 | 现场严格失败关闭且未提升/未取 Token；补丁先拒绝链接/错属主，再逐个精确 chmod 和 strict check；独立 QA/审阅 READY |
 
 最终独立复测未发现新的产品 P0/P1/P2 缺陷。现场未执行项属于发布门禁缺口，不得记为关闭。
 
@@ -147,12 +156,12 @@ CI 运行页：`https://github.com/CP11-gh/CRM/actions/runs/34429552119`。该�
 
 | 门禁 | 当前状态 |
 | --- | --- |
-| 从清单官方 URL 下载两个真实归档并本地验签 | 未执行 |
-| 受保护 SSH/SCP 传输、UID/类型/链接/远端 SHA-256 | 未执行 |
+| 从清单官方 URL 下载两个真实归档并本地验签 | 已通过；Runner 226035903 字节、PowerShell 73393424 字节，两个完整 SHA-256 均与清单一致 |
+| 受保护 SSH/SCP 传输、UID/类型/链接/远端 SHA-256 | 部分执行；三项版本资产现场失败关闭且未提升，两个工具归档尚未上传 |
 | Ubuntu 原生解压、PowerShell/Runner 版本和 systemd user service | 未执行 |
 | GitHub Runner online 与 `self-hosted,linux,x64,crm-staging` 标签 | 未执行 |
 | Rootless 容器仍为 0、公司容器五字段不变 | 未执行 |
 
 ## 9. 验收建议
 
-最终仓库工程范围有条件通过，PR #13 的 Linux/前端 CI 和独立人工审阅均已通过，可执行 squash merge。Task 9 仍须完成两份真实归档的本地/远端 SHA-256、受保护传输、Ubuntu 原生安装、GitHub Runner online/标签以及公司容器不变取证。Task 9 现场完成前，不得宣称 Runner 已安装、基础运行面已完成或 staging/production 已放行。
+SCP 模式修复的仓库工程范围经独立 QA/审阅有条件通过，仍须完成新 PR 的 Linux/前端 CI 和 squash merge。Task 9 已完成两份真实归档的本地官方来源与 SHA-256，但远端归档验签、Ubuntu 原生安装、GitHub Runner online/标签以及操作后公司容器不变取证仍未完成。Task 9 现场完成前，不得宣称 Runner 已安装、基础运行面已完成或 staging/production 已放行。

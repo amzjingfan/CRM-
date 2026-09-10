@@ -387,9 +387,9 @@ def test_runner_readme_promotes_merged_assets_before_versioned_installer_invocat
         "$runnerUnitSha256",
         "sha256sum -c -",
         "bash -n",
-        "chmod 0700 '$remoteTransferDir/install-runner.sh'",
-        "chmod 0600 '$remoteTransferDir/toolchain-manifest.json'",
-        "chmod 0600 '$remoteTransferDir/systemd/user/crm-staging-runner.service'",
+        "normalize_bootstrap_file '$remoteTransferDir/install-runner.sh' 0700",
+        "normalize_bootstrap_file '$remoteTransferDir/toolchain-manifest.json' 0600",
+        "normalize_bootstrap_file '$remoteTransferDir/systemd/user/crm-staging-runner.service' 0600",
         "mv -T",
     )
     for marker in required:
@@ -403,6 +403,42 @@ def test_runner_readme_promotes_merged_assets_before_versioned_installer_invocat
     assert "$invokeVerifiedRunner" in source[invocation:]
 
 
+def test_runner_readme_normalizes_windows_scp_modes_before_strict_file_checks() -> None:
+    """唯一私有 incoming 目录内应先拒绝链接/错属主，再精确收紧 Windows SCP 文件模式。"""
+    source = (ROOTLESS_DIR / "README.md").read_text(encoding="utf-8")
+    transfer_section = source[source.index("$remoteDirectoryGuard =") : source.index("$manifest =")]
+
+    guard = "$remoteBootstrapFileGuard = 'normalize_bootstrap_file()"
+    assert guard in transfer_section
+    guard_start = transfer_section.index(guard)
+    guard_end = transfer_section.index("';", guard_start)
+    guard_body = transfer_section[guard_start:guard_end]
+    for required in (
+        'test -f "$path"',
+        'test ! -L "$path"',
+        'test "$(stat -c %u "$path")" = 1004',
+        'chmod "$target_mode" -- "$path"',
+        'check_secure_file "$path"',
+    ):
+        assert required in guard_body
+
+    verify_start = transfer_section.index('$verifyBootstrap = "')
+    verify_end = transfer_section.index('"\nssh -i', verify_start)
+    verify_body = transfer_section[verify_start:verify_end]
+    directory_check = verify_body.index("check_secure_directory '$remoteTransferDir'")
+    installer_normalize = verify_body.index("normalize_bootstrap_file '$remoteTransferDir/install-runner.sh' 0700")
+    manifest_normalize = verify_body.index("normalize_bootstrap_file '$remoteTransferDir/toolchain-manifest.json' 0600")
+    unit_normalize = verify_body.index(
+        "normalize_bootstrap_file '$remoteTransferDir/systemd/user/crm-staging-runner.service' 0600"
+    )
+    first_digest_check = verify_body.index("sha256sum -c -")
+    promotion = verify_body.index("mv -T")
+
+    assert directory_check < installer_normalize < manifest_normalize < unit_normalize
+    assert unit_normalize < first_digest_check < promotion
+    assert "chmod *" not in verify_body
+
+
 def test_runner_readme_rechecks_remote_path_security_at_every_ssh_boundary() -> None:
     """各跨 SSH 边界都必须重新校验父路径、临时目录和提升后目录。"""
     source = (ROOTLESS_DIR / "README.md").read_text(encoding="utf-8")
@@ -411,7 +447,10 @@ def test_runner_readme_rechecks_remote_path_security_at_every_ssh_boundary() -> 
         "$remoteFileGuard =",
         "8#$mode & 0022",
         '$prepareBootstrap = "$remoteDirectoryGuard $remoteHomeGuard;',
-        '$verifyBootstrap = "$remoteDirectoryGuard $remoteFileGuard $remoteHomeGuard; $remoteSrcGuard;',
+        (
+            '$verifyBootstrap = "$remoteDirectoryGuard $remoteFileGuard '
+            "$remoteBootstrapFileGuard $remoteHomeGuard; $remoteSrcGuard;"
+        ),
         '$prepareToolchainCache = "$remoteDirectoryGuard $remoteHomeGuard;',
         '$prepareRemote = "$remoteDirectoryGuard $remoteHomeGuard; $remoteDotCacheGuard; $remoteCacheGuard;',
         (
