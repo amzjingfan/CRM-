@@ -115,28 +115,28 @@
 | 最终复审 RED/GREEN | Token-bearing SSH 同一进程复验契约 | 缺少 `$invokeVerifiedRunner` 时失败，最小实现后通过 | `1 failed in 0.10s` → `1 passed in 0.02s` | 通过（开发自测） |
 | 最终复审双文件回归 | `pytest test_rootless_staging_assets.py test_production_gate_scripts.py` | 当前树相关回归无失败 | 首轮 `1 failed, 106 passed, 4 skipped` 暴露旧静态断言仍要求内联安装器；修正断言并单测 `1 passed` 后，以新 basetemp 重跑得到 `107 passed, 4 skipped in 32.40s`、exit 0 | 通过（开发自测） |
 | 2026-09-10 最终独立 QA | 测试工程师Agent 使用新仓库外 basetemp 独立执行双文件回归与同进程复验静态检查 | 最终树无失败，Windows skip 不冒充通过 | session `74210` 完成至 `[100%]`、exit 0，精确 `107 passed, 4 skipped`；`$invokeVerifiedRunner` 同进程复验顺序、Ruff、Bash 和 PowerShell AST 均通过 | 通过（仓库工程范围） |
+| PR #13 Linux CI | GitHub Actions run `34429552119` 后端/前端质量门禁 | Ubuntu 动态覆盖本地跳过案例，完整工程无回归 | 后端 `1552 passed, 12 skipped, 3 warnings`；Rootless 资产测试无 skip；前端门禁通过 | 通过 |
 | Bash/Ruff/静态检查 | `bash -n install-runner.sh`；Ruff check/format；README PowerShell AST 解析；`git diff --check` | 语法、格式和手册代码块无错误 | Bash exit 0；Ruff 通过；8 个 PowerShell 块零解析错误；diff 通过 | 通过 |
 | Task 9 现场 | 合并后服务器安装、GitHub online/标签及公司容器不变复核 | 全部现场门禁取证 | 本任务未执行 | 未执行 |
 
 ## 8. 实施结果
 
 - 完成项：仓库代码、自动化行为测试、运维流程、架构边界和可追溯文档已实施。
-- 未完成项：合并/PR/CI 和 Task 9 真实现场（不在仓库工程验证范围）。
+- 未完成项：Task 9 真实现场（不在仓库工程验证范围）；PR #13 最终合并状态以 GitHub 为准。
 - 与原方案差异：无生产行为差异；Windows 动态符号链接案例跳过，保留静态契约并要求 Linux 复测。
-- 当前状态：2026-09-10 最终独立 QA 对当前树得到 `107 passed, 4 skipped`、exit 0，仓库工程范围有条件通过。4 个 Windows 符号链接/目录联接案例待 Linux CI 或 Ubuntu 现场补证；Task 9 真实现场继续阻塞，不构成 G1～G6 或 production 放行。
+- 当前状态：2026-09-10 最终独立 QA 得到 `107 passed, 4 skipped`、exit 0；PR #13 Linux CI 得到后端 `1552 passed, 12 skipped` 且 Rootless 资产测试无 skip，前端门禁通过；最终审阅 Critical/Important/Minor 均为 0。仓库工程范围有条件通过，Task 9 真实现场继续阻塞，不构成 G1～G6 或 production 放行。
 
 ## 9. 遗留问题与风险
 
 | 编号 | 问题或风险 | 优先级 | 负责 Agent | 计划处理 Phase/任务 |
 | --- | --- | --- | --- | --- |
-| R-CACHE-001 | Windows 本地无法执行文件/目录符号链接动态案例 | P2 | 测试工程师Agent | Linux CI / Task 9 受控失败路径 |
 | R-CACHE-002 | 本地官方归档、受保护传输、Ubuntu 原生解压和 GitHub Runner online 未执行 | P1 | 全栈开发工程师Agent/测试工程师Agent | Task 9 |
 | R-CACHE-003 | 密封文件检查与解压之间仍存在同用户本地竞态窗口 | P2 | 架构师Agent/全栈开发工程师Agent | Task 9 现场风险复核 |
 
 ## 10. 交接事项
 
 - 交接给：测试工程师Agent、代码审阅者、Task 9 执行者。
-- 后续任务：完成 Task 4 最终验证、PR/CI 和人工审阅；合并后按运行手册执行 Task 9。
+- 后续任务：完成 PR #13 squash merge；随后按运行手册执行 Task 9。
 - 必须注意：任何损坏密封归档都必须硬停；不得为绕过错误删除/改名缓存后让安装器自行联网。
 
 ## 11. 文档同步

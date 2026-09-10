@@ -125,7 +125,13 @@
 | Token 前顺序 | 定位 `set -euo pipefail`、`$verifyRunnerBootstrap`、`$invokeVerifiedRunner`、独立远端预检、registration-token 和 Token SSH | 6 个顺序标记严格递增；完整复验定义与预检均在 Token 请求前，同一 Token 进程再次执行完整复验 |
 | 索引、凭据与差异卫生 | 检查正式测试/实施记录路径与目标；扫描 9 个本轮文件中的高置信凭据模式；执行 `git diff --check` | 两个索引路径各出现 1 次且目标存在；凭据命中 0；diff 检查通过 |
 
-本轮 4 个跳过项与第 6.2 节相同，不计作通过：2 项为 Rootless 文件/目录符号链接动态案例，另外 2 项为既有生产门禁 Windows 符号链接/目录联接案例。静态失败关闭契约通过，Linux CI/Task 9 Ubuntu 现场动态证据仍未取得。
+本轮 4 个跳过项与第 6.2 节相同，不计作 Windows 通过：2 项为 Rootless 文件/目录符号链接动态案例，另外 2 项为既有生产门禁 Windows 符号链接/目录联接案例。静态失败关闭契约通过，后续由 PR #13 的 Linux CI 补齐动态证据。
+
+### 6.4 PR #13 Linux CI 证据
+
+GitHub Actions run `34429552119` 在 Ubuntu / Python 3.11.16 上完成后端与前端两个质量门禁。后端收集 1564 项，最终 `1552 passed, 12 skipped, 3 warnings in 70.72s`；日志中的 `tests/test_rootless_staging_assets.py` 全部为通过标记，没有该文件的 skip，因而本地受 Windows 权限限制的文件/目录符号链接案例已取得 Linux 动态通过证据。12 个 skip 均位于既有 PostgreSQL 集成测试文件，不属于本增量。前端质量门禁同时通过。
+
+CI 运行页：`https://github.com/CP11-gh/CRM/actions/runs/34429552119`。该证据验证的是 PR 工程树，不替代目标 Ubuntu 主机、真实归档或 Runner 注册现场。
 
 ## 7. 失败项、缺陷与回归
 
@@ -133,7 +139,7 @@
 | --- | --- | --- |
 | 旧安装器无密封缓存入口 | P1，开发修复已验证 | RED 四个案例均因函数缺失失败；最小实现后 GREEN |
 | Windows PATH 命令替身未截获 curl/stat | 测试装置，已关闭 | 本机受限联网使案例显式失败；改为局部 Bash 函数替身，不改生产行为 |
-| 动态符号链接/目录联接案例 | 遗留验证风险，未执行 | 最终独立回归有 4 项因 Windows 权限跳过；Linux CI/Task 9 现场须补动态复测，不计为通过 |
+| 动态符号链接/目录联接案例 | 已关闭（Linux 工程环境） | Windows 最终独立回归的 4 项 skip 不计通过；PR #13 Linux CI 已执行相关测试且 `test_rootless_staging_assets.py` 无 skip |
 
 最终独立复测未发现新的产品 P0/P1/P2 缺陷。现场未执行项属于发布门禁缺口，不得记为关闭。
 
@@ -149,4 +155,4 @@
 
 ## 9. 验收建议
 
-最终仓库工程范围有条件通过，建议进入 GitHub Flow CI 和人工审阅，并优先使用 Linux CI 补动态符号链接案例。即使 CI 通过，Task 9 仍须完成两份真实归档的本地/远端 SHA-256、受保护传输、Ubuntu 原生安装、GitHub Runner online/标签以及公司容器不变取证。Task 9 现场完成前，不得宣称 Runner 已安装、基础运行面已完成或 staging/production 已放行。
+最终仓库工程范围有条件通过，PR #13 的 Linux/前端 CI 和独立人工审阅均已通过，可执行 squash merge。Task 9 仍须完成两份真实归档的本地/远端 SHA-256、受保护传输、Ubuntu 原生安装、GitHub Runner online/标签以及公司容器不变取证。Task 9 现场完成前，不得宣称 Runner 已安装、基础运行面已完成或 staging/production 已放行。
