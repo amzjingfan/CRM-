@@ -139,7 +139,9 @@ PR #13 squash merge 后以 clean `main` 完整 SHA `d5d45ef1d0a513b54d3cf4cffbf3
 
 三项版本资产经 SCP 进入唯一 `0700` incoming 目录后，目标 Ubuntu 上的文件模式实际为 `0664`。旧流程在逐文件 chmod 之前调用 strict file guard，因此按失败关闭原则退出；三个文件的本地/远端 SHA-256 一致且 `bash -n` 通过，但没有原子提升版本目标，没有申请 Token，也没有安装 Runner、PowerShell 或 user unit。该现场结果证明旧手册无法直接兼容 Windows OpenSSH/SCP 的权限映射，不能通过人工绕过门禁继续。
 
-修复以 TDD 实施：新增测试先得到 `1 failed`，随后引入 `normalize_bootstrap_file`，在唯一私有目录内按普通文件、非链接、UID 1004、精确 chmod、strict file check 的顺序处理三个固定路径，再执行摘要、Bash 语法和原子提升。开发单文件回归 `48 passed, 2 skipped`，与生产门禁联合回归 `108 passed, 4 skipped in 34.95s`。独立 QA 复跑联合回归得到 `108 passed, 4 skipped`、exit 0；Ruff、Bash、8 个 PowerShell 代码块 AST、差异与高置信凭据检查均通过。独立安全审阅 Critical/Important/Minor 均为 0，结论 READY。4 个 skip 仍是 Windows 权限限制的既有动态链接案例，PR Linux CI 必须再次补证。
+修复以 TDD 实施：新增测试先得到 `1 failed`，随后引入文件规范化 helper，在唯一私有目录内按普通文件、非链接、UID 1004、精确 chmod、strict file check 的顺序处理三个固定路径，再执行摘要、Bash 语法和原子提升。开发单文件回归 `48 passed, 2 skipped`，与生产门禁联合回归 `108 passed, 4 skipped in 34.95s`。独立 QA 复跑联合回归得到 `108 passed, 4 skipped`、exit 0；Ruff、Bash、8 个 PowerShell 代码块 AST、差异与高置信凭据检查均通过。独立安全审阅 Critical/Important/Minor 均为 0，结论 READY。PR #14 的后端/前端 CI 均通过，随后 squash merge 为 `415b138e7674c2c700808edad84c7f3698d9b64a`；从该 main SHA 重传的三项版本资产在 incoming/版本目录共六次摘要检查全部 OK，并成功原子提升。
+
+在上传两个大归档之前，静态复核发现 archive incoming 使用相同 Windows SCP 通道，却仍在 chmod 前执行 strict mode 检查。归档尚未上传，因此未产生第二次现场失败或不完整远端大文件。新增归档顺序用例先得到 `1 failed`；helper 泛化为 `normalize_transferred_file` 并同时用于 bootstrap/archive 后，单文件 `49 passed, 2 skipped`，联合回归 `109 passed, 4 skipped in 34.68s`。最终独立 QA 使用唯一 session 得到 `109 passed, 4 skipped`、exit 0，Ruff/格式、Bash、8 个 PowerShell AST、差异和高置信凭据均通过；安全审阅 Critical/Important/Minor 为 0，结论 READY。4 个 skip 仍是 Windows 权限限制的既有动态链接案例，新 PR Linux CI 必须再次补证。
 
 ## 7. 失败项、缺陷与回归
 
@@ -149,6 +151,7 @@ PR #13 squash merge 后以 clean `main` 完整 SHA `d5d45ef1d0a513b54d3cf4cffbf3
 | Windows PATH 命令替身未截获 curl/stat | 测试装置，已关闭 | 本机受限联网使案例显式失败；改为局部 Bash 函数替身，不改生产行为 |
 | 动态符号链接/目录联接案例 | 已关闭（Linux 工程环境） | Windows 最终独立回归的 4 项 skip 不计通过；PR #13 Linux CI 已执行相关测试且 `test_rootless_staging_assets.py` 无 skip |
 | Windows SCP 产生 `0664`，旧流程在精确 chmod 前失败 | P1 运维缺陷，仓库修复待 CI/合并 | 现场严格失败关闭且未提升/未取 Token；补丁先拒绝链接/错属主，再逐个精确 chmod 和 strict check；独立 QA/审阅 READY |
+| 工具归档 SCP 路径仍在 chmod 前 strict check | P1 运维缺陷，上传前发现，修复待 CI/合并 | 未上传归档；泛化 helper 后同样先拒绝链接/错属主，再精确 `0600`、strict check、SHA 和原子提升；本地联合回归通过 |
 
 最终独立复测未发现新的产品 P0/P1/P2 缺陷。现场未执行项属于发布门禁缺口，不得记为关闭。
 
@@ -157,11 +160,11 @@ PR #13 squash merge 后以 clean `main` 完整 SHA `d5d45ef1d0a513b54d3cf4cffbf3
 | 门禁 | 当前状态 |
 | --- | --- |
 | 从清单官方 URL 下载两个真实归档并本地验签 | 已通过；Runner 226035903 字节、PowerShell 73393424 字节，两个完整 SHA-256 均与清单一致 |
-| 受保护 SSH/SCP 传输、UID/类型/链接/远端 SHA-256 | 部分执行；三项版本资产现场失败关闭且未提升，两个工具归档尚未上传 |
+| 受保护 SSH/SCP 传输、UID/类型/链接/远端 SHA-256 | 部分执行；main `415b138e...` 三项版本资产已通过并提升，两个工具归档尚未上传 |
 | Ubuntu 原生解压、PowerShell/Runner 版本和 systemd user service | 未执行 |
 | GitHub Runner online 与 `self-hosted,linux,x64,crm-staging` 标签 | 未执行 |
 | Rootless 容器仍为 0、公司容器五字段不变 | 未执行 |
 
 ## 9. 验收建议
 
-SCP 模式修复的仓库工程范围经独立 QA/审阅有条件通过，仍须完成新 PR 的 Linux/前端 CI 和 squash merge。Task 9 已完成两份真实归档的本地官方来源与 SHA-256，但远端归档验签、Ubuntu 原生安装、GitHub Runner online/标签以及操作后公司容器不变取证仍未完成。Task 9 现场完成前，不得宣称 Runner 已安装、基础运行面已完成或 staging/production 已放行。
+版本资产 SCP 模式修复已通过 PR #14 CI/合并及真实重传。工具归档路径的同类修复已通过独立 QA/审阅，仍须完成新 PR Linux/前端 CI 和 squash merge。Task 9 已完成两份真实归档的本地官方来源与 SHA-256，但远端归档验签、Ubuntu 原生安装、GitHub Runner online/标签以及操作后公司容器不变取证仍未完成。Task 9 现场完成前，不得宣称 Runner 已安装、基础运行面已完成或 staging/production 已放行。

@@ -387,9 +387,9 @@ def test_runner_readme_promotes_merged_assets_before_versioned_installer_invocat
         "$runnerUnitSha256",
         "sha256sum -c -",
         "bash -n",
-        "normalize_bootstrap_file '$remoteTransferDir/install-runner.sh' 0700",
-        "normalize_bootstrap_file '$remoteTransferDir/toolchain-manifest.json' 0600",
-        "normalize_bootstrap_file '$remoteTransferDir/systemd/user/crm-staging-runner.service' 0600",
+        "normalize_transferred_file '$remoteTransferDir/install-runner.sh' 0700",
+        "normalize_transferred_file '$remoteTransferDir/toolchain-manifest.json' 0600",
+        "normalize_transferred_file '$remoteTransferDir/systemd/user/crm-staging-runner.service' 0600",
         "mv -T",
     )
     for marker in required:
@@ -408,7 +408,7 @@ def test_runner_readme_normalizes_windows_scp_modes_before_strict_file_checks() 
     source = (ROOTLESS_DIR / "README.md").read_text(encoding="utf-8")
     transfer_section = source[source.index("$remoteDirectoryGuard =") : source.index("$manifest =")]
 
-    guard = "$remoteBootstrapFileGuard = 'normalize_bootstrap_file()"
+    guard = "$remoteTransferredFileGuard = 'normalize_transferred_file()"
     assert guard in transfer_section
     guard_start = transfer_section.index(guard)
     guard_end = transfer_section.index("';", guard_start)
@@ -426,16 +426,40 @@ def test_runner_readme_normalizes_windows_scp_modes_before_strict_file_checks() 
     verify_end = transfer_section.index('"\nssh -i', verify_start)
     verify_body = transfer_section[verify_start:verify_end]
     directory_check = verify_body.index("check_secure_directory '$remoteTransferDir'")
-    installer_normalize = verify_body.index("normalize_bootstrap_file '$remoteTransferDir/install-runner.sh' 0700")
-    manifest_normalize = verify_body.index("normalize_bootstrap_file '$remoteTransferDir/toolchain-manifest.json' 0600")
+    installer_normalize = verify_body.index("normalize_transferred_file '$remoteTransferDir/install-runner.sh' 0700")
+    manifest_normalize = verify_body.index(
+        "normalize_transferred_file '$remoteTransferDir/toolchain-manifest.json' 0600"
+    )
     unit_normalize = verify_body.index(
-        "normalize_bootstrap_file '$remoteTransferDir/systemd/user/crm-staging-runner.service' 0600"
+        "normalize_transferred_file '$remoteTransferDir/systemd/user/crm-staging-runner.service' 0600"
     )
     first_digest_check = verify_body.index("sha256sum -c -")
     promotion = verify_body.index("mv -T")
 
     assert directory_check < installer_normalize < manifest_normalize < unit_normalize
     assert unit_normalize < first_digest_check < promotion
+    assert "chmod *" not in verify_body
+
+
+def test_runner_readme_normalizes_archive_scp_mode_before_digest_and_promotion() -> None:
+    """工具归档也必须在私有 incoming 内先验类型/属主，再收紧模式并验签提升。"""
+    source = (ROOTLESS_DIR / "README.md").read_text(encoding="utf-8")
+    transfer_section = source[source.index("$remoteDirectoryGuard =") : source.index("传输后先以")]
+
+    guard = "$remoteTransferredFileGuard = 'normalize_transferred_file()"
+    assert guard in transfer_section
+    verify_start = transfer_section.index('$verifyAndPromote = "')
+    verify_end = transfer_section.index('"\n  ssh -i', verify_start)
+    verify_body = transfer_section[verify_start:verify_end]
+
+    directory_check = verify_body.index("check_secure_directory '$remoteCacheTransferDir'")
+    archive_normalize = verify_body.index("normalize_transferred_file '$remoteIncoming' 0600")
+    first_digest_check = verify_body.index("sha256sum -c -")
+    promotion = verify_body.index("mv -T")
+    sealed_strict_check = verify_body.index("check_secure_file '$remoteSealed'")
+
+    assert directory_check < archive_normalize < first_digest_check < promotion < sealed_strict_check
+    assert "chmod 0600 '$remoteIncoming'" not in verify_body
     assert "chmod *" not in verify_body
 
 
@@ -449,13 +473,13 @@ def test_runner_readme_rechecks_remote_path_security_at_every_ssh_boundary() -> 
         '$prepareBootstrap = "$remoteDirectoryGuard $remoteHomeGuard;',
         (
             '$verifyBootstrap = "$remoteDirectoryGuard $remoteFileGuard '
-            "$remoteBootstrapFileGuard $remoteHomeGuard; $remoteSrcGuard;"
+            "$remoteTransferredFileGuard $remoteHomeGuard; $remoteSrcGuard;"
         ),
         '$prepareToolchainCache = "$remoteDirectoryGuard $remoteHomeGuard;',
         '$prepareRemote = "$remoteDirectoryGuard $remoteHomeGuard; $remoteDotCacheGuard; $remoteCacheGuard;',
         (
-            '$verifyAndPromote = "$remoteDirectoryGuard $remoteFileGuard $remoteHomeGuard; '
-            "$remoteDotCacheGuard; $remoteCacheGuard;"
+            '$verifyAndPromote = "$remoteDirectoryGuard $remoteFileGuard '
+            "$remoteTransferredFileGuard $remoteHomeGuard; $remoteDotCacheGuard; $remoteCacheGuard;"
         ),
         "check_secure_directory '$remoteTransferDir'",
         "check_secure_directory '$remoteBootstrap'",
