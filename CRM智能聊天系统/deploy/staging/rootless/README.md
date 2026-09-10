@@ -103,16 +103,155 @@ bootstrap 只显式安装 `uidmap`，`NEEDRESTART_MODE=l`；启用 linger 和用
 
 安装器固定官方归档 URL/SHA-256，先校验再解压到 `/home/crmdeploy`，不安装 OS 包。PowerShell 基线 7.6.5、Runner 基线 2.336.0；已登记同名 runner 可保留 GitHub 的认证自动更新。原生依赖缺失、摘要不符、非本安装器目录或身份不符均停止，不运行 runner 的系统依赖自动安装脚本。
 
-本地 PowerShell 先确认仓库 runner 管理权限，再将一小时注册 Token 仅经 stdin 传递。Windows 原生管道产生 CRLF，远端 `tr` 删除 CR、保留 LF。命令中的 POSIX 单引号转义用于让 Windows PowerShell 5.1/PowerShell 7 都保留 `\r`，不要简化引号。`pipefail` 将规范化或安装失败传回 SSH，安装器严格字符校验保持不变。Token 不拼入 SSH 命令参数、不写临时文件；不要启用命令转录/调试或打印变量：
+若目标主机无法稳定访问 GitHub Release，允许从本地通过受保护的 SSH/SCP 传入“密封归档”。这不是第三方镜像站：本地下载必须使用 `toolchain-manifest.json` 的原始官方 URL，传输前后均必须按同一清单 SHA-256 校验。远端文件名固定为 `/home/crmdeploy/.cache/crm-toolchain/sealed-<manifest filename>`；安装器若发现该路径存在但类型、符号链接、UID 1004 属主或摘要任一不符，立即失败且不退回网络。
+
+在本地干净 `main` checkout 根目录执行下列 PowerShell。本地临时目录不得放入 Git，不得写入 Token 或私钥；上传完成并复核后再按团队保留策略处理本地副本。
 
 ```powershell
+$rootlessAssets = Resolve-Path -LiteralPath './CRM智能聊天系统/deploy/staging/rootless'
+$currentBranch = ([string](git branch --show-current)).Trim()
+if ($LASTEXITCODE -ne 0 -or $currentBranch -ne 'main') { throw 'Runner assets must come from main' }
+$worktreeChanges = @(git status --porcelain=v1)
+if ($LASTEXITCODE -ne 0 -or $worktreeChanges.Count -ne 0) { throw 'Runner assets require a clean main checkout' }
+$bootstrapRevision = ([string](git rev-parse HEAD)).Trim()
+if ($LASTEXITCODE -ne 0 -or $bootstrapRevision -notmatch '^[0-9a-f]{40}$') { throw 'Cannot resolve a full merged HEAD' }
+$bootstrapFiles = [ordered]@{
+  'install-runner.sh' = Join-Path $rootlessAssets 'install-runner.sh'
+  'toolchain-manifest.json' = Join-Path $rootlessAssets 'toolchain-manifest.json'
+  'systemd/user/crm-staging-runner.service' = Join-Path $rootlessAssets 'systemd/user/crm-staging-runner.service'
+}
+$bootstrapDigests = @{}
+foreach ($relativePath in $bootstrapFiles.Keys) {
+  $digest = (Get-FileHash -LiteralPath $bootstrapFiles[$relativePath] -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($digest -notmatch '^[0-9a-f]{64}$') { throw "Cannot hash merged asset $relativePath" }
+  $bootstrapDigests[$relativePath] = $digest
+}
+
+# 每次 SSH 都自包含相同的目录/文件门禁；不把前一次检查结果当作后一次调用的可信状态。
+$remoteDirectoryGuard = 'set -euo pipefail; check_secure_directory() { local path=$1 mode; test -d "$path"; test ! -L "$path"; test "$(stat -c %u "$path")" = 1004; mode=$(stat -c %a "$path"); test "$((8#$mode & 0022))" = 0; };'
+$remoteFileGuard = 'check_secure_file() { local path=$1 mode; test -f "$path"; test ! -L "$path"; test "$(stat -c %u "$path")" = 1004; mode=$(stat -c %a "$path"); test "$((8#$mode & 0022))" = 0; };'
+$remoteHomeGuard = 'check_secure_directory /home/crmdeploy'
+$remoteSrcGuard = 'check_secure_directory /home/crmdeploy/src'
+$remoteDotCacheGuard = 'check_secure_directory /home/crmdeploy/.cache'
+$remoteCacheGuard = 'check_secure_directory /home/crmdeploy/.cache/crm-toolchain'
+
+# 合并资产先进入唯一目录，逐文件验签后原子提升；既有目标版本不允许被覆盖。
+$transferId = [guid]::NewGuid().ToString('N')
+$remoteTransferDir = "/home/crmdeploy/src/.incoming-bootstrap-$bootstrapRevision-$transferId"
+$remoteBootstrap = "/home/crmdeploy/src/rootless-staging-bootstrap-$bootstrapRevision"
+$prepareBootstrap = "$remoteDirectoryGuard $remoteHomeGuard; if [[ -e /home/crmdeploy/src || -L /home/crmdeploy/src ]]; then $remoteSrcGuard; else mkdir -m 0700 -- /home/crmdeploy/src; fi; $remoteSrcGuard; test ! -e '$remoteBootstrap'; test ! -L '$remoteBootstrap'; mkdir -m 0700 -- '$remoteTransferDir'; mkdir -m 0700 -- '$remoteTransferDir/systemd' '$remoteTransferDir/systemd/user'; check_secure_directory '$remoteTransferDir'; check_secure_directory '$remoteTransferDir/systemd'; check_secure_directory '$remoteTransferDir/systemd/user'"
+ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 $prepareBootstrap
+if ($LASTEXITCODE -ne 0) { throw 'Cannot prepare unique merged-asset directory' }
+scp -i $env:CRM_STAGING_SSH_KEY $bootstrapFiles['install-runner.sh'] "crmdeploy@192.168.110.210:$remoteTransferDir/install-runner.sh"
+if ($LASTEXITCODE -ne 0) { throw 'Cannot transfer merged install-runner.sh' }
+scp -i $env:CRM_STAGING_SSH_KEY $bootstrapFiles['toolchain-manifest.json'] "crmdeploy@192.168.110.210:$remoteTransferDir/toolchain-manifest.json"
+if ($LASTEXITCODE -ne 0) { throw 'Cannot transfer merged toolchain manifest' }
+scp -i $env:CRM_STAGING_SSH_KEY $bootstrapFiles['systemd/user/crm-staging-runner.service'] "crmdeploy@192.168.110.210:$remoteTransferDir/systemd/user/crm-staging-runner.service"
+if ($LASTEXITCODE -ne 0) { throw 'Cannot transfer merged runner unit' }
+$runnerInstallerSha256 = $bootstrapDigests['install-runner.sh']
+$toolchainManifestSha256 = $bootstrapDigests['toolchain-manifest.json']
+$runnerUnitSha256 = $bootstrapDigests['systemd/user/crm-staging-runner.service']
+$verifyBootstrap = "$remoteDirectoryGuard $remoteFileGuard $remoteHomeGuard; $remoteSrcGuard; check_secure_directory '$remoteTransferDir'; check_secure_directory '$remoteTransferDir/systemd'; check_secure_directory '$remoteTransferDir/systemd/user'; check_secure_file '$remoteTransferDir/install-runner.sh'; check_secure_file '$remoteTransferDir/toolchain-manifest.json'; check_secure_file '$remoteTransferDir/systemd/user/crm-staging-runner.service'; printf '%s  %s\n' '$runnerInstallerSha256' '$remoteTransferDir/install-runner.sh' | sha256sum -c -; printf '%s  %s\n' '$toolchainManifestSha256' '$remoteTransferDir/toolchain-manifest.json' | sha256sum -c -; printf '%s  %s\n' '$runnerUnitSha256' '$remoteTransferDir/systemd/user/crm-staging-runner.service' | sha256sum -c -; bash -n '$remoteTransferDir/install-runner.sh'; chmod 0700 '$remoteTransferDir/install-runner.sh'; chmod 0600 '$remoteTransferDir/toolchain-manifest.json'; chmod 0600 '$remoteTransferDir/systemd/user/crm-staging-runner.service'; test ! -e '$remoteBootstrap'; test ! -L '$remoteBootstrap'; mv -T -- '$remoteTransferDir' '$remoteBootstrap'; check_secure_directory '$remoteBootstrap'; check_secure_directory '$remoteBootstrap/systemd'; check_secure_directory '$remoteBootstrap/systemd/user'; check_secure_file '$remoteBootstrap/install-runner.sh'; check_secure_file '$remoteBootstrap/toolchain-manifest.json'; check_secure_file '$remoteBootstrap/systemd/user/crm-staging-runner.service'; printf '%s  %s\n' '$runnerInstallerSha256' '$remoteBootstrap/install-runner.sh' | sha256sum -c -; printf '%s  %s\n' '$toolchainManifestSha256' '$remoteBootstrap/toolchain-manifest.json' | sha256sum -c -; printf '%s  %s\n' '$runnerUnitSha256' '$remoteBootstrap/systemd/user/crm-staging-runner.service' | sha256sum -c -; bash -n '$remoteBootstrap/install-runner.sh'"
+ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 $verifyBootstrap
+if ($LASTEXITCODE -ne 0) { throw 'Merged runner assets failed remote verification or atomic promotion' }
+
+$manifest = Get-Content -LiteralPath (Join-Path $rootlessAssets 'toolchain-manifest.json') -Raw | ConvertFrom-Json
+$offlineCache = Join-Path ([IO.Path]::GetTempPath()) ('crm-runner-cache-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $offlineCache | Out-Null
+
+$prepareToolchainCache = "$remoteDirectoryGuard $remoteHomeGuard; if [[ -e /home/crmdeploy/.cache || -L /home/crmdeploy/.cache ]]; then $remoteDotCacheGuard; else mkdir -m 0700 -- /home/crmdeploy/.cache; fi; $remoteDotCacheGuard; if [[ -e /home/crmdeploy/.cache/crm-toolchain || -L /home/crmdeploy/.cache/crm-toolchain ]]; then $remoteCacheGuard; else mkdir -m 0700 -- /home/crmdeploy/.cache/crm-toolchain; fi; $remoteCacheGuard"
+ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 $prepareToolchainCache
+if ($LASTEXITCODE -ne 0) { throw 'Cannot prepare remote toolchain cache' }
+
+foreach ($toolName in @('runner', 'powershell')) {
+  $entry = $manifest.$toolName
+  $uri = [Uri]$entry.url
+  if ($uri.Scheme -ne 'https' -or $uri.Host -ne 'github.com') { throw "Unexpected toolchain URL for $toolName" }
+  $filename = [IO.Path]::GetFileName($uri.AbsolutePath)
+  $expectedSha256 = ([string]$entry.sha256).ToLowerInvariant()
+  if ($filename -notmatch '^[A-Za-z0-9._-]+$' -or $expectedSha256 -notmatch '^[0-9a-f]{64}$') { throw "Unsafe manifest metadata for $toolName" }
+  $localArchive = Join-Path $offlineCache ('sealed-' + $filename)
+  curl.exe --fail --location --proto '=https' --proto-redir '=https' --retry 5 --retry-all-errors --continue-at - --output $localArchive $entry.url
+  if ($LASTEXITCODE -ne 0) { throw "Official download failed for $toolName" }
+  $actualSha256 = (Get-FileHash -LiteralPath $localArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($actualSha256 -ne $expectedSha256) { throw "Local SHA-256 mismatch for $toolName" }
+
+  # 先在新建的唯一目录中上传，避免 SCP 跟随既有 sealed 链接或把中断半包暴露为正式缓存。
+  $transferId = [guid]::NewGuid().ToString('N')
+  $remoteCacheTransferDir = "/home/crmdeploy/.cache/crm-toolchain/.incoming-$transferId"
+  $remoteIncoming = "$remoteCacheTransferDir/archive"
+  $remoteSealed = "/home/crmdeploy/.cache/crm-toolchain/sealed-$filename"
+  $prepareRemote = "$remoteDirectoryGuard $remoteHomeGuard; $remoteDotCacheGuard; $remoteCacheGuard; mkdir -m 0700 -- '$remoteCacheTransferDir'; check_secure_directory '$remoteCacheTransferDir'; test ! -e '$remoteIncoming'; test ! -L '$remoteIncoming'; test ! -e '$remoteSealed'; test ! -L '$remoteSealed'"
+  ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 $prepareRemote
+  if ($LASTEXITCODE -ne 0) { throw "Remote sealed path already exists or incoming path is unsafe for $toolName" }
+  scp -i $env:CRM_STAGING_SSH_KEY $localArchive "crmdeploy@192.168.110.210:$remoteIncoming"
+  if ($LASTEXITCODE -ne 0) { throw "Archive transfer failed for $toolName" }
+  $verifyAndPromote = "$remoteDirectoryGuard $remoteFileGuard $remoteHomeGuard; $remoteDotCacheGuard; $remoteCacheGuard; check_secure_directory '$remoteCacheTransferDir'; check_secure_file '$remoteIncoming'; test ! -e '$remoteSealed'; test ! -L '$remoteSealed'; printf '%s  %s\n' '$expectedSha256' '$remoteIncoming' | sha256sum -c -; chmod 0600 '$remoteIncoming'; check_secure_file '$remoteIncoming'; mv -T -- '$remoteIncoming' '$remoteSealed'; rmdir -- '$remoteCacheTransferDir'; $remoteHomeGuard; $remoteDotCacheGuard; $remoteCacheGuard; check_secure_file '$remoteSealed'; printf '%s  %s\n' '$expectedSha256' '$remoteSealed' | sha256sum -c -"
+  ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 $verifyAndPromote
+  if ($LASTEXITCODE -ne 0) { throw "Remote verification or atomic promotion failed for $toolName; inspect the unique incoming directory" }
+}
+```
+
+传输后先以 `crmdeploy` 身份重新校验类型、链接、属主和摘要，再申请 Runner 注册 Token。下列摘要必须与当前合并后清单逐字一致；版本升级时不得沿用本示例值。
+
+```bash
+set -euo pipefail
+cache=/home/crmdeploy/.cache/crm-toolchain
+test -f "$cache/sealed-actions-runner-linux-x64-2.336.0.tar.gz"
+test ! -L "$cache/sealed-actions-runner-linux-x64-2.336.0.tar.gz"
+test "$(stat -c %u "$cache/sealed-actions-runner-linux-x64-2.336.0.tar.gz")" = 1004
+test -f "$cache/sealed-powershell-7.6.5-linux-x64.tar.gz"
+test ! -L "$cache/sealed-powershell-7.6.5-linux-x64.tar.gz"
+test "$(stat -c %u "$cache/sealed-powershell-7.6.5-linux-x64.tar.gz")" = 1004
+chmod 0600 "$cache/sealed-actions-runner-linux-x64-2.336.0.tar.gz"
+chmod 0600 "$cache/sealed-powershell-7.6.5-linux-x64.tar.gz"
+printf '%s  %s\n' '04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d' "$cache/sealed-actions-runner-linux-x64-2.336.0.tar.gz" | sha256sum -c -
+printf '%s  %s\n' 'b34ab3b19acac1d3d4d0d3cfdb02acf62f457b0b6a962ff008132033f7566844' "$cache/sealed-powershell-7.6.5-linux-x64.tar.gz" | sha256sum -c -
+```
+
+本地 PowerShell 先确认仓库 runner 管理权限，再将一小时注册 Token 仅经 stdin 传递。Windows 原生管道产生 CRLF，远端 `tr` 删除 CR、保留 LF。Token-bearing SSH 直接执行由完整远端复验和安装器管道组成的 `$invokeVerifiedRunner`，不再嵌套 `bash -c` 引号；同一进程的 `set -euo pipefail` 会在任一复验失败时阻止读取 Token 和启动安装器。Token 不拼入 SSH 命令参数、不写临时文件或环境，也不输出；不要启用命令转录/调试或打印变量：
+
+```powershell
+$runnerBranch = ([string](git branch --show-current)).Trim()
+if ($LASTEXITCODE -ne 0 -or $runnerBranch -ne 'main') { throw 'Runner registration requires main' }
+$runnerWorktreeChanges = @(git status --porcelain=v1)
+if ($LASTEXITCODE -ne 0 -or $runnerWorktreeChanges.Count -ne 0) { throw 'Runner registration requires a clean main checkout' }
+$runnerBootstrapRevision = ([string](git rev-parse HEAD)).Trim()
+if ($LASTEXITCODE -ne 0 -or $runnerBootstrapRevision -notmatch '^[0-9a-f]{40}$') { throw 'Cannot re-resolve merged runner HEAD' }
+$runnerRootlessAssets = Resolve-Path -LiteralPath './CRM智能聊天系统/deploy/staging/rootless'
+$runnerBootstrapFiles = [ordered]@{
+  'install-runner.sh' = Join-Path $runnerRootlessAssets 'install-runner.sh'
+  'toolchain-manifest.json' = Join-Path $runnerRootlessAssets 'toolchain-manifest.json'
+  'systemd/user/crm-staging-runner.service' = Join-Path $runnerRootlessAssets 'systemd/user/crm-staging-runner.service'
+}
+$runnerBootstrapDigests = @{}
+foreach ($relativePath in $runnerBootstrapFiles.Keys) {
+  $digest = (Get-FileHash -LiteralPath $runnerBootstrapFiles[$relativePath] -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($digest -notmatch '^[0-9a-f]{64}$') { throw "Cannot re-hash merged asset $relativePath" }
+  $runnerBootstrapDigests[$relativePath] = $digest
+}
+$runnerInstallerSha256 = $runnerBootstrapDigests['install-runner.sh']
+$toolchainManifestSha256 = $runnerBootstrapDigests['toolchain-manifest.json']
+$runnerUnitSha256 = $runnerBootstrapDigests['systemd/user/crm-staging-runner.service']
+$runnerBootstrap = "/home/crmdeploy/src/rootless-staging-bootstrap-$runnerBootstrapRevision"
+$runnerInstaller = "/home/crmdeploy/src/rootless-staging-bootstrap-$runnerBootstrapRevision/install-runner.sh"
+$runnerManifest = "$runnerBootstrap/toolchain-manifest.json"
+$runnerUnit = "$runnerBootstrap/systemd/user/crm-staging-runner.service"
+$remoteDirectoryGuard = 'set -euo pipefail; check_secure_directory() { local path=$1 mode; test -d "$path"; test ! -L "$path"; test "$(stat -c %u "$path")" = 1004; mode=$(stat -c %a "$path"); test "$((8#$mode & 0022))" = 0; };'
+$remoteFileGuard = 'check_secure_file() { local path=$1 mode; test -f "$path"; test ! -L "$path"; test "$(stat -c %u "$path")" = 1004; mode=$(stat -c %a "$path"); test "$((8#$mode & 0022))" = 0; };'
+$remoteHomeGuard = 'check_secure_directory /home/crmdeploy'
+$remoteSrcGuard = 'check_secure_directory /home/crmdeploy/src'
+$verifyRunnerBootstrap = "$remoteDirectoryGuard $remoteFileGuard $remoteHomeGuard; $remoteSrcGuard; check_secure_directory '$runnerBootstrap'; check_secure_directory '$runnerBootstrap/systemd'; check_secure_directory '$runnerBootstrap/systemd/user'; check_secure_file '$runnerInstaller'; check_secure_file '$runnerManifest'; check_secure_file '$runnerUnit'; printf '%s  %s\n' '$runnerInstallerSha256' '$runnerInstaller' | sha256sum -c -; printf '%s  %s\n' '$toolchainManifestSha256' '$runnerManifest' | sha256sum -c -; printf '%s  %s\n' '$runnerUnitSha256' '$runnerUnit' | sha256sum -c -; bash -n '$runnerInstaller'"
+$invokeVerifiedRunner = "$verifyRunnerBootstrap; tr -d '\r' | bash '$runnerInstaller'"
+ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 $verifyRunnerBootstrap
+if ($LASTEXITCODE -ne 0) { throw 'Versioned runner assets failed final verification; no Token requested' }
 gh api repos/CP11-gh/CRM/actions/runners --jq '.total_count'
 if ($LASTEXITCODE -ne 0) { throw 'Repository administrator action required' }
 $runnerToken = $null
 try {
   $runnerToken = gh api -X POST repos/CP11-gh/CRM/actions/runners/registration-token --jq '.token'
   if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($runnerToken)) { throw 'No registration token returned' }
-  $runnerToken | ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 "bash -o pipefail -c 'tr -d '\''\r'\'' | bash /home/crmdeploy/src/rootless-staging-bootstrap/install-runner.sh'"
+  $runnerToken | ssh -i $env:CRM_STAGING_SSH_KEY crmdeploy@192.168.110.210 $invokeVerifiedRunner
   if ($LASTEXITCODE -ne 0) { throw 'Runner install failed' }
 } finally { $runnerToken = $null }
 gh api repos/CP11-gh/CRM/actions/runners --jq '.runners[] | select(.name=="crm-staging-192-168-110-210") | {name,status,busy,labels:[.labels[].name]}'

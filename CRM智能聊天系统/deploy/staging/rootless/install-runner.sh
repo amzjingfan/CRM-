@@ -26,6 +26,15 @@ unit_dir=/home/crmdeploy/.config/systemd/user
 unit_target="$unit_dir/crm-staging-runner.service"
 
 # 检查路径的每一级，拒绝链接和其他账户目录，避免缓存或服务文件落到预期目录外。
+check_existing_directory() {
+    local directory=$1 directory_mode
+    [[ -d "$directory" && ! -L "$directory" ]] || fail "Installation path must be a real directory"
+    [[ $(stat -c %u "$directory") == 1004 ]] || fail "Unexpected installation path ownership"
+    directory_mode=$(stat -c %a "$directory") || fail "Cannot inspect installation path permissions"
+    # 任一父目录可被同组或其他账户写入时，后续文件校验可能被路径替换绕过。
+    (( (8#$directory_mode & 0022) == 0 )) || fail "Installation path must not be group/other writable"
+}
+
 check_directory() {
     local directory=$1 current=/home/crmdeploy component
     [[ "$directory" == /home/crmdeploy/* ]] || fail "Unexpected installation path"
@@ -36,12 +45,13 @@ check_directory() {
         current="$current/$component"
         [[ ! -L "$current" ]] || fail "Installation path contains a symlink"
         if [[ -e "$current" ]]; then
-            [[ -d "$current" && $(stat -c %u "$current") == 1004 ]] || fail "Unexpected path ownership or type"
+            check_existing_directory "$current"
         else
             mkdir -- "$current"
         fi
     done
 }
+check_existing_directory /home/crmdeploy
 check_directory "$cache_dir"
 check_directory "$unit_dir"
 check_directory /home/crmdeploy/tools
@@ -89,11 +99,33 @@ for name, repository, prefix in (
     url = f"https://github.com/{repository}/releases/download/v{version}/{filename}"
     if entry["url"] != url:
         sys.exit("Unexpected toolchain release URL")
-    print(f"{name}\t{url}\t{digest}")
+    print(f"{name}\t{filename}\t{url}\t{digest}")
 PY
 ) || fail "Toolchain manifest validation failed"
 
-while IFS=$'\t' read -r name url digest; do
+# 密封归档是运维人员从清单官方 URL 预下载并经受保护通道传入的缓存。
+# 只要确定性路径存在，安装器就必须完成类型、属主和摘要校验；非法缓存不得联网绕过。
+prepare_verified_archive() {
+    local name=$1 filename=$2 url=$3 digest=$4
+    local sealed_archive="$cache_dir/sealed-$filename" cache_mode sealed_mode
+    cache_mode=$(stat -c %a "$cache_dir") || fail "Cannot inspect toolchain cache permissions"
+    # 归档完整性依赖缓存目录不可被同组或其他账户替换；属主仍由前置目录门禁固定为 UID 1004。
+    (( (8#$cache_mode & 0022) == 0 )) || fail "Toolchain cache must not be group/other writable"
+    if [[ -e "$sealed_archive" || -L "$sealed_archive" ]]; then
+        [[ -f "$sealed_archive" && ! -L "$sealed_archive" ]] || fail "Sealed archive must be a regular file"
+        [[ $(stat -c %u "$sealed_archive") == 1004 ]] || fail "Unexpected sealed archive ownership"
+        sealed_mode=$(stat -c %a "$sealed_archive") || fail "Cannot inspect sealed archive permissions"
+        (( (8#$sealed_mode & 0022) == 0 )) || fail "Sealed archive must not be group/other writable"
+        archive="$sealed_archive"
+    else
+        archive=$(mktemp "$cache_dir/$name-XXXXXXXX.tar.gz")
+        curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            --connect-timeout 30 --max-time 900 --output "$archive" "$url"
+    fi
+    printf '%s  %s\n' "$digest" "$archive" | sha256sum -c - || fail "Archive checksum mismatch"
+}
+
+while IFS=$'\t' read -r name filename url digest; do
     destination="$runner_dir"
     [[ "$name" != powershell ]] || destination="$powershell_dir"
     [[ ! -L "$destination" ]] || fail "Tool destination must not be a symlink"
@@ -104,10 +136,7 @@ while IFS=$'\t' read -r name url digest; do
         # 已安装 Runner 允许 GitHub 的认证自动更新；重复执行不得用旧归档覆盖运行中版本。
         continue
     fi
-    archive=$(mktemp "$cache_dir/$name-XXXXXXXX.tar.gz")
-    curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
-        --connect-timeout 30 --max-time 900 --output "$archive" "$url"
-    printf '%s  %s\n' "$digest" "$archive" | sha256sum -c - || fail "Archive checksum mismatch"
+    prepare_verified_archive "$name" "$filename" "$url" "$digest"
     extracted=$(mktemp -d "$cache_dir/$name-extract-XXXXXXXX")
     # 仅解压已校验的官方归档；失败保留私有缓存供排查，不提升半成品为可运行目录。
     tar -xzf "$archive" --no-same-owner -C "$extracted"
