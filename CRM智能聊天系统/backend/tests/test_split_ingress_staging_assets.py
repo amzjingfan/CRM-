@@ -82,6 +82,9 @@ def test_tunnel_installers_preserve_identity_and_key_boundaries() -> None:
         'permitlisten="127.0.0.1:18080"',
         "ssh-ed25519",
         "passwd --lock",
+        "id -nG",
+        "Unexpected tunnel account group memberships",
+        "Tunnel home must not be group/other writable",
     ):
         assert required in public
     assert "sudo" not in public
@@ -137,6 +140,10 @@ def test_split_ingress_verifier_avoids_secret_output() -> None:
         "/v1/health/ready",
         "text/event-stream",
         "http_code",
+        "sort -u",
+        "Unexpected tunnel listener",
+        "Unexpected cookie jar owner",
+        "Unexpected HTTP redirect target",
     ):
         assert required in source
     for forbidden in ("privkey.pem", "crm-staging.env", "docker inspect"):

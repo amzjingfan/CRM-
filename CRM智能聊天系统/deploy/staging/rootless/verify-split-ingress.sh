@@ -19,8 +19,9 @@ session_id=$2
     fail "Cookie jar must be a non-empty regular file"
 cookie_mode=$(stat -c %a "$cookie_jar") || fail "Cannot inspect cookie jar permissions"
 [[ $cookie_mode == 600 ]] || fail "Cookie jar must use mode 0600"
+[[ $(stat -c %u "$cookie_jar") == $(id -u) ]] || fail "Unexpected cookie jar owner"
 
-for command in curl dig openssl ss awk grep; do
+for command in curl dig openssl ss awk grep sort stat id; do
     command -v "$command" >/dev/null || fail "Required command is missing: $command"
 done
 
@@ -28,13 +29,18 @@ done
 for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
     answers=$(dig +time=3 +tries=1 +short A "$DOMAIN" "@$resolver") ||
         fail "DNS lookup failed"
-    grep -Fxq "$EXPECTED_IP" <<<"$answers" || fail "DNS A record differs from the approved gateway"
+    unique_answers=$(printf '%s\n' "$answers" | awk 'NF' | sort -u)
+    [[ $unique_answers == "$EXPECTED_IP" ]] || fail "DNS A record differs from the approved gateway"
 done
 
 # 本脚本必须在公网服务器运行；远程转发端口只能出现在 IPv4 回环地址。
 listeners=$(ss -H -ltn 'sport = :18080') || fail "Cannot inspect tunnel listener"
-grep -Fq "$TUNNEL_LISTENER" <<<"$listeners" || fail "Tunnel listener is missing"
-grep -Eq '(0\.0\.0\.0|\[::\]|\*):18080' <<<"$listeners" && fail "Tunnel listener is publicly exposed"
+listener_count=$(awk -v expected="$TUNNEL_LISTENER" '
+    $4 != expected { exit 2 }
+    { count++ }
+    END { if (count != 1) exit 3; print count }
+' <<<"$listeners") || fail "Unexpected tunnel listener"
+[[ $listener_count == 1 ]] || fail "Unexpected tunnel listener"
 
 certificate_file=$(mktemp)
 headers_file=$(mktemp)
@@ -51,9 +57,11 @@ openssl s_client -connect "$DOMAIN:443" -servername "$DOMAIN" </dev/null 2>/dev/
 openssl x509 -checkhost "$DOMAIN" -in "$certificate_file" -noout >/dev/null || fail "Certificate SAN mismatch"
 openssl x509 -in "$certificate_file" -noout -checkend 604800 >/dev/null || fail "Certificate expires within seven days"
 
-http_code=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+http_code=$(curl --silent --show-error --output /dev/null --dump-header "$headers_file" --write-out '%{http_code}' \
     --max-redirs 0 --connect-timeout 5 --max-time 15 "http://$DOMAIN/healthz") || fail "HTTP redirect check failed"
 [[ $http_code == 301 ]] || fail "HTTP does not redirect to HTTPS"
+grep -Eiq '^location:[[:space:]]*https://staging\.overselfx\.com/healthz[[:space:]]*$' "$headers_file" ||
+    fail "Unexpected HTTP redirect target"
 for path in /healthz /v1/health /v1/health/ready; do
     curl --fail --silent --show-error --output /dev/null --proto '=https' --tlsv1.2 \
         --connect-timeout 5 --max-time 15 "https://$DOMAIN$path" || fail "HTTPS health check failed"

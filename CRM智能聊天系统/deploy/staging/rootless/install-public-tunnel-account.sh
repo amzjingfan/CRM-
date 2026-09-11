@@ -30,11 +30,22 @@ usermod --shell /usr/sbin/nologin "$ACCOUNT"
 passwd --lock "$ACCOUNT" >/dev/null
 account_uid=$(id -u "$ACCOUNT")
 account_gid=$(id -g "$ACCOUNT")
+primary_group=$(id -gn "$ACCOUNT")
+[[ $(id -nG "$ACCOUNT") == "$primary_group" ]] ||
+    fail "Unexpected tunnel account group memberships"
 [[ -d "$ACCOUNT_HOME" && ! -L "$ACCOUNT_HOME" ]] || fail "Tunnel account home is missing or linked"
 [[ $(stat -c %u "$ACCOUNT_HOME") == "$account_uid" ]] || fail "Unexpected tunnel home owner"
+home_mode=$(stat -c %a "$ACCOUNT_HOME") || fail "Cannot inspect tunnel home permissions"
+(( (8#$home_mode & 0022) == 0 )) || fail "Tunnel home must not be group/other writable"
 
 ssh_dir="$ACCOUNT_HOME/.ssh"
 [[ ! -L "$ssh_dir" && ! -L "$AUTHORIZED_KEYS" ]] || fail "Tunnel SSH paths must not be links"
+if [[ -e "$ssh_dir" ]]; then
+    [[ -d "$ssh_dir" ]] || fail "Tunnel SSH directory is not a directory"
+    [[ $(stat -c %u "$ssh_dir") == "$account_uid" ]] || fail "Unexpected tunnel SSH directory owner"
+    ssh_dir_mode=$(stat -c %a "$ssh_dir") || fail "Cannot inspect tunnel SSH directory permissions"
+    (( (8#$ssh_dir_mode & 0022) == 0 )) || fail "Tunnel SSH directory must not be group/other writable"
+fi
 install -d -o "$account_uid" -g "$account_gid" -m 0700 "$ssh_dir"
 temporary_keys=$(mktemp "$ssh_dir/authorized_keys.XXXXXXXX")
 cleanup() { rm -f -- "$temporary_keys"; }
