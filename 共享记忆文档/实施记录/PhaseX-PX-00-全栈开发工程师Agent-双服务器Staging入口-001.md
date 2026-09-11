@@ -57,7 +57,7 @@
 | `CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1` | 回滚门禁固定同一入口契约 |
 | `CRM智能聊天系统/deploy/staging/rootless/systemd/user/crm-staging-tunnel.service` | 新增用户级反向隧道 |
 | `CRM智能聊天系统/deploy/staging/rootless/install-reverse-tunnel.sh` | 新增业务端身份/权限/指纹/unit 安装门禁 |
-| `CRM智能聊天系统/deploy/staging/rootless/install-public-tunnel-account.sh` | 新增公网受限账号和 authorized_keys 安装门禁；拒绝附加组和 group/other 可写目录 |
+| `CRM智能聊天系统/deploy/staging/rootless/install-public-tunnel-account.sh` | 新增公网受限账号和 authorized_keys 安装门禁；拒绝附加组和 group/other 可写目录，并以账号级 Match 强制 remote-only 转发、禁止会话和本地转发 |
 | `CRM智能聊天系统/deploy/staging/rootless/public-nginx/*` | 新增 HTTP 引导和正式 TLS vhost |
 | `CRM智能聊天系统/deploy/staging/rootless/verify-split-ingress.sh` | 新增低敏全链路验证；精确约束 DNS 唯一值、单一回环监听、Cookie 属主和 HTTP 重定向目标 |
 | `CRM智能聊天系统/backend/tests/test_split_ingress_staging_assets.py` | 新增双机入口契约测试 |
@@ -69,7 +69,7 @@
 | Rootless/production/项目 README、放行检查表 | 同步唯一活动操作和真实状态 |
 | 008 测试报告及两个索引 | 登记工程证据与未执行项 |
 
-提交链截至合并前安全复核：`338400c`、`6954d71`、`3ee7314`、`1de02c8`、`557f13c`、`bddd9d2`、`1d2ab21`、`2fdbeb7`、`7403ac5`、`93e82d1`、`d026c93`。最终 squash SHA 和镜像摘要待 PR 合并后追加，禁止预填。
+提交链截至合并前安全复核：`338400c`、`6954d71`、`3ee7314`、`1de02c8`、`557f13c`、`bddd9d2`、`1d2ab21`、`2fdbeb7`、`7403ac5`、`93e82d1`、`d026c93`、`58cfe53`、`9c4a6a7`。最终 squash SHA 和镜像摘要待 PR 合并后追加，禁止预填。
 
 ## 7. 验证结果
 
@@ -80,6 +80,7 @@
 | 隧道和既有 Rootless 回归 | 55 passed |
 | 公网入口和既有 Rootless 回归 | 58 passed |
 | 合并前安全复核 | RED 为 2 failed/5 passed；补齐约束后 7 passed，邻接回归 191 passed |
+| OpenSSH 转发边界复核 | RED 为 1 failed/6 passed；账号级 remote-only 策略实现后邻接回归 191 passed，Shell 语法通过 |
 | 文档回归与修复 | 首次 7 failed, 114 passed；恢复既有 runner 安全章节后 121 passed |
 | 后端全量 | 正确 `backend/` 工作目录最终 1565 passed, 12 skipped, 2 warnings in 46.17s；Ruff check/format 通过 |
 | 前端 | lint 0 error/2 warning、类型通过、40 passed、生产构建通过 |

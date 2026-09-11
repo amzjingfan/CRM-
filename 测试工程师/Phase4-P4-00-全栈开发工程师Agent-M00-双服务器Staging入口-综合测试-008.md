@@ -35,6 +35,7 @@
 | 合并前安全复核 RED | `pytest test_split_ingress_staging_assets.py -q` | 2 failed, 5 passed；账号附加组/目录权限与 DNS/监听/Cookie/重定向目标精确校验尚未实现 |
 | 安全复核 GREEN | `pytest test_split_ingress_staging_assets.py -q` | 7 passed；新增约束全部转绿 |
 | 安全复核邻接回归 | 三个 split-ingress/rootless/runtime 配置测试模块 | 191 passed in 2.93s |
+| OpenSSH 转发边界复核 RED/GREEN | `pytest test_split_ingress_staging_assets.py -q`，随后重跑三个邻接模块和 Shell 语法 | 初始 1 failed/6 passed；新增账号级 remote-only Match 策略后 191 passed in 2.28s，Shell exit 0 |
 | 文档全量聚焦首次回归 | 三个入口/Rootless/门禁测试模块 | 7 failed, 114 passed；重写手册误删既有 runner 安全转移章节 |
 | runner 文档修复聚焦 | `pytest test_rootless_staging_assets.py -q -k runner_readme` | 6 passed, 45 deselected |
 | 修复后三模块回归 | `pytest test_split_ingress_staging_assets.py test_rootless_staging_assets.py test_production_gate_scripts.py -q` | 121 passed in 31.31s |
@@ -57,7 +58,7 @@
 - Rootless overlay 只发布 `127.0.0.1:10080:80`，挂载只读 `nginx-tunnel.conf`，不再发布 10443 或挂载活动 TLS。
 - 内层 Nginx 只使用 HTTP，错误 Host 返回 444；对上游固定 `X-Forwarded-Proto https`，两层 SSE 关闭缓冲，日志只记录 `$uri`。
 - 用户级隧道固定 `-R 127.0.0.1:18080:127.0.0.1:10080`、严格主机校验、独立私钥和断线重启。
-- 公网 `crm-tunnel` 授权项锁定密码、nologin、forced command、`restrict,port-forwarding` 和单一 `permitlisten`；安装器拒绝附加组以及 group/other 可写的 home/SSH 目录。
+- 公网 `crm-tunnel` 授权项锁定密码、nologin、forced command、`restrict,port-forwarding` 和单一 `permitlisten`；账号级 `Match User` 进一步强制 remote-only TCP、禁止本地/Unix socket 转发与登录会话，并由 `sshd -t`、`sshd -T -C` 在 reload 前确认生效。安装器还拒绝附加组以及 group/other 可写的 home/SSH/策略目录。
 - 公网 HTTP 引导 vhost 只开放 ACME、低敏健康和 503；正式 vhost 在公网终止 TLS 且唯一上游为 `127.0.0.1:18080`。
 - 低敏验证脚本要求三个 DNS 解析器各自只返回唯一批准地址、18080 只存在一个 IPv4 回环监听、Cookie jar 归当前用户所有且为 0600，并精确校验证书 SAN/有效期、HTTP 301 目标、三个健康端点和 SSE Content-Type；脚本不读取活动私钥、环境正文或容器环境。
 
