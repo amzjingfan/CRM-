@@ -3,7 +3,6 @@
 import configparser
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ROOTLESS_OVERLAY = PROJECT_ROOT / "docker-compose.rootless-staging.yml"
 ROOTLESS_TUNNEL_NGINX = PROJECT_ROOT / "deploy" / "nginx" / "nginx-tunnel.conf"
