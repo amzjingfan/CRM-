@@ -315,21 +315,26 @@ function Assert-ProductionComposeContract {
     }
 
     $proxyService = $Config.services.PSObject.Properties["proxy"].Value
-    if (@($proxyService.ports).Count -ne 2) {
+    if (@($proxyService.ports).Count -ne 1) {
         throw "Production Compose proxy must bind only the required loopback ports."
     }
-    foreach ($expectedBinding in @(
-        @{ host_ip = "127.0.0.1"; published = "10080"; target = "80" },
-        @{ host_ip = "127.0.0.1"; published = "10443"; target = "443" }
-    )) {
-        $matchingBinding = @($proxyService.ports | Where-Object {
-            [string]$_.host_ip -eq $expectedBinding.host_ip -and
-            [string]$_.published -eq $expectedBinding.published -and
-            [string]$_.target -eq $expectedBinding.target
-        })
-        if ($matchingBinding.Count -ne 1) {
-            throw "Production Compose proxy must bind only the required loopback ports."
-        }
+    $proxyBinding = @($proxyService.ports)[0]
+    if ([string]$proxyBinding.host_ip -ne "127.0.0.1" -or
+        [string]$proxyBinding.published -ne "10080" -or
+        [string]$proxyBinding.target -ne "80") {
+        throw "Production Compose proxy must bind only the required loopback ports."
+    }
+
+    $proxyVolumes = @($proxyService.volumes)
+    if ($proxyVolumes.Count -ne 1) {
+        throw "Production Compose proxy must mount only the tunnel Nginx configuration."
+    }
+    $proxyConfigMount = $proxyVolumes[0]
+    if ([string]$proxyConfigMount.type -ne "bind" -or
+        [IO.Path]::GetFileName([string]$proxyConfigMount.source) -ne "nginx-tunnel.conf" -or
+        [string]$proxyConfigMount.target -ne "/etc/nginx/nginx.conf" -or
+        $proxyConfigMount.read_only -ne $true) {
+        throw "Production Compose proxy must mount only the tunnel Nginx configuration."
     }
 }
 
