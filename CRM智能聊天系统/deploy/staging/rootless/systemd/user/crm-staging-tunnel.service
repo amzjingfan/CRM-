@@ -1,0 +1,13 @@
+[Unit]
+Description=CRM staging reverse SSH tunnel
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssh -NT -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o UserKnownHostsFile=/home/crmdeploy/secrets/tunnel/known_hosts -i /home/crmdeploy/secrets/tunnel/id_ed25519 -R 127.0.0.1:18080:127.0.0.1:10080 crm-tunnel@38.55.145.52
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
