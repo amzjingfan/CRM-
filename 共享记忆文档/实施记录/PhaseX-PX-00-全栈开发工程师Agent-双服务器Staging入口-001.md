@@ -57,9 +57,9 @@
 | `CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1` | 回滚门禁固定同一入口契约 |
 | `CRM智能聊天系统/deploy/staging/rootless/systemd/user/crm-staging-tunnel.service` | 新增用户级反向隧道 |
 | `CRM智能聊天系统/deploy/staging/rootless/install-reverse-tunnel.sh` | 新增业务端身份/权限/指纹/unit 安装门禁 |
-| `CRM智能聊天系统/deploy/staging/rootless/install-public-tunnel-account.sh` | 新增公网受限账号和 authorized_keys 安装门禁 |
+| `CRM智能聊天系统/deploy/staging/rootless/install-public-tunnel-account.sh` | 新增公网受限账号和 authorized_keys 安装门禁；拒绝附加组和 group/other 可写目录 |
 | `CRM智能聊天系统/deploy/staging/rootless/public-nginx/*` | 新增 HTTP 引导和正式 TLS vhost |
-| `CRM智能聊天系统/deploy/staging/rootless/verify-split-ingress.sh` | 新增低敏全链路验证 |
+| `CRM智能聊天系统/deploy/staging/rootless/verify-split-ingress.sh` | 新增低敏全链路验证；精确约束 DNS 唯一值、单一回环监听、Cookie 属主和 HTTP 重定向目标 |
 | `CRM智能聊天系统/backend/tests/test_split_ingress_staging_assets.py` | 新增双机入口契约测试 |
 | `CRM智能聊天系统/backend/tests/test_production_gate_scripts.py` | 更新单端口门禁夹具 |
 | `CRM智能聊天系统/backend/tests/test_real_runtime_config.py` | 把旧 10443 契约更新为单端口和只读 tunnel 配置 |
@@ -69,7 +69,7 @@
 | Rootless/production/项目 README、放行检查表 | 同步唯一活动操作和真实状态 |
 | 008 测试报告及两个索引 | 登记工程证据与未执行项 |
 
-提交链截至文档同步前：`338400c`、`6954d71`、`3ee7314`、`1de02c8`、`557f13c`、`bddd9d2`。最终 squash SHA 和镜像摘要待 PR 合并后追加，禁止预填。
+提交链截至合并前安全复核：`338400c`、`6954d71`、`3ee7314`、`1de02c8`、`557f13c`、`bddd9d2`、`1d2ab21`、`2fdbeb7`、`7403ac5`、`93e82d1`、`d026c93`。最终 squash SHA 和镜像摘要待 PR 合并后追加，禁止预填。
 
 ## 7. 验证结果
 
@@ -79,8 +79,9 @@
 | Rootless proxy/门禁聚焦 | 116 passed |
 | 隧道和既有 Rootless 回归 | 55 passed |
 | 公网入口和既有 Rootless 回归 | 58 passed |
+| 合并前安全复核 | RED 为 2 failed/5 passed；补齐约束后 7 passed，邻接回归 191 passed |
 | 文档回归与修复 | 首次 7 failed, 114 passed；恢复既有 runner 安全章节后 121 passed |
-| 后端全量 | 正确 `backend/` 工作目录 1565 passed, 2 warnings；Ruff check/format 通过 |
+| 后端全量 | 正确 `backend/` 工作目录最终 1565 passed, 12 skipped, 2 warnings in 46.17s；Ruff check/format 通过 |
 | 前端 | lint 0 error/2 warning、类型通过、40 passed、生产构建通过 |
 | 前端安全 | 发现 1 High 后最小升级 `js-yaml 4.3.2`；生产与完整官方审计均 0 vulnerability |
 | Compose/Nginx/Shell | 单端口/单只读挂载通过；三个 Nginx 配置语法通过；三个 Shell 脚本语法通过 |

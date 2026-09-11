@@ -32,6 +32,9 @@
 | 隧道与既有 Rootless 回归 | `pytest test_split_ingress_staging_assets.py test_rootless_staging_assets.py -q` | 55 passed in 1.72s |
 | 公网 vhost/验证脚本 RED | `pytest test_split_ingress_staging_assets.py -q` | 3 failed, 4 passed；三个目标资产缺失 |
 | 公网入口与 Rootless 回归 | `pytest test_split_ingress_staging_assets.py test_rootless_staging_assets.py -q` | 58 passed in 1.93s |
+| 合并前安全复核 RED | `pytest test_split_ingress_staging_assets.py -q` | 2 failed, 5 passed；账号附加组/目录权限与 DNS/监听/Cookie/重定向目标精确校验尚未实现 |
+| 安全复核 GREEN | `pytest test_split_ingress_staging_assets.py -q` | 7 passed；新增约束全部转绿 |
+| 安全复核邻接回归 | 三个 split-ingress/rootless/runtime 配置测试模块 | 191 passed in 2.93s |
 | 文档全量聚焦首次回归 | 三个入口/Rootless/门禁测试模块 | 7 failed, 114 passed；重写手册误删既有 runner 安全转移章节 |
 | runner 文档修复聚焦 | `pytest test_rootless_staging_assets.py -q -k runner_readme` | 6 passed, 45 deselected |
 | 修复后三模块回归 | `pytest test_split_ingress_staging_assets.py test_rootless_staging_assets.py test_production_gate_scripts.py -q` | 121 passed in 31.31s |
@@ -39,11 +42,11 @@
 | 空白与行尾 | `git diff --check`；`.conf/.sh/.service` LF 属性 | exit 0；无空白错误 |
 | 首次后端全量命令 | 从产品根运行计划中的 `uv run --project backend pytest backend/tests -q` | 24 failed, 1541 passed, 2 warnings；23 项因相对 `evals/` 工作目录错误，1 项为旧 10443 断言 |
 | 后端旧契约修复 | `pytest tests/test_real_runtime_config.py::test_rootless_staging_overlay_is_loopback_only_and_fail_closed -q` | 1 passed |
-| 后端正确工作目录全量 | 在 `backend/` 执行 `uv run pytest tests -q` | 1565 passed, 2 warnings in 44.21s |
+| 后端正确工作目录全量 | 在 `backend/` 执行 `uv run pytest -q` | 最终 1565 passed, 12 skipped, 2 warnings in 46.17s |
 | Python 静态质量 | `ruff check backend`；`ruff format --check backend` | All checks passed；240 files already formatted |
 | 前端 lint/类型/测试/构建 | `npm run lint`、`npm run typecheck`、`npm test`、`npm run build` | lint 0 error/2 个既有导航 warning；类型 exit 0；40 passed；Next.js 16.3.4 生产构建 exit 0 |
 | 首次官方完整 npm 审计 | `npm audit --registry=https://registry.npmjs.org --audit-level=high` | 1 High；ESLint 传递依赖 `js-yaml 4.3.1` |
-| js-yaml 最小升级与复测 | 锁文件升级到 4.3.2；生产/完整官方 audit；重跑前端四门禁 | 两次 audit 均 0 vulnerability；lint/类型/40 测试/生产构建再次 exit 0 |
+| js-yaml 最小升级与最终复测 | 锁文件升级到 4.3.2；显式使用 npm 官方 registry 执行生产/完整 audit；重跑前端四门禁 | 两次 audit 均 0 vulnerability；lint 0 error/2 个既有 warning、类型/40 测试/生产构建再次 exit 0 |
 | 合并 Compose | 使用虚构低敏必填值解析基础/prod/rootless 三层并只读取 proxy 端口/挂载 | 仅 `127.0.0.1:10080→80`；仅一个只读 `nginx-tunnel.conf` 挂载 |
 | Nginx 语法 | 固定摘要 Nginx 1.27.5 镜像对内层、HTTP 引导和正式 vhost 执行 `nginx -t` | 三项 syntax ok / test successful；正式 vhost 使用一次性自签名测试证书，随后删除 |
 
@@ -54,9 +57,9 @@
 - Rootless overlay 只发布 `127.0.0.1:10080:80`，挂载只读 `nginx-tunnel.conf`，不再发布 10443 或挂载活动 TLS。
 - 内层 Nginx 只使用 HTTP，错误 Host 返回 444；对上游固定 `X-Forwarded-Proto https`，两层 SSE 关闭缓冲，日志只记录 `$uri`。
 - 用户级隧道固定 `-R 127.0.0.1:18080:127.0.0.1:10080`、严格主机校验、独立私钥和断线重启。
-- 公网 `crm-tunnel` 授权项锁定密码、nologin、forced command、`restrict,port-forwarding` 和单一 `permitlisten`。
+- 公网 `crm-tunnel` 授权项锁定密码、nologin、forced command、`restrict,port-forwarding` 和单一 `permitlisten`；安装器拒绝附加组以及 group/other 可写的 home/SSH 目录。
 - 公网 HTTP 引导 vhost 只开放 ACME、低敏健康和 503；正式 vhost 在公网终止 TLS 且唯一上游为 `127.0.0.1:18080`。
-- 低敏验证脚本覆盖三个 DNS 解析器、证书 SAN/有效期、回环监听、HTTP 301、三个健康端点和 SSE Content-Type，不读取活动私钥、环境正文或容器环境。
+- 低敏验证脚本要求三个 DNS 解析器各自只返回唯一批准地址、18080 只存在一个 IPv4 回环监听、Cookie jar 归当前用户所有且为 0600，并精确校验证书 SAN/有效期、HTTP 301 目标、三个健康端点和 SSE Content-Type；脚本不读取活动私钥、环境正文或容器环境。
 
 ## 5. 未执行与阻塞项
 
