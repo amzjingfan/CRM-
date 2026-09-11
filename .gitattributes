@@ -10,6 +10,7 @@
 *.yml text eol=lf
 *.json text eol=lf
 *.jsonl text eol=lf
+*.conf text eol=lf
 *.js text eol=lf
 *.mjs text eol=lf
 *.cjs text eol=lf

@@ -297,7 +297,14 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
             "image": "nginx:1.27.5-alpine@sha256:" + "4" * 64,
             "ports": [
                 {"host_ip": "127.0.0.1", "published": "10080", "target": "80"},
-                {"host_ip": "127.0.0.1", "published": "10443", "target": "443"},
+            ],
+            "volumes": [
+                {
+                    "type": "bind",
+                    "source": str(PROJECT_ROOT / "deploy" / "nginx" / "nginx-tunnel.conf"),
+                    "target": "/etc/nginx/nginx.conf",
+                    "read_only": True,
+                },
             ],
         },
     }

@@ -14,7 +14,7 @@ v0.1 的真实发布范围以 `架构师/ADR-006-CROSS-TikTok人工辅助首版�
 
 | 门禁 | 当前状态 | 当前结论 |
 | --- | --- | --- |
-| G0 基线与密钥 | 实施中 | 前端 3 High 已完成工程修复并通过独立复测，最终 main 三类应用镜像和外部镜像均已取得 RepoDigest；staging 配置同步、日志独立复测、真实密钥轮换、备份恢复和实际回滚证据未完成 |
+| G0 基线与密钥 | 实施中 | 前端 3 High 已完成工程修复并通过独立复测，历史 main 三类应用镜像和外部镜像已取得 RepoDigest；双服务器入口工程正在实施，新 main 候选、DNS/TLS/隧道、staging 配置、日志独立复测、真实密钥轮换、备份恢复和实际回滚证据未完成 |
 | G1 TikTok OAuth/只读 | 实施中 | 确定性工程有条件通过；真实店铺 OAuth、Scope、Token 刷新和只读冒烟未执行 |
 | G2 TikTok Webhook | 实施中 | 验签、幂等、Worker 和契约测试通过；Partner Center 真实投递未执行 |
 | G3 人工消息写入 | 实施中 | 确定性工程有条件通过；真实单店铺发送、unknown 对账和回滚未执行 |
@@ -26,21 +26,21 @@ v0.1 的真实发布范围以 `架构师/ADR-006-CROSS-TikTok人工辅助首版�
 
 ## 3. G0 基线、安全和恢复
 
-2026-09-09 Rootless staging 工程增量：ADR-007 已确认临时使用 `/home/crmdeploy` 的 Rootless Docker，固定项目 `crm-staging`，独立 staging 域名及环境回调；production 运行方案未决定。以下四个状态独立判定，前项不推导后项：
+2026-09-11 双服务器入口勘误：ADR-008 保留 `192.168.110.210` 上 `/home/crmdeploy` 的 Rootless Docker 和固定项目 `crm-staging`，但由 `38.55.145.52` 作为 `staging.overselfx.com` 唯一公网 Nginx/TLS 入口。公网回环 `127.0.0.1:18080` 通过受限反向 SSH 隧道到业务回环 `127.0.0.1:10080`；ADR-007 的业务服务器 80/443 socket proxy 与 Rootless 10443 不再是活动方案。production 运行方案未决定。以下四个状态独立判定，前项不推导后项：
 
 | 运行阶段 | 状态 | 证据边界 |
 | --- | --- | --- |
-| 基础运行面就绪 | 未开始 | 仓库脚本和契约自测已提供；Ubuntu Rootless/security options/数据路径/公司容器不变实测未执行 |
-| 失败关闭部署通过 | 未开始 | DNS、TLS、外部模型、runner、新 main 镜像部署、公开健康、恢复/兼容回滚未执行 |
+| 基础运行面就绪 | 通过 | Tasks 8/9 已有 Ubuntu Rootless、数据路径、公司容器不变和 runner 独立现场证据；双服务器实施前仍须重新冻结保护基线 |
+| 失败关闭部署通过 | 实施中 | 单端口 Rootless、受限隧道和公网 vhost 仓库资产正在实施；DNS、TLS、新 main 镜像部署、公开健康、恢复/兼容回滚未执行 |
 | G1～G6 真实门禁通过 | 未执行（本次 staging） | 保留下文既有确定性/历史离线证据；本次 staging 真实平台、AI、SSE、五日门禁未执行 |
 | production 放行 | 阻塞 | 运行方案与 G8 签署未批准 |
 
-工程报告：`测试工程师/Phase4-P4-00-全栈开发工程师Agent-M00-Rootless-Staging运行面-综合测试-007.md`；独立测试结论待测试工程师复核。本次不改变既有缺陷正式状态。
+既有现场报告：`测试工程师/Phase4-P4-00-全栈开发工程师Agent-M00-Rootless-Staging运行面-综合测试-007.md`；双服务器入口工程报告：`测试工程师/Phase4-P4-00-全栈开发工程师Agent-M00-双服务器Staging入口-综合测试-008.md`。008 只登记实际工程验证，真实 DNS/TLS/部署未执行项不得写成通过。本次不改变既有缺陷正式状态。
 
-- [ ] Task 8 实证系统公司容器五字段前后不变，Rootless socket 为 `/run/user/1004/docker.sock`、数据在 `/home/crmdeploy`，无 Docker TCP API。
-- [ ] Task 9 实证专用用户 runner、工具链、短期 GHCR 拉取认证正常。
-- [ ] Task 10 实证独立 DNS、公信 TLS、仓库外配置、六文件模型材料及可信摘要。
-- [ ] Task 11 实证入口仅 80/443 转发至回环 10080/10443、全部能力关闭、公开健康、恢复与兼容版本回滚。
+- [x] Task 8 已实证系统公司容器五字段前后不变，Rootless socket 为 `/run/user/1004/docker.sock`、数据在 `/home/crmdeploy`，无 Docker TCP API；本次部署前后必须重新比较。
+- [x] Task 9 已实证专用用户 runner、官方工具链和 GitHub online/标签；新候选的短期 GHCR 拉取仍待执行。
+- [ ] Task 10 实证 DNS A 精确为 `38.55.145.52`、公信 TLS 只在公网服务器、受限隧道、仓库外配置、六文件模型材料及可信摘要；当前只有既有六文件模型前置通过。
+- [ ] Task 11 实证公网 80/443 → 公网回环 18080 → 业务回环 10080，Rootless 不保存活动 TLS、全部能力关闭、公开健康、恢复与兼容版本回滚。
 
 系统 Docker 与公司容器在任务边界外；快照差异是硬停点，不能通过修复/重启公司容器继续。历史 `f7c0f9f9` 镜像不包含 staging 回调变更，不能直接当作本次新候选或兼容回滚成功证据。
 

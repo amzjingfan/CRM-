@@ -2,7 +2,7 @@
 
 本目录说明 REAL-FS-01～04 的安全运行面。OAuth、真实只读、Webhook 和人工确认普通消息已具备工程实现，但尚未完成真实店铺正式验收，因此所有 `REAL_TIKTOK_*` 开关默认保持 `false`；高风险写入和自动回复必须固定关闭。
 
-2026-09-09：当前 staging 采用 `/home/crmdeploy` 下 Rootless Docker。2026-09-10 经用户批准，独立域名切换为 `staging.overselfx.com`，旧 `staging.hophorsefit.com` 不再用于当前 staging。唯一操作手册见 [`../staging/rootless/README.md`](../staging/rootless/README.md)，架构边界见 ADR-007。本文的 production 地址和 Compose 示例保留作为生产契约；production 最终运行方式尚未决定，不能直接套用到公司系统 Docker。系统 Docker 与现有公司容器禁止停止、重启、迁移、修复或接管。
+2026-09-11：当前 staging 采用双服务器入口分离。`38.55.145.52` 是 `staging.overselfx.com` 的唯一公网 Nginx/TLS 入口，通过公网回环 `127.0.0.1:18080` 的受限反向 SSH 隧道访问 `192.168.110.210` 上 `/home/crmdeploy` 的 Rootless HTTP `127.0.0.1:10080`。唯一操作手册见 [`../staging/rootless/README.md`](../staging/rootless/README.md)，架构边界见 ADR-008；ADR-007 的业务服务器 80/443 socket proxy 已停用。本文的 production 地址和 Compose 示例只保留为生产契约，production 最终运行方式尚未决定，不能直接套用到公司系统 Docker 或 staging 拓扑。系统 Docker 与现有公司容器禁止停止、重启、迁移、修复或接管。
 
 ## 1. 外部基础设施前置条件
 
@@ -319,8 +319,8 @@ CRM_STAGING_BASE_URL=https://staging.overselfx.com
 ```
 
 两个门禁脚本必须传入 `-DockerHost unix:///run/user/1004/docker.sock`，内部清除继承的
-`DOCKER_CONTEXT` 并固定叠加 `docker-compose.rootless-staging.yml`，高端口只绑定回环。
-直接预检、部署、入口撤除和回滚命令统一见 Rootless staging 运行手册；不要沿用旧 Windows
+`DOCKER_CONTEXT` 并固定叠加 `docker-compose.rootless-staging.yml`，唯一宿主端口固定为业务服务器回环 `127.0.0.1:10080`。TLS 只在公网服务器终止，Rootless overlay 不挂载证书。
+直接预检、部署、隧道/入口撤除和回滚命令统一见 Rootless staging 运行手册；不要沿用旧 Windows
 主机路径或 `staging.example.com` 示例。全部真实能力强制关闭的基础脚本不能用来直接开启 G1～G6。
 
 真实回滚由 `Invoke-StagingRollbackDrill.ps1 -Execute` 完成，固定顺序是：先强制关闭全部真实
@@ -331,5 +331,4 @@ CRM_STAGING_BASE_URL=https://staging.overselfx.com
 `passed` 证据。
 
 `基础运行面就绪`、`失败关闭部署通过`、`G1～G6 真实门禁通过` 与 `production 放行`
-是独立结论，任何前项不推导后项。当前 DNS、TLS、模型、runner、公开健康、备份恢复与回滚
-仍待真实验证；生产签署继续阻塞。
+是独立结论，任何前项不推导后项。既有 Rootless/runner 基础已有现场证据；新 main 候选、DNS 指向 `38.55.145.52`、公网 TLS、受限隧道、公开健康、备份恢复与回滚仍待真实验证，生产签署继续阻塞。
