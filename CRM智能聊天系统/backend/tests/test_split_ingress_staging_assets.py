@@ -85,6 +85,13 @@ def test_tunnel_installers_preserve_identity_and_key_boundaries() -> None:
         "id -nG",
         "Unexpected tunnel account group memberships",
         "Tunnel home must not be group/other writable",
+        "/etc/ssh/sshd_config.d/90-crm-tunnel.conf",
+        "AllowTcpForwarding remote",
+        "PermitListen 127.0.0.1:18080",
+        "PermitOpen none",
+        "MaxSessions 0",
+        "sshd -T -C",
+        "Unexpected account-scoped SSH forwarding policy",
     ):
         assert required in public
     assert "sudo" not in public

@@ -47,6 +47,88 @@ if [[ -e "$ssh_dir" ]]; then
     (( (8#$ssh_dir_mode & 0022) == 0 )) || fail "Tunnel SSH directory must not be group/other writable"
 fi
 install -d -o "$account_uid" -g "$account_gid" -m 0700 "$ssh_dir"
+
+# 密钥级 restrict 需要用 port-forwarding 重新启用 -R；账号级 Match 再把能力收紧为仅远程 TCP 转发。
+SSHD_POLICY_DIR=/etc/ssh/sshd_config.d
+SSHD_POLICY=/etc/ssh/sshd_config.d/90-crm-tunnel.conf
+[[ -d "$SSHD_POLICY_DIR" && ! -L "$SSHD_POLICY_DIR" ]] || fail "SSH policy directory is missing or linked"
+[[ $(stat -c %u "$SSHD_POLICY_DIR") == 0 ]] || fail "Unexpected SSH policy directory owner"
+policy_dir_mode=$(stat -c %a "$SSHD_POLICY_DIR") || fail "Cannot inspect SSH policy directory permissions"
+(( (8#$policy_dir_mode & 0022) == 0 )) || fail "SSH policy directory must not be group/other writable"
+
+temporary_policy=$(mktemp "$SSHD_POLICY_DIR/.90-crm-tunnel.conf.XXXXXXXX")
+cleanup_policy() { rm -f -- "$temporary_policy"; }
+trap cleanup_policy EXIT
+cat >"$temporary_policy" <<'EOF'
+Match User crm-tunnel
+    AuthenticationMethods publickey
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    AllowTcpForwarding remote
+    AllowStreamLocalForwarding no
+    GatewayPorts no
+    PermitListen 127.0.0.1:18080
+    PermitOpen none
+    AllowAgentForwarding no
+    X11Forwarding no
+    PermitTTY no
+    PermitTunnel no
+    PermitUserRC no
+    MaxSessions 0
+    ForceCommand /usr/bin/false
+Match all
+EOF
+chown root:root "$temporary_policy"
+chmod 0600 "$temporary_policy"
+
+policy_created=false
+if [[ -e "$SSHD_POLICY" || -L "$SSHD_POLICY" ]]; then
+    [[ -f "$SSHD_POLICY" && ! -L "$SSHD_POLICY" ]] || fail "Existing tunnel SSH policy is not a regular file"
+    [[ $(stat -c %u "$SSHD_POLICY") == 0 ]] || fail "Unexpected tunnel SSH policy owner"
+    policy_mode=$(stat -c %a "$SSHD_POLICY") || fail "Cannot inspect tunnel SSH policy permissions"
+    (( (8#$policy_mode & 0022) == 0 )) || fail "Tunnel SSH policy must not be group/other writable"
+    cmp -s -- "$temporary_policy" "$SSHD_POLICY" || fail "Existing tunnel SSH policy differs from the reviewed policy"
+else
+    mv -- "$temporary_policy" "$SSHD_POLICY"
+    policy_created=true
+fi
+rm -f -- "$temporary_policy"
+trap - EXIT
+
+rollback_new_policy() {
+    if [[ $policy_created == true ]]; then
+        rm -f -- "$SSHD_POLICY"
+        sshd -t >/dev/null 2>&1 && systemctl reload ssh >/dev/null 2>&1 || true
+    fi
+}
+sshd -t || { rollback_new_policy; fail "SSH server rejected the tunnel account policy"; }
+sshd_effective=$(sshd -T -C "user=$ACCOUNT,host=localhost,addr=127.0.0.1,laddr=127.0.0.1,lport=22") || {
+    rollback_new_policy
+    fail "Cannot read account-scoped SSH server configuration"
+}
+for expected_policy in \
+    "authenticationmethods publickey" \
+    "passwordauthentication no" \
+    "kbdinteractiveauthentication no" \
+    "allowtcpforwarding remote" \
+    "allowstreamlocalforwarding no" \
+    "gatewayports no" \
+    "permitlisten 127.0.0.1:18080" \
+    "permitopen none" \
+    "allowagentforwarding no" \
+    "x11forwarding no" \
+    "permittty no" \
+    "permittunnel no" \
+    "permituserrc no" \
+    "maxsessions 0" \
+    "forcecommand /usr/bin/false"; do
+    grep -Fxq "$expected_policy" <<<"$sshd_effective" || {
+        rollback_new_policy
+        fail "Unexpected account-scoped SSH forwarding policy"
+    }
+done
+systemctl reload ssh || { rollback_new_policy; fail "Cannot reload SSH server safely"; }
+
 temporary_keys=$(mktemp "$ssh_dir/authorized_keys.XXXXXXXX")
 cleanup() { rm -f -- "$temporary_keys"; }
 trap cleanup EXIT
@@ -56,8 +138,4 @@ chown "$account_uid:$account_gid" "$temporary_keys"
 chmod 0600 "$temporary_keys"
 mv -f -- "$temporary_keys" "$AUTHORIZED_KEYS"
 trap - EXIT
-
-sshd_effective=$(sshd -T) || fail "Cannot read effective SSH server configuration"
-grep -Eq '^allowtcpforwarding (yes|remote)$' <<<"$sshd_effective" || fail "Remote forwarding is disabled"
-grep -q '^gatewayports no$' <<<"$sshd_effective" || fail "GatewayPorts must remain disabled"
 echo "Restricted CRM staging tunnel account is installed"
