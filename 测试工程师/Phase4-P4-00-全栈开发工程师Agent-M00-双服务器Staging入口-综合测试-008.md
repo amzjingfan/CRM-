@@ -13,7 +13,7 @@
 | 测试执行 Agent | 全栈开发工程师Agent工程自测；测试工程师独立复测待执行 |
 | 关联实施记录 | `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-双服务器Staging入口-001.md` |
 | 执行日期 | 2026-09-11 |
-| 当前结论 | 仓库静态契约与脚本语法阶段通过；PR/CI、真实 DNS/TLS/隧道/部署/G0～G6 未执行，不构成 staging 或 production 放行 |
+| 当前结论 | 仓库后端、前端、Compose、Nginx、Shell 与依赖审计工程验证通过；PR/CI、真实 DNS/TLS/隧道/部署/G0～G6 未执行，不构成 staging 或 production 放行 |
 
 ## 2. 范围与环境
 
@@ -37,8 +37,17 @@
 | 修复后三模块回归 | `pytest test_split_ingress_staging_assets.py test_rootless_staging_assets.py test_production_gate_scripts.py -q` | 121 passed in 31.31s |
 | Shell 语法 | Git Bash `bash -n` 检查三个新增 `.sh` | exit 0，无输出 |
 | 空白与行尾 | `git diff --check`；`.conf/.sh/.service` LF 属性 | exit 0；无空白错误 |
+| 首次后端全量命令 | 从产品根运行计划中的 `uv run --project backend pytest backend/tests -q` | 24 failed, 1541 passed, 2 warnings；23 项因相对 `evals/` 工作目录错误，1 项为旧 10443 断言 |
+| 后端旧契约修复 | `pytest tests/test_real_runtime_config.py::test_rootless_staging_overlay_is_loopback_only_and_fail_closed -q` | 1 passed |
+| 后端正确工作目录全量 | 在 `backend/` 执行 `uv run pytest tests -q` | 1565 passed, 2 warnings in 44.21s |
+| Python 静态质量 | `ruff check backend`；`ruff format --check backend` | All checks passed；240 files already formatted |
+| 前端 lint/类型/测试/构建 | `npm run lint`、`npm run typecheck`、`npm test`、`npm run build` | lint 0 error/2 个既有导航 warning；类型 exit 0；40 passed；Next.js 16.3.4 生产构建 exit 0 |
+| 首次官方完整 npm 审计 | `npm audit --registry=https://registry.npmjs.org --audit-level=high` | 1 High；ESLint 传递依赖 `js-yaml 4.3.1` |
+| js-yaml 最小升级与复测 | 锁文件升级到 4.3.2；生产/完整官方 audit；重跑前端四门禁 | 两次 audit 均 0 vulnerability；lint/类型/40 测试/生产构建再次 exit 0 |
+| 合并 Compose | 使用虚构低敏必填值解析基础/prod/rootless 三层并只读取 proxy 端口/挂载 | 仅 `127.0.0.1:10080→80`；仅一个只读 `nginx-tunnel.conf` 挂载 |
+| Nginx 语法 | 固定摘要 Nginx 1.27.5 镜像对内层、HTTP 引导和正式 vhost 执行 `nginx -t` | 三项 syntax ok / test successful；正式 vhost 使用一次性自签名测试证书，随后删除 |
 
-首次文档回归的根因是活动入口手册重写时删除了既有 runner 的逐 SSH 路径复验、Windows SCP 模式收紧、原子提升和 Token 同进程复验说明。修复从基础 main 完整恢复该安全章节，没有恢复旧 80/443 socket 的活动入口命令。完整后端、前端、Compose、PR CI 和目标 Nginx 语法将在后续验证阶段追加；未运行前不预填结果。
+首次文档回归的根因是活动入口手册重写时删除了既有 runner 的逐 SSH 路径复验、Windows SCP 模式收紧、原子提升和 Token 同进程复验说明。修复从基础 main 完整恢复该安全章节，没有恢复旧 80/443 socket 的活动入口命令。首次后端全量失败还暴露计划命令的工作目录错误和一处旧 10443 测试契约；两项均按根因修正并完整重跑。PR CI 和目标宝塔 Nginx 现场语法仍待执行；未运行前不预填结果。
 
 ## 4. 已验证工程契约
 
@@ -65,4 +74,4 @@
 
 ## 6. 结论
 
-当前只能写“仓库工程资产的聚焦测试通过”。不能写“双机入口已部署”“G0 通过”“TikTok 人工辅助 v0.1 可用”“完整 MVP 完成”或“production 放行”。测试工程师应在目标机现场按 ADR-008 和运行手册独立复核，并把真实结果追加到本报告和索引。
+当前只能写“仓库工程验证通过，等待 PR/CI 与现场验证”。不能写“双机入口已部署”“G0 通过”“TikTok 人工辅助 v0.1 可用”“完整 MVP 完成”或“production 放行”。测试工程师应在目标机现场按 ADR-008 和运行手册独立复核，并把真实结果追加到本报告和索引。

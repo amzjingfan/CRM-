@@ -62,6 +62,8 @@
 | `CRM智能聊天系统/deploy/staging/rootless/verify-split-ingress.sh` | 新增低敏全链路验证 |
 | `CRM智能聊天系统/backend/tests/test_split_ingress_staging_assets.py` | 新增双机入口契约测试 |
 | `CRM智能聊天系统/backend/tests/test_production_gate_scripts.py` | 更新单端口门禁夹具 |
+| `CRM智能聊天系统/backend/tests/test_real_runtime_config.py` | 把旧 10443 契约更新为单端口和只读 tunnel 配置 |
+| `CRM智能聊天系统/frontend/package-lock.json` | 将 ESLint 传递 `js-yaml` 从 4.3.1 最小升级到安全的 4.3.2 |
 | `.gitattributes` | 固定 `.conf` 为 LF |
 | `架构师/ADR-007...`、`ADR-008...` | 追加取代勘误并登记新决策 |
 | Rootless/production/项目 README、放行检查表 | 同步唯一活动操作和真实状态 |
@@ -78,8 +80,11 @@
 | 隧道和既有 Rootless 回归 | 55 passed |
 | 公网入口和既有 Rootless 回归 | 58 passed |
 | 文档回归与修复 | 首次 7 failed, 114 passed；恢复既有 runner 安全章节后 121 passed |
-| 三个新增 Shell 脚本语法 | exit 0 |
-| 全量后端/前端/Compose/PR CI | 未执行，后续追加 |
+| 后端全量 | 正确 `backend/` 工作目录 1565 passed, 2 warnings；Ruff check/format 通过 |
+| 前端 | lint 0 error/2 warning、类型通过、40 passed、生产构建通过 |
+| 前端安全 | 发现 1 High 后最小升级 `js-yaml 4.3.2`；生产与完整官方审计均 0 vulnerability |
+| Compose/Nginx/Shell | 单端口/单只读挂载通过；三个 Nginx 配置语法通过；三个 Shell 脚本语法通过 |
+| PR CI | 未执行，后续追加 |
 | 服务器/DNS/TLS/部署/G0～G6 | 未执行 |
 
 详细命令和限制见 008 测试报告。上述工程结果不替代目标 Ubuntu/Nginx/OpenSSH/systemd、真实平台或生产证据。
