@@ -9,6 +9,8 @@ staging 暂时使用 `/home` 下的 Rootless Docker，由 `crmdeploy`（UID/GID 
 
 本决策落实已批准的 `docs/superpowers/specs/2026-09-09-rootless-staging-deployment-design.md`。运维操作统一以 `CRM智能聊天系统/deploy/staging/rootless/README.md` 为准，独立验收仍使用生产放行检查表，不以本 ADR 替代测试结论。
 
+> 2026-09-11 勘误：本文件第 3.2 节原“业务服务器本机 80/443 socket proxy、Rootless 10080/10443、业务服务器保存 TLS”的入口方案，连同第 4、6 节中仅针对该入口的后果和撤除说明，已由 `ADR-008-INFRA-双服务器Staging入口分离-v1.0.md` 取代。当前唯一活动方案是 `38.55.145.52` 公网 Nginx/TLS → `127.0.0.1:18080` 受限反向 SSH 隧道 → `192.168.110.210` Rootless `127.0.0.1:10080` HTTP。本文其余 Rootless、公司容器隔离、runner 和能力失败关闭决策继续有效；旧单元只作历史资产，不得启用。
+
 ## 2. 背景与约束
 
 - 已有公司系统 Docker 负载运行，用户无权停止现有容器或迁移 Docker data-root；根盘空间有限，`/home` 有独立容量。

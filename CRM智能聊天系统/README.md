@@ -12,6 +12,8 @@ Git 仓库根目录是本目录的上一级工作区根目录，产品代码、�
 
 当前预发布工程基线标识为 `v0.1.0-mvp.20260907`，应用版本为 `0.1.0`，数据库迁移 head 为 `023_marketing_review_idempotency`。机器可读清单位于工作区根目录 `release/baselines/v0.1.0-mvp.20260907.json`；它固定构建输入、迁移、评测数据和已取得的镜像摘要，并如实记录前端镜像及外部镜像摘要仍未闭环。该标识不表示真实平台、性能、稳定性或最终生产放行已经通过。
 
+当前 staging 的活动架构见 `架构师/ADR-008-INFRA-双服务器Staging入口分离-v1.0.md`：`staging.overselfx.com` 最终指向公网入口 `38.55.145.52`，由该机 Nginx 终止 TLS，再通过仅监听公网机回环 `127.0.0.1:18080` 的受限反向 SSH 隧道访问业务服务器 `192.168.110.210` 上 Rootless HTTP `127.0.0.1:10080`。业务服务器不发布 80/443、不保存活动 staging TLS 私钥，也不使用系统 Docker。仓库资产正在分支验证；DNS、证书、新 main 候选和真实部署尚未完成，不能据此宣称 G0 或 MVP 已通过。操作只以 `deploy/staging/rootless/README.md` 为准。
+
 ## 目录
 
 - `backend/app/auth`：JWT、Cookie、CSRF、登录限流和 RBAC。
@@ -145,6 +147,8 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 > 2026-09-09 勘误：上述跨环境相同回调约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `deploy/staging/rootless/README.md`，真实运行验收仍待执行。
 
 > 2026-09-10 更新：经用户批准，当前 staging 回调改为 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；旧 `staging.hophorsefit.com` 仅保留为历史记录，不再接受。integration/production 地址不变。
+
+> 2026-09-11 入口更新：ADR-008 进一步取代 ADR-007 的业务服务器 80/443 socket proxy。staging 的 TLS 和公网入口固定在 `38.55.145.52`，Rootless 只发布业务回环 `127.0.0.1:10080`；`183.158.225.78` 及其 NAT 不再是本 staging 的入口依赖。
 
 ## Phase 3 业务能力
 
@@ -385,6 +389,7 @@ Remove-Item Env:PHASE3_TEST_PASSWORD
 
 ## 当前边界
 
+- 双服务器 staging 入口、隧道和单端口 Rootless overlay 已形成仓库工程资产；真实 DNS、TLS、服务器安装、不可变候选部署、恢复/回滚和 G0～G6 仍须逐项取证。production 运行方式尚未决定。
 - TikTok OAuth `DEF-REAL-FS02-001～006` 已由 003 号独立报告全部关闭。REAL-FS-03 已完成真实只读与官方 Webhook 工程实现，但本轮未注入真实凭证，也未执行真实店铺冒烟或 Partner Center Webhook 投递验证；地址、发券和平台发送仍为 Mock。
 - 公开 `/suggest` 和 `/chat/query` SSE 已实现，但只返回人工可采用的安全草稿；`delta` 是传输层分块，不是模型原生 Token 流。
 - Agent 工作流可返回 `auto_reply`、`human_review` 或 `transfer_human` 决策；只有确定性可信回复可返回 `auto_reply`，全局自动回复、AI 翻译和 AI 营销开关均默认关闭。
