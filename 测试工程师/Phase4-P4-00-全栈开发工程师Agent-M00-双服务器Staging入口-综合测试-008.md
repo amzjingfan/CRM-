@@ -13,7 +13,7 @@
 | 测试执行 Agent | 全栈开发工程师Agent工程自测；测试工程师独立复测待执行 |
 | 关联实施记录 | `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-双服务器Staging入口-001.md` |
 | 执行日期 | 2026-09-11 |
-| 当前结论 | 仓库后端、前端、Compose、Nginx、Shell 与依赖审计工程验证通过；PR/CI、真实 DNS/TLS/隧道/部署/G0～G6 未执行，不构成 staging 或 production 放行 |
+| 当前结论 | 仓库工程验证与 PR #19 两项 CI 通过；真实 DNS/TLS/隧道/部署/G0～G6 未执行，不构成 staging 或 production 放行 |
 
 ## 2. 范围与环境
 
@@ -50,8 +50,9 @@
 | js-yaml 最小升级与最终复测 | 锁文件升级到 4.3.2；显式使用 npm 官方 registry 执行生产/完整 audit；重跑前端四门禁 | 两次 audit 均 0 vulnerability；lint 0 error/2 个既有 warning、类型/40 测试/生产构建再次 exit 0 |
 | 合并 Compose | 使用虚构低敏必填值解析基础/prod/rootless 三层并只读取 proxy 端口/挂载 | 仅 `127.0.0.1:10080→80`；仅一个只读 `nginx-tunnel.conf` 挂载 |
 | Nginx 语法 | 固定摘要 Nginx 1.27.5 镜像对内层、HTTP 引导和正式 vhost 执行 `nginx -t` | 三项 syntax ok / test successful；正式 vhost 使用一次性自签名测试证书，随后删除 |
+| PR #19 CI | GitHub `CI / Backend quality gates`、`CI / Frontend quality gates` | Backend pass in 1m48s；Frontend pass in 48s；head `f0178c1bb12794a852a0aeb7603383652506a5e6`，最终文档提交将再次执行 CI |
 
-首次文档回归的根因是活动入口手册重写时删除了既有 runner 的逐 SSH 路径复验、Windows SCP 模式收紧、原子提升和 Token 同进程复验说明。修复从基础 main 完整恢复该安全章节，没有恢复旧 80/443 socket 的活动入口命令。首次后端全量失败还暴露计划命令的工作目录错误和一处旧 10443 测试契约；两项均按根因修正并完整重跑。PR CI 和目标宝塔 Nginx 现场语法仍待执行；未运行前不预填结果。
+首次文档回归的根因是活动入口手册重写时删除了既有 runner 的逐 SSH 路径复验、Windows SCP 模式收紧、原子提升和 Token 同进程复验说明。修复从基础 main 完整恢复该安全章节，没有恢复旧 80/443 socket 的活动入口命令。首次后端全量失败还暴露计划命令的工作目录错误和一处旧 10443 测试契约；两项均按根因修正并完整重跑。合并前逐文件复核又补齐了账号/目录/DNS/监听/Cookie/重定向和 OpenSSH remote-only 边界。PR #19 首轮 CI 已通过；目标宝塔 Nginx 现场语法仍待执行，未运行前不预填结果。
 
 ## 4. 已验证工程契约
 
@@ -66,7 +67,7 @@
 
 | 项目 | 状态 | 所需证据 |
 | --- | --- | --- |
-| PR/CI/squash merge | 未执行 | GitHub required checks、人工审阅和新 main SHA |
+| PR/CI/squash merge | PR #19 首轮 CI 通过；最终文档 CI 与 squash 待执行 | 最终 required checks 和新 main SHA |
 | 新不可变候选 | 未执行 | 三条应用 RepoDigest 与新 main 完整 SHA 关联 |
 | 公网 Nginx 配置 | 未执行 | 其他 vhost 前后摘要、`nginx -t`、安全 reload |
 | DNS | 未执行 | 三个公共解析器均返回 `38.55.145.52` |
@@ -78,4 +79,4 @@
 
 ## 6. 结论
 
-当前只能写“仓库工程验证通过，等待 PR/CI 与现场验证”。不能写“双机入口已部署”“G0 通过”“TikTok 人工辅助 v0.1 可用”“完整 MVP 完成”或“production 放行”。测试工程师应在目标机现场按 ADR-008 和运行手册独立复核，并把真实结果追加到本报告和索引。
+当前只能写“仓库工程验证和 PR CI 通过，等待 squash merge 与现场验证”。不能写“双机入口已部署”“G0 通过”“TikTok 人工辅助 v0.1 可用”“完整 MVP 完成”或“production 放行”。测试工程师应在目标机现场按 ADR-008 和运行手册独立复核，并把真实结果追加到本报告和索引。

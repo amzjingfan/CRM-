@@ -9,7 +9,7 @@
 | 模块编号 | M00 |
 | 主责 Agent | 全栈开发工程师Agent |
 | 协作 Agent | 架构师Agent、共享记忆文档Agent、测试工程师Agent |
-| 实施状态 | 实施中；仓库工程完成到文档同步，PR/CI/服务器现场待执行 |
+| 实施状态 | 实施中；PR #19 首轮 CI 已通过，最终文档 CI、squash merge 和服务器现场待执行 |
 | 开始日期 | 2026-09-11 |
 | 完成日期 | 未完成 |
 | 分支/工作树 | `feature/split-ingress-staging` / `.worktrees/split-ingress-staging` |
@@ -86,14 +86,14 @@
 | 前端 | lint 0 error/2 warning、类型通过、40 passed、生产构建通过 |
 | 前端安全 | 发现 1 High 后最小升级 `js-yaml 4.3.2`；生产与完整官方审计均 0 vulnerability |
 | Compose/Nginx/Shell | 单端口/单只读挂载通过；三个 Nginx 配置语法通过；三个 Shell 脚本语法通过 |
-| PR CI | 未执行，后续追加 |
+| PR CI | PR #19 首轮 Backend/Frontend quality gates 均通过；最终文档提交将再次执行 CI |
 | 服务器/DNS/TLS/部署/G0～G6 | 未执行 |
 
 详细命令和限制见 008 测试报告。上述工程结果不替代目标 Ubuntu/Nginx/OpenSSH/systemd、真实平台或生产证据。
 
 ## 8. 遗留风险与下一步
 
-- 必须完成全量仓库验证、人工审阅、CI 和 squash merge，再发布与新 main 关联的三条 RepoDigest。
+- 必须等待最终文档 CI 并 squash merge PR #19，再发布与新 main 关联的三条 RepoDigest。
 - 公网 vhost 必须在现有宝塔环境执行 `nginx -t` 并复核其他站点前后不变。
 - DNS 当前尚未证明指向 `38.55.145.52`；证书不得提前宣称签发成功。
 - 公网受限账号、主机指纹、隧道断线恢复和回环监听须现场独立复核。
