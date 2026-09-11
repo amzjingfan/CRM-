@@ -82,7 +82,7 @@
 | 合并前安全复核 | RED 为 2 failed/5 passed；补齐约束后 7 passed，邻接回归 191 passed |
 | OpenSSH 转发边界复核 | RED 为 1 failed/6 passed；账号级 remote-only 策略实现后邻接回归 191 passed，Shell 语法通过 |
 | 文档回归与修复 | 首次 7 failed, 114 passed；恢复既有 runner 安全章节后 121 passed |
-| 后端全量 | 正确 `backend/` 工作目录最终 1565 passed, 12 skipped, 2 warnings in 46.17s；Ruff check/format 通过 |
+| 后端全量 | remote-only 安全整改后在正确 `backend/` 工作目录最终 1565 passed, 12 skipped, 2 warnings in 37.68s；Ruff check/format 通过 |
 | 前端 | lint 0 error/2 warning、类型通过、40 passed、生产构建通过 |
 | 前端安全 | 发现 1 High 后最小升级 `js-yaml 4.3.2`；生产与完整官方审计均 0 vulnerability |
 | Compose/Nginx/Shell | 单端口/单只读挂载通过；三个 Nginx 配置语法通过；三个 Shell 脚本语法通过 |

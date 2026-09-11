@@ -43,7 +43,7 @@
 | 空白与行尾 | `git diff --check`；`.conf/.sh/.service` LF 属性 | exit 0；无空白错误 |
 | 首次后端全量命令 | 从产品根运行计划中的 `uv run --project backend pytest backend/tests -q` | 24 failed, 1541 passed, 2 warnings；23 项因相对 `evals/` 工作目录错误，1 项为旧 10443 断言 |
 | 后端旧契约修复 | `pytest tests/test_real_runtime_config.py::test_rootless_staging_overlay_is_loopback_only_and_fail_closed -q` | 1 passed |
-| 后端正确工作目录全量 | 在 `backend/` 执行 `uv run pytest -q` | 最终 1565 passed, 12 skipped, 2 warnings in 46.17s |
+| 后端正确工作目录全量 | 在 `backend/` 执行 `uv run pytest -q` | remote-only 安全整改后最终 1565 passed, 12 skipped, 2 warnings in 37.68s |
 | Python 静态质量 | `ruff check backend`；`ruff format --check backend` | All checks passed；240 files already formatted |
 | 前端 lint/类型/测试/构建 | `npm run lint`、`npm run typecheck`、`npm test`、`npm run build` | lint 0 error/2 个既有导航 warning；类型 exit 0；40 passed；Next.js 16.3.4 生产构建 exit 0 |
 | 首次官方完整 npm 审计 | `npm audit --registry=https://registry.npmjs.org --audit-level=high` | 1 High；ESLint 传递依赖 `js-yaml 4.3.1` |
