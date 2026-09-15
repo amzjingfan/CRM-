@@ -4,7 +4,7 @@
 
 **Goal:** 将六个角色型一级目录的 424 个跟踪文件压缩为不超过十五份当前文档和一组最小机器证据，并在修复全部活动引用后删除这些目录。
 
-**Architecture:** 以 `CRM智能聊天系统/` 作为唯一产品工程，以根 `docs/` 保存面向用途的当前事实，以 `release/evidence/` 保存发布清单必须读取的低敏机器证据。先建立自动化结构契约，再分主题生成压缩文档，随后迁移证据、修复路径、删除旧目录，最后执行全量验证。
+**Architecture:** 以 `CRM智能聊天系统/` 作为唯一产品工程，以根 `docs/` 保存面向用途的当前事实，以 `release/evidence/` 保存发布清单必须读取的低敏机器证据。先建立自动化结构契约，再分主题生成压缩文档，随后迁移证据、修复路径、删除旧目录，最后执行与变更范围相称的必要验证。
 
 **Tech Stack:** Markdown、JSON/JSONL、Python 3.11、pytest、PowerShell、Git/GitHub Flow。
 
@@ -584,7 +584,7 @@ git commit -m 'chore: remove role-based project directories'
 
 ---
 
-### Task 8: 全量验证与一次性迁移说明
+### Task 8: 必要验证与一次性迁移说明
 
 **Files:**
 - Modify when verification exposes a defect: `AGENTS.md`
@@ -632,31 +632,21 @@ uv run pytest tests/test_repository_structure.py tests/test_retrieval_model_asse
 
 Expected: JSON 解析成功，结构和模型清单测试通过。
 
-- [ ] **Step 3: 运行后端静态检查和测试**
+- [ ] **Step 3: 运行受影响文件的静态检查**
 
 ```powershell
 Set-Location 'CRM智能聊天系统/backend'
 uv lock --check
-uv run ruff check app scripts tests
-uv run ruff format --check app scripts tests
-uv run mypy app scripts
-uv run pytest
+uv run ruff check scripts/bge_production_gate.py tests/test_repository_structure.py
+uv run ruff format --check scripts/bge_production_gate.py tests/test_repository_structure.py
+uv run mypy scripts/bge_production_gate.py tests/test_repository_structure.py
 ```
 
-Expected: 与 `origin/main` 基线相比无新增失败；若环境相关集成测试跳过，记录准确数量和原因。
+Expected: 锁文件有效，两个受影响的 Python 文件通过 Ruff 和 mypy。
 
-- [ ] **Step 4: 运行前端检查**
+- [ ] **Step 4: 明确不重复执行无关产品回归**
 
-```powershell
-Set-Location 'CRM智能聊天系统/frontend'
-npm ci
-npm run lint
-npm run typecheck
-npm test -- --run
-npm run build
-```
-
-Expected: lint、typecheck、测试和生产构建通过；不得使用旧 worktree 的构建输出冒充本分支结果。
+本次不修改前端、业务后端、数据库迁移、运行配置或依赖，因此不执行完整后端 pytest、前端 `npm ci`、lint、typecheck、测试或生产构建。最终交付明确记录这些检查未执行及原因，不把历史结果描述为本分支验证结果。
 
 - [ ] **Step 5: 运行敏感信息和旧路径最终扫描**
 
