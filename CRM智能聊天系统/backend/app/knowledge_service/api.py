@@ -198,9 +198,9 @@ def _audit_record(
     jti_hash: str | None = None,
     evidence_count: int = 0,
 ) -> AuditRecord:
-    del trace_id
     return AuditRecord(
         request_id=request.request_id,
+        trace_id=trace_id,
         application_ref=application_ref,
         shop_ref_hash=hash_shop_ref(request.shop_ref),
         requested_space_codes=tuple(request.requested_space_codes),

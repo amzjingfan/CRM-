@@ -21,6 +21,8 @@ def test_compose_overlay_runs_independent_service_and_one_shot_initializers() ->
     assert knowledge_service["environment"]["KNOWLEDGE_DATABASE_URL"].endswith("/company_knowledge")
     assert knowledge_service["environment"]["KNOWLEDGE_OBJECT_STORE_BUCKET"] == "company-knowledge"
     assert services["knowledge-migrations"]["command"][-2:] == ["upgrade", "head"]
+    assert services["postgres"]["healthcheck"]["start_period"] == "120s"
+    assert services["postgres"]["healthcheck"]["retries"] >= 30
 
 
 def test_database_bootstrap_uses_separate_database_and_least_privilege_roles() -> None:

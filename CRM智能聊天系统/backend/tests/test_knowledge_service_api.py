@@ -153,6 +153,7 @@ def test_authorized_request_returns_k2_fail_closed_state_and_low_sensitivity_aud
     assert searcher.last_context.authorization.application_ref == "crm-assistant"
     assert len(audit.records) == 1
     assert audit.records[0].request_id == "req-k2-0001"
+    assert audit.records[0].trace_id == response.json()["trace_id"]
     assert not hasattr(audit.records[0], "query")
     assert token not in repr(audit.records[0])
 

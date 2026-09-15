@@ -92,6 +92,7 @@ class SqlAlchemyAuditSink:
             session.add(
                 AuditEvent(
                     request_id=event.request_id,
+                    trace_id=event.trace_id,
                     application_ref=event.application_ref,
                     shop_ref_hash=event.shop_ref_hash,
                     requested_space_codes=list(event.requested_space_codes),

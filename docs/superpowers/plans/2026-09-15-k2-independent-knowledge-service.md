@@ -10,6 +10,8 @@
 
 **Specs:** `架构师/ADR-001-KB-独立知识服务与空间授权边界-v1.0.md`、`API-001-KB`、`SEC-001-KB`、`DEP-001-KB`、`DATA-001-KB`及 `验收-001-KB-KBG0联合架构评审结论-v1.0.md`。
 
+**Execution Status (2026-09-15):** Tasks 1～6 的 K2 工程实现和开发侧验证已完成，当前 Alembic head 为 `003_kb_audit_trace`。正式独立 QA 不由本次开发实施替代，因此未生成测试工程师权威报告；K3～K5 和生产放行仍未开始。
+
 ## Global Constraints
 
 - 所有正式产品代码只放入 `CRM智能聊天系统/`；项目 PRD、代码、测试和实施记录不是 RAG 语料。
@@ -31,9 +33,9 @@
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_config.py`
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_health.py`
 
-- [ ] 先写配置隔离、生产密钥/数据库/对象存储拒绝和健康端点测试，确认因模块不存在而失败。
-- [ ] 实现独立 `KnowledgeServiceSettings`，不读 CRM `.env`，并提供 `/internal/health/live` 与 `/internal/health/ready`。
-- [ ] 运行 `pytest tests/test_knowledge_service_config.py tests/test_knowledge_service_health.py -q`，再运行 `ruff check app/knowledge_service tests/test_knowledge_service_*.py`。
+- [x] 先写配置隔离、生产密钥/数据库/对象存储拒绝和健康端点测试，确认因模块不存在而失败。
+- [x] 实现独立 `KnowledgeServiceSettings`，不读 CRM `.env`，并提供 `/internal/health/live` 与 `/internal/health/ready`。
+- [x] 运行 `pytest tests/test_knowledge_service_config.py tests/test_knowledge_service_health.py -q`，再运行 `ruff check app/knowledge_service tests/test_knowledge_service_*.py`。
 
 ### Task 2: 建立独立数据模型与 Alembic 历史
 
@@ -47,9 +49,9 @@
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_models.py`
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_migrations.py`
 
-- [ ] 先写元数据不得引用 CRM 表、核心表/唯一约束/审计字段与独立 Alembic 版本链的失败测试。
-- [ ] 实现应用、应用空间授权、店铺空间授权、撤销凭证、覆盖单元、来源、内容版本、版本审批、索引代次和低敏审计表；不建 K3 向量切片表。
-- [ ] 生成并检查 `alembic -c knowledge_alembic.ini upgrade head --sql`，如本地 PostgreSQL 可用，再做独立库升级/降级/再升级验证。
+- [x] 先写元数据不得引用 CRM 表、核心表/唯一约束/审计字段与独立 Alembic 版本链的失败测试。
+- [x] 实现应用、应用空间授权、店铺空间授权、撤销凭证、覆盖单元、来源、内容版本、版本审批、索引代次和低敏审计表；不建 K3 向量切片表。
+- [x] 生成并检查 `alembic -c knowledge_alembic.ini upgrade head --sql`，并在本地独立数据库完成升级/降级/再升级及 003 实际升级验证。
 
 ### Task 3: 实现服务身份和空间授权
 
@@ -62,9 +64,9 @@
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_auth.py`
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_authorization.py`
 
-- [ ] 先写 ES256/EdDSA `typ`、`kid`、issuer、audience、token_type、必填 claims、最长 TTL、30 秒时钟偏差、撤销 JTI、应用停用、空间交集、店铺委托与服务端 grant 交集测试。
-- [ ] 新增显式 `cryptography` 依赖，使用 PyJWT 完成标准非对称签名验证；不实现自定义密码算法。
-- [ ] 实现可替换的授权仓储接口及 SQLAlchemy 实现，严格区分 401、403 和权威不可用 503。
+- [x] 先写 ES256/EdDSA `typ`、`kid`、issuer、audience、token_type、必填 claims、最长 TTL、30 秒时钟偏差、撤销 JTI、应用停用、空间交集、店铺委托与服务端 grant 交集测试。
+- [x] 新增显式 `cryptography` 依赖，使用 PyJWT 完成标准非对称签名验证；不实现自定义密码算法。
+- [x] 实现可替换的授权仓储接口及 SQLAlchemy 实现，严格区分 401、403 和权威不可用 503。
 
 ### Task 4: 实现内部证据 API 四态契约与审计
 
@@ -76,10 +78,10 @@
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_api.py`
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_openapi.py`
 
-- [ ] 先写请求/response DTO、`ok/no_evidence/conflict/unavailable` 四态、固定 reason code、401/403/503 包络和低敏审计的失败测试。
-- [ ] 实现 `POST /internal/v1/evidence:search`；`company_shared` 禁止带 `shop_ref`，`shop_private` 必须同时通过应用 Token、店铺委托 Token、服务端 grant 和内容策略交集。
-- [ ] K2 默认 searcher 在无 K3 活跃索引代次时返回 `unavailable/INDEX_GENERATION_UNAVAILABLE`，不伪造检索结果；测试通过注入 fake searcher 锁定四态序列化。
-- [ ] 检查 OpenAPI 与 `API-001-KB` 一致，并确认审计中无 query、Token 或店铺真实标识。
+- [x] 先写请求/response DTO、`ok/no_evidence/conflict/unavailable` 四态、固定 reason code、401/403/503 包络和低敏审计的失败测试。
+- [x] 实现 `POST /internal/v1/evidence:search`；`company_shared` 禁止带 `shop_ref`，`shop_private` 必须同时通过应用 Token、店铺委托 Token、服务端 grant 和内容策略交集。
+- [x] K2 默认 searcher 在无 K3 活跃索引代次时返回 `unavailable/INDEX_GENERATION_UNAVAILABLE`，不伪造检索结果；测试通过注入 fake searcher 锁定四态序列化。
+- [x] 检查 OpenAPI 与 `API-001-KB` 一致，并确认审计中无 query、Token 或店铺真实标识；响应与审计使用同一 `trace_id`。
 
 ### Task 5: 交付 Compose、独立库和 MinIO 最小权限配置
 
@@ -92,24 +94,23 @@
 - Modify: `CRM智能聊天系统/deploy/minio/README.md`
 - Create: `CRM智能聊天系统/backend/tests/test_knowledge_service_deployment.py`
 
-- [ ] 先写 Compose 服务、独立库/角色、专用 bucket/服务账号、只读挂载、健康检查和无默认真密钥的静态失败测试。
-- [ ] 实现同 PostgreSQL 集群下的 `company_knowledge` 独立库、migration/runtime 角色，以及 `company-knowledge` 桶和对象前缀限制策略。
-- [ ] 运行 `docker compose -f docker-compose.yml -f docker-compose.knowledge.yml config`；如已有所需镜像，再做实际启动、迁移和健康检查。
+- [x] 先写 Compose 服务、独立库/角色、专用 bucket/服务账号、只读挂载、健康检查和无默认真密钥的静态失败测试。
+- [x] 实现同 PostgreSQL 集群下的 `company_knowledge` 独立库、migration/runtime 角色，以及 `company-knowledge` 桶和对象前缀限制策略。
+- [x] 运行 `docker compose -f docker-compose.yml -f docker-compose.knowledge.yml config`，并完成实际启动、迁移、健康、MinIO 初始化和 runtime DDL 拒绝验证。
 
 ### Task 6: 契约同步、验证与实施交接
 
 **Files:**
 - Modify: `架构师/API-001-KB-内部证据检索与兼容契约-v1.0.md`
-- Modify: `共享记忆文档/智能客服系统接口文档.md`
+- Modify: `共享记忆文档/智能客服平台 — 管理端接口文档.md`
 - Modify: `共享记忆文档/开发任务拆解（按人天分配）.md`
-- Create: `测试工程师/PhaseX-PX-00-全栈开发工程师Agent-K2-独立知识服务-测试报告-001.md`
-- Modify: `共享记忆文档/测试报告索引.md`
-- Create: `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-K2独立知识服务-001.md`
+- Deferred to independent QA: `测试工程师/` 中的 K2 正式测试报告及 `共享记忆文档/测试报告索引.md`
+- Create: `共享记忆文档/实施记录/PhaseX-PX-00-全栈开发工程师Agent-K2独立知识服务-004.md`
 - Modify: `共享记忆文档/实施记录索引.md`
 
-- [ ] 同步实际路径、委托 Token header、配置、K2 实现状态与 K3/K4 未实施边界，不把单元测试写成生产验收。
-- [ ] 运行知识服务全量测试、CRM 健康/安全回归、Ruff、Mypy、`git diff --check`、Alembic 离线 SQL 与 Compose config，如实际容器/数据库未启动必须明确记录。
-- [ ] 按实施记录规范记录修改、验证、遺留风险和回滚；正式测试结论放入 `测试工程师/`，共享记忆只更新索引。
+- [x] 同步实际路径、委托 Token header、配置、K2 实现状态与 K3/K4 未实施边界，不把单元测试写成生产验收。
+- [x] 运行知识服务全量测试、CRM 健康/安全回归、Ruff、Mypy、`git diff --check`、Alembic 离线 SQL、Compose config 和实际容器/数据库验证。
+- [x] 按实施记录规范记录修改、验证、遗留风险和回滚；正式测试结论明确延期到测试工程师独立执行，本次不创建竞争性报告或索引条目。
 
 ## K2 Completion Gate
 

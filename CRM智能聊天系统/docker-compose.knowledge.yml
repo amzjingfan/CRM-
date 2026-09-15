@@ -1,4 +1,10 @@
 services:
+  # 只在 K2 叠加栈放宽既有持久卷异常关机后的 WAL/fsync 恢复窗口。
+  postgres:
+    healthcheck:
+      start_period: 120s
+      retries: 30
+
   knowledge-db-bootstrap:
     image: ${POSTGRES_IMAGE:-pgvector/pgvector:pg16}
     restart: "no"

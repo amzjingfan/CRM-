@@ -40,6 +40,7 @@ class IndexUnavailableSearcher:
 @dataclass(frozen=True, slots=True)
 class AuditRecord:
     request_id: str
+    trace_id: str
     application_ref: str | None
     shop_ref_hash: str | None
     requested_space_codes: tuple[str, ...]

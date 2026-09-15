@@ -28,6 +28,13 @@
 
 服务端从认证上下文取得 `application_ref`、委托主体、允许空间和允许店铺，不接受正文覆盖。幂等性按 `request_id + application_ref` 只保证审计关联，不缓存跨授权结果。
 
+### 2.1 K2 认证 Header 与错误信封
+
+- `Authorization: Bearer <application-jwt>` 必填；符合 `typ=service_access+jwt`、`token_type=service_access`、固定 issuer/audience、`kid`、最长 5 分钟和 ES256/EdDSA 约束。
+- `X-Shop-Delegation: Bearer <delegation-jwt>` 仅 `shop_private` 必填；符合 `typ=shop_delegation+jwt`、`token_type=shop_delegation`、最长 2 分钟，并绑定同一 `application_ref`、`shop_ref` 和 `allowed_space_codes`。
+- `company_shared` 请求不带店铺委托或 `shop_ref`；K2 v0.1 不允许在同一请求混合 `company_shared` 和 `shop_private`。
+- HTTP 401/403/503 统一返回 `{"error":{"code":"...","message":"..."},"trace_id":"..."}`，不含业务 `status`。Token 全文禁止进入日志或审计表。
+
 ## 3. 响应 DTO
 
 | 字段 | 说明 |
@@ -71,3 +78,11 @@
 - K2：OpenAPI/Pydantic 契约、401/403、四态、错误码、超时与审计测试完成。
 - K3：四态、错误市场/语言、冲突、撤销、过期、索引代际、引用字段、外部模型禁止传递和依赖故障测试完成。
 - 任一契约字段变化必须升版本并重新执行 CRM 和第二系统契约测试。
+
+## 8. K2 实现快照（2026-09-15）
+
+- 独立进程入口为 `app.knowledge_service.main:create_configured_app`，默认容器端口 `8011`；健康端点为 `/internal/health/live` 和 `/internal/health/ready`。
+- 权威数据使用 `company_knowledge` 独立库、`knowledge_migrations` 独立 Alembic 链和 `company-knowledge` 对象桶，不引用 CRM `stores/users/knowledge_*` 表。
+- 应用 grant 对平台、市场、语言、读者和空间精确登记；`shop_private` 再与委托 JWT、服务端店铺 grant 取交集。
+- K2 已实现四态 schema 和可注入 searcher，但 K3 向量/词法索引尚未建立。默认实现因无激活索引代次返回 `unavailable/INDEX_GENERATION_UNAVAILABLE`，不伪造 `ok`。
+- 本快照是 K2 工程实现状态，不代表 K3 内容/检索、K4 TK 同步、CRM 切流、第二系统真实验收或生产放行。

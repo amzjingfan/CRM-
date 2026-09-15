@@ -45,6 +45,11 @@ def test_space_and_content_state_constraints_are_authoritative() -> None:
         "market_code",
         "language_tag",
         "audience_code",
+        "knowledge_shape",
+        "content_owner_ref",
+        "review_due_at",
+        "evaluation_set_ref",
+        "gap_reason",
     } <= coverage_columns
     assert {
         "space_code",
@@ -59,13 +64,47 @@ def test_space_and_content_state_constraints_are_authoritative() -> None:
         "effective_from",
         "effective_until",
         "content_sha256",
+        "knowledge_shape",
+        "statement_type",
+        "customer_scope",
+        "conflict_group_ref",
+        "supersedes_version_ref",
     } <= content_columns
     assert {"index_state", "embedding_model", "embedding_dimensions", "activated_at"} <= index_columns
+
+    source_columns = set(KnowledgeBase.metadata.tables["kb_sources"].columns.keys())
+    assert {
+        "source_market",
+        "source_language",
+        "captured_at",
+        "rights_review_status",
+        "rights_reviewer_ref",
+        "rights_reviewed_at",
+        "allowed_app_refs",
+        "allowed_space_codes",
+        "snapshot_allowed",
+        "excerpt_allowed",
+        "source_owner_ref",
+        "review_due_at",
+        "effective_from",
+        "effective_until",
+    } <= source_columns
+
+    approval_columns = set(KnowledgeBase.metadata.tables["kb_content_approvals"].columns.keys())
+    assert {"approval_ref", "approved_by_ref", "approved_at"} <= approval_columns
 
 
 def test_audit_table_cannot_persist_query_or_token_body() -> None:
     """审计表只保存低敏决策元数据，不预留正文字段。"""
     audit_columns = set(KnowledgeBase.metadata.tables["kb_audit_events"].columns.keys())
 
-    assert {"request_id", "application_ref", "decision", "reason_code", "jti_hash", "created_at"} <= audit_columns
+    assert {
+        "request_id",
+        "trace_id",
+        "application_ref",
+        "decision",
+        "reason_code",
+        "jti_hash",
+        "created_at",
+    } <= audit_columns
     assert not audit_columns.intersection({"query", "query_text", "token", "authorization", "content_text"})

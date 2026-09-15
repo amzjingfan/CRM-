@@ -1,5 +1,7 @@
 """独立知识服务配置边界测试。"""
 
+import json
+
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -13,7 +15,7 @@ def _verification_keys_json() -> str:
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("ascii")
-    return '{"application-key":{"alg":"ES256","pem":' + repr(public_pem).replace("'", '"') + "}}"
+    return json.dumps({"application-key": {"alg": "ES256", "pem": public_pem}})
 
 
 def test_local_settings_use_independent_database_and_bucket() -> None:
