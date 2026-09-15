@@ -30,6 +30,10 @@ def test_knowledge_alembic_generates_independent_offline_sql() -> None:
     assert "ADD COLUMN knowledge_shape" in result.stdout
     assert "ADD COLUMN rights_review_status" in result.stdout
     assert "ADD COLUMN trace_id" in result.stdout
+    assert "CREATE TABLE kb_delegated_subject_grants" in result.stdout
+    assert "ADD COLUMN application_jti_hash" in result.stdout
+    assert "GRANT INSERT ON TABLE kb_audit_events" in result.stdout
+    assert "UPDATE kb_sources SET" in result.stdout
     assert "CREATE TABLE stores" not in result.stdout
     assert "CREATE TABLE users" not in result.stdout
 

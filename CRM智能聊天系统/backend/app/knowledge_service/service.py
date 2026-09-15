@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Protocol
 
 from sqlalchemy import text
@@ -22,6 +23,64 @@ class EvidenceSearchRequestContext:
 
 class EvidenceSearcher(Protocol):
     async def search(self, context: EvidenceSearchRequestContext) -> EvidenceSearchResponse: ...
+
+
+class EvidenceScopeViolation(Exception):
+    """检索实现返回了越界或损坏证据，API 必须失败关闭。"""
+
+
+def enforce_response_scope(
+    response: EvidenceSearchResponse,
+    context: EvidenceSearchRequestContext,
+) -> EvidenceSearchResponse:
+    """在可替换检索器之外建立不可绕过的最终授权围栏。"""
+    request = context.request
+    authorization = context.authorization
+    if response.request_id != request.request_id or response.trace_id != context.trace_id:
+        raise EvidenceScopeViolation("response correlation mismatch")
+    if response.status is not SearchStatus.OK:
+        return response
+
+    now = datetime.now(UTC)
+    for item in response.evidence:
+        exact_dimensions = (
+            item.platform_code == request.platform_code
+            and item.market_code == request.market_code
+            and item.language_tag == request.language_tag
+            and item.audience_code == request.audience_code
+        )
+        scope_allowed = (
+            item.space_code in authorization.allowed_space_codes
+            and item.space_code in request.requested_space_codes
+            and item.space_code in item.usage_policy.allowed_space_codes
+        )
+        shop_allowed = (
+            item.shop_ref is None
+            if item.space_code == "company_shared"
+            else item.space_code == "shop_private" and item.shop_ref == authorization.shop_ref
+        )
+        policy_allowed = authorization.application_ref in item.usage_policy.allowed_app_refs
+        generation_valid = item.index_generation_id == response.index_generation_id
+        effective = (
+            item.effective_from.tzinfo is not None
+            and item.effective_from <= now
+            and (
+                item.effective_until is None
+                or (item.effective_until.tzinfo is not None and item.effective_until > now)
+            )
+        )
+        if not all(
+            (
+                exact_dimensions,
+                scope_allowed,
+                shop_allowed,
+                policy_allowed,
+                generation_valid,
+                effective,
+            )
+        ):
+            raise EvidenceScopeViolation("evidence is outside the authorized request scope")
+    return response
 
 
 class IndexUnavailableSearcher:
@@ -46,7 +105,8 @@ class AuditRecord:
     requested_space_codes: tuple[str, ...]
     decision: str
     reason_code: str | None
-    jti_hash: str | None
+    application_jti_hash: str | None
+    delegation_jti_hash: str | None
     evidence_count: int
     latency_ms: int
 

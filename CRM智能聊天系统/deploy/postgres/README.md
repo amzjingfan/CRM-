@@ -30,7 +30,7 @@ Redis 仅保存可重建缓存、登录限流、Refresh Token 撤销和短期任
 
 ## 独立知识服务数据库
 
-K2 使用同一 PostgreSQL 集群中的 `company_knowledge` 独立数据库，不在 CRM `crm` 库建表。`deploy/postgres/bootstrap-company-knowledge.sql` 幂等创建 `knowledge_migration` 和 `knowledge_runtime` 角色：前者拥有迁移，后者只获得业务表 DML 权限。部署时使用：
+K2 使用同一 PostgreSQL 集群中的 `company_knowledge` 独立数据库，不在 CRM `crm` 库建表。`deploy/postgres/bootstrap-company-knowledge.sql` 幂等创建 `knowledge_migration` 和 `knowledge_runtime` 角色：前者拥有迁移和治理写入，后者只能读取权威表并向 `kb_audit_events` 追加记录，不能更新授权、删除审计或执行 DDL。部署时使用：
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.knowledge.yml up -d knowledge-service

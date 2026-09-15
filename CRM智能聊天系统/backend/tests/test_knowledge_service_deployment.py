@@ -17,12 +17,17 @@ def test_compose_overlay_runs_independent_service_and_one_shot_initializers() ->
         services
     )
     knowledge_service = services["knowledge-service"]
+    assert "env_file" not in knowledge_service
     assert "app.knowledge_service.main:create_configured_app" in " ".join(knowledge_service["command"])
     assert knowledge_service["environment"]["KNOWLEDGE_DATABASE_URL"].endswith("/company_knowledge")
     assert knowledge_service["environment"]["KNOWLEDGE_OBJECT_STORE_BUCKET"] == "company-knowledge"
     assert services["knowledge-migrations"]["command"][-2:] == ["upgrade", "head"]
     assert services["postgres"]["healthcheck"]["start_period"] == "120s"
     assert services["postgres"]["healthcheck"]["retries"] >= 30
+    assert all(volume.endswith(":ro") for volume in knowledge_service["volumes"])
+    assert all(volume.endswith(":ro") for volume in services["knowledge-migrations"]["volumes"])
+    assert "KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON" in knowledge_service["environment"]
+    assert "KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON" in knowledge_service["environment"]
 
 
 def test_database_bootstrap_uses_separate_database_and_least_privilege_roles() -> None:
@@ -32,6 +37,12 @@ def test_database_bootstrap_uses_separate_database_and_least_privilege_roles() -
     assert "knowledge_migration" in sql
     assert "knowledge_runtime" in sql
     assert "ALTER DEFAULT PRIVILEGES" in sql
+    assert "GRANT SELECT ON TABLES TO knowledge_runtime" in sql
+    assert "GRANT SELECT ON ALL TABLES IN SCHEMA public TO knowledge_runtime" in sql
+    assert "GRANT INSERT ON TABLE kb_audit_events TO knowledge_runtime" in sql
+    assert "GRANT SELECT, INSERT, UPDATE, DELETE" not in sql
+    assert "REVOKE INSERT, UPDATE, DELETE ON TABLES FROM knowledge_runtime" in sql
+    assert "REVOKE ALL ON ALL TABLES" in sql
     assert "CREATE TABLE" not in sql
     assert "crm.users" not in sql
     assert "crm.stores" not in sql
@@ -54,4 +65,5 @@ def test_example_environment_uses_only_dedicated_knowledge_names() -> None:
     assert "KNOWLEDGE_DATABASE_URL=" in example
     assert "/company_knowledge" in example
     assert "KNOWLEDGE_OBJECT_STORE_BUCKET=company-knowledge" in example
-    assert "KNOWLEDGE_VERIFICATION_KEYS_JSON=" in example
+    assert "KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON=" in example
+    assert "KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON=" in example

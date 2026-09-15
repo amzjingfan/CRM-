@@ -32,6 +32,7 @@ class ApplicationIdentity:
 class DelegationIdentity:
     """已验签的店铺范围委托身份。"""
 
+    delegated_subject_ref: str
     application_ref: str
     shop_ref: str
     allowed_space_codes: frozenset[str]
@@ -50,6 +51,7 @@ class TokenVerifier:
     def verify_application(self, token: str) -> ApplicationIdentity:
         claims = self._decode(
             token,
+            verification_keys=self._settings.application_verification_keys,
             expected_typ="service_access+jwt",
             expected_token_type="service_access",
             expected_issuer=self._settings.jwt_application_issuer,
@@ -57,6 +59,9 @@ class TokenVerifier:
             extra_required=(),
         )
         self._require_subject_match(claims)
+        key_entry = self._settings.application_verification_keys[claims["_verified_kid"]]
+        if key_entry.get("application_ref") != claims["application_ref"]:
+            raise AuthenticationRejected()
         return ApplicationIdentity(
             application_ref=claims["application_ref"],
             issuer=claims["iss"],
@@ -66,13 +71,21 @@ class TokenVerifier:
     def verify_delegation(self, token: str) -> DelegationIdentity:
         claims = self._decode(
             token,
+            verification_keys=self._settings.delegation_verification_keys,
             expected_typ="shop_delegation+jwt",
             expected_token_type="shop_delegation",
             expected_issuer=self._settings.jwt_delegation_issuer,
             maximum_lifetime_seconds=120,
             extra_required=("shop_ref", "allowed_space_codes"),
         )
-        self._require_subject_match(claims)
+        delegated_subject_ref = claims.get("sub")
+        if (
+            not isinstance(delegated_subject_ref, str)
+            or not delegated_subject_ref
+            or not isinstance(claims.get("application_ref"), str)
+            or not claims["application_ref"]
+        ):
+            raise AuthenticationRejected()
         allowed_spaces = claims["allowed_space_codes"]
         if not isinstance(allowed_spaces, list) or not allowed_spaces or not all(
             isinstance(space, str) and space for space in allowed_spaces
@@ -81,6 +94,7 @@ class TokenVerifier:
         if not isinstance(claims["shop_ref"], str) or not claims["shop_ref"]:
             raise AuthenticationRejected()
         return DelegationIdentity(
+            delegated_subject_ref=delegated_subject_ref,
             application_ref=claims["application_ref"],
             shop_ref=claims["shop_ref"],
             allowed_space_codes=frozenset(allowed_spaces),
@@ -92,6 +106,7 @@ class TokenVerifier:
         self,
         token: str,
         *,
+        verification_keys: dict[str, dict[str, str]],
         expected_typ: str,
         expected_token_type: str,
         expected_issuer: str,
@@ -106,7 +121,7 @@ class TokenVerifier:
                 raise AuthenticationRejected()
             if not isinstance(key_id, str) or not key_id:
                 raise AuthenticationRejected()
-            key_entry = self._settings.verification_keys.get(key_id)
+            key_entry = verification_keys.get(key_id)
             if not isinstance(key_entry, dict) or key_entry.get("alg") != algorithm:
                 raise AuthenticationRejected("KEY_NOT_AVAILABLE")
             public_key = key_entry.get("pem")
@@ -148,6 +163,7 @@ class TokenVerifier:
             raise AuthenticationRejected("TOKEN_LIFETIME_INVALID")
         if not isinstance(claims.get("jti"), str) or not claims["jti"]:
             raise AuthenticationRejected()
+        claims["_verified_kid"] = key_id
         return claims
 
     @staticmethod

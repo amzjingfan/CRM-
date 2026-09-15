@@ -25,8 +25,10 @@ from app.knowledge_service.schemas import (
 from app.knowledge_service.service import (
     AuditRecord,
     AuditSink,
+    EvidenceScopeViolation,
     EvidenceSearcher,
     EvidenceSearchRequestContext,
+    enforce_response_scope,
     hash_shop_ref,
 )
 
@@ -120,7 +122,7 @@ def install_evidence_api(
                     "rejected",
                     error.reason_code,
                     application_ref=identity.application_ref,
-                    jti_hash=identity.jti_hash,
+                    application_jti_hash=identity.jti_hash,
                 ),
                 trace_id,
             )
@@ -135,7 +137,7 @@ def install_evidence_api(
                     "unavailable",
                     "AUTHORITY_UNAVAILABLE",
                     application_ref=identity.application_ref,
-                    jti_hash=identity.jti_hash,
+                    application_jti_hash=identity.jti_hash,
                 ),
                 trace_id,
             )
@@ -147,6 +149,7 @@ def install_evidence_api(
                 searcher.search(context),
                 timeout=settings.search_timeout_seconds,
             )
+            response = enforce_response_scope(response, context)
         except TimeoutError:
             response = EvidenceSearchResponse(
                 status=SearchStatus.UNAVAILABLE,
@@ -154,6 +157,14 @@ def install_evidence_api(
                 trace_id=trace_id,
                 reason_code=StableReasonCode.INDEX_GENERATION_UNAVAILABLE,
                 retryable=True,
+            )
+        except EvidenceScopeViolation:
+            response = EvidenceSearchResponse(
+                status=SearchStatus.UNAVAILABLE,
+                request_id=request.request_id,
+                trace_id=trace_id,
+                reason_code=StableReasonCode.CONTENT_METADATA_INVALID,
+                retryable=False,
             )
         except Exception:
             response = EvidenceSearchResponse(
@@ -172,7 +183,8 @@ def install_evidence_api(
                 response.status.value,
                 response.reason_code.value if response.reason_code else None,
                 application_ref=identity.application_ref,
-                jti_hash=identity.jti_hash,
+                application_jti_hash=identity.jti_hash,
+                delegation_jti_hash=authorization.delegation_jti_hash,
                 evidence_count=len(response.evidence),
             ),
             trace_id,
@@ -195,7 +207,8 @@ def _audit_record(
     reason_code: str | None,
     *,
     application_ref: str | None = None,
-    jti_hash: str | None = None,
+    application_jti_hash: str | None = None,
+    delegation_jti_hash: str | None = None,
     evidence_count: int = 0,
 ) -> AuditRecord:
     return AuditRecord(
@@ -206,7 +219,8 @@ def _audit_record(
         requested_space_codes=tuple(request.requested_space_codes),
         decision=decision,
         reason_code=reason_code,
-        jti_hash=jti_hash,
+        application_jti_hash=application_jti_hash,
+        delegation_jti_hash=delegation_jti_hash,
         evidence_count=evidence_count,
         latency_ms=max(0, int((time.perf_counter() - started) * 1000)),
     )

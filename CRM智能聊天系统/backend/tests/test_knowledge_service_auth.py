@@ -1,4 +1,4 @@
-"""知识服务非对称 JWT 验证测试。"""
+"""知识服务分域非对称 JWT 验证测试。"""
 
 import json
 from datetime import UTC, datetime, timedelta
@@ -12,43 +12,62 @@ from app.knowledge_service.auth import AuthenticationRejected, TokenVerifier
 from app.knowledge_service.config import KnowledgeServiceSettings
 
 
-@pytest.fixture
-def signing_material() -> tuple[ec.EllipticCurvePrivateKey, TokenVerifier]:
-    """每个测试动态生成短命测试密钥，不在仓库保存私钥。"""
-    private_key = ec.generate_private_key(ec.SECP256R1())
-    public_pem = private_key.public_key().public_bytes(
+def _public_pem(private_key: ec.EllipticCurvePrivateKey) -> str:
+    return private_key.public_key().public_bytes(
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("ascii")
+
+
+@pytest.fixture
+def signing_material() -> tuple[
+    ec.EllipticCurvePrivateKey,
+    ec.EllipticCurvePrivateKey,
+    TokenVerifier,
+]:
+    """应用与委托域使用不同测试私钥，私钥不落盘。"""
+    application_key = ec.generate_private_key(ec.SECP256R1())
+    delegation_key = ec.generate_private_key(ec.SECP256R1())
     settings = KnowledgeServiceSettings(
         environment="test",
-        verification_keys_json=json.dumps(
-            {"test-es256": {"alg": "ES256", "pem": public_pem}},
+        application_verification_keys_json=json.dumps(
+            {
+                "app-es256": {
+                    "alg": "ES256",
+                    "pem": _public_pem(application_key),
+                    "application_ref": "crm-assistant",
+                }
+            }
+        ),
+        delegation_verification_keys_json=json.dumps(
+            {"delegation-es256": {"alg": "ES256", "pem": _public_pem(delegation_key)}}
         ),
     )
-    return private_key, TokenVerifier(settings)
+    return application_key, delegation_key, TokenVerifier(settings)
 
 
 def _application_token(
     private_key: ec.EllipticCurvePrivateKey,
     *,
     application_ref: str = "crm-assistant",
-    key_id: str = "test-es256",
+    key_id: str = "app-es256",
     typ: str = "service_access+jwt",
     token_type: str = "service_access",
+    issuer: str = "company-service-identity",
     audience: str = "company-knowledge-service",
     lifetime: timedelta = timedelta(minutes=4),
+    not_before_offset: timedelta = timedelta(0),
 ) -> str:
     now = datetime.now(UTC)
     return jwt.encode(
         {
-            "iss": "company-service-identity",
+            "iss": issuer,
             "aud": audience,
             "sub": application_ref,
             "application_ref": application_ref,
             "token_type": token_type,
             "iat": now,
-            "nbf": now,
+            "nbf": now + not_before_offset,
             "exp": now + lifetime,
             "jti": f"{application_ref}-jti-001",
         },
@@ -58,13 +77,40 @@ def _application_token(
     )
 
 
-def test_application_token_requires_exact_profile(
-    signing_material: tuple[ec.EllipticCurvePrivateKey, TokenVerifier],
-) -> None:
-    """合法应用 Token 只暴露低敏应用标识和 JTI 哈希。"""
-    private_key, verifier = signing_material
+def _delegation_token(
+    private_key: ec.EllipticCurvePrivateKey,
+    *,
+    key_id: str = "delegation-es256",
+    delegated_subject_ref: str = "employee-ref-001",
+    application_ref: str = "crm-assistant",
+) -> str:
+    now = datetime.now(UTC)
+    return jwt.encode(
+        {
+            "iss": "company-business-delegation",
+            "aud": "company-knowledge-service",
+            "sub": delegated_subject_ref,
+            "application_ref": application_ref,
+            "shop_ref": "shop-ref-us-001",
+            "allowed_space_codes": ["shop_private"],
+            "token_type": "shop_delegation",
+            "iat": now,
+            "nbf": now,
+            "exp": now + timedelta(minutes=2),
+            "jti": "delegation-jti-001",
+        },
+        private_key,
+        algorithm="ES256",
+        headers={"typ": "shop_delegation+jwt", "kid": key_id},
+    )
 
-    identity = verifier.verify_application(_application_token(private_key))
+
+def test_application_token_requires_exact_profile(
+    signing_material: tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePrivateKey, TokenVerifier],
+) -> None:
+    application_key, _, verifier = signing_material
+
+    identity = verifier.verify_application(_application_token(application_key))
 
     assert identity.application_ref == "crm-assistant"
     assert identity.issuer == "company-service-identity"
@@ -77,71 +123,106 @@ def test_application_token_requires_exact_profile(
     [
         {"typ": "JWT"},
         {"token_type": "shop_delegation"},
+        {"issuer": "company-business-delegation"},
         {"audience": "crm-backend"},
         {"lifetime": timedelta(minutes=6)},
+        {"lifetime": timedelta(seconds=-1)},
+        {"not_before_offset": timedelta(minutes=2)},
+        {"key_id": "unknown-key"},
     ],
 )
 def test_application_token_rejects_wrong_profile(
-    signing_material: tuple[ec.EllipticCurvePrivateKey, TokenVerifier],
+    signing_material: tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePrivateKey, TokenVerifier],
     token_kwargs: dict[str, object],
 ) -> None:
-    """typ、token_type、audience 或最长 TTL 任一不符都必须失败关闭。"""
-    private_key, verifier = signing_material
+    application_key, _, verifier = signing_material
 
     with pytest.raises(AuthenticationRejected):
-        verifier.verify_application(_application_token(private_key, **token_kwargs))  # type: ignore[arg-type]
+        verifier.verify_application(_application_token(application_key, **token_kwargs))  # type: ignore[arg-type]
 
 
-def test_delegation_token_requires_shop_and_shorter_ttl(
-    signing_material: tuple[ec.EllipticCurvePrivateKey, TokenVerifier],
+def test_application_key_is_bound_to_application_ref(
+    signing_material: tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePrivateKey, TokenVerifier],
 ) -> None:
-    """店铺委托 Token 仅允许两分钟，且必须携带允许空间。"""
-    private_key, verifier = signing_material
+    application_key, _, verifier = signing_material
+
+    with pytest.raises(AuthenticationRejected):
+        verifier.verify_application(_application_token(application_key, application_ref="operations-console"))
+
+
+def test_application_and_delegation_key_domains_cannot_be_exchanged(
+    signing_material: tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePrivateKey, TokenVerifier],
+) -> None:
+    application_key, delegation_key, verifier = signing_material
+
+    with pytest.raises(AuthenticationRejected):
+        verifier.verify_delegation(_delegation_token(application_key, key_id="app-es256"))
+    with pytest.raises(AuthenticationRejected):
+        verifier.verify_application(_application_token(delegation_key, key_id="delegation-es256"))
+
+
+def test_symmetric_algorithm_is_rejected_before_key_lookup(
+    signing_material: tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePrivateKey, TokenVerifier],
+) -> None:
+    _, _, verifier = signing_material
     now = datetime.now(UTC)
     token = jwt.encode(
         {
-            "iss": "company-business-delegation",
+            "iss": "company-service-identity",
             "aud": "company-knowledge-service",
             "sub": "crm-assistant",
             "application_ref": "crm-assistant",
-            "shop_ref": "shop-ref-us-001",
-            "allowed_space_codes": ["shop_private"],
-            "token_type": "shop_delegation",
+            "token_type": "service_access",
             "iat": now,
             "nbf": now,
-            "exp": now + timedelta(minutes=2),
-            "jti": "delegation-jti-001",
+            "exp": now + timedelta(minutes=4),
+            "jti": "symmetric-jti",
         },
-        private_key,
-        algorithm="ES256",
-        headers={"typ": "shop_delegation+jwt", "kid": "test-es256"},
+        "unit-test-only-symmetric-key-32-bytes",
+        algorithm="HS256",
+        headers={"typ": "service_access+jwt", "kid": "app-es256"},
     )
 
-    identity = verifier.verify_delegation(token)
+    with pytest.raises(AuthenticationRejected):
+        verifier.verify_application(token)
 
+
+def test_delegation_token_preserves_distinct_delegated_subject(
+    signing_material: tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePrivateKey, TokenVerifier],
+) -> None:
+    _, delegation_key, verifier = signing_material
+
+    identity = verifier.verify_delegation(_delegation_token(delegation_key))
+
+    assert identity.delegated_subject_ref == "employee-ref-001"
+    assert identity.application_ref == "crm-assistant"
     assert identity.shop_ref == "shop-ref-us-001"
     assert identity.allowed_space_codes == frozenset({"shop_private"})
 
 
 def test_two_consumers_use_distinct_application_refs_and_signing_keys() -> None:
-    """多系统复用不得通过共享 CRM 密钥或伪造相同应用身份实现。"""
     first_key = ec.generate_private_key(ec.SECP256R1())
     second_key = ec.generate_private_key(ec.SECP256R1())
-
-    def public_pem(private_key: ec.EllipticCurvePrivateKey) -> str:
-        return private_key.public_key().public_bytes(
-            serialization.Encoding.PEM,
-            serialization.PublicFormat.SubjectPublicKeyInfo,
-        ).decode("ascii")
-
+    delegation_key = ec.generate_private_key(ec.SECP256R1())
     verifier = TokenVerifier(
         KnowledgeServiceSettings(
             environment="test",
-            verification_keys_json=json.dumps(
+            application_verification_keys_json=json.dumps(
                 {
-                    "crm-key": {"alg": "ES256", "pem": public_pem(first_key)},
-                    "ops-key": {"alg": "ES256", "pem": public_pem(second_key)},
+                    "crm-key": {
+                        "alg": "ES256",
+                        "pem": _public_pem(first_key),
+                        "application_ref": "crm-assistant",
+                    },
+                    "ops-key": {
+                        "alg": "ES256",
+                        "pem": _public_pem(second_key),
+                        "application_ref": "operations-console",
+                    },
                 }
+            ),
+            delegation_verification_keys_json=json.dumps(
+                {"delegation-key": {"alg": "ES256", "pem": _public_pem(delegation_key)}}
             ),
         )
     )
@@ -155,4 +236,3 @@ def test_two_consumers_use_distinct_application_refs_and_signing_keys() -> None:
 
     assert crm.application_ref == "crm-assistant"
     assert operations.application_ref == "operations-console"
-    assert crm.application_ref != operations.application_ref

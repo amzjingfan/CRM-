@@ -11,6 +11,7 @@ from app.knowledge_service.authorization import ApplicationAuthority, Applicatio
 from app.knowledge_service.models import (
     ApplicationSpaceGrant,
     AuditEvent,
+    DelegatedSubjectGrant,
     KnowledgeApplication,
     RevokedCredential,
     ShopSpaceGrant,
@@ -80,6 +81,29 @@ class SqlAlchemyAuthorityRepository:
             )
             return grant_id is not None
 
+    async def has_delegated_subject_grant(
+        self,
+        application_ref: str,
+        delegated_subject_ref: str,
+        shop_ref: str,
+    ) -> bool:
+        now = datetime.now(UTC)
+        async with self._session_factory() as session:
+            grant_id = await session.scalar(
+                select(DelegatedSubjectGrant.id).where(
+                    DelegatedSubjectGrant.application_ref == application_ref,
+                    DelegatedSubjectGrant.delegated_subject_ref == delegated_subject_ref,
+                    DelegatedSubjectGrant.shop_ref == shop_ref,
+                    DelegatedSubjectGrant.enabled.is_(True),
+                    DelegatedSubjectGrant.valid_from <= now,
+                    or_(
+                        DelegatedSubjectGrant.valid_until.is_(None),
+                        DelegatedSubjectGrant.valid_until >= now,
+                    ),
+                )
+            )
+            return grant_id is not None
+
 
 class SqlAlchemyAuditSink:
     """每个决策单独提交，保证检索失败仍可审计。"""
@@ -98,7 +122,8 @@ class SqlAlchemyAuditSink:
                     requested_space_codes=list(event.requested_space_codes),
                     decision=event.decision,
                     reason_code=event.reason_code,
-                    jti_hash=event.jti_hash,
+                    application_jti_hash=event.application_jti_hash,
+                    delegation_jti_hash=event.delegation_jti_hash,
                     evidence_count=event.evidence_count,
                     latency_ms=event.latency_ms,
                     created_at=datetime.now(UTC),

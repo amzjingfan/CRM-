@@ -10,7 +10,7 @@
 
 **Specs:** `架构师/ADR-001-KB-独立知识服务与空间授权边界-v1.0.md`、`API-001-KB`、`SEC-001-KB`、`DEP-001-KB`、`DATA-001-KB`及 `验收-001-KB-KBG0联合架构评审结论-v1.0.md`。
 
-**Execution Status (2026-09-15):** Tasks 1～6 的 K2 工程实现和开发侧验证已完成，当前 Alembic head 为 `003_kb_audit_trace`。正式独立 QA 不由本次开发实施替代，因此未生成测试工程师权威报告；K3～K5 和生产放行仍未开始。
+**Execution Status (2026-09-15):** Tasks 1～6 的 K2 工程实现和开发侧验证已完成，代码审查后增加分域验签、委托主体权威、响应出口围栏、逐表最小权限与带数据迁移修复，当前 Alembic head 为 `004_kb_security`。正式独立 QA 不由本次开发实施替代，因此未生成测试工程师权威报告；K3～K5 和生产放行仍未开始。
 
 ## Global Constraints
 

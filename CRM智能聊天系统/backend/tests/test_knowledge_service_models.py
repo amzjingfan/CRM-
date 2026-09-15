@@ -6,6 +6,7 @@ EXPECTED_TABLES = {
     "kb_applications",
     "kb_application_space_grants",
     "kb_shop_space_grants",
+    "kb_delegated_subject_grants",
     "kb_revoked_credentials",
     "kb_coverage_cells",
     "kb_sources",
@@ -93,6 +94,11 @@ def test_space_and_content_state_constraints_are_authoritative() -> None:
     approval_columns = set(KnowledgeBase.metadata.tables["kb_content_approvals"].columns.keys())
     assert {"approval_ref", "approved_by_ref", "approved_at"} <= approval_columns
 
+    delegated_subject_columns = set(
+        KnowledgeBase.metadata.tables["kb_delegated_subject_grants"].columns.keys()
+    )
+    assert {"application_ref", "delegated_subject_ref", "shop_ref", "enabled"} <= delegated_subject_columns
+
 
 def test_audit_table_cannot_persist_query_or_token_body() -> None:
     """审计表只保存低敏决策元数据，不预留正文字段。"""
@@ -104,7 +110,34 @@ def test_audit_table_cannot_persist_query_or_token_body() -> None:
         "application_ref",
         "decision",
         "reason_code",
-        "jti_hash",
+        "application_jti_hash",
+        "delegation_jti_hash",
         "created_at",
     } <= audit_columns
     assert not audit_columns.intersection({"query", "query_text", "token", "authorization", "content_text"})
+
+
+def test_governance_tables_expose_database_check_constraints() -> None:
+    """安全关键状态和值域不能只靠 K3 应用代码约定。"""
+    constraint_names = {
+        constraint.name
+        for table in KnowledgeBase.metadata.tables.values()
+        for constraint in table.constraints
+        if constraint.name is not None
+    }
+
+    assert {
+        "ck_kb_coverage_shape",
+        "ck_kb_source_reference",
+        "ck_kb_source_effective_window",
+        "ck_kb_content_sha256",
+        "ck_kb_content_status",
+        "ck_kb_content_approval_status",
+        "ck_kb_content_shape",
+        "ck_kb_statement_type",
+        "ck_kb_customer_scope",
+        "ck_kb_content_effective_window",
+        "ck_kb_approval_decision",
+        "ck_kb_index_state",
+        "ck_kb_embedding_dimensions",
+    } <= constraint_names

@@ -30,7 +30,10 @@ class FakeAuthority:
             application_ref=application_ref,
             enabled=self.enabled,
             allowed_scopes=frozenset(
-                {ApplicationScope("TK", "US", "en-US", "internal_agent", "company_shared")}
+                {
+                    ApplicationScope("TK", "US", "en-US", "internal_agent", "company_shared"),
+                    ApplicationScope("TK", "US", "en-US", "internal_agent", "shop_private"),
+                }
             ),
         )
 
@@ -39,8 +42,23 @@ class FakeAuthority:
         return False
 
     async def has_shop_grant(self, application_ref: str, shop_ref: str, space_code: str) -> bool:
-        del application_ref, shop_ref, space_code
-        return False
+        return (application_ref, shop_ref, space_code) == (
+            "crm-assistant",
+            "shop-ref-us-001",
+            "shop_private",
+        )
+
+    async def has_delegated_subject_grant(
+        self,
+        application_ref: str,
+        delegated_subject_ref: str,
+        shop_ref: str,
+    ) -> bool:
+        return (application_ref, delegated_subject_ref, shop_ref) == (
+            "crm-assistant",
+            "employee-ref-001",
+            "shop-ref-us-001",
+        )
 
 
 class FixedSearcher:
@@ -83,7 +101,18 @@ def api_identity() -> tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str]:
     ).decode("ascii")
     settings = KnowledgeServiceSettings(
         environment="test",
-        verification_keys_json=json.dumps({"api-test-key": {"alg": "ES256", "pem": public_pem}}),
+        application_verification_keys_json=json.dumps(
+            {
+                "api-test-key": {
+                    "alg": "ES256",
+                    "pem": public_pem,
+                    "application_ref": "crm-assistant",
+                }
+            }
+        ),
+        delegation_verification_keys_json=json.dumps(
+            {"delegation-test-key": {"alg": "ES256", "pem": public_pem}}
+        ),
     )
     now = datetime.now(UTC)
     token = jwt.encode(
@@ -115,6 +144,41 @@ def _request_body() -> dict[str, object]:
         "audience_code": "internal_agent",
         "requested_space_codes": ["company_shared"],
         "top_k": 5,
+    }
+
+
+def _eligible_evidence() -> dict[str, object]:
+    now = datetime.now(UTC)
+    return {
+        "content_version_id": "content-v1",
+        "content_sha256": "a" * 64,
+        "chunk_id": "chunk-1",
+        "text": "Company-authored test evidence.",
+        "source_id": "source-1",
+        "source_url": "https://example.test/source",
+        "platform_code": "TK",
+        "market_code": "US",
+        "language_tag": "en-US",
+        "audience_code": "internal_agent",
+        "space_code": "company_shared",
+        "shop_ref": None,
+        "approval_ref": "approval-1",
+        "effective_from": now - timedelta(minutes=1),
+        "effective_until": now + timedelta(minutes=5),
+        "index_generation_id": "generation-1",
+        "dense_score": 0.8,
+        "lexical_score": 0.7,
+        "rrf_score": 0.6,
+        "reranker_score": 1.2,
+        "score_types": {"reranker_score": "logit"},
+        "usage_policy": {
+            "rights_basis_ref": "rights-1",
+            "allowed_app_refs": ["crm-assistant"],
+            "allowed_space_codes": ["company_shared"],
+            "external_model_allowed": False,
+            "automatic_delivery_allowed": False,
+            "forbidden_uses": ["automatic_delivery"],
+        },
     }
 
 
@@ -206,6 +270,110 @@ def test_search_timeout_is_a_retryable_business_unavailable_state(
     assert response.json()["status"] == "unavailable"
     assert response.json()["reason_code"] == "INDEX_GENERATION_UNAVAILABLE"
     assert response.json()["retryable"] is True
+
+
+def test_private_request_audits_application_and_delegation_jti_separately(
+    api_identity: tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str],
+) -> None:
+    private_key, verifier, application_token = api_identity
+    now = datetime.now(UTC)
+    delegation_token = jwt.encode(
+        {
+            "iss": "company-business-delegation",
+            "aud": "company-knowledge-service",
+            "sub": "employee-ref-001",
+            "application_ref": "crm-assistant",
+            "shop_ref": "shop-ref-us-001",
+            "allowed_space_codes": ["shop_private"],
+            "token_type": "shop_delegation",
+            "iat": now,
+            "nbf": now,
+            "exp": now + timedelta(minutes=2),
+            "jti": "private-delegation-jti",
+        },
+        private_key,
+        algorithm="ES256",
+        headers={"typ": "shop_delegation+jwt", "kid": "delegation-test-key"},
+    )
+    body = _request_body()
+    body["requested_space_codes"] = ["shop_private"]
+    body["shop_ref"] = "shop-ref-us-001"
+    audit = CapturingAuditSink()
+    app = create_app(
+        verifier=verifier,
+        authorizer=KnowledgeAuthorizer(FakeAuthority()),
+        audit_sink=audit,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/internal/v1/evidence:search",
+            headers={
+                "Authorization": f"Bearer {application_token}",
+                "X-Shop-Delegation": f"Bearer {delegation_token}",
+            },
+            json=body,
+        )
+
+    assert response.status_code == 200
+    assert audit.records[0].application_jti_hash is not None
+    assert audit.records[0].delegation_jti_hash is not None
+    assert audit.records[0].application_jti_hash != audit.records[0].delegation_jti_hash
+
+
+@pytest.mark.parametrize(
+    ("mutation", "value"),
+    [
+        ("market_code", "UK"),
+        ("index_generation_id", "generation-2"),
+        ("allowed_app_refs", ["another-application"]),
+    ],
+)
+def test_searcher_cannot_return_evidence_outside_final_authorized_scope(
+    api_identity: tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str],
+    mutation: str,
+    value: object,
+) -> None:
+    _, verifier, token = api_identity
+    evidence = _eligible_evidence()
+    if mutation == "allowed_app_refs":
+        policy = evidence["usage_policy"]
+        assert isinstance(policy, dict)
+        policy[mutation] = value
+    else:
+        evidence[mutation] = value
+    searcher = FixedSearcher(
+        EvidenceSearchResponse.model_validate(
+            {
+                "status": "ok",
+                "request_id": "placeholder",
+                "trace_id": "placeholder",
+                "index_generation_id": "generation-1",
+                "retrieval_profile_version": "profile-v1",
+                "evidence": [evidence],
+            }
+        )
+    )
+    audit = CapturingAuditSink()
+    app = create_app(
+        verifier=verifier,
+        authorizer=KnowledgeAuthorizer(FakeAuthority()),
+        searcher=searcher,
+        audit_sink=audit,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/internal/v1/evidence:search",
+            headers={"Authorization": f"Bearer {token}"},
+            json=_request_body(),
+        )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "unavailable"
+    assert response.json()["reason_code"] == "CONTENT_METADATA_INVALID"
+    assert response.json()["evidence"] == []
+    assert audit.records[0].evidence_count == 0
 
 
 @pytest.mark.parametrize(

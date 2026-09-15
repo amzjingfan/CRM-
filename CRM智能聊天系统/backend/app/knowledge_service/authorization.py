@@ -52,6 +52,7 @@ class AuthorizationContext:
     application_ref: str
     allowed_space_codes: frozenset[str]
     shop_ref: str | None
+    delegated_subject_ref: str | None
     application_jti_hash: str
     delegation_jti_hash: str | None
 
@@ -64,6 +65,13 @@ class AuthorityRepository(Protocol):
     async def is_credential_revoked(self, issuer: str, jti_hash: str) -> bool: ...
 
     async def has_shop_grant(self, application_ref: str, shop_ref: str, space_code: str) -> bool: ...
+
+    async def has_delegated_subject_grant(
+        self,
+        application_ref: str,
+        delegated_subject_ref: str,
+        shop_ref: str,
+    ) -> bool: ...
 
 
 class KnowledgeAuthorizer:
@@ -137,6 +145,7 @@ class KnowledgeAuthorizer:
                 application_ref=application_identity.application_ref,
                 allowed_space_codes=requested_space_codes,
                 shop_ref=None,
+                delegated_subject_ref=None,
                 application_jti_hash=application_identity.jti_hash,
                 delegation_jti_hash=None,
             )
@@ -160,10 +169,17 @@ class KnowledgeAuthorizer:
             "shop_private",
         ):
             raise AuthorizationRejected("NO_SCOPE_MATCH")
+        if not await self._repository.has_delegated_subject_grant(
+            application_identity.application_ref,
+            delegation_identity.delegated_subject_ref,
+            shop_ref,
+        ):
+            raise AuthorizationRejected("NO_SCOPE_MATCH")
         return AuthorizationContext(
             application_ref=application_identity.application_ref,
             allowed_space_codes=requested_space_codes,
             shop_ref=shop_ref,
+            delegated_subject_ref=delegation_identity.delegated_subject_ref,
             application_jti_hash=application_identity.jti_hash,
             delegation_jti_hash=delegation_identity.jti_hash,
         )

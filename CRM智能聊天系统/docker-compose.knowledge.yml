@@ -12,10 +12,10 @@ services:
       PGHOST: postgres
       PGPORT: "5432"
       PGUSER: ${POSTGRES_USER:-crm}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-crm}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB:-crm}
-      KNOWLEDGE_MIGRATION_PASSWORD: ${KNOWLEDGE_MIGRATION_PASSWORD:-local-only-migration}
-      KNOWLEDGE_RUNTIME_PASSWORD: ${KNOWLEDGE_RUNTIME_PASSWORD:-local-only-runtime}
+      KNOWLEDGE_MIGRATION_PASSWORD: ${KNOWLEDGE_MIGRATION_PASSWORD:?set KNOWLEDGE_MIGRATION_PASSWORD}
+      KNOWLEDGE_RUNTIME_PASSWORD: ${KNOWLEDGE_RUNTIME_PASSWORD:?set KNOWLEDGE_RUNTIME_PASSWORD}
     volumes:
       - ./deploy/postgres/bootstrap-company-knowledge.sql:/bootstrap/bootstrap-company-knowledge.sql:ro
     depends_on:
@@ -31,9 +31,9 @@ services:
     restart: "no"
     environment:
       KNOWLEDGE_ENVIRONMENT: local
-      KNOWLEDGE_DATABASE_URL: postgresql+asyncpg://knowledge_migration:${KNOWLEDGE_MIGRATION_PASSWORD:-local-only-migration}@postgres:5432/company_knowledge
+      KNOWLEDGE_DATABASE_URL: postgresql+asyncpg://knowledge_migration:${KNOWLEDGE_MIGRATION_PASSWORD:?set KNOWLEDGE_MIGRATION_PASSWORD}@postgres:5432/company_knowledge
     volumes:
-      - ./backend:/app
+      - ./backend:/app:ro
     depends_on:
       knowledge-db-bootstrap:
         condition: service_completed_successfully
@@ -44,10 +44,10 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     restart: "no"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-password}
-      KNOWLEDGE_OBJECT_STORE_ACCESS_KEY: ${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY:-knowledge-local}
-      KNOWLEDGE_OBJECT_STORE_SECRET_KEY: ${KNOWLEDGE_OBJECT_STORE_SECRET_KEY:-local-only-knowledge-secret}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      KNOWLEDGE_OBJECT_STORE_ACCESS_KEY: ${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY:?set KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}
+      KNOWLEDGE_OBJECT_STORE_SECRET_KEY: ${KNOWLEDGE_OBJECT_STORE_SECRET_KEY:?set KNOWLEDGE_OBJECT_STORE_SECRET_KEY}
       KNOWLEDGE_OBJECT_STORE_BUCKET: company-knowledge
     volumes:
       - ./deploy/minio/company-knowledge-policy.json:/config/company-knowledge-policy.json:ro
@@ -69,25 +69,23 @@ services:
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend
-    env_file:
-      - path: .env
-        required: false
     environment:
-      KNOWLEDGE_ENVIRONMENT: ${KNOWLEDGE_ENVIRONMENT:-local}
-      KNOWLEDGE_DATABASE_URL: postgresql+asyncpg://knowledge_runtime:${KNOWLEDGE_RUNTIME_PASSWORD:-local-only-runtime}@postgres:5432/company_knowledge
+      KNOWLEDGE_ENVIRONMENT: ${KNOWLEDGE_ENVIRONMENT:?set KNOWLEDGE_ENVIRONMENT}
+      KNOWLEDGE_DATABASE_URL: postgresql+asyncpg://knowledge_runtime:${KNOWLEDGE_RUNTIME_PASSWORD:?set KNOWLEDGE_RUNTIME_PASSWORD}@postgres:5432/company_knowledge
       KNOWLEDGE_OBJECT_STORE_ENDPOINT: minio:9000
-      KNOWLEDGE_OBJECT_STORE_ACCESS_KEY: ${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY:-knowledge-local}
-      KNOWLEDGE_OBJECT_STORE_SECRET_KEY: ${KNOWLEDGE_OBJECT_STORE_SECRET_KEY:-local-only-knowledge-secret}
+      KNOWLEDGE_OBJECT_STORE_ACCESS_KEY: ${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY:?set KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}
+      KNOWLEDGE_OBJECT_STORE_SECRET_KEY: ${KNOWLEDGE_OBJECT_STORE_SECRET_KEY:?set KNOWLEDGE_OBJECT_STORE_SECRET_KEY}
       KNOWLEDGE_OBJECT_STORE_BUCKET: company-knowledge
       KNOWLEDGE_OBJECT_STORE_SECURE: "false"
       KNOWLEDGE_JWT_APPLICATION_ISSUER: company-service-identity
       KNOWLEDGE_JWT_DELEGATION_ISSUER: company-business-delegation
       KNOWLEDGE_JWT_AUDIENCE: company-knowledge-service
-      KNOWLEDGE_VERIFICATION_KEYS_JSON: ${KNOWLEDGE_VERIFICATION_KEYS_JSON:-{}}
+      KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON: ${KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON:?set KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON}
+      KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON: ${KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON:?set KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON}
     ports:
       - "8011:8011"
     volumes:
-      - ./backend:/app
+      - ./backend:/app:ro
     depends_on:
       knowledge-migrations:
         condition: service_completed_successfully

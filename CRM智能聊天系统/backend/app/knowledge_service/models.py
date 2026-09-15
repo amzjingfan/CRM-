@@ -88,6 +88,31 @@ class ShopSpaceGrant(KnowledgeBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class DelegatedSubjectGrant(KnowledgeBase):
+    """受委托主体对应用和店铺的服务端启用权威。"""
+
+    __tablename__ = "kb_delegated_subject_grants"
+    __table_args__ = (
+        UniqueConstraint(
+            "application_ref",
+            "delegated_subject_ref",
+            "shop_ref",
+            name="uq_kb_delegated_subject_grant",
+        ),
+        CheckConstraint("valid_until IS NULL OR valid_until > valid_from", name="ck_kb_delegated_subject_window"),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_primary_key()
+    application_ref: Mapped[str] = mapped_column(ForeignKey("kb_applications.application_ref"), index=True)
+    delegated_subject_ref: Mapped[str] = mapped_column(String(128), index=True)
+    shop_ref: Mapped[str] = mapped_column(String(128), index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class RevokedCredential(KnowledgeBase):
     """服务 Token 和委托 Token 撤销列表，只保存 JTI 哈希。"""
 
@@ -124,6 +149,7 @@ class CoverageCell(KnowledgeBase):
             unique=True,
             postgresql_nulls_not_distinct=True,
         ),
+        CheckConstraint("knowledge_shape IN ('A', 'B', 'C', 'D')", name="ck_kb_coverage_shape"),
     )
 
     id: Mapped[uuid.UUID] = uuid_primary_key()
@@ -149,6 +175,13 @@ class KnowledgeSource(KnowledgeBase):
     """来源与使用权元数据；原文放于受控对象存储。"""
 
     __tablename__ = "kb_sources"
+    __table_args__ = (
+        CheckConstraint("source_uri IS NOT NULL OR object_key IS NOT NULL", name="ck_kb_source_reference"),
+        CheckConstraint(
+            "effective_until IS NULL OR effective_until > effective_from",
+            name="ck_kb_source_effective_window",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = uuid_primary_key()
     source_ref: Mapped[str] = mapped_column(String(160), unique=True)
@@ -180,7 +213,29 @@ class ContentVersion(KnowledgeBase):
     """按内容哈希不可变的知识版本。"""
 
     __tablename__ = "kb_content_versions"
-    __table_args__ = (UniqueConstraint("coverage_cell_id", "content_sha256", name="uq_kb_content_hash"),)
+    __table_args__ = (
+        UniqueConstraint("coverage_cell_id", "content_sha256", name="uq_kb_content_hash"),
+        CheckConstraint("content_sha256 ~ '^[0-9a-f]{64}$'", name="ck_kb_content_sha256"),
+        CheckConstraint("content_status IN ('draft', 'reviewed', 'approved', 'revoked')", name="ck_kb_content_status"),
+        CheckConstraint(
+            "approval_status IN ('pending', 'approved', 'rejected', 'revoked')",
+            name="ck_kb_content_approval_status",
+        ),
+        CheckConstraint("knowledge_shape IN ('A', 'B', 'C', 'D')", name="ck_kb_content_shape"),
+        CheckConstraint(
+            "statement_type IN ('policy', 'technical_artifact', 'customer_instance_fact', "
+            "'non_assertive_proposition', 'unknown')",
+            name="ck_kb_statement_type",
+        ),
+        CheckConstraint(
+            "customer_scope IN ('none', 'generic', 'specific_customer')",
+            name="ck_kb_customer_scope",
+        ),
+        CheckConstraint(
+            "effective_until IS NULL OR effective_until > effective_from",
+            name="ck_kb_content_effective_window",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = uuid_primary_key()
     content_version_ref: Mapped[str] = mapped_column(String(160), unique=True)
@@ -210,6 +265,9 @@ class ContentApproval(KnowledgeBase):
     """内容版本的逐版本人工审批记录。"""
 
     __tablename__ = "kb_content_approvals"
+    __table_args__ = (
+        CheckConstraint("decision IN ('approved', 'rejected', 'revoked')", name="ck_kb_approval_decision"),
+    )
 
     id: Mapped[uuid.UUID] = uuid_primary_key()
     approval_ref: Mapped[str] = mapped_column(String(160), unique=True)
@@ -225,6 +283,13 @@ class IndexGeneration(KnowledgeBase):
     """索引代次权威状态；向量切片属于 K3。"""
 
     __tablename__ = "kb_index_generations"
+    __table_args__ = (
+        CheckConstraint(
+            "index_state IN ('not_indexed', 'building', 'ready', 'failed', 'stale')",
+            name="ck_kb_index_state",
+        ),
+        CheckConstraint("embedding_dimensions > 0", name="ck_kb_embedding_dimensions"),
+    )
 
     id: Mapped[uuid.UUID] = uuid_primary_key()
     generation_ref: Mapped[str] = mapped_column(String(160), unique=True)
@@ -256,7 +321,8 @@ class AuditEvent(KnowledgeBase):
     requested_space_codes: Mapped[list[str]] = mapped_column(JSON, default=list)
     decision: Mapped[str] = mapped_column(String(32), index=True)
     reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    jti_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    application_jti_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    delegation_jti_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     evidence_count: Mapped[int] = mapped_column(Integer, default=0)
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 
 -- K2 在现有 PostgreSQL 集群内创建 company_knowledge 独立库，
--- knowledge_migration 拥有 schema，knowledge_runtime 只获得运行时 DML 权限。
+-- knowledge_migration 拥有 schema；knowledge_runtime 只读权威表并只追加审计。
 \getenv migration_password KNOWLEDGE_MIGRATION_PASSWORD
 \getenv runtime_password KNOWLEDGE_RUNTIME_PASSWORD
 
@@ -24,7 +24,15 @@ GRANT CONNECT ON DATABASE company_knowledge TO knowledge_runtime;
 
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO knowledge_runtime;
+REVOKE CREATE ON SCHEMA public FROM knowledge_runtime;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM knowledge_runtime;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO knowledge_runtime;
+SELECT 'GRANT INSERT ON TABLE kb_audit_events TO knowledge_runtime'
+WHERE to_regclass('public.kb_audit_events') IS NOT NULL
+\gexec
 ALTER DEFAULT PRIVILEGES FOR ROLE knowledge_migration IN SCHEMA public
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO knowledge_runtime;
+REVOKE INSERT, UPDATE, DELETE ON TABLES FROM knowledge_runtime;
 ALTER DEFAULT PRIVILEGES FOR ROLE knowledge_migration IN SCHEMA public
-GRANT USAGE, SELECT ON SEQUENCES TO knowledge_runtime;
+GRANT SELECT ON TABLES TO knowledge_runtime;
+ALTER DEFAULT PRIVILEGES FOR ROLE knowledge_migration IN SCHEMA public
+REVOKE ALL ON SEQUENCES FROM knowledge_runtime;

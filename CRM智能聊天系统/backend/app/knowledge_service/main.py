@@ -80,6 +80,7 @@ def create_app(
 def create_configured_app() -> FastAPI:
     """部署入口：强制使用 SQL 授权、SQL 审计和真实数据库就绪检查。"""
     settings = KnowledgeServiceSettings()
+    settings.validate_operational_security()
     engine = create_knowledge_engine(settings)
     session_factory = create_session_factory(engine)
     authority_repository = SqlAlchemyAuthorityRepository(session_factory)
@@ -93,6 +94,3 @@ def create_configured_app() -> FastAPI:
     )
     application.state.knowledge_engine = engine
     return application
-
-
-app = create_app()

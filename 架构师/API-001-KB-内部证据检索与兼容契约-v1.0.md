@@ -83,6 +83,6 @@
 
 - 独立进程入口为 `app.knowledge_service.main:create_configured_app`，默认容器端口 `8011`；健康端点为 `/internal/health/live` 和 `/internal/health/ready`。
 - 权威数据使用 `company_knowledge` 独立库、`knowledge_migrations` 独立 Alembic 链和 `company-knowledge` 对象桶，不引用 CRM `stores/users/knowledge_*` 表。
-- 应用 grant 对平台、市场、语言、读者和空间精确登记；`shop_private` 再与委托 JWT、服务端店铺 grant 取交集。
-- K2 已实现四态 schema 和可注入 searcher，但 K3 向量/词法索引尚未建立。默认实现因无激活索引代次返回 `unavailable/INDEX_GENERATION_UNAVAILABLE`，不伪造 `ok`。
+- 应用与委托 JWT 使用两套不可互换的验签公钥配置，应用 `kid` 绑定唯一 `application_ref`；应用 grant 对平台、市场、语言、读者和空间精确登记，`shop_private` 再与委托主体、服务端店铺及主体 grant 取交集。
+- K2 已实现四态 schema 和可注入 searcher，并在 API 出口强制复核证据的应用用途、平台、市场、语言、读者、空间、店铺、时效、索引代际及追踪标识；任何越界或损坏元数据失败关闭为 `unavailable/CONTENT_METADATA_INVALID`。K3 向量/词法索引尚未建立，默认实现返回 `unavailable/INDEX_GENERATION_UNAVAILABLE`，不伪造 `ok`。
 - 本快照是 K2 工程实现状态，不代表 K3 内容/检索、K4 TK 同步、CRM 切流、第二系统真实验收或生产放行。

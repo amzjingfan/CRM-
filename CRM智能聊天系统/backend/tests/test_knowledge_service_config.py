@@ -10,12 +10,15 @@ from pydantic import ValidationError
 from app.knowledge_service.config import KnowledgeServiceSettings
 
 
-def _verification_keys_json() -> str:
+def _verification_keys_json(*, application: bool) -> str:
     public_pem = ec.generate_private_key(ec.SECP256R1()).public_key().public_bytes(
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("ascii")
-    return json.dumps({"application-key": {"alg": "ES256", "pem": public_pem}})
+    entry = {"alg": "ES256", "pem": public_pem}
+    if application:
+        entry["application_ref"] = "crm-assistant"
+    return json.dumps({"test-key": entry})
 
 
 def test_local_settings_use_independent_database_and_bucket() -> None:
@@ -42,8 +45,11 @@ def test_local_settings_use_independent_database_and_bucket() -> None:
         ({"object_store_access_key": "minio"}, "root"),
         ({"object_store_secret_key": "change-me-minio-password"}, "example"),
         ({"jwt_audience": ""}, "audience"),
-        ({"verification_keys_json": "{}"}, "verification"),
-        ({"verification_keys_json": '{"key":{"alg":"ES256","pem":"public"}}'}, "verification"),
+        ({"application_verification_keys_json": "{}"}, "verification"),
+        (
+            {"delegation_verification_keys_json": '{"key":{"alg":"ES256","pem":"public"}}'},
+            "verification",
+        ),
     ],
 )
 def test_staging_settings_reject_unsafe_or_shared_configuration(
@@ -56,7 +62,8 @@ def test_staging_settings_reject_unsafe_or_shared_configuration(
         "object_store_access_key": "knowledge-runtime",
         "object_store_secret_key": "strong-object-secret",
         "jwt_audience": "company-knowledge-service",
-        "verification_keys_json": _verification_keys_json(),
+        "application_verification_keys_json": _verification_keys_json(application=True),
+        "delegation_verification_keys_json": _verification_keys_json(application=False),
     }
     values.update(override)
 
@@ -75,3 +82,10 @@ def test_settings_do_not_reuse_crm_environment_names(monkeypatch: pytest.MonkeyP
 
     assert settings.database_url.rsplit("/", maxsplit=1)[-1] == "company_knowledge"
     assert settings.object_store_bucket == "company-knowledge"
+
+
+def test_operational_factory_security_rejects_empty_key_domains_even_locally() -> None:
+    settings = KnowledgeServiceSettings(environment="local")
+
+    with pytest.raises(ValueError, match="application and delegation"):
+        settings.validate_operational_security()
