@@ -105,9 +105,9 @@
   ],
   "evaluation": {
     "dataset_version": "real-model-independent-v1.0.0",
-    "dataset_path": "测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.jsonl",
+    "dataset_path": "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
     "dataset_sha256": "7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94",
-    "dataset_manifest_path": "测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.manifest.json",
+    "dataset_manifest_path": "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
     "dataset_manifest_file_sha256": "232f52a3fa5f5c33622f25a87456128aa9c553a5c00da682bbce2cb8cb3d6905",
     "dataset_manifest_canonical_sha256": "20daad15afdea810c35129f2d9dbac3054f901d5fcd2d0866f477eed534c5146",
     "result_path": "CRM智能聊天系统/backend/evals/results/real-model-independent-v1.0.0-deepseek-20260905-001.json",

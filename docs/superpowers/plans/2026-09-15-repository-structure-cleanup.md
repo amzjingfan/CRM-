@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 将六个角色型一级目录的 424 个跟踪文件压缩为不超过十五份当前文档和一组最小机器证据，并在修复全部活动引用后删除这些目录。
+**Goal:** 将六个角色型一级目录的 427 个跟踪文件压缩为不超过十五份当前文档和一组最小机器证据，并在修复全部活动引用后删除这些目录。
 
 **Architecture:** 以 `CRM智能聊天系统/` 作为唯一产品工程，以根 `docs/` 保存面向用途的当前事实，以 `release/evidence/` 保存发布清单必须读取的低敏机器证据。先记录结构基线，再分主题生成压缩文档，随后迁移证据、修复路径、删除旧目录，最后执行与变更范围相称的必要验证。
 
@@ -42,7 +42,6 @@
 
 ### 新建或调整的机器资产
 
-- `CRM智能聊天系统/backend/scripts/bge_production_gate.py`：角色无关的 BGE 生产门禁脚本；从旧脚本提炼并复用现有 RAG 评测逻辑。
 - `release/evidence/retrieval/bge-quality-threshold-052-20260821.json`：最终 BGE 质量门禁证据。
 - `release/evidence/retrieval/bge-capacity-gpu-gate-20260821.json`：最终 GPU 容量门禁证据。
 - `release/evidence/retrieval/bge-gpu-runtime-20260821.json`：GPU、冷启动和显存证据。
@@ -96,7 +95,7 @@ foreach($target in $targets){
 }
 ```
 
-Expected: 六个目录全部存在，总跟踪文件约 424，总文本行约 7.06 万。
+Expected: 六个目录全部存在，总跟踪文件 427，总文本行 64,848。
 
 - [ ] **Step 2: 记录冻结评测集摘要**
 
@@ -282,7 +281,7 @@ git commit -m 'docs: compress gates tests and project history'
 
 ---
 
-### Task 5: 归并机器证据和 BGE 门禁脚本
+### Task 5: 归并机器证据
 
 **Files:**
 - Create: `release/evidence/retrieval/bge-quality-threshold-052-20260821.json`
@@ -290,13 +289,12 @@ git commit -m 'docs: compress gates tests and project history'
 - Create: `release/evidence/retrieval/bge-gpu-runtime-20260821.json`
 - Create: `release/evidence/ai/real-model-independent-v1.0.0.jsonl`
 - Create: `release/evidence/ai/real-model-independent-v1.0.0.manifest.json`
-- Create: `CRM智能聊天系统/backend/scripts/bge_production_gate.py`
 - Modify: `CRM智能聊天系统/deploy/models/model-manifest.json`
 - Modify: `release/baselines/v0.1.0-mvp.20260907.json`
 
 **Interfaces:**
-- Consumes: 冻结证据原字节、旧 BGE 门禁脚本和现有 `scripts/evaluate_rag.py`。
-- Produces: 角色无关的发布证据路径、保持原 SHA-256 的评测集、可重复执行的质量/容量门禁。
+- Consumes: 冻结证据原字节与现有模型清单/发布基线。
+- Produces: 角色无关的发布证据路径和保持原 SHA-256 的评测集。历史的一次性容量驱动脚本不迁移；质量和运行时复验继续使用现有脚本。
 
 - [ ] **Step 1: 复制最小机器证据白名单**
 
@@ -320,11 +318,7 @@ Copy-Item -LiteralPath '测试工程师/evidence/REAL-AI-05-002/real-model-indep
 
 Expected: 分别为 `7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94` 和 `232f52a3fa5f5c33622f25a87456128aa9c553a5c00da682bbce2cb8cb3d6905`。
 
-- [ ] **Step 3: 提炼 BGE 门禁脚本**
-
-将旧 `测试工程师/scripts/bge_production_gate.py` 的 HTTP 容量测试、显存采样和 JSON 输出迁入 `backend/scripts/bge_production_gate.py`；质量样本模型、`cosine_similarity` 和 `load_cases` 从同目录 `evaluate_rag.py` 导入，删除重复定义。保留 CLI：`--mode quality|capacity|all`、`--base-url`、`--dataset`、`--output`、`--configured-threshold`、`--sample-gpu`，并保持失败门禁以非零退出。
-
-- [ ] **Step 4: 更新模型清单和发布基线路径**
+- [ ] **Step 3: 更新模型清单和发布基线路径**
 
 `model-manifest.json` 保持字段名不变，值改为：
 
@@ -342,21 +336,19 @@ Expected: 分别为 `7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c
 
 摘要字段保持原值，因为冻结文件字节不变。
 
-- [ ] **Step 5: 运行证据和脚本测试**
+- [ ] **Step 4: 运行证据定向测试**
 
 ```powershell
 Set-Location 'CRM智能聊天系统/backend'
-uv run ruff check scripts/bge_production_gate.py
-uv run mypy scripts/bge_production_gate.py
 uv run pytest tests/test_retrieval_model_asset_hashes.py -v
 ```
 
-Expected: Ruff、mypy 和两个证据测试通过；目录删除测试仍可失败。
+Expected: 两个模型资产测试通过。
 
-- [ ] **Step 6: 提交机器证据归并**
+- [ ] **Step 5: 提交机器证据归并**
 
 ```powershell
-git add -- release/evidence 'CRM智能聊天系统/backend/scripts/bge_production_gate.py' 'CRM智能聊天系统/deploy/models/model-manifest.json' 'release/baselines/v0.1.0-mvp.20260907.json'
+git add -- release/evidence 'CRM智能聊天系统/deploy/models/model-manifest.json' 'release/baselines/v0.1.0-mvp.20260907.json'
 git commit -m 'build: consolidate release evidence'
 ```
 
@@ -499,7 +491,6 @@ git commit -m 'chore: remove role-based project directories'
 - Modify when verification exposes a defect: `docs/history.md`
 - Modify when verification exposes a defect: `release/baselines/v0.1.0-mvp.20260907.json`
 - Modify when verification exposes a defect: `CRM智能聊天系统/deploy/models/model-manifest.json`
-- Modify when verification exposes a defect: `CRM智能聊天系统/backend/scripts/bge_production_gate.py`
 - Do not create: any file under the six deleted directories
 
 **Interfaces:**
@@ -527,17 +518,14 @@ uv run pytest tests/test_retrieval_model_asset_hashes.py -v
 
 Expected: JSON 解析成功，结构和模型清单测试通过。
 
-- [ ] **Step 3: 运行受影响文件的静态检查**
+- [ ] **Step 3: 验证锁文件未被结构清理改变**
 
 ```powershell
 Set-Location 'CRM智能聊天系统/backend'
 uv lock --check
-uv run ruff check scripts/bge_production_gate.py
-uv run ruff format --check scripts/bge_production_gate.py
-uv run mypy scripts/bge_production_gate.py
 ```
 
-Expected: 锁文件有效，两个受影响的 Python 文件通过 Ruff 和 mypy。
+Expected: 锁文件有效；本次没有新增或修改 Python 文件，因此不运行 Ruff 和 mypy。
 
 - [ ] **Step 4: 明确不重复执行无关产品回归**
 

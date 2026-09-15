@@ -3,8 +3,8 @@
   "generated_at": "2026-08-21",
   "status": "integrated_runtime_verified",
   "production_quality_gate": "passed",
-  "quality_gate_report": "测试工程师/Phase2-P2-03-P2-07-AIAgent开发工程师Agent-M04-BGE混合检索与重排序-AI评测-001.md",
-  "capacity_gate_report": "测试工程师/Phase4-P4-10-AIAgent开发工程师Agent-M04-BGE模型服务-性能测试-001.md",
+  "quality_gate_report": "release/evidence/retrieval/bge-quality-threshold-052-20260821.json",
+  "capacity_gate_report": "release/evidence/retrieval/bge-capacity-gpu-gate-20260821.json",
   "models": [
     {
       "model_id": "BAAI/bge-m3",
