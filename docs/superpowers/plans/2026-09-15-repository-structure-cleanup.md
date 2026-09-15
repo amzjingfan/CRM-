@@ -4,7 +4,7 @@
 
 **Goal:** 将六个角色型一级目录的 424 个跟踪文件压缩为不超过十五份当前文档和一组最小机器证据，并在修复全部活动引用后删除这些目录。
 
-**Architecture:** 以 `CRM智能聊天系统/` 作为唯一产品工程，以根 `docs/` 保存面向用途的当前事实，以 `release/evidence/` 保存发布清单必须读取的低敏机器证据。先建立自动化结构契约，再分主题生成压缩文档，随后迁移证据、修复路径、删除旧目录，最后执行与变更范围相称的必要验证。
+**Architecture:** 以 `CRM智能聊天系统/` 作为唯一产品工程，以根 `docs/` 保存面向用途的当前事实，以 `release/evidence/` 保存发布清单必须读取的低敏机器证据。先记录结构基线，再分主题生成压缩文档，随后迁移证据、修复路径、删除旧目录，最后执行与变更范围相称的必要验证。
 
 **Tech Stack:** Markdown、JSON/JSONL、Python 3.11、pytest、PowerShell、Git/GitHub Flow。
 
@@ -42,7 +42,6 @@
 
 ### 新建或调整的机器资产
 
-- `CRM智能聊天系统/backend/tests/test_repository_structure.py`：仓库结构、旧路径和机器证据自动化契约。
 - `CRM智能聊天系统/backend/scripts/bge_production_gate.py`：角色无关的 BGE 生产门禁脚本；从旧脚本提炼并复用现有 RAG 评测逻辑。
 - `release/evidence/retrieval/bge-quality-threshold-052-20260821.json`：最终 BGE 质量门禁证据。
 - `release/evidence/retrieval/bge-capacity-gpu-gate-20260821.json`：最终 GPU 容量门禁证据。
@@ -74,140 +73,39 @@
 
 ---
 
-### Task 1: 建立仓库结构契约
+### Task 1: 记录清理基线
 
 **Files:**
-- Create: `CRM智能聊天系统/backend/tests/test_repository_structure.py`
 - Read: `docs/superpowers/specs/2026-09-15-repository-structure-cleanup-design.md`
+- Read: `release/baselines/v0.1.0-mvp.20260907.json`
+- Read: `CRM智能聊天系统/deploy/models/model-manifest.json`
 
 **Interfaces:**
 - Consumes: Git 跟踪文件列表、模型清单和发布基线 JSON。
-- Produces: 六个目录删除、十一份文档存在、旧路径零活动引用、证据路径/哈希有效的自动化门禁。
+- Produces: 删除前文件数、行数、旧路径引用和机器证据摘要，供最终结果对照。
 
-- [ ] **Step 1: 写入初始失败测试**
-
-创建以下测试骨架。设计稿、实施计划和 `docs/history.md` 是允许描述旧目录的历史性文件；其他跟踪文本不得再引用旧目录路径。
-
-```python
-"""验证角色型目录清理后的仓库结构和发布证据引用。"""
-
-from __future__ import annotations
-
-import hashlib
-import json
-import subprocess
-from pathlib import Path
-
-REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
-REMOVED_DIRECTORIES = (
-    "全栈开发工程师",
-    "AI agent 开发工程师",
-    "共享记忆文档",
-    "开发工具",
-    "架构师",
-    "测试工程师",
-)
-REQUIRED_DOCUMENTS = (
-    "README.md",
-    "product.md",
-    "api.md",
-    "architecture.md",
-    "ai.md",
-    "development.md",
-    "deployment.md",
-    "release-gates.md",
-    "test-status.md",
-    "open-work.md",
-    "history.md",
-)
-TEXT_SUFFIXES = {".md", ".json", ".jsonl", ".py", ".ps1", ".yml", ".yaml"}
-
-
-def tracked_files() -> list[Path]:
-    """返回当前提交跟踪的真实文件，避免扫描缓存、密钥和模型权重。"""
-    completed = subprocess.run(
-        ["git", "-c", "core.quotepath=false", "ls-files", "-z"],
-        cwd=REPOSITORY_ROOT,
-        check=True,
-        capture_output=True,
-    )
-    return [REPOSITORY_ROOT / item.decode("utf-8") for item in completed.stdout.split(b"\0") if item]
-
-
-def sha256_file(path: Path) -> str:
-    """计算机器证据文件摘要，保证迁移未改变冻结字节。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def test_role_directories_are_removed_and_compressed_documents_exist() -> None:
-    """角色目录必须消失，压缩后的十一份当前文档必须存在。"""
-    assert not [name for name in REMOVED_DIRECTORIES if (REPOSITORY_ROOT / name).exists()]
-    missing = [name for name in REQUIRED_DOCUMENTS if not (REPOSITORY_ROOT / "docs" / name).is_file()]
-    assert not missing
-    assert len(list((REPOSITORY_ROOT / "docs").glob("*.md"))) <= 15
-
-
-def test_active_tracked_files_do_not_reference_removed_directory_paths() -> None:
-    """除设计历史外，活动文件不能继续依赖已删除目录。"""
-    violations: list[str] = []
-    for path in tracked_files():
-        relative = path.relative_to(REPOSITORY_ROOT).as_posix()
-        if relative.startswith("docs/superpowers/") or relative == "docs/history.md":
-            continue
-        if path.suffix.lower() not in TEXT_SUFFIXES:
-            continue
-        text = path.read_text(encoding="utf-8")
-        for directory in REMOVED_DIRECTORIES:
-            if f"{directory}/" in text:
-                violations.append(f"{relative}: {directory}/")
-    assert not violations
-
-
-def test_release_evidence_paths_and_hashes_are_valid() -> None:
-    """发布基线中的评测集路径和摘要必须对应迁移后的冻结文件。"""
-    baseline_path = REPOSITORY_ROOT / "release/baselines/v0.1.0-mvp.20260907.json"
-    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
-    evaluation = baseline["evaluation"]
-    dataset = REPOSITORY_ROOT / evaluation["dataset_path"]
-    manifest = REPOSITORY_ROOT / evaluation["dataset_manifest_path"]
-    assert dataset.is_file()
-    assert manifest.is_file()
-    assert sha256_file(dataset) == evaluation["dataset_sha256"]
-    assert sha256_file(manifest) == evaluation["dataset_manifest_file_sha256"]
-
-
-def test_model_manifest_gate_evidence_exists() -> None:
-    """模型质量和容量门禁必须指向可解析的低敏 JSON 证据。"""
-    manifest_path = REPOSITORY_ROOT / "CRM智能聊天系统/deploy/models/model-manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    for field in ("quality_gate_report", "capacity_gate_report"):
-        evidence = REPOSITORY_ROOT / manifest[field]
-        assert evidence.is_file()
-        assert evidence.suffix == ".json"
-        json.loads(evidence.read_text(encoding="utf-8"))
-```
-
-- [ ] **Step 2: 运行结构测试并确认按预期失败**
-
-Run:
+- [ ] **Step 1: 记录六个目录的跟踪文件数和文本行数**
 
 ```powershell
-Set-Location 'CRM智能聊天系统/backend'
-uv run pytest tests/test_repository_structure.py -v
+$targets=@('全栈开发工程师','AI agent 开发工程师','共享记忆文档','开发工具','架构师','测试工程师')
+foreach($target in $targets){
+  $files=Get-ChildItem -LiteralPath $target -Recurse -File -Force
+  $lines=0
+  foreach($file in $files){ try { $lines+=(Get-Content -LiteralPath $file.FullName | Measure-Object -Line).Lines } catch {} }
+  [PSCustomObject]@{Target=$target;Tracked=(git ls-files -- $target | Measure-Object).Count;Files=$files.Count;Lines=$lines}
+}
 ```
 
-Expected: `test_role_directories_are_removed_and_compressed_documents_exist` 因六个旧目录仍存在而失败，其他测试可能因新路径尚未创建而失败。
+Expected: 六个目录全部存在，总跟踪文件约 424，总文本行约 7.06 万。
 
-- [ ] **Step 3: 提交失败测试**
+- [ ] **Step 2: 记录冻结评测集摘要**
 
 ```powershell
-git add -- 'CRM智能聊天系统/backend/tests/test_repository_structure.py'
-git commit -m 'test: define repository structure contract'
+(Get-FileHash -Algorithm SHA256 '测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.jsonl').Hash.ToLower()
+(Get-FileHash -Algorithm SHA256 '测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.manifest.json').Hash.ToLower()
 ```
+
+Expected: 分别为 `7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94` 和 `232f52a3fa5f5c33622f25a87456128aa9c553a5c00da682bbce2cb8cb3d6905`。
 
 ---
 
@@ -395,7 +293,6 @@ git commit -m 'docs: compress gates tests and project history'
 - Create: `CRM智能聊天系统/backend/scripts/bge_production_gate.py`
 - Modify: `CRM智能聊天系统/deploy/models/model-manifest.json`
 - Modify: `release/baselines/v0.1.0-mvp.20260907.json`
-- Test: `CRM智能聊天系统/backend/tests/test_repository_structure.py`
 
 **Interfaces:**
 - Consumes: 冻结证据原字节、旧 BGE 门禁脚本和现有 `scripts/evaluate_rag.py`。
@@ -449,9 +346,9 @@ Expected: 分别为 `7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c
 
 ```powershell
 Set-Location 'CRM智能聊天系统/backend'
-uv run ruff check scripts/bge_production_gate.py tests/test_repository_structure.py
+uv run ruff check scripts/bge_production_gate.py
 uv run mypy scripts/bge_production_gate.py
-uv run pytest tests/test_repository_structure.py::test_release_evidence_paths_and_hashes_are_valid tests/test_repository_structure.py::test_model_manifest_gate_evidence_exists -v
+uv run pytest tests/test_retrieval_model_asset_hashes.py -v
 ```
 
 Expected: Ruff、mypy 和两个证据测试通过；目录删除测试仍可失败。
@@ -533,7 +430,6 @@ git commit -m 'docs: remove role-based repository references'
 - Delete: `开发工具/`
 - Delete: `架构师/`
 - Delete: `测试工程师/`
-- Test: `CRM智能聊天系统/backend/tests/test_repository_structure.py`
 
 **Interfaces:**
 - Consumes: Tasks 2～6 已提交的压缩文档、机器证据和新路径引用。
@@ -557,14 +453,14 @@ Expected: 只输出当前隔离 worktree 下的六个绝对路径。
 git rm -r -- '全栈开发工程师' 'AI agent 开发工程师' '共享记忆文档' '开发工具' '架构师' '测试工程师'
 ```
 
-- [ ] **Step 3: 运行结构契约**
+- [ ] **Step 3: 运行结构与证据检查**
 
 ```powershell
-Set-Location 'CRM智能聊天系统/backend'
-uv run pytest tests/test_repository_structure.py -v
+Get-ChildItem -LiteralPath docs -File | Measure-Object
+git -c core.quotepath=false grep -n -I -E '共享记忆文档/|测试工程师/|架构师/|开发工具/|全栈开发工程师/|AI agent 开发工程师/' -- AGENTS.md .github 'CRM智能聊天系统' release docs ':!docs/superpowers/**' ':!docs/history.md'
 ```
 
-Expected: 全部结构、旧路径和证据测试通过。
+Expected: 根 `docs/` 长期文档不超过十五份；旧路径活动引用扫描无输出。
 
 - [ ] **Step 4: 审查删除规模和新建规模**
 
@@ -603,7 +499,6 @@ git commit -m 'chore: remove role-based project directories'
 - Modify when verification exposes a defect: `docs/history.md`
 - Modify when verification exposes a defect: `release/baselines/v0.1.0-mvp.20260907.json`
 - Modify when verification exposes a defect: `CRM智能聊天系统/deploy/models/model-manifest.json`
-- Modify when verification exposes a defect: `CRM智能聊天系统/backend/tests/test_repository_structure.py`
 - Modify when verification exposes a defect: `CRM智能聊天系统/backend/scripts/bge_production_gate.py`
 - Do not create: any file under the six deleted directories
 
@@ -627,7 +522,7 @@ Expected: diff check 无错误；旧目录没有跟踪文件。
 Get-Content -LiteralPath 'release/baselines/v0.1.0-mvp.20260907.json' -Raw | ConvertFrom-Json | Out-Null
 Get-Content -LiteralPath 'CRM智能聊天系统/deploy/models/model-manifest.json' -Raw | ConvertFrom-Json | Out-Null
 Set-Location 'CRM智能聊天系统/backend'
-uv run pytest tests/test_repository_structure.py tests/test_retrieval_model_asset_hashes.py -v
+uv run pytest tests/test_retrieval_model_asset_hashes.py -v
 ```
 
 Expected: JSON 解析成功，结构和模型清单测试通过。
@@ -637,9 +532,9 @@ Expected: JSON 解析成功，结构和模型清单测试通过。
 ```powershell
 Set-Location 'CRM智能聊天系统/backend'
 uv lock --check
-uv run ruff check scripts/bge_production_gate.py tests/test_repository_structure.py
-uv run ruff format --check scripts/bge_production_gate.py tests/test_repository_structure.py
-uv run mypy scripts/bge_production_gate.py tests/test_repository_structure.py
+uv run ruff check scripts/bge_production_gate.py
+uv run ruff format --check scripts/bge_production_gate.py
+uv run mypy scripts/bge_production_gate.py
 ```
 
 Expected: 锁文件有效，两个受影响的 Python 文件通过 Ruff 和 mypy。
