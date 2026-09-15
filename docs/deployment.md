@@ -8,13 +8,11 @@
 
 Compose 以基础文件为主，再叠加环境覆盖；环境变量只通过部署环境或密钥管理注入。仓库中的 `.env.example` 只描述变量，不含真实值。
 
-独立知识服务另行叠加 `docker-compose.knowledge.yml`，使用 `company_knowledge` 数据库、migration/runtime 最小权限角色、专用 MinIO 服务账号和 `company-knowledge` 桶。生产/预发必须拒绝示例密码、MinIO root 账号、错误数据库名、空 audience 和空验签密钥集；K3 索引未就绪时不得切换 CRM 检索流量。
+## 首版 Rootless staging
 
-## Rootless staging 与入口分离
+当前工作树恢复到源提交 `77d9f8f` 的首版 Rootless Staging。运行面使用专用非特权用户和 Rootless Docker，Compose 项目名为 `crm-staging`；应用入口只绑定回环 `10080/10443`，由同机 systemd socket/service 将 `80/443` 转发至回环端口。容器和应用不直接持有主机级网络特权。
 
-当前 staging 域名为 `staging.overselfx.com`。业务运行面位于 Rootless 服务器 `192.168.110.210`，容器和应用不持有公网 TLS 特权。公网服务器 `38.55.145.52` 负责 Nginx/TLS，并通过反向 SSH 隧道把公网侧 `127.0.0.1:18080` 转发到业务侧 `127.0.0.1:10080`。
-
-公网层只做入口、证书和最小转发；业务层保留 API、Worker、数据库和模型服务。任何隧道、主机密钥、Nginx 或 systemd 变化都要失败关闭并独立验收。基础设施连通不等于应用真实部署或生产门禁通过。
+主机引导、入口代理、Runner 安装、工具链摘要和运行顺序位于 `deploy/staging/rootless/`。真实 DNS/TLS、密钥、镜像拉取、应用部署、恢复和回滚仍必须在目标主机独立验收；工程资产存在不等于真实部署或生产门禁通过。
 
 ## TikTok 与 DeepSeek
 
@@ -26,7 +24,7 @@ Compose 以基础文件为主，再叠加环境覆盖；环境变量只通过部
 
 ## 模型资产
 
-模型固定 Revision、权重清单、SHA-256、质量和容量证据的机器权威入口是 `CRM智能聊天系统/deploy/models/model-manifest.json`。实际权重不进入 Git。部署前校验文件名、大小和哈希；不允许漂移到浮动分支或静默降级模型。
+模型固定 Revision、权重清单、SHA-256、质量和容量证据的机器权威入口是 `deploy/models/model-manifest.json`。实际权重不进入 Git。部署前校验文件名、大小和哈希；不允许漂移到浮动分支或静默降级模型。
 
 BGE 运行基线为 1024 维、Dense Top-20、Rerank Top-5、阈值 0.52。质量可使用 `backend/scripts/evaluate_rag.py` 复验，运行时与混合检索可使用现有 `verify_retrieval_model_runtime.py` 和 `verify_bge_hybrid_runtime.py`；发布证据保存在 `release/evidence/retrieval/`。
 
