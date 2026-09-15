@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 文档性质 | K1 内容准备与治理证据；项目内部文档，永远不得作为 RAG 语料导入 |
-| 状态 | 待内容负责人逐条复核、定稿、生成 SHA-256 并审批；不是已发布内容版本 |
+| 状态 | 三份确定字节版本已获内容负责人、来源权利和高风险内部合规签署；最终发布延期，尚未进入 K3 或正式检索 |
 | 日期 | 2026-09-15 |
 | 平台 / 市场 | TK / US |
 | 目标读者 | 公司内部运营、客服 |
@@ -12,9 +12,9 @@
 
 ## 1. 准备规则
 
-本清单把三份官方页面转换成“待审批的公司自编业务陈述”。它不保存官方正文、网页快照、截图、表格、原文片段或原文向量，不生成可发布内容哈希，也不代表 TikTok 对公司的背书。内容负责人必须在批准当天打开官方页面重新核对；页面日期、适用条件或政策内容有变化时，应退回修改，不得沿用本清单直接发布。
+本清单记录三份官方页面到公司自编业务陈述的准备与审批结果。它不保存官方正文、网页快照、截图、表格、原文片段或原文向量，也不代表 TikTok 对公司的背书。三份确定字节内容及其 SHA-256 已由内容、权利和内部合规角色签署；本清单本身仍是项目治理文档，不是可发布内容。页面日期、适用条件或政策内容有变化时，应退回修改并生成新版本，不得沿用既有哈希直接发布。
 
-每个正式内容版本必须从本清单单独生成确定字节的内容文件，填写 `共享记忆文档/公司级知识内容版本审批模板.md`，经内容与风险审核后才可交给 K3。公司项目需求、架构、接口、代码、测试和实施记录均不属于知识来源，采集器必须永久排除。
+三份确定字节候选位于 `release/knowledge-content/TK-US/`，它们是公司自编跨境电商业务内容，而不是项目 PRD/架构/接口/代码/测试/实施记录；后者仍必须永久排除。候选版本已由 `APP-KCV-TK-US-001` 绑定精确哈希，可交给 K3 构建隔离候选索引、冻结样本并执行独立 QA；Git 文件本身不构成已入库、索引代际已激活或正式服务已生效。
 
 ## 2. 候选版本一：物流 / 履约规则
 
@@ -23,10 +23,11 @@
 | coverage_cell_id | `COV-TK-US-LOG-01` |
 | source_id | `SRC-TK-US-004` |
 | 官方来源 | [Best Practices for Order Fulfillment](https://seller-us.tiktok.com/university/essay?from=policy&identity=1&knowledge_id=6179821974439723&role=1) |
-| 页面显示日期 / 本次复核日期 | 2026-09-09 / 2026-09-15 |
-| 拟定版本号 | `TK-US-LOG-001-draft`（占位，不得发布） |
-| statement_type / 风险 | `policy_rule` / 高 |
-| 当前状态 | `draft_spec`；内容负责人、QA 未签署，`content_sha256` 未生成 |
+| 页面显示日期 / 本次复核日期 | 2026-06-25 / 2026-09-15 |
+| 确定字节候选 | `release/knowledge-content/TK-US/KCV-TK-US-LOG-001.json` |
+| content_version_id | `KCV-TK-US-LOG-001` |
+| statement_type / shape / 风险 | `policy` / `B` / 高 |
+| 当前状态 | 内容/权利/内部合规已按哈希接受；独立 QA 未执行，不可正式检索 |
 
 ### 2.1 待复核的公司自编陈述
 
@@ -49,9 +50,10 @@
 | source_id | `SRC-TK-US-005` |
 | 官方来源 | [Customer Order Cancellation, Return, and Refund Policy](https://seller-us.tiktok.com/university/essay?anchor_link=EAED00D6&from=policy&identity=1&knowledge_id=3253210454181634&role=1) |
 | 页面显示日期 / 本次复核日期 | 2026-08-28 / 2026-09-15 |
-| 拟定版本号 | `TK-US-AFT-001-draft`（占位，不得发布） |
-| statement_type / 风险 | `policy_rule` / 高 |
-| 当前状态 | `draft_spec`；内容负责人、QA 未签署，`content_sha256` 未生成 |
+| 确定字节候选 | `release/knowledge-content/TK-US/KCV-TK-US-AFT-001.json` |
+| content_version_id | `KCV-TK-US-AFT-001` |
+| statement_type / shape / 风险 | `policy` / `B` / 高 |
+| 当前状态 | 内容/权利/内部合规已按哈希接受；独立 QA 未执行，不可正式检索 |
 
 ### 3.1 待复核的公司自编陈述
 
@@ -73,10 +75,11 @@
 | coverage_cell_id | `COV-TK-US-PROD-01` |
 | source_id | `SRC-TK-US-002` |
 | 官方来源 | [Product Listing Policy](https://seller-us.tiktok.com/university/essay?anchor_link=EB6900D1&course_type=1&from=search&identity=1&knowledge_id=3196690250417921&role=1) |
-| 页面显示日期 / 本次复核日期 | 2026-09-01 / 2026-09-15 |
-| 拟定版本号 | `TK-US-PROD-001-draft`（占位，不得发布） |
-| statement_type / 风险 | `policy_rule` / 高 |
-| 当前状态 | `draft_spec`；内容负责人、合规复核、QA 未签署，`content_sha256` 未生成 |
+| 页面显示日期 / 本次复核日期 | 2026-06-15 / 2026-09-15 |
+| 确定字节候选 | `release/knowledge-content/TK-US/KCV-TK-US-PROD-001.json` |
+| content_version_id | `KCV-TK-US-PROD-001` |
+| statement_type / shape / 风险 | `policy` / `B` / 高 |
+| 当前状态 | 内容/权利/内部合规已按哈希接受；独立 QA 未执行，不可正式检索；具体 SKU 仍延期 |
 
 ### 4.1 待复核的公司自编陈述
 
@@ -91,10 +94,11 @@
 
 ## 5. 发布前逐版本验收清单
 
-- [ ] 内容负责人重新打开官方页面并记录核对日期、页面显示日期和适用市场。
-- [ ] 每条陈述均可回指唯一 `source_id`，且没有复制官方原文或形成可逆原文摘要。
-- [ ] 市场、读者、空间、条件变量、有效期和拒答边界完整。
-- [ ] 高风险内容由指定专业/合规复核人签署；架构治理签署不得代签业务内容正确性。
-- [ ] 生成确定字节的公司自编内容文件及 SHA-256，审批记录与哈希一一对应。
+- [x] 内容负责人和权利/合规复核已于 2026-09-15 重新核对官方页面日期、适用市场和公司自编陈述。
+- [x] 每条陈述均可回指唯一 `source_id`，且没有复制官方原文或形成可逆原文摘要。
+- [x] 市场、读者、空间、条件变量、有效期和拒答边界完整。
+- [x] 高风险内容已由产品内容负责人和内部合规复核角色分别签署，见 `APP-KCV-TK-US-001`。
+- [x] 已生成确定字节公司自编内容、SHA-256 和逐版本审批记录。
 - [ ] 测试工程师冻结正向、负向、过期、冲突、越权和 `no_evidence` 样本，并完成独立测试。
-- [ ] 只有审批状态为 `approved` 且测试通过的版本可进入 K3；索引状态不得反向提升权威状态。
+- [x] 内容、权利和专业审批已绑定精确哈希，允许进入 K3 的隔离候选索引、冻结样本和独立 QA；索引状态不得反向提升权威状态。
+- [ ] 只有独立 QA 通过并完成发布记录后，才可激活对应索引代际并推导 `service_eligibility=true`。
