@@ -74,4 +74,3 @@ TEST_LAYOUT: hybrid
 - `PASS` 只表示记录范围内的实际命令通过；未执行项、环境差异和残余风险必须同时记录。
 - 影响交付内容的最后变更会产生新的 `CANDIDATE_SUBJECT_SHA`，并触发受影响测试重跑。最终 TR 不接受 `WORKTREE`。
 - 测试通过不自动表示 PR 已合并、staging 已部署或 production 已放行。
-

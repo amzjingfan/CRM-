@@ -57,4 +57,3 @@ Workspace hygiene: CLEAN
 1. 复核治理分支差异和静态验证结果，再由用户决定是否推送并创建 Pull Request。
 2. 为 MVP-001 补齐精确环境、资源、授权和验收步骤，满足后将其从 `BACKLOG` 转为 `READY`。
 3. MVP-001 完成后按依赖关系准备 MVP-002、MVP-005 与 MVP-008，避免并行触碰同一凭证或环境状态。
-
