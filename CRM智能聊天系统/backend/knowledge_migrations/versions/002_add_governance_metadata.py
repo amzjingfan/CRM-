@@ -55,7 +55,7 @@ def upgrade() -> None:
           source_market = COALESCE(source_market, 'UNKNOWN'),
           source_language = COALESCE(source_language, 'und'),
           captured_at = COALESCE(captured_at, created_at),
-          rights_review_status = COALESCE(rights_review_status, '未审'),
+          rights_review_status = COALESCE(rights_review_status, rights_status),
           rights_reviewer_ref = COALESCE(rights_reviewer_ref, 'migration-unassigned'),
           rights_reviewed_at = COALESCE(rights_reviewed_at, created_at),
           allowed_app_refs = COALESCE(allowed_app_refs, '[]'::json),

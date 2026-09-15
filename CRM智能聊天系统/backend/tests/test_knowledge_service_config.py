@@ -10,15 +10,20 @@ from pydantic import ValidationError
 from app.knowledge_service.config import KnowledgeServiceSettings
 
 
-def _verification_keys_json(*, application: bool) -> str:
-    public_pem = ec.generate_private_key(ec.SECP256R1()).public_key().public_bytes(
+def _verification_keys_json(
+    *,
+    application: bool,
+    private_key: ec.EllipticCurvePrivateKey | None = None,
+    key_id: str = "test-key",
+) -> str:
+    public_pem = (private_key or ec.generate_private_key(ec.SECP256R1())).public_key().public_bytes(
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("ascii")
     entry = {"alg": "ES256", "pem": public_pem}
     if application:
         entry["application_ref"] = "crm-assistant"
-    return json.dumps({"test-key": entry})
+    return json.dumps({key_id: entry})
 
 
 def test_local_settings_use_independent_database_and_bucket() -> None:
@@ -88,4 +93,42 @@ def test_operational_factory_security_rejects_empty_key_domains_even_locally() -
     settings = KnowledgeServiceSettings(environment="local")
 
     with pytest.raises(ValueError, match="application and delegation"):
+        settings.validate_operational_security()
+
+
+def test_operational_security_rejects_same_public_key_across_credential_domains() -> None:
+    """应用与委托即使使用不同 kid，也不得复用同一公钥材料。"""
+    shared_key = ec.generate_private_key(ec.SECP256R1())
+    settings = KnowledgeServiceSettings(
+        environment="local",
+        application_verification_keys_json=_verification_keys_json(
+            application=True,
+            private_key=shared_key,
+            key_id="application-key",
+        ),
+        delegation_verification_keys_json=_verification_keys_json(
+            application=False,
+            private_key=shared_key,
+            key_id="delegation-key",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="cryptographically distinct"):
+        settings.validate_operational_security()
+
+
+def test_operational_security_rejects_duplicate_kid_across_credential_domains() -> None:
+    settings = KnowledgeServiceSettings(
+        environment="local",
+        application_verification_keys_json=_verification_keys_json(
+            application=True,
+            key_id="shared-kid",
+        ),
+        delegation_verification_keys_json=_verification_keys_json(
+            application=False,
+            key_id="shared-kid",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="key identifiers"):
         settings.validate_operational_security()

@@ -150,6 +150,10 @@ class CoverageCell(KnowledgeBase):
             postgresql_nulls_not_distinct=True,
         ),
         CheckConstraint("knowledge_shape IN ('A', 'B', 'C', 'D')", name="ck_kb_coverage_shape"),
+        CheckConstraint(
+            "coverage_status IN ('资料待获取', '待审批', '已生效', '已过期', '不适用')",
+            name="ck_kb_coverage_status",
+        ),
     )
 
     id: Mapped[uuid.UUID] = uuid_primary_key()
@@ -180,6 +184,19 @@ class KnowledgeSource(KnowledgeBase):
         CheckConstraint(
             "effective_until IS NULL OR effective_until > effective_from",
             name="ck_kb_source_effective_window",
+        ),
+        CheckConstraint(
+            "rights_review_status IN ('未审', '允许受限使用', '拒绝', '已撤销')",
+            name="ck_kb_source_rights_status",
+        ),
+        CheckConstraint(
+            "json_typeof(allowed_app_refs) = 'array'",
+            name="ck_kb_source_allowed_apps_array",
+        ),
+        CheckConstraint(
+            "json_typeof(allowed_space_codes) = 'array' AND "
+            "allowed_space_codes::jsonb <@ '[\"company_shared\", \"shop_private\"]'::jsonb",
+            name="ck_kb_source_allowed_spaces",
         ),
     )
 
@@ -235,6 +252,7 @@ class ContentVersion(KnowledgeBase):
             "effective_until IS NULL OR effective_until > effective_from",
             name="ck_kb_content_effective_window",
         ),
+        CheckConstraint("risk_level IN ('低', '中', '高')", name="ck_kb_content_risk_level"),
     )
 
     id: Mapped[uuid.UUID] = uuid_primary_key()

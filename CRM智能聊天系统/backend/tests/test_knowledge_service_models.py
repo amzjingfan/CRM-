@@ -128,8 +128,12 @@ def test_governance_tables_expose_database_check_constraints() -> None:
 
     assert {
         "ck_kb_coverage_shape",
+        "ck_kb_coverage_status",
         "ck_kb_source_reference",
         "ck_kb_source_effective_window",
+        "ck_kb_source_rights_status",
+        "ck_kb_source_allowed_apps_array",
+        "ck_kb_source_allowed_spaces",
         "ck_kb_content_sha256",
         "ck_kb_content_status",
         "ck_kb_content_approval_status",
@@ -137,6 +141,7 @@ def test_governance_tables_expose_database_check_constraints() -> None:
         "ck_kb_statement_type",
         "ck_kb_customer_scope",
         "ck_kb_content_effective_window",
+        "ck_kb_content_risk_level",
         "ck_kb_approval_decision",
         "ck_kb_index_state",
         "ck_kb_embedding_dimensions",

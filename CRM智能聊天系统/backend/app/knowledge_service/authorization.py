@@ -20,6 +20,10 @@ class AuthorizationRejected(Exception):
 class AuthorityUnavailable(Exception):
     """权威授权存储无法给出可信判定。"""
 
+    def __init__(self, message: str, *, trace_id: str | None = None) -> None:
+        super().__init__(message)
+        self.trace_id = trace_id
+
 
 @dataclass(frozen=True, slots=True)
 class ApplicationScope:

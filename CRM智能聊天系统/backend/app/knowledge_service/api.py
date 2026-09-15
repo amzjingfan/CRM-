@@ -54,12 +54,12 @@ def install_evidence_api(
 
     @application.exception_handler(AuthorityUnavailable)
     async def authority_unavailable_handler(request: Request, error: AuthorityUnavailable) -> JSONResponse:
-        del request, error
+        del request
         return error_response(
             503,
             "AUTHORITY_UNAVAILABLE",
             "authorization or mandatory audit authority unavailable",
-            str(uuid.uuid4()),
+            error.trace_id or str(uuid.uuid4()),
         )
 
     @application.post(
@@ -83,6 +83,7 @@ def install_evidence_api(
                 audit_sink,
                 _audit_record(request, trace_id, started, "rejected", "TOKEN_INVALID"),
                 trace_id,
+                settings.authority_timeout_seconds,
             )
             return error_response(401, "TOKEN_INVALID", "application credential is required", trace_id)  # type: ignore[return-value]
         try:
@@ -95,6 +96,7 @@ def install_evidence_api(
                 audit_sink,
                 _audit_record(request, trace_id, started, "rejected", error.reason_code),
                 trace_id,
+                settings.authority_timeout_seconds,
             )
             return error_response(401, error.reason_code, "credential rejected", trace_id)  # type: ignore[return-value]
 
@@ -123,8 +125,10 @@ def install_evidence_api(
                     error.reason_code,
                     application_ref=identity.application_ref,
                     application_jti_hash=identity.jti_hash,
+                    delegation_jti_hash=delegation.jti_hash if delegation is not None else None,
                 ),
                 trace_id,
+                settings.authority_timeout_seconds,
             )
             return error_response(error.http_status, error.reason_code, "request is not authorized", trace_id)  # type: ignore[return-value]
         except (AuthorityUnavailable, TimeoutError):
@@ -138,8 +142,10 @@ def install_evidence_api(
                     "AUTHORITY_UNAVAILABLE",
                     application_ref=identity.application_ref,
                     application_jti_hash=identity.jti_hash,
+                    delegation_jti_hash=delegation.jti_hash if delegation is not None else None,
                 ),
                 trace_id,
+                settings.authority_timeout_seconds,
             )
             return error_response(503, "AUTHORITY_UNAVAILABLE", "authorization authority unavailable", trace_id)  # type: ignore[return-value]
 
@@ -188,6 +194,7 @@ def install_evidence_api(
                 evidence_count=len(response.evidence),
             ),
             trace_id,
+            settings.authority_timeout_seconds,
         )
         return response
 
@@ -226,8 +233,13 @@ def _audit_record(
     )
 
 
-async def _record_or_raise(audit_sink: AuditSink, event: AuditRecord, trace_id: str) -> None:
+async def _record_or_raise(
+    audit_sink: AuditSink,
+    event: AuditRecord,
+    trace_id: str,
+    timeout_seconds: float,
+) -> None:
     try:
-        await audit_sink.record(event)
+        await asyncio.wait_for(audit_sink.record(event), timeout=timeout_seconds)
     except Exception as error:
-        raise AuthorityUnavailable("mandatory audit unavailable") from error
+        raise AuthorityUnavailable("mandatory audit unavailable", trace_id=trace_id) from error

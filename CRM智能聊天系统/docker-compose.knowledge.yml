@@ -61,8 +61,12 @@ services:
         if ! mc admin user info local "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}" >/dev/null 2>&1; then
           mc admin user add local "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}" "$${KNOWLEDGE_OBJECT_STORE_SECRET_KEY}"
         fi
-        mc admin policy create local company-knowledge-rw /config/company-knowledge-policy.json
-        mc admin policy attach local company-knowledge-rw --user "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}"
+        if mc admin policy info local company-knowledge-rw >/dev/null 2>&1; then
+          mc admin policy detach local company-knowledge-rw --user "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}" || true
+          mc admin policy rm local company-knowledge-rw
+        fi
+        mc admin policy create local company-knowledge-read /config/company-knowledge-policy.json
+        mc admin policy attach local company-knowledge-read --user "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}"
 
   knowledge-service:
     image: ${BACKEND_IMAGE:-crm-backend:local}

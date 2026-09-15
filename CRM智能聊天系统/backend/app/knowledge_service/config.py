@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Literal
 from urllib.parse import urlsplit
@@ -78,6 +79,10 @@ class KnowledgeServiceSettings(BaseSettings):
             require_application_ref=True,
         )
         self._validate_verification_keys(self.delegation_verification_keys)
+        self._validate_distinct_key_domains(
+            self.application_verification_keys,
+            self.delegation_verification_keys,
+        )
 
     @model_validator(mode="after")
     def reject_unsafe_non_local_configuration(self) -> KnowledgeServiceSettings:
@@ -105,6 +110,7 @@ class KnowledgeServiceSettings(BaseSettings):
         try:
             self._validate_verification_keys(application_keys, require_application_ref=True)
             self._validate_verification_keys(delegation_keys)
+            self._validate_distinct_key_domains(application_keys, delegation_keys)
         except (TypeError, ValueError) as error:
             raise ValueError("verification key set contains an invalid public key") from error
         return self
@@ -135,3 +141,29 @@ class KnowledgeServiceSettings(BaseSettings):
                     raise ValueError("ES256 requires a P-256 public key")
             elif not isinstance(public_key, (ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)):
                 raise ValueError("EdDSA requires an Ed25519 or Ed448 public key")
+
+    @staticmethod
+    def _validate_distinct_key_domains(
+        application_keys: dict[str, dict[str, str]],
+        delegation_keys: dict[str, dict[str, str]],
+    ) -> None:
+        """按公钥指纹拒绝改名后的跨域复用。"""
+
+        if application_keys.keys() & delegation_keys.keys():
+            raise ValueError("application and delegation key identifiers must be distinct")
+
+        def fingerprints(keys: dict[str, dict[str, str]]) -> set[str]:
+            values: set[str] = set()
+            for entry in keys.values():
+                public_key = serialization.load_pem_public_key(entry["pem"].encode("ascii"))
+                der = public_key.public_bytes(
+                    serialization.Encoding.DER,
+                    serialization.PublicFormat.SubjectPublicKeyInfo,
+                )
+                values.add(hashlib.sha256(der).hexdigest())
+            return values
+
+        if fingerprints(application_keys) & fingerprints(delegation_keys):
+            raise ValueError(
+                "application and delegation verification keys must be cryptographically distinct"
+            )

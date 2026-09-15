@@ -34,6 +34,11 @@ def test_knowledge_alembic_generates_independent_offline_sql() -> None:
     assert "ADD COLUMN application_jti_hash" in result.stdout
     assert "GRANT INSERT ON TABLE kb_audit_events" in result.stdout
     assert "UPDATE kb_sources SET" in result.stdout
+    assert "rights_review_status = COALESCE(rights_review_status, rights_status)" in result.stdout
+    assert "ck_kb_coverage_status" in result.stdout
+    assert "ck_kb_source_rights_status" in result.stdout
+    assert "ck_kb_source_allowed_spaces" in result.stdout
+    assert "ck_kb_content_risk_level" in result.stdout
     assert "CREATE TABLE stores" not in result.stdout
     assert "CREATE TABLE users" not in result.stdout
 

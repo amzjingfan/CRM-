@@ -87,15 +87,37 @@ class CapturingAuditSink:
 
 
 class FailingAuditSink:
+    def __init__(self) -> None:
+        self.last_event: AuditRecord | None = None
+
     async def record(self, event: AuditRecord) -> None:
-        del event
+        self.last_event = event
         raise RuntimeError("audit database unavailable")
 
 
+class HangingAuditSink:
+    async def record(self, event: AuditRecord) -> None:
+        del event
+        await asyncio.sleep(1)
+
+
+ApiIdentity = tuple[
+    ec.EllipticCurvePrivateKey,
+    ec.EllipticCurvePrivateKey,
+    TokenVerifier,
+    str,
+]
+
+
 @pytest.fixture
-def api_identity() -> tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str]:
-    private_key = ec.generate_private_key(ec.SECP256R1())
-    public_pem = private_key.public_key().public_bytes(
+def api_identity() -> ApiIdentity:
+    application_private_key = ec.generate_private_key(ec.SECP256R1())
+    delegation_private_key = ec.generate_private_key(ec.SECP256R1())
+    application_public_pem = application_private_key.public_key().public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode("ascii")
+    delegation_public_pem = delegation_private_key.public_key().public_bytes(
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("ascii")
@@ -105,13 +127,13 @@ def api_identity() -> tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str]:
             {
                 "api-test-key": {
                     "alg": "ES256",
-                    "pem": public_pem,
+                    "pem": application_public_pem,
                     "application_ref": "crm-assistant",
                 }
             }
         ),
         delegation_verification_keys_json=json.dumps(
-            {"delegation-test-key": {"alg": "ES256", "pem": public_pem}}
+            {"delegation-test-key": {"alg": "ES256", "pem": delegation_public_pem}}
         ),
     )
     now = datetime.now(UTC)
@@ -127,11 +149,40 @@ def api_identity() -> tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str]:
             "exp": now + timedelta(minutes=4),
             "jti": "api-application-jti",
         },
-        private_key,
+        application_private_key,
         algorithm="ES256",
         headers={"typ": "service_access+jwt", "kid": "api-test-key"},
     )
-    return private_key, TokenVerifier(settings), token
+    return application_private_key, delegation_private_key, TokenVerifier(settings), token
+
+
+def _delegation_token(private_key: ec.EllipticCurvePrivateKey) -> str:
+    now = datetime.now(UTC)
+    return jwt.encode(
+        {
+            "iss": "company-business-delegation",
+            "aud": "company-knowledge-service",
+            "sub": "employee-ref-001",
+            "application_ref": "crm-assistant",
+            "shop_ref": "shop-ref-us-001",
+            "allowed_space_codes": ["shop_private"],
+            "token_type": "shop_delegation",
+            "iat": now,
+            "nbf": now,
+            "exp": now + timedelta(minutes=2),
+            "jti": "private-delegation-jti",
+        },
+        private_key,
+        algorithm="ES256",
+        headers={"typ": "shop_delegation+jwt", "kid": "delegation-test-key"},
+    )
+
+
+def _private_request_body() -> dict[str, object]:
+    body = _request_body()
+    body["requested_space_codes"] = ["shop_private"]
+    body["shop_ref"] = "shop-ref-us-001"
+    return body
 
 
 def _request_body() -> dict[str, object]:
@@ -183,9 +234,9 @@ def _eligible_evidence() -> dict[str, object]:
 
 
 def test_authorized_request_returns_k2_fail_closed_state_and_low_sensitivity_audit(
-    api_identity: tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str],
+    api_identity: ApiIdentity,
 ) -> None:
-    _, verifier, token = api_identity
+    _, _, verifier, token = api_identity
     searcher = FixedSearcher(
         EvidenceSearchResponse(
             status=SearchStatus.UNAVAILABLE,
@@ -236,22 +287,38 @@ def test_missing_or_invalid_application_token_returns_401_without_business_envel
 
 
 def test_mandatory_audit_failure_returns_503_without_business_envelope() -> None:
+    audit = FailingAuditSink()
     app = create_app(
         authorizer=KnowledgeAuthorizer(FakeAuthority()),
-        audit_sink=FailingAuditSink(),
+        audit_sink=audit,
     )
     with TestClient(app, raise_server_exceptions=False) as client:
         response = client.post("/internal/v1/evidence:search", json=_request_body())
 
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "AUTHORITY_UNAVAILABLE"
+    assert audit.last_event is not None
+    assert response.json()["trace_id"] == audit.last_event.trace_id
     assert "status" not in response.json()
 
 
+def test_mandatory_audit_hang_is_bounded_and_fails_closed() -> None:
+    app = create_app(
+        settings=KnowledgeServiceSettings(environment="test", authority_timeout_seconds=0.01),
+        authorizer=KnowledgeAuthorizer(FakeAuthority()),
+        audit_sink=HangingAuditSink(),
+    )
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.post("/internal/v1/evidence:search", json=_request_body())
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "AUTHORITY_UNAVAILABLE"
+
+
 def test_search_timeout_is_a_retryable_business_unavailable_state(
-    api_identity: tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str],
+    api_identity: ApiIdentity,
 ) -> None:
-    _, verifier, token = api_identity
+    _, _, verifier, token = api_identity
     app = create_app(
         settings=KnowledgeServiceSettings(environment="test", search_timeout_seconds=0.01),
         verifier=verifier,
@@ -273,31 +340,11 @@ def test_search_timeout_is_a_retryable_business_unavailable_state(
 
 
 def test_private_request_audits_application_and_delegation_jti_separately(
-    api_identity: tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str],
+    api_identity: ApiIdentity,
 ) -> None:
-    private_key, verifier, application_token = api_identity
-    now = datetime.now(UTC)
-    delegation_token = jwt.encode(
-        {
-            "iss": "company-business-delegation",
-            "aud": "company-knowledge-service",
-            "sub": "employee-ref-001",
-            "application_ref": "crm-assistant",
-            "shop_ref": "shop-ref-us-001",
-            "allowed_space_codes": ["shop_private"],
-            "token_type": "shop_delegation",
-            "iat": now,
-            "nbf": now,
-            "exp": now + timedelta(minutes=2),
-            "jti": "private-delegation-jti",
-        },
-        private_key,
-        algorithm="ES256",
-        headers={"typ": "shop_delegation+jwt", "kid": "delegation-test-key"},
-    )
-    body = _request_body()
-    body["requested_space_codes"] = ["shop_private"]
-    body["shop_ref"] = "shop-ref-us-001"
+    _, delegation_private_key, verifier, application_token = api_identity
+    delegation_token = _delegation_token(delegation_private_key)
+    body = _private_request_body()
     audit = CapturingAuditSink()
     app = create_app(
         verifier=verifier,
@@ -321,6 +368,33 @@ def test_private_request_audits_application_and_delegation_jti_separately(
     assert audit.records[0].application_jti_hash != audit.records[0].delegation_jti_hash
 
 
+@pytest.mark.parametrize("authority", [FakeAuthority(enabled=False), FakeAuthority(unavailable=True)])
+def test_verified_delegation_jti_is_audited_when_authority_rejects_or_fails(
+    api_identity: ApiIdentity,
+    authority: FakeAuthority,
+) -> None:
+    _, delegation_private_key, verifier, application_token = api_identity
+    audit = CapturingAuditSink()
+    app = create_app(
+        verifier=verifier,
+        authorizer=KnowledgeAuthorizer(authority),
+        audit_sink=audit,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/internal/v1/evidence:search",
+            headers={
+                "Authorization": f"Bearer {application_token}",
+                "X-Shop-Delegation": f"Bearer {_delegation_token(delegation_private_key)}",
+            },
+            json=_private_request_body(),
+        )
+
+    assert response.status_code in {403, 503}
+    assert audit.records[0].delegation_jti_hash is not None
+
+
 @pytest.mark.parametrize(
     ("mutation", "value"),
     [
@@ -330,11 +404,11 @@ def test_private_request_audits_application_and_delegation_jti_separately(
     ],
 )
 def test_searcher_cannot_return_evidence_outside_final_authorized_scope(
-    api_identity: tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str],
+    api_identity: ApiIdentity,
     mutation: str,
     value: object,
 ) -> None:
-    _, verifier, token = api_identity
+    _, _, verifier, token = api_identity
     evidence = _eligible_evidence()
     if mutation == "allowed_app_refs":
         policy = evidence["usage_policy"]
@@ -384,12 +458,12 @@ def test_searcher_cannot_return_evidence_outside_final_authorized_scope(
     ],
 )
 def test_authority_decisions_remain_distinct_from_business_states(
-    api_identity: tuple[ec.EllipticCurvePrivateKey, TokenVerifier, str],
+    api_identity: ApiIdentity,
     authority: FakeAuthority,
     expected_status: int,
     expected_code: str,
 ) -> None:
-    _, verifier, token = api_identity
+    _, _, verifier, token = api_identity
     app = create_app(
         verifier=verifier,
         authorizer=KnowledgeAuthorizer(authority),

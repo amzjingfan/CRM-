@@ -53,10 +53,14 @@ def test_minio_policy_is_limited_to_company_knowledge_bucket() -> None:
         (PROJECT_ROOT / "deploy/minio/company-knowledge-policy.json").read_text(encoding="utf-8")
     )
     resources = [resource for statement in policy["Statement"] for resource in statement["Resource"]]
+    actions = {action for statement in policy["Statement"] for action in statement["Action"]}
 
     assert resources
     assert all(resource.startswith("arn:aws:s3:::company-knowledge") for resource in resources)
     assert not any("crm-files" in resource or resource == "arn:aws:s3:::*" for resource in resources)
+    assert "s3:GetObject" in actions
+    assert "s3:PutObject" not in actions
+    assert "s3:DeleteObject" not in actions
 
 
 def test_example_environment_uses_only_dedicated_knowledge_names() -> None:
