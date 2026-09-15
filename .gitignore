@@ -83,6 +83,9 @@ Desktop.ini
 # Project-local Git worktrees must never be tracked by the parent repository.
 /.worktrees/
 
+# Local maintenance quarantine, draft manifests, and cleanup outputs.
+/.maintenance/
+
 # The product now lives at the repository root. Keep pre-migration local-only
 # files such as the nested .env and IDE caches from being added accidentally.
 /CRM智能聊天系统/
