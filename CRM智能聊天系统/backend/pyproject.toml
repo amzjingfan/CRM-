@@ -12,6 +12,8 @@ dependencies = [
     "openpyxl>=3.1,<4.0",
     "openai>=2.51,<3",
     "anthropic>=0.120,<0.121",
+    # 知识服务的 ES256/EdDSA JWT 验签依赖标准非对称密码实现。
+    "cryptography>=46,<47",
     "langgraph>=1.2.9,<1.3",
     "passlib[argon2]>=1.7,<2.0",
     "pydantic-settings>=2.6,<3.0",

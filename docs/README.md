@@ -20,6 +20,7 @@
 - `api.md`：当前管理端接口族、权限与规划接口边界。
 - `architecture.md`：系统组件、数据流、隔离和数据结构。
 - `ai.md`：模型、RAG、知识审批、工具和失败关闭契约。
+- `knowledge-service.md`：公司级独立知识服务、来源治理和 K1～K5 边界。
 - `development.md`：编码、测试、安全、Git 和 PR 规则。
 - `deployment.md`：环境、模型资产、staging、备份和回滚。
 - `release-gates.md`：G0～G8 当前状态与阻断条件。

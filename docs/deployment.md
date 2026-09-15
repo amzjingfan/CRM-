@@ -8,6 +8,8 @@
 
 Compose 以基础文件为主，再叠加环境覆盖；环境变量只通过部署环境或密钥管理注入。仓库中的 `.env.example` 只描述变量，不含真实值。
 
+独立知识服务另行叠加 `docker-compose.knowledge.yml`，使用 `company_knowledge` 数据库、migration/runtime 最小权限角色、专用 MinIO 服务账号和 `company-knowledge` 桶。生产/预发必须拒绝示例密码、MinIO root 账号、错误数据库名、空 audience 和空验签密钥集；K3 索引未就绪时不得切换 CRM 检索流量。
+
 ## Rootless staging 与入口分离
 
 当前 staging 域名为 `staging.overselfx.com`。业务运行面位于 Rootless 服务器 `192.168.110.210`，容器和应用不持有公网 TLS 特权。公网服务器 `38.55.145.52` 负责 Nginx/TLS，并通过反向 SSH 隧道把公网侧 `127.0.0.1:18080` 转发到业务侧 `127.0.0.1:10080`。

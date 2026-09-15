@@ -1,0 +1,33 @@
+{
+  "content_version_id": "KCV-TK-US-AFT-001",
+  "title": "TikTok Shop US cancellation, return, and refund guidance",
+  "language": "en-US",
+  "audience": ["internal_customer_service"],
+  "space_code": "company_shared",
+  "statement_type": "policy",
+  "knowledge_shape": "B",
+  "source_id": "SRC-TK-US-005",
+  "effective_from": "2026-09-15",
+  "review_due_at": "2026-10-15",
+  "automatic_delivery_allowed": false,
+  "statements": [
+    {
+      "statement_id": "AFT-CANCEL-001",
+      "text": "For a cancellation question, first establish the US market, fulfillment method, current order status, request type, and the current policy version. If any required fact is unavailable, do not state that the order can or cannot be cancelled; provide the official source link and escalate for manual review.",
+      "required_context": ["market", "fulfillment_method", "order_status", "request_type", "policy_version"],
+      "no_answer_when": ["a required fact is unavailable", "the request concerns a non-US market"]
+    },
+    {
+      "statement_id": "AFT-RETURN-001",
+      "text": "For a return question, first establish the fulfillment method, order status, product category, seller settings, request creation time, and current policy version. Static guidance must not decide eligibility for an individual order without authorized live facts.",
+      "required_context": ["fulfillment_method", "order_status", "product_category", "seller_settings", "request_created_at", "policy_version"],
+      "no_answer_when": ["individual-order eligibility requires live facts", "a required condition cannot be verified"]
+    },
+    {
+      "statement_id": "AFT-REFUND-001",
+      "text": "For a refund question, use an authorized live business source for payment arrival, remaining handling time, platform decisions, compensation, and case ownership. This guidance may explain the review path but must not approve, reject, or promise the outcome of a refund.",
+      "required_context": ["authorized_live_source_for_instance_facts"],
+      "no_answer_when": ["the request asks for refund arrival", "the request asks for a platform decision, compensation, or a promised outcome"]
+    }
+  ]
+}

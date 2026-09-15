@@ -66,3 +66,7 @@
 ## 规划但未放行
 
 Shopee/Amazon 真实接口、公开自动回复、无需人工确认的发送、自动营销、高风险工具和生产翻译仍是规划能力。早期 `/marketing/flows`、无确认发送或宽泛 PUT 更新草案不构成当前公开契约；以运行代码生成的 OpenAPI 和本文件为准。
+
+## 独立知识服务内部契约
+
+公司级独立知识服务提供 `POST /internal/v1/evidence:search`，使用应用 Bearer Token 和可选的 `X-Shop-Delegation`，返回 `ok/no_evidence/conflict/unavailable` 四态。它不挂载 CRM 路由，不负责生成或发送回复。K3 索引尚未交付时默认返回 `unavailable/INDEX_GENERATION_UNAVAILABLE`；完整授权和数据边界见 `docs/knowledge-service.md`。

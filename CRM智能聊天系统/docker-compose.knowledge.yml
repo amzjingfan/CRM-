@@ -1,0 +1,119 @@
+services:
+  # 只在 K2 叠加栈放宽既有持久卷异常关机后的 WAL/fsync 恢复窗口。
+  postgres:
+    healthcheck:
+      start_period: 120s
+      retries: 30
+
+  knowledge-db-bootstrap:
+    image: ${POSTGRES_IMAGE:-pgvector/pgvector:pg16}
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-crm}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-crm}
+      KNOWLEDGE_MIGRATION_PASSWORD: ${KNOWLEDGE_MIGRATION_PASSWORD:?set KNOWLEDGE_MIGRATION_PASSWORD}
+      KNOWLEDGE_RUNTIME_PASSWORD: ${KNOWLEDGE_RUNTIME_PASSWORD:?set KNOWLEDGE_RUNTIME_PASSWORD}
+    volumes:
+      - ./deploy/postgres/bootstrap-company-knowledge.sql:/bootstrap/bootstrap-company-knowledge.sql:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["psql", "--file", "/bootstrap/bootstrap-company-knowledge.sql"]
+
+  knowledge-migrations:
+    image: ${BACKEND_IMAGE:-crm-backend:local}
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    restart: "no"
+    environment:
+      KNOWLEDGE_ENVIRONMENT: local
+      KNOWLEDGE_DATABASE_URL: postgresql+asyncpg://knowledge_migration:${KNOWLEDGE_MIGRATION_PASSWORD:?set KNOWLEDGE_MIGRATION_PASSWORD}@postgres:5432/company_knowledge
+    volumes:
+      - ./backend:/app:ro
+    depends_on:
+      knowledge-db-bootstrap:
+        condition: service_completed_successfully
+    command: ["alembic", "-c", "knowledge_alembic.ini", "upgrade", "head"]
+
+  knowledge-minio-init:
+    image: ${MINIO_IMAGE:-minio/minio:latest}
+    entrypoint: ["/bin/sh", "-ec"]
+    restart: "no"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      KNOWLEDGE_OBJECT_STORE_ACCESS_KEY: ${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY:?set KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}
+      KNOWLEDGE_OBJECT_STORE_SECRET_KEY: ${KNOWLEDGE_OBJECT_STORE_SECRET_KEY:?set KNOWLEDGE_OBJECT_STORE_SECRET_KEY}
+      KNOWLEDGE_OBJECT_STORE_BUCKET: company-knowledge
+    volumes:
+      - ./deploy/minio/company-knowledge-policy.json:/config/company-knowledge-policy.json:ro
+    depends_on:
+      minio:
+        condition: service_healthy
+    command:
+      - |
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing "local/$${KNOWLEDGE_OBJECT_STORE_BUCKET}"
+        if ! mc admin user info local "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}" >/dev/null 2>&1; then
+          mc admin user add local "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}" "$${KNOWLEDGE_OBJECT_STORE_SECRET_KEY}"
+        fi
+        if mc admin policy info local company-knowledge-rw >/dev/null 2>&1; then
+          mc admin policy detach local company-knowledge-rw --user "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}" || true
+          mc admin policy rm local company-knowledge-rw
+        fi
+        mc admin policy create local company-knowledge-read /config/company-knowledge-policy.json
+        mc admin policy attach local company-knowledge-read --user "$${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}"
+
+  knowledge-service:
+    image: ${BACKEND_IMAGE:-crm-backend:local}
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    environment:
+      KNOWLEDGE_ENVIRONMENT: ${KNOWLEDGE_ENVIRONMENT:?set KNOWLEDGE_ENVIRONMENT}
+      KNOWLEDGE_DATABASE_URL: postgresql+asyncpg://knowledge_runtime:${KNOWLEDGE_RUNTIME_PASSWORD:?set KNOWLEDGE_RUNTIME_PASSWORD}@postgres:5432/company_knowledge
+      KNOWLEDGE_OBJECT_STORE_ENDPOINT: minio:9000
+      KNOWLEDGE_OBJECT_STORE_ACCESS_KEY: ${KNOWLEDGE_OBJECT_STORE_ACCESS_KEY:?set KNOWLEDGE_OBJECT_STORE_ACCESS_KEY}
+      KNOWLEDGE_OBJECT_STORE_SECRET_KEY: ${KNOWLEDGE_OBJECT_STORE_SECRET_KEY:?set KNOWLEDGE_OBJECT_STORE_SECRET_KEY}
+      KNOWLEDGE_OBJECT_STORE_BUCKET: company-knowledge
+      KNOWLEDGE_OBJECT_STORE_SECURE: "false"
+      KNOWLEDGE_JWT_APPLICATION_ISSUER: company-service-identity
+      KNOWLEDGE_JWT_DELEGATION_ISSUER: company-business-delegation
+      KNOWLEDGE_JWT_AUDIENCE: company-knowledge-service
+      KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON: ${KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON:?set KNOWLEDGE_APPLICATION_VERIFICATION_KEYS_JSON}
+      KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON: ${KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON:?set KNOWLEDGE_DELEGATION_VERIFICATION_KEYS_JSON}
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./backend:/app:ro
+    depends_on:
+      knowledge-migrations:
+        condition: service_completed_successfully
+      knowledge-minio-init:
+        condition: service_completed_successfully
+    command:
+      [
+        "uvicorn",
+        "app.knowledge_service.main:create_configured_app",
+        "--factory",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8011",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8011/internal/health/ready', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

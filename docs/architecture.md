@@ -13,8 +13,11 @@
 - Redis：会话/限流、OAuth state、短期状态和任务协调。
 - MinIO：受控对象存储。
 - 模型服务：本地 BGE-M3 Embedding、bge-reranker-large 和受控 DeepSeek Provider。
+- 独立知识服务：单独 FastAPI 入口、`company_knowledge` 数据库、专用 Alembic 历史和 `company-knowledge` 对象桶；当前仅交付 K2 底座。
 
 当前数据库迁移头为 `023_marketing_review_idempotency`。迁移顺序是部署契约的一部分，禁止跳过或手工修改生产结构。
+
+独立知识服务不复用 CRM 业务表，其迁移头为 `005_kb_governance_constraints`。应用/店铺身份使用非对称 JWT 与服务端 grant 交集授权；详细契约见 `docs/knowledge-service.md`。
 
 ## 请求与消息流
 
