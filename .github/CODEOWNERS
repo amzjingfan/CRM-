@@ -5,7 +5,7 @@
 /release/ @CP11-gh
 /docs/ @CP11-gh
 
-/CRM智能聊天系统/.env.example @CP11-gh
-/CRM智能聊天系统/Dockerfile* @CP11-gh
-/CRM智能聊天系统/docker-compose*.yml @CP11-gh
-/CRM智能聊天系统/backend/migrations/ @CP11-gh
+/.env.example @CP11-gh
+/Dockerfile* @CP11-gh
+/docker-compose*.yml @CP11-gh
+/backend/migrations/ @CP11-gh

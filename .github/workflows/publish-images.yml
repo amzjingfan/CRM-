@@ -70,8 +70,8 @@ jobs:
         id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: CRM智能聊天系统/backend
-          file: CRM智能聊天系统/Dockerfile.backend
+          context: backend
+          file: Dockerfile.backend
           platforms: linux/amd64
           push: true
           tags: ${{ env.BACKEND_IMAGE }}:${{ steps.metadata.outputs.tag }}
@@ -127,8 +127,8 @@ jobs:
         id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: CRM智能聊天系统/frontend
-          file: CRM智能聊天系统/Dockerfile.frontend.prod
+          context: frontend
+          file: Dockerfile.frontend.prod
           platforms: linux/amd64
           push: true
           tags: ${{ env.FRONTEND_IMAGE }}:${{ steps.metadata.outputs.tag }}
@@ -187,8 +187,8 @@ jobs:
         id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: CRM智能聊天系统/backend
-          file: CRM智能聊天系统/Dockerfile.model-service
+          context: backend
+          file: Dockerfile.model-service
           platforms: linux/amd64
           push: true
           tags: ${{ env.RETRIEVAL_MODEL_IMAGE }}:${{ steps.metadata.outputs.tag }}

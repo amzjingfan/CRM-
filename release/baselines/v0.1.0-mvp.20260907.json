@@ -13,7 +13,7 @@
   },
   "database": {
     "migration_head": "023_marketing_review_idempotency",
-    "migration_path": "CRM智能聊天系统/backend/migrations/versions/023_marketing_review_idempotency.py",
+    "migration_path": "backend/migrations/versions/023_marketing_review_idempotency.py",
     "migration_sha256": "5f22678a52640163bb413e598bf054f91b15081d97a3f27d775890caa014ea82",
     "down_revision": "022_ai_marketing_review"
   },
@@ -35,82 +35,82 @@
       "sha256": "c95d53dbddb5b6b0fe8090df9bc2fcf6c3e3264a486d65e62509be815ba56e05"
     },
     {
-      "path": "CRM智能聊天系统/.env.example",
+      "path": ".env.example",
       "sha256": "b64d4a83e093f65eadd1981f8cb8a0206412520f71046f7886281c6399a8081a"
     },
     {
-      "path": "CRM智能聊天系统/.mcp.json",
+      "path": ".mcp.json",
       "sha256": "cd3e80e30b5e85a3fa7abbe1313d3926300d23545beba501c517e23800a1aa16"
     },
     {
-      "path": "CRM智能聊天系统/docker-compose.yml",
+      "path": "docker-compose.yml",
       "sha256": "eb6985cdeee750c6f9ab21d466da0992868a804aed32656920443627d50fae8f"
     },
     {
-      "path": "CRM智能聊天系统/docker-compose.ai.yml",
+      "path": "docker-compose.ai.yml",
       "sha256": "7f71254aa9a911ff88f64e0d0e505d15274a7d19ee2601d923b249e2da751479"
     },
     {
-      "path": "CRM智能聊天系统/docker-compose.deepseek-sse.yml",
+      "path": "docker-compose.deepseek-sse.yml",
       "sha256": "856d9690f8648abc78375954bb6a04f91dad3412e610684dcaeb17f50837ed5c"
     },
     {
-      "path": "CRM智能聊天系统/docker-compose.gpu.yml",
+      "path": "docker-compose.gpu.yml",
       "sha256": "9847256a1b954f6cae5a160dbd32ef9a76b907d79a35b633e0c995fcb3bc2200"
     },
     {
-      "path": "CRM智能聊天系统/docker-compose.prod.yml",
+      "path": "docker-compose.prod.yml",
       "sha256": "4201babd55766598f792a574e23a371a4096406fd4c6bfbe3849901e95cd03c1"
     },
     {
-      "path": "CRM智能聊天系统/docker-compose.sse-load-test.yml",
+      "path": "docker-compose.sse-load-test.yml",
       "sha256": "f092284c6ca058cf9f50d7722b4271fca781da9dfc28870c53e9136b9f03895e"
     },
     {
-      "path": "CRM智能聊天系统/docker-compose.tiktok-manual.yml",
+      "path": "docker-compose.tiktok-manual.yml",
       "sha256": "bff1acd146ffa2a2b1446e197c5febb26a6150349ee0b779c3dce3c1d5630933"
     },
     {
-      "path": "CRM智能聊天系统/Dockerfile.backend",
+      "path": "Dockerfile.backend",
       "sha256": "48e84772c88eaadac2eac8982d9d3db9a559d33323658894a4fd01429999ffe7"
     },
     {
-      "path": "CRM智能聊天系统/Dockerfile.frontend",
+      "path": "Dockerfile.frontend",
       "sha256": "9c25530173fed546dee0549a3070946deebafec01d35a2c2300bb777f061d2b6"
     },
     {
-      "path": "CRM智能聊天系统/Dockerfile.frontend.prod",
+      "path": "Dockerfile.frontend.prod",
       "sha256": "81dab22264d4c1d0762dfd013a5b8ae1c0b856804c9d1d9d35377c743cd7bd66"
     },
     {
-      "path": "CRM智能聊天系统/Dockerfile.model-service",
+      "path": "Dockerfile.model-service",
       "sha256": "4f91522624bb2141bdc236b3c20b857c9cf1253ffb27303fb7b5a346b01fa0a0"
     },
     {
-      "path": "CRM智能聊天系统/backend/pyproject.toml",
+      "path": "backend/pyproject.toml",
       "sha256": "0c5af76e82886b988a7c73f368de8aed6d64af9c42cfb760a434d9c03ba8bd9f"
     },
     {
-      "path": "CRM智能聊天系统/backend/uv.lock",
+      "path": "backend/uv.lock",
       "sha256": "b5c854bf97326b0ecf6d42ae361d1c6ca58ed8dfb4c1f056d796960c0f13eb58"
     },
     {
-      "path": "CRM智能聊天系统/frontend/package.json",
+      "path": "frontend/package.json",
       "sha256": "5dcf3bb22e3fa44a66c996a1f2689545e6ffbbc1cac3486331fd07b2251c38bc"
     },
     {
-      "path": "CRM智能聊天系统/frontend/package-lock.json",
+      "path": "frontend/package-lock.json",
       "sha256": "7a8d1e26f2f115bc840d53ec67d0c4af85c5bdb13274bff0697062aed2d6076f"
     }
   ],
   "evaluation": {
     "dataset_version": "real-model-independent-v1.0.0",
-    "dataset_path": "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
+    "dataset_path": "测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.jsonl",
     "dataset_sha256": "7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94",
-    "dataset_manifest_path": "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
+    "dataset_manifest_path": "测试工程师/evidence/REAL-AI-05-002/real-model-independent-v1.0.0.manifest.json",
     "dataset_manifest_file_sha256": "232f52a3fa5f5c33622f25a87456128aa9c553a5c00da682bbce2cb8cb3d6905",
     "dataset_manifest_canonical_sha256": "20daad15afdea810c35129f2d9dbac3054f901d5fcd2d0866f477eed534c5146",
-    "result_path": "CRM智能聊天系统/backend/evals/results/real-model-independent-v1.0.0-deepseek-20260905-001.json",
+    "result_path": "backend/evals/results/real-model-independent-v1.0.0-deepseek-20260905-001.json",
     "result_sha256": "1c5dcf97d6af9a7741b1130172016c1ce00241d9edc3126014d718125dd6e02c",
     "product_candidate_aggregate_sha256": "7370d9c269e4d09c4afffc8f9d8da6ec3de07bea8d380b70665e2b16e891c354",
     "provider": "deepseek",

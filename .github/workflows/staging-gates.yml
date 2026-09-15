@@ -65,8 +65,8 @@ jobs:
         env:
           CRM_STAGING_BASE_URL: ${{ vars.CRM_STAGING_BASE_URL }}
         run: |
-          if ($env:CRM_STAGING_BASE_URL -cne "https://staging.overselfx.com") {
-            throw "CRM_STAGING_BASE_URL must exactly equal https://staging.overselfx.com"
+          if ($env:CRM_STAGING_BASE_URL -cne "https://staging.hophorsefit.com") {
+            throw "CRM_STAGING_BASE_URL must exactly equal https://staging.hophorsefit.com"
           }
 
       - name: Log in to GHCR for immutable image pulls
@@ -121,7 +121,7 @@ jobs:
               $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
               $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
-              & ./CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1 @parameters -ValidateOnly
+              & ./scripts/Test-StagingProductionGates.ps1 @parameters -ValidateOnly
             }
             "deploy" {
               $parameters = $common.Clone()
@@ -129,7 +129,7 @@ jobs:
               $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
               $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
-              & ./CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1 @parameters -Deploy -Confirm:$false
+              & ./scripts/Test-StagingProductionGates.ps1 @parameters -Deploy -Confirm:$false
             }
             "rollback" {
               if ([string]::IsNullOrWhiteSpace($env:PREVIOUS_BACKEND_IMAGE_INPUT) -or
@@ -145,7 +145,7 @@ jobs:
               $parameters["PreviousFrontendImage"] = $env:PREVIOUS_FRONTEND_IMAGE_INPUT
               $parameters["PreviousRetrievalModelImage"] = $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
-              & ./CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1 @parameters -Execute -Confirm:$false
+              & ./scripts/Invoke-StagingRollbackDrill.ps1 @parameters -Execute -Confirm:$false
             }
             default {
               throw "Unsupported staging operation"
