@@ -125,6 +125,7 @@ K2 采用独立 FastAPI 进程和独立 SQLAlchemy metadata/Alembic 历史；可
 | 真实负向鉴权与审计关联 | 无 Token 请求 `req-k2-final-verify-2` 后查询审计 | HTTP 401 且响应/audit trace 一致 | HTTP 401；响应与审计原始 trace 一致；容器禁止的 CRM 环境变量数为 0、`/app` 只读 | 通过 |
 | 数据库最小权限 | 查询 PostgreSQL 权限目录并以 runtime 角色追加审计 | 权威表只读、审计只插入 | `applications SELECT=true/UPDATE=false`，`audit INSERT=true/DELETE=false`；实际 INSERT 成功 | 通过 |
 | MinIO 最小权限 | 重放初始化并以运行账号执行 List/Put 探针 | 旧读写策略移除，仅保留专用桶 List/Get | `company-knowledge-rw` 已解绑删除，`company-knowledge-read` 已绑定；List 成功、Put 被拒绝 | 通过 |
+| 合并前代码审查 | 对 `9019dd6..5f23a4a` 做两轮安全、授权、迁移和部署复核 | 无 Critical/Important 未关闭 | 最终 `Ready to merge: Yes`；2 个 Minor 已转 K3 前置门禁 | 通过 |
 | 正式独立 QA | 测试工程师在独立环境执行 K2 安全、迁移、故障和性能测试 | 形成权威测试报告 | 本次未执行；开发验证不能替代独立 QA | 未执行 |
 
 ## 8. 实施结果
@@ -143,6 +144,8 @@ K2 采用独立 FastAPI 进程和独立 SQLAlchemy metadata/Alembic 历史；可
 | R-003 | 尚未由两个真实内部消费系统证明隔离、回退和兼容 | P1 | 全栈开发工程师Agent、测试工程师Agent | PhaseX / K5 |
 | R-004 | 未执行独立 QA、性能、故障注入、备份恢复和真实环境门禁 | P1 | 测试工程师Agent、运维负责人 | PhaseX / K2 QA、K5 |
 | R-005 | 生产应用身份、验签公钥、精确 grant 与密钥轮换尚未配置 | P1 | 架构师Agent、全栈开发工程师Agent | PhaseX / K5、生产门禁 |
+| R-006 | 检索执行超时暂复用 `INDEX_GENERATION_UNAVAILABLE`，监控无法精确区分查询超时 | P2 | 架构师Agent、AIAgent开发工程师Agent | PhaseX / K3 接入前 |
+| R-007 | readiness 当前只校验 PostgreSQL，尚未把 MinIO 纳入组合探针 | P2 | 全栈开发工程师Agent | PhaseX / K3 对象读取前 |
 
 ## 10. 交接事项
 
