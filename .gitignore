@@ -68,6 +68,8 @@ logs/
 *.onnx
 *.gguf
 **/deploy/models/**/.cache/
+/deploy/models/bge-m3/
+/deploy/models/bge-reranker-large/
 
 # Editors and operating-system metadata.
 .idea/
@@ -80,3 +82,7 @@ Desktop.ini
 
 # Project-local Git worktrees must never be tracked by the parent repository.
 /.worktrees/
+
+# The product now lives at the repository root. Keep pre-migration local-only
+# files such as the nested .env and IDE caches from being added accidentally.
+/CRM智能聊天系统/

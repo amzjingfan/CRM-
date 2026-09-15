@@ -64,7 +64,7 @@ git status --short --branch
 git rev-parse HEAD
 ssh -i $env:CRM_STAGING_SSH_KEY root@192.168.110.210 'test ! -e /home/crmdeploy/src/rootless-staging-bootstrap && install -d -o crmdeploy -g crmdeploy -m 0750 /home/crmdeploy/src/rootless-staging-bootstrap'
 if ($LASTEXITCODE -ne 0) { throw 'Transfer target exists or cannot be created; inspect before overwriting' }
-scp -r -i $env:CRM_STAGING_SSH_KEY './CRM智能聊天系统/deploy/staging/rootless/.' 'root@192.168.110.210:/home/crmdeploy/src/rootless-staging-bootstrap/'
+scp -r -i $env:CRM_STAGING_SSH_KEY './deploy/staging/rootless/.' 'root@192.168.110.210:/home/crmdeploy/src/rootless-staging-bootstrap/'
 if ($LASTEXITCODE -ne 0) { throw 'Asset transfer failed' }
 ```
 
@@ -150,7 +150,7 @@ $candidate = @{
   FrontendImage = $candidateFrontend
   RetrievalModelImage = $candidateRetrieval
 }
-& './CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/validate.json' -ValidateOnly
+& './scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/validate.json' -ValidateOnly
 ```
 
 validate 检查输入/模型目录和合并 Compose，不拉取镜像、不探测公信证书、不证明容器可启动。其 `validated` JSON 不能用作部署通过。Compose 固定项目名 `crm-staging`、profile `ai`、基础/prod/rootless 三层；外部配置必须与候选 retrieval 摘要一致。不得打印展开的 `docker compose config`、完整容器环境或连接串。
@@ -168,7 +168,7 @@ ss -lntp 'sport = :80 or sport = :443'
 DNS/TLS、模型、配置、候选与入口全部确认后，使用工作流 `operation=deploy`（其 GHCR 登录自动清理）；直接运行仅限已有受控短期 registry 认证的窗口：
 
 ```powershell
-& './CRM智能聊天系统/scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/deploy.json' -Deploy -Confirm
+& './scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/deploy.json' -Deploy -Confirm
 ```
 
 脚本 `up` 使用 `--no-build --wait --wait-timeout 600`，模型启动哈希计算可能耗时。任一容器或健康失败立即停止，不重试开能力。用外部网络检查 DNS、TLS 与以下入口；不要用 `-k` 忽略证书问题：
@@ -190,7 +190,7 @@ curl.exe --fail --proto '=https' https://staging.hophorsefit.com/v1/health/ready
 先记录系统公司容器保护快照。备份在 `crmdeploy` 的 PowerShell 中执行，使用完整 Compose 环境以防老脚本选中默认项目。进入产品目录，备份目录必须仓库外、受访问控制并由运维加密保管：
 
 ```powershell
-Set-Location './CRM智能聊天系统'
+Set-Location (git rev-parse --show-toplevel)
 $env:DOCKER_HOST = 'unix:///run/user/1004/docker.sock'
 Remove-Item Env:DOCKER_CONTEXT -ErrorAction SilentlyContinue
 $env:COMPOSE_PROJECT_NAME = 'crm-staging'
@@ -217,9 +217,9 @@ $rollback = @{
   PreviousFrontendImage = (Read-Host 'Approved compatible previous frontend repository@sha256')
   PreviousRetrievalModelImage = (Read-Host 'Approved compatible previous retrieval repository@sha256')
 }
-& './CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback-plan.json' -ValidateOnly
+& './scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback-plan.json' -ValidateOnly
 # 只有兼容性核验和恢复准备完成后执行下一行；也可工作流 operation=rollback。
-& './CRM智能聊天系统/scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback.json' -Execute -Confirm
+& './scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback.json' -Execute -Confirm
 ```
 
 执行顺序为关闭能力、切上一版、验证三个健康端点；结束停在上一版，需单独以 `deploy` 切回候选。脚本不自动降级数据库、不删除业务记录。运行后重新比较公司容器 ID/StartedAt 等五字段，并确认系统 Docker 未新增 CRM 数据、根盘仍至少 1.5 GiB。

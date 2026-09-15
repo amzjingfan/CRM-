@@ -155,7 +155,7 @@ def test_installer_substate_contract_accepts_only_listening_or_running(substate:
 @pytest.mark.parametrize("extension", ["service", "socket"])
 def test_systemd_units_have_lf_checkout_contract(extension: str) -> None:
     """固定 Git 检出换行，避免 Windows 资产与 Linux 已安装单元 cmp 不一致。"""
-    attributes = (PROJECT_ROOT.parent / ".gitattributes").read_text(encoding="utf-8")
+    attributes = (PROJECT_ROOT / ".gitattributes").read_text(encoding="utf-8")
     assert f"*.{extension} text eol=lf" in attributes.splitlines()
     for unit in SYSTEMD_DIR.glob(f"*.{extension}"):
         assert b"\r" not in unit.read_bytes()

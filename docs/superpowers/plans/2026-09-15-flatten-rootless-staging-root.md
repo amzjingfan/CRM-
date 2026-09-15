@@ -1,6 +1,6 @@
 # 首版 Rootless Staging 根目录扁平化 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 将 `77d9f8f` 的产品工程提升到 `E:\develop\CRM智能聊天系统` 根目录，同时保留现有 Git 历史、用途型文档和首版 Rootless Staging 部署能力。
 
@@ -63,7 +63,7 @@
 - Consumes: Git tree `77d9f8f:CRM智能聊天系统/`.
 - Produces: 根级产品树；后续任务可直接使用 `backend/`、`frontend/`、`deploy/` 和根级 Compose 路径。
 
-- [ ] **Step 1: 再次确认分支、工作区和源提交**
+- [x] **Step 1: 再次确认分支、工作区和源提交**
 
 Run:
 
@@ -75,7 +75,7 @@ git rev-parse 77d9f8f
 
 Expected: 当前分支为 `feature/flatten-rootless-staging-root`；除本计划文件外无意外修改；源 SHA 为 `77d9f8f78844f08e5840e505af53ef87e9484c0b`。
 
-- [ ] **Step 2: 将基线产品树导出到仓库内临时目录**
+- [x] **Step 2: 将基线产品树导出到仓库内临时目录**
 
 Run:
 
@@ -91,7 +91,7 @@ Get-ChildItem -Force -LiteralPath "$migrationTemp\CRM智能聊天系统"
 
 Expected: 临时目录出现 `backend`、`frontend`、`deploy`、`scripts`、`tests` 及基线根文件；归档不含 `.env`、缓存或模型权重。
 
-- [ ] **Step 3: 删除嵌套目录中的受版本控制文件**
+- [x] **Step 3: 删除嵌套目录中的受版本控制文件**
 
 Run:
 
@@ -101,7 +101,7 @@ git rm -r -- 'CRM智能聊天系统'
 
 Expected: Git 暂存嵌套产品树删除；被根 `.gitignore` 忽略的 `.env`、IDE 配置和缓存仍留在原目录且未被读取。
 
-- [ ] **Step 4: 复制基线产品文件到根目录，保留当前治理文件**
+- [x] **Step 4: 复制基线产品文件到根目录，保留当前治理文件**
 
 Run:
 
@@ -117,7 +117,7 @@ git status --short
 
 Expected: Git 将大部分变化识别为从 `CRM智能聊天系统/...` 到根级路径的 rename；`AGENTS.md` 和根 `.gitignore` 未被旧版本覆盖。
 
-- [ ] **Step 5: 验证根级产品快照内容**
+- [x] **Step 5: 验证根级产品快照内容**
 
 Run:
 
@@ -131,7 +131,7 @@ git diff --cached --check
 
 Expected: `$missing` 为空，`git diff --cached --check` 无输出。
 
-- [ ] **Step 6: 提交产品树提升**
+- [x] **Step 6: 提交产品树提升**
 
 Run:
 
@@ -159,7 +159,7 @@ Expected: 生成一个仅包含产品树提升的本地提交。
 - Consumes: Task 1 的根级产品路径。
 - Produces: 不依赖 `CRM智能聊天系统/` 前缀的 CI、Staging 门禁和发布清单。
 
-- [ ] **Step 1: 恢复首版 Rootless Staging 的根级工作流和机器清单**
+- [x] **Step 1: 恢复首版 Rootless Staging 的根级工作流和机器清单**
 
 Run:
 
@@ -170,7 +170,7 @@ git rm -r --ignore-unmatch -- 'release/knowledge-content'
 
 Expected: `.github/workflows/staging-gates.yml` 回到首版 Rootless Staging 语义，K2 知识内容清单进入删除状态。
 
-- [ ] **Step 2: 批量移除仓库内嵌套前缀**
+- [x] **Step 2: 批量移除仓库内嵌套前缀**
 
 Run:
 
@@ -192,11 +192,11 @@ foreach ($pathFile in $pathFiles) {
 
 Expected: CI 的 working directory 变为 `backend`/`frontend`，Docker context 和脚本入口均从仓库根解析，发布清单路径不带嵌套前缀。
 
-- [ ] **Step 3: 清理 CODEOWNERS 中已删除的岗位目录规则**
+- [x] **Step 3: 清理 CODEOWNERS 中已删除的岗位目录规则**
 
 Edit `.github/CODEOWNERS` so it contains only current root paths and repository owner `@CP11-gh`; remove entries for `AI agent 开发工程师/`、`全栈开发工程师/`、`共享记忆文档/`、`开发工具/`、`架构师/`、`测试工程师/`。
 
-- [ ] **Step 4: 静态验证 CI 和发布 JSON**
+- [x] **Step 4: 静态验证 CI 和发布 JSON**
 
 Run:
 
@@ -211,7 +211,7 @@ git diff --check
 
 Expected: 无旧前缀，两个 JSON 可解析，差异检查无输出。
 
-- [ ] **Step 5: 提交 CI 和发布路径迁移**
+- [x] **Step 5: 提交 CI 和发布路径迁移**
 
 Run:
 
@@ -248,7 +248,7 @@ Expected: 生成 Rootless Staging CI/发布清单适配提交。
 - Consumes: `77d9f8f` Rootless Staging 代码、Task 2 根级路径。
 - Produces: 与实际根级代码一致的用途型当前文档。
 
-- [ ] **Step 1: 删除明确晚于目标基线的专题文档**
+- [x] **Step 1: 删除明确晚于目标基线的专题文档**
 
 Run:
 
@@ -266,7 +266,7 @@ git rm --ignore-unmatch -- $obsoleteDocs
 
 Expected: 仅删除 Split-ingress、K1/K2 独立知识服务的后续文档，不删除本次迁移设计和计划。
 
-- [ ] **Step 2: 更新文档入口和部署事实**
+- [x] **Step 2: 更新文档入口和部署事实**
 
 Edit `docs/README.md`:
 
@@ -280,7 +280,7 @@ Edit `docs/deployment.md`:
 - 将模型清单路径改为 `deploy/models/model-manifest.json`。
 - 保持真实平台、AI、高风险写入、备份与回滚仍未放行。
 
-- [ ] **Step 3: 更新门禁和历史**
+- [x] **Step 3: 更新门禁和历史**
 
 Edit `docs/release-gates.md`:
 
@@ -294,7 +294,7 @@ Edit `docs/history.md`:
 - 保留 2026-09-15 文档压缩与本次仓库根扁平化记录，用于解释为什么岗位目录没有恢复。
 - 明确 Split-ingress 和 K2 仅存在于后续历史，不属于当前工作树。
 
-- [ ] **Step 4: 扫描并修正其余当前文档**
+- [x] **Step 4: 扫描并修正其余当前文档**
 
 Run:
 
@@ -311,7 +311,7 @@ For each result outside the preserved migration design/plan, apply these exact r
 - independent knowledge service/K2/K3 runtime claims → remove from current-state sections；
 - do not alter source SHA `77d9f8f` or historical filenames quoted solely for Git traceability。
 
-- [ ] **Step 5: 验证文档事实和格式**
+- [x] **Step 5: 验证文档事实和格式**
 
 Run:
 
@@ -325,7 +325,7 @@ git diff --check
 
 Expected: 当前事实不再引用嵌套产品路径或把后续能力描述为当前能力，差异检查无输出。
 
-- [ ] **Step 6: 提交文档状态回退**
+- [x] **Step 6: 提交文档状态回退**
 
 Run:
 
@@ -350,7 +350,7 @@ Expected: 生成用途型文档与首版 Staging 状态同步提交。
 - Consumes: Tasks 1～3 的完整迁移结果。
 - Produces: 可提交合并且不触碰远程的本地迁移分支。
 
-- [ ] **Step 1: 扫描所有受跟踪文本中的旧路径**
+- [x] **Step 1: 扫描所有受跟踪文本中的旧路径**
 
 Run:
 
@@ -366,11 +366,11 @@ $legacyRefs
 
 Expected: 只允许迁移设计/计划中用于解释旧路径的引用；运行代码、CI、部署说明和发布清单不得命中。
 
-- [ ] **Step 2: 修正运行面仍存在的旧前缀**
+- [x] **Step 2: 修正运行面仍存在的旧前缀**
 
 For every match in `README.md`、`.github/`、`deploy/`、`scripts/`、Compose 或发布 JSON，将仓库内路径前缀 `CRM智能聊天系统/` 移除。保留 `deploy/cloudflared/config.example.yml` 中与真实本机绝对位置相关的示例时，必须改成不绑定开发机盘符的占位路径 `/home/crmdeploy/.cloudflared/YOUR_TUNNEL_UUID.json`。
 
-- [ ] **Step 3: 验证目标树与后续能力排除**
+- [x] **Step 3: 验证目标树与后续能力排除**
 
 Run:
 
@@ -382,7 +382,7 @@ git ls-files -- 'deploy/staging/rootless/bootstrap-host.sh' 'deploy/staging/root
 
 Expected: 第一条和第二条无输出；第三条列出四个首版 Rootless Staging 关键资产。
 
-- [ ] **Step 4: 验证敏感文件和本地残留未进入 Git**
+- [x] **Step 4: 验证敏感文件和本地残留未进入 Git**
 
 Run:
 
@@ -393,7 +393,7 @@ git check-ignore -v 'CRM智能聊天系统/.env'
 
 Expected: 第一条无输出；第二条确认内层 `.env` 被根 `.gitignore` 忽略。
 
-- [ ] **Step 5: 验证 Git 历史、远程和工作区**
+- [x] **Step 5: 验证 Git 历史、远程和工作区**
 
 Run:
 
@@ -407,7 +407,7 @@ git status --short --branch
 
 Expected: 两次 ancestry 检查退出码均为 0；`origin` 仍为 `ssh://git@ssh.github.com:443/CP11-gh/CRM.git`；无格式错误；状态只包含本任务尚未提交的修正。
 
-- [ ] **Step 6: 提交最终路径修正**
+- [x] **Step 6: 提交最终路径修正**
 
 Run:
 
@@ -419,7 +419,7 @@ git commit -m "chore: finalize rootless staging root migration"
 
 Expected: 最终迁移提交成功，未推送远程。
 
-- [ ] **Step 7: 生成最终验收摘要**
+- [x] **Step 7: 生成最终验收摘要**
 
 Run:
 

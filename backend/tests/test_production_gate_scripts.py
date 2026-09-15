@@ -40,7 +40,7 @@ WHITESPACE_PATTERN = re.compile(r"\s+")
 
 def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -> None:
     """工作流必须把调用者 UID 交给脚本的 1004 门禁，且 GHCR 不依赖长期 PAT。"""
-    workflow = yaml.safe_load((PROJECT_ROOT.parent / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    workflow = yaml.safe_load((PROJECT_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     assert workflow["permissions"] == {"contents": "read", "packages": "read"}
     steps = workflow["jobs"]["staging"]["steps"]
     login = next(step for step in steps if step.get("uses", "").startswith("docker/login-action@"))
@@ -68,7 +68,7 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
 )
 def test_workflow_rejects_nonexact_base_url_before_mutation(tmp_path: Path, base_url: str, accepted: bool) -> None:
     """执行真实工作流预检片段，防止生产地址、前缀匹配或路径误配置被放行。"""
-    workflow = yaml.safe_load((PROJECT_ROOT.parent / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    workflow = yaml.safe_load((PROJECT_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     steps = workflow["jobs"]["staging"]["steps"]
     guards = [step for step in steps if step["name"] == "Validate staging target"]
     assert len(guards) == 1, "exact staging URL guard must precede credential or deployment steps"

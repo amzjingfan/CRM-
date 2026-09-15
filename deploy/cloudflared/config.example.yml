@@ -1,7 +1,7 @@
 # 复制为项目根目录 `.cloudflared/config.yml` 后填写 cloudflared 创建的 Tunnel UUID。
 # 凭证文件由 `cloudflared tunnel create` 生成，并保存在 `.cloudflared/`，该目录已被 Git 忽略。
 tunnel: YOUR_TUNNEL_UUID
-credentials-file: E:/develop/CRM智能聊天系统/CRM智能聊天系统/.cloudflared/YOUR_TUNNEL_UUID.json
+credentials-file: /home/crmdeploy/.cloudflared/YOUR_TUNNEL_UUID.json
 
 ingress:
   # OAuth、Webhook 和所有后端 API 进入 FastAPI。
