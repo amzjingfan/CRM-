@@ -9,7 +9,7 @@
 | `BAAI/bge-m3` | 1024 维 Dense 向量生成，预留 Sparse 和 ColBERT 能力 | 已接入，默认关闭 | `deploy/models/bge-m3` |
 | `BAAI/bge-reranker-large` | 混合召回后的中英文 Cross-Encoder 重排序 | 已接入，默认关闭 | `deploy/models/bge-reranker-large` |
 
-产品代码已通过内部单实例模型服务接入两个固定版本模型；迁移 `014_bge_hybrid` 已把知识向量切换到 1024 维，并创建 `pg_trgm` 词法索引。运行链路为 BGE-M3 Dense Top 20 + trigram Top 20，经 RRF 融合候选 Top 20，再由 Reranker 产出最终 Top 5。AI 功能仍默认关闭，正式启用前必须完成全量重新向量化、阈值标定以及测试工程师的质量和容量评测。
+产品代码已通过内部单实例模型服务接入两个固定版本模型；迁移 `014_bge_hybrid` 已把知识向量切换到 1024 维，并创建 `pg_trgm` 词法索引。运行链路为 BGE-M3 Dense Top 20 + trigram Top 20，经 RRF 融合候选 Top 20，再由 Reranker 产出最终 Top 5。AI 功能仍默认关闭，正式启用前必须完成全量重新向量化、阈值标定以及独立质量和容量评测。
 
 ## 安全规则
 
@@ -38,8 +38,8 @@ docker-compose -f docker-compose.yml -f docker-compose.ai.yml --profile ai up -d
 并在启动时强制执行六个运行文件的固定 SHA-256 校验。目录准备和门禁说明见
 `deploy/production/README.md`。
 
-2026-08-21 的 OSV 审计对锁定的 PyTorch/Transformers 报告已知漏洞。生产启用前必须完成安全版本兼容评估与测试工程师复核；固定 Revision、哈希、离线模式和非 root 运行不能替代依赖修复。
+2026-08-21 的 OSV 审计对锁定的 PyTorch/Transformers 报告已知漏洞。生产启用前必须完成安全版本兼容评估与独立复核；固定 Revision、哈希、离线模式和非 root 运行不能替代依赖修复。
 
 ## 校验
 
-配置、分词器、权重、固定提交、大小和 SHA-256 见 `model-manifest.json`。两个分词器摘要由固定 Revision 的官方 Xet 指针复核；两个配置文件先以下载元数据中的 Git blob SHA-1 核验官方固定 Revision 字节，再登记本地 SHA-256。下载与复核流程见项目 AI 工程师目录中的 `AI-003-MODEL-BGE本地模型下载与校验指南-v1.0.md`。
+配置、分词器、权重、固定提交、大小和 SHA-256 见 `model-manifest.json`。两个分词器摘要由固定 Revision 的官方 Xet 指针复核；两个配置文件先以下载元数据中的 Git blob SHA-1 核验官方固定 Revision 字节，再登记本地 SHA-256。当前下载、校验、运行和门禁流程见根目录 `docs/deployment.md`，质量与容量机器证据见 `release/evidence/retrieval/`。

@@ -160,7 +160,7 @@ docker compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f 
 ```
 
 首次灰度固定为单店铺、单渠道、单操作人。开启顺序为只读、Webhook、人工普通消息；
-每一步均需测试工程师证据和架构师放行。不得仅因配置可以启动就宣称生产接入完成。
+每一步均需独立测试证据和架构评审放行。不得仅因配置可以启动就宣称生产接入完成；当前状态见根目录 `docs/release-gates.md`。
 
 ### DeepSeek 内部草稿 SSE 灰度
 
@@ -169,7 +169,7 @@ REAL-FS-05 只开放认证员工按需生成内部草稿。生产环境文件至
 ```text
 LLM_ENABLED=true
 LLM_PRIMARY_PROVIDER=deepseek
-LLM_PRIMARY_MODEL={架构师和AI工程师确认的模型}
+LLM_PRIMARY_MODEL={发布基线确认的模型}
 DEEPSEEK_API_KEY={密钥系统注入}
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 LLM_TIMEOUT_SECONDS=30

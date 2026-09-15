@@ -3,9 +3,7 @@
 
 /.github/ @CP11-gh
 /release/ @CP11-gh
-/架构师/ @CP11-gh
-/测试工程师/ @CP11-gh
-/共享记忆文档/ @CP11-gh
+/docs/ @CP11-gh
 
 /CRM智能聊天系统/.env.example @CP11-gh
 /CRM智能聊天系统/Dockerfile* @CP11-gh

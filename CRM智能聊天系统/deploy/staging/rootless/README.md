@@ -1,6 +1,6 @@
 # 双服务器 Rootless Docker staging 运行手册
 
-日期：2026-09-11。架构依据为 `架构师/ADR-008-INFRA-双服务器Staging入口分离-v1.0.md`。本文是当前唯一活动入口手册；未执行命令不是成功证据。
+日期：2026-09-11。架构依据见根目录 `docs/deployment.md`，门禁见 `docs/release-gates.md`。本文是当前唯一活动操作手册；未执行命令不是成功证据。
 
 ## 1. 范围与当前状态
 

@@ -8,11 +8,11 @@ BGE-M3 与 `bge-reranker-large` 固定版本模型已经接入单实例内部模
 
 ## 版本控制与发布基线
 
-Git 仓库根目录是本目录的上一级工作区根目录，产品代码、架构、正式测试报告和共享文档使用同一条提交历史。后续开发统一采用 GitHub Flow：从 `main` 创建短期分支，通过 Pull Request、CI 和审阅后 squash merge。完整操作见 `共享记忆文档/Git与GitHub Flow开发规范.md`。
+Git 仓库根目录是本目录的上一级工作区根目录，产品代码、当前文档与发布证据使用同一条提交历史。后续开发统一采用 GitHub Flow：从 `main` 创建短期分支，通过 Pull Request、CI 和审阅后 squash merge。完整规则见根目录 `docs/development.md`。
 
 当前预发布工程基线标识为 `v0.1.0-mvp.20260907`，应用版本为 `0.1.0`，数据库迁移 head 为 `023_marketing_review_idempotency`。机器可读清单位于工作区根目录 `release/baselines/v0.1.0-mvp.20260907.json`；它固定构建输入、迁移、评测数据和已取得的镜像摘要，并如实记录前端镜像及外部镜像摘要仍未闭环。该标识不表示真实平台、性能、稳定性或最终生产放行已经通过。
 
-当前 staging 的活动架构见 `架构师/ADR-008-INFRA-双服务器Staging入口分离-v1.0.md`：`staging.overselfx.com` 最终指向公网入口 `38.55.145.52`，由该机 Nginx 终止 TLS，再通过仅监听公网机回环 `127.0.0.1:18080` 的受限反向 SSH 隧道访问业务服务器 `192.168.110.210` 上 Rootless HTTP `127.0.0.1:10080`。业务服务器不发布 80/443、不保存活动 staging TLS 私钥，也不使用系统 Docker。仓库资产正在分支验证；DNS、证书、新 main 候选和真实部署尚未完成，不能据此宣称 G0 或 MVP 已通过。操作只以 `deploy/staging/rootless/README.md` 为准。
+当前 staging 架构见根目录 `docs/deployment.md`：`staging.overselfx.com` 最终指向公网入口 `38.55.145.52`，由该机 Nginx 终止 TLS，再通过仅监听公网机回环 `127.0.0.1:18080` 的受限反向 SSH 隧道访问业务服务器 `192.168.110.210` 上 Rootless HTTP `127.0.0.1:10080`。业务服务器不发布 80/443、不保存活动 staging TLS 私钥，也不使用系统 Docker。仓库资产正在分支验证；DNS、证书、新 main 候选和真实部署尚未完成，不能据此宣称 G0 或 MVP 已通过。操作以 `deploy/staging/rootless/README.md` 为准。
 
 ## 目录
 
@@ -144,11 +144,7 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 - Jobs Worker 默认每 5 分钟扫描一次，并在 Access Token 到期前 24 小时采用 `FOR UPDATE SKIP LOCKED` 提前刷新。刷新结果必须保持 `open_id` 和已授权店铺连续；不一致或失败时状态变为 `expired` 并要求重新授权，不覆盖为成功凭证。
 - TikTok 应用后台重定向地址固定为 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/staging/production 启动以及 OAuth start/callback 都会失败关闭 HTTP、错误主机、错误路径、query 或 fragment，真实密钥只从服务端安全配置注入。
 
-> 2026-09-09 勘误：上述跨环境相同回调约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `deploy/staging/rootless/README.md`，真实运行验收仍待执行。
-
-> 2026-09-10 更新：经用户批准，当前 staging 回调改为 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；旧 `staging.hophorsefit.com` 仅保留为历史记录，不再接受。integration/production 地址不变。
-
-> 2026-09-11 入口更新：ADR-008 进一步取代 ADR-007 的业务服务器 80/443 socket proxy。staging 的 TLS 和公网入口固定在 `38.55.145.52`，Rootless 只发布业务回环 `127.0.0.1:10080`；`183.158.225.78` 及其 NAT 不再是本 staging 的入口依赖。
+> 当前 staging 回调固定为 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`。TLS 和公网入口固定在 `38.55.145.52`，Rootless 只发布业务回环 `127.0.0.1:10080`；integration/production 地址及历史变更见根目录 `docs/deployment.md` 和 Git 历史。
 
 ## Phase 3 业务能力
 
