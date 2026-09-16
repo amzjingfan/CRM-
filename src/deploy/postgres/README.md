@@ -2,6 +2,8 @@
 
 生产备份必须在受控运维主机执行，并写入加密、受访问控制的备份目录。脚本不会把数据库密码、MinIO 密钥或业务正文输出到日志。
 
+四个脚本默认显式使用 `src/compose/docker-compose.yml`，不依赖调用目录自动发现配置。需要操作受控的其他 Compose 组合时使用 `-ComposeFile` 与 `-ProjectName`；也可由现有运维环境提供 `COMPOSE_FILE` 和 `COMPOSE_PROJECT_NAME`。
+
 ## PostgreSQL
 
 备份使用逻辑 SQL，恢复脚本要求 `-ConfirmTarget` 与目标数据库完全一致，并再次触发 PowerShell `ShouldProcess` 确认：

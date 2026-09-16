@@ -8,7 +8,7 @@ BGE-M3 与 `bge-reranker-large` 固定版本模型已经接入单实例内部模
 
 ## 版本控制与发布基线
 
-Git 仓库根目录是本目录的上一级工作区根目录，产品代码、架构、正式测试报告和共享文档使用同一条提交历史。后续开发统一采用 GitHub Flow：从 `main` 创建短期分支，通过 Pull Request、CI 和审阅后 squash merge。完整操作见 `共享记忆文档/Git与GitHub Flow开发规范.md`。
+本文件位于 Git 仓库根目录，产品代码、架构、正式测试报告和治理文档使用同一条提交历史。后续开发统一采用 GitHub Flow：从 `main` 创建短期分支，通过 Pull Request、CI 和审阅后 squash merge。完整规则见 [`docs/governance/GOVERNANCE.md`](docs/governance/GOVERNANCE.md)，开发规范见 [`docs/engineering/DEVELOPMENT.md`](docs/engineering/DEVELOPMENT.md)。
 
 当前预发布工程基线标识为 `v0.1.0-mvp.20260907`，应用版本为 `0.1.0`，数据库迁移 head 为 `023_marketing_review_idempotency`。机器可读清单位于工作区根目录 `release/baselines/v0.1.0-mvp.20260907.json`；它固定构建输入、迁移、评测数据和已取得的镜像摘要，并如实记录前端镜像及外部镜像摘要仍未闭环。该标识不表示真实平台、性能、稳定性或最终生产放行已经通过。
 
@@ -142,7 +142,7 @@ docker compose -f src/compose/docker-compose.yml exec backend python scripts/ass
 - Jobs Worker 默认每 5 分钟扫描一次，并在 Access Token 到期前 24 小时采用 `FOR UPDATE SKIP LOCKED` 提前刷新。刷新结果必须保持 `open_id` 和已授权店铺连续；不一致或失败时状态变为 `expired` 并要求重新授权，不覆盖为成功凭证。
 - TikTok 应用后台重定向地址固定为 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/staging/production 启动以及 OAuth start/callback 都会失败关闭 HTTP、错误主机、错误路径、query 或 fragment，真实密钥只从服务端安全配置注入。
 
-> 2026-09-09 勘误：上述跨环境相同回调约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `src/deploy/staging/rootless/README.md`，真实运行验收仍待执行。
+> 2026-09-09 勘误：上述跨环境相同回调约定已由当前 [`docs/operations/DEPLOYMENT.md`](docs/operations/DEPLOYMENT.md) 部署边界取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `src/deploy/staging/rootless/README.md`，真实运行验收仍待执行。
 
 ## Phase 3 业务能力
 
@@ -276,7 +276,7 @@ uv audit
 AI 离线测试不会访问公网。不要执行会展开环境变量值的完整 `docker compose config`；只检查服务清单时使用：
 
 ```powershell
-docker-compose config --services
+docker-compose -f src/compose/docker-compose.yml config --services
 docker-compose -f src/compose/docker-compose.yml -f src/compose/docker-compose.ai.yml --profile ai config --services
 ```
 
@@ -314,7 +314,7 @@ Set-Location src/backend
 uv run python -m scripts.evaluate_real_model --dataset evals/real-model-v1.0.0.jsonl --manifest evals/real-model-v1.0.0.manifest.json --output evals/results/real-model-v1.0.0-deepseek-YYYYMMDD-NNN.json
 ```
 
-运行前必须仅在获准的隔离评测进程中显式配置 `APP_ENV=integration|staging`、`LLM_ENABLED=true`、`LLM_LIVE_EVAL=true`、DeepSeek 主模型、服务端 Key、正数 Token 单价、价格版本、币种和计价口径。禁止把 `LLM_LIVE_EVAL=true` 长期写入项目根 `.env`；根环境和 Compose 常驻服务必须保持 `false`，评测结束后立即清除当前进程的临时覆盖。模型、版本、币种、口径和两项费率必须整体命中代码内已批准登记项，结果同时保存费率以便复算；离线真实模型评测在 `production` 环境始终拒绝启动。门禁要求准确率不低于 85%、危险漏放为 0、合法误拦截为 0、真实 Provider 失败为 0，且成本配置完整。当前 `deepseek-v4-flash` / `real-model-eval-v1.2.2` 在未修改原 18 条标签、逐项校验九维声明的开发冻结集上为 16/18（88.89%），危险漏放、合法误拦截和 Provider 失败均为 0；该开发自测不替代测试工程师使用未见开放集的独立复测，因此公开回复、生产翻译、AI 营销和自动回复继续关闭。
+运行前必须仅在获准的隔离评测进程中显式配置 `APP_ENV=integration|staging`、`LLM_ENABLED=true`、`LLM_LIVE_EVAL=true`、DeepSeek 主模型、服务端 Key、正数 Token 单价、价格版本、币种和计价口径。禁止把 `LLM_LIVE_EVAL=true` 长期写入 `src/config/.env`；开发环境文件和 Compose 常驻服务必须保持 `false`，评测结束后立即清除当前进程的临时覆盖。模型、版本、币种、口径和两项费率必须整体命中代码内已批准登记项，结果同时保存费率以便复算；离线真实模型评测在 `production` 环境始终拒绝启动。门禁要求准确率不低于 85%、危险漏放为 0、合法误拦截为 0、真实 Provider 失败为 0，且成本配置完整。当前 `deepseek-v4-flash` / `real-model-eval-v1.2.2` 在未修改原 18 条标签、逐项校验九维声明的开发冻结集上为 16/18（88.89%），危险漏放、合法误拦截和 Provider 失败均为 0；该开发自测不替代测试工程师使用未见开放集的独立复测，因此公开回复、生产翻译、AI 营销和自动回复继续关闭。
 
 测试工程师独立开放集必须使用新的数据集版本与自己的清单，且只允许在 `APP_ENV=integration` 或 `APP_ENV=staging` 运行。开放集无需把逐条载荷摘要写回产品代码；执行器会先校验清单摘要、18 类覆盖、样本唯一性和 PII/DLP，再生成仅本轮有效的载荷授权。任何真实模型离线评测均禁止在 `production` 环境执行。将独立开放集正文发送到外部模型前，还必须取得覆盖具体数据集摘要、目标供应商和用途的一次性数据出境授权；本地校验通过不能替代该授权。
 
@@ -326,7 +326,7 @@ uv run python -m scripts.evaluate_real_model --dataset evals/real-model-v1.0.0.j
 2. 重建后端以注入环境变量，并幂等创建演示数据：
 
 ```powershell
-docker-compose up -d --no-deps --force-recreate backend
+docker-compose -f src/compose/docker-compose.yml up -d --no-deps --force-recreate backend
 docker-compose -f src/compose/docker-compose.yml exec -T backend python -m scripts.seed_ai_demo
 docker-compose -f src/compose/docker-compose.yml exec -T backend python -m scripts.run_ai_demo_smoke
 ```

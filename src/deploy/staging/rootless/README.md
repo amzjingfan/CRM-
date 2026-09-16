@@ -1,6 +1,6 @@
 # Rootless Docker staging 运行手册
 
-日期：2026-09-09。状态：仓库工程已交付，真实主机执行待验证。架构依据为 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md`；工程及后续现场证据统一登记到 `测试工程师/Phase4-P4-00-全栈开发工程师Agent-M00-Rootless-Staging运行面-综合测试-007.md`。本文中的命令是后续执行步骤，不是执行成功记录。
+日期：2026-09-09。状态：仓库工程已交付，真实主机执行待验证。当前架构与部署边界见 [`docs/architecture/SYSTEM.md`](../../../../docs/architecture/SYSTEM.md) 和 [`docs/operations/DEPLOYMENT.md`](../../../../docs/operations/DEPLOYMENT.md)；门禁状态与现场证据入口见 [`docs/operations/RELEASE-GATES.md`](../../../../docs/operations/RELEASE-GATES.md)。旧角色目录记录只保留在 Git 历史中，不再作为当前事实源。本文中的命令是后续执行步骤，不是执行成功记录。
 
 ## 1. 范围与四个独立门禁
 

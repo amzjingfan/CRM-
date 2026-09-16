@@ -79,6 +79,33 @@ def test_local_startup_entrypoint_uses_source_relative_compose_assets() -> None:
         assert required_path in compose_source
 
 
+def test_operational_scripts_bind_the_relocated_compose_file() -> None:
+    """备份恢复入口不得依赖当前目录向上猜测 Compose 文件。"""
+    for name in (
+        "backup-postgres.ps1",
+        "backup-minio.ps1",
+        "restore-postgres.ps1",
+        "restore-minio.ps1",
+    ):
+        source = (SOURCE_ROOT / "scripts" / name).read_text(encoding="utf-8-sig")
+        assert '$sourceRoot = Split-Path -Parent $PSScriptRoot' in source
+        assert 'Join-Path $sourceRoot "compose/docker-compose.yml"' in source
+        assert "$env:COMPOSE_FILE" in source
+        assert "@composeArguments" in source
+
+    readme = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "docker-compose config --services" not in readme
+    assert "docker-compose up -d --no-deps --force-recreate backend" not in readme
+    assert "共享记忆文档/" not in readme
+    assert "架构师/" not in readme
+    assert "测试工程师/" not in readme
+    assert "项目根 `.env`" not in readme
+
+    staging_readme = (SOURCE_ROOT / "deploy/staging/rootless/README.md").read_text(encoding="utf-8")
+    assert "架构师/" not in staging_readme
+    assert "测试工程师/" not in staging_readme
+
+
 def test_automation_uses_canonical_src_paths() -> None:
     """CI、镜像发布和 staging 门禁不得引用已移除的根级工程路径。"""
     ci_source = (REPOSITORY_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
