@@ -2,12 +2,17 @@
 
 import json
 
-from _support import REPOSITORY_ROOT, SOURCE_ROOT
+from _support import REPOSITORY_ROOT, SOURCE_ROOT, TESTS_ROOT
 
 
 def test_backend_tests_use_central_test_root() -> None:
     assert (SOURCE_ROOT / "tests" / "backend").is_dir()
     assert not (SOURCE_ROOT / "backend" / "tests").exists()
+
+
+def test_postgres_integration_tests_have_one_category() -> None:
+    assert (TESTS_ROOT / "integration" / "postgres").is_dir()
+    assert not list((TESTS_ROOT / "integration").glob("test_*.py"))
 
 
 def test_engineering_assets_live_under_src() -> None:
