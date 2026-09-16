@@ -11,9 +11,9 @@ Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
 Working branch at this snapshot: docs/root-hygiene-cleanup-20260916
 Governance base SHA: c9128a5b2e1b6d102d90699b6b50da84a63820df
-CANDIDATE_SUBJECT_SHA: WORKTREE
+CANDIDATE_SUBJECT_SHA: 848c134f0d99c710b9375b4d992c6a4bb249b32a
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: QUARANTINED
+Workspace hygiene: CLEAN
 ```
 
 当前工程根已迁移到 `src/`。最终候选已完成完整质量、四镜像构建、全部 Compose 组合解析、独立审查和全新卷实际启动验证。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
@@ -35,7 +35,7 @@ Workspace hygiene: QUARANTINED
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 正在处理根目录本地生成残留；MVP-001～MVP-009 均为 `BACKLOG`。
+- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 已完成活动根残留隔离与复核；MVP-001～MVP-009 均为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
