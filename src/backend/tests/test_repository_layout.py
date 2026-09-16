@@ -40,6 +40,12 @@ def test_engineering_assets_live_under_src() -> None:
     assert all(not (REPOSITORY_ROOT / path).exists() for path in forbidden)
     assert not (SOURCE_ROOT / "deploy/cloudflared/config.example.yml").exists()
 
+    ignore_source = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
+    assert "/src/deploy/models/bge-m3/" in ignore_source
+    assert "/src/deploy/models/bge-reranker-large/" in ignore_source
+    assert "\n/deploy/models/bge-m3/" not in ignore_source
+    assert "\n/deploy/models/bge-reranker-large/" not in ignore_source
+
 
 def test_local_startup_entrypoint_uses_source_relative_compose_assets() -> None:
     """本地启动入口必须固定工程根、环境模板和 Compose 项目身份。"""
