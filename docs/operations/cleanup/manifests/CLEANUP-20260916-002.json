@@ -1,0 +1,45 @@
+{
+  "task_id": "MAINT-CLEANUP-20260916-002",
+  "batch_id": "CLEANUP-20260916-002",
+  "base_sha": "bec5d290b75ad14df954d9f4732c7934c8157549",
+  "state": "VERIFIED_UNUSED",
+  "authorized_root": ".",
+  "quarantined_at": "2026-09-16T18:04:24.1857391+08:00",
+  "retention_until": "2026-09-23T18:05:00+08:00",
+  "items": [
+    {
+      "task_id": "MAINT-CLEANUP-20260916-002",
+      "batch_id": "CLEANUP-20260916-002",
+      "base_sha": "bec5d290b75ad14df954d9f4732c7934c8157549",
+      "original_path": "src/backend/tests",
+      "kind": "directory",
+      "category": "test-artifacts",
+      "git_status": "ignored/untracked",
+      "size_bytes": 30298,
+      "sha256": "0c9a093261ab3e20bb3ef87b6fece50e7ecff2ab2f803cf489d178855c1fc8f4 (sole .pyc file)",
+      "modified_at": "2026-09-16T13:49:35.2873049+08:00",
+      "reason": "Legacy backend test-root cache left in the main checkout after tracked tests moved to src/tests/backend; its physical directory made the centralized-layout guard fail.",
+      "reference_checks": [
+        "git ls-files src/backend/tests returned no tracked paths",
+        "the directory contained exactly one pytest-generated .pyc file",
+        "the source path resolved inside the repository root and was not a reparse point",
+        "the centralized layout forbids a physical src/backend/tests root"
+      ],
+      "related_tasks_or_worktrees": [
+        "TEST-001 merged locally at evidence head bec5d290b75ad14df954d9f4732c7934c8157549",
+        "artifact existed only in the persistent main checkout"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20260916-002/src/backend/tests",
+      "retention_until": "2026-09-23T18:05:00+08:00",
+      "restore_method": "If src/backend/tests does not exist, run from the repository root: Move-Item -LiteralPath '.maintenance\\quarantine\\CLEANUP-20260916-002\\src\\backend\\tests' -Destination 'src\\backend\\tests'.",
+      "verification": [
+        "original path is absent after the move",
+        "quarantine path contains exactly one 30298-byte .pyc file with the recorded SHA-256",
+        "merged-main backend pytest passed 1536 cases with only 14 environment-gated skips",
+        "isolated PostgreSQL run passed all 1550 collected tests",
+        "frontend lint, typecheck, 40 Node tests and the 13-page production build passed"
+      ]
+    }
+  ]
+}
