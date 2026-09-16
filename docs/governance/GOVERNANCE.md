@@ -2,7 +2,7 @@
 
 本文件是 CRM 智能聊天系统的长期执行治理契约，落实单人持续开发模式下的架构、Git、任务、质量、证据、恢复、清理与发布规则。根 `AGENTS.md` 保存每次任务自动加载的摘要；出现格式、状态或门禁细节时以本文件为准。
 
-项目当前阶段为 `ACTIVE`，治理档位固定为 `STANDARD`。本文件不改变 `docs/product.md` 的产品范围、`docs/architecture.md` 的运行架构或 `docs/release-gates.md` 的生产结论。
+项目当前阶段为 `ACTIVE`，治理档位固定为 `STANDARD`。本文件不改变 `docs/product/PRODUCT.md` 的产品范围、`docs/architecture/SYSTEM.md` 的运行架构或 `docs/operations/RELEASE-GATES.md` 的生产结论。
 
 ## 指令、资料与授权
 
@@ -17,7 +17,7 @@
 - 默认沿用单仓库、模块化单体、一个主要部署单元和最少运行服务。
 - 没有需求证据时，不创建现有 Worker 之外的新独立服务、共享包、事件总线、微服务、Kubernetes、复杂权限平台或插件系统。
 - 只有难以逆转并影响公共契约、数据、权限、安全、生产拓扑或长期成本的决定才建立 ADR。普通可逆选择记录在任务、代码注释或提交中。
-- 当前产品和技术事实分别由 `docs/product.md`、`docs/api.md`、`docs/architecture.md`、`docs/ai.md`、`docs/deployment.md` 与运行实现维护，不建立重复 PRD 或 SYSTEM 文档。
+- 当前产品和技术事实分别由 `docs/product/PRODUCT.md`、`docs/architecture/API.md`、`docs/architecture/SYSTEM.md`、`docs/architecture/AI.md`、`docs/operations/DEPLOYMENT.md` 与运行实现维护，不建立重复 PRD 或 SYSTEM 文档。
 
 ### 仓库身份与授权根
 

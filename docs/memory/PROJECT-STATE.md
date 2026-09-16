@@ -1,6 +1,6 @@
 # 项目状态与恢复入口
 
-本文件是跨 Codex 会话恢复项目所需的精简摘要，不复制 `../tasks/TASKS.md` 的任务状态、`../test-status.md` 的测试结论或 `../release-gates.md` 的门禁正文。恢复工作时先读本文件，再按链接读取事实源。
+本文件是跨 Codex 会话恢复项目所需的精简摘要，不复制 `../tasks/TASKS.md` 的任务状态、`../quality/TEST-STATUS.md` 的测试结论或 `../operations/RELEASE-GATES.md` 的门禁正文。恢复工作时先读本文件，再按链接读取事实源。
 
 ## 当前状态
 
@@ -20,17 +20,17 @@ Workspace hygiene: CLEAN
 
 ## 权威入口
 
-- 产品范围与验收：[`../product.md`](../product.md)
-- 系统架构：[`../architecture.md`](../architecture.md)
-- API 契约：[`../api.md`](../api.md)
-- AI、RAG 与工具安全：[`../ai.md`](../ai.md)
+- 产品范围与验收：[`../product/PRODUCT.md`](../product/PRODUCT.md)
+- 系统架构：[`../architecture/SYSTEM.md`](../architecture/SYSTEM.md)
+- API 契约：[`../architecture/API.md`](../architecture/API.md)
+- AI、RAG 与工具安全：[`../architecture/AI.md`](../architecture/AI.md)
 - 唯一任务状态：[`../tasks/TASKS.md`](../tasks/TASKS.md)
-- 开发与协作规范：[`../development.md`](../development.md)
-- STANDARD 治理：[`../governance.md`](../governance.md)
+- 开发与协作规范：[`../engineering/DEVELOPMENT.md`](../engineering/DEVELOPMENT.md)
+- STANDARD 治理：[`../governance/GOVERNANCE.md`](../governance/GOVERNANCE.md)
 - 测试策略：[`../quality/TEST-STRATEGY.md`](../quality/TEST-STRATEGY.md)
-- 最新测试状态：[`../test-status.md`](../test-status.md)
-- 部署边界：[`../deployment.md`](../deployment.md)
-- 生产门禁：[`../release-gates.md`](../release-gates.md)
+- 最新测试状态：[`../quality/TEST-STATUS.md`](../quality/TEST-STATUS.md)
+- 部署边界：[`../operations/DEPLOYMENT.md`](../operations/DEPLOYMENT.md)
+- 生产门禁：[`../operations/RELEASE-GATES.md`](../operations/RELEASE-GATES.md)
 
 ## 里程碑与活动任务
 
@@ -40,7 +40,7 @@ Workspace hygiene: CLEAN
 
 ## 记录、索引与证据
 
-- 当前格式的 IR/TR/RR：`NOT_YET_CREATED`。历史实施与测试事实仍由 Git 历史、`test-status.md` 和 `release/evidence/` 保留，不伪造迁移记录。
+- 当前格式的 IR/TR/RR：`NOT_YET_CREATED`。历史实施与测试事实仍由 Git 历史、`docs/quality/TEST-STATUS.md` 和 `release/evidence/` 保留，不伪造迁移记录。
 - `IMPLEMENTATION-INDEX`、`TEST-INDEX`、`REVIEW-INDEX`：`NOT_YET_CREATED`；首次产生对应真实源记录时创建。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：在治理基线启动盘点中未发现未跟踪/忽略对象或重解析点，状态为 `CLEAN`；当前没有活动清理任务或批次。

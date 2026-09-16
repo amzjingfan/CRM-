@@ -9,23 +9,23 @@
 
 ## 开始前与文档路由
 
-1. 从 `docs/README.md` 选择任务所需的当前事实文档，确认目标、边界、依赖、验收标准和风险。治理流程、记录格式和批准边界见 `docs/governance.md`。
-2. 修改代码前必须阅读 `docs/development.md`；涉及产品、接口、架构、AI、部署、测试或发布时继续读取对应当前文档。
+1. 从 `docs/README.md` 选择任务所需的当前事实文档，确认目标、边界、依赖、验收标准和风险。治理流程、记录格式和批准边界见 `docs/governance/GOVERNANCE.md`。
+2. 修改代码前必须阅读 `docs/engineering/DEVELOPMENT.md`；涉及产品、接口、架构、AI、部署、测试或发布时继续读取对应当前文档。
 3. 写入前核对 Git 顶层目录、common dir、当前分支、HEAD、远端、worktree、未提交修改、生效规则和目录卫生；只在已授权 checkout/worktree 内工作并保护未知文件。
 4. 不得在 `main` 实施日常修改。从当前真实基线创建单主题短期分支，优先使用已忽略的 `.worktrees/` 隔离。
 5. 文档与实现冲突时按 `docs/README.md` 的事实优先级处理；安全、公共接口、数据结构或生产边界仍不明确时暂停并形成决定。
 
 ## 范围、架构与任务
 
-- 当前产品范围以 `docs/product.md` 为准；公开自动回复、自动营销、Shopee/Amazon 真实接入和高风险写入不属于 TikTok 人工辅助 v0.1。
+- 当前产品范围以 `docs/product/PRODUCT.md` 为准；公开自动回复、自动营销、Shopee/Amazon 真实接入和高风险写入不属于 TikTok 人工辅助 v0.1。
 - 默认采用现有单仓库模块化单体、一个主要部署单元和最少运行服务。没有已批准需求时不新增微服务、事件总线、Kubernetes、共享平台、插件系统或复杂权限框架。
-- `docs/tasks/TASKS.md` 是任务状态的唯一事实源。任务按 `BACKLOG → READY → DOING → VERIFYING → DONE` 推进；阻塞和取消按 `docs/governance.md` 处理。
+- `docs/tasks/TASKS.md` 是任务状态的唯一事实源。任务按 `BACKLOG → READY → DOING → VERIFYING → DONE` 推进；阻塞和取消按 `docs/governance/GOVERNANCE.md` 处理。
 - 单人默认在当前 Codex 任务完成普通短任务。只有跨里程碑、需要独立分支或跨会话交接的 `READY` 项才考虑创建新的可见任务；创建前按项目和任务 ID 查重。
 - 子智能体只用于路径和依赖真正独立的并行工作，并且必须记录父任务、允许路径和交付物；不得以岗位名新建一级目录，也不得用子智能体代替任务状态源。
 
 ## 工程与安全
 
-- 所有代码遵守 `docs/development.md` 的分层、类型、异常、中文业务注释、测试和安全规则。
+- 所有代码遵守 `docs/engineering/DEVELOPMENT.md` 的分层、类型、异常、中文业务注释、测试和安全规则。
 - 不提交 `.env`、真实密钥/Token、凭证池、生产数据、模型权重、虚拟环境、依赖目录、缓存、日志、构建产物或测试临时目录。
 - 店铺隔离、权限、CSRF、幂等、审计、DLP 和失败关闭不得因开发或测试被绕过。未经明确授权，不执行生产数据操作、不可逆迁移、付费资源创建或外部消息发送。
 - 未经精确授权，不删除或覆盖未知文件，不执行破坏性 Git，不修改用户级配置、全局 Memory、其他项目或账户设置。
@@ -35,7 +35,7 @@
 - 选择最高优先级 `READY` 任务，复核范围、依赖和 Git 后进入 `DOING`；完成最小完整变更后进入 `VERIFYING`，验证、文档和证据全部满足才进入 `DONE`。
 - 新功能与缺陷修复优先行为测试驱动；运行与风险相称的 format、lint、typecheck、unit、integration、build、健康检查、安全、迁移或 AI eval。静态文档变更不运行无关产品回归。
 - 不通过删除测试、降低阈值、绕过门禁或改写验收标准制造通过。历史结果不能冒充本次验证；未运行项必须说明原因和残余风险。
-- 所有“完成、通过、部署、通知、推送、合并、发布”必须有本次真实证据。行为变更的 IR/TR、按风险 RR、subject/evidence SHA 和索引规则见 `docs/governance.md`。
+- 所有“完成、通过、部署、通知、推送、合并、发布”必须有本次真实证据。行为变更的 IR/TR、按风险 RR、subject/evidence SHA 和索引规则见 `docs/governance/GOVERNANCE.md`。
 - 接口、迁移、配置、安全边界、Prompt、模型、门禁或发布证据变化必须同步对应 `docs/` 当前文档和机器清单。
 
 ## 测试、记忆与恢复
@@ -48,7 +48,7 @@
 
 - 启动、里程碑交付前、生产发布前以及用户要求时只读盘点目录。无候选时仅在 `PROJECT-STATE.md` 记录 `Workspace hygiene: CLEAN`。
 - 实际隔离或删除必须使用独立 `MAINT-CLEANUP-*` 任务和 `CLEANUP-*` 批次。未知文件、用户文件、需求来源、数据、备份、密钥、迁移和活动 worktree 内容永不自动删除。
-- 被跟踪文件的移动或删除必须形成可审阅 diff；隔离后运行受影响验证。永久删除必须满足保留期并针对精确批次和路径取得授权，完整规则见 `docs/governance.md`。
+- 被跟踪文件的移动或删除必须形成可审阅 diff；隔离后运行受影响验证。永久删除必须满足保留期并针对精确批次和路径取得授权，完整规则见 `docs/governance/GOVERNANCE.md`。
 
 ## GitHub Flow、远端与发布
 

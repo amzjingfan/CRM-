@@ -1,6 +1,6 @@
 # 项目任务状态
 
-本文件是 CRM 智能聊天系统任务状态的唯一事实源。产品范围与验收原则见 `../product.md`，生产门禁状态见 `../release-gates.md`，治理流程与证据格式见 `../governance.md`。README、项目恢复摘要、报告和 Codex 侧栏只能引用本表，不维护第二套任务状态。
+本文件是 CRM 智能聊天系统任务状态的唯一事实源。产品范围与验收原则见 `../product/PRODUCT.md`，生产门禁状态见 `../operations/RELEASE-GATES.md`，治理流程与证据格式见 `../governance/GOVERNANCE.md`。README、项目恢复摘要、报告和 Codex 侧栏只能引用本表，不维护第二套任务状态。
 
 ## 状态规则
 
@@ -51,12 +51,12 @@ DOING/VERIFYING → BLOCKED
 
 | ID | 可验证结果 | 需求/验收或门禁 | 状态 | 分支 | 依赖 | IR | TR | RR | 最终 SHA |
 |---|---|---|---|---|---|---|---|---|---|
-| DOCS-001 | 按职责域分类 `docs/` 当前文档并修复活动引用，不改变项目事实 | 本设计规格的 7 项验收标准；`BASE_SHA=318d0e0272a580e0eb36f17e6188944276d2c9be` | DOING | codex/docs-classify-documentation | none | N/A | N/A | N/A（纯文档路径重组） | |
+| DOCS-001 | 按职责域分类 `docs/` 当前文档并修复活动引用，不改变项目事实 | 本设计规格的 7 项验收标准；`BASE_SHA=318d0e0272a580e0eb36f17e6188944276d2c9be` | VERIFYING | codex/docs-classify-documentation | none | N/A | N/A | N/A（纯文档路径重组） | |
 
 ## 维护规则
 
 1. 开始任务时只选择依赖已满足的最高优先级 `READY` 项，并在同一次更新中写入分支和基线。
-2. 范围或验收改变时先更新 `docs/product.md` 或相关当前事实文档，再更新本表。
+2. 范围或验收改变时先更新 `docs/product/PRODUCT.md` 或相关当前事实文档，再更新本表。
 3. 失败验证回到同一任务和分支修复，不新建重复任务制造“通过”。
 4. 实际清理使用 `MAINT-CLEANUP-YYYYMMDD-NNN`，并链接精确 `CLEANUP-YYYYMMDD-NNN` 批次。
 5. 超过约 20 个活动任务或进入多人长期协作后，才评估独立任务文件或外部任务平台；在此之前不扩展状态系统。

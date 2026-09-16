@@ -42,10 +42,10 @@ TEST_LAYOUT: hybrid
 
 ## 需求、任务与门禁追踪
 
-- 产品验收来自 `docs/product.md`，当前任务状态来自 `docs/tasks/TASKS.md`，生产门禁来自 `docs/release-gates.md`。
+- 产品验收来自 `docs/product/PRODUCT.md`，当前任务状态来自 `docs/tasks/TASKS.md`，生产门禁来自 `docs/operations/RELEASE-GATES.md`。
 - 自动化测试使用稳定测试名表达行为；在任务 TR 中把任务 ID、REQ/AC 或 G0～G8 门禁映射到具体命令和结果。
 - 只有影响运行行为的任务需要最终 IR/TR；认证、权限、租户、迁移、公共契约、生产基础设施和关键 AI 变化默认还需要 RR。
-- `docs/test-status.md` 只汇总当前仍有效的正式结论，历史结果不能当作新分支本次运行证据。
+- `docs/quality/TEST-STATUS.md` 只汇总当前仍有效的正式结论，历史结果不能当作新分支本次运行证据。
 
 ## 变更与验证矩阵
 
@@ -65,7 +65,7 @@ TEST_LAYOUT: hybrid
 
 - 测试源码：`backend/tests/`、`tests/integration/`、`frontend/tests/` 或已登记的 eval 路径。
 - 临时覆盖率、日志、截图、浏览器结果与缓存：使用 `.pytest_cache/`、`.test-artifacts/`、`test-results/`、`playwright-report/`、`coverage/` 等已忽略目录，或仓库外安全路径。
-- 正式测试记录：首次产生当前格式 TR 时保存到 `docs/reports/tests/`，并按 `docs/governance.md` 建立索引。
+- 正式测试记录：首次产生当前格式 TR 时保存到 `docs/reports/tests/`，并按 `docs/governance/GOVERNANCE.md` 建立索引。
 - 发布基线机器证据：只有必须长期固定且经过低敏检查的结果进入 `release/evidence/`；普通本地结果不得混入。
 
 ## 失败与完成判定
