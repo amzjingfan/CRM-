@@ -11,18 +11,8 @@ from pathlib import Path
 
 import pytest
 import yaml
+from _support import REPOSITORY_ROOT, SOURCE_ROOT
 
-
-def repository_root(start: Path) -> Path:
-    """从普通 checkout 或 linked worktree 中定位 Git 仓库根。"""
-    for candidate in (start, *start.parents):
-        if (candidate / ".git").exists():
-            return candidate
-    raise AssertionError("Git repository root was not found")
-
-
-REPOSITORY_ROOT = repository_root(Path(__file__).resolve())
-SOURCE_ROOT = REPOSITORY_ROOT / "src"
 PREFLIGHT_SCRIPT = SOURCE_ROOT / "scripts" / "Test-StagingProductionGates.ps1"
 ROLLBACK_SCRIPT = SOURCE_ROOT / "scripts" / "Invoke-StagingRollbackDrill.ps1"
 POWERSHELL = shutil.which("pwsh") or shutil.which("powershell")

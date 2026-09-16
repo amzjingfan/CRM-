@@ -1,19 +1,13 @@
 """仓库工程根布局契约。"""
 
 import json
-from pathlib import Path
+
+from _support import REPOSITORY_ROOT, SOURCE_ROOT
 
 
-def repository_root(start: Path) -> Path:
-    """从普通 checkout 或 linked worktree 中定位 Git 仓库根。"""
-    for candidate in (start, *start.parents):
-        if (candidate / ".git").exists():
-            return candidate
-    raise AssertionError("Git repository root was not found")
-
-
-REPOSITORY_ROOT = repository_root(Path(__file__).resolve())
-SOURCE_ROOT = REPOSITORY_ROOT / "src"
+def test_backend_tests_use_central_test_root() -> None:
+    assert (SOURCE_ROOT / "tests" / "backend").is_dir()
+    assert not (SOURCE_ROOT / "backend" / "tests").exists()
 
 
 def test_engineering_assets_live_under_src() -> None:

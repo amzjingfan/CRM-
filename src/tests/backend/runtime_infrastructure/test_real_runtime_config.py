@@ -5,9 +5,9 @@ import json
 import logging
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
+from _support import BACKEND_ROOT, SOURCE_ROOT
 from pydantic import ValidationError
 
 from app.shared.config.settings import (
@@ -17,8 +17,6 @@ from app.shared.config.settings import (
     Settings,
 )
 from app.shared.logging.setup import JsonFormatter, redact_log_text
-
-SOURCE_ROOT = Path(__file__).resolve().parents[2]
 
 
 def production_settings(**overrides: object) -> Settings:
@@ -611,10 +609,9 @@ def test_json_formatter_maps_known_framework_loggers_without_exposing_message(
 
 def test_alembic_offline_command_uses_unified_json_logging() -> None:
     """Alembic 真实入口在 ``fileConfig`` 后仍必须输出统一低敏 JSON。"""
-    backend_root = SOURCE_ROOT / "backend"
     completed = subprocess.run(
         [sys.executable, "-m", "alembic", "-c", "alembic.ini", "upgrade", "base", "--sql"],
-        cwd=backend_root,
+        cwd=BACKEND_ROOT,
         check=False,
         capture_output=True,
         text=True,

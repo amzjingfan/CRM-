@@ -2,11 +2,11 @@
 
 import asyncio
 import uuid
-from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from _support import SOURCE_ROOT
 from pydantic import ValidationError
 
 from app.agent.workflow import AgentWorkflowExecutionError
@@ -16,8 +16,6 @@ from app.chat.schemas import ChatQueryRequest
 from app.shared.config.settings import Settings
 from app.shared.database import redis as redis_module
 from app.shared.health import check_llm_provider_configuration
-
-SOURCE_ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize(

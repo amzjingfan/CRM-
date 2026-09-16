@@ -1,12 +1,13 @@
 """锁定本地 BGE 推理运行时的安全版本与离线加载边界。"""
 
 import tomllib
-from pathlib import Path
+
+from _support import BACKEND_ROOT
 
 
 def test_retrieval_model_extra_uses_reviewed_security_baseline() -> None:
     """防止已处置的 Torch/Transformers 漏洞版本被意外重新引入。"""
-    project_file = Path(__file__).parents[1] / "pyproject.toml"
+    project_file = BACKEND_ROOT / "pyproject.toml"
     project = tomllib.loads(project_file.read_text(encoding="utf-8"))
 
     dependencies = set(project["project"]["optional-dependencies"]["retrieval-model"])
@@ -17,7 +18,7 @@ def test_retrieval_model_extra_uses_reviewed_security_baseline() -> None:
 
 def test_model_engine_keeps_offline_untrusted_code_disabled() -> None:
     """模型运行面只能读取受校验的本地资产，禁止执行仓库自定义代码。"""
-    engine_file = Path(__file__).parents[1] / "app" / "retrieval_model_service" / "engine.py"
+    engine_file = BACKEND_ROOT / "app" / "retrieval_model_service" / "engine.py"
     source = engine_file.read_text(encoding="utf-8")
 
     assert source.count("local_files_only=True") == 4
