@@ -13,10 +13,10 @@ Working branch at this snapshot: main
 Governance base SHA: bec5d290b75ad14df954d9f4732c7934c8157549
 CANDIDATE_SUBJECT_SHA: 43b9ea86b674e7ea563738a16dac686748463fc9
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and ignored TEST-001 temporary/worktree material remain under retention or explicit-deletion approval
+Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and other TEST-001 temporary material remain under retention or require a separate cleanup batch
 ```
 
-当前工程根已迁移到 `src/`，`TEST-001` 已将测试源码、普通 AI eval 资产和项目内临时输出契约集中到 `src/tests/`，并已快进合并到本地 `main`。合并后门禁通过；`CLEANUP-20260916-002` 将主 checkout 中阻止布局守卫的旧 pytest 缓存可恢复隔离。`feature/unified-test-layout` worktree/分支因包含已知 ignored 材料而未获得永久删除授权，仍保留并等待用户明确选择，因此计划 Step 8 保持未勾选。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+当前工程根已迁移到 `src/`，`TEST-001` 已将测试源码、普通 AI eval 资产和项目内临时输出契约集中到 `src/tests/`，并已快进合并到本地 `main`。合并后门禁通过；`CLEANUP-20260916-002` 将主 checkout 中阻止布局守卫的旧 pytest 缓存可恢复隔离。用户已授权永久删除 `feature/unified-test-layout` worktree 中的已知 ignored 材料，该 worktree 和已合并的本地分支均已删除，计划 Step 8 已完成；无关的 `docs/centralized-test-layout-design` worktree 保留不变。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
 ## 权威入口
 
@@ -62,6 +62,6 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and ignore
 
 ## 最多三个下一动作
 
-1. 用户明确选择保留还是永久删除 `feature/unified-test-layout` worktree 内的 ignored SDD 报告、虚拟环境、`node_modules` 和测试临时材料；只有获得删除授权后才删除 worktree/分支并勾选 Step 8。
-2. 在各自保留期到期后复核 `CLEANUP-20260916-001/002`，并针对精确批次另取永久删除授权；TEST-001 的其他 ignored/repository-external 临时材料仍需独立清理批次。
+1. 在各自保留期到期后复核 `CLEANUP-20260916-001/002`，并针对精确批次另取永久删除授权。
+2. 如需清理 TEST-001 其他 ignored 或 repository-external 临时材料，先建立独立任务与清理批次。
 3. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务；pytest 聚焦命令文档 Minor 可在后续文档任务处理。

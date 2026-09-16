@@ -515,6 +515,6 @@ git add -- docs/records docs/reports docs/tasks/TASKS.md docs/memory/PROJECT-STA
 git commit -m "docs: record centralized test layout evidence"
 ```
 
-- [ ] **Step 8: Merge locally and clean the task branch**
+- [x] **Step 8: Merge locally and clean the task branch**
 
 Use `superpowers:finishing-a-development-branch`. Because the user already selected local merge for this task, fast-forward local `main` only after merged-result verification passes. Do not pull, push, create a PR, or modify the remote. Delete `feature/unified-test-layout` with ordinary `git branch -d` and remove only the worktree created for that branch; preserve the unrelated `docs/centralized-test-layout-design` worktree.
