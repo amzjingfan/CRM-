@@ -33,19 +33,19 @@
 - Consumes: Git baseline `c9128a5b2e1b6d102d90699b6b50da84a63820df` and the read-only root inventory.
 - Produces: Task `MAINT-CLEANUP-20260916-001`, batch `CLEANUP-20260916-001`, exact candidates, hashes, restore commands, and retention deadline.
 
-- [ ] **Step 1: Add the maintenance task in `DOING` state**
+- [x] **Step 1: Add the maintenance task in `DOING` state**
 
 Record the branch, base SHA, cleanup batch link, local-only scope, and verification criteria in `docs/tasks/TASKS.md`.
 
-- [ ] **Step 2: Create the batch record and manifest**
+- [x] **Step 2: Create the batch record and manifest**
 
 Record `frontend/` as a zero-byte generated cache tree containing only empty `.next/` and `node_modules/`, and `.test-tmp/` as a zero-byte test artifact containing the empty SHA-256 value `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
 
-- [ ] **Step 3: Update project recovery state**
+- [x] **Step 3: Update project recovery state**
 
 Set workspace hygiene to `CANDIDATE` and identify the active cleanup task and batch without storing machine absolute paths.
 
-- [ ] **Step 4: Validate and commit the candidate records**
+- [x] **Step 4: Validate and commit the candidate records**
 
 Run JSON parsing, Markdown link validation, `git diff --check`, and `git status --short`, then commit with `docs: register root hygiene cleanup batch`.
 
@@ -64,23 +64,22 @@ Run JSON parsing, Markdown link validation, `git diff --check`, and `git status 
 - Consumes: The candidate manifest and the primary checkout containing the local-only remnants.
 - Produces: A root without the two inactive paths, a persistent recoverable quarantine, and verified recovery metadata.
 
-- [ ] **Step 1: Reconfirm exact candidates immediately before movement**
+- [x] **Step 1: Reconfirm exact candidates immediately before movement**
 
 Verify both paths resolve beneath the repository root, are not reparse points, are untracked, contain no nonempty file, have no tracked references, and are unrelated to an active worktree.
 
-- [ ] **Step 2: Move candidates into persistent quarantine**
+- [x] **Step 2: Move candidates into persistent quarantine**
 
 Create `.maintenance/quarantine/CLEANUP-20260916-001/`, then use literal-path moves for the exact `frontend` and `.test-tmp` directories. Do not use wildcards or recursive deletion.
 
-- [ ] **Step 3: Verify active-root removal and restoration metadata**
+- [x] **Step 3: Verify active-root removal and restoration metadata**
 
 Confirm the original paths no longer exist, the quarantine copies match the manifest, `.worktrees/` remains available, tracked files are unchanged, and Docker Compose parses from `src/compose/docker-compose.yml`.
 
-- [ ] **Step 4: Finalize the batch as `VERIFIED_UNUSED`**
+- [x] **Step 4: Finalize the batch as `VERIFIED_UNUSED`**
 
 Update the batch, manifest, index, task, and project state with the actual result. Keep permanent deletion pending until the retention deadline.
 
-- [ ] **Step 5: Validate and commit the final records**
+- [x] **Step 5: Validate and commit the final records**
 
 Run JSON parsing, Markdown link validation, `git diff --check`, and focused repository layout checks, then commit with `docs: record quarantined root remnants`.
-

@@ -2,7 +2,7 @@
   "task_id": "MAINT-CLEANUP-20260916-001",
   "batch_id": "CLEANUP-20260916-001",
   "base_sha": "c9128a5b2e1b6d102d90699b6b50da84a63820df",
-  "state": "CANDIDATE",
+  "state": "VERIFIED_UNUSED",
   "authorized_root": ".",
   "retention_until": "2026-09-23T10:34:00+08:00",
   "items": [
@@ -28,11 +28,17 @@
         "REPO-001 completed",
         "no active worktree uses this path"
       ],
-      "action": "candidate",
+      "action": "quarantined",
       "quarantine_path": ".maintenance/quarantine/CLEANUP-20260916-001/frontend",
       "retention_until": "2026-09-23T10:34:00+08:00",
       "restore_method": "If repository-root frontend does not exist, move the quarantined frontend directory back with PowerShell Move-Item -LiteralPath.",
-      "verification": []
+      "verification": [
+        "source resolved inside the repository root and was not a reparse point",
+        "source contained exactly the two expected empty directories and no files",
+        "original path is absent after the move",
+        "quarantine path exists and remains an empty directory tree",
+        "tracked repository paths are unchanged"
+      ]
     },
     {
       "task_id": "MAINT-CLEANUP-20260916-001",
@@ -56,11 +62,17 @@
         "REPO-001 verification residue",
         "no active worktree uses this path"
       ],
-      "action": "candidate",
+      "action": "quarantined",
       "quarantine_path": ".maintenance/quarantine/CLEANUP-20260916-001/.test-tmp",
       "retention_until": "2026-09-23T10:34:00+08:00",
       "restore_method": "If repository-root .test-tmp does not exist, move the quarantined .test-tmp directory back with PowerShell Move-Item -LiteralPath.",
-      "verification": []
+      "verification": [
+        "source resolved inside the repository root and was not a reparse point",
+        "sole file remained zero bytes with the recorded SHA-256 before movement",
+        "original path is absent after the move",
+        "quarantine path contains the expected empty lock file",
+        "tracked repository paths are unchanged"
+      ]
     }
   ]
 }

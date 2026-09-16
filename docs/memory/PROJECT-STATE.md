@@ -13,7 +13,7 @@ Working branch at this snapshot: docs/root-hygiene-cleanup-20260916
 Governance base SHA: c9128a5b2e1b6d102d90699b6b50da84a63820df
 CANDIDATE_SUBJECT_SHA: WORKTREE
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: CANDIDATE
+Workspace hygiene: QUARANTINED
 ```
 
 当前工程根已迁移到 `src/`。最终候选已完成完整质量、四镜像构建、全部 Compose 组合解析、独立审查和全新卷实际启动验证。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
@@ -44,7 +44,7 @@ Workspace hygiene: CANDIDATE
 - REPO-001 测试记录：[`../reports/tests/TR-REPO-001-20260916-R01.md`](../reports/tests/TR-REPO-001-20260916-R01.md)。
 - REPO-001 审查记录：[`../reports/reviews/RR-REPO-001-20260916-R01.md`](../reports/reviews/RR-REPO-001-20260916-R01.md)。三个派生索引状态为 `CANDIDATE_VIEW`；从本地主分支读取时重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
-- 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已进入 `CLEANUP-20260916-001` 候选；活动批次状态为 `CANDIDATE`，最早永久删除时间为 2026-09-23T10:34:00+08:00。
+- 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T10:34:00+08:00。
 
 ## 阻塞、决定与风险
 
@@ -55,6 +55,6 @@ Workspace hygiene: CANDIDATE
 
 ## 最多三个下一动作
 
-1. 完成 `CLEANUP-20260916-001` 的持久隔离、复核与恢复信息登记，不修改远端。
+1. 2026-09-23T10:34:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
 2. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。
 3. 准备 MVP-001 的精确环境、资源、授权和验收步骤。
