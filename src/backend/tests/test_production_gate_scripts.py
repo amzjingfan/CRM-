@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+
 def repository_root(start: Path) -> Path:
     """从普通 checkout 或 linked worktree 中定位 Git 仓库根。"""
     for candidate in (start, *start.parents):

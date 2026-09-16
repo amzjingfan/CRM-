@@ -16,6 +16,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 90s
 
   postgres-test:
     profiles: ["test"]
@@ -52,8 +53,8 @@ services:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: change-me-minio-password
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-change-me-minio-password}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -65,8 +66,24 @@ services:
       timeout: 5s
       retries: 10
 
+  minio-init:
+    image: minio/minio:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
+        mc mb --ignore-existing "local/$$MINIO_BUCKET"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-change-me-minio-password}
+      MINIO_BUCKET: ${MINIO_BUCKET:-crm-files}
+    restart: "no"
+
   backend:
-    image: ${BACKEND_IMAGE:-crm-backend:local}
+    image: ${BACKEND_DEV_IMAGE:-crm-backend:local}
     build:
       context: ../backend
       dockerfile: ../docker/Dockerfile.backend
@@ -77,8 +94,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: change-me-minio-password
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-change-me-minio-password}
       # 真实模型评测是一次性外部数据出境任务，常驻 API 服务必须显式关闭。
       LLM_LIVE_EVAL: "false"
     ports:
@@ -90,8 +107,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     healthcheck:
       test:
@@ -107,7 +124,7 @@ services:
       start_period: 10s
 
   worker:
-    image: ${BACKEND_IMAGE:-crm-backend:local}
+    image: ${BACKEND_DEV_IMAGE:-crm-backend:local}
     build:
       context: ../backend
       dockerfile: ../docker/Dockerfile.backend
@@ -118,8 +135,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: change-me-minio-password
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-change-me-minio-password}
       # Webhook Worker 不参与离线模型评测，避免根环境文件误开启外部调用。
       LLM_LIVE_EVAL: "false"
     volumes:
@@ -132,7 +149,7 @@ services:
     command: python -m app.integrations.worker
 
   jobs:
-    image: ${BACKEND_IMAGE:-crm-backend:local}
+    image: ${BACKEND_DEV_IMAGE:-crm-backend:local}
     build:
       context: ../backend
       dockerfile: ../docker/Dockerfile.backend
@@ -143,8 +160,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: change-me-minio-password
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-change-me-minio-password}
       # Jobs 仅按业务开关生成草稿，不复用 REAL-AI-05 离线评测开关。
       LLM_LIVE_EVAL: "false"
     volumes:
@@ -154,12 +171,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     command: python -m app.jobs.worker
 
   agent-worker:
-    image: ${BACKEND_IMAGE:-crm-backend:local}
+    image: ${BACKEND_DEV_IMAGE:-crm-backend:local}
     profiles: ["ai"]
     build:
       context: ../backend
@@ -171,8 +188,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: change-me-minio-password
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-change-me-minio-password}
       # Agent Worker 是常驻业务进程，真实评测只能由隔离 CLI 显式启用。
       LLM_LIVE_EVAL: "false"
     volumes:

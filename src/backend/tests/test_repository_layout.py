@@ -52,6 +52,12 @@ def test_local_startup_entrypoint_uses_source_relative_compose_assets() -> None:
 
     compose_source = (SOURCE_ROOT / "compose/docker-compose.yml").read_text(encoding="utf-8")
     assert compose_source.startswith("name: crm\n")
+    assert "image: ${BACKEND_DEV_IMAGE:-crm-backend:local}" in compose_source
+    assert "image: ${BACKEND_IMAGE:-crm-backend:local}" not in compose_source
+    assert "  minio-init:\n" in compose_source
+    assert "condition: service_completed_successfully" in compose_source
+    assert "mc mb --ignore-existing" in compose_source
+    assert "start_period: 90s" in compose_source
     for required_path in (
         "context: ../backend",
         "context: ../frontend",
