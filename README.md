@@ -322,7 +322,7 @@ uv run python -m scripts.evaluate_real_model --dataset evals/real-model-v1.0.0.j
 
 不接入真实店铺时，可使用六条固定合成会话验证真实 DeepSeek 回复建议、SSE 传输和“使用建议”交互。演示入口只允许服务端内置的完整测试载荷，浏览器不能把任意客户正文送入该入口；所有结果固定为人工草稿，不执行工具、不自动发送，也不改变会话状态。
 
-1. 在开发 `.env` 中设置 `LLM_ENABLED=true`、有效的服务端 DeepSeek 配置和 `AI_SYNTHETIC_DEMO_ENABLED=true`。该演示开关只允许在 `development/test` 使用，生产环境启用会启动失败。
+1. 在 `src/config/.env` 中设置 `LLM_ENABLED=true`、有效的服务端 DeepSeek 配置和 `AI_SYNTHETIC_DEMO_ENABLED=true`。该演示开关只允许在 `development/test` 使用，生产环境启用会启动失败。
 2. 重建后端以注入环境变量，并幂等创建演示数据：
 
 ```powershell

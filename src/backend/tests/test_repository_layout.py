@@ -1,5 +1,6 @@
 """仓库工程根布局契约。"""
 
+import json
 from pathlib import Path
 
 
@@ -100,10 +101,17 @@ def test_operational_scripts_bind_the_relocated_compose_file() -> None:
     assert "架构师/" not in readme
     assert "测试工程师/" not in readme
     assert "项目根 `.env`" not in readme
+    assert "开发 `.env`" not in readme
 
     staging_readme = (SOURCE_ROOT / "deploy/staging/rootless/README.md").read_text(encoding="utf-8")
     assert "架构师/" not in staging_readme
     assert "测试工程师/" not in staging_readme
+
+    model_manifest = json.loads((SOURCE_ROOT / "deploy/models/model-manifest.json").read_text(encoding="utf-8"))
+    for key in ("quality_gate_report", "capacity_gate_report"):
+        report = model_manifest[key]
+        assert report.startswith("release/evidence/retrieval/")
+        assert (REPOSITORY_ROOT / report).is_file()
 
 
 def test_automation_uses_canonical_src_paths() -> None:
