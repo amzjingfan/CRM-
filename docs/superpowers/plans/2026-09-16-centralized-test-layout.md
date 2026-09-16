@@ -465,7 +465,7 @@ git commit -m "ci: enforce centralized test layout"
 
 Update `TEST-001` to `VERIFYING`, mark implementation-plan checkboxes complete as real steps finish, run `git diff --check`, and commit all remaining delivery files. Record `git rev-parse HEAD` as `CANDIDATE_SUBJECT_SHA`.
 
-- [ ] **Step 2: Run complete backend quality gates on the candidate SHA**
+- [x] **Step 2: Run complete backend quality gates on the candidate SHA**
 
 From `src/backend/` run:
 
@@ -479,7 +479,7 @@ uv run pytest -q -rs
 
 Then run `.\src\scripts\run-postgres-integration-tests.ps1` from the repository root. Record pass/skip counts and confirm no collected test disappeared relative to the base.
 
-- [ ] **Step 3: Run complete frontend gates on the candidate SHA**
+- [x] **Step 3: Run complete frontend gates on the candidate SHA**
 
 From `src/frontend/` run:
 
@@ -492,21 +492,21 @@ npm run build
 
 Record the Node assertion count and build result.
 
-- [ ] **Step 4: Validate assets, paths, security, Compose, images, and startup**
+- [x] **Step 4: Validate assets, paths, security, Compose, images, and startup**
 
 Verify eval Git blob identity against the base SHA, parse changed JSON/YAML/PowerShell, check Markdown links, run `git diff --check`, scan added lines for secret patterns, and confirm no legacy active path remains.
 
 Run all applicable Compose `config --quiet` combinations already listed in `TR-REPO-001-20260916-R01.md`. Build fresh backend and frontend images from the final candidate. Start an isolated Compose project with fresh volumes, verify backend health/readiness and frontend login return HTTP 200, then remove only that isolated project and its volumes.
 
-- [ ] **Step 5: Request independent review**
+- [x] **Step 5: Request independent review**
 
 Use `superpowers:requesting-code-review` with base SHA `17bb9bf9501ead60aafe8eed6bddc331f26c43f0` and the actual candidate subject SHA. Require review of classification completeness, test collection, CWD-independent paths, CI lint coverage, Docker context effects, eval hashes, documentation truth, and rollback. Fix every Critical/Important issue and rerun affected gates.
 
-- [ ] **Step 6: Finalize IR/TR/RR and indexes**
+- [x] **Step 6: Finalize IR/TR/RR and indexes**
 
 Write FINAL/PASS/APPROVE records using the actual commands, counts, environment, residual risks, and candidate SHA. Regenerate all three indexes from source records. The evidence tail after the candidate may contain only IR/TR/RR, their indexes, `TASKS.md`, `PROJECT-STATE.md`, and this plan's completion bookkeeping.
 
-- [ ] **Step 7: Close the task and commit evidence**
+- [x] **Step 7: Close the task and commit evidence**
 
 Set `TEST-001` to `DONE`, put the candidate subject SHA in its final column, set `PROJECT-STATE.md` to the real branch/subject and `Workspace hygiene: CLEAN`, then commit with:
 

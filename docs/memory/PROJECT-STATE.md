@@ -11,12 +11,12 @@ Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
 Working branch at this snapshot: feature/unified-test-layout
 Governance base SHA: 17bb9bf9501ead60aafe8eed6bddc331f26c43f0
-CANDIDATE_SUBJECT_SHA: WORKTREE
+CANDIDATE_SUBJECT_SHA: 4cd66643540d7e70acaeae2229a0f10620f7b6ae
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: CLEAN
+Workspace hygiene: ATTENTION — ignored TEST-001 temporary material retained; no cleanup batch or deletion authorization
 ```
 
-当前工程根已迁移到 `src/`，`TEST-001` 已将测试源码、普通 AI eval 资产和项目内临时输出契约集中到 `src/tests/`，正在完成最终验证、审查和证据闭环。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+当前工程根已迁移到 `src/`，`TEST-001` 已将测试源码、普通 AI eval 资产和项目内临时输出契约集中到 `src/tests/`，完整验证和独立审查已通过，最终记录已绑定候选 SHA。任务状态以 `TASKS.md` 为准；本地合并和任务分支清理尚待计划 Step 8 执行。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
 ## 权威入口
 
@@ -35,7 +35,7 @@ Workspace hygiene: CLEAN
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 已完成活动根残留隔离与复核；`TEST-001` 已形成集中式 `src/tests/` 物理布局与当前治理/CI 契约，任务状态仍以 `TASKS.md` 为准；MVP-001～MVP-009 均为 `BACKLOG`。
+- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 已完成活动根残留隔离与复核；`TEST-001` 已完成集中式 `src/tests/` 物理布局、治理/CI 契约、完整验证与独立审查；MVP-001～MVP-009 均为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -43,18 +43,24 @@ Workspace hygiene: CLEAN
 - REPO-001 实施记录：[`../records/implementation/IR-REPO-001-20260916-R01.md`](../records/implementation/IR-REPO-001-20260916-R01.md)。
 - REPO-001 测试记录：[`../reports/tests/TR-REPO-001-20260916-R01.md`](../reports/tests/TR-REPO-001-20260916-R01.md)。
 - REPO-001 审查记录：[`../reports/reviews/RR-REPO-001-20260916-R01.md`](../reports/reviews/RR-REPO-001-20260916-R01.md)。三个派生索引状态为 `CANDIDATE_VIEW`；从本地主分支读取时重建为 `CURRENT`。
+- TEST-001 实施记录：[`../records/implementation/IR-TEST-001-20260916-R01.md`](../records/implementation/IR-TEST-001-20260916-R01.md)。
+- TEST-001 测试记录：[`../reports/tests/TR-TEST-001-20260916-R01.md`](../reports/tests/TR-TEST-001-20260916-R01.md)。
+- TEST-001 审查记录：[`../reports/reviews/RR-TEST-001-20260916-R01.md`](../reports/reviews/RR-TEST-001-20260916-R01.md)。三个派生索引已从全部源记录重建为 `CANDIDATE_VIEW`；从本地主分支读取时重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
+- TEST-001 验证保留了已忽略的 `src/tests/.artifacts/task6-4cd6664-temp/`，仓库外受控验证工作区也保留 candidate-scoped archive、override 和 temp。它们是已知可重建临时材料，但未建立独立清理任务/批次，未移动或删除，因此目录卫生不标记 `CLEAN`。
 
 ## 阻塞、决定与风险
 
 - G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
+- TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
+- TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
 - 本地 `main` 完成本任务快进合并后仍显著领先 `origin/main`；本任务未修改远端。任何远端修改或推送前必须重新读取远端状态、确认目标与历史关系，不得从旧快照推断。
 - Git、文件、Codex UI 与 GitHub 不是原子事务；每一步必须查重、执行、复核并保留恢复点。
 
 ## 最多三个下一动作
 
-1. 按 `docs/superpowers/plans/2026-09-16-centralized-test-layout.md` 完成 `TEST-001` 的全量验证、独立审查和证据闭环。
-2. 2026-09-23T14:00:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
-3. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。
+1. 按 `docs/superpowers/plans/2026-09-16-centralized-test-layout.md` Step 8 完成本地快进合并、合并结果复核和仅限本任务 worktree/分支的清理。
+2. 按治理为 TEST-001 保留的 ignored/repository-external 临时材料建立独立清理候选；同时在 2026-09-23T14:00:00+08:00 后复核 `CLEANUP-20260916-001` 并另取永久删除授权。
+3. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务；pytest 聚焦命令文档 Minor 可在后续文档任务处理。
