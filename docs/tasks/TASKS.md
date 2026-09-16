@@ -53,6 +53,7 @@ DOING/VERIFYING → BLOCKED
 |---|---|---|---|---|---|---|---|---|---|
 | DOCS-001 | 按职责域分类 `docs/` 当前文档并修复活动引用，不改变项目事实 | 本设计规格的 7 项验收标准；`BASE_SHA=318d0e0272a580e0eb36f17e6188944276d2c9be` | DONE | codex/docs-classify-documentation | none | N/A | N/A | N/A（纯文档路径重组） | 35e41ee641e15ce124e3ad09a27f3d8bef1caeec |
 | REPO-001 | 将全部工程代码与运行资产迁入 `src/`，并通过完整构建和实际启动验证 | `src/` 工程根迁移设计的 9 项验收标准；`BASE_SHA=6b726a32502a364040ccf0a0b251a320d379ee7d` | DONE | codex/src-layout-migration | none | [IR](../records/implementation/IR-REPO-001-20260916-R01.md) | [TR](../reports/tests/TR-REPO-001-20260916-R01.md) | [RR](../reports/reviews/RR-REPO-001-20260916-R01.md) | a8c15b516052dc8733ec3764d4d0e6d606ddc11e |
+| MAINT-CLEANUP-20260916-001 | 根目录本地生成残留按 `CLEANUP-20260916-001` 隔离、验证并保留可恢复性 | [清理批次](../operations/cleanup/CLEANUP-20260916-001.md)；`BASE_SHA=c9128a5b2e1b6d102d90699b6b50da84a63820df` | DOING | docs/root-hygiene-cleanup-20260916 | none | N/A（本地非跟踪残留） | N/A（静态结构验证） | N/A（低风险可恢复隔离） | |
 
 ## 维护规则
 

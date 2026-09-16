@@ -9,11 +9,11 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: codex/src-layout-migration
-Governance base SHA: 6b726a32502a364040ccf0a0b251a320d379ee7d
-CANDIDATE_SUBJECT_SHA: a8c15b516052dc8733ec3764d4d0e6d606ddc11e
+Working branch at this snapshot: docs/root-hygiene-cleanup-20260916
+Governance base SHA: c9128a5b2e1b6d102d90699b6b50da84a63820df
+CANDIDATE_SUBJECT_SHA: WORKTREE
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: CLEAN
+Workspace hygiene: CANDIDATE
 ```
 
 当前工程根已迁移到 `src/`。最终候选已完成完整质量、四镜像构建、全部 Compose 组合解析、独立审查和全新卷实际启动验证。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
@@ -35,7 +35,7 @@ Workspace hygiene: CLEAN
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；MVP-001～MVP-009 均为 `BACKLOG`。
+- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 正在处理根目录本地生成残留；MVP-001～MVP-009 均为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -44,7 +44,7 @@ Workspace hygiene: CLEAN
 - REPO-001 测试记录：[`../reports/tests/TR-REPO-001-20260916-R01.md`](../reports/tests/TR-REPO-001-20260916-R01.md)。
 - REPO-001 审查记录：[`../reports/reviews/RR-REPO-001-20260916-R01.md`](../reports/reviews/RR-REPO-001-20260916-R01.md)。三个派生索引状态为 `CANDIDATE_VIEW`；从本地主分支读取时重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
-- 目录卫生：在治理基线启动盘点中未发现未跟踪/忽略对象或重解析点，状态为 `CLEAN`；当前没有活动清理任务或批次。
+- 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已进入 `CLEANUP-20260916-001` 候选；活动批次状态为 `CANDIDATE`，最早永久删除时间为 2026-09-23T10:34:00+08:00。
 
 ## 阻塞、决定与风险
 
@@ -55,6 +55,6 @@ Workspace hygiene: CLEAN
 
 ## 最多三个下一动作
 
-1. 在本地 `main` 复核 `src/` 新路径、Compose 配置与启动入口，不修改远端。
+1. 完成 `CLEANUP-20260916-001` 的持久隔离、复核与恢复信息登记，不修改远端。
 2. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。
 3. 准备 MVP-001 的精确环境、资源、授权和验收步骤。
