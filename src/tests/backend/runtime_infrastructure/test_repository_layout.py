@@ -1,8 +1,61 @@
 """仓库工程根布局契约。"""
 
 import json
+import subprocess
+from pathlib import PurePosixPath
 
 from _support import REPOSITORY_ROOT, SOURCE_ROOT, TESTS_ROOT
+
+
+def test_tracked_test_assets_use_centralized_layout() -> None:
+    """测试源码、评测资产和普通结果只能从统一测试根提供。"""
+    legacy_roots = (
+        SOURCE_ROOT / "backend" / "tests",
+        SOURCE_ROOT / "frontend" / "tests",
+        SOURCE_ROOT / "backend" / "evals",
+    )
+    assert all(not path.exists() for path in legacy_roots)
+    assert (TESTS_ROOT / "backend").is_dir()
+    assert (TESTS_ROOT / "frontend" / "contract").is_dir()
+    assert (TESTS_ROOT / "integration" / "postgres").is_dir()
+    assert (TESTS_ROOT / "ai" / "datasets").is_dir()
+    assert (TESTS_ROOT / "ai" / "results").is_dir()
+
+    tracked_output = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    tracked_paths = tuple(PurePosixPath(path) for path in tracked_output.split("\0") if path)
+    exempt_roots = (
+        PurePosixPath("docs/reports/tests"),
+        PurePosixPath("release/evidence"),
+        PurePosixPath("docs/superpowers"),
+        PurePosixPath("release/baselines"),
+    )
+
+    def is_test_asset(path: PurePosixPath) -> bool:
+        return (
+            "tests" in path.parts
+            or "evals" in path.parts
+            or (path.name.startswith("test_") and path.suffix == ".py")
+            or path.name.endswith(".test.mjs")
+            or ("eval" in path.stem.lower() and path.suffix in {".json", ".jsonl"})
+        )
+
+    classified_assets = (
+        path
+        for path in tracked_paths
+        if is_test_asset(path) and not any(path.is_relative_to(root) for root in exempt_roots)
+    )
+    central_root = PurePosixPath("src/tests")
+    assert all(path.is_relative_to(central_root) for path in classified_assets)
+    assert not any(path.is_relative_to(central_root / ".artifacts") for path in tracked_paths)
+
+    ignore_source = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
+    assert "/src/tests/.artifacts/" in ignore_source
 
 
 def test_backend_tests_use_central_test_root() -> None:

@@ -16,7 +16,7 @@ EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN
 ```
 
-当前工程根已迁移到 `src/`。最终候选已完成完整质量、四镜像构建、全部 Compose 组合解析、独立审查和全新卷实际启动验证。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+当前工程根已迁移到 `src/`，`TEST-001` 已将测试源码、普通 AI eval 资产和项目内临时输出契约集中到 `src/tests/`，正在完成最终验证、审查和证据闭环。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
 ## 权威入口
 
@@ -35,7 +35,7 @@ Workspace hygiene: CLEAN
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 已完成活动根残留隔离与复核；`TEST-001` 正在设计并实施统一 `src/tests/` 测试布局；MVP-001～MVP-009 均为 `BACKLOG`。
+- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 已完成活动根残留隔离与复核；`TEST-001` 已形成集中式 `src/tests/` 物理布局与当前治理/CI 契约，任务状态仍以 `TASKS.md` 为准；MVP-001～MVP-009 均为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -55,6 +55,6 @@ Workspace hygiene: CLEAN
 
 ## 最多三个下一动作
 
-1. 按已批准规格和 `docs/superpowers/plans/2026-09-16-centralized-test-layout.md` 实施 `TEST-001`，完成迁移、全量验证和独立审查。
+1. 按 `docs/superpowers/plans/2026-09-16-centralized-test-layout.md` 完成 `TEST-001` 的全量验证、独立审查和证据闭环。
 2. 2026-09-23T14:00:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
 3. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。

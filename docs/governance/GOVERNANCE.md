@@ -117,17 +117,19 @@ MVP 只有在核心流程通过对应验收、所有 DONE 任务和最终记录�
 本项目固定：
 
 ```text
-TEST_LAYOUT：hybrid
-后端模块/契约/安全测试：src/backend/tests/
-跨 PostgreSQL/pgvector 集成测试：src/tests/integration/
-前端契约与行为测试：src/frontend/tests/
-AI/RAG 评测：src/backend/evals/
+TEST_LAYOUT: centralized
+后端模块/契约/安全测试：src/tests/backend/
+跨 PostgreSQL/pgvector 集成测试：src/tests/integration/postgres/
+前端契约与行为测试：src/tests/frontend/contract/
+AI/RAG 评测数据与版本化结果：src/tests/ai/datasets/ 与 src/tests/ai/results/
+项目内临时测试输出：src/tests/.artifacts/
+正式测试记录：docs/reports/tests/
 正式低敏机器证据：release/evidence/
 测试策略：docs/quality/TEST-STRATEGY.md
 实际命令与发现规则：src/tests/README.md
 ```
 
-不存在真实测试的层级在测试策略中标记 `N/A`、理由和启用条件，不创建空目录。测试源码、fixture/helper、临时输出和正式证据必须分离；fixtures 不含真实密钥、生产数据或未经脱敏的用户数据。
+未来的测试、测试专用 fixture/data、普通 eval 输入/结果和项目内临时输出必须放在 `src/tests/`，不得在产品模块下重建测试或 eval 根。临时输出只能写入已忽略的 `src/tests/.artifacts/`；正式 TR 与必须长期保存的低敏发布证据分别保留在 `docs/reports/tests/` 和 `release/evidence/`。不存在真实测试的层级在测试策略中标记 `N/A`、理由和启用条件，不创建空目录；fixtures 不含真实密钥、生产数据或未经脱敏的用户数据。
 
 ### 何时创建 IR、TR 与 RR
 

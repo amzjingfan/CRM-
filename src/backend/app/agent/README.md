@@ -83,9 +83,9 @@ Prompt、模型、检索策略、工具 Schema 或安全规则变更时，必须
 ## 评测与指标
 
 ```powershell
-uv run python -m scripts.evaluate_phase4 --dataset ../tests/ai/datasets/agent-phase4-v1.0.0.jsonl --output ../tests/ai/results/agent-phase4-deterministic.json
+uv run python -m scripts.evaluate_phase4 --dataset ../tests/ai/datasets/agent-phase4-v1.0.0.jsonl --output ../tests/.artifacts/ai/agent-phase4-deterministic.json
 ```
 
-确定性回归当前包含 234 条普通回复、翻译、弃单和中差评样本。额外单元测试覆盖报告 010～013 的业务资金结果、合法作用域、结构化声明绕过、污染 FAQ、营销复核、工具证据对象绑定和脱敏对象绑定。自由文本样本不并入固定评测集自证；测试必须分别检查人工复核资格和 `automatic_delivery_allowed`，旧 `is_safe` 二元值不再代表自动发送授权。离线有标签指标由 `calculate_phase4_metrics` 计算，线上 `metric_daily` 只从事实表聚合指标。
+确定性回归当前包含 237 条普通回复、翻译、弃单和中差评样本。额外单元测试覆盖报告 010～013 的业务资金结果、合法作用域、结构化声明绕过、污染 FAQ、营销复核、工具证据对象绑定和脱敏对象绑定。自由文本样本不并入固定评测集自证；测试必须分别检查人工复核资格和 `automatic_delivery_allowed`，旧 `is_safe` 二元值不再代表自动发送授权。离线有标签指标由 `calculate_phase4_metrics` 计算，线上 `metric_daily` 只从事实表聚合指标。
 
 真实模型 SSE 50 并发、首输出小于 3 秒、真实平台写和 5 天稳定性必须由测试工程师在隔离环境中执行，不得用 Fake Provider 或传输分块冒充正式结论。

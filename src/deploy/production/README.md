@@ -27,7 +27,7 @@
 
 `retrieval-model-service` 不接收数据库、Redis、MinIO、JWT、TikTok 或 DeepSeek 凭据；
 它只运行本地 BGE 模型并接收自身服务 Token。新增服务或调整职责时必须同步修改此矩阵和
-`src/backend/tests/test_real_runtime_config.py`，不能把平台与模型凭据重新放回公共锚点。
+`src/tests/backend/runtime_infrastructure/test_real_runtime_config.py`，不能把平台与模型凭据重新放回公共锚点。
 
 应用会校验 `TIKTOK_EGRESS_IP` 的格式，但无法证明云网络实际使用该地址。正式联调前由运维在目标主机查询公网出口地址，并与云控制台、TikTok 白名单三方核对。
 

@@ -43,6 +43,7 @@ coverage/
 *.tsbuildinfo
 
 # Browser and test temporary output.
+/src/tests/.artifacts/
 .test-artifacts/
 .tmp/
 tmp/

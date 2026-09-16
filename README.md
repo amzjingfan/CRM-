@@ -27,7 +27,7 @@ BGE-M3 与 `bge-reranker-large` 固定版本模型已经接入单实例内部模
 - `src/backend/app/dashboard|agent_management|users`：每日指标、运营看板、Agent 配置/脱敏日志和团队管理。
 - `src/backend/app/workspace`：会话列表、消息、分配、转人工、订单/物流、改地址和发券入口。
 - `src/backend/app/customers|conversations|orders|audit`：Phase 2 领域模型。
-- `src/backend/evals`：版本化意图识别、FAQ RAG 和 Phase 4 回复安全 JSONL 评测集。
+- `src/tests`：统一收纳分类后的后端、前端与 PostgreSQL 测试，AI/RAG 版本化数据集与结果，以及已忽略的项目内临时输出根 `src/tests/.artifacts/`。
 - `src/deploy/models`：本地 BGE 模型说明和资产清单；大体积权重由 `.gitignore` 排除。
 - `src/backend/migrations`：001–023 可逆迁移；019 强制一个内部店铺只能绑定一个 TikTok 渠道，020 增加知识语义审批，021 增加平台写结果 `unknown` 消息状态，022 增加 AI 交付与营销复核，023 加固营销复核幂等。
 - `src/frontend/app/workspace|dashboard|knowledge|marketing|agents|settings`：工作台、看板、知识库、营销、Agent 运营和系统设置。
@@ -266,8 +266,8 @@ AI 叠加文件会显式启用 `EMBEDDING_ENABLED=true`，并让 backend、jobs 
 Set-Location src/backend
 uv sync --frozen --all-groups
 uv lock --check
-uv run ruff check .
-uv run ruff format --check .
+uv run ruff check . ../tests/backend ../tests/integration/postgres
+uv run ruff format --check . ../tests/backend ../tests/integration/postgres
 uv run mypy app scripts
 uv run pytest
 uv audit
@@ -284,7 +284,7 @@ docker-compose -f src/compose/docker-compose.yml -f src/compose/docker-compose.a
 
 ```powershell
 Set-Location src/backend
-uv run python -m scripts.evaluate_intents --output evals/results/intent-classifier-live.md
+uv run python -m scripts.evaluate_intents --output ../tests/.artifacts/ai/intent-classifier-live.md
 ```
 
 评测门禁为五类意图准确率不低于 85%、30 条边界样本正确拒判率不低于 90%，并且 Provider 失败数必须为 0。单条模型失败不会中断整个评测，而是作为错误计入最终报告。DeepSeek V4 短分类任务默认配置 `DEEPSEEK_THINKING_ENABLED=false`，避免思考 Token 耗尽最终 JSON 的输出预算。报告不保存样本原文、Prompt、模型正文或密钥；没有真实 Key 时不得把单元测试 Provider 的结果当作正式模型评测。
@@ -293,7 +293,7 @@ uv run python -m scripts.evaluate_intents --output evals/results/intent-classifi
 
 ```powershell
 Set-Location src/backend
-uv run python -m scripts.evaluate_rag --dataset evals/faq-rag-v1.0.0.jsonl --output evals/results/faq-rag-live.json
+uv run python -m scripts.evaluate_rag --dataset ../tests/ai/datasets/faq-rag-v1.0.0.jsonl --output ../tests/.artifacts/ai/faq-rag-live.json
 ```
 
 RAG 评测至少输出 Dense `Recall@20`、重排序 `Recall@5`、MRR、nDCG、20 条无答案样本正确拒判率和引用合法率。正式门禁仍要求重排序 `Recall@5 >= 90%`、无答案正确转人工率 `>= 90%`、引用合法率 `100%`。Fake Provider 和工程冒烟不代表正式模型质量通过。
@@ -302,7 +302,7 @@ Phase 4 安全回归集当前包含 237 条客服回复、翻译、弃单和中�
 
 ```powershell
 Set-Location src/backend
-uv run python -m scripts.evaluate_phase4 --dataset evals/agent-phase4-v1.0.0.jsonl --output evals/results/agent-phase4-deterministic.json
+uv run python -m scripts.evaluate_phase4 --dataset ../tests/ai/datasets/agent-phase4-v1.0.0.jsonl --output ../tests/.artifacts/ai/agent-phase4-deterministic.json
 ```
 
 `phase4_evaluation.calculate_phase4_metrics` 可汇总有标签离线评测；线上 `metric_daily` 从事实表重建 RAG、工具、首输出、Token 和显式单价估算成本。价格由运行方通过 `LLM_*_COST_PER_MILLION_USD` 配置，默认 0 表示未配置。这个确定性回归不是真实模型、真实平台或 50 并发性能结论。
@@ -311,7 +311,7 @@ REAL-AI-05 使用 18 类冻结合成样本调用真实 DeepSeek，其中 17 条�
 
 ```powershell
 Set-Location src/backend
-uv run python -m scripts.evaluate_real_model --dataset evals/real-model-v1.0.0.jsonl --manifest evals/real-model-v1.0.0.manifest.json --output evals/results/real-model-v1.0.0-deepseek-YYYYMMDD-NNN.json
+uv run python -m scripts.evaluate_real_model --dataset ../tests/ai/datasets/real-model-v1.0.0.jsonl --manifest ../tests/ai/datasets/real-model-v1.0.0.manifest.json --output ../tests/.artifacts/ai/real-model-v1.0.0-deepseek-YYYYMMDD-NNN.json
 ```
 
 运行前必须仅在获准的隔离评测进程中显式配置 `APP_ENV=integration|staging`、`LLM_ENABLED=true`、`LLM_LIVE_EVAL=true`、DeepSeek 主模型、服务端 Key、正数 Token 单价、价格版本、币种和计价口径。禁止把 `LLM_LIVE_EVAL=true` 长期写入 `src/config/.env`；开发环境文件和 Compose 常驻服务必须保持 `false`，评测结束后立即清除当前进程的临时覆盖。模型、版本、币种、口径和两项费率必须整体命中代码内已批准登记项，结果同时保存费率以便复算；离线真实模型评测在 `production` 环境始终拒绝启动。门禁要求准确率不低于 85%、危险漏放为 0、合法误拦截为 0、真实 Provider 失败为 0，且成本配置完整。当前 `deepseek-v4-flash` / `real-model-eval-v1.2.2` 在未修改原 18 条标签、逐项校验九维声明的开发冻结集上为 16/18（88.89%），危险漏放、合法误拦截和 Provider 失败均为 0；该开发自测不替代测试工程师使用未见开放集的独立复测，因此公开回复、生产翻译、AI 营销和自动回复继续关闭。
@@ -339,7 +339,7 @@ docker-compose -f src/compose/docker-compose.yml exec -T backend python -m scrip
 前端：
 
 ```powershell
-cd frontend
+Set-Location src/frontend
 npm ci
 npm run lint
 npm run typecheck
