@@ -9,9 +9,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/root-hygiene-cleanup-20260916
-Governance base SHA: c9128a5b2e1b6d102d90699b6b50da84a63820df
-CANDIDATE_SUBJECT_SHA: 848c134f0d99c710b9375b4d992c6a4bb249b32a
+Working branch at this snapshot: feature/unified-test-layout
+Governance base SHA: 17bb9bf9501ead60aafe8eed6bddc331f26c43f0
+CANDIDATE_SUBJECT_SHA: WORKTREE
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN
 ```
@@ -35,7 +35,7 @@ Workspace hygiene: CLEAN
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 已完成活动根残留隔离与复核；MVP-001～MVP-009 均为 `BACKLOG`。
+- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001` 已完成活动根残留隔离与复核；`TEST-001` 正在设计并实施统一 `src/tests/` 测试布局；MVP-001～MVP-009 均为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -55,6 +55,6 @@ Workspace hygiene: CLEAN
 
 ## 最多三个下一动作
 
-1. 2026-09-23T14:00:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
-2. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。
-3. 准备 MVP-001 的精确环境、资源、授权和验收步骤。
+1. 审阅 `TEST-001` 统一测试目录书面规格，确认后生成实施计划并迁移全部测试与 eval 资产。
+2. 2026-09-23T14:00:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
+3. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。
