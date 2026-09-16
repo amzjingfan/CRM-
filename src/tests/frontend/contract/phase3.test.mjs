@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
+import { frontendRoot } from "../helpers/paths.mjs";
+
 const sourceUrls = {
-  agent: new URL("../app/agents/page.tsx", import.meta.url),
-  api: new URL("../lib/api.ts", import.meta.url),
-  appShell: new URL("../components/AppShell.tsx", import.meta.url),
-  css: new URL("../app/globals.css", import.meta.url),
-  knowledge: new URL("../app/knowledge/page.tsx", import.meta.url),
-  marketing: new URL("../app/marketing/page.tsx", import.meta.url),
-  workspace: new URL("../app/workspace/page.tsx", import.meta.url),
+  agent: new URL("app/agents/page.tsx", frontendRoot),
+  api: new URL("lib/api.ts", frontendRoot),
+  appShell: new URL("components/AppShell.tsx", frontendRoot),
+  css: new URL("app/globals.css", frontendRoot),
+  knowledge: new URL("app/knowledge/page.tsx", frontendRoot),
+  marketing: new URL("app/marketing/page.tsx", frontendRoot),
+  workspace: new URL("app/workspace/page.tsx", frontendRoot),
 };
 
 function readRequiredSource(sourceName) {

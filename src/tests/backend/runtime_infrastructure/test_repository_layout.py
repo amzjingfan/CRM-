@@ -10,6 +10,11 @@ def test_backend_tests_use_central_test_root() -> None:
     assert not (SOURCE_ROOT / "backend" / "tests").exists()
 
 
+def test_frontend_tests_use_central_test_root() -> None:
+    assert (TESTS_ROOT / "frontend" / "contract").is_dir()
+    assert not (SOURCE_ROOT / "frontend" / "tests").exists()
+
+
 def test_postgres_integration_tests_have_one_category() -> None:
     assert (TESTS_ROOT / "integration" / "postgres").is_dir()
     assert not list((TESTS_ROOT / "integration").glob("test_*.py"))

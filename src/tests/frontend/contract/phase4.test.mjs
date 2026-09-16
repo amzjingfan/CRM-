@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
+import { frontendRoot } from "../helpers/paths.mjs";
+
+const read = (path) => readFile(new URL(path, frontendRoot), "utf8");
 
 test("Phase 4 dashboard has an accessible chart and table fallback", async () => {
-  const source = await read("../app/dashboard/page.tsx");
+  const source = await read("app/dashboard/page.tsx");
   assert.match(source, /Conversation trend line chart/);
   assert.match(source, /会话趋势折线图/);
   assert.match(source, /查看数据表/);
@@ -18,9 +20,9 @@ test("Phase 4 dashboard has an accessible chart and table fallback", async () =>
 
 test("settings pages cover stores channels and team", async () => {
   const sources = await Promise.all([
-    read("../app/settings/stores/page.tsx"),
-    read("../app/settings/channels/page.tsx"),
-    read("../app/settings/team/page.tsx"),
+    read("app/settings/stores/page.tsx"),
+    read("app/settings/channels/page.tsx"),
+    read("app/settings/team/page.tsx"),
   ]);
   assert.match(sources[0], /createStore/);
   assert.match(sources[0], /Store management/);
@@ -35,8 +37,8 @@ test("settings pages cover stores channels and team", async () => {
 
 test("Phase 4 English mode covers Agent forms and workspace SSE content", async () => {
   const [agent, workspace] = await Promise.all([
-    read("../app/agents/page.tsx"),
-    read("../app/workspace/page.tsx"),
+    read("app/agents/page.tsx"),
+    read("app/workspace/page.tsx"),
   ]);
   assert.match(agent, /Allowed tools/);
   assert.match(agent, /Save operations configuration/);
@@ -46,7 +48,7 @@ test("Phase 4 English mode covers Agent forms and workspace SSE content", async 
 });
 
 test("workspace ignores stale conversation detail responses and updates read state", async () => {
-  const source = await read("../app/workspace/page.tsx");
+  const source = await read("app/workspace/page.tsx");
   assert.match(source, /let isCurrentRequest = true/);
   assert.match(source, /return \(\) => \{ isCurrentRequest = false; \}/);
   assert.match(source, /item\.id === selectedId \? \{ \.\.\.item, unread_count: 0 \}/);
@@ -54,14 +56,14 @@ test("workspace ignores stale conversation detail responses and updates read sta
 });
 
 test("application shell exposes a retryable authentication error state", async () => {
-  const source = await read("../components/AppShell.tsx");
+  const source = await read("components/AppShell.tsx");
   assert.match(source, /setAuthError/);
   assert.match(source, /setAuthRetry\(\(value\) => value \+ 1\)/);
   assert.match(source, /暂时无法进入管理台/);
 });
 
 test("Agent tool codes use readable Chinese labels", async () => {
-  const agent = await read("../app/agents/page.tsx");
+  const agent = await read("app/agents/page.tsx");
   for (const label of ["查询订单", "查询物流", "查询客户资料", "修改收货地址", "发送优惠券", "转人工", "发送平台消息"]) {
     assert.match(agent, new RegExp(label));
   }
@@ -69,7 +71,7 @@ test("Agent tool codes use readable Chinese labels", async () => {
 });
 
 test("interactive filters and compact fields meet the 44px touch target", async () => {
-  const css = await read("../app/globals.css");
+  const css = await read("app/globals.css");
   assert.match(css, /\.filter\s*\{[^}]*min-height:\s*44px/);
   assert.match(css, /\.compact-field\s*\{[^}]*min-height:\s*44px/);
   assert.doesNotMatch(css, /\.compact-field\s*\{[^}]*min-height:\s*40px/);
@@ -77,8 +79,8 @@ test("interactive filters and compact fields meet the 44px touch target", async 
 
 test("SSE uses cookie CSRF transport and abort support", async () => {
   const [api, workspace] = await Promise.all([
-    read("../lib/api.ts"),
-    read("../app/workspace/page.tsx"),
+    read("lib/api.ts"),
+    read("app/workspace/page.tsx"),
   ]);
   assert.match(api, /X-CSRF-Token/);
   assert.match(api, /credentials: "include"/);
@@ -94,7 +96,7 @@ test("SSE uses cookie CSRF transport and abort support", async () => {
 });
 
 test("management shell follows the prototype information architecture", async () => {
-  const source = await read("../components/AppShell.tsx");
+  const source = await read("components/AppShell.tsx");
   for (const label of ["数据看板", "客服工作台", "知识库", "智能营销", "Agent 管理", "系统配置"]) {
     assert.match(source, new RegExp(label));
   }
@@ -104,8 +106,8 @@ test("management shell follows the prototype information architecture", async ()
 
 test("knowledge and marketing pages implement the prototype while keeping live APIs", async () => {
   const [knowledge, marketing] = await Promise.all([
-    read("../app/knowledge/page.tsx"),
-    read("../app/marketing/page.tsx"),
+    read("app/knowledge/page.tsx"),
+    read("app/marketing/page.tsx"),
   ]);
   assert.match(knowledge, /knowledge-layout/);
   assert.match(knowledge, /category_id/);
@@ -117,8 +119,8 @@ test("knowledge and marketing pages implement the prototype while keeping live A
 
 test("knowledge layers are interactive, URL-backed, and protected from stale responses", async () => {
   const [knowledge, css] = await Promise.all([
-    read("../app/knowledge/page.tsx"),
-    read("../app/globals.css"),
+    read("app/knowledge/page.tsx"),
+    read("app/globals.css"),
   ]);
   assert.match(knowledge, /selectedLayer/);
   assert.match(knowledge, /query\.set\("layer", selectedLayer\)/);

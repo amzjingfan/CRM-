@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const sourceRoot = new URL("../../", import.meta.url);
-const repositoryRoot = new URL("../../../", import.meta.url);
+import { frontendRoot, repositoryRoot, sourceRoot } from "../helpers/paths.mjs";
 
 const composeSource = await readFile(
   new URL("compose/docker-compose.yml", sourceRoot),
@@ -30,7 +29,7 @@ const productionReadmeSource = await readFile(
   "utf8",
 );
 const packageJson = JSON.parse(
-  await readFile(new URL("../package.json", import.meta.url), "utf8"),
+  await readFile(new URL("package.json", frontendRoot), "utf8"),
 );
 
 function composeServiceBlock(composeText, serviceName) {

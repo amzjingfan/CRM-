@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { frontendRoot } from "../helpers/paths.mjs";
+
 test("browser authentication never stores JWT in localStorage", async () => {
   const sources = await Promise.all([
-    readFile(new URL("../lib/api.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/login/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("lib/api.ts", frontendRoot), "utf8"),
+    readFile(new URL("app/login/page.tsx", frontendRoot), "utf8"),
   ]);
   const code = sources.join("\n");
   assert.equal(code.includes('localStorage.setItem("crm_access_token"'), false);
@@ -14,8 +16,8 @@ test("browser authentication never stores JWT in localStorage", async () => {
 });
 
 test("workspace SSE suggestion fills the composer without automatic sending", async () => {
-  const source = await readFile(new URL("../app/workspace/page.tsx", import.meta.url), "utf8");
-  const api = await readFile(new URL("../lib/api.ts", import.meta.url), "utf8");
+  const source = await readFile(new URL("app/workspace/page.tsx", frontendRoot), "utf8");
+  const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
   assert.equal(api.includes('rawRequest("/chat/query"'), true);
   assert.equal(api.includes("ReadableStream"), false);
   assert.equal(api.includes("response.body.getReader()"), true);
@@ -25,8 +27,8 @@ test("workspace SSE suggestion fills the composer without automatic sending", as
 });
 
 test("manual platform messages require confirmation and expose uncertain delivery", async () => {
-  const source = await readFile(new URL("../app/workspace/page.tsx", import.meta.url), "utf8");
-  const api = await readFile(new URL("../lib/api.ts", import.meta.url), "utf8");
+  const source = await readFile(new URL("app/workspace/page.tsx", frontendRoot), "utf8");
+  const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
   assert.equal(api.includes("JSON.stringify({ content, confirmed: true })"), true);
   assert.equal(source.includes("window.confirm(prompt)"), true);
   assert.equal(source.includes("真实 TikTok 客户"), true);
