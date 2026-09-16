@@ -44,7 +44,7 @@ Workspace hygiene: QUARANTINED
 - REPO-001 测试记录：[`../reports/tests/TR-REPO-001-20260916-R01.md`](../reports/tests/TR-REPO-001-20260916-R01.md)。
 - REPO-001 审查记录：[`../reports/reviews/RR-REPO-001-20260916-R01.md`](../reports/reviews/RR-REPO-001-20260916-R01.md)。三个派生索引状态为 `CANDIDATE_VIEW`；从本地主分支读取时重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
-- 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T10:34:00+08:00。
+- 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 
 ## 阻塞、决定与风险
 
@@ -55,6 +55,6 @@ Workspace hygiene: QUARANTINED
 
 ## 最多三个下一动作
 
-1. 2026-09-23T10:34:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
+1. 2026-09-23T14:00:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
 2. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。
 3. 准备 MVP-001 的精确环境、资源、授权和验收步骤。

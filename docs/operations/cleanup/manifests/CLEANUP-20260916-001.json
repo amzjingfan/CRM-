@@ -4,7 +4,8 @@
   "base_sha": "c9128a5b2e1b6d102d90699b6b50da84a63820df",
   "state": "VERIFIED_UNUSED",
   "authorized_root": ".",
-  "retention_until": "2026-09-23T10:34:00+08:00",
+  "quarantined_at": "2026-09-16T13:45:15.6720182+08:00",
+  "retention_until": "2026-09-23T14:00:00+08:00",
   "items": [
     {
       "task_id": "MAINT-CLEANUP-20260916-001",
@@ -13,7 +14,7 @@
       "original_path": "frontend",
       "kind": "directory",
       "category": "generated",
-      "git_status": "untracked-empty",
+      "git_status": "untracked",
       "size_bytes": 0,
       "sha256": "N/A: empty directory tree",
       "modified_at": "2026-09-16T13:13:02.2069072+08:00",
@@ -30,8 +31,8 @@
       ],
       "action": "quarantined",
       "quarantine_path": ".maintenance/quarantine/CLEANUP-20260916-001/frontend",
-      "retention_until": "2026-09-23T10:34:00+08:00",
-      "restore_method": "If repository-root frontend does not exist, move the quarantined frontend directory back with PowerShell Move-Item -LiteralPath.",
+      "retention_until": "2026-09-23T14:00:00+08:00",
+      "restore_method": "If repository-root frontend does not exist, run from the repository root: Move-Item -LiteralPath '.maintenance\\quarantine\\CLEANUP-20260916-001\\frontend' -Destination 'frontend'.",
       "verification": [
         "source resolved inside the repository root and was not a reparse point",
         "source contained exactly the two expected empty directories and no files",
@@ -64,8 +65,8 @@
       ],
       "action": "quarantined",
       "quarantine_path": ".maintenance/quarantine/CLEANUP-20260916-001/.test-tmp",
-      "retention_until": "2026-09-23T10:34:00+08:00",
-      "restore_method": "If repository-root .test-tmp does not exist, move the quarantined .test-tmp directory back with PowerShell Move-Item -LiteralPath.",
+      "retention_until": "2026-09-23T14:00:00+08:00",
+      "restore_method": "If repository-root .test-tmp does not exist, run from the repository root: Move-Item -LiteralPath '.maintenance\\quarantine\\CLEANUP-20260916-001\\.test-tmp' -Destination '.test-tmp'.",
       "verification": [
         "source resolved inside the repository root and was not a reparse point",
         "sole file remained zero bytes with the recorded SHA-256 before movement",

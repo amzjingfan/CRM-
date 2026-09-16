@@ -15,7 +15,7 @@
 - Do not delete or modify `.git/`, tracked project assets, release evidence, secrets, data, backups, migrations, or active worktrees.
 - Keep `.worktrees/` because the project explicitly uses it as the ignored worktree root.
 - Treat `frontend/` and `.test-tmp/` as local-only generated/test remnants; quarantine them under `.maintenance/quarantine/CLEANUP-20260916-001/`.
-- Retain quarantined data through `2026-09-23T10:34:00+08:00`; permanent deletion requires a fresh exact-path authorization after that deadline.
+- Retain quarantined data through `2026-09-23T14:00:00+08:00`; permanent deletion requires a fresh exact-path authorization after that deadline.
 - Do not run unrelated product regressions because no product source, runtime configuration, dependency, or behavior changes.
 
 ---
