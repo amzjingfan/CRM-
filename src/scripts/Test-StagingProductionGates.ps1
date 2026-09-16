@@ -390,8 +390,8 @@ if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $bas
 
 $environmentValues = Read-EnvironmentFile -Path $EnvFile
 Assert-EnvironmentContract -Values $environmentValues
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$gitCheckoutRoot = Resolve-GitCheckoutRoot -ProjectRoot $projectRoot
+$sourceRoot = Split-Path -Parent $PSScriptRoot
+$gitCheckoutRoot = Resolve-GitCheckoutRoot -ProjectRoot $sourceRoot
 $modelAssetDir = Assert-ExternalModelAssets -Path $environmentValues["RETRIEVAL_MODEL_ASSET_DIR"] `
     -GitCheckoutRoot $gitCheckoutRoot
 $externalImageRepositories = @{
@@ -412,7 +412,7 @@ if ($retrievalModelImage -ne $RetrievalModelImage) {
     throw "RETRIEVAL_MODEL_SERVICE_IMAGE must equal the reviewed RetrievalModelImage input."
 }
 
-$rootlessOverlay = Join-Path $projectRoot "docker-compose.rootless-staging.yml"
+$rootlessOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging.yml"
 if (-not (Test-Path -LiteralPath $rootlessOverlay -PathType Leaf)) {
     throw "The repository-fixed Rootless staging overlay does not exist."
 }
@@ -437,8 +437,8 @@ try {
         "--project-name", "crm-staging",
         "--profile", "ai",
         "--env-file", (Resolve-Path -LiteralPath $EnvFile).Path,
-        "-f", (Join-Path $projectRoot "docker-compose.yml"),
-        "-f", (Join-Path $projectRoot "docker-compose.prod.yml"),
+        "-f", (Join-Path $sourceRoot "compose/docker-compose.yml"),
+        "-f", (Join-Path $sourceRoot "compose/docker-compose.prod.yml"),
         "-f", (Resolve-Path -LiteralPath $rootlessOverlay).Path
     )
     Set-DisabledCapabilities

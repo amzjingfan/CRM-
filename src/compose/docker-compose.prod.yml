@@ -170,7 +170,7 @@ services:
       - "443:443"
     volumes:
       - type: bind
-        source: ./deploy/nginx/nginx.conf
+        source: ../deploy/nginx/nginx.conf
         target: /etc/nginx/nginx.conf
         read_only: true
       - type: bind

@@ -8,8 +8,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$frontendDirectory = Join-Path $projectRoot "frontend"
+$sourceRoot = Split-Path -Parent $PSScriptRoot
+$frontendDirectory = Join-Path $sourceRoot "frontend"
 $nodeModulesDirectory = Join-Path $frontendDirectory "node_modules"
 
 if (-not (Get-Command node.exe -ErrorAction SilentlyContinue)) {

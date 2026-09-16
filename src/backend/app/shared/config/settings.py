@@ -13,7 +13,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.shared.config.llm_pricing import validate_approved_llm_pricing
 
-PROJECT_ENV_FILE = Path(__file__).resolve().parents[4] / ".env"
+SOURCE_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ENV_FILE = SOURCE_ROOT / "config" / ".env"
 
 # TikTok Partner Center、反向代理和 FastAPI 必须共享同一回调契约。真实环境
 # 不允许通过环境变量改变域名或路径；测试环境只允许替换主机，便于使用假凭证验证流程。
@@ -287,8 +288,8 @@ class Settings(BaseSettings):
         validation_alias="AGENT_HUMAN_REVIEW_THRESHOLD",
     )
 
-    # 项目约定环境文件位于代码仓库根目录。使用绝对路径避免从 backend/ 执行
-    # 评测、迁移或测试时静默回退到默认配置。
+    # 本地环境文件固定在 src/config；容器通过 Compose 注入变量，不要求镜像内存在该文件。
+    # 使用绝对路径避免从 backend/ 执行评测、迁移或测试时静默回退到默认配置。
     model_config = SettingsConfigDict(env_file=PROJECT_ENV_FILE, extra="ignore", case_sensitive=False)
 
     @model_validator(mode="after")

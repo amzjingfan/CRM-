@@ -39,3 +39,25 @@ def test_engineering_assets_live_under_src() -> None:
     )
     assert all(not (REPOSITORY_ROOT / path).exists() for path in forbidden)
     assert not (SOURCE_ROOT / "deploy/cloudflared/config.example.yml").exists()
+
+
+def test_local_startup_entrypoint_uses_source_relative_compose_assets() -> None:
+    """本地启动入口必须固定工程根、环境模板和 Compose 项目身份。"""
+    startup_script = SOURCE_ROOT / "scripts/start-local.ps1"
+    assert startup_script.is_file()
+    startup_source = startup_script.read_text(encoding="utf-8-sig")
+    assert 'Join-Path $sourceRoot "config/.env"' in startup_source
+    assert 'Join-Path $sourceRoot "compose/docker-compose.yml"' in startup_source
+    assert '"--project-name", "crm"' in startup_source
+
+    compose_source = (SOURCE_ROOT / "compose/docker-compose.yml").read_text(encoding="utf-8")
+    assert compose_source.startswith("name: crm\n")
+    for required_path in (
+        "context: ../backend",
+        "context: ../frontend",
+        "dockerfile: ../docker/Dockerfile.backend",
+        "dockerfile: ../docker/Dockerfile.frontend",
+        "path: ../config/.env",
+        "../deploy/models:/models:ro",
+    ):
+        assert required_path in compose_source

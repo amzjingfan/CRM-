@@ -1,3 +1,5 @@
+name: crm
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -66,10 +68,10 @@ services:
   backend:
     image: ${BACKEND_IMAGE:-crm-backend:local}
     build:
-      context: ./backend
-      dockerfile: ../Dockerfile.backend
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
     env_file:
-      - path: .env
+      - path: ../config/.env
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
@@ -82,7 +84,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,10 +109,10 @@ services:
   worker:
     image: ${BACKEND_IMAGE:-crm-backend:local}
     build:
-      context: ./backend
-      dockerfile: ../Dockerfile.backend
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
     env_file:
-      - path: .env
+      - path: ../config/.env
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
@@ -121,7 +123,7 @@ services:
       # Webhook Worker 不参与离线模型评测，避免根环境文件误开启外部调用。
       LLM_LIVE_EVAL: "false"
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -132,10 +134,10 @@ services:
   jobs:
     image: ${BACKEND_IMAGE:-crm-backend:local}
     build:
-      context: ./backend
-      dockerfile: ../Dockerfile.backend
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
     env_file:
-      - path: .env
+      - path: ../config/.env
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
@@ -146,7 +148,7 @@ services:
       # Jobs 仅按业务开关生成草稿，不复用 REAL-AI-05 离线评测开关。
       LLM_LIVE_EVAL: "false"
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -160,10 +162,10 @@ services:
     image: ${BACKEND_IMAGE:-crm-backend:local}
     profiles: ["ai"]
     build:
-      context: ./backend
-      dockerfile: ../Dockerfile.backend
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
     env_file:
-      - path: .env
+      - path: ../config/.env
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
@@ -174,7 +176,7 @@ services:
       # Agent Worker 是常驻业务进程，真实评测只能由隔离 CLI 显式启用。
       LLM_LIVE_EVAL: "false"
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -185,10 +187,10 @@ services:
   retrieval-model-service:
     profiles: ["ai"]
     build:
-      context: ./backend
-      dockerfile: ../Dockerfile.model-service
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.model-service
     env_file:
-      - path: .env
+      - path: ../config/.env
         required: false
     environment:
       EMBEDDING_ENABLED: "true"
@@ -203,7 +205,7 @@ services:
       HF_HUB_OFFLINE: "1"
       TRANSFORMERS_OFFLINE: "1"
     volumes:
-      - ./deploy/models:/models:ro
+      - ../deploy/models:/models:ro
     expose:
       - "8010"
     command:
@@ -233,8 +235,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../Dockerfile.frontend
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
       args:
         # 默认走官方源；Docker Hub 受限时可在 .env 中切换到内部仓库或可信镜像加速地址。
         NODE_IMAGE: ${FRONTEND_NODE_IMAGE:-node:20-alpine}
@@ -245,7 +247,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ../frontend:/app
       - frontend_node_modules:/app/node_modules
       # Next.js 开发容器必须使用独立构建目录。否则宿主机执行 npm run build
       # 会覆盖同一份 .next，导致运行中的 next dev 引用到不一致的 chunk。

@@ -5,13 +5,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$backendDirectory = Join-Path $projectRoot "backend"
+$sourceRoot = Split-Path -Parent $PSScriptRoot
+$backendDirectory = Join-Path $sourceRoot "backend"
+$composeFile = Join-Path $sourceRoot "compose/docker-compose.yml"
 $testDatabaseUrl = "postgresql+asyncpg://crm_test:crm_test@localhost:5433/crm_test"
 
-Push-Location $projectRoot
+Push-Location $sourceRoot
 try {
-    docker compose --profile test up -d --wait postgres-test
+    docker compose -f $composeFile --profile test up -d --wait postgres-test
     if ($LASTEXITCODE -ne 0) {
         throw "隔离 PostgreSQL 测试库启动失败。"
     }
@@ -43,8 +44,8 @@ finally {
     if (-not $KeepDatabase) {
         # postgres-test 使用 tmpfs，只包含自动化测试数据；停止并删除该精确服务
         # 可以避免 5433 端口长期占用，不会触碰开发数据库 postgres。
-        docker compose --profile test stop postgres-test | Out-Null
-        docker compose --profile test rm -f postgres-test | Out-Null
+        docker compose -f $composeFile --profile test stop postgres-test | Out-Null
+        docker compose -f $composeFile --profile test rm -f postgres-test | Out-Null
     }
 
     Pop-Location
