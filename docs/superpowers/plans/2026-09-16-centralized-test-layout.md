@@ -148,7 +148,7 @@ def test_postgres_integration_tests_have_one_category() -> None:
 
 ```powershell
 Set-Location src/backend
-uv run pytest ../tests/backend/runtime_infrastructure/test_repository_layout.py::test_postgres_integration_tests_have_one_category -q
+uv run pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_repository_layout.py::test_postgres_integration_tests_have_one_category -q
 ```
 
 Expected: FAIL because tests still live directly under `src/tests/integration/`.
@@ -167,7 +167,7 @@ Run:
 
 ```powershell
 Set-Location src/backend
-uv run pytest ../tests/integration/postgres --collect-only -q
+uv run pytest -c pyproject.toml ../tests/integration/postgres --collect-only -q
 Set-Location ../..
 .\src\scripts\run-postgres-integration-tests.ps1
 ```
@@ -215,7 +215,7 @@ def test_versioned_eval_datasets_live_under_central_test_root() -> None:
 
 ```powershell
 Set-Location src/backend
-uv run pytest ../tests/backend/agent/test_agent_evaluation.py::test_versioned_eval_datasets_live_under_central_test_root -q
+uv run pytest -c pyproject.toml ../tests/backend/agent/test_agent_evaluation.py::test_versioned_eval_datasets_live_under_central_test_root -q
 ```
 
 Expected: FAIL because datasets still live under `src/backend/evals/`.
@@ -270,7 +270,7 @@ foreach ($newRoot in $newRoots) {
 Then run from `src/backend/`:
 
 ```powershell
-uv run pytest ../tests/backend/agent/test_agent_evaluation.py ../tests/backend/agent/test_agent_phase4.py ../tests/backend/agent/test_real_model_evaluation.py ../tests/backend/agent/test_real_model_evaluation_remediation.py -q
+uv run pytest -c pyproject.toml ../tests/backend/agent/test_agent_evaluation.py ../tests/backend/agent/test_agent_phase4.py ../tests/backend/agent/test_real_model_evaluation.py ../tests/backend/agent/test_real_model_evaluation_remediation.py -q
 uv run python -c "from scripts.evaluate_intents import DEFAULT_DATASET; from scripts.evaluate_real_model import DEFAULT_DATASET as REAL, DEFAULT_MANIFEST; assert DEFAULT_DATASET.is_file() and REAL.is_file() and DEFAULT_MANIFEST.is_file()"
 ```
 
