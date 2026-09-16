@@ -4,7 +4,7 @@
 
 ```text
 Task ID: TEST-001
-Status: APPROVED_IN_CHAT_PENDING_WRITTEN_REVIEW
+Status: APPROVED
 Base SHA: 17bb9bf9501ead60aafe8eed6bddc331f26c43f0
 Branch: feature/unified-test-layout
 ```

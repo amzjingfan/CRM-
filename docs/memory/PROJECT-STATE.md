@@ -55,6 +55,6 @@ Workspace hygiene: CLEAN
 
 ## 最多三个下一动作
 
-1. 审阅 `TEST-001` 统一测试目录书面规格，确认后生成实施计划并迁移全部测试与 eval 资产。
+1. 按已批准规格和 `docs/superpowers/plans/2026-09-16-centralized-test-layout.md` 实施 `TEST-001`，完成迁移、全量验证和独立审查。
 2. 2026-09-23T14:00:00+08:00 后复核 `CLEANUP-20260916-001` 并取得精确永久删除授权；此前保持隔离可恢复。
 3. 为前端依赖审计的 1 个 high severity 项建立独立升级兼容性任务。
