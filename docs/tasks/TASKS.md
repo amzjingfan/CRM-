@@ -47,6 +47,12 @@ DOING/VERIFYING → BLOCKED
 | MVP-012 | 建立公开自动回复、主动营销与高风险写入的审批、频控、幂等、审计、容量和回滚基线 | G7；新需求与门禁 | BACKLOG | | MVP-009 | | | required | |
 | MVP-013 | 根据真实流量复核 BGE/DeepSeek 容量与成本并形成后续容量决定 | 新需求与门禁 | BACKLOG | | MVP-006, MVP-007 | | | required | |
 
+## P2：仓库与文档维护
+
+| ID | 可验证结果 | 需求/验收或门禁 | 状态 | 分支 | 依赖 | IR | TR | RR | 最终 SHA |
+|---|---|---|---|---|---|---|---|---|---|
+| DOCS-001 | 按职责域分类 `docs/` 当前文档并修复活动引用，不改变项目事实 | 本设计规格的 7 项验收标准；`BASE_SHA=318d0e0272a580e0eb36f17e6188944276d2c9be` | DOING | codex/docs-classify-documentation | none | N/A | N/A | N/A（纯文档路径重组） | |
+
 ## 维护规则
 
 1. 开始任务时只选择依赖已满足的最高优先级 `READY` 项，并在同一次更新中写入分支和基线。
