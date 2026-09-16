@@ -9,14 +9,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/codex-standard-governance
-Governance base SHA: e0592c29c2e9d4153ffbbbf43da9a7aa05c29207
-CANDIDATE_SUBJECT_SHA: e0592c29c2e9d4153ffbbbf43da9a7aa05c29207
+Working branch at this snapshot: codex/src-layout-migration
+Governance base SHA: 6b726a32502a364040ccf0a0b251a320d379ee7d
+CANDIDATE_SUBJECT_SHA: PENDING_VERIFICATION
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN
 ```
 
-`CANDIDATE_SUBJECT_SHA` 是当前最后一个影响产品交付内容的已确认提交；本次治理分支只修改文档和协作规则。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+当前工程根已迁移到 `src/`，`CANDIDATE_SUBJECT_SHA` 在完整质量、镜像构建和实际启动验证结束后确定。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
 ## 权威入口
 
@@ -35,13 +35,12 @@ Workspace hygiene: CLEAN
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `TASKS.md` 当前没有 `READY`、`DOING` 或 `VERIFYING` 业务任务；MVP-001～MVP-009 均为 `BACKLOG`。
+- `REPO-001` 正在 `VERIFYING`，负责 `src/` 工程根迁移与启动证明；MVP-001～MVP-009 均为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
 
-- 当前格式的 IR/TR/RR：`NOT_YET_CREATED`。历史实施与测试事实仍由 Git 历史、`docs/quality/TEST-STATUS.md` 和 `release/evidence/` 保留，不伪造迁移记录。
-- `IMPLEMENTATION-INDEX`、`TEST-INDEX`、`REVIEW-INDEX`：`NOT_YET_CREATED`；首次产生对应真实源记录时创建。
+- REPO-001 的 IR/TR/RR 与三个首次索引将在本次验证完成后写入，当前不得提前标记通过。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：在治理基线启动盘点中未发现未跟踪/忽略对象或重解析点，状态为 `CLEAN`；当前没有活动清理任务或批次。
 
@@ -54,6 +53,6 @@ Workspace hygiene: CLEAN
 
 ## 最多三个下一动作
 
-1. 复核治理分支差异和静态验证结果，再由用户决定是否推送并创建 Pull Request。
-2. 为 MVP-001 补齐精确环境、资源、授权和验收步骤，满足后将其从 `BACKLOG` 转为 `READY`。
-3. MVP-001 完成后按依赖关系准备 MVP-002、MVP-005 与 MVP-008，避免并行触碰同一凭证或环境状态。
+1. 完成 REPO-001 的全量质量、四镜像构建与隔离启动验证并写入 IR/TR/RR。
+2. 将已验证分支按用户授权合并到本地 `main`，不修改远端。
+3. 合并后复核新路径与启动冒烟，再准备 MVP-001 的精确环境、资源、授权和验收步骤。

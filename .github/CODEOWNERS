@@ -5,7 +5,8 @@
 /release/ @CP11-gh
 /docs/ @CP11-gh
 
-/.env.example @CP11-gh
-/Dockerfile* @CP11-gh
-/docker-compose*.yml @CP11-gh
-/backend/migrations/ @CP11-gh
+/src/config/.env.example @CP11-gh
+/src/docker/ @CP11-gh
+/src/compose/ @CP11-gh
+/src/deploy/ @CP11-gh
+/src/backend/migrations/ @CP11-gh

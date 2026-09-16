@@ -50,7 +50,7 @@ x-production-model: &production-model
   LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-30}
   LLM_MAX_ATTEMPTS: ${LLM_MAX_ATTEMPTS:-2}
 
-# 最小密钥矩阵（retrieval-only 仅含 docker-compose.yml 中显式检索配置）：
+# 最小密钥矩阵（retrieval-only 仅含 src/compose/docker-compose.yml 中显式检索配置）：
 # - backend: common + platform + model
 # - worker: common + platform
 # - jobs: common + platform + model

@@ -8,20 +8,20 @@
 TEST_LAYOUT: hybrid
 ```
 
-测试遵循后端与前端框架的现有目录，同时把真实 PostgreSQL/pgvector 跨模块集成测试集中在仓库根 `tests/integration/`。不为尚无真实测试的层级创建空目录。
+测试遵循后端与前端框架的现有目录，同时把真实 PostgreSQL/pgvector 跨模块集成测试集中在 `src/tests/integration/`。不为尚无真实测试的层级创建空目录。
 
 | 层级 | 权威路径或模式 | 当前适用性 | 目的 |
 |---|---|---|---|
-| 后端模块、领域与契约 | `backend/tests/test_*.py` | 适用 | 服务、仓储、路由契约、平台适配器、AI 工作流和确定性安全行为 |
-| 后端安全 | `backend/tests/test_security.py`、`test_auth_cookies.py` 及相关领域测试 | 适用 | 认证、权限、店铺隔离、CSRF、DLP、幂等和失败关闭 |
-| 跨模块集成 | `tests/integration/test_*.py` | 适用 | 真实 PostgreSQL/pgvector、迁移后的数据结构和跨模块事务行为 |
-| 前端契约与行为 | `frontend/tests/*.test.mjs` | 适用 | 页面组合、API 使用、安全约束和 TikTok OAuth 前端契约 |
-| 启动与健康冒烟 | `backend/tests/test_health.py` 与已登记的 `backend/scripts/verify_*.py` | 适用 | 健康检查和需要显式环境的专项运行时核对 |
-| AI/RAG eval | `backend/evals/` 与对应评测脚本 | 适用 | 版本化意图、RAG、回复安全和真实模型门禁 |
+| 后端模块、领域与契约 | `src/backend/tests/test_*.py` | 适用 | 服务、仓储、路由契约、平台适配器、AI 工作流和确定性安全行为 |
+| 后端安全 | `src/backend/tests/test_security.py`、`test_auth_cookies.py` 及相关领域测试 | 适用 | 认证、权限、店铺隔离、CSRF、DLP、幂等和失败关闭 |
+| 跨模块集成 | `src/tests/integration/test_*.py` | 适用 | 真实 PostgreSQL/pgvector、迁移后的数据结构和跨模块事务行为 |
+| 前端契约与行为 | `src/frontend/tests/*.test.mjs` | 适用 | 页面组合、API 使用、安全约束和 TikTok OAuth 前端契约 |
+| 启动与健康冒烟 | `src/backend/tests/test_health.py` 与已登记的 `src/backend/scripts/verify_*.py` | 适用 | 健康检查和需要显式环境的专项运行时核对 |
+| AI/RAG eval | `src/backend/evals/` 与对应评测脚本 | 适用 | 版本化意图、RAG、回复安全和真实模型门禁 |
 | 浏览器核心闭环 E2E | 无权威自动化路径 | `N/A` | 当前真实 TikTok/DeepSeek 闭环需要隔离 staging、真实授权和低敏冻结数据；建立独立可重复入口后启用 |
 | 正式低敏机器证据 | `release/evidence/` | 适用 | 保存发布基线必须长期存在的冻结机器结果，不保存普通临时测试输出 |
 
-`backend/pyproject.toml` 的 pytest `testpaths` 同时发现 `backend/tests/` 与 `tests/integration/`。`frontend/package.json` 的 `npm run test` 发现 `frontend/tests/*.test.mjs`。准确执行命令见仓库根 `tests/README.md`。
+`src/backend/pyproject.toml` 的 pytest `testpaths` 同时发现 `src/backend/tests/` 与 `src/tests/integration/`。`src/frontend/package.json` 的 `npm run test` 发现 `src/frontend/tests/*.test.mjs`。准确执行命令见 `src/tests/README.md`。
 
 ## 环境分层
 
@@ -35,7 +35,7 @@ TEST_LAYOUT: hybrid
 ## 数据、fixture 与 helper
 
 - 测试输入必须固定、脱敏、可追踪，不包含真实密钥、Token、生产数据或未经脱敏的客户内容。
-- 当前没有独立的共享 `fixtures/` 或 `helpers/` 权威目录。只有出现两个以上测试模块的真实复用需求时才新增，并在 `tests/README.md` 登记用途和发现方式。
+- 当前没有独立的共享 `fixtures/` 或 `helpers/` 权威目录。只有出现两个以上测试模块的真实复用需求时才新增，并在 `src/tests/README.md` 登记用途和发现方式。
 - 后端测试数据优先通过测试函数或受控工厂构造；数据库集成测试使用隔离实例和可重复清理的测试记录。
 - AI eval 数据集必须固定版本、摘要、允许字段和用途；把数据发给外部模型前还需满足项目的数据出境授权和环境限制。
 - 凭证池、浏览器会话、性能原始日志和临时截图保存到仓库外安全路径或已忽略的测试输出目录，测试后按批准策略处理。
@@ -63,7 +63,7 @@ TEST_LAYOUT: hybrid
 
 ## 输出与正式证据
 
-- 测试源码：`backend/tests/`、`tests/integration/`、`frontend/tests/` 或已登记的 eval 路径。
+- 测试源码：`src/backend/tests/`、`src/tests/integration/`、`src/frontend/tests/` 或已登记的 eval 路径。
 - 临时覆盖率、日志、截图、浏览器结果与缓存：使用 `.pytest_cache/`、`.test-artifacts/`、`test-results/`、`playwright-report/`、`coverage/` 等已忽略目录，或仓库外安全路径。
 - 正式测试记录：首次产生当前格式 TR 时保存到 `docs/reports/tests/`，并按 `docs/governance/GOVERNANCE.md` 建立索引。
 - 发布基线机器证据：只有必须长期固定且经过低敏检查的结果进入 `release/evidence/`；普通本地结果不得混入。

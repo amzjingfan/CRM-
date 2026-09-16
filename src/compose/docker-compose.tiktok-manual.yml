@@ -1,5 +1,5 @@
 # 真实 TikTok 只读、Webhook 与人工普通消息的受控生产叠加文件。
-# 必须与 docker-compose.yml、docker-compose.prod.yml 同时使用；所有开关
+# 必须与 src/compose/docker-compose.yml、src/compose/docker-compose.prod.yml 同时使用；所有开关
 # 仍默认 false，高风险写入和自动回复不能由本文件开启。
 services:
   backend:

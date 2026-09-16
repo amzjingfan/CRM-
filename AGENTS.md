@@ -40,7 +40,7 @@
 
 ## 测试、记忆与恢复
 
-- 项目测试布局固定为 `hybrid`；策略见 `docs/quality/TEST-STRATEGY.md`，实际目录、发现规则和命令见 `tests/README.md`。
+- 项目测试布局固定为 `hybrid`；策略见 `docs/quality/TEST-STRATEGY.md`，实际目录、发现规则和命令见 `src/tests/README.md`。
 - `docs/memory/PROJECT-STATE.md` 是跨会话恢复摘要，只记录最新项目状态、证据入口、阻塞、风险和最多三个下一动作；不得保存真实 thread ID、本机绝对路径、密钥或个人数据。
 - Git、文件、Codex UI 和 GitHub 不是原子事务。每一步先查重，再执行、复核并记录恢复点。UI 工具不可用或结果未知时记录 `UI_UNAVAILABLE`，给出人工步骤，不得虚报成功。
 

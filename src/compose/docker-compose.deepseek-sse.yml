@@ -1,5 +1,5 @@
 # REAL-FS-05 受控叠加：只允许后端按需生成内部草稿，不开放自动回复、翻译或营销。
-# 使用时必须同时叠加 docker-compose.prod.yml 与 docker-compose.ai.yml，且由密钥系统注入真实值。
+# 使用时必须同时叠加 src/compose/docker-compose.prod.yml 与 src/compose/docker-compose.ai.yml，且由密钥系统注入真实值。
 services:
   backend:
     environment:

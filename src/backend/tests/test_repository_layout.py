@@ -61,3 +61,25 @@ def test_local_startup_entrypoint_uses_source_relative_compose_assets() -> None:
         "../deploy/models:/models:ro",
     ):
         assert required_path in compose_source
+
+
+def test_automation_uses_canonical_src_paths() -> None:
+    """CI、镜像发布和 staging 门禁不得引用已移除的根级工程路径。"""
+    ci_source = (REPOSITORY_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "working-directory: src/backend" in ci_source
+    assert "working-directory: src/frontend" in ci_source
+    assert "cache-dependency-path: src/frontend/package-lock.json" in ci_source
+
+    publish_source = (REPOSITORY_ROOT / ".github/workflows/publish-images.yml").read_text(encoding="utf-8")
+    for required_path in (
+        "context: src/backend",
+        "context: src/frontend",
+        "file: src/docker/Dockerfile.backend",
+        "file: src/docker/Dockerfile.frontend.prod",
+        "file: src/docker/Dockerfile.model-service",
+    ):
+        assert required_path in publish_source
+
+    staging_source = (REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text(encoding="utf-8")
+    assert "./src/scripts/Test-StagingProductionGates.ps1" in staging_source
+    assert "./src/scripts/Invoke-StagingRollbackDrill.ps1" in staging_source

@@ -2,7 +2,7 @@
 services:
   backend:
     environment:
-      # 本文件通常叠加生产拓扑，但不得继承 docker-compose.prod.yml 的 production 运行级别。
+# 本文件通常叠加生产拓扑，但不得继承 src/compose/docker-compose.prod.yml 的 production 运行级别。
       APP_ENV: ${SSE_LOAD_TEST_APP_ENV:-integration}
       SSE_LOAD_TEST_ENABLED: "true"
       # 50 个不同授权用户仍共享压测机出口 IP，预留 10 次容量避免启动抖动误伤样本。

@@ -26,7 +26,7 @@ CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
 CRM_STAGING_BASE_URL=https://staging.hophorsefit.com
 ```
 
-仓库外配置由主机管理员安全写入，权限 `0600`，不要复制开发 `.env.example` 后直接运行。公网值必须是：
+仓库外配置由主机管理员安全写入，权限 `0600`，不要复制开发 `src/config/.env.example` 后直接运行。公网值必须是：
 
 ```text
 APP_ENV=staging
@@ -48,7 +48,7 @@ AI_MARKETING_ENABLED=false
 AUTO_REPLY_ENABLED=false
 ```
 
-数据库、MinIO、JWT、检索服务 Token 等由安全渠道生成/注入；TikTok 与 DeepSeek 凭据在各自真实门禁窗口前留空。模型六个普通文件必须在 checkout 外：`bge-m3/{config.json,pytorch_model.bin,tokenizer.json}`、`bge-reranker-large/{config.json,model.safetensors,tokenizer.json}`，拒绝路径链上的符号链接。`deploy/models/model-manifest.json` 当前只登记两份权重的 SHA-256；启动时验证这两份权重。四个辅助 JSON 文件的逐文件摘要来源仍需 Task 10 补齐，不能声称已完成六文件哈希验证。
+数据库、MinIO、JWT、检索服务 Token 等由安全渠道生成/注入；TikTok 与 DeepSeek 凭据在各自真实门禁窗口前留空。模型六个普通文件必须在 checkout 外：`bge-m3/{config.json,pytorch_model.bin,tokenizer.json}`、`bge-reranker-large/{config.json,model.safetensors,tokenizer.json}`，拒绝路径链上的符号链接。`src/deploy/models/model-manifest.json` 当前只登记两份权重的 SHA-256；启动时验证这两份权重。四个辅助 JSON 文件的逐文件摘要来源仍需 Task 10 补齐，不能声称已完成六文件哈希验证。
 
 `BACKEND_IMAGE`、`FRONTEND_IMAGE`、`RETRIEVAL_MODEL_SERVICE_IMAGE` 必须来自本分支合并后完整 main SHA 的发布制品，均为 `repository@sha256:<64-hex>`；不得使用标签替代摘要或在主机 build。`release/images/mvp-production-gates.json` 的 `f7c0f9f9` 是历史已发布版本，不包含本次 staging 回调改动，不能当成本次候选。四个外部运行镜像的摘要继续取该清单 `external_images`。候选发布、配置同步和真实拉取均待执行。
 
@@ -64,7 +64,7 @@ git status --short --branch
 git rev-parse HEAD
 ssh -i $env:CRM_STAGING_SSH_KEY root@192.168.110.210 'test ! -e /home/crmdeploy/src/rootless-staging-bootstrap && install -d -o crmdeploy -g crmdeploy -m 0750 /home/crmdeploy/src/rootless-staging-bootstrap'
 if ($LASTEXITCODE -ne 0) { throw 'Transfer target exists or cannot be created; inspect before overwriting' }
-scp -r -i $env:CRM_STAGING_SSH_KEY './deploy/staging/rootless/.' 'root@192.168.110.210:/home/crmdeploy/src/rootless-staging-bootstrap/'
+scp -r -i $env:CRM_STAGING_SSH_KEY './src/deploy/staging/rootless/.' 'root@192.168.110.210:/home/crmdeploy/src/rootless-staging-bootstrap/'
 if ($LASTEXITCODE -ne 0) { throw 'Asset transfer failed' }
 ```
 
@@ -150,7 +150,7 @@ $candidate = @{
   FrontendImage = $candidateFrontend
   RetrievalModelImage = $candidateRetrieval
 }
-& './scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/validate.json' -ValidateOnly
+& './src/scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/validate.json' -ValidateOnly
 ```
 
 validate 检查输入/模型目录和合并 Compose，不拉取镜像、不探测公信证书、不证明容器可启动。其 `validated` JSON 不能用作部署通过。Compose 固定项目名 `crm-staging`、profile `ai`、基础/prod/rootless 三层；外部配置必须与候选 retrieval 摘要一致。不得打印展开的 `docker compose config`、完整容器环境或连接串。
@@ -168,7 +168,7 @@ ss -lntp 'sport = :80 or sport = :443'
 DNS/TLS、模型、配置、候选与入口全部确认后，使用工作流 `operation=deploy`（其 GHCR 登录自动清理）；直接运行仅限已有受控短期 registry 认证的窗口：
 
 ```powershell
-& './scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/deploy.json' -Deploy -Confirm
+& './src/scripts/Test-StagingProductionGates.ps1' @common @candidate -EvidenceFile '/home/crmdeploy/evidence/deploy.json' -Deploy -Confirm
 ```
 
 脚本 `up` 使用 `--no-build --wait --wait-timeout 600`，模型启动哈希计算可能耗时。任一容器或健康失败立即停止，不重试开能力。用外部网络检查 DNS、TLS 与以下入口；不要用 `-k` 忽略证书问题：
@@ -196,13 +196,13 @@ Remove-Item Env:DOCKER_CONTEXT -ErrorAction SilentlyContinue
 $env:COMPOSE_PROJECT_NAME = 'crm-staging'
 $env:COMPOSE_PROFILES = 'ai'
 $env:COMPOSE_ENV_FILES = '/home/crmdeploy/config/crm-staging.env'
-$env:COMPOSE_FILE = 'docker-compose.yml:docker-compose.prod.yml:docker-compose.rootless-staging.yml'
+$env:COMPOSE_FILE = 'src/compose/docker-compose.yml:src/compose/docker-compose.prod.yml:src/compose/docker-compose.rootless-staging.yml'
 $backupRun = Get-Date -Format 'yyyyMMdd-HHmmss'
-& './scripts/backup-postgres.ps1' -OutputFile "/home/crmdeploy/backups/$backupRun/postgres.sql"
-& './scripts/backup-minio.ps1' -OutputDirectory "/home/crmdeploy/backups/$backupRun/minio"
+& './src/scripts/backup-postgres.ps1' -OutputFile "/home/crmdeploy/backups/$backupRun/postgres.sql"
+& './src/scripts/backup-minio.ps1' -OutputDirectory "/home/crmdeploy/backups/$backupRun/minio"
 ```
 
-旧 `restore-*` 会写入选定数据库/MinIO，不能直接对当前 staging 执行。Task 11 必须先建立隔离恢复目标、明确目标名称和备份路径，再依 `deploy/postgres/README.md` 执行受确认的恢复，核对迁移、对象数量/摘要和审计。隔离恢复目标与命令尚待现场确定，当前恢复门禁未执行；不要把备份脚本退出 0 当作恢复通过。删除恢复目标或任何数据需要单独明确批准。
+旧 `restore-*` 会写入选定数据库/MinIO，不能直接对当前 staging 执行。Task 11 必须先建立隔离恢复目标、明确目标名称和备份路径，再依 `src/deploy/postgres/README.md` 执行受确认的恢复，核对迁移、对象数量/摘要和审计。隔离恢复目标与命令尚待现场确定，当前恢复门禁未执行；不要把备份脚本退出 0 当作恢复通过。删除恢复目标或任何数据需要单独明确批准。
 
 镜像回滚前必须证明上一版三个摘要与候选分别不同，且兼容 staging 回调、迁移 023 和配置。历史清单 `f7c0f9f9` 的 OAuth 仅接受 www，不能直接沿用 staging 回调做成功回滚；在兼容性方案经过架构确认前，停止真实回滚。不得为了演练将 staging 回调切到 production 域名。
 
@@ -217,9 +217,9 @@ $rollback = @{
   PreviousFrontendImage = (Read-Host 'Approved compatible previous frontend repository@sha256')
   PreviousRetrievalModelImage = (Read-Host 'Approved compatible previous retrieval repository@sha256')
 }
-& './scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback-plan.json' -ValidateOnly
+& './src/scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback-plan.json' -ValidateOnly
 # 只有兼容性核验和恢复准备完成后执行下一行；也可工作流 operation=rollback。
-& './scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback.json' -Execute -Confirm
+& './src/scripts/Invoke-StagingRollbackDrill.ps1' @common @rollback -EvidenceFile '/home/crmdeploy/evidence/rollback.json' -Execute -Confirm
 ```
 
 执行顺序为关闭能力、切上一版、验证三个健康端点；结束停在上一版，需单独以 `deploy` 切回候选。脚本不自动降级数据库、不删除业务记录。运行后重新比较公司容器 ID/StartedAt 等五字段，并确认系统 Docker 未新增 CRM 数据、根盘仍至少 1.5 GiB。

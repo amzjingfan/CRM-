@@ -121,7 +121,7 @@ jobs:
               $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
               $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
-              & ./scripts/Test-StagingProductionGates.ps1 @parameters -ValidateOnly
+              & ./src/scripts/Test-StagingProductionGates.ps1 @parameters -ValidateOnly
             }
             "deploy" {
               $parameters = $common.Clone()
@@ -129,7 +129,7 @@ jobs:
               $parameters["FrontendImage"] = $env:FRONTEND_IMAGE_INPUT
               $parameters["RetrievalModelImage"] = $env:RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
-              & ./scripts/Test-StagingProductionGates.ps1 @parameters -Deploy -Confirm:$false
+              & ./src/scripts/Test-StagingProductionGates.ps1 @parameters -Deploy -Confirm:$false
             }
             "rollback" {
               if ([string]::IsNullOrWhiteSpace($env:PREVIOUS_BACKEND_IMAGE_INPUT) -or
@@ -145,7 +145,7 @@ jobs:
               $parameters["PreviousFrontendImage"] = $env:PREVIOUS_FRONTEND_IMAGE_INPUT
               $parameters["PreviousRetrievalModelImage"] = $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
               $parameters["ConfirmTarget"] = "staging"
-              & ./scripts/Invoke-StagingRollbackDrill.ps1 @parameters -Execute -Confirm:$false
+              & ./src/scripts/Invoke-StagingRollbackDrill.ps1 @parameters -Execute -Confirm:$false
             }
             default {
               throw "Unsupported staging operation"

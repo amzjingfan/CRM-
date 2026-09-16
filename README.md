@@ -14,49 +14,49 @@ Git 仓库根目录是本目录的上一级工作区根目录，产品代码、�
 
 ## 目录
 
-- `backend/app/auth`：JWT、Cookie、CSRF、登录限流和 RBAC。
-- `backend/app/stores`：店铺、渠道授权和店铺访问边界。
-- `backend/app/integrations`：平台适配器、Webhook 接收和数据库 Worker。
-- `backend/app/agent`：LLM/Embedding/Reranker Provider、FAQ 切分、混合 RAG、LangGraph 工作流、店铺回复策略、翻译、营销文案、版本化 Prompt、脱敏、安全门禁和运行追踪。
-- `backend/app/retrieval_model_service`：只读加载本地 BGE-M3 与 Reranker 的单实例内部模型服务。
-- `backend/app/knowledge_base`：FAQ 分类、条目、导入任务、切片存储和向量化交接端口。
-- `backend/app/tools`：白名单工具契约、权限/店铺校验、幂等执行、结果追踪和模拟发券。
-- `backend/app/marketing`：弃单/中差评活动、冷却频控、重试和转化事件。
-- `backend/app/jobs`：知识库导入和主动营销异步任务。
-- `backend/app/chat`：可信会话建议、POST SSE 传输层分块和默认关闭的 Agent 自动任务 Worker。
-- `backend/app/dashboard|agent_management|users`：每日指标、运营看板、Agent 配置/脱敏日志和团队管理。
-- `backend/app/workspace`：会话列表、消息、分配、转人工、订单/物流、改地址和发券入口。
-- `backend/app/customers|conversations|orders|audit`：Phase 2 领域模型。
-- `backend/evals`：版本化意图识别、FAQ RAG 和 Phase 4 回复安全 JSONL 评测集。
-- `deploy/models`：本地 BGE 模型说明和资产清单；大体积权重由 `.gitignore` 排除。
-- `backend/migrations`：001–023 可逆迁移；019 强制一个内部店铺只能绑定一个 TikTok 渠道，020 增加知识语义审批，021 增加平台写结果 `unknown` 消息状态，022 增加 AI 交付与营销复核，023 加固营销复核幂等。
-- `frontend/app/workspace|dashboard|knowledge|marketing|agents|settings`：工作台、看板、知识库、营销、Agent 运营和系统设置。
-- `docker-compose.yml`：基础服务和默认关闭的 `ai` Profile；`docker-compose.ai.yml` 在启用本地 BGE 时增加模型健康门禁和 1024 维运行配置；`docker-compose.gpu.yml` 只增加 GPU 设备预留。
+- `src/backend/app/auth`：JWT、Cookie、CSRF、登录限流和 RBAC。
+- `src/backend/app/stores`：店铺、渠道授权和店铺访问边界。
+- `src/backend/app/integrations`：平台适配器、Webhook 接收和数据库 Worker。
+- `src/backend/app/agent`：LLM/Embedding/Reranker Provider、FAQ 切分、混合 RAG、LangGraph 工作流、店铺回复策略、翻译、营销文案、版本化 Prompt、脱敏、安全门禁和运行追踪。
+- `src/backend/app/retrieval_model_service`：只读加载本地 BGE-M3 与 Reranker 的单实例内部模型服务。
+- `src/backend/app/knowledge_base`：FAQ 分类、条目、导入任务、切片存储和向量化交接端口。
+- `src/backend/app/tools`：白名单工具契约、权限/店铺校验、幂等执行、结果追踪和模拟发券。
+- `src/backend/app/marketing`：弃单/中差评活动、冷却频控、重试和转化事件。
+- `src/backend/app/jobs`：知识库导入和主动营销异步任务。
+- `src/backend/app/chat`：可信会话建议、POST SSE 传输层分块和默认关闭的 Agent 自动任务 Worker。
+- `src/backend/app/dashboard|agent_management|users`：每日指标、运营看板、Agent 配置/脱敏日志和团队管理。
+- `src/backend/app/workspace`：会话列表、消息、分配、转人工、订单/物流、改地址和发券入口。
+- `src/backend/app/customers|conversations|orders|audit`：Phase 2 领域模型。
+- `src/backend/evals`：版本化意图识别、FAQ RAG 和 Phase 4 回复安全 JSONL 评测集。
+- `src/deploy/models`：本地 BGE 模型说明和资产清单；大体积权重由 `.gitignore` 排除。
+- `src/backend/migrations`：001–023 可逆迁移；019 强制一个内部店铺只能绑定一个 TikTok 渠道，020 增加知识语义审批，021 增加平台写结果 `unknown` 消息状态，022 增加 AI 交付与营销复核，023 加固营销复核幂等。
+- `src/frontend/app/workspace|dashboard|knowledge|marketing|agents|settings`：工作台、看板、知识库、营销、Agent 运营和系统设置。
+- `src/compose/docker-compose.yml`：基础服务和默认关闭的 `ai` Profile；`src/compose/docker-compose.ai.yml` 在启用本地 BGE 时增加模型健康门禁和 1024 维运行配置；`src/compose/docker-compose.gpu.yml` 只增加 GPU 设备预留。
 
 ## 本地启动
 
 1. 创建配置并替换开发密钥：
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item src/config/.env.example src/config/.env
 ```
 
 2. 启动基础设施和应用：
 
 ```powershell
-docker compose up -d --build
+.\src\scripts\start-local.ps1
 ```
 
-开发容器的 `/app/.next` 使用独立命名卷，与宿主机 `frontend/.next` 隔离。因此可以在前端容器运行期间执行宿主机 `npm run build`，不会覆盖 `next dev` 正在使用的服务端 chunk。不要删除 `docker-compose.yml` 中的 `frontend_next_cache:/app/.next` 挂载。
+开发容器的 `/app/.next` 使用独立命名卷，与宿主机 `src/frontend/.next` 隔离。因此可以在前端容器运行期间执行宿主机 `npm run build`，不会覆盖 `next dev` 正在使用的服务端 chunk。不要删除 `src/compose/docker-compose.yml` 中的 `frontend_next_cache:/app/.next` 挂载。
 
-如果 Docker Hub 在当前网络不可访问，不需要修改 Dockerfile。项目允许通过 `.env` 覆盖前端基础镜像和 npm registry：
+如果 Docker Hub 在当前网络不可访问，不需要修改 Dockerfile。项目允许通过 `src/config/.env` 覆盖前端基础镜像和 npm registry：
 
 ```powershell
 # 示例：使用组织内部镜像仓库和 npm 代理。地址由部署环境维护者提供。
 $env:FRONTEND_NODE_IMAGE = "registry.example.com/library/node:20-alpine"
 $env:FRONTEND_NPM_REGISTRY = "https://npm.example.com"
-docker compose build frontend
-docker compose up -d frontend
+docker compose -f src/compose/docker-compose.yml build frontend
+docker compose -f src/compose/docker-compose.yml up -d frontend
 Remove-Item Env:FRONTEND_NODE_IMAGE
 Remove-Item Env:FRONTEND_NPM_REGISTRY
 ```
@@ -67,20 +67,20 @@ Remove-Item Env:FRONTEND_NPM_REGISTRY
 
 ```powershell
 docker load --input node-20-alpine.tar
-docker compose build frontend
-docker compose up -d frontend
+docker compose -f src/compose/docker-compose.yml build frontend
+docker compose -f src/compose/docker-compose.yml up -d frontend
 ```
 
 如果当前仅需要继续前端开发，而 Docker 外部网络暂时不可用，可以使用项目提供的本地降级脚本：
 
 ```powershell
-.\scripts\start-frontend-local.ps1
+.\src\scripts\start-frontend-local.ps1
 ```
 
 首次运行且尚未安装依赖时使用：
 
 ```powershell
-.\scripts\start-frontend-local.ps1 -InstallDependencies
+.\src\scripts\start-frontend-local.ps1 -InstallDependencies
 ```
 
 该脚本会检查 Node.js/npm、依赖目录和端口参数，并在当前进程中注入 API 地址。它只解决开发连续性，不替代正式的 frontend Compose 验收。
@@ -88,27 +88,27 @@ docker compose up -d frontend
 3. 执行迁移：
 
 ```powershell
-docker compose exec backend alembic upgrade head
+docker compose -f src/compose/docker-compose.yml exec backend alembic upgrade head
 ```
 
 4. 创建或重置本地管理员（密码只能通过环境变量传入）：
 
 ```powershell
 $env:ADMIN_PASSWORD = "请替换为高强度开发密码"
-docker compose exec backend python scripts/create_admin.py
+docker compose -f src/compose/docker-compose.yml exec backend python scripts/create_admin.py
 Remove-Item Env:ADMIN_PASSWORD
 ```
 
 5. 可选：创建契约测试店铺与三平台渠道：
 
 ```powershell
-docker compose exec backend python scripts/seed_phase2_demo.py
+docker compose -f src/compose/docker-compose.yml exec backend python scripts/seed_phase2_demo.py
 ```
 
 为现有客服分配店铺角色：
 
 ```powershell
-docker compose exec backend python scripts/assign_store_role.py --email agent@example.com --store demo-store --role agent
+docker compose -f src/compose/docker-compose.yml exec backend python scripts/assign_store_role.py --email agent@example.com --store demo-store --role agent
 ```
 
 ## 地址
@@ -142,7 +142,7 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 - Jobs Worker 默认每 5 分钟扫描一次，并在 Access Token 到期前 24 小时采用 `FOR UPDATE SKIP LOCKED` 提前刷新。刷新结果必须保持 `open_id` 和已授权店铺连续；不一致或失败时状态变为 `expired` 并要求重新授权，不覆盖为成功凭证。
 - TikTok 应用后台重定向地址固定为 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/staging/production 启动以及 OAuth start/callback 都会失败关闭 HTTP、错误主机、错误路径、query 或 fragment，真实密钥只从服务端安全配置注入。
 
-> 2026-09-09 勘误：上述跨环境相同回调约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `deploy/staging/rootless/README.md`，真实运行验收仍待执行。
+> 2026-09-09 勘误：上述跨环境相同回调约定由 `架构师/ADR-007-INFRA-Rootless-Staging部署边界-v1.0.md` 取代。staging 精确使用 `https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `src/deploy/staging/rootless/README.md`，真实运行验收仍待执行。
 
 ## Phase 3 业务能力
 
@@ -163,7 +163,7 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 - `metric_daily` 每五分钟幂等聚合当天和前一天，并记录 RAG 命中、Agent 工具成功、每日首输出 P95、Token 与显式单价估算成本；看板 1/7/30 天周期首输出 P95 直接基于对应店铺时区范围内的 `agent_runs.first_output_latency_ms` 原始样本计算，不取每日 P95 的最大值。无人工标签时意图准确率保持 `null`，不会由模型自信度伪造。`uv run python -m scripts.backfill_metrics --store-id UUID --start YYYY-MM-DD --end YYYY-MM-DD` 可回填指定日期。
 - 团队禁用采用软状态并撤销 Refresh Token，禁止自我禁用和禁用最后一个有效管理员。supervisor/agent 角色必须显式指定店铺。
 - 普通 API 有统一超时；SSE、Webhook 和上传使用独立策略。日志为单行 JSON，只保留低敏事件、模块和 trace ID。
-- 生产部署使用 `docker-compose.prod.yml`，由 Nginx 统一暴露 80/443，backend/frontend 和数据服务不映射宿主机端口；源码挂载和 reload 被移除，应用镜像使用非 root 用户。真实 TikTok 灰度需额外叠加 `docker-compose.tiktok-manual.yml`。内部 DeepSeek 草稿 SSE 灰度使用 `ai` profile，并叠加 `docker-compose.ai.yml` 与 `docker-compose.deepseek-sse.yml`；只有 backend 可读取 `LLM_ENABLED`，后台任务、AI 翻译、AI 营销和自动回复保持关闭。
+- 生产部署使用 `src/compose/docker-compose.prod.yml`，由 Nginx 统一暴露 80/443，backend/frontend 和数据服务不映射宿主机端口；源码挂载和 reload 被移除，应用镜像使用非 root 用户。真实 TikTok 灰度需额外叠加 `src/compose/docker-compose.tiktok-manual.yml`。内部 DeepSeek 草稿 SSE 灰度使用 `ai` profile，并叠加 `src/compose/docker-compose.ai.yml` 与 `src/compose/docker-compose.deepseek-sse.yml`；只有 backend 可读取 `LLM_ENABLED`，后台任务、AI 翻译、AI 营销和自动回复保持关闭。
 
 ## AI Agent Phase 4 回复、翻译与营销能力
 
@@ -177,14 +177,14 @@ docker compose exec backend python scripts/assign_store_role.py --email agent@ex
 生产 Compose 配置检查和启动示例：
 
 ```powershell
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml config --services
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml pull
-docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+docker-compose --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml config --services
+docker-compose --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml pull
+docker-compose --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml up -d --no-build
 ```
 
-生产环境文件必须位于仓库外，不能复用开发 `.env`。生产所需变量、HTTPS、固定出口 IP、密钥注入、日志告警和回滚说明见 `deploy/production/README.md`；备份恢复说明见 `deploy/postgres/README.md`。项目 PowerShell 脚本使用 UTF-8 BOM，并声明兼容 Windows PowerShell 5.1 与 PowerShell 7；提交前应使用两种解析器执行语法检查。
+生产环境文件必须位于仓库外，不能复用开发 `src/config/.env`。生产所需变量、HTTPS、固定出口 IP、密钥注入、日志告警和回滚说明见 `src/deploy/production/README.md`；备份恢复说明见 `src/deploy/postgres/README.md`。项目 PowerShell 脚本使用 UTF-8 BOM，并声明兼容 Windows PowerShell 5.1 与 PowerShell 7；提交前应使用两种解析器执行语法检查。
 
-50 并发 SSE 工程压测使用 `backend/scripts/load_test_sse.py`。默认每组凭证只代表一个并发客户端，因此 50 并发需要 50 组不同授权用户的 Cookie 凭证。不同用户只能避开用户维度门禁，仍会共享单台压测机的来源 IP；执行前必须在隔离的 integration/staging 环境显式叠加 `docker-compose.sse-load-test.yml`，把本次窗口的 IP 限额提高到 60。日常生产部署不得长期叠加该文件。凭证池 JSON 必须存放在仓库外，测试后立即安全删除：
+50 并发 SSE 工程压测使用 `src/backend/scripts/load_test_sse.py`。默认每组凭证只代表一个并发客户端，因此 50 并发需要 50 组不同授权用户的 Cookie 凭证。不同用户只能避开用户维度门禁，仍会共享单台压测机的来源 IP；执行前必须在隔离的 integration/staging 环境显式叠加 `src/compose/docker-compose.sse-load-test.yml`，把本次窗口的 IP 限额提高到 60。日常生产部署不得长期叠加该文件。凭证池 JSON 必须存放在仓库外，测试后立即安全删除：
 
 ```json
 {
@@ -204,12 +204,12 @@ docker-compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f 
 ```
 
 ```powershell
-docker-compose --profile ai --env-file C:\secure\crm-integration.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml -f docker-compose.sse-load-test.yml up -d backend
-Set-Location backend
+docker-compose --profile ai --env-file C:\secure\crm-integration.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.ai.yml -f src/compose/docker-compose.deepseek-sse.yml -f src/compose/docker-compose.sse-load-test.yml up -d backend
+Set-Location src/backend
 uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --first-delta-p99-limit-ms 3000 --total-p99-limit-ms 5000 --output D:\secure-test-data\sse-evidence.json
 ```
 
-专用叠加通过 `SSE_LOAD_TEST_APP_ENV=integration|staging` 覆盖生产拓扑中的 backend 环境，并设置 `SSE_LOAD_TEST_ENABLED=true`；development 或 production 会失败关闭。`--server-ip-rate-limit` 是服务端本次实际 `CHAT_QUERY_LIMIT` 的低敏声明；声明值低于并发数时脚本会在联网前失败。单客户端冒烟仍可使用 `CRM_ACCESS_TOKEN`、`CRM_CSRF_TOKEN` 和 `--session-id`，但默认不能扩展为 50 并发。只有在隔离测试环境已经同步提高用户并发和频率限制后，才可显式传入 `--requests-per-credential`。性能门禁固定使用首个安全 `delta` P99 `<3000ms` 和总耗时 P99 `<5000ms` 的严格比较；CLI 参数只允许收紧这两个架构上限，不能放宽。全部请求还必须收到 `done.reason=completed` 且产生首个安全 `delta`，任一完整性或 SLA 条件不满足时脚本均以非零状态退出。JSON 证据会记录实际阈值、`strictly_less_than` 比较语义和最终门禁结果；HTTP/SSE 限流、超时、认证拒绝、失败和不完整流分别统计。输出不含 Token、CSRF、会话 ID、消息或模型正文，可连续五日保存到仓库外供测试工程师汇总。压测后必须移除 `docker-compose.sse-load-test.yml` 叠加并重建 backend，恢复日常限流。确定性 Provider 结果不等同于真实模型生产 P99。
+专用叠加通过 `SSE_LOAD_TEST_APP_ENV=integration|staging` 覆盖生产拓扑中的 backend 环境，并设置 `SSE_LOAD_TEST_ENABLED=true`；development 或 production 会失败关闭。`--server-ip-rate-limit` 是服务端本次实际 `CHAT_QUERY_LIMIT` 的低敏声明；声明值低于并发数时脚本会在联网前失败。单客户端冒烟仍可使用 `CRM_ACCESS_TOKEN`、`CRM_CSRF_TOKEN` 和 `--session-id`，但默认不能扩展为 50 并发。只有在隔离测试环境已经同步提高用户并发和频率限制后，才可显式传入 `--requests-per-credential`。性能门禁固定使用首个安全 `delta` P99 `<3000ms` 和总耗时 P99 `<5000ms` 的严格比较；CLI 参数只允许收紧这两个架构上限，不能放宽。全部请求还必须收到 `done.reason=completed` 且产生首个安全 `delta`，任一完整性或 SLA 条件不满足时脚本均以非零状态退出。JSON 证据会记录实际阈值、`strictly_less_than` 比较语义和最终门禁结果；HTTP/SSE 限流、超时、认证拒绝、失败和不完整流分别统计。输出不含 Token、CSRF、会话 ID、消息或模型正文，可连续五日保存到仓库外供测试工程师汇总。压测后必须移除 `src/compose/docker-compose.sse-load-test.yml` 叠加并重建 backend，恢复日常限流。确定性 Provider 结果不等同于真实模型生产 P99。
 
 ## AI Agent Phase 2
 
@@ -240,16 +240,16 @@ uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\ss
 | `BAAI/bge-m3` | `5617a9f61b028005a4858fdac845db406aefb181` | `pytorch_model.bin`，1024 维 | Provider 已接入，默认关闭 |
 | `BAAI/bge-reranker-large` | `55611d7bca2a7133960a6d3b71e083071bbfc312` | `model.safetensors` | Reranker 已接入，默认关闭 |
 
-权重保存于 `deploy/models/bge-m3` 和 `deploy/models/bge-reranker-large`，不会提交到版本库。固定版本、SHA-256、大小和许可证见 `deploy/models/model-manifest.json`。
+权重保存于 `src/deploy/models/bge-m3` 和 `src/deploy/models/bge-reranker-large`，不会提交到版本库。固定版本、SHA-256、大小和许可证见 `src/deploy/models/model-manifest.json`。
 
 首次启用前先执行迁移，再使用 AI 叠加文件启动模型服务和 Jobs Worker。模型服务 Token 必须至少 32 个字符并使用随机密钥，禁止沿用示例值：
 
 ```powershell
-docker-compose exec backend alembic upgrade head
-docker-compose -f docker-compose.yml -f docker-compose.ai.yml --profile ai up -d --build
+docker-compose -f src/compose/docker-compose.yml exec backend alembic upgrade head
+docker-compose -f src/compose/docker-compose.yml -f src/compose/docker-compose.ai.yml --profile ai up -d --build
 # 已确认 Docker Desktop/WSL2 NVIDIA GPU 后才叠加 GPU 文件：
-docker-compose -f docker-compose.yml -f docker-compose.ai.yml -f docker-compose.gpu.yml --profile ai up -d --build
-docker-compose exec backend python scripts/verify_bge_hybrid_runtime.py
+docker-compose -f src/compose/docker-compose.yml -f src/compose/docker-compose.ai.yml -f src/compose/docker-compose.gpu.yml --profile ai up -d --build
+docker-compose -f src/compose/docker-compose.yml exec backend python scripts/verify_bge_hybrid_runtime.py
 ```
 
 AI 叠加文件会显式启用 `EMBEDDING_ENABLED=true`，并让 backend、jobs 等待 `retrieval-model-service` 健康后启动，避免 Worker 抢跑把待回填 FAQ 批量标记为失败。应用启动时还会校验 `local_bge + BAAI/bge-m3 + 1024`、内部服务 URL 和 Token 强度；配置不一致时直接失败。迁移会清理旧 1536 维切片，并把已发布 FAQ 重置为 `pending`；必须等待全量重新向量化完成后再开放正式检索。当前固定 Revision、RTX 4060 单实例、候选上限 20 和短查询负载的质量与容量门禁已通过，Dense 门禁为 0.52；模型、数据、批量、候选长度或 GPU 变化后必须重新评测。
@@ -263,7 +263,7 @@ AI 叠加文件会显式启用 `EMBEDDING_ENABLED=true`，并让 backend、jobs 
 后端固定 Python 3.11：
 
 ```powershell
-cd backend
+Set-Location src/backend
 uv sync --frozen --all-groups
 uv lock --check
 uv run ruff check .
@@ -277,13 +277,13 @@ AI 离线测试不会访问公网。不要执行会展开环境变量值的完�
 
 ```powershell
 docker-compose config --services
-docker-compose -f docker-compose.yml -f docker-compose.ai.yml --profile ai config --services
+docker-compose -f src/compose/docker-compose.yml -f src/compose/docker-compose.ai.yml --profile ai config --services
 ```
 
 需要真实 API Key 执行 130 条意图 live 评测时，先配置 `LLM_ENABLED=true`、`LLM_LIVE_EVAL=true`、模型名和密钥，再运行：
 
 ```powershell
-cd backend
+Set-Location src/backend
 uv run python -m scripts.evaluate_intents --output evals/results/intent-classifier-live.md
 ```
 
@@ -292,7 +292,7 @@ uv run python -m scripts.evaluate_intents --output evals/results/intent-classifi
 真实 FAQ RAG 评测需要启动本地 BGE 模型服务，并显式配置 `EMBEDDING_ENABLED=true`、`EMBEDDING_PROVIDER=local_bge`、`LLM_LIVE_EVAL=true`。如果评测包含答案生成，仍需配置已轮换的 LLM Key：
 
 ```powershell
-cd backend
+Set-Location src/backend
 uv run python -m scripts.evaluate_rag --dataset evals/faq-rag-v1.0.0.jsonl --output evals/results/faq-rag-live.json
 ```
 
@@ -301,7 +301,7 @@ RAG 评测至少输出 Dense `Recall@20`、重排序 `Recall@5`、MRR、nDCG、2
 Phase 4 安全回归集当前包含 237 条客服回复、翻译、弃单和中差评合成样本。工作流的自动交付边界是代码确定性渲染、对象级证据绑定和明确授权来源；结构化声明、模型复核和自由文本扫描只增加门禁。单元测试另覆盖 010～013 的独立危险事实、合法作用域、污染 FAQ、营销复核、跨对象证据和脱敏对象绑定，但这些样本不计入版本化评测集，也不用于声称全部开放语言已被证明。命令不访问公网，报告不包含样本正文：
 
 ```powershell
-cd backend
+Set-Location src/backend
 uv run python -m scripts.evaluate_phase4 --dataset evals/agent-phase4-v1.0.0.jsonl --output evals/results/agent-phase4-deterministic.json
 ```
 
@@ -310,7 +310,7 @@ uv run python -m scripts.evaluate_phase4 --dataset evals/agent-phase4-v1.0.0.jso
 REAL-AI-05 使用 18 类冻结合成样本调用真实 DeepSeek，其中 17 条执行真实 Provider，1 条模型超时使用确定性故障注入。数据集必须带同名清单；清单冻结版本、SHA-256、样本数和来源。DLP 只允许已验证清单派生出的本轮载荷摘要，普通生产 Prompt 不共享这项授权；结果只保存输入/输出 SHA-256、版本、标签、原因码、时延和 Token，不保存样本文本、Prompt、模型原文或密钥。输出路径必须是新文件，脚本拒绝覆盖历史证据：
 
 ```powershell
-cd backend
+Set-Location src/backend
 uv run python -m scripts.evaluate_real_model --dataset evals/real-model-v1.0.0.jsonl --manifest evals/real-model-v1.0.0.manifest.json --output evals/results/real-model-v1.0.0-deepseek-YYYYMMDD-NNN.json
 ```
 
@@ -327,8 +327,8 @@ uv run python -m scripts.evaluate_real_model --dataset evals/real-model-v1.0.0.j
 
 ```powershell
 docker-compose up -d --no-deps --force-recreate backend
-docker-compose exec -T backend python -m scripts.seed_ai_demo
-docker-compose exec -T backend python -m scripts.run_ai_demo_smoke
+docker-compose -f src/compose/docker-compose.yml exec -T backend python -m scripts.seed_ai_demo
+docker-compose -f src/compose/docker-compose.yml exec -T backend python -m scripts.run_ai_demo_smoke
 ```
 
 3. 打开 `http://localhost:3000/workspace`，选择名称以 `演示客户·` 开头的会话，点击“生成”。当前提供物流、退货政策、尺码、价格、客服时间和高风险退款承诺六种场景。
@@ -351,7 +351,7 @@ npm run build
 
 ```powershell
 cd ..
-.\scripts\run-postgres-integration-tests.ps1
+.\src\scripts\run-postgres-integration-tests.ps1
 ```
 
 该命令使用 Compose `test` profile 的隔离 `postgres-test` 服务（本机端口 5433、tmpfs 临时数据），执行迁移后运行完整 pytest，完成后自动清理。禁止用 `docker compose run --service-ports backend` 执行测试，否则一次性容器会抢占正式 backend 的 8000 端口。
@@ -359,7 +359,7 @@ cd ..
 真实 TikTok 只读冒烟只能在完成 OAuth 的隔离 `integration` 环境执行。先核对 Partner Center 已启用 `seller.authorization.info`、`seller.order.info`、`seller.customer_service`、`seller.logistics`，再打开只读开关。物流使用 `/logistics/202604/orders/{order_id}/tracking`，同一订单的真实查询频率不得超过每 8 小时一次；脚本只输出计数，不输出店铺、订单、客户、消息或 Token：
 
 ```powershell
-cd backend
+Set-Location src/backend
 uv run python -m scripts.verify_tiktok_readonly --channel-id <channel_accounts UUID>
 ```
 
@@ -368,16 +368,16 @@ Webhook 地址固定为 `https://www.hophorsefit.com/v1/webhooks/tiktok`，Partn
 迁移验收：
 
 ```powershell
-docker compose run --rm backend alembic upgrade head
-docker compose run --rm backend alembic downgrade base
-docker compose run --rm backend alembic upgrade head
+docker compose -f src/compose/docker-compose.yml run --rm backend alembic upgrade head
+docker compose -f src/compose/docker-compose.yml run --rm backend alembic downgrade base
+docker compose -f src/compose/docker-compose.yml run --rm backend alembic upgrade head
 ```
 
 Phase 3 本地运行验收（临时密码不会输出，脚本结束后清理测试夹具）：
 
 ```powershell
 $env:PHASE3_TEST_PASSWORD = "请替换为至少 12 位临时密码"
-docker compose exec backend uv run python scripts/verify_phase3_runtime.py
+docker compose -f src/compose/docker-compose.yml exec backend uv run python scripts/verify_phase3_runtime.py
 Remove-Item Env:PHASE3_TEST_PASSWORD
 ```
 

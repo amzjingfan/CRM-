@@ -20,7 +20,7 @@
 
 - 所有查询和写入必须绑定店铺/租户；客户端传入的店铺 ID 不能替代服务端授权判断。
 - 写操作按风险使用 CSRF、`Idempotency-Key`、状态机和审计。
-- 真实凭证仅通过环境或密钥管理系统注入；仓库只保存脱敏 `.env.example`。
+- 真实凭证仅通过环境或密钥管理系统注入；仓库只保存脱敏 `src/config/.env.example`。
 - 默认关闭真实平台、公开自动回复、自动营销和高风险写入；不得为了测试绕过生产检查。
 - 外部结果不确定时失败关闭；可能已写入的平台调用进入 `unknown` 并对账。
 
@@ -33,7 +33,7 @@
 
 ## GitHub Flow
 
-- 根目录是唯一 Git 仓库。日常修改从最新 `main` 创建 `feature/*`、`fix/*`、`docs/*`、`hotfix/*` 短期分支，优先使用 `.worktrees/` 隔离。
+- 根目录是唯一 Git 仓库，`src/` 是唯一工程根。日常修改从最新 `main` 创建 `feature/*`、`fix/*`、`docs/*`、`hotfix/*` 短期分支，优先使用 `.worktrees/` 隔离。
 - 一个分支只处理一个主题，小步提交；提交前缀使用 `feat:`、`fix:`、`docs:`、`test:`、`build:`、`ci:` 或 `chore:`。
 - 通过 Pull Request 合并，完成 CI、人工审阅、文档同步和安全检查；默认 squash merge 并删除短期分支。
 - 禁止强制推送和 `git reset --hard` 覆盖共享历史；已共享提交使用 `git revert` 回滚。

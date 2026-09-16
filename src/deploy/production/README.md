@@ -27,7 +27,7 @@
 
 `retrieval-model-service` 不接收数据库、Redis、MinIO、JWT、TikTok 或 DeepSeek 凭据；
 它只运行本地 BGE 模型并接收自身服务 Token。新增服务或调整职责时必须同步修改此矩阵和
-`backend/tests/test_real_runtime_config.py`，不能把平台与模型凭据重新放回公共锚点。
+`src/backend/tests/test_real_runtime_config.py`，不能把平台与模型凭据重新放回公共锚点。
 
 应用会校验 `TIKTOK_EGRESS_IP` 的格式，但无法证明云网络实际使用该地址。正式联调前由运维在目标主机查询公网出口地址，并与云控制台、TikTok 白名单三方核对。
 
@@ -152,11 +152,11 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 `CP11-gh/CRM` 仓库的 Actions 读取；不在服务器环境文件中保存 GitHub 个人访问令牌。
 
 完成 OAuth、真实只读和 Webhook 门禁后，人工消息灰度只能显式叠加
-`docker-compose.tiktok-manual.yml`。该叠加文件只允许 backend 读取
+`src/compose/docker-compose.tiktok-manual.yml`。该叠加文件只允许 backend 读取
 `REAL_TIKTOK_MESSAGE_WRITE_ENABLED`，Worker、自动回复和高风险写入仍固定关闭：
 
 ```powershell
-docker compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tiktok-manual.yml config --services
+docker compose --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.tiktok-manual.yml config --services
 ```
 
 首次灰度固定为单店铺、单渠道、单操作人。开启顺序为只读、Webhook、人工普通消息；
@@ -184,12 +184,12 @@ AUTO_REPLY_ENABLED=false
 必须使用 `ai` profile 和两个受控叠加文件；配置检查只输出服务名：
 
 ```powershell
-docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml config --services
-docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml pull backend retrieval-model-service
-docker compose --profile ai --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml up -d --no-build --wait --wait-timeout 600 backend retrieval-model-service
+docker compose --profile ai --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.ai.yml -f src/compose/docker-compose.deepseek-sse.yml config --services
+docker compose --profile ai --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.ai.yml -f src/compose/docker-compose.deepseek-sse.yml pull backend retrieval-model-service
+docker compose --profile ai --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.ai.yml -f src/compose/docker-compose.deepseek-sse.yml up -d --no-build --wait --wait-timeout 600 backend retrieval-model-service
 ```
 
-`docker-compose.deepseek-sse.yml` 只允许 backend 读取 `LLM_ENABLED`；jobs 和 agent-worker
+`src/compose/docker-compose.deepseek-sse.yml` 只允许 backend 读取 `LLM_ENABLED`；jobs 和 agent-worker
 仍固定关闭 LLM、翻译、营销和自动回复。`POST /v1/chat/query` 等待安全草稿期间每隔
 `CHAT_SSE_HEARTBEAT_SECONDS` 发送 SSE 注释心跳，总时长超过
 `CHAT_STREAM_TIMEOUT_SECONDS` 会取消工作流并返回低敏 `error + done(timeout)`。
@@ -227,7 +227,7 @@ Jobs Worker 按 `TIKTOK_TOKEN_REFRESH_POLL_SECONDS` 扫描即将过期的 TikTok
 会替代默认 `.env` 的 Compose 插值来源；配置检查只输出服务名，避免展开敏感值：
 
 ```powershell
-docker compose --env-file C:\secure\crm-production.env -f docker-compose.yml -f docker-compose.prod.yml config --services
+docker compose --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml config --services
 ```
 
 CI/CD 场景可直接注入同名环境变量，且环境变量优先于 `--env-file`。禁止执行会打印
@@ -276,21 +276,21 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 50 个授权客户端压测必须使用仓库外凭证池，并把低敏结果写到仓库外证据目录。50 个不同用户仍共享压测机来源 IP，因此只能在隔离的 integration/staging 测试窗口叠加专用限流文件；日常生产不得长期使用该叠加：
 
 ```powershell
-docker compose --profile ai --env-file C:\secure\crm-integration.env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ai.yml -f docker-compose.deepseek-sse.yml -f docker-compose.sse-load-test.yml up -d --wait --wait-timeout 600 backend
-Set-Location backend
+docker compose --profile ai --env-file C:\secure\crm-integration.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.ai.yml -f src/compose/docker-compose.deepseek-sse.yml -f src/compose/docker-compose.sse-load-test.yml up -d --wait --wait-timeout 600 backend
+Set-Location src/backend
 uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --first-delta-p99-limit-ms 3000 --total-p99-limit-ms 5000 --output D:\secure-test-data\sse-evidence.json
 ```
 
-专用叠加通过 `SSE_LOAD_TEST_APP_ENV=integration|staging` 覆盖生产拓扑中的 backend 环境，把单 IP 窗口限额设为 60，并设置 `SSE_LOAD_TEST_ENABLED=true`；development 或 production 会失败关闭。脚本通过 `--server-ip-rate-limit 60` 声明并预检同一值。全部 50 个请求必须收到 `done.reason=completed` 且产生首个安全 `delta`；首个安全 `delta` P99 必须严格 `<3000ms`，总耗时 P99 必须严格 `<5000ms`，等于阈值也失败。两个 CLI 阈值只能收紧、不能超过架构上限，JSON 证据同步记录阈值、毫秒单位、严格比较语义和最终门禁结果。任一完整性或 SLA 条件不满足时脚本以非零状态退出；SSE 内部限流、超时、认证拒绝、失败和不完整流均独立计数。压测后移除 `docker-compose.sse-load-test.yml` 并重建 backend，恢复默认限流。五日稳定性由测试工程师连续五日执行同一受控场景并汇总可用性、首个安全 `delta` P50/P99、总耗时 P50/P99 和失败原因；工程脚本本身不构成真实模型质量或生产放行。
+专用叠加通过 `SSE_LOAD_TEST_APP_ENV=integration|staging` 覆盖生产拓扑中的 backend 环境，把单 IP 窗口限额设为 60，并设置 `SSE_LOAD_TEST_ENABLED=true`；development 或 production 会失败关闭。脚本通过 `--server-ip-rate-limit 60` 声明并预检同一值。全部 50 个请求必须收到 `done.reason=completed` 且产生首个安全 `delta`；首个安全 `delta` P99 必须严格 `<3000ms`，总耗时 P99 必须严格 `<5000ms`，等于阈值也失败。两个 CLI 阈值只能收紧、不能超过架构上限，JSON 证据同步记录阈值、毫秒单位、严格比较语义和最终门禁结果。任一完整性或 SLA 条件不满足时脚本以非零状态退出；SSE 内部限流、超时、认证拒绝、失败和不完整流均独立计数。压测后移除 `src/compose/docker-compose.sse-load-test.yml` 并重建 backend，恢复默认限流。五日稳定性由测试工程师连续五日执行同一受控场景并汇总可用性、首个安全 `delta` P50/P99、总耗时 P50/P99 和失败原因；工程脚本本身不构成真实模型质量或生产放行。
 
 本项目不绑定具体云告警供应商；在选定部署平台后，将上述 JSON 事件接入该平台原生告警即可。
 
 ## 5. 备份、恢复和回滚
 
-- PostgreSQL 和 MinIO 使用 `scripts/backup-*`、`scripts/restore-*`，详细步骤见 `deploy/postgres/README.md`。
+- PostgreSQL 和 MinIO 使用 `src/scripts/backup-*`、`src/scripts/restore-*`，详细步骤见 `src/deploy/postgres/README.md`。
 - Redis 当前只保存可重建缓存、限流状态和短期任务协调数据，不作为长期业务事实备份；灾难恢复时使用空 Redis，并通过数据库状态恢复 Worker。
 - 回滚优先关闭最小功能开关并重启对应服务，不删除数据库业务记录。
-- DeepSeek 草稿异常时先将 `LLM_ENABLED=false`，移除 `docker-compose.deepseek-sse.yml` 叠加并重建 backend；本操作不修改 Agent 运行历史，也不打开 Mock、翻译、营销或自动回复。
+- DeepSeek 草稿异常时先将 `LLM_ENABLED=false`，移除 `src/compose/docker-compose.deepseek-sse.yml` 叠加并重建 backend；本操作不修改 Agent 运行历史，也不打开 Mock、翻译、营销或自动回复。
 - 基础生产 Compose 的四个真实 TikTok 开关都为 false。人工发送异常时优先把 `REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false` 并重启 backend；`unknown` 消息不得重试，必须在 TikTok 后台人工对账。高风险写入和自动回复即使出现在外部环境文件中也会被叠加文件及应用启动门禁拒绝。
 - 恢复后依次验证迁移 head、`/v1/health/ready`、店铺隔离、审计链路和任务积压。
 
@@ -319,7 +319,7 @@ CRM_STAGING_BASE_URL=https://staging.hophorsefit.com
 ```
 
 两个门禁脚本必须传入 `-DockerHost unix:///run/user/1004/docker.sock`，内部清除继承的
-`DOCKER_CONTEXT` 并固定叠加 `docker-compose.rootless-staging.yml`，高端口只绑定回环。
+`DOCKER_CONTEXT` 并固定叠加 `src/compose/docker-compose.rootless-staging.yml`，高端口只绑定回环。
 直接预检、部署、入口撤除和回滚命令统一见 Rootless staging 运行手册；不要沿用旧 Windows
 主机路径或 `staging.example.com` 示例。全部真实能力强制关闭的基础脚本不能用来直接开启 G1～G6。
 

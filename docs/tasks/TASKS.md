@@ -52,7 +52,7 @@ DOING/VERIFYING → BLOCKED
 | ID | 可验证结果 | 需求/验收或门禁 | 状态 | 分支 | 依赖 | IR | TR | RR | 最终 SHA |
 |---|---|---|---|---|---|---|---|---|---|
 | DOCS-001 | 按职责域分类 `docs/` 当前文档并修复活动引用，不改变项目事实 | 本设计规格的 7 项验收标准；`BASE_SHA=318d0e0272a580e0eb36f17e6188944276d2c9be` | DONE | codex/docs-classify-documentation | none | N/A | N/A | N/A（纯文档路径重组） | 35e41ee641e15ce124e3ad09a27f3d8bef1caeec |
-| REPO-001 | 将全部工程代码与运行资产迁入 `src/`，并通过完整构建和实际启动验证 | `src/` 工程根迁移设计的 9 项验收标准；`BASE_SHA=6b726a32502a364040ccf0a0b251a320d379ee7d` | DOING | codex/src-layout-migration | none | required | required | required | |
+| REPO-001 | 将全部工程代码与运行资产迁入 `src/`，并通过完整构建和实际启动验证 | `src/` 工程根迁移设计的 9 项验收标准；`BASE_SHA=6b726a32502a364040ccf0a0b251a320d379ee7d` | VERIFYING | codex/src-layout-migration | none | required | required | required | |
 
 ## 维护规则
 

@@ -118,13 +118,13 @@ MVP 只有在核心流程通过对应验收、所有 DONE 任务和最终记录�
 
 ```text
 TEST_LAYOUT：hybrid
-后端模块/契约/安全测试：backend/tests/
-跨 PostgreSQL/pgvector 集成测试：tests/integration/
-前端契约与行为测试：frontend/tests/
-AI/RAG 评测：backend/evals/
+后端模块/契约/安全测试：src/backend/tests/
+跨 PostgreSQL/pgvector 集成测试：src/tests/integration/
+前端契约与行为测试：src/frontend/tests/
+AI/RAG 评测：src/backend/evals/
 正式低敏机器证据：release/evidence/
 测试策略：docs/quality/TEST-STRATEGY.md
-实际命令与发现规则：tests/README.md
+实际命令与发现规则：src/tests/README.md
 ```
 
 不存在真实测试的层级在测试策略中标记 `N/A`、理由和启用条件，不创建空目录。测试源码、fixture/helper、临时输出和正式证据必须分离；fixtures 不含真实密钥、生产数据或未经脱敏的用户数据。
