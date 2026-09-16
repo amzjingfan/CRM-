@@ -17,7 +17,7 @@ from app.shared.config.settings import Settings
 from app.shared.database import redis as redis_module
 from app.shared.health import check_llm_provider_configuration
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize(
@@ -211,7 +211,7 @@ def test_real_environment_deepseek_rejects_insecure_base_url() -> None:
 
 
 def test_deepseek_sse_overlay_only_enables_authenticated_backend_drafts() -> None:
-    overlay = (PROJECT_ROOT / "docker-compose.deepseek-sse.yml").read_text(encoding="utf-8")
+    overlay = (SOURCE_ROOT / "compose" / "docker-compose.deepseek-sse.yml").read_text(encoding="utf-8")
 
     assert "LLM_ENABLED: ${LLM_ENABLED:-false}" in overlay
     assert overlay.count('AUTO_REPLY_ENABLED: "false"') == 3
@@ -222,7 +222,7 @@ def test_deepseek_sse_overlay_only_enables_authenticated_backend_drafts() -> Non
 
 
 def test_sse_load_overlay_raises_only_backend_ip_rate_capacity() -> None:
-    overlay = (PROJECT_ROOT / "docker-compose.sse-load-test.yml").read_text(encoding="utf-8")
+    overlay = (SOURCE_ROOT / "compose" / "docker-compose.sse-load-test.yml").read_text(encoding="utf-8")
 
     assert "SSE_LOAD_TEST_APP_ENV:-integration" in overlay
     assert "SSE_LOAD_TEST_QUERY_LIMIT:-60" in overlay

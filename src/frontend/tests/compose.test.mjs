@@ -2,28 +2,31 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+const sourceRoot = new URL("../../", import.meta.url);
+const repositoryRoot = new URL("../../../", import.meta.url);
+
 const composeSource = await readFile(
-  new URL("../../docker-compose.yml", import.meta.url),
+  new URL("compose/docker-compose.yml", sourceRoot),
   "utf8",
 );
 const productionComposeSource = await readFile(
-  new URL("../../docker-compose.prod.yml", import.meta.url),
+  new URL("compose/docker-compose.prod.yml", sourceRoot),
   "utf8",
 );
 const aiComposeSource = await readFile(
-  new URL("../../docker-compose.ai.yml", import.meta.url),
+  new URL("compose/docker-compose.ai.yml", sourceRoot),
   "utf8",
 );
 const modelDockerfile = await readFile(
-  new URL("../../Dockerfile.model-service", import.meta.url),
+  new URL("docker/Dockerfile.model-service", sourceRoot),
   "utf8",
 );
 const productionFrontendDockerfile = await readFile(
-  new URL("../../Dockerfile.frontend.prod", import.meta.url),
+  new URL("docker/Dockerfile.frontend.prod", sourceRoot),
   "utf8",
 );
 const productionReadmeSource = await readFile(
-  new URL("../../deploy/production/README.md", import.meta.url),
+  new URL("deploy/production/README.md", sourceRoot),
   "utf8",
 );
 const packageJson = JSON.parse(
@@ -113,7 +116,7 @@ test("production application services consume published images without local bui
 
 test("GHCR publisher uses least privilege and immutable GitHub Actions", async () => {
   const workflow = await readFile(
-    new URL("../../../.github/workflows/publish-images.yml", import.meta.url),
+    new URL(".github/workflows/publish-images.yml", repositoryRoot),
     "utf8",
   );
 
@@ -135,7 +138,7 @@ test("GHCR publisher uses least privilege and immutable GitHub Actions", async (
 
 test("staging workflow cannot target production or a generic hosted runner", async () => {
   const workflow = await readFile(
-    new URL("../../../.github/workflows/staging-gates.yml", import.meta.url),
+    new URL(".github/workflows/staging-gates.yml", repositoryRoot),
     "utf8",
   );
 
@@ -160,7 +163,7 @@ test("staging workflow cannot target production or a generic hosted runner", asy
 test("published image evidence binds available GHCR RepoDigests to one source commit", async () => {
   const evidence = JSON.parse(
     await readFile(
-      new URL("../../../release/images/mvp-production-gates.json", import.meta.url),
+      new URL("release/images/mvp-production-gates.json", repositoryRoot),
       "utf8",
     ),
   );

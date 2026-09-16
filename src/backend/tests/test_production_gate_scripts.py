@@ -12,9 +12,18 @@ from pathlib import Path
 import pytest
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-PREFLIGHT_SCRIPT = PROJECT_ROOT / "scripts" / "Test-StagingProductionGates.ps1"
-ROLLBACK_SCRIPT = PROJECT_ROOT / "scripts" / "Invoke-StagingRollbackDrill.ps1"
+def repository_root(start: Path) -> Path:
+    """从普通 checkout 或 linked worktree 中定位 Git 仓库根。"""
+    for candidate in (start, *start.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    raise AssertionError("Git repository root was not found")
+
+
+REPOSITORY_ROOT = repository_root(Path(__file__).resolve())
+SOURCE_ROOT = REPOSITORY_ROOT / "src"
+PREFLIGHT_SCRIPT = SOURCE_ROOT / "scripts" / "Test-StagingProductionGates.ps1"
+ROLLBACK_SCRIPT = SOURCE_ROOT / "scripts" / "Invoke-StagingRollbackDrill.ps1"
 POWERSHELL = shutil.which("pwsh") or shutil.which("powershell")
 
 BACKEND_IMAGE = "ghcr.io/cp11-gh/crm-backend@sha256:" + "a" * 64
@@ -40,7 +49,7 @@ WHITESPACE_PATTERN = re.compile(r"\s+")
 
 def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -> None:
     """工作流必须把调用者 UID 交给脚本的 1004 门禁，且 GHCR 不依赖长期 PAT。"""
-    workflow = yaml.safe_load((PROJECT_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     assert workflow["permissions"] == {"contents": "read", "packages": "read"}
     steps = workflow["jobs"]["staging"]["steps"]
     login = next(step for step in steps if step.get("uses", "").startswith("docker/login-action@"))
@@ -68,7 +77,7 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
 )
 def test_workflow_rejects_nonexact_base_url_before_mutation(tmp_path: Path, base_url: str, accepted: bool) -> None:
     """执行真实工作流预检片段，防止生产地址、前缀匹配或路径误配置被放行。"""
-    workflow = yaml.safe_load((PROJECT_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     steps = workflow["jobs"]["staging"]["steps"]
     guards = [step for step in steps if step["name"] == "Validate staging target"]
     assert len(guards) == 1, "exact staging URL guard must precede credential or deployment steps"
@@ -376,9 +385,9 @@ def assert_compose_invocations_use_fixed_staging_target(command_log: Path) -> No
         assert arguments[arguments.index("--profile") + 1] == "ai"
         compose_files = [Path(arguments[index + 1]) for index, value in enumerate(arguments) if value == "-f"]
         assert compose_files == [
-            PROJECT_ROOT / "docker-compose.yml",
-            PROJECT_ROOT / "docker-compose.prod.yml",
-            PROJECT_ROOT / "docker-compose.rootless-staging.yml",
+            SOURCE_ROOT / "compose" / "docker-compose.yml",
+            SOURCE_ROOT / "compose" / "docker-compose.prod.yml",
+            SOURCE_ROOT / "compose" / "docker-compose.rootless-staging.yml",
         ]
 
 
@@ -784,7 +793,7 @@ def test_preflight_rejects_model_asset_directory_inside_checkout(
     replace_environment_value(
         staging_env_file,
         "RETRIEVAL_MODEL_ASSET_DIR",
-        str(PROJECT_ROOT / "deploy" / "models"),
+        str(SOURCE_ROOT / "deploy" / "models"),
     )
 
     result = run_powershell(
@@ -821,7 +830,7 @@ def test_gate_scripts_reject_model_assets_anywhere_inside_git_checkout(
     tmp_path: Path,
 ) -> None:
     """嵌套产品目录不能让工作树根目录内的权重绕过仓库外门禁。"""
-    replace_environment_value(staging_env_file, "RETRIEVAL_MODEL_ASSET_DIR", str(PROJECT_ROOT.parent))
+    replace_environment_value(staging_env_file, "RETRIEVAL_MODEL_ASSET_DIR", str(REPOSITORY_ROOT))
     evidence_file = tmp_path / f"{script.stem}-git-root-evidence.json"
     result = run_powershell(
         script,
@@ -853,7 +862,7 @@ def test_gate_scripts_reject_external_link_pointing_into_git_checkout(
     tmp_path: Path,
 ) -> None:
     """仓库外符号链接或 Junction 不得把仓库内资产伪装成外部目录。"""
-    with tempfile.TemporaryDirectory(prefix=".model-link-target-", dir=PROJECT_ROOT / "backend") as directory:
+    with tempfile.TemporaryDirectory(prefix=".model-link-target-", dir=SOURCE_ROOT / "backend") as directory:
         internal_target = Path(directory)
         for relative_path in REQUIRED_MODEL_FILES:
             asset_path = internal_target / relative_path

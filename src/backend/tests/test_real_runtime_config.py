@@ -18,7 +18,7 @@ from app.shared.config.settings import (
 )
 from app.shared.logging.setup import JsonFormatter, redact_log_text
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = Path(__file__).resolve().parents[2]
 
 
 def production_settings(**overrides: object) -> Settings:
@@ -451,7 +451,7 @@ def test_production_accepts_explicit_https_origins_with_optional_port() -> None:
 
 def test_production_compose_resets_dev_env_and_separates_secret_domains() -> None:
     """生产服务必须重置开发环境文件并按职责拆分平台与模型密钥。"""
-    compose_text = (PROJECT_ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    compose_text = (SOURCE_ROOT / "compose" / "docker-compose.prod.yml").read_text(encoding="utf-8")
 
     assert compose_text.count("env_file: !reset []") == 5
     assert "x-production-platform: &production-platform" in compose_text
@@ -475,7 +475,7 @@ def test_production_compose_resets_dev_env_and_separates_secret_domains() -> Non
 
 def test_production_compose_enforces_least_secret_service_matrix() -> None:
     """防止公共锚点和本地检索服务再次跨域持有平台或模型凭据。"""
-    compose_text = (PROJECT_ROOT / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    compose_text = (SOURCE_ROOT / "compose" / "docker-compose.prod.yml").read_text(encoding="utf-8")
     runtime_block = compose_text.split("x-production-platform: &production-platform", 1)[0]
     retrieval_block = compose_service_block(compose_text, "retrieval-model-service")
 
@@ -494,7 +494,7 @@ def test_production_compose_enforces_least_secret_service_matrix() -> None:
 )
 def test_development_compose_keeps_live_evaluation_out_of_long_lived_services(service_name: str) -> None:
     """一次性真实模型评测开关不得从根环境文件污染常驻服务或迁移进程。"""
-    compose_text = (PROJECT_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    compose_text = (SOURCE_ROOT / "compose" / "docker-compose.yml").read_text(encoding="utf-8")
     service_lines = compose_service_block(compose_text, service_name).splitlines()
 
     assert any(line.strip() == 'LLM_LIVE_EVAL: "false"' for line in service_lines)
@@ -502,7 +502,7 @@ def test_development_compose_keeps_live_evaluation_out_of_long_lived_services(se
 
 def test_tiktok_manual_overlay_limits_real_write_to_backend() -> None:
     """真实普通消息开关只能进入人工 HTTP 服务，Worker 保持写入关闭。"""
-    overlay = (PROJECT_ROOT / "docker-compose.tiktok-manual.yml").read_text(encoding="utf-8")
+    overlay = (SOURCE_ROOT / "compose" / "docker-compose.tiktok-manual.yml").read_text(encoding="utf-8")
     backend = compose_service_block(overlay, "backend")
     worker = compose_service_block(overlay, "worker")
 
@@ -515,7 +515,7 @@ def test_tiktok_manual_overlay_limits_real_write_to_backend() -> None:
 
 def test_rootless_staging_overlay_is_loopback_only_and_fail_closed() -> None:
     """预发布覆盖层必须限制代理到回环地址并集中关闭真实能力。"""
-    overlay = (PROJECT_ROOT / "docker-compose.rootless-staging.yml").read_text(encoding="utf-8")
+    overlay = (SOURCE_ROOT / "compose" / "docker-compose.rootless-staging.yml").read_text(encoding="utf-8")
 
     assert "x-rootless-staging-runtime: &rootless-staging-runtime" in overlay
     assert 'APP_ENV: "staging"' in overlay.split("services:", 1)[0]
@@ -546,7 +546,7 @@ def test_rootless_staging_overlay_is_loopback_only_and_fail_closed() -> None:
 
 def test_nginx_access_log_format_excludes_query_string() -> None:
     """代理日志不得在正常或上游错误路径记录 OAuth 查询参数。"""
-    nginx_text = (PROJECT_ROOT / "deploy" / "nginx" / "nginx.conf").read_text(encoding="utf-8")
+    nginx_text = (SOURCE_ROOT / "deploy" / "nginx" / "nginx.conf").read_text(encoding="utf-8")
 
     assert "access_log /dev/stdout safe_json;" in nginx_text
     assert '"uri":"$uri"' in nginx_text
@@ -611,7 +611,7 @@ def test_json_formatter_maps_known_framework_loggers_without_exposing_message(
 
 def test_alembic_offline_command_uses_unified_json_logging() -> None:
     """Alembic 真实入口在 ``fileConfig`` 后仍必须输出统一低敏 JSON。"""
-    backend_root = PROJECT_ROOT / "backend"
+    backend_root = SOURCE_ROOT / "backend"
     completed = subprocess.run(
         [sys.executable, "-m", "alembic", "-c", "alembic.ini", "upgrade", "base", "--sql"],
         cwd=backend_root,
@@ -735,6 +735,6 @@ def test_internal_trace_producers_do_not_emit_legacy_non_uuid_values(
     forbidden_trace_source: str,
 ) -> None:
     """内部生产路径必须生成 UUID Trace ID，业务语义由 event 等字段承载。"""
-    source = (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
+    source = (SOURCE_ROOT / relative_path).read_text(encoding="utf-8")
 
     assert forbidden_trace_source not in source
