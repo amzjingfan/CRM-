@@ -46,6 +46,10 @@ def test_engineering_assets_live_under_src() -> None:
     assert "\n/deploy/models/bge-m3/" not in ignore_source
     assert "\n/deploy/models/bge-reranker-large/" not in ignore_source
 
+    env_example = (SOURCE_ROOT / "config/.env.example").read_text(encoding="utf-8")
+    assert "src/deploy/staging/rootless/README.md" in env_example
+    assert "# deploy/staging/rootless/README.md" not in env_example
+
 
 def test_local_startup_entrypoint_uses_source_relative_compose_assets() -> None:
     """本地启动入口必须固定工程根、环境模板和 Compose 项目身份。"""
