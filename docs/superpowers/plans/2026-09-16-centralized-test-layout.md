@@ -38,7 +38,7 @@
 - Consumes: existing backend tests collected from `src/backend/tests/`, backend application imports from `src/backend/app/`, and current integration tests at `src/tests/integration/`.
 - Produces: categorized backend tests, `BACKEND_ROOT`, `SOURCE_ROOT`, `REPOSITORY_ROOT`, and `TESTS_ROOT` constants from `_support.py`, plus pytest discovery of the new backend tree.
 
-- [ ] **Step 1: Strengthen the layout test before moving files**
+- [x] **Step 1: Strengthen the layout test before moving files**
 
 Add a failing test to the current `src/backend/tests/test_repository_layout.py`:
 
@@ -48,7 +48,7 @@ def test_backend_tests_use_central_test_root() -> None:
     assert not (SOURCE_ROOT / "backend" / "tests").exists()
 ```
 
-- [ ] **Step 2: Run the new contract and confirm the red state**
+- [x] **Step 2: Run the new contract and confirm the red state**
 
 Run from `src/backend/`:
 
@@ -58,7 +58,7 @@ uv run pytest tests/test_repository_layout.py::test_backend_tests_use_central_te
 
 Expected: FAIL because `src/tests/backend/` does not exist and `src/backend/tests/` still exists.
 
-- [ ] **Step 3: Create exact category directories and move all 40 backend tests**
+- [x] **Step 3: Create exact category directories and move all 40 backend tests**
 
 Use `New-Item -ItemType Directory` for the five nonempty category directories, then `Move-Item -LiteralPath` for each explicit file listed in this task. Do not use a recursive wildcard move. Confirm:
 
@@ -69,7 +69,7 @@ if ($old.Count -ne 0) { throw "Unmoved backend tests: $($old.Name -join ', ')" }
 
 Remove the now-empty `src/backend/tests/` directory only after that check.
 
-- [ ] **Step 4: Add stable Python path roots**
+- [x] **Step 4: Add stable Python path roots**
 
 Create `src/tests/backend/_support.py` with:
 
@@ -92,7 +92,7 @@ TESTS_ROOT = SOURCE_ROOT / "tests"
 
 Replace fixed `parents[n]` and old test-relative backend paths in these moved files with imports from `_support`: `test_production_gate_scripts.py`, `test_real_fs05_sse_runtime.py`, `test_real_runtime_config.py`, `test_repository_layout.py`, `test_retrieval_runtime_dependencies.py`, and `test_rootless_staging_assets.py`. Logging-only uses of `__file__` remain unchanged.
 
-- [ ] **Step 5: Update pytest discovery without moving integration tests yet**
+- [x] **Step 5: Update pytest discovery without moving integration tests yet**
 
 Set in `src/backend/pyproject.toml`:
 
@@ -104,7 +104,7 @@ pythonpath = [".", "../tests/backend"]
 cache_dir = "../tests/.artifacts/pytest-cache"
 ```
 
-- [ ] **Step 6: Run the backend layout and full deterministic suite**
+- [x] **Step 6: Run the backend layout and full deterministic suite**
 
 Run from `src/backend/`:
 
@@ -115,7 +115,7 @@ uv run pytest -q -rs
 
 Expected: layout contract passes; full suite collects the same backend and integration tests as the base branch, with only environment-gated skips.
 
-- [ ] **Step 7: Commit backend test centralization**
+- [x] **Step 7: Commit backend test centralization**
 
 ```powershell
 git add -A -- src/backend/tests src/tests/backend src/backend/pyproject.toml
@@ -134,7 +134,7 @@ git commit -m "test: centralize backend test suites"
 - Consumes: pytest discovery and backend Python path from Task 1.
 - Produces: one explicit PostgreSQL/pgvector integration category discovered by both `uv run pytest` and the isolated database script.
 
-- [ ] **Step 1: Extend the layout test for the PostgreSQL category**
+- [x] **Step 1: Extend the layout test for the PostgreSQL category**
 
 Add to `src/tests/backend/runtime_infrastructure/test_repository_layout.py`:
 
@@ -144,7 +144,7 @@ def test_postgres_integration_tests_have_one_category() -> None:
     assert not list((TESTS_ROOT / "integration").glob("test_*.py"))
 ```
 
-- [ ] **Step 2: Verify the new category contract fails**
+- [x] **Step 2: Verify the new category contract fails**
 
 ```powershell
 Set-Location src/backend
@@ -153,7 +153,7 @@ uv run pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_rep
 
 Expected: FAIL because tests still live directly under `src/tests/integration/`.
 
-- [ ] **Step 3: Move the README and six tests with literal paths**
+- [x] **Step 3: Move the README and six tests with literal paths**
 
 Create `src/tests/integration/postgres/`, move the seven tracked files, and remove the empty old directory. Change pytest configuration to:
 
@@ -161,7 +161,7 @@ Create `src/tests/integration/postgres/`, move the seven tracked files, and remo
 testpaths = ["../tests/backend", "../tests/integration/postgres"]
 ```
 
-- [ ] **Step 4: Verify discovery and the isolated database entry point**
+- [x] **Step 4: Verify discovery and the isolated database entry point**
 
 Run:
 
@@ -174,7 +174,7 @@ Set-Location ../..
 
 Expected: six PostgreSQL files are collected; the script runs migrations and the full pytest command against its isolated database, then removes the temporary test service.
 
-- [ ] **Step 5: Commit integration classification**
+- [x] **Step 5: Commit integration classification**
 
 ```powershell
 git add -A -- src/tests/integration src/backend/pyproject.toml src/scripts/run-postgres-integration-tests.ps1
@@ -196,7 +196,7 @@ git commit -m "test: classify postgres integration suites"
 - Consumes: `TESTS_ROOT` from Task 1 and the byte-identical eval assets at base SHA.
 - Produces: `src/tests/ai/datasets/`, `src/tests/ai/results/`, and CWD-independent defaults in evaluation scripts.
 
-- [ ] **Step 1: Add a failing eval-location contract**
+- [x] **Step 1: Add a failing eval-location contract**
 
 Add to the moved `test_agent_evaluation.py`:
 
@@ -211,7 +211,7 @@ def test_versioned_eval_datasets_live_under_central_test_root() -> None:
     assert not (TESTS_ROOT.parent / "backend" / "evals").exists()
 ```
 
-- [ ] **Step 2: Verify the eval-location contract fails**
+- [x] **Step 2: Verify the eval-location contract fails**
 
 ```powershell
 Set-Location src/backend
@@ -220,7 +220,7 @@ uv run pytest -c pyproject.toml ../tests/backend/agent/test_agent_evaluation.py:
 
 Expected: FAIL because datasets still live under `src/backend/evals/`.
 
-- [ ] **Step 3: Move datasets and results without editing contents**
+- [x] **Step 3: Move datasets and results without editing contents**
 
 Move these exact dataset files:
 
@@ -234,7 +234,7 @@ real-model-v1.0.0.manifest.json
 
 Move every tracked `src/backend/evals/results/*` file to `src/tests/ai/results/`, preserving each basename. Remove the empty `src/backend/evals/` tree.
 
-- [ ] **Step 4: Make script defaults independent of the current directory**
+- [x] **Step 4: Make script defaults independent of the current directory**
 
 In both `evaluate_intents.py` and `evaluate_real_model.py`, derive:
 
@@ -245,11 +245,11 @@ DATASETS_ROOT = TESTS_ROOT / "ai" / "datasets"
 
 Use `DATASETS_ROOT` for `DEFAULT_DATASET` and `DEFAULT_MANIFEST`. Keep `evaluate_rag.py` and `evaluate_phase4.py` explicit-argument interfaces unchanged. Change moved tests to use `_support.TESTS_ROOT / "ai" / "datasets"` rather than `Path("evals/..." )`. Update the security comment to name `src/tests/ai/datasets/real-model-v1.0.0.jsonl`.
 
-- [ ] **Step 5: Remove the stale Docker ignore rule**
+- [x] **Step 5: Remove the stale Docker ignore rule**
 
 Delete only the obsolete `evals/reports` entry from `src/backend/.dockerignore`. Do not widen the backend build context and do not add `src/tests/` to the image.
 
-- [ ] **Step 6: Prove byte identity and run eval-related tests**
+- [x] **Step 6: Prove byte identity and run eval-related tests**
 
 For each moved asset, compare the base blob with the current file:
 
@@ -274,7 +274,7 @@ uv run pytest -c pyproject.toml ../tests/backend/agent/test_agent_evaluation.py 
 uv run python -c "from scripts.evaluate_intents import DEFAULT_DATASET; from scripts.evaluate_real_model import DEFAULT_DATASET as REAL, DEFAULT_MANIFEST; assert DEFAULT_DATASET.is_file() and REAL.is_file() and DEFAULT_MANIFEST.is_file()"
 ```
 
-- [ ] **Step 7: Commit the eval migration**
+- [x] **Step 7: Commit the eval migration**
 
 ```powershell
 git add -A -- src/backend/evals src/tests/ai src/backend/scripts src/backend/app/agent/security.py src/tests/backend/agent src/backend/.dockerignore
@@ -293,7 +293,7 @@ git commit -m "test: centralize ai evaluation assets"
 - Consumes: frontend source at `src/frontend/`, source-wide Compose/deploy assets at `src/`, and repository assets at the Git root.
 - Produces: `sourceRoot`, `frontendRoot`, `repositoryRoot`, and `testsRoot` URL constants plus stable `npm run test` and `npm run lint` entry points.
 
-- [ ] **Step 1: Extend the layout contract for frontend tests**
+- [x] **Step 1: Extend the layout contract for frontend tests**
 
 Add to `test_repository_layout.py`:
 
@@ -303,11 +303,11 @@ def test_frontend_tests_use_central_test_root() -> None:
     assert not (SOURCE_ROOT / "frontend" / "tests").exists()
 ```
 
-- [ ] **Step 2: Verify the frontend contract is red**
+- [x] **Step 2: Verify the frontend contract is red**
 
 Run the single Python layout function and confirm it fails before the move.
 
-- [ ] **Step 3: Move the five Node test files and create the shared path helper**
+- [x] **Step 3: Move the five Node test files and create the shared path helper**
 
 Create `src/tests/frontend/helpers/paths.mjs`:
 
@@ -320,7 +320,7 @@ export const testsRoot = new URL("../../", import.meta.url);
 
 Move `compose.test.mjs`, `phase3.test.mjs`, `phase4.test.mjs`, `security.test.mjs`, and `tiktok-oauth.test.mjs` into `src/tests/frontend/contract/`. Import the helper with `../helpers/paths.mjs` and replace every old `../app`, `../lib`, `../components`, `../../`, and `../../../` source-location assumption with URLs based on the exported roots.
 
-- [ ] **Step 4: Update frontend scripts**
+- [x] **Step 4: Update frontend scripts**
 
 Set in `src/frontend/package.json`:
 
@@ -329,7 +329,7 @@ Set in `src/frontend/package.json`:
 "test": "node --test ../tests/frontend/contract/*.test.mjs"
 ```
 
-- [ ] **Step 5: Run all frontend gates**
+- [x] **Step 5: Run all frontend gates**
 
 From `src/frontend/` run:
 
@@ -342,7 +342,7 @@ npm run build
 
 Expected: lint has no errors, typecheck passes, all 40 Node assertions pass, and the production build completes.
 
-- [ ] **Step 6: Commit frontend centralization**
+- [x] **Step 6: Commit frontend centralization**
 
 ```powershell
 git add -A -- src/frontend/tests src/tests/frontend src/frontend/package.json
@@ -371,7 +371,7 @@ git commit -m "test: centralize frontend contract tests"
 - Consumes: final directory layout and commands from Tasks 1–4.
 - Produces: `TEST_LAYOUT: centralized`, one documented entry point, CI coverage of sibling tests, and a regression contract that rejects legacy test roots.
 
-- [ ] **Step 1: Add the final centralized-layout regression assertions**
+- [x] **Step 1: Add the final centralized-layout regression assertions**
 
 The repository layout test must assert:
 
@@ -391,11 +391,11 @@ assert (TESTS_ROOT / "ai" / "results").is_dir()
 
 Use `git ls-files` only for stable tracked-path classification. Explicitly exempt `docs/reports/tests/`, `release/evidence/`, historical `docs/superpowers/`, and frozen `release/baselines/`.
 
-- [ ] **Step 2: Route all project-local temporary output to the ignored artifact root**
+- [x] **Step 2: Route all project-local temporary output to the ignored artifact root**
 
 Add `/src/tests/.artifacts/` to `.gitignore`. Document it as the only project-local test output root. Keep existing generic ignore rules for tool compatibility and prevent tracked artifacts with the layout test.
 
-- [ ] **Step 3: Update CI quality paths**
+- [x] **Step 3: Update CI quality paths**
 
 In `.github/workflows/ci.yml`, keep job working directories unchanged and set backend commands to:
 
@@ -410,7 +410,7 @@ In `.github/workflows/ci.yml`, keep job working directories unchanged and set ba
 
 The frontend job continues to use `npm run lint` and `npm run test`, which now include sibling tests through `package.json`.
 
-- [ ] **Step 4: Update current governance and developer documentation**
+- [x] **Step 4: Update current governance and developer documentation**
 
 Change every active `TEST_LAYOUT: hybrid` statement to `TEST_LAYOUT: centralized`; document the exact target tree and commands. Add the rule that future tests, test-only fixtures/data, ordinary eval inputs/results, and local test outputs belong under `src/tests/`. Keep formal TR and release evidence exceptions explicit.
 
@@ -420,11 +420,11 @@ Update root and Agent README eval commands to use paths such as:
 uv run python -m scripts.evaluate_phase4 --dataset ../tests/ai/datasets/agent-phase4-v1.0.0.jsonl --output ../tests/.artifacts/ai/agent-phase4-deterministic.json
 ```
 
-- [ ] **Step 5: Scan active files for old test paths**
+- [x] **Step 5: Scan active files for old test paths**
 
 Run `git grep` for `src/backend/tests`, `src/frontend/tests`, `src/backend/evals`, bare `evals/`, and `TEST_LAYOUT: hybrid`, excluding only historical specs/plans/history and frozen release baselines. Every remaining active match must be corrected or be an explicit legacy-path rejection assertion.
 
-- [ ] **Step 6: Validate static configuration and links**
+- [x] **Step 6: Validate static configuration and links**
 
 Run:
 
@@ -437,7 +437,7 @@ Get-Content src/backend/pyproject.toml -Raw
 
 Run a local Markdown link checker across changed current docs and parse every changed JSON file.
 
-- [ ] **Step 7: Commit the centralized test contract**
+- [x] **Step 7: Commit the centralized test contract**
 
 ```powershell
 git add -- AGENTS.md .gitignore .github README.md docs src/tests src/backend/app/agent/README.md
@@ -461,7 +461,7 @@ git commit -m "ci: enforce centralized test layout"
 - Consumes: final centralized layout, commands, and acceptance criteria from the design.
 - Produces: one candidate subject SHA, reproducible verification evidence, independent review, and an evidence-only tail.
 
-- [ ] **Step 1: Mark the task `VERIFYING` and commit the final delivery subject**
+- [x] **Step 1: Mark the task `VERIFYING` and commit the final delivery subject**
 
 Update `TEST-001` to `VERIFYING`, mark implementation-plan checkboxes complete as real steps finish, run `git diff --check`, and commit all remaining delivery files. Record `git rev-parse HEAD` as `CANDIDATE_SUBJECT_SHA`.
 
