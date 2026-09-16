@@ -88,7 +88,7 @@ def test_operational_scripts_bind_the_relocated_compose_file() -> None:
         "restore-minio.ps1",
     ):
         source = (SOURCE_ROOT / "scripts" / name).read_text(encoding="utf-8-sig")
-        assert '$sourceRoot = Split-Path -Parent $PSScriptRoot' in source
+        assert "$sourceRoot = Split-Path -Parent $PSScriptRoot" in source
         assert 'Join-Path $sourceRoot "compose/docker-compose.yml"' in source
         assert "$env:COMPOSE_FILE" in source
         assert "@composeArguments" in source
