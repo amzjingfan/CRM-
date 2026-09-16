@@ -109,7 +109,7 @@ cache_dir = "../tests/.artifacts/pytest-cache"
 Run from `src/backend/`:
 
 ```powershell
-uv run pytest ../tests/backend/runtime_infrastructure/test_repository_layout.py -q
+uv run pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_repository_layout.py -q
 uv run pytest -q -rs
 ```
 
