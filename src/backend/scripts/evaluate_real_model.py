@@ -15,8 +15,10 @@ from app.agent.real_model_evaluation import (
 )
 from app.shared.config.settings import get_settings
 
-DEFAULT_DATASET = Path("evals/real-model-v1.0.0.jsonl")
-DEFAULT_MANIFEST = Path("evals/real-model-v1.0.0.manifest.json")
+TESTS_ROOT = Path(__file__).resolve().parents[2] / "tests"
+DATASETS_ROOT = TESTS_ROOT / "ai" / "datasets"
+DEFAULT_DATASET = DATASETS_ROOT / "real-model-v1.0.0.jsonl"
+DEFAULT_MANIFEST = DATASETS_ROOT / "real-model-v1.0.0.manifest.json"
 
 
 def parse_args() -> argparse.Namespace:

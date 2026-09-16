@@ -22,7 +22,9 @@ from app.shared.config.settings import get_settings
 
 CLASSIFIED_ACCURACY_GATE = 0.85
 ABSTENTION_ACCURACY_GATE = 0.90
-DEFAULT_DATASET = Path("evals/intent-classifier-v1.0.0.jsonl")
+TESTS_ROOT = Path(__file__).resolve().parents[2] / "tests"
+DATASETS_ROOT = TESTS_ROOT / "ai" / "datasets"
+DEFAULT_DATASET = DATASETS_ROOT / "intent-classifier-v1.0.0.jsonl"
 logger = logging.getLogger(__name__)
 
 

@@ -3,9 +3,9 @@
 import json
 import uuid
 from decimal import Decimal
-from pathlib import Path
 
 import pytest
+from _support import TESTS_ROOT
 
 from app.agent.phase4_evaluation import AgentMetricAction
 from app.agent.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
@@ -22,8 +22,9 @@ from app.agent.real_model_evaluation import (
 )
 from app.agent.security import PromptSafetyState, evaluate_prompt_safety
 
-DATASET_PATH = Path("evals/real-model-v1.0.0.jsonl")
-MANIFEST_PATH = Path("evals/real-model-v1.0.0.manifest.json")
+DATASETS_ROOT = TESTS_ROOT / "ai" / "datasets"
+DATASET_PATH = DATASETS_ROOT / "real-model-v1.0.0.jsonl"
+MANIFEST_PATH = DATASETS_ROOT / "real-model-v1.0.0.manifest.json"
 
 
 def test_versioned_real_model_dataset_covers_required_categories() -> None:

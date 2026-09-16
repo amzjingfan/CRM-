@@ -4,13 +4,21 @@ import json
 import logging
 import uuid
 from collections import Counter
-from pathlib import Path
+
+from _support import TESTS_ROOT
 
 from app.agent.evaluation import EvaluationCase, EvaluationPrediction, calculate_metrics
 from app.agent.schemas import ClassificationState, IntentName
 from app.shared.logging.setup import JsonFormatter
 from scripts.evaluate_intents import build_evaluation_trace_id, load_cases
 from scripts.evaluate_rag import load_cases as load_rag_cases
+
+
+def test_versioned_eval_datasets_live_under_central_test_root() -> None:
+    datasets = TESTS_ROOT / "ai" / "datasets"
+    assert (datasets / "intent-classifier-v1.0.0.jsonl").is_file()
+    assert (datasets / "faq-rag-v1.0.0.jsonl").is_file()
+    assert not (TESTS_ROOT.parent / "backend" / "evals").exists()
 
 
 def test_evaluation_reports_accuracy_per_class_and_abstention_rate() -> None:
@@ -43,7 +51,7 @@ def test_evaluation_reports_accuracy_per_class_and_abstention_rate() -> None:
 
 def test_versioned_dataset_has_balanced_100_classified_and_30_abstention_cases() -> None:
     """评测集规模和类别分布必须保持计划约定，防止门禁被静默稀释。"""
-    cases = load_cases(Path("evals/intent-classifier-v1.0.0.jsonl"))
+    cases = load_cases(TESTS_ROOT / "ai" / "datasets" / "intent-classifier-v1.0.0.jsonl")
     classified = [case for case in cases if case.expected_intent is not None]
     abstention = [case for case in cases if case.expected_intent is None]
 
@@ -111,7 +119,7 @@ def test_provider_failure_is_counted_as_error_instead_of_successful_abstention()
 
 def test_versioned_rag_dataset_has_50_grounded_and_20_rejection_cases() -> None:
     """RAG 数据集规模必须保持门禁约定，并且所有 case_id 唯一。"""
-    cases = load_rag_cases(Path("evals/faq-rag-v1.0.0.jsonl"))
+    cases = load_rag_cases(TESTS_ROOT / "ai" / "datasets" / "faq-rag-v1.0.0.jsonl")
     grounded = [case for case in cases if case.expected_document_key]
     rejected = [case for case in cases if not case.expected_document_key]
 

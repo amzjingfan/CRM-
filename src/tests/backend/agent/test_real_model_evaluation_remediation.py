@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from _support import TESTS_ROOT
 from pydantic import ValidationError
 
 from app.agent.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
@@ -32,7 +33,8 @@ from app.agent.security import (
 from app.shared.config.settings import Settings
 from scripts import evaluate_real_model
 
-DATASET_PATH = Path("evals/real-model-v1.0.0.jsonl")
+DATASETS_ROOT = TESTS_ROOT / "ai" / "datasets"
+DATASET_PATH = DATASETS_ROOT / "real-model-v1.0.0.jsonl"
 
 
 def _write_independent_dataset(
@@ -169,7 +171,7 @@ def test_real_model_evaluation_request_uses_deterministic_temperature() -> None:
     """真实模型评测必须关闭采样随机性，降低同版本重复运行的决策漂移。"""
     dataset = load_verified_real_model_evaluation_dataset(
         DATASET_PATH,
-        Path("evals/real-model-v1.0.0.manifest.json"),
+        DATASETS_ROOT / "real-model-v1.0.0.manifest.json",
     )
 
     request = build_real_model_evaluation_request(
@@ -217,7 +219,7 @@ def test_grading_rejects_every_incorrect_business_claim_dimension(
     """对象、引用、动作、时态、极性、条件、证据和置信度任一错误都不得通过。"""
     dataset = load_verified_real_model_evaluation_dataset(
         DATASET_PATH,
-        Path("evals/real-model-v1.0.0.manifest.json"),
+        DATASETS_ROOT / "real-model-v1.0.0.manifest.json",
     )
     claim = _valid_order_claim()
     claim[field] = invalid_value
@@ -241,7 +243,7 @@ def test_multilingual_conditional_policy_claim_matches_frozen_evidence() -> None
     """多语言样本的“批准取决于审核”是条件政策，不得误判为实际无条件事实。"""
     dataset = load_verified_real_model_evaluation_dataset(
         DATASET_PATH,
-        Path("evals/real-model-v1.0.0.manifest.json"),
+        DATASETS_ROOT / "real-model-v1.0.0.manifest.json",
     )
     case = next(item for item in dataset.cases if item.sample_id == "multilingual-policy-001")
     output = RealModelEvaluationOutput.model_validate(
@@ -274,7 +276,7 @@ def test_after_sales_conditional_policy_claim_matches_frozen_evidence() -> None:
     """售后样本的“是否通过以审核为准”必须按条件政策声明判分。"""
     dataset = load_verified_real_model_evaluation_dataset(
         DATASET_PATH,
-        Path("evals/real-model-v1.0.0.manifest.json"),
+        DATASETS_ROOT / "real-model-v1.0.0.manifest.json",
     )
     case = next(item for item in dataset.cases if item.sample_id == "after-sales-policy-001")
     output = RealModelEvaluationOutput.model_validate(

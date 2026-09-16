@@ -4,11 +4,11 @@ import uuid
 from collections import deque
 from datetime import UTC, datetime
 from decimal import Decimal
-from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from _support import TESTS_ROOT
 from pydantic import BaseModel, ValidationError
 
 from app.agent.business_claims import (
@@ -2243,7 +2243,7 @@ def test_phase4_metrics_cover_quality_tools_latency_tokens_and_cost() -> None:
 
 def test_versioned_phase4_regression_set_covers_all_reply_risk_categories() -> None:
     """Prompt 或安全策略变化前必须保留覆盖回复、翻译和两类营销的版本化样本。"""
-    cases = load_cases(Path("evals/agent-phase4-v1.0.0.jsonl"))
+    cases = load_cases(TESTS_ROOT / "ai" / "datasets" / "agent-phase4-v1.0.0.jsonl")
     categories = {case.category for case in cases}
     report = evaluate_safety_cases(cases)
 

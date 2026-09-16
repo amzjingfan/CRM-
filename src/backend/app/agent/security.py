@@ -123,7 +123,7 @@ REAL_MODEL_EVALUATION_SYSTEM_PROMPT = (
     '"tense":"present","polarity":"affirmed","condition":"actual","evidence_type":"tool_call",'
     '"evidence_id":"10000000-0000-4000-8000-000000000001","confidence":0.9}。'
 )
-# 每个摘要对应 ``evals/real-model-v1.0.0.jsonl`` 中一个规范化外发载荷。
+# 每个摘要对应 ``src/tests/ai/datasets/real-model-v1.0.0.jsonl`` 中一个规范化外发载荷。
 # 只登记摘要而不在安全模块复制正文；数据集任意字符变化都会回到默认失败关闭。
 TRUSTED_REAL_MODEL_EVALUATION_PAYLOAD_HASHES = frozenset(
     {
