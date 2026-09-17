@@ -17,7 +17,7 @@
 
 ## 文档地图
 
-- 产品：`product/PRODUCT.md` 保存产品目标、完整 MVP 与 TikTok 人工辅助 v0.1 范围。
+- 产品：`product/PRD.md` 保存用户提供的总体需求原文，`product/MVP.md` 保存根据当前代码与总 PRD 收敛的可交付 MVP，`product/PRODUCT.md` 保存当前产品范围与验收原则摘要。
 - 架构与接口：`architecture/SYSTEM.md` 保存系统组件、数据流、隔离和数据结构；`architecture/API.md` 保存当前管理端接口族、权限与规划接口边界；`architecture/AI.md` 保存模型、RAG、知识审批、工具和失败关闭契约。
 - 工程：`engineering/DEVELOPMENT.md` 保存编码、测试、安全、Git 和 PR 规则。
 - 质量：`quality/TEST-STRATEGY.md` 保存测试布局、层级、数据和门禁策略；`quality/TEST-STATUS.md` 保存最新有效测试结论。
