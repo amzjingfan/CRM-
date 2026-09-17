@@ -4,10 +4,10 @@
 
 本文档定义当前可实施、可验证、可恢复的 MVP，并将总体 [`PRD.md`](PRD.md) 中的长期愿景收敛为与现有代码一致的交付边界。当前可交付 MVP 为 **TikTok 人工辅助客服 v0.1**；总 PRD 中更广的多平台、主动营销和分布式多 Agent 能力属于后续路线，不因收录 PRD 而自动获得实施或生产授权。
 
-文档状态：当前 MVP 基线  
-基线日期：2026-09-17  
-当前产品事实摘要：[`PRODUCT.md`](PRODUCT.md)  
-任务与发布状态：[`../tasks/TASKS.md`](../tasks/TASKS.md)、[`../operations/RELEASE-GATES.md`](../operations/RELEASE-GATES.md)
+- 文档状态：当前 MVP 基线
+- 基线日期：2026-09-17
+- 当前产品事实摘要：[`PRODUCT.md`](PRODUCT.md)
+- 任务与发布状态：[`../tasks/TASKS.md`](../tasks/TASKS.md)、[`../operations/RELEASE-GATES.md`](../operations/RELEASE-GATES.md)
 
 ## 产品问题与目标用户
 
