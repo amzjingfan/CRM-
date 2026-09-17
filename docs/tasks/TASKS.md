@@ -26,7 +26,7 @@ DOING/VERIFYING → BLOCKED
 
 | ID | 可验证结果 | 需求/验收或门禁 | 状态 | 分支 | 依赖 | IR | TR | RR | 最终 SHA |
 |---|---|---|---|---|---|---|---|---|---|
-| MVP-DOMAIN-001 | staging/production 的 OAuth、Webhook、CORS、公开地址、TLS 示例和部署守卫统一使用 `staging.overselfx.com` / `www.overselfx.com` | G0/G1/G2；用户 2026-09-17 域名决定；AC-01～AC-05；`BASE_SHA=9f432c853dc5d31a9c2a013b6769b162934976d4` | VERIFYING | fix/staging-production-domain-overselfx | none | [IR](../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md) | [TR](../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md) | [RR](../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md) | 10428b4501fd470a5a671676edcdc00e75180844 |
+| MVP-DOMAIN-001 | staging/production 的 OAuth、Webhook、CORS、公开地址、TLS 示例和部署守卫统一使用 `staging.overselfx.com` / `www.overselfx.com` | G0/G1/G2；用户 2026-09-17 域名决定；AC-01～AC-05；`BASE_SHA=9f432c853dc5d31a9c2a013b6769b162934976d4` | DONE | fix/staging-production-domain-overselfx | none | [IR](../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md) | [TR](../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md) | [RR](../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md) | 10428b4501fd470a5a671676edcdc00e75180844 |
 | MVP-001 | 轮换并通过密钥管理安全注入 v0.1 所需凭证，确认日志与响应无泄漏 | G0 | BACKLOG | | none | | | required | |
 | MVP-002 | 专用真实店铺完成 TikTok OAuth、Scope、Token 生命周期、只读能力与店铺隔离验收 | G1 | BACKLOG | | MVP-001 | | | required | |
 | MVP-003 | Partner Center 完成真实 Webhook 投递、签名、幂等、重试、乱序与审计验收 | G2 | BACKLOG | | MVP-001, MVP-002 | | | required | |
