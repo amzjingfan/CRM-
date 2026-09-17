@@ -65,8 +65,8 @@ jobs:
         env:
           CRM_STAGING_BASE_URL: ${{ vars.CRM_STAGING_BASE_URL }}
         run: |
-          if ($env:CRM_STAGING_BASE_URL -cne "https://staging.hophorsefit.com") {
-            throw "CRM_STAGING_BASE_URL must exactly equal https://staging.hophorsefit.com"
+          if ($env:CRM_STAGING_BASE_URL -cne "https://staging.overselfx.com") {
+            throw "CRM_STAGING_BASE_URL must exactly equal https://staging.overselfx.com"
           }
 
       - name: Log in to GHCR for immutable image pulls

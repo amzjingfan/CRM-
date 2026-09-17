@@ -23,18 +23,18 @@
 DOCKER_HOST=unix:///run/user/1004/docker.sock
 COMPOSE_PROJECT_NAME=crm-staging
 CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
-CRM_STAGING_BASE_URL=https://staging.hophorsefit.com
+CRM_STAGING_BASE_URL=https://staging.overselfx.com
 ```
 
 仓库外配置由主机管理员安全写入，权限 `0600`，不要复制开发 `src/config/.env.example` 后直接运行。公网值必须是：
 
 ```text
 APP_ENV=staging
-PUBLIC_BASE_URL=https://staging.hophorsefit.com
-PUBLIC_API_BASE_URL=https://staging.hophorsefit.com/v1
-CORS_ORIGINS=https://staging.hophorsefit.com
-TIKTOK_OAUTH_REDIRECT_URI=https://staging.hophorsefit.com/v1/integrations/tiktok/oauth/callback
-TLS_CERT_DIR=/home/crmdeploy/secrets/tls/staging.hophorsefit.com
+PUBLIC_BASE_URL=https://staging.overselfx.com
+PUBLIC_API_BASE_URL=https://staging.overselfx.com/v1
+CORS_ORIGINS=https://staging.overselfx.com
+TIKTOK_OAUTH_REDIRECT_URI=https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback
+TLS_CERT_DIR=/home/crmdeploy/secrets/tls/staging.overselfx.com
 RETRIEVAL_MODEL_ASSET_DIR=/home/crmdeploy/assets/models
 ALLOW_MOCK_PLATFORM_ADAPTERS=false
 REAL_TIKTOK_READ_ENABLED=false
@@ -52,7 +52,7 @@ AUTO_REPLY_ENABLED=false
 
 `BACKEND_IMAGE`、`FRONTEND_IMAGE`、`RETRIEVAL_MODEL_SERVICE_IMAGE` 必须来自本分支合并后完整 main SHA 的发布制品，均为 `repository@sha256:<64-hex>`；不得使用标签替代摘要或在主机 build。`release/images/mvp-production-gates.json` 的 `f7c0f9f9` 是历史已发布版本，不包含本次 staging 回调改动，不能当成本次候选。四个外部运行镜像的摘要继续取该清单 `external_images`。候选发布、配置同步和真实拉取均待执行。
 
-DNS A 记录 `staging.hophorsefit.com → 183.158.225.78`、上游 NAT/80/443、公信 TLS、模型和真实配置目前均待外部提供/验证。TLS 由域名管理员通过公司 CA/ACME 流程签发，仓库不处理 DNS/CA 凭据。证书目录与两份文件采用 `root:crmdeploy`，目录 `0750`、文件 `0640`；`crmdeploy` 可读、不可改私钥。验证 SAN、有效期、证书链与私钥匹配，只输出公开证书信息。缺任一材料时停在 validate 前，不生成“部署通过”。
+DNS A 记录 `staging.overselfx.com → 183.158.225.78`、上游 NAT/80/443、公信 TLS、模型和真实配置目前均待外部提供/验证。TLS 由域名管理员通过公司 CA/ACME 流程签发，仓库不处理 DNS/CA 凭据。证书目录与两份文件采用 `root:crmdeploy`，目录 `0750`、文件 `0640`；`crmdeploy` 可读、不可改私钥。验证 SAN、有效期、证书链与私钥匹配，只输出公开证书信息。缺任一材料时停在 validate 前，不生成“部署通过”。
 
 ## 3. 转移资产与主机预检（Task 8）
 
@@ -143,7 +143,7 @@ $common = @{
   ConfirmTarget = 'staging'
   DockerHost = 'unix:///run/user/1004/docker.sock'
   EnvFile = '/home/crmdeploy/config/crm-staging.env'
-  BaseUrl = 'https://staging.hophorsefit.com'
+  BaseUrl = 'https://staging.overselfx.com'
 }
 $candidate = @{
   BackendImage = $candidateBackend
@@ -174,13 +174,13 @@ DNS/TLS、模型、配置、候选与入口全部确认后，使用工作流 `op
 脚本 `up` 使用 `--no-build --wait --wait-timeout 600`，模型启动哈希计算可能耗时。任一容器或健康失败立即停止，不重试开能力。用外部网络检查 DNS、TLS 与以下入口；不要用 `-k` 忽略证书问题：
 
 ```powershell
-Resolve-DnsName staging.hophorsefit.com -Type A
-Test-NetConnection staging.hophorsefit.com -Port 80
-Test-NetConnection staging.hophorsefit.com -Port 443
-curl.exe --fail --proto '=https' https://staging.hophorsefit.com/
-curl.exe --fail --proto '=https' https://staging.hophorsefit.com/healthz
-curl.exe --fail --proto '=https' https://staging.hophorsefit.com/v1/health
-curl.exe --fail --proto '=https' https://staging.hophorsefit.com/v1/health/ready
+Resolve-DnsName staging.overselfx.com -Type A
+Test-NetConnection staging.overselfx.com -Port 80
+Test-NetConnection staging.overselfx.com -Port 443
+curl.exe --fail --proto '=https' https://staging.overselfx.com/
+curl.exe --fail --proto '=https' https://staging.overselfx.com/healthz
+curl.exe --fail --proto '=https' https://staging.overselfx.com/v1/health
+curl.exe --fail --proto '=https' https://staging.overselfx.com/v1/health/ready
 ```
 
 以上响应不能包含连接串、路径、凭据和原始异常。容器能力检查只提取已列出的十项布尔开关，四个应用服务必须全部 false。`llm_provider=disabled` 属于初次部署预期；ready 不调用真实 DeepSeek。合并后的 Git SHA、镜像摘要、时间、迁移 `023_marketing_review_idempotency`、配置版本/受控摘要需要另行记录，现有门禁 JSON 不会自动提供完整发布基线。

@@ -16,7 +16,7 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 ## TikTok 与 DeepSeek
 
-- TikTok OAuth 回调使用 `staging.overselfx.com` 的 HTTPS 固定地址，state 默认 600 秒、哈希存储并原子消费。
+- TikTok OAuth 回调在 staging 使用 `staging.overselfx.com`、在 production 使用 `www.overselfx.com` 的 HTTPS 固定地址，state 默认 600 秒、哈希存储并原子消费。
 - Webhook 真实模式使用官方签名和原始请求体；开发签名只能在真实开关关闭时使用。
 - Token 加密保存，刷新失败将渠道置为 `expired`；日志和响应不输出 Token 或凭证引用。
 - DeepSeek Key 只从环境读取，Provider 使用固定正向输入协议、DLP 和结构化输出。

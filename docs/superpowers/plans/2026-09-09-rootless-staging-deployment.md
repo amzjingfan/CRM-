@@ -17,9 +17,9 @@
 - Rootless 用户固定为 `crmdeploy`，UID/GID 为 `1004`，数据必须位于 `/home/crmdeploy`。
 - Rootless Docker socket 固定为 `unix:///run/user/1004/docker.sock`，禁止 Docker API TCP 监听。
 - Rootless proxy 只绑定 `127.0.0.1:10080` 和 `127.0.0.1:10443`；公网只开放 `80/443`。
-- staging 域名固定为 `staging.overselfx.com`；production 域名继续固定为 `www.hophorsefit.com`。
+- staging 域名固定为 `staging.overselfx.com`；production 域名固定为 `www.overselfx.com`。
 - staging OAuth callback 固定为 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`。
-- production OAuth callback 固定为 `https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback`。
+- production OAuth callback 固定为 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`。
 - staging Compose 项目名固定为 `crm-staging`。
 - 初次部署时 `ALLOW_MOCK_PLATFORM_ADAPTERS`、全部 `REAL_TIKTOK_*`、`LLM_ENABLED`、`LLM_LIVE_EVAL`、`AI_TRANSLATION_ENABLED`、`AI_MARKETING_ENABLED` 和 `AUTO_REPLY_ENABLED` 必须为 `false`。
 - `.env`、真实密钥、Token、证书私钥、凭证池、模型权重和完整业务数据不得进入 Git 或低敏证据。
@@ -114,12 +114,12 @@ Run:
 & 'E:\develop\CRM智能聊天系统\CRM智能聊天系统\backend\.venv\Scripts\python.exe' -m pytest tests/test_real_runtime_config.py -q
 ```
 
-Expected: FAIL because staging still only accepts `www.hophorsefit.com`.
+Expected: FAIL because staging still only accepts `www.overselfx.com`.
 
 - [ ] **Step 3: Implement the minimal exact environment mapping**
 
 ```python
-TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI = f"https://www.hophorsefit.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
+TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI = f"https://www.overselfx.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
 TIKTOK_OAUTH_STAGING_REDIRECT_URI = f"https://staging.overselfx.com{TIKTOK_OAUTH_PUBLIC_CALLBACK_PATH}"
 TIKTOK_OAUTH_FIXED_REDIRECT_URI = TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI
 TIKTOK_OAUTH_FIXED_REDIRECT_URIS = {
@@ -696,7 +696,7 @@ Agent, collaborators, files, commits, validation, server changes and residual ri
 Run:
 
 ```powershell
-git grep -n 'www.hophorsefit.com/v1/integrations/tiktok/oauth/callback'
+git grep -n 'www.overselfx.com/v1/integrations/tiktok/oauth/callback'
 git grep -n 'staging.overselfx.com/v1/integrations/tiktok/oauth/callback'
 git diff --check
 ```

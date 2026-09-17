@@ -209,11 +209,11 @@ def test_real_tiktok_read_rejects_missing_logistics_scope() -> None:
 @pytest.mark.parametrize(
     "unsafe_redirect_uri",
     [
-        "http://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback",
+        "http://www.overselfx.com/v1/integrations/tiktok/oauth/callback",
         "https://attacker.example/v1/integrations/tiktok/oauth/callback",
-        "https://www.hophorsefit.com/v1/integrations/tiktok/oauth/wrong",
-        "https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback?next=unexpected",
-        "https://www.hophorsefit.com/v1/integrations/tiktok/oauth/callback#fragment",
+        "https://www.overselfx.com/v1/integrations/tiktok/oauth/wrong",
+        "https://www.overselfx.com/v1/integrations/tiktok/oauth/callback?next=unexpected",
+        "https://www.overselfx.com/v1/integrations/tiktok/oauth/callback#fragment",
     ],
 )
 def test_real_environments_reject_oauth_redirect_configuration_drift(

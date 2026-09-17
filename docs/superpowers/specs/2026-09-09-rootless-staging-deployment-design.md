@@ -116,7 +116,7 @@ TIKTOK_OAUTH_REDIRECT_URI=https://staging.overselfx.com/v1/integrations/tiktok/o
 
 - Partner Center Webhook：
   `https://staging.overselfx.com/v1/webhooks/tiktok`。
-- production 继续只接受 `https://www.hophorsefit.com/...`，不放宽为任意主机。
+- production 继续只接受 `https://www.overselfx.com/...`，不放宽为任意主机。
 - 应用按 `APP_ENV` 对 staging 和 production 分别执行精确 scheme、host、path 校验，拒绝
   HTTP、任意子域、query、fragment 和错误路径。
 - DNS、TLS 和 Partner Center 配置完成前，只能标记基础运行面就绪，不能标记 G1/G2 通过。

@@ -236,7 +236,7 @@ async def test_shop_tracking_conversation_message_and_webhook_reads_use_get_only
                 "webhooks": [
                     {
                         "event_type": "NEW_MESSAGE",
-                        "address": "https://www.hophorsefit.com/v1/webhooks/tiktok",
+                        "address": "https://www.overselfx.com/v1/webhooks/tiktok",
                     }
                 ]
             }
