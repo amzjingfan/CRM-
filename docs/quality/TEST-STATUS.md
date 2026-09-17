@@ -28,6 +28,10 @@
 - 未执行真实 DeepSeek 50 客户端 SSE 和连续 5 日 99.5% 稳定性。
 - 未完成备份恢复、实际回滚及最终联合签署。
 
+## 域名契约迁移验证
+
+候选 `10428b4501fd470a5a671676edcdc00e75180844` 已将 staging/production 固定域名统一为 `staging.overselfx.com` / `www.overselfx.com`。完整后端回归为 `1538 passed, 12 skipped, 3 warnings`，Ruff、格式、mypy、锁文件和旧域名扫描通过。该结果只证明仓库内契约一致；真实 DNS、TLS、Partner Center、OAuth/Webhook 和部署仍未执行。
+
 ## 本次根目录迁移验证口径
 
 本次将产品代码恢复到源提交 `77d9f8f` 并提升到仓库根，验证范围为 Git 历史、目录结构、活动路径引用、JSON 可解析和首版 Rootless Staging 关键资产。按用户要求不执行完整后端回归、前端安装/构建或真实平台门禁，且历史测试结果不得被描述为本分支重新运行结果。
