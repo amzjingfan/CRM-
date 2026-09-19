@@ -14,7 +14,7 @@ DOING/VERIFYING → BLOCKED
 - `READY`：可验证结果、验收或门禁、依赖、授权边界和验证方法完整。
 - `DOING`：已经记录短期分支、`BASE_SHA` 和实际执行范围。
 - `VERIFYING`：实现已完成，正在执行验证、审查、文档同步和证据定稿。
-- `DONE`：验收通过，最终 IR/TR 已定稿，需要的 RR 已关闭，文档已同步，“最终 SHA”为真实 `CANDIDATE_SUBJECT_SHA`，证据尾区间只包含允许路径。`DONE` 不接受 `WORKTREE`。
+- `DONE`：验收通过，最终 IR/TR 已定稿，需要的 RR 已关闭，文档已同步，“最终 SHA”为真实 `CANDIDATE_SUBJECT_SHA`，证据尾区间只包含允许路径；自 2026-09-19 起创建或仍在进行的短期分支还必须已按治理规则自动合并并复核目标分支。`DONE` 不接受 `WORKTREE`。
 - `BLOCKED`：阻塞原因、已尝试措施和解除条件明确；解除后回到 `DOING` 或 `VERIFYING`。
 - `CANCELLED`：记录取消原因和恢复/清理需要，不等同于完成。
 

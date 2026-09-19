@@ -56,6 +56,7 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and other 
 
 ## 阻塞、决定与风险
 
+- 自 2026-09-19 起执行“完成即合并”：短期分支通过适用门禁后自动合并到创建时记录的 `MERGE_TARGET`，复核目标分支后才标记任务 `DONE`；详细条件与阻断处理以 `docs/governance/GOVERNANCE.md` 为准。
 - G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
 - staging DNS A 已指向 `38.55.145.52`，但当前证书 SAN 不匹配，CRM 尚未部署，已有反向隧道仍错误指向 GitLab `10080`；在现场切换、公开健康和公司负载复核完成前不得宣称 staging 可用。

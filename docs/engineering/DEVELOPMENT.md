@@ -37,6 +37,7 @@
 - 根目录是唯一 Git 仓库，`src/` 是唯一工程根。日常修改从最新 `main` 创建 `feature/*`、`fix/*`、`docs/*`、`hotfix/*` 短期分支，优先使用 `.worktrees/` 隔离。
 - 一个分支只处理一个主题，小步提交；提交前缀使用 `feat:`、`fix:`、`docs:`、`test:`、`build:`、`ci:` 或 `chore:`。
 - 通过 Pull Request 合并，完成 CI、人工审阅、文档同步和安全检查；默认 squash merge 并删除短期分支。
+- 分支达到 `docs/governance/GOVERNANCE.md` 定义的合并就绪条件后，立即执行“完成即合并”；先合并并复核目标分支，再把任务标记为 `DONE`。
 - 禁止强制推送和 `git reset --hard` 覆盖共享历史；已共享提交使用 `git revert` 回滚。
 - 发布标签必须带注释并关联迁移、配置、冻结数据和 SHA-256；标签本身不等于生产放行。
 
