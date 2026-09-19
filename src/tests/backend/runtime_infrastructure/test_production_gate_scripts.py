@@ -22,6 +22,7 @@ FRONTEND_IMAGE = "ghcr.io/cp11-gh/crm-frontend@sha256:" + "b" * 64
 PREVIOUS_BACKEND_IMAGE = "ghcr.io/cp11-gh/crm-backend@sha256:" + "c" * 64
 PREVIOUS_FRONTEND_IMAGE = "ghcr.io/cp11-gh/crm-frontend@sha256:" + "d" * 64
 RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "e" * 64
+UNREVIEWED_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "9" * 64
 PREVIOUS_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "f" * 64
 SECRET_SENTINEL = "must-not-appear-in-command-output-or-evidence"
 ROOTLESS_DOCKER_HOST = "unix:///run/user/1004/docker.sock"
@@ -659,6 +660,59 @@ def test_validate_only_writes_redacted_preflight_evidence(
     assert evidence["docker_transport"] == "rootless_unix_socket"
     assert len(evidence["rootless_overlay_sha256"]) == 64
     assert ROOTLESS_DOCKER_HOST not in evidence_file.read_text(encoding="utf-8-sig")
+
+
+def test_validate_only_rejects_unreviewed_retrieval_model_env_image(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """环境文件不得用旧摘要覆盖工作流已经审阅的检索模型摘要。"""
+    replace_environment_value(
+        staging_env_file,
+        "RETRIEVAL_MODEL_SERVICE_IMAGE",
+        UNREVIEWED_RETRIEVAL_MODEL_IMAGE,
+    )
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = Path(environment["FAKE_DOCKER_CONFIG"])
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["services"]["retrieval-model-service"]["image"] = UNREVIEWED_RETRIEVAL_MODEL_IMAGE
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    evidence_file = tmp_path / "mismatched-retrieval-evidence.json"
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+        environment=environment,
+    )
+
+    assert result.returncode != 0
+    assert "must equal the reviewed retrievalmodelimage input." in normalized_process_output(result)
+    assert not evidence_file.exists()
 
 
 @pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])

@@ -412,10 +412,10 @@ foreach ($name in $externalImageRepositories.Keys) {
     $validatedExternalImages[$name] = Assert-ImmutableImage -Name $name -Reference $environmentValues[$name] `
         -Repository $externalImageRepositories[$name] -AllowTag
 }
-$retrievalModelImage = Assert-ImmutableImage -Name "RETRIEVAL_MODEL_SERVICE_IMAGE" `
+$configuredRetrievalModelImage = Assert-ImmutableImage -Name "RETRIEVAL_MODEL_SERVICE_IMAGE" `
     -Reference $environmentValues["RETRIEVAL_MODEL_SERVICE_IMAGE"] `
     -Repository "ghcr.io/cp11-gh/crm-retrieval-model-service"
-if ($retrievalModelImage -ne $RetrievalModelImage) {
+if ($configuredRetrievalModelImage -ne $RetrievalModelImage) {
     throw "RETRIEVAL_MODEL_SERVICE_IMAGE must equal the reviewed RetrievalModelImage input."
 }
 
@@ -453,7 +453,7 @@ try {
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
-    $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $retrievalModelImage
+    $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $configuredRetrievalModelImage
     # Compose 会在合并 rootless override 前先展开 production 文件；此值只用于通过必填展开，最终配置不得挂载它。
     $env:TLS_CERT_DIR = $StagingTlsInterpolationSentinel
 
@@ -466,7 +466,7 @@ try {
         "worker" = $BackendImage
         "jobs" = $BackendImage
         "agent-worker" = $BackendImage
-        "retrieval-model-service" = $retrievalModelImage
+        "retrieval-model-service" = $configuredRetrievalModelImage
         "frontend" = $FrontendImage
         "proxy" = $validatedExternalImages["NGINX_IMAGE"]
     }
