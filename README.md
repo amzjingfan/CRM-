@@ -140,9 +140,9 @@ docker compose -f src/compose/docker-compose.yml exec backend python scripts/ass
 - TikTok 渠道页通过服务端 OAuth 接入：`state` 一次性绑定当前用户与内部店铺，回调验证卖家身份、Scope 和真实店铺后，才将 Access/Refresh Token 以 AES-256-GCM 密文保存。通用渠道 POST 在 Schema 和 Service 两层拒绝 TikTok，数据库也强制同一内部店铺只能绑定一个 TikTok 渠道。
 - 人工普通消息要求工作台二次确认、`workspace.reply`、店铺权限和 `Idempotency-Key`。真实发送结果不可确认时记录 `unknown` 并熔断同店铺后续消息；管理员在 TikTok 后台核对后通过 `/v1/workspace/messages/{message_id}/reconcile` 留下审计并解除熔断。
 - Jobs Worker 默认每 5 分钟扫描一次，并在 Access Token 到期前 24 小时采用 `FOR UPDATE SKIP LOCKED` 提前刷新。刷新结果必须保持 `open_id` 和已授权店铺连续；不一致或失败时状态变为 `expired` 并要求重新授权，不覆盖为成功凭证。
-- TikTok 应用后台重定向地址固定为 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`；integration/staging/production 启动以及 OAuth start/callback 都会失败关闭 HTTP、错误主机、错误路径、query 或 fragment，真实密钥只从服务端安全配置注入。
+- TikTok 应用后台重定向地址按环境固定：staging 使用 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`，integration/production 使用 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`。真实环境启动和 OAuth start/callback 都会失败关闭 HTTP、错误主机、错误路径、query 或 fragment，真实密钥只从服务端安全配置注入。
 
-> 2026-09-09 勘误：上述跨环境相同回调约定已由当前 [`docs/operations/DEPLOYMENT.md`](docs/operations/DEPLOYMENT.md) 部署边界取代。staging 精确使用 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`。Rootless staging 操作见 `src/deploy/staging/rootless/README.md`，真实运行验收仍待执行。
+> 当前环境约定：staging 精确使用 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`。staging 采用 `38.55.145.52` 宝塔 TLS 经受限 SSH 反向隧道访问 `192.168.110.210` Rootless CRM，旧服务器只发布回环 `18081`，不使用 GitLab 的 `10080/10443`。唯一活动操作手册见 [`src/deploy/staging/rootless/README.md`](src/deploy/staging/rootless/README.md)，真实运行验收仍待本轮现场执行。
 
 ## Phase 3 业务能力
 

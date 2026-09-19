@@ -66,6 +66,7 @@ $DisabledCapabilityVariables = @(
     "AI_MARKETING_ENABLED",
     "AUTO_REPLY_ENABLED"
 )
+$StagingTlsInterpolationSentinel = "/__crm_staging_tls_not_used__"
 $PlannedSteps = @(
     "disable_real_capabilities",
     "deploy_previous_image_digests",
@@ -315,21 +316,26 @@ function Assert-ProductionComposeContract {
     }
 
     $proxyService = $Config.services.PSObject.Properties["proxy"].Value
-    if (@($proxyService.ports).Count -ne 2) {
-        throw "Production Compose proxy must bind only the required loopback ports."
+    if (@($proxyService.ports).Count -ne 1) {
+        throw "Staging Compose proxy must expose exactly one loopback HTTP port."
     }
-    foreach ($expectedBinding in @(
-        @{ host_ip = "127.0.0.1"; published = "10080"; target = "80" },
-        @{ host_ip = "127.0.0.1"; published = "10443"; target = "443" }
-    )) {
-        $matchingBinding = @($proxyService.ports | Where-Object {
-            [string]$_.host_ip -eq $expectedBinding.host_ip -and
-            [string]$_.published -eq $expectedBinding.published -and
-            [string]$_.target -eq $expectedBinding.target
-        })
-        if ($matchingBinding.Count -ne 1) {
-            throw "Production Compose proxy must bind only the required loopback ports."
-        }
+    $proxyBinding = @($proxyService.ports)[0]
+    if ([string]$proxyBinding.host_ip -ne "127.0.0.1" -or
+        [string]$proxyBinding.published -ne "18081" -or
+        [string]$proxyBinding.target -ne "80") {
+        throw "Staging Compose proxy must expose exactly one loopback HTTP port."
+    }
+
+    $proxyVolumes = @($proxyService.volumes)
+    if ($proxyVolumes.Count -ne 1) {
+        throw "Staging Compose proxy must mount exactly one read-only tunnel Nginx configuration."
+    }
+    $proxyConfigMount = $proxyVolumes[0]
+    if ([string]$proxyConfigMount.type -ne "bind" -or
+        [IO.Path]::GetFileName([string]$proxyConfigMount.source) -ne "nginx-tunnel.conf" -or
+        [string]$proxyConfigMount.target -ne "/etc/nginx/nginx.conf" -or
+        $proxyConfigMount.read_only -ne $true) {
+        throw "Staging Compose proxy must mount exactly one read-only tunnel Nginx configuration."
     }
 }
 
@@ -435,6 +441,7 @@ foreach ($name in @($DisabledCapabilityVariables + @(
     "FRONTEND_IMAGE",
     "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
+    "TLS_CERT_DIR",
     "DOCKER_HOST",
     "DOCKER_CONTEXT"
 ))) {
@@ -460,6 +467,8 @@ try {
     $env:FRONTEND_IMAGE = $CandidateFrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
     $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $CandidateRetrievalModelImage
+    # Compose 会在合并 rootless override 前先展开 production 文件；此值只用于通过必填展开，最终配置不得挂载它。
+    $env:TLS_CERT_DIR = $StagingTlsInterpolationSentinel
 
     $config = Get-ProductionComposeConfig -Command $compose -Arguments $composeArguments
     $expectedImages = @{

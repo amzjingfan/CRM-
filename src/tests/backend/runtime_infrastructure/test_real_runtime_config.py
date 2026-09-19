@@ -536,10 +536,11 @@ def test_rootless_staging_overlay_is_loopback_only_and_fail_closed() -> None:
         assert "<<: *rootless-staging-runtime" in service_block
         assert 'APP_ENV: "staging"' not in service_block
 
-    assert '"127.0.0.1:10080:80"' in overlay
-    assert '"127.0.0.1:10443:443"' in overlay
-    assert '"0.0.0.0:10080:80"' not in overlay
-    assert '"0.0.0.0:10443:443"' not in overlay
+    assert '"127.0.0.1:18081:80"' in overlay
+    assert "nginx-tunnel.conf" in overlay
+    assert "10080" not in overlay
+    assert "10443" not in overlay
+    assert '"0.0.0.0:18081:80"' not in overlay
 
 
 def test_nginx_access_log_format_excludes_query_string() -> None:

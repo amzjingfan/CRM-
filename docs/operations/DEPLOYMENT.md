@@ -8,11 +8,15 @@
 
 Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目录的环境覆盖；环境变量只通过部署环境或密钥管理注入。仓库中的 `src/config/.env.example` 只描述变量，不含真实值。
 
-## 首版 Rootless staging
+## Split-ingress Rootless staging
 
-当前工作树恢复到源提交 `77d9f8f` 的首版 Rootless Staging。运行面使用专用非特权用户和 Rootless Docker，Compose 项目名为 `crm-staging`；应用入口只绑定回环 `10080/10443`，由同机 systemd socket/service 将 `80/443` 转发至回环端口。容器和应用不直接持有主机级网络特权。
+当前 staging 固定使用双服务器入口分离：`staging.overselfx.com:443 → 38.55.145.52 宝塔 Nginx/TLS → 127.0.0.1:18080 → SSH 反向隧道 → 192.168.110.210:127.0.0.1:18081 → crmdeploy Rootless CRM`。Compose 项目名为 `crm-staging`，Docker socket 为 `unix:///run/user/1004/docker.sock`，数据和模型均留在 `/home/crmdeploy`。
 
-主机引导、入口代理、Runner 安装、工具链摘要和运行顺序位于 `src/deploy/staging/rootless/`。真实 DNS/TLS、密钥、镜像拉取、应用部署、恢复和回滚仍必须在目标主机独立验收；工程资产存在不等于真实部署或生产门禁通过。
+旧服务器系统 Docker 的 GitLab 已占用 `10080/10443`，这些容器、端口、卷、网络和 data-root 禁止修改。CRM 只发布单个回环 HTTP 端口 `18081`，不在旧服务器终止 TLS；历史同机 systemd 入口只作为 Git 历史，不是当前操作路径。新服务器只承载宝塔 Nginx、站点证书和回环隧道监听，不运行 CRM 数据或模型服务。
+
+活动运行手册和恢复顺序位于 `src/deploy/staging/rootless/README.md`：先建立公司负载与站点保护基线，上传与 main SHA 绑定的版本化资产，把公网入口置为 HTTP `503`，再切换 `18080 → 18081` 隧道；完成不可变镜像/配置 validate 和 Rootless deploy 后，通过宝塔签发证书，安装正式 HTTPS vhost，执行动态健康、隧道重连和公司负载复核。任何阶段失败都恢复 staging `503`、停止候选并保留数据卷，不切回 GitLab。
+
+当前仓库已实现该路径，但真实服务器部署、正确 SAN 证书、公开健康、恢复和回滚只有在本轮现场证据完成后才能记为通过；工程资产存在不等于 staging 或 production 放行。
 
 ## TikTok 与 DeepSeek
 

@@ -191,7 +191,6 @@ def staging_env_file(tmp_path: Path) -> Path:
                 "POSTGRES_DB=crm",
                 "POSTGRES_USER=crm",
                 "POSTGRES_PASSWORD=test-postgres-password",
-                "TLS_CERT_DIR=/secure/test-certs",
                 f"RETRIEVAL_MODEL_ASSET_DIR={model_asset_dir}",
                 f"RETRIEVAL_MODEL_SERVICE_IMAGE={RETRIEVAL_MODEL_IMAGE}",
                 "POSTGRES_IMAGE=pgvector/pgvector:0.8.0-pg16@sha256:" + "1" * 64,
@@ -294,9 +293,14 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
         "frontend": {"image": FRONTEND_IMAGE},
         "proxy": {
             "image": "nginx:1.27.5-alpine@sha256:" + "4" * 64,
-            "ports": [
-                {"host_ip": "127.0.0.1", "published": "10080", "target": "80"},
-                {"host_ip": "127.0.0.1", "published": "10443", "target": "443"},
+            "ports": [{"host_ip": "127.0.0.1", "published": "18081", "target": "80"}],
+            "volumes": [
+                {
+                    "type": "bind",
+                    "source": str(SOURCE_ROOT / "deploy" / "nginx" / "nginx-tunnel.conf"),
+                    "target": "/etc/nginx/nginx.conf",
+                    "read_only": True,
+                }
             ],
         },
     }
@@ -314,10 +318,22 @@ with Path(os.environ["FAKE_DOCKER_LOG"]).open("a", encoding="utf-8") as handle:
 with Path(os.environ["FAKE_DOCKER_CONTEXT_LOG"]).open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(os.environ.get("DOCKER_CONTEXT")) + "\\n")
 if "config" in arguments:
+    if os.environ.get("TLS_CERT_DIR") != "/__crm_staging_tls_not_used__":
+        print("staging compose must inject the non-mounted TLS interpolation sentinel", file=sys.stderr)
+        sys.exit(43)
     print(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
     sys.exit(int(os.environ.get("FAKE_DOCKER_CONFIG_EXIT_CODE", "0")))
 if "up" in arguments and "--wait" in arguments:
-    sys.exit(42)
+    configured_failure = os.environ.get("FAKE_DOCKER_FAIL_UP_NUMBER")
+    if configured_failure is None:
+        sys.exit(42)
+    commands = [
+        json.loads(line)
+        for line in Path(os.environ["FAKE_DOCKER_LOG"]).read_text(encoding="utf-8").splitlines()
+    ]
+    up_number = sum("up" in command and "--wait" in command for command in commands)
+    if up_number == int(configured_failure):
+        sys.exit(42)
 sys.exit(0)
 """,
         encoding="utf-8",
@@ -645,6 +661,7 @@ def test_validate_only_writes_redacted_preflight_evidence(
     assert ROOTLESS_DOCKER_HOST not in evidence_file.read_text(encoding="utf-8-sig")
 
 
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
 @pytest.mark.parametrize(
     ("configure", "expected_error"),
     [
@@ -654,13 +671,41 @@ def test_validate_only_writes_redacted_preflight_evidence(
         ),
         (
             lambda config: config["services"]["proxy"]["ports"].append(
-                {"host_ip": "0.0.0.0", "published": "10081", "target": "80"}
+                {"host_ip": "127.0.0.1", "published": "18082", "target": "80"}
             ),
-            "loopback ports",
+            "loopback http port",
+        ),
+        (
+            lambda config: config["services"]["proxy"]["ports"][0].update({"host_ip": "0.0.0.0"}),
+            "loopback http port",
+        ),
+        (
+            lambda config: config["services"]["proxy"]["ports"][0].update({"published": "10080"}),
+            "loopback http port",
+        ),
+        (
+            lambda config: config["services"]["proxy"]["ports"][0].update({"published": "10443", "target": "443"}),
+            "loopback http port",
+        ),
+        (
+            lambda config: config["services"]["proxy"]["volumes"][0].update({"read_only": False}),
+            "read-only tunnel nginx configuration",
+        ),
+        (
+            lambda config: config["services"]["proxy"]["volumes"].append(
+                {
+                    "type": "bind",
+                    "source": "/secure/test-certs",
+                    "target": "/etc/nginx/certs",
+                    "read_only": True,
+                }
+            ),
+            "read-only tunnel nginx configuration",
         ),
     ],
 )
-def test_preflight_rejects_merged_compose_capability_or_port_regressions(
+def test_gate_scripts_reject_merged_compose_capability_port_or_mount_regressions(
+    script: Path,
     configure: object,
     expected_error: str,
     staging_env_file: Path,
@@ -681,17 +726,12 @@ def test_preflight_rejects_merged_compose_capability_or_port_regressions(
     config_path.write_text(json.dumps(config), encoding="utf-8")
 
     result = run_powershell(
-        PREFLIGHT_SCRIPT,
+        script,
         "-Environment",
         "staging",
         "-EnvFile",
         str(staging_env_file),
-        "-BackendImage",
-        BACKEND_IMAGE,
-        "-FrontendImage",
-        FRONTEND_IMAGE,
-        "-RetrievalModelImage",
-        RETRIEVAL_MODEL_IMAGE,
+        *validation_image_arguments(script),
         "-BaseUrl",
         "https://staging.overselfx.com",
         "-EvidenceFile",
@@ -1074,6 +1114,66 @@ def test_preflight_deploys_the_validated_retrieval_model_image() -> None:
     deploy_path = source[source.index('if (-not $PSCmdlet.ShouldProcess("staging"') :]
 
     assert deploy_path.count('"retrieval-model-service"') >= 2
+
+
+def test_preflight_migrates_and_checks_database_head_before_starting_application(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """首次部署必须先启动依赖并把数据库迁移到镜像声明的全部 head，再启动应用。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "2"
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(tmp_path / "migration-order.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Deploy",
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    assert result.returncode != 0
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    dependency_up = next(
+        index
+        for index, command in enumerate(commands)
+        if "up" in command and {"postgres", "redis", "minio"}.issubset(command) and "backend" not in command
+    )
+    upgrade = next(
+        index
+        for index, command in enumerate(commands)
+        if command[-7:] == ["run", "--rm", "--no-deps", "backend", "alembic", "upgrade", "head"]
+    )
+    check_heads = next(
+        index
+        for index, command in enumerate(commands)
+        if command[-7:] == ["run", "--rm", "--no-deps", "backend", "alembic", "current", "--check-heads"]
+    )
+    application_up = next(index for index, command in enumerate(commands) if "up" in command and "backend" in command)
+    assert dependency_up < upgrade < check_heads < application_up
 
 
 def test_rollback_plan_disables_capabilities_before_switching_images(

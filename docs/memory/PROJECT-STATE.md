@@ -9,14 +9,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: main
-Governance base SHA: bec5d290b75ad14df954d9f4732c7934c8157549
-CANDIDATE_SUBJECT_SHA: 10428b4501fd470a5a671676edcdc00e75180844
+Working branch at this snapshot: feature/split-ingress-staging-20260919
+Governance base SHA: 98414c2b51bfd403365aa6c72e0585f045d4a26a
+CANDIDATE_SUBJECT_SHA: WORKTREE
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and other TEST-001 temporary material remain under retention or require a separate cleanup batch
 ```
 
-当前工程根已迁移到 `src/`，`TEST-001` 已将测试源码、普通 AI eval 资产和项目内临时输出契约集中到 `src/tests/`，并已快进合并到本地 `main`。合并后门禁通过；`CLEANUP-20260916-002` 将主 checkout 中阻止布局守卫的旧 pytest 缓存可恢复隔离。用户已授权永久删除 `feature/unified-test-layout` worktree 中的已知 ignored 材料，该 worktree 和已合并的本地分支均已删除，计划 Step 8 已完成；无关的 `docs/centralized-test-layout-design` worktree 保留不变。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 正在隔离 worktree 实现双服务器 split-ingress：新服务器 `38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，旧服务器 `192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`。仓库 runtime、受限隧道、宝塔 vhost、失败关闭门禁和测试已实现，任务处于 `VERIFYING`；远端 main、镜像和两台服务器尚未按本候选变更。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
 `MVP-DOMAIN-001` 已在候选 `10428b4501fd470a5a671676edcdc00e75180844` 将 staging/production 的仓库内固定域名统一为 `staging.overselfx.com` / `www.overselfx.com`，通过完整后端回归与安全契约审查，并已快进合并到本地 `main`；任务为 `DONE`，尚未推送远端或执行真实 DNS/TLS/Partner Center 变更。
 
@@ -37,7 +37,7 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and other 
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001` 已完成 `src/` 工程根迁移与启动证明；`MAINT-CLEANUP-20260916-001/002` 已完成已知本地残留的可恢复隔离与复核；`TEST-001` 已完成集中式 `src/tests/` 物理布局、治理/CI 契约、完整验证、独立审查和本地快进合并；`MVP-DOMAIN-001` 为 `DONE`，MVP-001～MVP-009 均为 `BACKLOG`。
+- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001` 与两个维护清理任务为 `DONE`；`MVP-STAGING-001` 为 `VERIFYING`，MVP-001～MVP-009 仍为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -58,7 +58,7 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and other 
 
 - G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- overselfx 仓库契约已经统一，但真实 DNS、TLS SAN、入口代理和 TikTok Partner Center 尚未切换；在真实门禁完成前不得开启对应能力或宣称外部可达。
+- staging DNS A 已指向 `38.55.145.52`，但当前证书 SAN 不匹配，CRM 尚未部署，已有反向隧道仍错误指向 GitLab `10080`；在现场切换、公开健康和公司负载复核完成前不得宣称 staging 可用。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
 - 本地 `main` 已完成 TEST-001 快进合并且显著领先 `origin/main`；本任务未修改远端。任何远端修改或推送前必须重新读取远端状态、确认目标与历史关系，不得从旧快照推断。
@@ -66,6 +66,6 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 quarantines and other 
 
 ## 最多三个下一动作
 
-1. 在受控窗口把 DNS、TLS、入口代理和 TikTok Partner Center 同步到 `staging.overselfx.com` / `www.overselfx.com`，并执行真实门禁。
-2. 补齐 MVP-001 的环境、凭证、验收和授权信息，使其从 `BACKLOG` 进入 `READY`。
-3. 在取得远端授权后推送本地 `main`；本地合并不代表远端发布或生产放行。
+1. 完成 `MVP-STAGING-001` 本地全量验证与审查，通过 PR 合入远端 main，并发布与 main SHA 绑定的三个不可变镜像。
+2. 在保护公司负载和其他 vhost 的前提下，把公网入口置为 `503`，切换隧道到 `18081`，部署 Rootless CRM并通过宝塔签发正确证书。
+3. 完成公网健康、隧道恢复和前后基线复核，定稿 IR/TR/RR；TikTok G1～G6 与 production 继续保持关闭。

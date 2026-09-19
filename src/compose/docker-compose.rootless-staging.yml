@@ -27,5 +27,9 @@ services:
       <<: *rootless-staging-runtime
   proxy:
     ports: !override
-      - "127.0.0.1:10080:80"
-      - "127.0.0.1:10443:443"
+      - "127.0.0.1:18081:80"
+    volumes: !override
+      - type: bind
+        source: ../deploy/nginx/nginx-tunnel.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true

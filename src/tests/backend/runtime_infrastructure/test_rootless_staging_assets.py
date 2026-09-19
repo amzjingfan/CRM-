@@ -3,7 +3,6 @@
 import configparser
 import json
 import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -81,75 +80,19 @@ def test_bootstrap_compares_full_system_snapshot_even_on_failure() -> None:
     assert source.index("trap finish EXIT") < source.index("apt-get update")
 
 
-@pytest.mark.parametrize("protocol,port,target", [("http", "80", "10080"), ("https", "443", "10443")])
-def test_entry_proxy_targets_only_loopback(protocol: str, port: str, target: str) -> None:
-    """用解析后的 unit 契约捕获低端口、转发目的地和沙箱保护回归。"""
-    socket = configparser.ConfigParser(interpolation=None)
-    socket.read_string((SYSTEMD_DIR / f"crm-staging-{protocol}.socket").read_text(encoding="utf-8"))
-    assert socket["Socket"]["ListenStream"] == port
-    assert socket["Socket"]["Accept"] == "no"
-    assert socket["Socket"]["Service"] == f"crm-staging-{protocol}.service"
-    assert socket["Install"]["WantedBy"] == "sockets.target"
-    service = configparser.ConfigParser(interpolation=None)
-    service.read_string((SYSTEMD_DIR / f"crm-staging-{protocol}.service").read_text(encoding="utf-8"))
-    assert service["Service"]["ExecStart"] == f"/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:{target}"
-    for key in ("PrivateTmp", "NoNewPrivileges", "ProtectHome"):
-        assert service["Service"][key] == "yes"
-    assert service["Service"]["ProtectSystem"] == "strict"
-    assert "Install" not in service
-
-
-def test_installer_rejects_foreign_listeners_and_modified_units_before_writes() -> None:
-    """占用端口不能仅凭 PID 1 放行；同时校验 unit 路径、内容及归属。"""
-    source = (ROOTLESS_DIR / "install-entry-proxy.sh").read_text(encoding="utf-8")
-    for required in (
-        "ss -H -lntp",
-        "list-sockets",
-        "FragmentPath",
-        "DropInPaths",
-        "NeedDaemonReload",
-        "MainPID",
-        "cmp -s",
-        "check_port 80 crm-staging-http",
-        "check_port 443 crm-staging-https",
-        "systemctl daemon-reload",
-        "systemctl enable --now crm-staging-http.socket crm-staging-https.socket",
-        "systemctl status",
-        "ss -lntp",
-        "entry-proxy",
-        "rollback",
-        "flock",
-    ):
-        assert required in source
-    assert source.index("check_port 443 crm-staging-https") < source.index("install -o root -g root -m 0644")
-    assert "enable --now crm-staging-http.service" not in source
-    assert "systemctl restart docker" not in source
-
-
-def test_installer_rechecks_port_ownership_after_socket_activation() -> None:
-    """捕获只做预检、启动之后未核对真实监听者的缺口。"""
-    source = (ROOTLESS_DIR / "install-entry-proxy.sh").read_text(encoding="utf-8")
-    activated = source.split("systemctl enable --now crm-staging-http.socket crm-staging-https.socket", 1)[1]
-    assert "check_port 80 crm-staging-http" in activated
-    assert "check_port 443 crm-staging-https" in activated
-
-
 @pytest.mark.parametrize(
-    "substate,accepted",
-    [("listening", True), ("running", True), ("dead", False), ("failed", False), ("start-pre", False), ("", False)],
+    "relative_path",
+    [
+        "install-entry-proxy.sh",
+        "systemd/crm-staging-http.service",
+        "systemd/crm-staging-http.socket",
+        "systemd/crm-staging-https.service",
+        "systemd/crm-staging-https.socket",
+    ],
 )
-def test_installer_substate_contract_accepts_only_listening_or_running(substate: str, accepted: bool) -> None:
-    """静态解析实际 case 白名单；Bash 执行和首个连接后的幂等验证仍归 Task 8。"""
-    source = (ROOTLESS_DIR / "install-entry-proxy.sh").read_text(encoding="utf-8")
-    state_branch = re.search(
-        r'case \$\(systemctl show "\$prefix\.socket" --property=SubState --value\) in\s+'
-        r"([a-z|]+)\) ;;\s+\*\) fail [^\n]+ ;;\s+esac",
-        source,
-    )
-    assert state_branch is not None, "SubState must use an explicit allowlist and a failing default branch"
-    allowed_states = state_branch.group(1).split("|")
-    assert set(allowed_states) == {"listening", "running"}
-    assert (substate in allowed_states) is accepted
+def test_legacy_same_host_entry_proxy_assets_are_not_active(relative_path: str) -> None:
+    """旧同机 80/443 转发资产不能与 split-ingress 形成第二条可执行入口。"""
+    assert not (ROOTLESS_DIR / relative_path).exists()
 
 
 @pytest.mark.parametrize("extension", ["service", "socket"])
@@ -161,14 +104,16 @@ def test_systemd_units_have_lf_checkout_contract(extension: str) -> None:
         assert b"\r" not in unit.read_bytes()
 
 
-@pytest.mark.parametrize("name", ["bootstrap-host.sh", "install-entry-proxy.sh"])
-def test_evidence_parent_remains_writable_by_deployment_user(name: str) -> None:
+def test_evidence_parent_remains_writable_by_deployment_user() -> None:
     """主机取证不能夺走后续 crmdeploy 部署任务创建证据目录的权限。"""
-    source = (ROOTLESS_DIR / name).read_text(encoding="utf-8")
+    source = (ROOTLESS_DIR / "bootstrap-host.sh").read_text(encoding="utf-8")
     assert 'install -d -o 1004 -g 1004 -m 0750 "$evidence_root"' in source
 
 
-@pytest.mark.parametrize("name", ["bootstrap-host.sh", "install-entry-proxy.sh"])
+@pytest.mark.parametrize(
+    "name",
+    ["bootstrap-host.sh", "install-public-tunnel-account.sh", "install-reverse-tunnel.sh", "verify-split-ingress.sh"],
+)
 def test_shell_assets_use_lf_and_no_utf8_bom(name: str) -> None:
     """Windows 检出后脚本仍需可作为 Linux Bash 资产交付。"""
     content = (ROOTLESS_DIR / name).read_bytes()

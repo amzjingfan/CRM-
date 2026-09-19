@@ -52,7 +52,6 @@ $RequiredVariables = @(
     "POSTGRES_DB",
     "POSTGRES_USER",
     "POSTGRES_PASSWORD",
-    "TLS_CERT_DIR",
     "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
     "POSTGRES_IMAGE",
@@ -72,6 +71,7 @@ $DisabledCapabilityVariables = @(
     "AI_MARKETING_ENABLED",
     "AUTO_REPLY_ENABLED"
 )
+$StagingTlsInterpolationSentinel = "/__crm_staging_tls_not_used__"
 
 function Assert-StagingTarget {
     if ($Environment -ne "staging" -or $ConfirmTarget -ne "staging") {
@@ -304,21 +304,26 @@ function Assert-ProductionComposeContract {
     }
 
     $proxyService = $Config.services.PSObject.Properties["proxy"].Value
-    if (@($proxyService.ports).Count -ne 2) {
-        throw "Production Compose proxy must bind only the required loopback ports."
+    if (@($proxyService.ports).Count -ne 1) {
+        throw "Staging Compose proxy must expose exactly one loopback HTTP port."
     }
-    foreach ($expectedBinding in @(
-        @{ host_ip = "127.0.0.1"; published = "10080"; target = "80" },
-        @{ host_ip = "127.0.0.1"; published = "10443"; target = "443" }
-    )) {
-        $matchingBinding = @($proxyService.ports | Where-Object {
-            [string]$_.host_ip -eq $expectedBinding.host_ip -and
-            [string]$_.published -eq $expectedBinding.published -and
-            [string]$_.target -eq $expectedBinding.target
-        })
-        if ($matchingBinding.Count -ne 1) {
-            throw "Production Compose proxy must bind only the required loopback ports."
-        }
+    $proxyBinding = @($proxyService.ports)[0]
+    if ([string]$proxyBinding.host_ip -ne "127.0.0.1" -or
+        [string]$proxyBinding.published -ne "18081" -or
+        [string]$proxyBinding.target -ne "80") {
+        throw "Staging Compose proxy must expose exactly one loopback HTTP port."
+    }
+
+    $proxyVolumes = @($proxyService.volumes)
+    if ($proxyVolumes.Count -ne 1) {
+        throw "Staging Compose proxy must mount exactly one read-only tunnel Nginx configuration."
+    }
+    $proxyConfigMount = $proxyVolumes[0]
+    if ([string]$proxyConfigMount.type -ne "bind" -or
+        [IO.Path]::GetFileName([string]$proxyConfigMount.source) -ne "nginx-tunnel.conf" -or
+        [string]$proxyConfigMount.target -ne "/etc/nginx/nginx.conf" -or
+        $proxyConfigMount.read_only -ne $true) {
+        throw "Staging Compose proxy must mount exactly one read-only tunnel Nginx configuration."
     }
 }
 
@@ -349,7 +354,8 @@ function Write-Evidence {
         [Parameter(Mandatory = $true)][string]$Status,
         [Parameter(Mandatory = $true)]
         [AllowEmptyCollection()]
-        [object[]]$HealthChecks
+        [object[]]$HealthChecks,
+        [string]$MigrationStatus = "not_executed"
     )
 
     $parent = Split-Path -Parent $EvidenceFile
@@ -369,6 +375,7 @@ function Write-Evidence {
         external_model_assets_validated = $true
         compose_project = "crm-staging"
         docker_transport = "rootless_unix_socket"
+        database_migration = $MigrationStatus
         rootless_overlay_sha256 = (Get-FileHash -LiteralPath $rootlessOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
         health_checks = $HealthChecks
@@ -423,6 +430,7 @@ foreach ($name in @($DisabledCapabilityVariables + @(
     "FRONTEND_IMAGE",
     "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
+    "TLS_CERT_DIR",
     "DOCKER_HOST",
     "DOCKER_CONTEXT"
 ))) {
@@ -446,6 +454,8 @@ try {
     $env:FRONTEND_IMAGE = $FrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
     $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $retrievalModelImage
+    # Compose 会在合并 rootless override 前先展开 production 文件；此值只用于通过必填展开，最终配置不得挂载它。
+    $env:TLS_CERT_DIR = $StagingTlsInterpolationSentinel
 
     $config = Get-ProductionComposeConfig -Command $compose -Arguments $composeArguments
     $expectedImages = @{
@@ -482,6 +492,15 @@ try {
         "pull", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
     ))
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "postgres", "redis", "minio"
+    ))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "run", "--rm", "--no-deps", "backend", "alembic", "upgrade", "head"
+    ))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "run", "--rm", "--no-deps", "backend", "alembic", "current", "--check-heads"
+    ))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "backend", "worker", "jobs", "agent-worker",
         "frontend", "proxy", "retrieval-model-service"
     ))
@@ -491,7 +510,7 @@ try {
         [ordered]@{ path = "/v1/health"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health") },
         [ordered]@{ path = "/v1/health/ready"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health/ready") }
     )
-    Write-Evidence -Status "passed" -HealthChecks $healthChecks
+    Write-Evidence -Status "passed" -HealthChecks $healthChecks -MigrationStatus "heads_applied"
     Write-Output "Staging production gate deployment and health verification passed; production_release=false."
 }
 finally {

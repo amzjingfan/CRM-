@@ -49,3 +49,23 @@ TikTok OAuth Token 加密保存，state 哈希绑定并原子消费。Webhook �
 ## 可观测与恢复
 
 请求、任务、模型、检索、工具和平台调用使用可关联的 request/trace 标识，但日志不含密钥、Token、客户正文或完整 Prompt。备份、恢复、迁移和回滚必须使用发布基线中的版本与哈希，并通过真实演练后才可用于生产签署。
+
+## Staging 运行拓扑
+
+当前 staging 是入口与业务运行分离的双服务器部署：
+
+```text
+staging.overselfx.com:443
+  → 38.55.145.52 宝塔 Nginx / TLS
+  → 127.0.0.1:18080
+  → 受限 SSH 反向隧道
+  → 192.168.110.210:127.0.0.1:18081
+  → crmdeploy Rootless proxy:80
+  → frontend / backend / worker / jobs / agent-worker / data / retrieval model
+```
+
+公网服务器只保存站点 Nginx 与宝塔管理的证书，不运行 CRM、数据库或模型。业务服务器只通过 UID 1004 的 Rootless Docker 运行 `crm-staging`，其宿主机入口固定为 `127.0.0.1:18081:80`；系统 Docker 和 GitLab 的 `10080/10443` 不属于 CRM 操作范围。隧道账号无交互 shell，只能创建新服务器回环 `127.0.0.1:18080`，目标固定为旧服务器回环 `18081`。
+
+TLS 只在公网宝塔 Nginx 终止，内层代理使用明文 HTTP 并覆盖 `X-Forwarded-Proto=https`。隧道、应用或证书未就绪时入口必须返回明确 `502/503`，不得回退到 GitLab、默认站点或其他 vhost。历史同机 systemd `80/443 → 10080/10443` 资产已从活动树移除，只能通过 Git 历史查看。
+
+production 仅复用 `www.overselfx.com`、固定 HTTPS、不可变镜像和安全开关等公共契约；是否采用相同双服务器拓扑仍需独立架构与发布批准。
