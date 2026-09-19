@@ -70,11 +70,20 @@ jobs:
           }
 
       - name: Log in to GHCR for immutable image pulls
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/crm-staging-docker-config
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USERNAME: ${{ github.actor }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:GHCR_TOKEN)) {
+            throw "GITHUB_TOKEN is unavailable for GHCR login"
+          }
+          New-Item -ItemType Directory -Force -Path $env:DOCKER_CONFIG | Out-Null
+          $env:GHCR_TOKEN | & docker login ghcr.io --username $env:GHCR_USERNAME --password-stdin
+          if ($LASTEXITCODE -ne 0) {
+            throw "GHCR login failed"
+          }
 
       - name: Run the selected staging gate
         shell: pwsh
@@ -89,6 +98,7 @@ jobs:
           PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.previous_retrieval_model_image }}
           CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
           CRM_STAGING_BASE_URL: ${{ vars.CRM_STAGING_BASE_URL }}
+          DOCKER_CONFIG: ${{ runner.temp }}/crm-staging-docker-config
         run: |
           if ($env:CONFIRM_TARGET -ne "staging") {
             throw "confirm_target must equal staging"
@@ -150,6 +160,17 @@ jobs:
             default {
               throw "Unsupported staging operation"
             }
+          }
+
+      - name: Log out from GHCR
+        if: ${{ always() }}
+        shell: pwsh
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/crm-staging-docker-config
+        run: |
+          & docker logout ghcr.io
+          if ($LASTEXITCODE -ne 0) {
+            throw "GHCR logout failed"
           }
 
       - name: Upload low-sensitive staging evidence

@@ -44,15 +44,30 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
     workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     assert workflow["permissions"] == {"contents": "read", "packages": "read"}
     steps = workflow["jobs"]["staging"]["steps"]
-    login = next(step for step in steps if step.get("uses", "").startswith("docker/login-action@"))
-    assert login["with"]["password"] == "${{ secrets.GITHUB_TOKEN }}"
-    gate = next(step["run"] for step in steps if step["name"] == "Run the selected staging gate")
+    assert not any(step.get("uses", "").startswith("docker/login-action@") for step in steps)
+    login = next(step for step in steps if step["name"] == "Log in to GHCR for immutable image pulls")
+    assert login["shell"] == "pwsh"
+    assert login["env"] == {
+        "DOCKER_CONFIG": "${{ runner.temp }}/crm-staging-docker-config",
+        "GHCR_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
+        "GHCR_USERNAME": "${{ github.actor }}",
+    }
+    assert "docker login ghcr.io" in login["run"]
+    assert "--password-stdin" in login["run"]
+    assert "$env:GHCR_TOKEN |" in login["run"]
+    gate_step = next(step for step in steps if step["name"] == "Run the selected staging gate")
+    assert gate_step["env"]["DOCKER_CONFIG"] == "${{ runner.temp }}/crm-staging-docker-config"
+    gate = gate_step["run"]
     assert "$runnerUid = (& id -u).Trim()" in gate
     assert "$LASTEXITCODE -ne 0" in gate
     assert "$runnerUid -notmatch '^[1-9][0-9]*$'" in gate
     assert '$dockerHost = "unix:///run/user/$runnerUid/docker.sock"' in gate
     assert '$common["DockerHost"] = $dockerHost' in gate
     assert gate.index("$runnerUid =") < gate.index("$common =") < gate.index("switch ($env:OPERATION)")
+    logout = next(step for step in steps if step["name"] == "Log out from GHCR")
+    assert logout["if"] == "${{ always() }}"
+    assert logout["env"]["DOCKER_CONFIG"] == "${{ runner.temp }}/crm-staging-docker-config"
+    assert "docker logout ghcr.io" in logout["run"]
 
 
 @pytest.mark.parametrize(
