@@ -281,6 +281,20 @@ def test_public_vhost_never_targets_gitlab_or_private_host() -> None:
     assert ":10080" not in source
 
 
+def test_public_vhost_replaces_inner_security_headers_once() -> None:
+    """客户端只能看到公网 TLS 边界定义的一组安全头，不得与内层值重复或冲突。"""
+    source = PUBLIC_HTTPS_VHOST.read_text(encoding="utf-8")
+    https_server_preamble = source.rsplit("server {", 1)[1].split("location =", 1)[0]
+
+    for header in (
+        "Strict-Transport-Security",
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+        "Referrer-Policy",
+    ):
+        assert f"proxy_hide_header {header};" in https_server_preamble
+
+
 def test_split_ingress_verifier_checks_public_and_loopback_boundaries() -> None:
     """全链路验证必须拒绝错误 DNS、证书、监听、GitLab 响应和不安全 TLS。"""
     source = SPLIT_INGRESS_VERIFIER.read_text(encoding="utf-8")
