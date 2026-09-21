@@ -1,0 +1,108 @@
+{
+  "task_id": "MAINT-CLEANUP-20260921-003",
+  "batch_id": "CLEANUP-20260921-003",
+  "base_sha": "79fa405f5fd0cea6bdf9b3cf1c0d88fa6b72166e",
+  "candidate_subject_sha": "85602c3c2702c33cbf00cf554afdfdc8c5ab0aa7",
+  "state": "QUARANTINED",
+  "authorized_root": "38.55.145.52:/root (only the three exact listed objects)",
+  "discovered_at": "2026-09-21T14:30:37+08:00",
+  "quarantined_at": "2026-09-21T14:37:17+08:00",
+  "verified_at": "2026-09-21T14:38:11+08:00",
+  "retention_until": "backup: indefinite; quarantined cache/probe: not before 2026-09-28T14:37:17+08:00",
+  "items": [
+    {
+      "task_id": "MAINT-CLEANUP-20260921-003",
+      "batch_id": "CLEANUP-20260921-003",
+      "base_sha": "79fa405f5fd0cea6bdf9b3cf1c0d88fa6b72166e",
+      "original_path": "/root/crm-staging-backups",
+      "kind": "directory",
+      "category": "backups",
+      "git_status": "N/A (remote server)",
+      "size_bytes": 3290749240,
+      "sha256": "N/A (multi-gigabyte heterogeneous backup tree); inventory digest d685f8bcc4c87438aee3ed69b095b2f5e3ba2b4576efdb21ed347d7b18212f9d",
+      "modified_at": "2026-09-21T04:58:38.971246264Z",
+      "reason": "CRM staging deployment backups and retired relay assets belong under /var/backups instead of the root login home.",
+      "reference_checks": [
+        "38 regular files and 12 directories; zero symlinks and zero special files",
+        "no references under persistent systemd, cron or BaoTa Nginx configuration",
+        "no running process cwd, executable or file descriptor references the source tree",
+        "source and destination parent are on device 64769 (/dev/vda1 ext4)"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001",
+        "fix/edge-root-hygiene-20260921"
+      ],
+      "action": "quarantined",
+      "quarantine_path": "/var/backups/crm-staging",
+      "retention_until": "N/A (backup and retired assets are never auto-deleted)",
+      "restore_method": "If /root/crm-staging-backups does not exist, move /var/backups/crm-staging back to /root/crm-staging-backups on the same filesystem.",
+      "verification": [
+        "destination retained device 64769 and inode 522012",
+        "destination retained 3290749240 bytes, 38 files, 12 directories, zero symlinks, zero special files and inventory digest d685f8bcc4c87438aee3ed69b095b2f5e3ba2b4576efdb21ed347d7b18212f9d",
+        "the source path is absent and the destination is root-owned mode 0700",
+        "public staging health returned 200 for all three endpoints and the tunnel remained loopback-only"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20260921-003",
+      "batch_id": "CLEANUP-20260921-003",
+      "base_sha": "79fa405f5fd0cea6bdf9b3cf1c0d88fa6b72166e",
+      "original_path": "/root/__pycache__",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "N/A (remote server)",
+      "size_bytes": 6311,
+      "sha256": "3a9913f1f8479fc5899ea5d80f97ca792228045a5ca626b1d1006b815c6645d2 (sole .pyc file)",
+      "modified_at": "2026-09-21T02:10:51.208863628Z",
+      "reason": "Python bytecode from the retired egress proxy does not belong in the root login home.",
+      "reference_checks": [
+        "contains exactly crm-egress-proxy.cpython-312.pyc",
+        "no persistent service, cron, Nginx or running-process reference"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001",
+        "fix/edge-root-hygiene-20260921"
+      ],
+      "action": "quarantined",
+      "quarantine_path": "/var/lib/crm-staging/quarantine/CLEANUP-20260921-003/root-home/__pycache__",
+      "retention_until": "2026-09-28T14:37:17+08:00",
+      "restore_method": "If /root/__pycache__ does not exist, move the quarantined __pycache__ directory back to /root/__pycache__.",
+      "verification": [
+        "destination retained directory inode 519467 and sole-file SHA-256 3a9913f1f8479fc5899ea5d80f97ca792228045a5ca626b1d1006b815c6645d2",
+        "the source path is absent and the quarantine parent is root-owned mode 0700",
+        "public staging health returned 200 for all three endpoints and the tunnel remained loopback-only"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20260921-003",
+      "batch_id": "CLEANUP-20260921-003",
+      "base_sha": "79fa405f5fd0cea6bdf9b3cf1c0d88fa6b72166e",
+      "original_path": "/root/ \\",
+      "original_path_shell_escaped": "/root/\\ \\\\",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A (remote server)",
+      "size_bytes": 15,
+      "sha256": "5b4af83498b700e6c5faa93385d114d96b42c01fdf34281d6ff47b7e72258797",
+      "modified_at": "2026-09-21T03:25:44.837104794Z",
+      "reason": "Stray file contains only the low-sensitivity marker crm-acme-probe plus newline and does not belong in the root login home.",
+      "reference_checks": [
+        "device 64769 and inode 4322 uniquely identify the source",
+        "no service, cron, Nginx or running-process reference"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001",
+        "fix/edge-root-hygiene-20260921"
+      ],
+      "action": "quarantined",
+      "quarantine_path": "/var/lib/crm-staging/quarantine/CLEANUP-20260921-003/root-home/crm-acme-probe.stray",
+      "retention_until": "2026-09-28T14:37:17+08:00",
+      "restore_method": "If original_path is absent, move crm-acme-probe.stray to the exact JSON value in original_path; treat original_path_shell_escaped only as a display aid, then verify device/inode 64769:4322 after restoration.",
+      "verification": [
+        "destination retained device 64769, inode 4322, size 15 and SHA-256 5b4af83498b700e6c5faa93385d114d96b42c01fdf34281d6ff47b7e72258797",
+        "the original inode is absent below /root and the named quarantine destination exists",
+        "public staging health returned 200 for all three endpoints and the tunnel remained loopback-only"
+      ]
+    }
+  ]
+}
