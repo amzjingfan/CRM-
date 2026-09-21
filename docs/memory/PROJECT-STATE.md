@@ -9,9 +9,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/cleanup-merged-worktrees-20260921
-Governance base SHA: 6147d3d9f89011dc52e313da89080b3ca7d39f47
-CANDIDATE_SUBJECT_SHA: WORKTREE
+Working branch at this snapshot: docs/close-merged-worktree-cleanup-20260921
+Governance base SHA: d592917b0597d1383ef81b868dde2a4faee108b5
+CANDIDATE_SUBJECT_SHA: 6b1d929f53c8bef6c4031fb3be42c29e591848ab
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -41,7 +41,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001` 与三个维护清理任务已关闭；`MVP-001` 内部轮换通过但因外部凭据缺失而 `BLOCKED`，MVP-002～MVP-009 保持 `BACKLOG`。
+- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001` 与四个维护清理任务已关闭；`MVP-001` 内部轮换通过但因外部凭据缺失而 `BLOCKED`，MVP-002～MVP-009 保持 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -60,7 +60,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
 - `CLEANUP-20260921-003` 已把入口服务器 root 家目录中的 staging 备份迁入 `/var/backups/crm-staging`，把两个退役生成物迁入 `/var/lib/crm-staging/quarantine/CLEANUP-20260921-003/root-home/`；状态为 `QUARANTINED`，备份永久保留，隔离物最早复核时间为 2026-09-28T14:37:17+08:00，详见 [`../operations/cleanup/CLEANUP-20260921-003.md`](../operations/cleanup/CLEANUP-20260921-003.md)。
-- `CLEANUP-20260921-004` 已删除截图中的六个已合并本地 worktree 和对应本地短期分支，共移除 2,749,219,080 B；`origin/main`、主 checkout 的本地领先提交与未跟踪 `.superpowers/` 均未改变，详见 [`../operations/cleanup/CLEANUP-20260921-004.md`](../operations/cleanup/CLEANUP-20260921-004.md)。
+- `CLEANUP-20260921-004` 已通过 PR #32 合入 `main`：截图中的六个已合并本地 worktree 和对应本地短期分支已删除，共移除 2,749,219,080 B；`origin/main`、主 checkout 的本地领先提交与未跟踪 `.superpowers/` 均未改变，详见 [`../operations/cleanup/CLEANUP-20260921-004.md`](../operations/cleanup/CLEANUP-20260921-004.md)。
 - TEST-001 验证保留了已忽略的 `src/tests/.artifacts/task6-4cd6664-temp/`，仓库外受控验证工作区也保留 candidate-scoped archive、override 和 temp。它们是已知可重建临时材料，但未建立独立清理任务/批次，未移动或删除，因此目录卫生不标记 `CLEAN`。
 
 ## 阻塞、决定与风险
