@@ -16,7 +16,7 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 活动运行手册和恢复顺序位于 `src/deploy/staging/rootless/README.md`：先建立公司负载与站点保护基线，上传与 main SHA 绑定的版本化资产，把公网入口置为 HTTP `503`，再切换 `18080 → 18081` 隧道；完成不可变镜像/配置 validate 和 Rootless deploy 后，通过宝塔签发证书，安装正式 HTTPS vhost，执行动态健康、隧道重连和公司负载复核。任何阶段失败都恢复 staging `503`、停止候选并保留数据卷，不切回 GitLab。
 
-当前仓库已实现该路径，但真实服务器部署、正确 SAN 证书、公开健康、恢复和回滚只有在本轮现场证据完成后才能记为通过；工程资产存在不等于 staging 或 production 放行。
+该路径已于 2026-09-21 在两台真实服务器上完成部署与验收：DNS、Let's Encrypt SAN/证书链、公网健康、迁移头、Rootless 容器、隧道自恢复和公司负载零变化通过，见 `MVP-STAGING-001` 定稿 IR/TR/RR 与 `release/evidence/staging/`。密钥轮换、数据库/对象存储恢复和兼容版本回滚仍是后续 G0 门禁；staging 通过不等于 production 放行。
 
 ## TikTok 与 DeepSeek
 

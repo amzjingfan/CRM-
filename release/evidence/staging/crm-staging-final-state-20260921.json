@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_final_state",
+  "capture_window_utc": {
+    "start": "2026-09-21T05:27:28Z",
+    "end": "2026-09-21T05:30:45Z"
+  },
+  "environment": "staging",
+  "status": "passed",
+  "production_release": false,
+  "candidate_subject_sha": "c0f1e6f0a5c575190b71541be3f67b3163780d61",
+  "candidate_tree_sha": "478cac38fcb207ac9b97957debb8ea2d5e404263",
+  "runtime_configuration_sha": "98460796bcb131e3c3a7ef7ae16f707ceff00e58",
+  "runtime_assets_equal_runtime_configuration": true,
+  "runtime_asset_comparison": "git diff --quiet 98460796bcb131e3c3a7ef7ae16f707ceff00e58..c0f1e6f0a5c575190b71541be3f67b3163780d61 -- src/compose src/deploy/staging/rootless/install-reverse-tunnel.sh src/deploy/staging/rootless/wait-for-reviewed-process.sh src/deploy/staging/rootless/systemd src/deploy/staging/rootless/public-nginx",
+  "runtime_asset_comparison_exit_code": 0,
+  "provenance": {
+    "image_publish_run_id": 35428767732,
+    "image_source_sha": "5099fc08d1ab0efbc30d679649bee32a7395ec36",
+    "image_build_inputs_equal_candidate": true,
+    "image_build_input_comparison": "git diff --quiet 5099fc08d1ab0efbc30d679649bee32a7395ec36..c0f1e6f0a5c575190b71541be3f67b3163780d61 -- src/backend src/frontend src/docker/Dockerfile.backend src/docker/Dockerfile.frontend.prod src/docker/Dockerfile.model-service",
+    "image_build_input_comparison_exit_code": 0,
+    "deploy_run_id": 35561109568,
+    "deploy_run_head_sha": "5df988340e27bbddd818bf402170f5d7badf7b84",
+    "final_systemd_fix_sha": "e451286cfbbdd34b0499c393c55e53c46ffdde53",
+    "final_nginx_fix_sha": "98460796bcb131e3c3a7ef7ae16f707ceff00e58",
+    "staging_gate_waiver": "User explicitly authorized continuing the staging deployment; immutable image build inputs are byte-identical across image source and final subject. The waiver does not apply to future or production deployments."
+  },
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:e2ca31c150b874b143f9ab4ff60ff0cc56f1814dec0661dfd78baa87164f37d2",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:26453c65b7706305fa4af7199e2954cd8a58471175b7ae66427d07a17fb8e74a",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:bc99dfa3ce36bc3332480b456da5d82a0d1495a2f9bbfd1b2bb56d4df2f02112",
+    "live_digest_match": true
+  },
+  "business_host": {
+    "address": "192.168.110.210",
+    "docker_transport": "unix:///run/user/1004/docker.sock",
+    "compose_project": "crm-staging",
+    "long_running_container_count": 10,
+    "all_containers_running": true,
+    "health": {
+      "backend": "healthy",
+      "frontend": "healthy",
+      "proxy": "healthy",
+      "retrieval_model_service": "healthy",
+      "postgres": "healthy",
+      "redis": "healthy",
+      "minio": "healthy"
+    },
+    "key_container_restart_count": 0,
+    "database_migration": "023_marketing_review_idempotency (head)",
+    "crm_listener": "127.0.0.1:18081",
+    "gitlab_listeners": [
+      "0.0.0.0:10080",
+      "0.0.0.0:10443"
+    ],
+    "temporary_egress_service": "not-found/inactive",
+    "temporary_egress_listener_19090": false,
+    "tunnel_service": {
+      "load_state": "loaded",
+      "active_state": "active",
+      "sub_state": "running",
+      "unit_file_state": "enabled",
+      "main_pid": 3971383,
+      "current_n_restarts": 0,
+      "argv_remote_forward": "127.0.0.1:18080:127.0.0.1:18081",
+      "installed_unit_sha256": "b77e1f9d3f59e0a21ea03bb56104fe1360da664a1d67a058837ef16d967e4d89"
+    },
+    "system_docker_evidence": {
+      "persistent_rebuild_before_sha256": "8924c0d26360cda87419c74680a0dd0dd4907db92323d9d5cbd07d5b4461e685",
+      "persistent_rebuild_after_sha256": "8924c0d26360cda87419c74680a0dd0dd4907db92323d9d5cbd07d5b4461e685",
+      "persistent_rebuild_cmp_exit_code": 0,
+      "formal_deploy_before_sha256": "6967f55e10796c1f2823b5079fac78331b3ed67edf1d51d0c217f37652a53428",
+      "formal_deploy_after_sha256": "6967f55e10796c1f2823b5079fac78331b3ed67edf1d51d0c217f37652a53428",
+      "final_recapture_sha256": "aabb93ce410471aeb1775e74f6d8e1027f748d46cdea06d8e9d09238b2c8037f",
+      "note": "The final recapture is later than deployment and may reflect unrelated company workload lifecycle; the deployment comparison is the equal before/after pair."
+    }
+  },
+  "edge_host": {
+    "address": "38.55.145.52",
+    "nginx_config_sha256": "1c5d047eba1a9b02b7984691ded2c813d4499d34aa7b9e96c72899444ab52a6a",
+    "nginx_config_matches_candidate": true,
+    "nginx_config_test": "successful",
+    "public_listeners": [
+      "0.0.0.0:80",
+      "0.0.0.0:443"
+    ],
+    "tunnel_listener": "127.0.0.1:18080",
+    "temporary_egress_service": "not-found/inactive",
+    "temporary_egress_listener_19090": false,
+    "tunnel_account": {
+      "login": "locked",
+      "shell": "/usr/sbin/nologin",
+      "supplementary_groups": false,
+      "password_authentication": false,
+      "allow_tcp_forwarding": "remote",
+      "gateway_ports": false,
+      "permit_listen": "127.0.0.1:18080",
+      "force_command": "/usr/bin/false"
+    },
+    "local_tunnel_health_body": "ok"
+  },
+  "public_endpoint": {
+    "dns_a": "38.55.145.52",
+    "certificate_subject": "CN = staging.overselfx.com",
+    "certificate_issuer": "C = US, O = Let's Encrypt, CN = YR1",
+    "certificate_not_before": "2026-09-21T02:30:28Z",
+    "certificate_not_after": "2026-12-20T02:30:27Z",
+    "certificate_san": "staging.overselfx.com",
+    "http_redirect_status": 301,
+    "http_redirect_location": "https://staging.overselfx.com/healthz",
+    "redirect_query_retained": false,
+    "health_checks": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    },
+    "security_header_counts": {
+      "strict_transport_security": 1,
+      "x_content_type_options": 1,
+      "x_frame_options": 1,
+      "referrer_policy": 1,
+      "x_gitlab": 0
+    }
+  },
+  "recovery": {
+    "tunnel_term_drill": {
+      "status": "passed",
+      "before_main_pid": 3941216,
+      "after_main_pid": 3953326,
+      "n_restarts_after_drill": 1,
+      "public_health_after_recovery": 200
+    },
+    "first_deploy_failure_closed": true,
+    "first_deploy_data_volumes_retained": true,
+    "compatible_image_rollback": "not_executed_deferred_to_MVP-008",
+    "database_object_restore": "not_executed_deferred_to_MVP-008",
+    "production_rollback": "not_applicable_production_not_released"
+  },
+  "commands": [
+    "gh run list --workflow publish-images.yml --json databaseId,headSha,status,conclusion,createdAt,url",
+    "gh run view 35428767732 --log (filtered to the three reviewed digests)",
+    "git diff --quiet 5099fc08d1ab0efbc30d679649bee32a7395ec36..c0f1e6f0a5c575190b71541be3f67b3163780d61 -- reviewed image build inputs",
+    "git diff --quiet 98460796bcb131e3c3a7ef7ae16f707ceff00e58..c0f1e6f0a5c575190b71541be3f67b3163780d61 -- reviewed runtime asset paths",
+    "business: docker --host unix:///run/user/1004/docker.sock ps --format <low-sensitive fields>",
+    "business: docker inspect --format <name,image,restart,health,running> for the 10 CRM containers",
+    "business: docker exec crm-staging-backend-1 alembic current --check-heads",
+    "business: ss -lntp filtered to 18081/10080/10443/19090",
+    "business: systemctl --user show crm-staging-tunnel.service and crm-egress-tunnel.service",
+    "business: tr NUL to newline for /proc/<MainPID>/cmdline",
+    "business: sha256sum and cmp of protected system Docker before/after evidence",
+    "edge: sha256sum staging vhost; nginx -t; ss -lntp filtered to 80/443/18080/19090",
+    "edge: systemctl show crm-egress-proxy.service; sshd -T for crm-tunnel; local tunnel curl",
+    "public: Resolve-DnsName A; curl status/redirect/headers for staging.overselfx.com",
+    "edge: openssl s_client/x509 for public certificate metadata"
+  ],
+  "sensitive_values_included": false
+}

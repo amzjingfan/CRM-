@@ -1,6 +1,6 @@
 # Split-ingress Rootless staging 运行手册
 
-日期：2026-09-19。状态：仓库实现已完成，真实主机切换与动态验收待执行。当前架构见 [`docs/architecture/SYSTEM.md`](../../../../docs/architecture/SYSTEM.md)，门禁结论见 [`docs/operations/RELEASE-GATES.md`](../../../../docs/operations/RELEASE-GATES.md)。本文是 staging 唯一活动操作路径；历史同机 systemd 入口只保留在 Git 历史中。
+日期：2026-09-21。状态：真实主机切换与动态验收已完成，staging 正常运行，production 未部署。当前架构见 [`docs/architecture/SYSTEM.md`](../../../../docs/architecture/SYSTEM.md)，门禁结论见 [`docs/operations/RELEASE-GATES.md`](../../../../docs/operations/RELEASE-GATES.md)。本文是 staging 唯一活动操作路径；历史同机 systemd 入口只保留在 Git 历史中。
 
 ## 1. 目标与禁止事项
 
@@ -24,16 +24,16 @@ staging.overselfx.com:443
 
 ## 2. 当前现场事实
 
-执行本轮变更前已经只读核实：
+截至 2026-09-21 终态只读复核：
 
 - DNS A 已是 `staging.overselfx.com → 38.55.145.52`。
-- 新服务器 Nginx 正监听 80/443，现有 staging HTTP 主路径返回 `503`，但 443 证书 SAN 不匹配。
-- 新服务器 `crm-tunnel` 为 nologin 专用账号，授权键限制 `permitlisten="127.0.0.1:18080"`。
-- 现有隧道错误地把 `18080` 转到旧服务器 GitLab `10080`；切换前 `/healthz` 会暴露 GitLab 响应。
-- 旧服务器 `/home/crmdeploy`、Rootless Docker、Runner、六个模型文件和 `0600` 环境文件已存在；Rootless 当前无 CRM 镜像/容器，`127.0.0.1:18081` 空闲。
-- 环境文件的基础数据库、MinIO、JWT、检索和镜像配置已设置；TikTok 应用身份与 DeepSeek Key 为空，适合全部真实能力关闭的首次部署。
+- 新服务器只由 Nginx 公网监听 80/443，SSHD 只在 `127.0.0.1:18080` 接收反向隧道；Let's Encrypt 证书 SAN 正确，无 `19090` 临时代理监听。
+- 新服务器 `crm-tunnel` 为锁定、nologin、无附加组的专用账号，有效 SSHD 策略只允许 remote forwarding 和 `permitlisten="127.0.0.1:18080"`。
+- 旧服务器的隧道 argv 固定为 `127.0.0.1:18080:127.0.0.1:18081`；Rootless CRM 共 10 个长运行容器，proxy 只发布 `127.0.0.1:18081:80`。
+- 数据库迁移头为 `023_marketing_review_idempotency (head)`；`/healthz`、`/v1/health` 和 `/v1/health/ready` 公网状态均为 200。
+- 系统 Docker 的 GitLab 仍监听 `10080/10443`，本次部署不使用系统 Docker socket；临时 registry 出网服务已停用并可恢复隔离。
 
-现场状态变化后必须重新读取，不能把本节当作当前证据。
+上述仅是交接摘要；可复核低敏命令、输出和时间窗见 `release/evidence/staging/crm-staging-final-state-20260921.json`。现场状态变化后必须重新读取，不能把本节单独当作当前证据。
 
 ## 3. 固定参数和输入
 
@@ -62,7 +62,7 @@ AI_MARKETING_ENABLED
 AUTO_REPLY_ENABLED
 ```
 
-TLS 只由新服务器宝塔管理，旧服务器 staging 环境文件不需要 `TLS_CERT_DIR`。backend、frontend 和 retrieval-model-service 必须使用最终远端 main SHA 发布的 `repository@sha256:` 完整摘要；`release/images/mvp-production-gates.json` 中的历史 `f7c0f9f9` 候选不得复用。
+TLS 只由新服务器宝塔管理，旧服务器 staging 环境文件不需要 `TLS_CERT_DIR`。常规部署中 backend、frontend 和 retrieval-model-service 必须使用目标远端 main SHA 发布的 `repository@sha256:` 完整摘要；`release/images/mvp-production-gates.json` 中的历史 `f7c0f9f9` 候选不得复用。本轮根据用户明确的 staging 门禁豁免，部署了 source `5099fc08d1ab0efbc30d679649bee32a7395ec36` 发布的三个不可变摘要；已用 `git diff --quiet 5099fc08...98460796 -- src/backend src/frontend src/docker/Dockerfile.backend src/docker/Dockerfile.frontend.prod src/docker/Dockerfile.model-service` 确认它们的全部构建输入与最终运行 subject 一致。该豁免不自动适用于后续或 production 部署。
 
 ## 4. 活动部署顺序
 
