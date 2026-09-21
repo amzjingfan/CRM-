@@ -64,6 +64,8 @@ actual_fingerprint=$(printf '%s\n' "${pinned_keys[0]}" | ssh-keygen -lf - -E sha
 [[ -f "$UNIT_SOURCE" && ! -L "$UNIT_SOURCE" ]] || fail "Tunnel unit template is missing or linked"
 [[ -f "$PROCESS_WAITER" && ! -L "$PROCESS_WAITER" && -x "$PROCESS_WAITER" ]] ||
     fail "Reviewed process waiter is missing, linked, or not executable"
+export XDG_RUNTIME_DIR=/run/user/1004
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1004/bus
 systemd-analyze --user verify "$UNIT_SOURCE" || fail "Tunnel unit validation failed"
 
 mkdir -p -- "$UNIT_DIR"
@@ -73,8 +75,6 @@ check_owned_directory "$UNIT_DIR"
 [[ ! -L "$UNIT_TARGET" ]] || fail "Tunnel unit target must not be a symlink"
 install -m 0600 "$UNIT_SOURCE" "$UNIT_TARGET"
 
-export XDG_RUNTIME_DIR=/run/user/1004
-export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1004/bus
 systemctl --user daemon-reload
 systemctl --user enable "$UNIT_NAME"
 # enable --now 不会重启已活动的旧 unit；必须显式 restart 才能从 GitLab 目标切到 CRM。

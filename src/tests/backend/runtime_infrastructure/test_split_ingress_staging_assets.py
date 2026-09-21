@@ -90,6 +90,12 @@ def test_tunnel_installers_preserve_account_and_key_boundaries() -> None:
     ):
         assert required in business
     assert 'systemctl --user enable --now "$UNIT_NAME"' not in business
+    assert business.index("export XDG_RUNTIME_DIR=/run/user/1004") < business.index(
+        'systemd-analyze --user verify "$UNIT_SOURCE"'
+    )
+    assert business.index("export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1004/bus") < business.index(
+        'systemd-analyze --user verify "$UNIT_SOURCE"'
+    )
     assert business.index("systemctl --user daemon-reload") < business.index('systemctl --user restart "$UNIT_NAME"')
     assert "StrictHostKeyChecking=no" not in business
 
