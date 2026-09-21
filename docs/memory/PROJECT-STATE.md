@@ -9,8 +9,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/edge-root-hygiene-20260921
-Governance base SHA: 79fa405f5fd0cea6bdf9b3cf1c0d88fa6b72166e
+Working branch at this snapshot: docs/close-edge-root-hygiene-20260921
+Governance base SHA: 98de5db872e0a6974f4f4fdb593c9acfb03c018e
 CANDIDATE_SUBJECT_SHA: 85602c3c2702c33cbf00cf554afdfdc8c5ab0aa7
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 and edge CLEANUP-20260921-003 quarantines remain under retention; other TEST-001 temporary material still requires a separate cleanup batch
@@ -39,7 +39,7 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 and edge CLEANUP-20260
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001` 与两个维护清理任务已关闭；`MAINT-CLEANUP-20260921-003` 已完成现场迁移并处于 `VERIFYING`；MVP-001～MVP-009 仍为 `BACKLOG`。
+- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001` 与三个维护清理任务已关闭；MVP-001～MVP-009 仍为 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -67,11 +67,11 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 and edge CLEANUP-20260
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
-- 远端 `main` 已通过 PR #26 合入终态证据，合并提交为 `f5adc8c455ff63caea148d2ff02562b01fd3329f`；现场运行配置 subject 仍为 `98460796bcb131e3c3a7ef7ae16f707ceff00e58`，运行手册终态 subject 为 `c0f1e6f0...`，其后只包含证据、索引、任务和当前状态更新。
+- 远端 `main` 已通过 PR #28 合入入口服务器目录清理证据，合并提交为 `98de5db872e0a6974f4f4fdb593c9acfb03c018e`；现场运行配置 subject 仍为 `98460796bcb131e3c3a7ef7ae16f707ceff00e58`，staging 运行手册终态 subject 为 `c0f1e6f0...`，本清理候选 subject 为 `85602c3c...`。
 - Git、文件、Codex UI 与 GitHub 不是原子事务；每一步必须查重、执行、复核并保留恢复点。
 
 ## 最多三个下一动作
 
-1. 合入 `MAINT-CLEANUP-20260921-003` 的批次记录并复核远端 `main`，随后把任务标记为 `DONE`。
-2. 启动 `MVP-001`：轮换并验证 v0.1 凭据/密钥的安全注入、日志与响应脱敏。
-3. `MVP-001` 通过后执行 `MVP-008`：数据库、对象存储恢复和兼容上一版镜像回滚，关闭 G0 剩余阻塞；production 继续关闭。
+1. 启动 `MVP-001`：轮换并验证 v0.1 凭据/密钥的安全注入、日志与响应脱敏。
+2. `MVP-001` 通过后执行 `MVP-008`：数据库、对象存储恢复和兼容上一版镜像回滚，关闭 G0 剩余阻塞；production 继续关闭。
+3. `MVP-001` 通过后启动 `MVP-002`：在专用真实店铺验收 TikTok OAuth、Scope、Token 生命周期、只读能力与店铺隔离。
