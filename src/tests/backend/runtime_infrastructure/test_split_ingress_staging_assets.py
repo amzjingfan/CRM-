@@ -1,7 +1,14 @@
 """双服务器 staging 入口资产的失败关闭契约测试。"""
 
 import configparser
+import os
+import shutil
+import subprocess
+import threading
+import time
+from pathlib import Path
 
+import pytest
 from _support import SOURCE_ROOT
 
 ROOTLESS_OVERLAY = SOURCE_ROOT / "compose" / "docker-compose.rootless-staging.yml"
@@ -9,6 +16,7 @@ ROOTLESS_TUNNEL_NGINX = SOURCE_ROOT / "deploy" / "nginx" / "nginx-tunnel.conf"
 ROOTLESS_DIR = SOURCE_ROOT / "deploy" / "staging" / "rootless"
 TUNNEL_UNIT = ROOTLESS_DIR / "systemd" / "user" / "crm-staging-tunnel.service"
 TUNNEL_INSTALLER = ROOTLESS_DIR / "install-reverse-tunnel.sh"
+PROCESS_WAITER = ROOTLESS_DIR / "wait-for-reviewed-process.sh"
 PUBLIC_ACCOUNT_INSTALLER = ROOTLESS_DIR / "install-public-tunnel-account.sh"
 PUBLIC_NGINX_DIR = ROOTLESS_DIR / "public-nginx"
 PUBLIC_HTTP_VHOST = PUBLIC_NGINX_DIR / "staging.overselfx.com-http.conf"
@@ -78,8 +86,7 @@ def test_tunnel_installers_preserve_account_and_key_boundaries() -> None:
         "systemd-analyze --user verify",
         'systemctl --user enable "$UNIT_NAME"',
         'systemctl --user restart "$UNIT_NAME"',
-        'systemctl --user show "$UNIT_NAME" --property=MainPID --value',
-        "/proc/$main_pid/cmdline",
+        '"systemd:$UNIT_NAME" /proc 20 1',
     ):
         assert required in business
     assert 'systemctl --user enable --now "$UNIT_NAME"' not in business
@@ -101,6 +108,140 @@ def test_tunnel_installers_preserve_account_and_key_boundaries() -> None:
     assert "sudo" not in public
     assert "docker" not in public
     assert "GatewayPorts yes" not in public
+
+
+def _ssh_cmdline(*overrides: str) -> bytes:
+    argv = [
+        "/usr/bin/ssh",
+        "-NT",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=10",
+        "-o",
+        "ExitOnForwardFailure=yes",
+        "-o",
+        "IdentitiesOnly=yes",
+        "-o",
+        "StrictHostKeyChecking=yes",
+        "-o",
+        "ServerAliveInterval=30",
+        "-o",
+        "ServerAliveCountMax=3",
+        "-o",
+        "UserKnownHostsFile=/home/crmdeploy/secrets/tunnel/known_hosts",
+        "-i",
+        "/home/crmdeploy/secrets/tunnel/id_ed25519",
+        "-R",
+        "127.0.0.1:18080:127.0.0.1:18081",
+        "crm-tunnel@38.55.145.52",
+    ]
+    argv[: len(overrides)] = overrides
+    return b"\0".join(item.encode() for item in argv) + b"\0"
+
+
+def test_process_waiter_reloads_pid_until_reviewed_tunnel_command(tmp_path: Path) -> None:
+    """服务自动重启换 PID 后必须重新取 MainPID，不得永久盯住旧进程。"""
+    assert PROCESS_WAITER.is_file(), f"missing process waiter: {PROCESS_WAITER}"
+    if os.name == "nt":
+        pytest.skip("process waiter behavior requires a POSIX bash runtime")
+    bash = shutil.which("bash")
+    assert bash is not None, "bash is required for process waiter behavior tests"
+
+    proc_root = tmp_path / "proc"
+    old_process = proc_root / "1001"
+    new_process = proc_root / "1002"
+    old_process.mkdir(parents=True)
+    new_process.mkdir()
+    (old_process / "cmdline").write_bytes(_ssh_cmdline("/usr/bin/ssh", "-NT", "-o", "BatchMode=no"))
+    (new_process / "cmdline").write_bytes(_ssh_cmdline())
+    pid_file = tmp_path / "main-pid"
+    pid_file.write_text("1001\n", encoding="ascii")
+
+    def publish_reviewed_command() -> None:
+        time.sleep(0.12)
+        pid_file.write_text("1002\n", encoding="ascii")
+
+    started = time.monotonic()
+    publisher = threading.Thread(target=publish_reviewed_command)
+    publisher.start()
+    result = subprocess.run(
+        [
+            bash,
+            str(PROCESS_WAITER),
+            f"file:{pid_file}",
+            str(proc_root),
+            "30",
+            "0.02",
+        ],
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=5,
+    )
+    publisher.join(timeout=1)
+
+    assert result.returncode == 0, result.stderr
+    assert time.monotonic() - started >= 0.1
+
+
+@pytest.mark.parametrize(
+    "cmdline",
+    [
+        _ssh_cmdline("/bin/not-ssh", "/usr/bin/ssh -NT"),
+        _ssh_cmdline(
+            "/usr/bin/ssh",
+            "-NT",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=10",
+            "-o",
+            "ExitOnForwardFailure=yes",
+            "-o",
+            "IdentitiesOnly=yes",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "-o",
+            "ServerAliveInterval=30",
+            "-o",
+            "ServerAliveCountMax=3",
+            "-o",
+            "UserKnownHostsFile=/home/crmdeploy/secrets/tunnel/known_hosts",
+            "-i",
+            "/home/crmdeploy/secrets/tunnel/id_ed25519",
+            "-R",
+            "127.0.0.1:18080:127.0.0.1:180810",
+        ),
+    ],
+)
+def test_process_waiter_rejects_argv_substring_lookalikes(tmp_path: Path, cmdline: bytes) -> None:
+    """只允许逐个 argv 完全匹配，禁止可执行文件或端口子串伪装。"""
+    source = PROCESS_WAITER.read_text(encoding="utf-8")
+    assert "mapfile -d '' -t running_argv" in source
+    assert "expected_argv" in source
+
+    if os.name == "nt":
+        pytest.skip("process waiter behavior requires a POSIX bash runtime")
+    bash = shutil.which("bash")
+    assert bash is not None, "bash is required for process waiter behavior tests"
+
+    proc_root = tmp_path / "proc"
+    process = proc_root / "2001"
+    process.mkdir(parents=True)
+    (process / "cmdline").write_bytes(cmdline)
+    pid_file = tmp_path / "main-pid"
+    pid_file.write_text("2001\n", encoding="ascii")
+
+    result = subprocess.run(
+        [bash, str(PROCESS_WAITER), f"file:{pid_file}", str(proc_root), "1", "0"],
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=5,
+    )
+
+    assert result.returncode != 0
 
 
 def test_public_http_vhost_is_acme_only_and_fail_closed_before_tls() -> None:

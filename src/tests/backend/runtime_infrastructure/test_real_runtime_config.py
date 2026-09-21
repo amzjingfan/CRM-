@@ -469,6 +469,16 @@ def test_production_compose_resets_dev_env_and_separates_secret_domains() -> Non
         ]
     )
     assert required_redirect_config in compose_text
+    agent_worker = compose_service_block(compose_text, "agent-worker")
+    assert required_redirect_config in agent_worker
+    for platform_credential in (
+        "TIKTOK_APP_KEY",
+        "TIKTOK_SERVICE_ID",
+        "TIKTOK_APP_SECRET",
+        "TIKTOK_WEBHOOK_SECRET",
+        "TIKTOK_CREDENTIAL_ENCRYPTION_KEY",
+    ):
+        assert platform_credential not in agent_worker
 
 
 def test_production_compose_enforces_least_secret_service_matrix() -> None:

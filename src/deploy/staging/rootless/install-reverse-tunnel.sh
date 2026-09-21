@@ -24,6 +24,7 @@ UNIT_NAME=crm-staging-tunnel.service
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 UNIT_SOURCE="$script_dir/systemd/user/$UNIT_NAME"
+PROCESS_WAITER="$script_dir/wait-for-reviewed-process.sh"
 UNIT_DIR="$EXPECTED_HOME/.config/systemd/user"
 UNIT_TARGET="$UNIT_DIR/$UNIT_NAME"
 
@@ -61,6 +62,8 @@ actual_fingerprint=$(printf '%s\n' "${pinned_keys[0]}" | ssh-keygen -lf - -E sha
 [[ $actual_fingerprint == "$EXPECTED_HOST_FINGERPRINT" ]] || fail "Pinned public gateway host fingerprint differs"
 
 [[ -f "$UNIT_SOURCE" && ! -L "$UNIT_SOURCE" ]] || fail "Tunnel unit template is missing or linked"
+[[ -f "$PROCESS_WAITER" && ! -L "$PROCESS_WAITER" && -x "$PROCESS_WAITER" ]] ||
+    fail "Reviewed process waiter is missing, linked, or not executable"
 systemd-analyze --user verify "$UNIT_SOURCE" || fail "Tunnel unit validation failed"
 
 mkdir -p -- "$UNIT_DIR"
@@ -78,9 +81,6 @@ systemctl --user enable "$UNIT_NAME"
 systemctl --user restart "$UNIT_NAME"
 systemctl --user is-enabled --quiet "$UNIT_NAME" || fail "Tunnel service is not enabled"
 systemctl --user is-active --quiet "$UNIT_NAME" || fail "Tunnel service is not active"
-main_pid=$(systemctl --user show "$UNIT_NAME" --property=MainPID --value)
-[[ $main_pid =~ ^[1-9][0-9]*$ && -r "/proc/$main_pid/cmdline" ]] || fail "Tunnel service has no readable running process"
-running_command=$(tr '\0' ' ' <"/proc/$main_pid/cmdline")
-[[ $running_command == *"/usr/bin/ssh -NT"* ]] || fail "Tunnel service is not running the reviewed SSH client"
-[[ $running_command == *"-R 127.0.0.1:18080:127.0.0.1:18081"* ]] || fail "Running tunnel still targets an unreviewed port"
+"$PROCESS_WAITER" "systemd:$UNIT_NAME" /proc 20 1 ||
+    fail "Tunnel service did not reach the reviewed SSH command"
 echo "CRM staging reverse tunnel is enabled and restarted"

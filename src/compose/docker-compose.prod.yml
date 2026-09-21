@@ -54,7 +54,7 @@ x-production-model: &production-model
 # - backend: common + platform + model
 # - worker: common + platform
 # - jobs: common + platform + model
-# - agent-worker: common + model
+# - agent-worker: common + model + non-secret OAuth callback URL
 # - retrieval-model-service: retrieval-only
 
 services:
@@ -140,6 +140,9 @@ services:
     restart: unless-stopped
     environment:
       <<: [*production-runtime, *production-model]
+      # 聊天 Worker 即使关闭全部真实 TikTok 能力，仍会导入共享适配器依赖图；
+      # Settings 因而必须取得这项非秘密的公开回调地址。
+      TIKTOK_OAUTH_REDIRECT_URI: ${TIKTOK_OAUTH_REDIRECT_URI:?TIKTOK_OAUTH_REDIRECT_URI is required}
 
   retrieval-model-service:
     image: ${RETRIEVAL_MODEL_SERVICE_IMAGE:?RETRIEVAL_MODEL_SERVICE_IMAGE must use an immutable repository@sha256 digest}
