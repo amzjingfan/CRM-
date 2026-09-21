@@ -9,14 +9,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/close-edge-root-hygiene-20260921
-Governance base SHA: 98de5db872e0a6974f4f4fdb593c9acfb03c018e
-CANDIDATE_SUBJECT_SHA: 85602c3c2702c33cbf00cf554afdfdc8c5ab0aa7
+Working branch at this snapshot: fix/mvp-001-secret-rotation-20260921
+Governance base SHA: 9edf2ce05a9d5fb053ce9ccfdccef24f32c9fca4
+CANDIDATE_SUBJECT_SHA: 83da7cc67a5e799d1d3aa9a6fb50253abbe523f8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 and edge CLEANUP-20260921-003 quarantines remain under retention; other TEST-001 temporary material still requires a separate cleanup batch
+Workspace hygiene: ATTENTION — existing quarantines remain under retention; two failed MVP-001 root-only recovery copies and ignored test material require separate governed cleanup batches
 ```
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+
+`MVP-001` 已在真实 staging 完成内部凭据轮换：PostgreSQL、MinIO、JWT、检索令牌和 TikTok 凭据加密主密钥的新配置已注入容器，新 PostgreSQL/MinIO/检索值接受、旧值拒绝，响应/日志扫描通过，三个公网健康端点为 200。TikTok Partner Center 与 DeepSeek 外部凭据仍为空，因此任务状态为 `BLOCKED`、TR 为 `PARTIAL`，production 和真实能力继续关闭。
 
 入口服务器 root 家目录清理候选为 `85602c3c2702c33cbf00cf554afdfdc8c5ab0aa7`：3.1 GB staging 备份已原子迁入 `/var/backups/crm-staging`，退役 Python 缓存和误生成探针文件已进入 root-only 隔离目录；`/root` 顶层 CRM 项目匹配项为 0。迁移未删除数据，staging vhost、回环隧道与公网健康保持不变。
 
@@ -39,7 +41,7 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 and edge CLEANUP-20260
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001` 与三个维护清理任务已关闭；MVP-001～MVP-009 仍为 `BACKLOG`。
+- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001` 与三个维护清理任务已关闭；`MVP-001` 内部轮换通过但因外部凭据缺失而 `BLOCKED`，MVP-002～MVP-009 保持 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -52,7 +54,8 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 and edge CLEANUP-20260
 - TEST-001 审查记录：[`../reports/reviews/RR-TEST-001-20260916-R01.md`](../reports/reviews/RR-TEST-001-20260916-R01.md)。三个派生索引已从全部源记录重建为 `CURRENT`。
 - MVP-DOMAIN-001 实施、测试与审查记录：[`../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md`](../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md`](../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md`](../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md)。三个派生索引从本地 `main` 读取时为 `CURRENT`。
 - MVP-STAGING-001 定稿实施、测试与审查记录：[`../records/implementation/IR-MVP-STAGING-001-20260919-R01.md`](../records/implementation/IR-MVP-STAGING-001-20260919-R01.md)、[`../reports/tests/TR-MVP-STAGING-001-20260919-R01.md`](../reports/tests/TR-MVP-STAGING-001-20260919-R01.md)、[`../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md`](../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md)；工作流与绑定最终 subject 的终态低敏证据见 [`../../release/evidence/staging/crm-staging-deploy-35561109568.json`](../../release/evidence/staging/crm-staging-deploy-35561109568.json) 和 [`../../release/evidence/staging/crm-staging-final-state-20260921.json`](../../release/evidence/staging/crm-staging-final-state-20260921.json)。
-- 三个派生索引已在终态证据合入权威 `main` 后重建为 `CURRENT`。
+- MVP-001 当前 revision：[`../records/implementation/IR-MVP-001-20260921-R01.md`](../records/implementation/IR-MVP-001-20260921-R01.md)、[`../reports/tests/TR-MVP-001-20260921-R01.md`](../reports/tests/TR-MVP-001-20260921-R01.md)、[`../reports/reviews/RR-MVP-001-20260921-R01.md`](../reports/reviews/RR-MVP-001-20260921-R01.md)；低敏机器证据见 [`../../release/evidence/staging/crm-staging-credential-rotation-20260921.json`](../../release/evidence/staging/crm-staging-credential-rotation-20260921.json)。
+- 三个派生索引在本分支标记为 `CANDIDATE_VIEW`；合入权威 `main` 后重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
@@ -62,16 +65,17 @@ Workspace hygiene: ATTENTION — CLEANUP-20260916-001/002 and edge CLEANUP-20260
 ## 阻塞、决定与风险
 
 - G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
+- `MVP-001` 的内部凭据轮换已通过；解除任务阻塞仍需用户提供 TikTok App Key、Service ID、App Secret、Webhook Secret、固定出口白名单确认和 DeepSeek API Key，并经服务器受限通道注入。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
 - staging DNS/TLS、`18080 → 18081` 反向隧道和 Rootless CRM 当前可用；临时 registry 代理已撤除，后续镜像更新依赖业务机到 GitHub/GHCR 的出网稳定性。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
-- 远端 `main` 已通过 PR #28 合入入口服务器目录清理证据，合并提交为 `98de5db872e0a6974f4f4fdb593c9acfb03c018e`；现场运行配置 subject 仍为 `98460796bcb131e3c3a7ef7ae16f707ceff00e58`，staging 运行手册终态 subject 为 `c0f1e6f0...`，本清理候选 subject 为 `85602c3c...`。
+- 本轮成功恢复点为 `/var/backups/crm-staging/secrets/20260921T080357Z/`；两份失败尝试恢复副本仍为 root-only 0600，清理必须另立 `MAINT-CLEANUP-*`，当前不得删除。
 - Git、文件、Codex UI 与 GitHub 不是原子事务；每一步必须查重、执行、复核并保留恢复点。
 
 ## 最多三个下一动作
 
-1. 启动 `MVP-001`：轮换并验证 v0.1 凭据/密钥的安全注入、日志与响应脱敏。
+1. 由用户准备 TikTok Partner Center 与 DeepSeek 外部凭据、确认 `192.168.110.210` 对外固定出口 IP，并通过服务器受限通道注入；复验后关闭 `MVP-001`。
 2. `MVP-001` 通过后执行 `MVP-008`：数据库、对象存储恢复和兼容上一版镜像回滚，关闭 G0 剩余阻塞；production 继续关闭。
-3. `MVP-001` 通过后启动 `MVP-002`：在专用真实店铺验收 TikTok OAuth、Scope、Token 生命周期、只读能力与店铺隔离。
+3. 同期准备专用 TikTok 测试店铺、Partner Center 回调/Scope 和低风险测试数据，随后启动 `MVP-002`；DeepSeek 低敏冻结集用于后续 `MVP-005`。

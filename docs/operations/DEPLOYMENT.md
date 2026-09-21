@@ -16,7 +16,15 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 活动运行手册和恢复顺序位于 `src/deploy/staging/rootless/README.md`：先建立公司负载与站点保护基线，上传与 main SHA 绑定的版本化资产，把公网入口置为 HTTP `503`，再切换 `18080 → 18081` 隧道；完成不可变镜像/配置 validate 和 Rootless deploy 后，通过宝塔签发证书，安装正式 HTTPS vhost，执行动态健康、隧道重连和公司负载复核。任何阶段失败都恢复 staging `503`、停止候选并保留数据卷，不切回 GitLab。
 
-该路径已于 2026-09-21 在两台真实服务器上完成部署与验收：DNS、Let's Encrypt SAN/证书链、公网健康、迁移头、Rootless 容器、隧道自恢复和公司负载零变化通过，见 `MVP-STAGING-001` 定稿 IR/TR/RR 与 `release/evidence/staging/`。密钥轮换、数据库/对象存储恢复和兼容版本回滚仍是后续 G0 门禁；staging 通过不等于 production 放行。
+该路径已于 2026-09-21 在两台真实服务器上完成部署与验收：DNS、Let's Encrypt SAN/证书链、公网健康、迁移头、Rootless 容器、隧道自恢复和公司负载零变化通过，见 `MVP-STAGING-001` 定稿 IR/TR/RR 与 `release/evidence/staging/`。数据库/对象存储恢复和兼容版本回滚仍是后续 G0 门禁；staging 通过不等于 production 放行。
+
+### Staging 凭据终态
+
+2026-09-21 已在业务服务器完成 `MVP-001` 凭据轮换：`POSTGRES_PASSWORD`、对应 `DATABASE_URL`、`MINIO_SECRET_KEY`、`JWT_SECRET_KEY`、`RETRIEVAL_MODEL_SERVICE_TOKEN` 已更新，并首次生成 `TIKTOK_CREDENTIAL_ENCRYPTION_KEY`。活动环境文件固定为 `/home/crmdeploy/config/crm-staging.env`、`crmdeploy:crmdeploy`、模式 `0600`；密钥值、摘要和可逆材料不进入 Git、日志或响应。
+
+轮换验收必须同时证明新 PostgreSQL、MinIO 和检索令牌可用且旧值被拒绝，四个应用容器取得相同的新数据库/MinIO/JWT 配置，真实 TikTok、LLM、AI 和自动回复开关继续失败关闭。PostgreSQL 容器的 localhost 规则允许 trust，因此口令正反例必须从 backend 容器经 `postgres:5432` 验证；backend 被重建后必须重启 proxy 以刷新 Nginx 上游地址，再检查三个公开健康端点。
+
+成功轮换的 root-only 恢复副本位于 `/var/backups/crm-staging/secrets/20260921T080357Z/crm-staging.env.before`。两次失败尝试在变更前/回滚后留下的受限重复副本尚未删除；删除必须另立 `MAINT-CLEANUP-*` 任务和精确批次。TikTok Partner Center 与 DeepSeek 的外部凭据仍为空，待对应 G1/G4 真实验收时由用户在服务器受限通道注入；production 未变更、未发布。
 
 ## TikTok 与 DeepSeek
 
