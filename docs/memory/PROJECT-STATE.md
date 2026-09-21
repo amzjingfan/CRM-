@@ -9,8 +9,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp-001-secret-rotation-20260921
-Governance base SHA: 9edf2ce05a9d5fb053ce9ccfdccef24f32c9fca4
+Working branch at this snapshot: docs/mvp-001-index-current-20260921
+Governance base SHA: f930d5ef523505fa14105931ea090b43dd90eb37
 CANDIDATE_SUBJECT_SHA: 83da7cc67a5e799d1d3aa9a6fb50253abbe523f8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — existing quarantines remain under retention; two failed MVP-001 root-only recovery copies and ignored test material require separate governed cleanup batches
@@ -55,7 +55,7 @@ Workspace hygiene: ATTENTION — existing quarantines remain under retention; tw
 - MVP-DOMAIN-001 实施、测试与审查记录：[`../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md`](../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md`](../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md`](../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md)。三个派生索引从本地 `main` 读取时为 `CURRENT`。
 - MVP-STAGING-001 定稿实施、测试与审查记录：[`../records/implementation/IR-MVP-STAGING-001-20260919-R01.md`](../records/implementation/IR-MVP-STAGING-001-20260919-R01.md)、[`../reports/tests/TR-MVP-STAGING-001-20260919-R01.md`](../reports/tests/TR-MVP-STAGING-001-20260919-R01.md)、[`../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md`](../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md)；工作流与绑定最终 subject 的终态低敏证据见 [`../../release/evidence/staging/crm-staging-deploy-35561109568.json`](../../release/evidence/staging/crm-staging-deploy-35561109568.json) 和 [`../../release/evidence/staging/crm-staging-final-state-20260921.json`](../../release/evidence/staging/crm-staging-final-state-20260921.json)。
 - MVP-001 当前 revision：[`../records/implementation/IR-MVP-001-20260921-R01.md`](../records/implementation/IR-MVP-001-20260921-R01.md)、[`../reports/tests/TR-MVP-001-20260921-R01.md`](../reports/tests/TR-MVP-001-20260921-R01.md)、[`../reports/reviews/RR-MVP-001-20260921-R01.md`](../reports/reviews/RR-MVP-001-20260921-R01.md)；低敏机器证据见 [`../../release/evidence/staging/crm-staging-credential-rotation-20260921.json`](../../release/evidence/staging/crm-staging-credential-rotation-20260921.json)。
-- 三个派生索引在本分支标记为 `CANDIDATE_VIEW`；合入权威 `main` 后重建为 `CURRENT`。
+- 三个派生索引已从合入 PR #30 后的权威 `main` 源记录重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
