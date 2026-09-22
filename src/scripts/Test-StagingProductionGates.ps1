@@ -460,6 +460,31 @@ function Invoke-Compose {
     }
 }
 
+function Invoke-ComposePullsWithRetry {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string[]]$Services,
+        [ValidateRange(1, 5)][int]$MaxAttempts = 3,
+        [ValidateRange(1, 60)][int]$RetryDelaySeconds = 5
+    )
+
+    foreach ($service in $Services) {
+        for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+            & $Command.Executable @($Command.Prefix + $Arguments + @("pull", $service))
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -eq 0) {
+                break
+            }
+            if ($attempt -eq $MaxAttempts) {
+                throw "Docker Compose pull for $service failed after $MaxAttempts attempts with exit code $exitCode."
+            }
+            Write-Warning "Docker Compose pull for $service failed with exit code $exitCode; retrying attempt $($attempt + 1) of $MaxAttempts."
+            Start-Sleep -Seconds $RetryDelaySeconds
+        }
+    }
+}
+
 function Test-HealthEndpoint {
     param([Parameter(Mandatory = $true)][string]$Uri)
 
@@ -626,9 +651,10 @@ try {
         Write-Output "Staging deployment was not executed; production_release=false."
         return
     }
-    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "pull", "tiktok-egress", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
-    ))
+    # 同一 backend 摘要被多个服务共享，只拉取一次；逐镜像限次重试避免慢链路并发传输放大临时断连。
+    Invoke-ComposePullsWithRetry -Command $compose -Arguments $composeArguments -Services @(
+        "tiktok-egress", "frontend", "retrieval-model-service"
+    )
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "postgres", "redis", "minio"
     ))

@@ -563,7 +563,8 @@ def test_gate_scripts_fix_project_and_rootless_overlay_before_compose_operations
     assert compose_path.index("docker-compose.tiktok-egress.yml") < compose_path.index(
         "docker-compose.rootless-staging.yml"
     )
-    for operation in ("Get-ProductionComposeConfig", '"pull"', '"up"'):
+    pull_operation = "Invoke-ComposePullsWithRetry" if script == PREFLIGHT_SCRIPT else '"pull"'
+    for operation in ("Get-ProductionComposeConfig", pull_operation, '"up"'):
         assert compose_path.index("docker-compose.rootless-staging.yml") < compose_path.index(operation)
 
 
@@ -1503,7 +1504,12 @@ def test_preflight_verifies_egress_before_migrations_and_applications(
     )
     assert result.returncode != 0
     assert helper_up < verifier_run < migration_upgrade < migration_check < application_up
-    assert any("pull" in command and "tiktok-egress" in command for command in commands)
+    pull_commands = [command for command in commands if "pull" in command]
+    assert [command[-2:] for command in pull_commands] == [
+        ["pull", "tiktok-egress"],
+        ["pull", "frontend"],
+        ["pull", "retrieval-model-service"],
+    ]
     if evidence_file.exists():
         assert json.loads(evidence_file.read_text(encoding="utf-8-sig"))["status"] != "passed"
 
