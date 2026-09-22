@@ -1,0 +1,82 @@
+services:
+  tiktok-egress:
+    image: ${TIKTOK_EGRESS_IMAGE:?TIKTOK_EGRESS_IMAGE is required}
+    user: "0:0"
+    command:
+      - /usr/bin/ssh
+      - -NT
+      - -D
+      - 0.0.0.0:1080
+      - -o
+      - BatchMode=yes
+      - -o
+      - ExitOnForwardFailure=yes
+      - -o
+      - IdentitiesOnly=yes
+      - -o
+      - StrictHostKeyChecking=yes
+      - -o
+      - UserKnownHostsFile=/run/secrets/tiktok-egress/known_hosts
+      - -o
+      - ServerAliveInterval=30
+      - -o
+      - ServerAliveCountMax=3
+      - -i
+      - /run/secrets/tiktok-egress/id_ed25519
+      - crm-egress@38.55.145.52
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: bind
+        source: ${TIKTOK_EGRESS_SECRET_DIR:?TIKTOK_EGRESS_SECRET_DIR is required}
+        target: /run/secrets/tiktok-egress
+        read_only: true
+    networks:
+      - tiktok-egress
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import socket; socket.create_connection(('127.0.0.1', 1080), timeout=3).close()
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    environment:
+      TIKTOK_EGRESS_PROXY_URL: socks5h://tiktok-egress:1080
+    depends_on:
+      tiktok-egress:
+        condition: service_healthy
+    networks:
+      - default
+      - tiktok-egress
+
+  worker:
+    environment:
+      TIKTOK_EGRESS_PROXY_URL: socks5h://tiktok-egress:1080
+    depends_on:
+      tiktok-egress:
+        condition: service_healthy
+    networks:
+      - default
+      - tiktok-egress
+
+  jobs:
+    environment:
+      TIKTOK_EGRESS_PROXY_URL: socks5h://tiktok-egress:1080
+    depends_on:
+      tiktok-egress:
+        condition: service_healthy
+    networks:
+      - default
+      - tiktok-egress
+
+networks:
+  tiktok-egress:

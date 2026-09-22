@@ -15,6 +15,7 @@ import pytest
 
 import app.integrations.adapters as adapters_module
 import app.integrations.service as integration_service
+import app.integrations.tiktok_read as tiktok_read_module
 from app.audit.models import AuditLog
 from app.integrations.adapters import TikTokAdapter
 from app.integrations.credential_crypto import encrypt_credential
@@ -40,6 +41,7 @@ def real_settings(**overrides: Any) -> Settings:
         "TIKTOK_OAUTH_REDIRECT_URI": "https://example.com/v1/integrations/tiktok/oauth/callback",
         "TIKTOK_CREDENTIAL_ENCRYPTION_KEY": "unit-test-encryption-key-with-at-least-32-characters",
         "TIKTOK_EGRESS_IP": "203.0.113.10",
+        "TIKTOK_EGRESS_PROXY_URL": "socks5h://127.0.0.1:1080",
         "TIKTOK_REQUIRED_SCOPES": (
             "seller.authorization.info,seller.order.info,seller.customer_service,seller.logistics"
         ),
@@ -258,6 +260,40 @@ async def test_shop_tracking_conversation_message_and_webhook_reads_use_get_only
     active_shop_request = requests[0]
     assert "shop_cipher" not in active_shop_request.url.params
     assert all(request.headers.get("x-tts-access-token") == "unit-test-access-token" for request in requests)
+
+
+@pytest.mark.asyncio
+async def test_read_default_client_uses_fixed_egress_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """默认只读请求必须经固定出口工厂，不能自行构造直连客户端。"""
+    settings = real_settings()
+    factory_calls: list[Settings] = []
+    async_client_type = httpx.AsyncClient
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "request_id": "factory-request-id",
+                "data": {"shops": [{"id": "7494049642642441621", "region": "US"}]},
+            },
+        )
+
+    def fake_factory(candidate: Settings) -> httpx.AsyncClient:
+        factory_calls.append(candidate)
+        return async_client_type(transport=httpx.MockTransport(handler))
+
+    def reject_direct_client(**_kwargs: object) -> httpx.AsyncClient:
+        raise AssertionError("read client bypassed the fixed-egress factory")
+
+    monkeypatch.setattr(tiktok_read_module, "create_tiktok_http_client", fake_factory, raising=False)
+    monkeypatch.setattr(tiktok_read_module.httpx, "AsyncClient", reject_direct_client)
+
+    shops, request_id = await TikTokReadClient(settings, connected_channel()).get_active_shops()
+
+    assert [shop.id for shop in shops] == ["7494049642642441621"]
+    assert request_id == "factory-request-id"
+    assert factory_calls == [settings]
 
 
 @pytest.mark.asyncio

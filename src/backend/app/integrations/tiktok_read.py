@@ -11,6 +11,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.integrations.oauth_service import decrypt_tiktok_access_token
+from app.integrations.tiktok_http import create_tiktok_http_client
 from app.integrations.tiktok_oauth import generate_api_signature
 from app.shared.config.settings import Settings
 from app.shared.exceptions.errors import AppError, ErrorCode
@@ -292,7 +293,7 @@ class TikTokReadClient:
         url = f"{API_BASE_URL}{path}"
         if self.client is not None:
             return await self.client.request(method, url, params=params, headers=headers, content=body)
-        async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+        async with create_tiktok_http_client(self.settings) as client:
             return await client.request(method, url, params=params, headers=headers, content=body)
 
     @staticmethod

@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from app.integrations.oauth_service import decrypt_tiktok_access_token
 from app.integrations.schemas import SendMessageCommand, SendMessageResult
+from app.integrations.tiktok_http import create_tiktok_http_client
 from app.integrations.tiktok_oauth import generate_api_signature
 from app.integrations.tiktok_read import (
     API_BASE_URL,
@@ -139,7 +140,7 @@ class TikTokMessageClient:
         url = f"{API_BASE_URL}{path}"
         if self.client is not None:
             return await self.client.post(url, params=params, headers=headers, content=body)
-        async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+        async with create_tiktok_http_client(self.settings) as client:
             return await client.post(url, params=params, headers=headers, content=body)
 
     @staticmethod

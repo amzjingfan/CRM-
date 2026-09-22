@@ -26,6 +26,7 @@ UNREVIEWED_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@
 PREVIOUS_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "f" * 64
 SECRET_SENTINEL = "must-not-appear-in-command-output-or-evidence"
 ROOTLESS_DOCKER_HOST = "unix:///run/user/1004/docker.sock"
+TIKTOK_EGRESS_IP = "38.55.145.52"
 REQUIRED_MODEL_FILES = (
     "bge-m3/config.json",
     "bge-m3/pytorch_model.bin",
@@ -189,6 +190,8 @@ def staging_env_file(tmp_path: Path) -> Path:
     (model_asset_dir / "bge-reranker-large").mkdir()
     for relative_path in REQUIRED_MODEL_FILES:
         (model_asset_dir / relative_path).write_bytes(f"test:{relative_path}".encode())
+    egress_secret_dir = tmp_path / "tiktok-egress-secrets"
+    egress_secret_dir.mkdir()
     env_file = tmp_path / "crm-staging.env"
     env_file.write_text(
         "\n".join(
@@ -202,7 +205,8 @@ def staging_env_file(tmp_path: Path) -> Path:
                 "CORS_ORIGINS=https://staging.overselfx.com",
                 "PUBLIC_BASE_URL=https://staging.overselfx.com",
                 "PUBLIC_API_BASE_URL=https://staging.overselfx.com/v1",
-                "TIKTOK_EGRESS_IP=203.0.113.10",
+                f"TIKTOK_EGRESS_IP={TIKTOK_EGRESS_IP}",
+                f"TIKTOK_EGRESS_SECRET_DIR={egress_secret_dir}",
                 "TIKTOK_OAUTH_REDIRECT_URI=https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback",
                 "POSTGRES_DB=crm",
                 "POSTGRES_USER=crm",
@@ -286,13 +290,50 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
         "AI_MARKETING_ENABLED": "false",
         "AUTO_REPLY_ENABLED": "false",
     }
+    tiktok_application_environment = {
+        **application_environment,
+        "TIKTOK_EGRESS_PROXY_URL": "socks5h://tiktok-egress:1080",
+    }
+    egress_secret_dir = tmp_path / "tiktok-egress-secrets"
+    tiktok_service_contract = {
+        "networks": {"default": None, "tiktok-egress": None},
+        "depends_on": {"tiktok-egress": {"condition": "service_healthy"}},
+    }
     services = {
         "postgres": {"image": "pgvector/pgvector:0.8.0-pg16@sha256:" + "1" * 64},
         "redis": {"image": "redis:7.4.2-alpine@sha256:" + "2" * 64},
         "minio": {"image": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:" + "3" * 64},
-        "backend": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
-        "worker": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
-        "jobs": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
+        "tiktok-egress": {
+            "image": BACKEND_IMAGE,
+            "user": "0:0",
+            "read_only": True,
+            "cap_drop": ["ALL"],
+            "security_opt": ["no-new-privileges:true"],
+            "volumes": [
+                {
+                    "type": "bind",
+                    "source": str(egress_secret_dir.absolute()),
+                    "target": "/run/secrets/tiktok-egress",
+                    "read_only": True,
+                }
+            ],
+            "networks": {"tiktok-egress": None},
+        },
+        "backend": {
+            "image": BACKEND_IMAGE,
+            "environment": tiktok_application_environment.copy(),
+            **tiktok_service_contract,
+        },
+        "worker": {
+            "image": BACKEND_IMAGE,
+            "environment": tiktok_application_environment.copy(),
+            **tiktok_service_contract,
+        },
+        "jobs": {
+            "image": BACKEND_IMAGE,
+            "environment": tiktok_application_environment.copy(),
+            **tiktok_service_contract,
+        },
         "agent-worker": {"image": BACKEND_IMAGE, "environment": application_environment.copy()},
         "retrieval-model-service": {
             "image": RETRIEVAL_MODEL_IMAGE,
@@ -333,12 +374,34 @@ with Path(os.environ["FAKE_DOCKER_LOG"]).open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(arguments) + "\\n")
 with Path(os.environ["FAKE_DOCKER_CONTEXT_LOG"]).open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(os.environ.get("DOCKER_CONTEXT")) + "\\n")
+with Path(os.environ["FAKE_DOCKER_ENV_LOG"]).open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps({
+        "arguments": arguments,
+        "BACKEND_IMAGE": os.environ.get("BACKEND_IMAGE"),
+        "TIKTOK_EGRESS_IMAGE": os.environ.get("TIKTOK_EGRESS_IMAGE"),
+        "REAL_TIKTOK_READ_ENABLED": os.environ.get("REAL_TIKTOK_READ_ENABLED"),
+        "REAL_TIKTOK_WEBHOOK_ENABLED": os.environ.get("REAL_TIKTOK_WEBHOOK_ENABLED"),
+        "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": os.environ.get("REAL_TIKTOK_MESSAGE_WRITE_ENABLED"),
+        "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": os.environ.get("REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED"),
+    }) + "\\n")
 if "config" in arguments:
     if os.environ.get("TLS_CERT_DIR") != "/__crm_staging_tls_not_used__":
         print("staging compose must inject the non-mounted TLS interpolation sentinel", file=sys.stderr)
         sys.exit(43)
     print(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
     sys.exit(int(os.environ.get("FAKE_DOCKER_CONFIG_EXIT_CODE", "0")))
+if arguments[-6:] == ["run", "--rm", "--no-deps", "backend", "python", "scripts/verify_tiktok_egress.py"]:
+    exit_code = int(os.environ.get("FAKE_DOCKER_VERIFY_EXIT_CODE", "0"))
+    if exit_code:
+        print("TikTok egress verification failed", file=sys.stderr)
+        sys.exit(exit_code)
+    print(json.dumps({
+        "schema_version": 1,
+        "status": "ok",
+        "configured_ip": "38.55.145.52",
+        "observed_ip": "38.55.145.52",
+    }))
+    sys.exit(0)
 if "up" in arguments and "--wait" in arguments:
     configured_failure = os.environ.get("FAKE_DOCKER_FAIL_UP_NUMBER")
     if configured_failure is None:
@@ -370,6 +433,7 @@ sys.exit(0)
     environment["PATH"] = str(fake_bin) + os.pathsep + environment.get("PATH", "")
     environment["FAKE_DOCKER_LOG"] = str(command_log)
     environment["FAKE_DOCKER_CONTEXT_LOG"] = str(tmp_path / "fake-docker-context.jsonl")
+    environment["FAKE_DOCKER_ENV_LOG"] = str(tmp_path / "fake-docker-environment.jsonl")
     environment["FAKE_DOCKER_CONFIG"] = str(config_path)
     return environment, command_log
 
@@ -410,6 +474,7 @@ def assert_compose_invocations_use_fixed_staging_target(command_log: Path) -> No
         assert compose_files == [
             SOURCE_ROOT / "compose" / "docker-compose.yml",
             SOURCE_ROOT / "compose" / "docker-compose.prod.yml",
+            SOURCE_ROOT / "compose" / "docker-compose.tiktok-egress.yml",
             SOURCE_ROOT / "compose" / "docker-compose.rootless-staging.yml",
         ]
 
@@ -487,13 +552,17 @@ def test_gate_scripts_reject_non_rootless_docker_hosts(
 
 @pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
 def test_gate_scripts_fix_project_and_rootless_overlay_before_compose_operations(script: Path) -> None:
-    """config、pull、up 必须共享固定项目名和 Rootless staging 覆盖层。"""
+    """config、pull、up 必须共享固定项目名和完整 staging 覆盖层顺序。"""
     source = script.read_text(encoding="utf-8-sig")
 
     assert "--project-name" in source
     assert "crm-staging" in source
+    assert "docker-compose.tiktok-egress.yml" in source
     assert "docker-compose.rootless-staging.yml" in source
-    compose_path = source[source.index("$rootlessOverlay") :]
+    compose_path = source[source.index("$egressOverlay") :]
+    assert compose_path.index("docker-compose.tiktok-egress.yml") < compose_path.index(
+        "docker-compose.rootless-staging.yml"
+    )
     for operation in ("Get-ProductionComposeConfig", '"pull"', '"up"'):
         assert compose_path.index("docker-compose.rootless-staging.yml") < compose_path.index(operation)
 
@@ -674,6 +743,7 @@ def test_validate_only_writes_redacted_preflight_evidence(
     assert evidence["compose_project"] == "crm-staging"
     assert evidence["docker_transport"] == "rootless_unix_socket"
     assert len(evidence["rootless_overlay_sha256"]) == 64
+    assert len(evidence["tiktok_egress_overlay_sha256"]) == 64
     assert ROOTLESS_DOCKER_HOST not in evidence_file.read_text(encoding="utf-8-sig")
 
 
@@ -770,6 +840,44 @@ def test_validate_only_rejects_unreviewed_retrieval_model_env_image(
                 }
             ),
             "read-only tunnel nginx configuration",
+        ),
+        (
+            lambda config: (
+                config["services"]["tiktok-egress"]
+                .setdefault("ports", [])
+                .append({"host_ip": "127.0.0.1", "published": "1080", "target": "1080"})
+            ),
+            "egress helper must not publish ports",
+        ),
+        (
+            lambda config: config["services"]["tiktok-egress"].update({"read_only": False}),
+            "egress helper must use a read-only root filesystem",
+        ),
+        (
+            lambda config: config["services"]["tiktok-egress"].update({"user": "999:999"}),
+            "egress helper must run as container root under rootless docker",
+        ),
+        (
+            lambda config: config["services"]["tiktok-egress"].update({"image": PREVIOUS_BACKEND_IMAGE}),
+            "unexpected image for service: tiktok-egress",
+        ),
+        (
+            lambda config: config["services"]["tiktok-egress"]["volumes"][0].update(
+                {"source": str(SOURCE_ROOT / "tests")}
+            ),
+            "egress helper must mount only the reviewed secret directory",
+        ),
+        (
+            lambda config: config["services"]["tiktok-egress"].update({"networks": {"default": None}}),
+            "egress helper must join only the dedicated network",
+        ),
+        (
+            lambda config: config["services"]["tiktok-egress"].update({"cap_drop": []}),
+            "egress helper must drop all capabilities",
+        ),
+        (
+            lambda config: config["services"]["tiktok-egress"].update({"security_opt": []}),
+            "egress helper must set no-new-privileges",
         ),
     ],
 )
@@ -1175,6 +1283,88 @@ def test_preflight_live_path_forces_capabilities_off_before_deploy() -> None:
 
     assert "Set-DisabledCapabilities" in live_path
     assert live_path.index("Set-DisabledCapabilities") < live_path.index("$env:BACKEND_IMAGE = $BackendImage")
+    assert live_path.index("Invoke-TikTokEgressVerification") < live_path.index("Test-HealthEndpoint")
+    passed_evidence = live_path[live_path.index('Write-Evidence -Status "passed"') :]
+    assert "-EgressVerification $egressVerification" in passed_evidence
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+@pytest.mark.parametrize("value_kind", ["missing", "relative", "inside_checkout"])
+def test_gate_scripts_reject_unsafe_egress_secret_directory(
+    script: Path,
+    value_kind: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """SSH 私钥目录必须真实存在于 checkout 外部，且不能依赖相对工作目录。"""
+    if value_kind == "missing":
+        value = str(tmp_path / "missing-egress-secrets")
+    elif value_kind == "relative":
+        value = "./tiktok-egress-secrets"
+    else:
+        value = str(SOURCE_ROOT / "tests")
+    replace_environment_value(staging_env_file, "TIKTOK_EGRESS_SECRET_DIR", value)
+
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(tmp_path / "unsafe-egress-secret-evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+    )
+
+    assert result.returncode != 0
+    assert not (tmp_path / "unsafe-egress-secret-evidence.json").exists()
+
+
+@pytest.mark.parametrize("script", [PREFLIGHT_SCRIPT, ROLLBACK_SCRIPT])
+def test_gate_scripts_reject_linked_egress_secret_directory(
+    script: Path,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """仓库外链接不得把 checkout 内目录伪装成 SSH 密钥目录。"""
+    link_path = tmp_path / "linked-egress-secrets"
+    create_directory_link(link_path, SOURCE_ROOT / "tests")
+    try:
+        replace_environment_value(staging_env_file, "TIKTOK_EGRESS_SECRET_DIR", str(link_path))
+        result = run_powershell(
+            script,
+            "-Environment",
+            "staging",
+            "-EnvFile",
+            str(staging_env_file),
+            *validation_image_arguments(script),
+            "-BaseUrl",
+            "https://staging.overselfx.com",
+            "-EvidenceFile",
+            str(tmp_path / "linked-egress-secret-evidence.json"),
+            "-ConfirmTarget",
+            "staging",
+            "-DockerHost",
+            ROOTLESS_DOCKER_HOST,
+            "-ValidateOnly",
+        )
+    finally:
+        if link_path.exists() or link_path.is_symlink():
+            if os.name == "nt":
+                os.rmdir(link_path)
+            else:
+                link_path.unlink()
+
+    assert result.returncode != 0
+    assert "reparse point" in normalized_process_output(result)
+    assert not (tmp_path / "linked-egress-secret-evidence.json").exists()
 
 
 def test_preflight_deploys_the_validated_retrieval_model_image() -> None:
@@ -1198,7 +1388,7 @@ def test_preflight_migrates_and_checks_database_head_before_starting_application
         )
     )
     environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
-    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "2"
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "3"
     result = run_powershell(
         PREFLIGHT_SCRIPT,
         "-Environment",
@@ -1243,6 +1433,129 @@ def test_preflight_migrates_and_checks_database_head_before_starting_application
     )
     application_up = next(index for index, command in enumerate(commands) if "up" in command and "backend" in command)
     assert dependency_up < upgrade < check_heads < application_up
+
+
+def test_preflight_verifies_egress_before_migrations_and_applications(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """helper 健康后先验证出口，再允许迁移和候选应用启动。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    evidence_file = tmp_path / "egress-order-evidence.json"
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Deploy",
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    helper_up = next(index for index, command in enumerate(commands) if "up" in command and "tiktok-egress" in command)
+    application_up = next(index for index, command in enumerate(commands) if "up" in command and "backend" in command)
+    verifier_run = next(
+        index
+        for index, command in enumerate(commands)
+        if command[-6:]
+        == [
+            "run",
+            "--rm",
+            "--no-deps",
+            "backend",
+            "python",
+            "scripts/verify_tiktok_egress.py",
+        ]
+    )
+    migration_upgrade = next(
+        index
+        for index, command in enumerate(commands)
+        if command[-7:] == ["run", "--rm", "--no-deps", "backend", "alembic", "upgrade", "head"]
+    )
+    migration_check = next(
+        index
+        for index, command in enumerate(commands)
+        if command[-7:] == ["run", "--rm", "--no-deps", "backend", "alembic", "current", "--check-heads"]
+    )
+    assert result.returncode != 0
+    assert helper_up < verifier_run < migration_upgrade < migration_check < application_up
+    assert any("pull" in command and "tiktok-egress" in command for command in commands)
+    if evidence_file.exists():
+        assert json.loads(evidence_file.read_text(encoding="utf-8-sig"))["status"] != "passed"
+
+
+def test_preflight_verifier_failure_never_records_passed_evidence(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """代理路径验证失败必须在公网健康检查和 passed 证据前停止。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    environment["FAKE_DOCKER_VERIFY_EXIT_CODE"] = "44"
+    evidence_file = tmp_path / "egress-mismatch-evidence.json"
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-BackendImage",
+        BACKEND_IMAGE,
+        "-FrontendImage",
+        FRONTEND_IMAGE,
+        "-RetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Deploy",
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    assert result.returncode != 0
+    assert any(command[-1:] == ["scripts/verify_tiktok_egress.py"] for command in commands)
+    assert not any("alembic" in command for command in commands)
+    assert not any("up" in command and "backend" in command for command in commands)
+    if evidence_file.exists():
+        assert json.loads(evidence_file.read_text(encoding="utf-8-sig"))["status"] != "passed"
 
 
 def test_rollback_plan_disables_capabilities_before_switching_images(
@@ -1298,6 +1611,64 @@ def test_rollback_plan_disables_capabilities_before_switching_images(
         "verify_health",
     ]
     assert evidence["production_release"] is False
+    assert len(evidence["rootless_overlay_sha256"]) == 64
+    assert len(evidence["tiktok_egress_overlay_sha256"]) == 64
+
+
+def test_rollback_keeps_candidate_egress_image_while_switching_applications(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """历史后端可能不含 OpenSSH；回滚期间 helper 必须始终固定候选后端摘要。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    result = run_powershell(
+        ROLLBACK_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(ROLLBACK_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(tmp_path / "rollback-live-evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Execute",
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "fake-docker-environment.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    compose_operations = [record for record in records if record["arguments"][:2] != ["compose", "version"]]
+    previous_image_operations = [
+        record for record in compose_operations if record["BACKEND_IMAGE"] == PREVIOUS_BACKEND_IMAGE
+    ]
+    assert result.returncode != 0
+    assert previous_image_operations
+    assert all(record["TIKTOK_EGRESS_IMAGE"] == BACKEND_IMAGE for record in compose_operations)
+    assert all(record["TIKTOK_EGRESS_IMAGE"] == BACKEND_IMAGE for record in previous_image_operations)
+    for record in compose_operations:
+        for capability in (
+            "REAL_TIKTOK_READ_ENABLED",
+            "REAL_TIKTOK_WEBHOOK_ENABLED",
+            "REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
+            "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
+        ):
+            assert record[capability] == "false"
 
 
 def test_rollback_rejects_floating_external_image(

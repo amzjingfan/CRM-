@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -9,3 +9,4 @@ View: `CURRENT`
 | RR-MVP-DOMAIN-001-20260917-R01 | MVP-DOMAIN-001 | R01 | APPROVE | `10428b4501fd470a5a671676edcdc00e75180844` | oauth-redirect / deployment-target / dns-tls / cors / webhook / fail-closed / documentation | 2026-09-17T10:04:27+08:00 | [`RR-MVP-DOMAIN-001-20260917-R01.md`](RR-MVP-DOMAIN-001-20260917-R01.md) |
 | RR-MVP-STAGING-001-20260919-R01 | MVP-STAGING-001 | R01 | APPROVE | `c0f1e6f0a5c575190b71541be3f67b3163780d61` | port-conflict / ssh-least-privilege / nginx-query-logging / image-supply-chain / company-workload-isolation / fail-closed / rollback | 2026-09-21T13:51:42+08:00 | [`RR-MVP-STAGING-001-20260919-R01.md`](RR-MVP-STAGING-001-20260919-R01.md) |
 | RR-MVP-001-20260921-R01 | MVP-001 | R01 | APPROVE | `83da7cc67a5e799d1d3aa9a6fb50253abbe523f8` | secret-handling / rollback / database-authentication / minio-authentication / retrieval-token / log-and-response-leakage / fail-closed / workload-isolation | 2026-09-21T16:11:43+08:00 | [`RR-MVP-001-20260921-R01.md`](RR-MVP-001-20260921-R01.md) |
+| RR-MVP-EGRESS-001-20260922-R01 | MVP-EGRESS-001 | R01 | APPROVE | `4c8d08c4728dad5e85f6bd2d0e83751a084ccace` | fixed-egress / fail-closed / rootless-uid / ssh-least-privilege / compose-order / secret-isolation / rollback / production-boundary | 2026-09-22T13:32:27+08:00 | [`RR-MVP-EGRESS-001-20260922-R01.md`](RR-MVP-EGRESS-001-20260922-R01.md) |

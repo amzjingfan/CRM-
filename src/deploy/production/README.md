@@ -8,7 +8,7 @@
 
 - 域名 `www.overselfx.com` 的 A/AAAA 记录指向部署入口。
 - 云主机、安全组或负载均衡器只对公网开放 80/443；PostgreSQL、Redis、MinIO、backend 和 frontend 不直接暴露。
-- 为服务器或 NAT 网关分配固定公网出口 IP，将其作为 `TIKTOK_EGRESS_IP`，后续加入 TikTok IP 白名单。
+- 为 production 独立选择固定公网出口服务器或 NAT，不得默认复用 staging；将实际地址作为 `TIKTOK_EGRESS_IP`，后续加入 TikTok IP 白名单。
 - TLS 证书目录位于仓库外，包含 `fullchain.pem`、`privkey.pem`，仅部署账户可读。
 - BGE 模型目录位于仓库外，例如 `/srv/crm/models`；只读挂载给模型服务，不随 Git checkout 或应用镜像更新。
 - 真实密钥由主机环境、CI/CD Secret 或云密钥管理系统注入，不写入仓库和命令历史。
@@ -46,6 +46,7 @@ CORS_ORIGINS=https://www.overselfx.com
 PUBLIC_BASE_URL=https://www.overselfx.com
 PUBLIC_API_BASE_URL=https://www.overselfx.com/v1
 TIKTOK_EGRESS_IP
+TIKTOK_EGRESS_SECRET_DIR
 TIKTOK_APP_KEY
 TIKTOK_SERVICE_ID
 TIKTOK_APP_SECRET
@@ -147,6 +148,14 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 前端镜像把 `NEXT_PUBLIC_API_BASE_URL` 固定为同源 `/v1`，因此同一不可变镜像可通过反向代理
 部署到 staging 和生产域名，不需要为不同域名重新构建。
 
+### TikTok 固定出口配置契约
+
+production 只有在独立批准实际拓扑、出口服务器、`crm-egress` 账号、主机指纹和密钥后，才可启用真实 TikTok 能力。启用时必须把 `src/compose/docker-compose.tiktok-egress.yml` 与基础/production Compose 一起叠加，并由该 overlay 固定注入 `TIKTOK_EGRESS_PROXY_URL=socks5h://tiktok-egress:1080`；人工消息灰度 overlay 放在其后。只写配置值或设置 `TIKTOK_EGRESS_IP` 不能证明流量已经固定。
+
+production 的 `TIKTOK_EGRESS_SECRET_DIR` 必须是仓库外绝对路径、目录模式 `0700`，私钥和 `known_hosts` 为 `0600`，只读挂载到 helper 的 `/run/secrets/tiktok-egress`。helper 不发布端口、只加入专用网络、使用与候选 backend 相同的不可变 RepoDigest，并在 Rootless Docker 内显式以容器 `0:0` 运行以读取部署账户所有的私钥；该身份不得拥有宿主机 root 权限。backend、worker、jobs 仍以镜像默认非 root 用户运行，只能通过显式 SOCKS5H 访问 TikTok，`trust_env=False` 且禁止 direct fallback。服务端 `PermitOpen` 只允许 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 与门禁专用 `checkip.amazonaws.com:443`。
+
+production 部署前必须从候选 backend 镜像运行 `python scripts/verify_tiktok_egress.py`，使声明 IP 与实际代理出口完全一致；隧道不可用时还要证明请求失败而不是直连成功。回滚应用镜像时 helper 保持候选镜像，防止上一应用镜像缺少隧道资产。上述只是可复用契约；本次任务没有创建 production 账号、密钥、服务器配置或部署，也不构成 production 放行。
+
 `Staging production gates` 使用工作流自带的 `GITHUB_TOKEN` 登录 GHCR，权限固定为
 `contents: read` 和 `packages: read`。如 GHCR 包保持私有，必须确保三个容器包允许
 `CP11-gh/CRM` 仓库的 Actions 读取；不在服务器环境文件中保存 GitHub 个人访问令牌。
@@ -156,7 +165,7 @@ ghcr.io/cp11-gh/crm-retrieval-model-service
 `REAL_TIKTOK_MESSAGE_WRITE_ENABLED`，Worker、自动回复和高风险写入仍固定关闭：
 
 ```powershell
-docker compose --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.tiktok-manual.yml config --services
+docker compose --env-file C:\secure\crm-production.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.tiktok-egress.yml -f src/compose/docker-compose.tiktok-manual.yml config --services
 ```
 
 首次灰度固定为单店铺、单渠道、单操作人。开启顺序为只读、Webhook、人工普通消息；
@@ -319,17 +328,17 @@ CRM_STAGING_BASE_URL=https://staging.overselfx.com
 ```
 
 两个门禁脚本必须传入 `-DockerHost unix:///run/user/1004/docker.sock`，内部清除继承的
-`DOCKER_CONTEXT` 并固定叠加 `src/compose/docker-compose.rootless-staging.yml`；proxy 只绑定旧服务器 `127.0.0.1:18081:80`，TLS 只在新服务器宝塔 Nginx 终止，staging 环境文件不再提供 `TLS_CERT_DIR`。
-部署操作先等待 PostgreSQL/Redis/MinIO，再用候选 backend RepoDigest 执行 `alembic upgrade head` 和 `alembic current --check-heads`；只有所有迁移 head 已应用后才启动应用和入口并在通过证据中记录 `database_migration=heads_applied`。
+`DOCKER_CONTEXT` 并固定按 base、prod、TikTok egress、rootless-staging 顺序叠加；proxy 只绑定旧服务器 `127.0.0.1:18081:80`，TLS 只在新服务器宝塔 Nginx 终止，staging 环境文件不再提供 `TLS_CERT_DIR`。
+部署操作先等待 PostgreSQL/Redis/MinIO，再启动并验证 `tiktok-egress` 的实际出口；只有出口一致后，才用候选 backend RepoDigest 执行 `alembic upgrade head` 和 `alembic current --check-heads`，最后启动应用和入口并在通过证据中记录 `database_migration=heads_applied`。
 直接预检、部署、入口撤除和回滚命令统一见 Rootless staging 运行手册；不要沿用旧 Windows
 主机路径或 `staging.example.com` 示例。全部真实能力强制关闭的基础脚本不能用来直接开启 G1～G6。
 
 真实回滚由 `Invoke-StagingRollbackDrill.ps1 -Execute` 完成，固定顺序是：先强制关闭全部真实
-能力，再切换上一版本 RepoDigest，最后复核三个健康端点。`-ValidateOnly` 只验证计划和输入，
+能力，以候选 backend 镜像启动并验证 `tiktok-egress` helper，再把应用切换到上一版本 RepoDigest，最后复核三个健康端点。`-ValidateOnly` 只验证计划和输入，
 不能作为真实部署或回滚通过证据。目标机必须安装 Docker CLI 和 Compose 插件（本次目标 5.3.1，待实测）；两个实时
 脚本的每次 `docker compose up` 都使用 `--wait --wait-timeout 600`，只有包括
 `retrieval-model-service` 在内的容器达到 running/healthy 后才继续外部健康检查并写入
 `passed` 证据。
 
-`基础运行面就绪`、`失败关闭部署通过`、`G1～G6 真实门禁通过` 与 `production 放行`
-是独立结论，任何前项不推导后项。当前 staging DNS A 已指向新服务器，但证书 SAN 不匹配、CRM 未部署且旧隧道仍误指 GitLab；模型文件、runner 和环境文件仅完成只读预检，公开健康、备份恢复与兼容回滚仍待真实验证。生产签署继续阻塞。
+`基础运行面就绪`、`固定出口现场通过`、`失败关闭部署通过`、`G1～G6 真实门禁通过` 与 `production 放行`
+是独立结论，任何前项不推导后项。split-ingress staging 已完成真实部署；固定出口当前只完成候选实现与自动化门禁，live-staging 为 `NOT_EXECUTED — requires merged main image`。备份恢复与兼容回滚仍待真实验证，生产签署继续阻塞。

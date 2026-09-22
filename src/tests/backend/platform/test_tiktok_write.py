@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 import pytest
 
+import app.integrations.tiktok_write as tiktok_write_module
 from app.integrations.credential_crypto import encrypt_credential
 from app.integrations.schemas import SendMessageCommand
 from app.integrations.tiktok_oauth import generate_api_signature
@@ -27,6 +28,7 @@ def real_write_settings(**overrides: Any) -> Settings:
         "TIKTOK_OAUTH_REDIRECT_URI": "https://example.com/v1/integrations/tiktok/oauth/callback",
         "TIKTOK_CREDENTIAL_ENCRYPTION_KEY": "unit-test-encryption-key-with-at-least-32-characters",
         "TIKTOK_EGRESS_IP": "203.0.113.10",
+        "TIKTOK_EGRESS_PROXY_URL": "socks5h://127.0.0.1:1080",
         "TIKTOK_REQUIRED_SCOPES": (
             "seller.authorization.info,seller.order.info,seller.customer_service,seller.logistics"
         ),
@@ -102,6 +104,69 @@ async def test_send_message_uses_official_202309_body_signature_and_token_header
     assert result.status == "sent"
     assert result.external_message_id == "722323407926368819"
     assert result.mock is False
+
+
+@pytest.mark.asyncio
+async def test_write_default_client_uses_fixed_egress_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """默认人工消息发送必须经固定出口工厂且只构造一次客户端。"""
+    settings = real_write_settings()
+    factory_calls: list[Settings] = []
+    async_client_type = httpx.AsyncClient
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    def fake_factory(candidate: Settings) -> httpx.AsyncClient:
+        factory_calls.append(candidate)
+        return async_client_type(transport=httpx.MockTransport(handler))
+
+    def reject_direct_client(**_kwargs: object) -> httpx.AsyncClient:
+        raise AssertionError("write client bypassed the fixed-egress factory")
+
+    monkeypatch.setattr(tiktok_write_module, "create_tiktok_http_client", fake_factory, raising=False)
+    monkeypatch.setattr(tiktok_write_module.httpx, "AsyncClient", reject_direct_client)
+
+    result = await TikTokMessageClient(settings, connected_channel()).send_text_message(command())
+
+    assert result.status == "sent"
+    assert result.external_message_id == "722323407926368819"
+    assert factory_calls == [settings]
+
+
+@pytest.mark.asyncio
+async def test_write_factory_failure_is_unknown_without_direct_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """固定出口连接失败可能已到达平台边界，只能 unknown 且不得直连重试。"""
+    settings = real_write_settings()
+    factory_calls: list[Settings] = []
+    direct_constructions = 0
+    async_client_type = httpx.AsyncClient
+
+    def failing_factory(candidate: Settings) -> httpx.AsyncClient:
+        factory_calls.append(candidate)
+        request = httpx.Request("POST", "https://open-api.tiktokglobalshop.com")
+        raise httpx.ConnectError("fixed egress unavailable", request=request)
+
+    def direct_client(**_kwargs: object) -> httpx.AsyncClient:
+        nonlocal direct_constructions
+        direct_constructions += 1
+        return async_client_type(
+            transport=httpx.MockTransport(
+                lambda _request: httpx.Response(
+                    200,
+                    json={"code": 0, "data": {"message_id": "722323407926368819"}},
+                )
+            )
+        )
+
+    monkeypatch.setattr(tiktok_write_module, "create_tiktok_http_client", failing_factory, raising=False)
+    monkeypatch.setattr(tiktok_write_module.httpx, "AsyncClient", direct_client)
+
+    result = await TikTokMessageClient(settings, connected_channel()).send_text_message(command())
+
+    assert result.status == "unknown"
+    assert result.error_code == "TIKTOK_MESSAGE_RESULT_UNKNOWN"
+    assert factory_calls == [settings]
+    assert direct_constructions == 0
 
 
 @pytest.mark.asyncio

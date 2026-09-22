@@ -65,6 +65,7 @@ def test_tiktok_real_capabilities_resolve_independently_when_mock_disabled(
         PUBLIC_BASE_URL="https://staging.overselfx.com",
         CORS_ORIGINS="https://staging.overselfx.com",
         TIKTOK_EGRESS_IP="203.0.113.10",
+        TIKTOK_EGRESS_PROXY_URL="socks5h://tiktok-egress:1080",
         TIKTOK_OAUTH_REDIRECT_URI="https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback",
         REAL_TIKTOK_READ_ENABLED=True,
         REAL_TIKTOK_WEBHOOK_ENABLED=webhook_enabled,

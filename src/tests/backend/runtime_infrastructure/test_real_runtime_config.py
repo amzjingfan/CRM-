@@ -31,6 +31,7 @@ def production_settings(**overrides: object) -> Settings:
         "DATABASE_URL": "postgresql+asyncpg://crm:strong-password@postgres:5432/crm",
         "MINIO_SECRET_KEY": "unit-test-minio-secret",
         "TIKTOK_EGRESS_IP": "203.0.113.10",
+        "TIKTOK_EGRESS_PROXY_URL": "socks5h://tiktok-egress:1080",
         "TIKTOK_OAUTH_REDIRECT_URI": TIKTOK_OAUTH_FIXED_REDIRECT_URI,
     }
     values.update(overrides)
@@ -203,6 +204,45 @@ def test_real_tiktok_read_rejects_missing_logistics_scope() -> None:
             TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
             TIKTOK_REQUIRED_SCOPES="seller.authorization.info,seller.order.info,seller.customer_service",
         )
+
+
+@pytest.mark.parametrize(
+    "unsafe_proxy",
+    [
+        None,
+        "socks5://tiktok-egress:1080",
+        "http://tiktok-egress:1080",
+        "socks5h://user:secret@tiktok-egress:1080",
+        "socks5h://tiktok-egress:1080/path",
+        "socks5h://tiktok-egress:1080?route=direct",
+        "socks5h://tiktok-egress:1080#fragment",
+        "socks5h://other-proxy:1080",
+    ],
+)
+def test_real_tiktok_rejects_unsafe_egress_proxy(unsafe_proxy: str | None) -> None:
+    """真实 TikTok 能力不能接受会直连、泄密或漂移的代理地址。"""
+    with pytest.raises(ValidationError, match="TIKTOK_EGRESS_PROXY_URL"):
+        production_settings(
+            REAL_TIKTOK_READ_ENABLED=True,
+            TIKTOK_APP_KEY="real-app-key",
+            TIKTOK_SERVICE_ID="real-service-id",
+            TIKTOK_APP_SECRET="unit-test-app-secret",
+            TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+            TIKTOK_EGRESS_PROXY_URL=unsafe_proxy,
+        )
+
+
+def test_real_tiktok_accepts_fixed_socks5h_egress_proxy() -> None:
+    """真实部署只能接受 Compose 提供的固定 SOCKS5H 服务地址。"""
+    settings = production_settings(
+        REAL_TIKTOK_READ_ENABLED=True,
+        TIKTOK_APP_KEY="real-app-key",
+        TIKTOK_SERVICE_ID="real-service-id",
+        TIKTOK_APP_SECRET="unit-test-app-secret",
+        TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+    )
+
+    assert settings.tiktok_egress_proxy_url == "socks5h://tiktok-egress:1080"
 
 
 @pytest.mark.parametrize("app_env", ["integration", "staging", "production"])
@@ -551,6 +591,39 @@ def test_rootless_staging_overlay_is_loopback_only_and_fail_closed() -> None:
     assert "10080" not in overlay
     assert "10443" not in overlay
     assert '"0.0.0.0:18081:80"' not in overlay
+
+
+def test_tiktok_egress_overlay_is_hardened_and_not_host_published() -> None:
+    """固定出口 helper 只能在隔离网络内提供 SOCKS5H，且密钥保持只读。"""
+    overlay = (SOURCE_ROOT / "compose" / "docker-compose.tiktok-egress.yml").read_text(encoding="utf-8")
+    egress_block = compose_service_block(overlay, "tiktok-egress")
+
+    assert "tiktok-egress:" in overlay
+    assert "${TIKTOK_EGRESS_IMAGE:?TIKTOK_EGRESS_IMAGE is required}" in overlay
+    assert "socks5h://tiktok-egress:1080" in overlay
+    assert "0.0.0.0:1080" in overlay
+    assert "ports:" not in egress_block
+    assert 'user: "0:0"' in egress_block
+    assert "read_only: true" in egress_block
+    assert "cap_drop:" in egress_block and "ALL" in egress_block
+    assert "no-new-privileges:true" in egress_block
+    assert "StrictHostKeyChecking=yes" in egress_block
+    assert "StrictHostKeyChecking=no" not in egress_block
+    assert "/run/secrets/tiktok-egress" in egress_block
+    assert "networks:\n      - tiktok-egress" in egress_block
+    assert "- default" not in egress_block
+    assert "internal: true" not in overlay
+
+
+def test_backend_image_installs_only_the_ssh_client_needed_by_egress_helper() -> None:
+    """后端镜像默认非 root，只有 Rootless helper 在 Compose 中显式覆盖运行用户。"""
+    dockerfile = (SOURCE_ROOT / "docker" / "Dockerfile.backend").read_text(encoding="utf-8")
+    install_position = dockerfile.index("apt-get install --no-install-recommends -y openssh-client")
+
+    assert install_position < dockerfile.index("USER crm")
+    assert "rm -rf /var/lib/apt/lists/*" in dockerfile
+    for forbidden_package in ("openssh-server", "supervisor", "socat", "curl", "sudo"):
+        assert forbidden_package not in dockerfile
 
 
 def test_nginx_access_log_format_excludes_query_string() -> None:

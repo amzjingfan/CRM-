@@ -69,3 +69,19 @@ staging.overselfx.com:443
 TLS 只在公网宝塔 Nginx 终止，内层代理使用明文 HTTP 并覆盖 `X-Forwarded-Proto=https`。隧道、应用或证书未就绪时入口必须返回明确 `502/503`，不得回退到 GitLab、默认站点或其他 vhost。历史同机 systemd `80/443 → 10080/10443` 资产已从活动树移除，只能通过 Git 历史查看。
 
 production 仅复用 `www.overselfx.com`、固定 HTTPS、不可变镜像和安全开关等公共契约；是否采用相同双服务器拓扑仍需独立架构与发布批准。
+
+## TikTok 固定出站拓扑
+
+TikTok 出站与上述公网入口是两条独立、最小权限的 SSH 链路，不复用账号、密钥、转发方向或允许目标：
+
+```text
+backend / worker / jobs
+  → socks5h://tiktok-egress:1080
+  → Rootless Compose tiktok-egress helper
+  → crm-egress@38.55.145.52:22（独立 SSH 动态转发）
+  → auth.tiktok-shops.com:443 / open-api.tiktokglobalshop.com:443
+```
+
+helper 只加入独立 `tiktok-egress` 网络，不发布宿主机端口；backend、worker、jobs 同时加入默认网络与该网络。TikTok HTTP 客户端统一显式设置代理并使用 `trust_env=False`，隧道不可用时连接失败，禁止回退到业务服务器的随机直连出口。`checkip.amazonaws.com:443` 只允许发布门禁验证实际出口，不用于业务请求。
+
+staging 的 helper 使用与候选 backend 相同的不可变镜像，并在 Rootless Docker 内显式以容器 `0:0` 运行；该 root 只映射到宿主机 `crmdeploy`，用于读取其所有的 `0600` 私钥，不获得宿主机 root。密钥目录只读挂载给 helper，应用容器继续使用镜像默认非 root 用户且不得取得私钥。production 只继承相同的配置与失败关闭契约，实际拓扑、出口、账号和密钥尚未部署或放行。

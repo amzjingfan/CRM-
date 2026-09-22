@@ -14,6 +14,7 @@ from app.integrations.oauth_schemas import (
     TikTokTokenData,
     TikTokTokenResponse,
 )
+from app.integrations.tiktok_http import create_tiktok_http_client
 from app.shared.config.settings import Settings
 from app.shared.exceptions.errors import AppError, ErrorCode
 
@@ -78,7 +79,7 @@ class TikTokOAuthClient:
             if self.client is not None:
                 response = await self.client.get(url, params=params)
             else:
-                async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+                async with create_tiktok_http_client(self.settings) as client:
                     response = await client.get(url, params=params)
             response.raise_for_status()
             parsed = TikTokTokenResponse.model_validate(response.json())
@@ -101,7 +102,7 @@ class TikTokOAuthClient:
             if self.client is not None:
                 response = await self.client.get(SHOP_URL, params=params, headers=headers)
             else:
-                async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+                async with create_tiktok_http_client(self.settings) as client:
                     response = await client.get(SHOP_URL, params=params, headers=headers)
             response.raise_for_status()
             parsed = TikTokShopResponse.model_validate(response.json())

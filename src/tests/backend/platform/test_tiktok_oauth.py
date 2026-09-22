@@ -14,6 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 import app.integrations.oauth_service as oauth_service
+import app.integrations.tiktok_oauth as tiktok_oauth_module
 import app.shared.database.redis as redis_module
 import app.stores.service as stores_service
 from app.audit.models import AuditLog
@@ -46,6 +47,7 @@ def oauth_settings(**overrides: Any) -> Settings:
         "TIKTOK_APP_SECRET": "unit-test-app-secret-value",
         "TIKTOK_OAUTH_REDIRECT_URI": "https://www.example.com/v1/integrations/tiktok/oauth/callback",
         "TIKTOK_CREDENTIAL_ENCRYPTION_KEY": "unit-test-encryption-key-with-at-least-32-characters",
+        "TIKTOK_EGRESS_PROXY_URL": "socks5h://127.0.0.1:1080",
         "TIKTOK_REQUIRED_SCOPES": "seller.authorization.info",
     }
     values.update(overrides)
@@ -232,6 +234,32 @@ async def test_token_exchange_uses_official_grant_and_hides_secret_from_response
         "grant_type": "authorized_code",
     }
     assert result.open_id == "seller-open-id"
+
+
+@pytest.mark.asyncio
+async def test_oauth_default_client_uses_fixed_egress_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """默认 OAuth 传输绕过固定出口工厂时必须失败。"""
+    settings = oauth_settings()
+    factory_calls: list[Settings] = []
+    async_client_type = httpx.AsyncClient
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"code": 0, "message": "Success", "data": token_data().model_dump()})
+
+    def fake_factory(candidate: Settings) -> httpx.AsyncClient:
+        factory_calls.append(candidate)
+        return async_client_type(transport=httpx.MockTransport(handler))
+
+    def reject_direct_client(**_kwargs: object) -> httpx.AsyncClient:
+        raise AssertionError("OAuth client bypassed the fixed-egress factory")
+
+    monkeypatch.setattr(tiktok_oauth_module, "create_tiktok_http_client", fake_factory, raising=False)
+    monkeypatch.setattr(tiktok_oauth_module.httpx, "AsyncClient", reject_direct_client)
+
+    result = await TikTokOAuthClient(settings).exchange_code("unit-test-auth-code")
+
+    assert result.open_id == "seller-open-id"
+    assert factory_calls == [settings]
 
 
 @pytest.mark.asyncio

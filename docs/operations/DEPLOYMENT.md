@@ -26,6 +26,31 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 成功轮换的 root-only 恢复副本位于 `/var/backups/crm-staging/secrets/20260921T080357Z/crm-staging.env.before`。两次失败尝试在变更前/回滚后留下的受限重复副本尚未删除；删除必须另立 `MAINT-CLEANUP-*` 任务和精确批次。TikTok Partner Center 与 DeepSeek 的外部凭据仍为空，待对应 G1/G4 真实验收时由用户在服务器受限通道注入；production 未变更、未发布。
 
+### TikTok 固定出口契约
+
+staging 的 TikTok 出站与 split-ingress 入口分离：应用只经 `socks5h://tiktok-egress:1080` 访问独立 helper，helper 再以 `crm-egress@38.55.145.52` 建立 SSH 动态转发。公网账号只允许 local/dynamic forwarding 到 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 和门禁专用 `checkip.amazonaws.com:443`；不得复用 `crm-tunnel`、开放代理端口或放宽为任意目标。
+
+staging 固定按以下顺序叠加 Compose：
+
+```text
+src/compose/docker-compose.yml
+src/compose/docker-compose.prod.yml
+src/compose/docker-compose.tiktok-egress.yml
+src/compose/docker-compose.rootless-staging.yml
+```
+
+仓库外环境文件声明 `TIKTOK_EGRESS_IP=38.55.145.52` 与 `TIKTOK_EGRESS_SECRET_DIR=/home/crmdeploy/secrets/tiktok-egress`；overlay 固定向应用注入 `TIKTOK_EGRESS_PROXY_URL=socks5h://tiktok-egress:1080`。密钥目录所有者为 UID/GID 1004、模式 `0700`，其中 `id_ed25519` 和 `known_hosts` 为 `0600`，只读挂载到 helper 的 `/run/secrets/tiktok-egress`。helper 显式 `user: "0:0"`，在 Rootless 映射下只是宿主机 `crmdeploy`，不会取得宿主机 root；应用容器仍为非 root。私钥不得进入应用容器、镜像、Git、环境文件或证据。
+
+门禁先以候选 backend RepoDigest 启动并等待 helper，再从同一候选 backend 镜像执行：
+
+```text
+python scripts/verify_tiktok_egress.py
+```
+
+验证器经应用实际使用的 SOCKS5H 路径访问固定检查地址，只有 `configured_ip` 与 `observed_ip` 都精确为 `38.55.145.52` 才通过；代理失败、格式错误或 IP 不一致均失败关闭，不尝试直连。staging 回滚只把应用切换到已验证的上一 RepoDigest，helper 继续使用包含当前隧道资产的候选 backend 镜像，全部真实 TikTok/LLM/自动回复开关保持 false。
+
+当前分支只完成自动化实现与本地门禁；真实 staging 出口、隧道断开无回退和公司负载复核必须等待合并 main 的不可变镜像，因此在对应现场证据产生前为 `NOT_EXECUTED`。production 仅获得可复用 Compose/config 契约，没有选择出口服务器、创建账号/密钥或实施部署。
+
 ## TikTok 与 DeepSeek
 
 - TikTok OAuth 回调在 staging 使用 `staging.overselfx.com`、在 production 使用 `www.overselfx.com` 的 HTTPS 固定地址，state 默认 600 秒、哈希存储并原子消费。

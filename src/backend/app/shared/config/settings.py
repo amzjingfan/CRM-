@@ -29,6 +29,7 @@ TIKTOK_OAUTH_FIXED_REDIRECT_URIS = {
     "staging": TIKTOK_OAUTH_STAGING_REDIRECT_URI,
     "production": TIKTOK_OAUTH_PRODUCTION_REDIRECT_URI,
 }
+TIKTOK_FIXED_EGRESS_PROXY_URL = "socks5h://tiktok-egress:1080"
 REAL_DEPLOYMENT_ENVIRONMENTS = {"integration", "staging", "production"}
 TIKTOK_REAL_READ_SCOPES = {
     "seller.authorization.info",
@@ -164,6 +165,7 @@ class Settings(BaseSettings):
         validation_alias="TIKTOK_CREDENTIAL_ENCRYPTION_KEY",
     )
     tiktok_egress_ip: str | None = Field(default=None, validation_alias="TIKTOK_EGRESS_IP")
+    tiktok_egress_proxy_url: str | None = Field(default=None, validation_alias="TIKTOK_EGRESS_PROXY_URL")
     real_tiktok_read_enabled: bool = Field(default=False, validation_alias="REAL_TIKTOK_READ_ENABLED")
     real_tiktok_webhook_enabled: bool = Field(default=False, validation_alias="REAL_TIKTOK_WEBHOOK_ENABLED")
     real_tiktok_message_write_enabled: bool = Field(
@@ -410,8 +412,26 @@ class Settings(BaseSettings):
             ip_address(self.tiktok_egress_ip)
         except ValueError as error:
             raise ValueError("TIKTOK_EGRESS_IP 必须为有效 IP") from error
+        self._validate_tiktok_egress_proxy()
         if self.real_tiktok_read_enabled and not TIKTOK_REAL_READ_SCOPES.issubset(self.tiktok_required_scope_set):
             raise ValueError("真实 TikTok 只读能力必须声明授权、订单、客服消息和物流 Scope")
+
+    def _validate_tiktok_egress_proxy(self) -> None:
+        """真实 TikTok 请求只允许走显式、无凭据的 SOCKS5H 固定出口。"""
+        value = self.tiktok_egress_proxy_url
+        if not value:
+            raise ValueError("真实 TikTok 能力必须配置 TIKTOK_EGRESS_PROXY_URL")
+        parsed = urlsplit(value)
+        try:
+            port = parsed.port
+        except ValueError as error:
+            raise ValueError("TIKTOK_EGRESS_PROXY_URL 必须包含有效端口") from error
+        if parsed.scheme != "socks5h" or not parsed.hostname or port is None:
+            raise ValueError("TIKTOK_EGRESS_PROXY_URL 必须为带显式端口的 SOCKS5H URL")
+        if parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
+            raise ValueError("TIKTOK_EGRESS_PROXY_URL 不得包含凭证、路径、查询参数或片段")
+        if self.app_env in {"staging", "production"} and value != TIKTOK_FIXED_EGRESS_PROXY_URL:
+            raise ValueError("TIKTOK_EGRESS_PROXY_URL 必须使用真实环境固定代理地址")
 
     def _validate_production_llm(self) -> None:
         """校验生产 LLM 的最低配置，不展开或记录任何 SecretStr。"""

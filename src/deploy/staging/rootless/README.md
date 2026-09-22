@@ -43,9 +43,14 @@ COMPOSE_PROJECT_NAME=crm-staging
 CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
 CRM_STAGING_BASE_URL=https://staging.overselfx.com
 RETRIEVAL_MODEL_ASSET_DIR=/home/crmdeploy/assets/models
+TIKTOK_EGRESS_IP=38.55.145.52
+TIKTOK_EGRESS_PROXY_URL=socks5h://tiktok-egress:1080
+TIKTOK_EGRESS_SECRET_DIR=/home/crmdeploy/secrets/tiktok-egress
 BUSINESS_PROXY=127.0.0.1:18081
 PUBLIC_TUNNEL_LISTENER=127.0.0.1:18080
 ```
+
+TikTok 出站密钥与入口隧道密钥完全分离。`/home/crmdeploy/secrets/tiktok-egress` 必须归 UID/GID 1004、模式 `0700`，其中 `id_ed25519` 和 `known_hosts` 为 `0600`；目录位于 Git checkout 外，只以只读方式挂载到 `tiktok-egress` helper。helper 在 Rootless Docker 内显式使用容器 `0:0`，只映射为宿主机 `crmdeploy` 以读取该私钥，不取得宿主机 root；应用服务继续使用镜像默认非 root 用户。私钥不得出现在环境文件、应用容器、日志或证据中。
 
 环境文件必须把以下能力明确设为 `false`：
 
@@ -111,11 +116,19 @@ Secret: CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
 Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 ```
 
-从镜像发布 artifact 程序化读取三条 RepoDigest，核对 `source_sha`、manifest digest 和 OCI `org.opencontainers.image.revision`。使用 `Staging production gates` 的 `validate` 操作；非零退出、证据缺失或任何 digest 漂移都停止。
+从镜像发布 artifact 程序化读取三条 RepoDigest，核对 `source_sha`、manifest digest 和 OCI `org.opencontainers.image.revision`。使用 `Staging production gates` 的 `validate` 操作；非零退出、证据缺失或任何 digest 漂移都停止。门禁固定按 `docker-compose.yml → docker-compose.prod.yml → docker-compose.tiktok-egress.yml → docker-compose.rootless-staging.yml` 顺序解析，拒绝缺少 overlay、helper 发布端口、错误网络、可写根文件系统、额外能力、非只读密钥挂载或应用容器取得密钥。
 
 ### 4.6 部署 Rootless CRM
 
-用与 validate 完全相同的三条 RepoDigest 触发 `deploy`。门禁固定使用 `crm-staging`、Rootless socket、base/prod/rootless 三个 Compose 文件、`ai` profile、`--no-build --wait --wait-timeout 600`，并强制所有真实能力关闭。执行顺序固定为：启动并等待 PostgreSQL/Redis/MinIO 健康，用已审阅 backend RepoDigest 执行一次性 `alembic upgrade head`，再以 `alembic current --check-heads` 失败关闭，最后才启动 backend/worker/jobs/agent-worker/frontend/proxy/retrieval-model-service。
+用与 validate 完全相同的三条 RepoDigest 触发 `deploy`。门禁固定使用 `crm-staging`、Rootless socket、上述四个 Compose 文件、`ai` profile、`--no-build --wait --wait-timeout 600`，并强制所有真实能力关闭。helper 使用候选 `BACKEND_IMAGE`，不使用浮动镜像或目标机 build。执行顺序固定为：
+
+1. 启动并等待 PostgreSQL/Redis/MinIO 健康；
+2. 启动并等待 `tiktok-egress` helper 健康；
+3. 从同一候选 backend 镜像运行 `python scripts/verify_tiktok_egress.py`，要求 `configured_ip` 与 `observed_ip` 都为 `38.55.145.52`；
+4. 用候选 backend RepoDigest 执行一次性 `alembic upgrade head`，再以 `alembic current --check-heads` 失败关闭；
+5. 最后才启动 backend/worker/jobs/agent-worker/frontend/proxy/retrieval-model-service。
+
+出口验证失败、代理不可达或观察值不一致时不得继续，也不得改用主机直连。通过证据只记录状态和两个 IP，不记录代理 URL、密钥路径内容、公钥、指纹或凭据。
 
 首次部署没有兼容的上一 CRM 实例。部署前只记录“无既有 Rootless CRM 容器/卷”的事实，不创建伪备份。任何容器不健康时停止候选并保留卷，公网继续 `503`。
 
@@ -164,6 +177,7 @@ Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 - Nginx 变更失败：保留或恢复已验证的 HTTP `503` vhost，`nginx -t` 成功后才 reload。
 - 隧道失败：保持公网 `503`；检查用户级 unit、回环监听和固定主机指纹，不放宽 SSH 权限。
 - 镜像/配置失败：不启动 Compose，不使用历史或浮动标签替代。
+- TikTok helper/出口失败：保持全部真实 TikTok 开关为 false，停止候选应用；禁止从 SOCKS5H 回退为业务服务器直连。应用镜像回滚时继续使用包含当前 helper 资产的候选 backend 镜像，只把 backend/worker/jobs 等应用切换到已验证的上一 RepoDigest。
 - 首次部署不健康：停止候选应用，保留 PostgreSQL/MinIO/Rootless 卷，不删除数据。
 - 公开响应为 GitLab：立即恢复 `503`，核对隧道必须是 `18080 → 18081`；不得调整 GitLab `10080/10443`。
 - 无兼容上一版镜像时不得调用“回滚成功”；真正的数据库/对象恢复和兼容版本回滚仍是独立 G0 阻断项。
@@ -172,4 +186,4 @@ Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 
 原始主机快照保存在本轮受限服务器目录，仓库只记录低敏摘要、SHA、workflow run、健康状态、恢复时间和前后基线比较。禁止记录 `.env` 值、私钥、Token、Cookie、证书私钥、模型、备份或客户数据。
 
-完成本手册只证明 `MVP-STAGING-001` 的失败关闭 staging 基础设施。TikTok OAuth/读取、Webhook、人工消息、DeepSeek/RAG、50 客户端 SSE、五日稳定性、数据库/对象恢复、兼容回滚和 production 放行仍按 G0～G8 独立取得证据；所有真实能力保持关闭。
+完成 split-ingress 部分只证明 `MVP-STAGING-001` 的失败关闭 staging 基础设施。固定出口还必须使用合并 main 的不可变镜像完成真实 IP、断隧道无直连回退、入口和公司负载复核；当前实现分支上的 live-staging 状态为 `NOT_EXECUTED — requires merged main image`。TikTok OAuth/读取、Webhook、人工消息、DeepSeek/RAG、50 客户端 SSE、五日稳定性、数据库/对象恢复、兼容回滚和 production 放行仍按 G0～G8 独立取得证据；所有真实能力保持关闭。

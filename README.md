@@ -142,7 +142,9 @@ docker compose -f src/compose/docker-compose.yml exec backend python scripts/ass
 - Jobs Worker 默认每 5 分钟扫描一次，并在 Access Token 到期前 24 小时采用 `FOR UPDATE SKIP LOCKED` 提前刷新。刷新结果必须保持 `open_id` 和已授权店铺连续；不一致或失败时状态变为 `expired` 并要求重新授权，不覆盖为成功凭证。
 - TikTok 应用后台重定向地址按环境固定：staging 使用 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`，integration/production 使用 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`。真实环境启动和 OAuth start/callback 都会失败关闭 HTTP、错误主机、错误路径、query 或 fragment，真实密钥只从服务端安全配置注入。
 
-> 当前环境约定：staging 精确使用 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`。staging 采用 `38.55.145.52` 宝塔 TLS 经受限 SSH 反向隧道访问 `192.168.110.210` Rootless CRM，旧服务器只发布回环 `18081`，不使用 GitLab 的 `10080/10443`。唯一活动操作手册见 [`src/deploy/staging/rootless/README.md`](src/deploy/staging/rootless/README.md)，真实运行验收仍待本轮现场执行。
+> 当前环境约定：staging 精确使用 `https://staging.overselfx.com/v1/integrations/tiktok/oauth/callback`；integration/production 保留 `https://www.overselfx.com/v1/integrations/tiktok/oauth/callback`。staging 采用 `38.55.145.52` 宝塔 TLS 经受限 SSH 反向隧道访问 `192.168.110.210` Rootless CRM，旧服务器只发布回环 `18081`，不使用 GitLab 的 `10080/10443`。split-ingress 已完成真实运行验收，唯一活动操作手册见 [`src/deploy/staging/rootless/README.md`](src/deploy/staging/rootless/README.md)。
+
+TikTok 服务端出站使用与入口完全分离的 `crm-egress` SSH/SOCKS5H 链路：backend、worker、jobs 显式连接 `socks5h://tiktok-egress:1080`，helper 再经 `38.55.145.52` 访问获准的 TikTok HTTPS 域名。代理不可用时失败关闭，不回退到业务服务器的随机公网出口。实现与自动化门禁已进入 `VERIFYING`；真实 staging 出口验证必须等待合并 main 的不可变镜像，production 只具备配置契约且未部署。
 
 ## Phase 3 业务能力
 

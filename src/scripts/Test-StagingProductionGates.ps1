@@ -48,6 +48,7 @@ $RequiredVariables = @(
     "PUBLIC_BASE_URL",
     "PUBLIC_API_BASE_URL",
     "TIKTOK_EGRESS_IP",
+    "TIKTOK_EGRESS_SECRET_DIR",
     "TIKTOK_OAUTH_REDIRECT_URI",
     "POSTGRES_DB",
     "POSTGRES_USER",
@@ -153,7 +154,7 @@ function Assert-NoReparsePointInPath {
     while ($true) {
         $item = Get-Item -LiteralPath $currentPath -Force
         if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-            throw "External model asset paths must not contain a symbolic link or reparse point."
+            throw "External runtime paths must not contain a symbolic link or reparse point."
         }
         $parent = [System.IO.Directory]::GetParent($currentPath)
         if ($null -eq $parent) {
@@ -201,6 +202,33 @@ function Assert-ExternalModelAssets {
             throw "External model asset directory is missing a required model asset file."
         }
         Assert-NoReparsePointInPath -Path $assetPath
+    }
+    return $resolvedPath
+}
+
+function Assert-ExternalEgressSecretDirectory {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$GitCheckoutRoot
+    )
+
+    if (-not [System.IO.Path]::IsPathRooted($Path)) {
+        throw "TIKTOK_EGRESS_SECRET_DIR must be an absolute server path."
+    }
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        throw "TIKTOK_EGRESS_SECRET_DIR does not exist or is not a directory."
+    }
+    Assert-NoReparsePointInPath -Path $Path
+
+    $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+    $resolvedGitCheckoutRoot = (Resolve-Path -LiteralPath $GitCheckoutRoot).Path
+    $checkoutPrefix = $resolvedGitCheckoutRoot.TrimEnd(
+        [System.IO.Path]::DirectorySeparatorChar,
+        [System.IO.Path]::AltDirectorySeparatorChar
+    ) + [System.IO.Path]::DirectorySeparatorChar
+    if ($resolvedPath.Equals($resolvedGitCheckoutRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        $resolvedPath.StartsWith($checkoutPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "TIKTOK_EGRESS_SECRET_DIR must be outside the Git checkout."
     }
     return $resolvedPath
 }
@@ -263,7 +291,8 @@ function Assert-ProductionComposeContract {
     param(
         [Parameter(Mandatory = $true)]$Config,
         [Parameter(Mandatory = $true)][hashtable]$ExpectedImages,
-        [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir
+        [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir,
+        [Parameter(Mandatory = $true)][string]$ExpectedEgressSecretDir
     )
 
     foreach ($serviceName in $ExpectedImages.Keys) {
@@ -291,14 +320,71 @@ function Assert-ProductionComposeContract {
         throw "Production retrieval model service must enable startup weight hash verification."
     }
 
+    $egressService = $Config.services.PSObject.Properties["tiktok-egress"].Value
+    $egressPorts = $egressService.PSObject.Properties["ports"]
+    if ($null -ne $egressPorts -and @($egressPorts.Value).Count -ne 0) {
+        throw "TikTok egress helper must not publish ports."
+    }
+    if ([string]$egressService.user -cne "0:0") {
+        throw "TikTok egress helper must run as container root under Rootless Docker."
+    }
+    if ($egressService.read_only -ne $true) {
+        throw "TikTok egress helper must use a read-only root filesystem."
+    }
+    $egressMounts = @($egressService.volumes)
+    if ($egressMounts.Count -ne 1 -or [string]$egressMounts[0].type -ne "bind" -or
+        [string]$egressMounts[0].source -ne $ExpectedEgressSecretDir -or
+        [string]$egressMounts[0].target -ne "/run/secrets/tiktok-egress" -or
+        $egressMounts[0].read_only -ne $true) {
+        throw "TikTok egress helper must mount only the reviewed secret directory read-only."
+    }
+    $egressNetworks = @($egressService.networks.PSObject.Properties.Name)
+    if ($egressNetworks.Count -ne 1 -or $egressNetworks[0] -cne "tiktok-egress") {
+        throw "TikTok egress helper must join only the dedicated network."
+    }
+    $droppedCapabilities = @($egressService.cap_drop)
+    if ($droppedCapabilities.Count -ne 1 -or [string]$droppedCapabilities[0] -cne "ALL") {
+        throw "TikTok egress helper must drop all capabilities."
+    }
+    $securityOptions = @($egressService.security_opt)
+    if ($securityOptions.Count -ne 1 -or [string]$securityOptions[0] -cne "no-new-privileges:true") {
+        throw "TikTok egress helper must set no-new-privileges."
+    }
+
     foreach ($serviceName in @("backend", "worker", "jobs", "agent-worker")) {
-        $applicationEnvironment = $Config.services.PSObject.Properties[$serviceName].Value.environment
+        $applicationService = $Config.services.PSObject.Properties[$serviceName].Value
+        $applicationEnvironment = $applicationService.environment
         if ([string]$applicationEnvironment.APP_ENV -ne "staging") {
             throw "Production Compose must set APP_ENV=staging for service: $serviceName"
         }
         foreach ($capabilityName in $DisabledCapabilityVariables) {
             if ([string]$applicationEnvironment.$capabilityName -ne "false") {
                 throw "Production Compose must fail closed for capability: $capabilityName"
+            }
+        }
+        if ($serviceName -in @("backend", "worker", "jobs")) {
+            if ([string]$applicationEnvironment.TIKTOK_EGRESS_PROXY_URL -cne "socks5h://tiktok-egress:1080") {
+                throw "TikTok application services must use the fixed egress proxy."
+            }
+            $applicationNetworks = @($applicationService.networks.PSObject.Properties.Name | Sort-Object)
+            if ($applicationNetworks.Count -ne 2 -or $applicationNetworks[0] -cne "default" -or
+                $applicationNetworks[1] -cne "tiktok-egress") {
+                throw "TikTok application services must join default and egress networks."
+            }
+            $dependsOn = $applicationService.PSObject.Properties["depends_on"]
+            $egressDependency = if ($null -eq $dependsOn) {
+                $null
+            }
+            else {
+                $dependsOn.Value.PSObject.Properties["tiktok-egress"]
+            }
+            if ($null -eq $egressDependency -or [string]$egressDependency.Value.condition -cne "service_healthy") {
+                throw "TikTok application services must wait for the egress helper health check."
+            }
+            $applicationVolumes = $applicationService.PSObject.Properties["volumes"]
+            if ($null -ne $applicationVolumes -and
+                @($applicationVolumes.Value | Where-Object { [string]$_.target -eq "/run/secrets/tiktok-egress" }).Count -ne 0) {
+                throw "TikTok application services must not mount egress SSH secrets."
             }
         }
     }
@@ -324,6 +410,41 @@ function Assert-ProductionComposeContract {
         [string]$proxyConfigMount.target -ne "/etc/nginx/nginx.conf" -or
         $proxyConfigMount.read_only -ne $true) {
         throw "Staging Compose proxy must mount exactly one read-only tunnel Nginx configuration."
+    }
+}
+
+function Invoke-TikTokEgressVerification {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$ExpectedIp
+    )
+
+    $jsonLines = & $Command.Executable @($Command.Prefix + $Arguments + @(
+        "run", "--rm", "--no-deps", "backend", "python", "scripts/verify_tiktok_egress.py"
+    ))
+    if ($LASTEXITCODE -ne 0) {
+        throw "TikTok egress verification failed with exit code $LASTEXITCODE."
+    }
+    try {
+        $result = ($jsonLines -join [Environment]::NewLine) | ConvertFrom-Json
+    }
+    catch {
+        throw "TikTok egress verifier did not return valid JSON."
+    }
+    $propertyNames = @($result.PSObject.Properties.Name | Sort-Object)
+    $expectedNames = @("configured_ip", "observed_ip", "schema_version", "status")
+    if (Compare-Object -ReferenceObject $expectedNames -DifferenceObject $propertyNames) {
+        throw "TikTok egress verifier returned an unexpected schema."
+    }
+    if ([int]$result.schema_version -ne 1 -or [string]$result.status -cne "ok" -or
+        [string]$result.configured_ip -cne $ExpectedIp -or [string]$result.observed_ip -cne $ExpectedIp) {
+        throw "TikTok egress verifier result does not match the configured IP."
+    }
+    return [ordered]@{
+        status = "passed"
+        configured_ip = [string]$result.configured_ip
+        observed_ip = [string]$result.observed_ip
     }
 }
 
@@ -355,7 +476,8 @@ function Write-Evidence {
         [Parameter(Mandatory = $true)]
         [AllowEmptyCollection()]
         [object[]]$HealthChecks,
-        [string]$MigrationStatus = "not_executed"
+        [string]$MigrationStatus = "not_executed",
+        [AllowNull()][object]$EgressVerification = $null
     )
 
     $parent = Split-Path -Parent $EvidenceFile
@@ -377,8 +499,12 @@ function Write-Evidence {
         docker_transport = "rootless_unix_socket"
         database_migration = $MigrationStatus
         rootless_overlay_sha256 = (Get-FileHash -LiteralPath $rootlessOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
+        tiktok_egress_overlay_sha256 = (Get-FileHash -LiteralPath $egressOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
         health_checks = $HealthChecks
+    }
+    if ($null -ne $EgressVerification) {
+        $evidence["tiktok_egress"] = $EgressVerification
     }
     $evidence | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $EvidenceFile -Encoding UTF8
 }
@@ -401,6 +527,8 @@ $sourceRoot = Split-Path -Parent $PSScriptRoot
 $gitCheckoutRoot = Resolve-GitCheckoutRoot -ProjectRoot $sourceRoot
 $modelAssetDir = Assert-ExternalModelAssets -Path $environmentValues["RETRIEVAL_MODEL_ASSET_DIR"] `
     -GitCheckoutRoot $gitCheckoutRoot
+$egressSecretDir = Assert-ExternalEgressSecretDirectory -Path $environmentValues["TIKTOK_EGRESS_SECRET_DIR"] `
+    -GitCheckoutRoot $gitCheckoutRoot
 $externalImageRepositories = @{
     "POSTGRES_IMAGE" = "pgvector/pgvector"
     "REDIS_IMAGE" = "redis"
@@ -419,7 +547,11 @@ if ($configuredRetrievalModelImage -ne $RetrievalModelImage) {
     throw "RETRIEVAL_MODEL_SERVICE_IMAGE must equal the reviewed RetrievalModelImage input."
 }
 
+$egressOverlay = Join-Path $sourceRoot "compose/docker-compose.tiktok-egress.yml"
 $rootlessOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging.yml"
+if (-not (Test-Path -LiteralPath $egressOverlay -PathType Leaf)) {
+    throw "The repository-fixed TikTok egress overlay does not exist."
+}
 if (-not (Test-Path -LiteralPath $rootlessOverlay -PathType Leaf)) {
     throw "The repository-fixed Rootless staging overlay does not exist."
 }
@@ -430,6 +562,8 @@ foreach ($name in @($DisabledCapabilityVariables + @(
     "FRONTEND_IMAGE",
     "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
+    "TIKTOK_EGRESS_IMAGE",
+    "TIKTOK_EGRESS_SECRET_DIR",
     "TLS_CERT_DIR",
     "DOCKER_HOST",
     "DOCKER_CONTEXT"
@@ -447,6 +581,7 @@ try {
         "--env-file", (Resolve-Path -LiteralPath $EnvFile).Path,
         "-f", (Join-Path $sourceRoot "compose/docker-compose.yml"),
         "-f", (Join-Path $sourceRoot "compose/docker-compose.prod.yml"),
+        "-f", (Resolve-Path -LiteralPath $egressOverlay).Path,
         "-f", (Resolve-Path -LiteralPath $rootlessOverlay).Path
     )
     Set-DisabledCapabilities
@@ -454,6 +589,8 @@ try {
     $env:FRONTEND_IMAGE = $FrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
     $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $configuredRetrievalModelImage
+    $env:TIKTOK_EGRESS_IMAGE = $BackendImage
+    $env:TIKTOK_EGRESS_SECRET_DIR = $egressSecretDir
     # Compose 会在合并 rootless override 前先展开 production 文件；此值只用于通过必填展开，最终配置不得挂载它。
     $env:TLS_CERT_DIR = $StagingTlsInterpolationSentinel
 
@@ -462,6 +599,7 @@ try {
         "postgres" = $validatedExternalImages["POSTGRES_IMAGE"]
         "redis" = $validatedExternalImages["REDIS_IMAGE"]
         "minio" = $validatedExternalImages["MINIO_IMAGE"]
+        "tiktok-egress" = $BackendImage
         "backend" = $BackendImage
         "worker" = $BackendImage
         "jobs" = $BackendImage
@@ -471,7 +609,7 @@ try {
         "proxy" = $validatedExternalImages["NGINX_IMAGE"]
     }
     Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages `
-        -ExpectedModelAssetDir $modelAssetDir
+        -ExpectedModelAssetDir $modelAssetDir -ExpectedEgressSecretDir $egressSecretDir
 
     if ($ValidateOnly) {
         Write-Evidence -Status "validated" -HealthChecks @()
@@ -489,11 +627,16 @@ try {
         return
     }
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "pull", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
+        "pull", "tiktok-egress", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
     ))
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "postgres", "redis", "minio"
     ))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "tiktok-egress"
+    ))
+    $egressVerification = Invoke-TikTokEgressVerification -Command $compose -Arguments $composeArguments `
+        -ExpectedIp $environmentValues["TIKTOK_EGRESS_IP"]
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "run", "--rm", "--no-deps", "backend", "alembic", "upgrade", "head"
     ))
@@ -510,7 +653,8 @@ try {
         [ordered]@{ path = "/v1/health"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health") },
         [ordered]@{ path = "/v1/health/ready"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/v1/health/ready") }
     )
-    Write-Evidence -Status "passed" -HealthChecks $healthChecks -MigrationStatus "heads_applied"
+    Write-Evidence -Status "passed" -HealthChecks $healthChecks -MigrationStatus "heads_applied" `
+        -EgressVerification $egressVerification
     Write-Output "Staging production gate deployment and health verification passed; production_release=false."
 }
 finally {

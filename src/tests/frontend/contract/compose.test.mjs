@@ -12,6 +12,10 @@ const productionComposeSource = await readFile(
   new URL("compose/docker-compose.prod.yml", sourceRoot),
   "utf8",
 );
+const tiktokEgressComposeSource = await readFile(
+  new URL("compose/docker-compose.tiktok-egress.yml", sourceRoot),
+  "utf8",
+);
 const aiComposeSource = await readFile(
   new URL("compose/docker-compose.ai.yml", sourceRoot),
   "utf8",
@@ -111,6 +115,17 @@ test("production application services consume published images without local bui
   assert.match(retrievalBlock, /image: \$\{RETRIEVAL_MODEL_SERVICE_IMAGE:\?/);
   assert.match(retrievalBlock, /build: !reset null/);
   assert.doesNotMatch(productionReadmeSource, /up -d --build/);
+});
+
+test("TikTok-capable services wait for fixed egress without receiving SSH secrets", () => {
+  for (const serviceName of ["backend", "worker", "jobs"]) {
+    const block = composeServiceBlock(tiktokEgressComposeSource, serviceName);
+    assert.match(block, /TIKTOK_EGRESS_PROXY_URL: socks5h:\/\/tiktok-egress:1080/);
+    assert.match(block, /networks:\s+\- default\s+\- tiktok-egress/);
+    assert.match(block, /tiktok-egress:\s+condition: service_healthy/);
+    assert.doesNotMatch(block, /\/run\/secrets\/tiktok-egress/);
+    assert.doesNotMatch(block, /TIKTOK_EGRESS_SECRET_DIR/);
+  }
 });
 
 test("GHCR publisher uses least privilege and immutable GitHub Actions", async () => {
