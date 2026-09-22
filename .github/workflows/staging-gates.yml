@@ -53,7 +53,8 @@ jobs:
     name: Run staging-only gate
     environment: staging
     runs-on: [self-hosted, linux, x64, crm-staging]
-    timeout-minutes: 45
+    # The immutable retrieval image is about 8 GiB and the staging host has a slow GHCR path.
+    timeout-minutes: 120
     steps:
       - name: Check out reviewed main
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

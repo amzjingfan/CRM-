@@ -44,6 +44,7 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
     """工作流必须把调用者 UID 交给脚本的 1004 门禁，且 GHCR 不依赖长期 PAT。"""
     workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     assert workflow["permissions"] == {"contents": "read", "packages": "read"}
+    assert workflow["jobs"]["staging"]["timeout-minutes"] == 120
     steps = workflow["jobs"]["staging"]["steps"]
     assert not any(step.get("uses", "").startswith("docker/login-action@") for step in steps)
     login = next(step for step in steps if step["name"] == "Log in to GHCR for immutable image pulls")
