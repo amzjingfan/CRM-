@@ -673,6 +673,11 @@ try {
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "backend", "worker", "jobs", "agent-worker",
         "frontend", "proxy", "retrieval-model-service"
     ))
+    # backend 重建会更换容器 IP；重启内层 Nginx，避免继续连接旧上游并等待其恢复健康。
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @("restart", "proxy"))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "proxy"
+    ))
 
     $healthChecks = @(
         [ordered]@{ path = "/healthz"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/healthz") },

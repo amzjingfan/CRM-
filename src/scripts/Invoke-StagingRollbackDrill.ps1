@@ -618,6 +618,11 @@ try {
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "backend", "worker", "jobs", "agent-worker",
         "frontend", "proxy", "retrieval-model-service"
     ))
+    # 回滚同样可能更换 backend IP，必须让内层 Nginx 重新解析上游后再检查公网。
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @("restart", "proxy"))
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
+        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "proxy"
+    ))
     $completedSteps += "deploy_previous_image_digests"
 
     $healthChecks = @(

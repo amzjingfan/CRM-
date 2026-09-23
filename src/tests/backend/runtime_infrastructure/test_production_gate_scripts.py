@@ -1856,3 +1856,56 @@ def test_live_gate_waits_for_compose_health_before_writing_passed_evidence(
     assert all("600" in arguments for arguments in up_commands)
     if evidence_file.exists():
         assert json.loads(evidence_file.read_text(encoding="utf-8-sig"))["status"] != "passed"
+
+
+@pytest.mark.parametrize(
+    ("script", "mode"),
+    [(PREFLIGHT_SCRIPT, "-Deploy"), (ROLLBACK_SCRIPT, "-Execute")],
+)
+def test_live_gate_refreshes_proxy_after_backend_recreation(
+    script: Path,
+    mode: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """backend 地址变化后必须重启内层 Nginx，并等 proxy 健康再检查公网。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    result = run_powershell(
+        script,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(script),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(tmp_path / "proxy-refresh.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        mode,
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    assert result.returncode != 0  # 本测试不提供公网服务。
+    assert command_log.exists(), result.stdout + result.stderr
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    application_up = max(index for index, command in enumerate(commands) if "up" in command and "backend" in command)
+    proxy_restart = next(index for index, command in enumerate(commands) if command[-2:] == ["restart", "proxy"])
+    proxy_wait = next(
+        index
+        for index, command in enumerate(commands)
+        if command[-7:] == ["up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "proxy"]
+    )
+    assert application_up < proxy_restart < proxy_wait
