@@ -24,7 +24,11 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 轮换验收必须同时证明新 PostgreSQL、MinIO 和检索令牌可用且旧值被拒绝，四个应用容器取得相同的新数据库/MinIO/JWT 配置，真实 TikTok、LLM、AI 和自动回复开关继续失败关闭。PostgreSQL 容器的 localhost 规则允许 trust，因此口令正反例必须从 backend 容器经 `postgres:5432` 验证；backend 被重建后必须重启 proxy 以刷新 Nginx 上游地址，再检查三个公开健康端点。staging 部署门禁和回滚演练已将 proxy 重启及健康等待纳入自动流程。
 
-成功轮换的 root-only 恢复副本位于 `/var/backups/crm-staging/secrets/20260921T080357Z/crm-staging.env.before`。两次失败尝试在变更前/回滚后留下的受限重复副本尚未删除；删除必须另立 `MAINT-CLEANUP-*` 任务和精确批次。TikTok Partner Center 与 DeepSeek 的外部凭据仍为空，待对应 G1/G4 真实验收时由用户在服务器受限通道注入；production 未变更、未发布。
+成功轮换的 root-only 恢复副本位于 `/var/backups/crm-staging/secrets/20260921T080357Z/crm-staging.env.before`。两次失败尝试在变更前/回滚后留下的受限重复副本尚未删除；删除必须另立 `MAINT-CLEANUP-*` 任务和精确批次。
+
+2026-09-23 又仅在 staging 经 SSH 受限通道注入 TikTok App Key、Service ID、App Secret 和 DeepSeek API Key；活动 env 仍为 `crmdeploy:crmdeploy:0600`。仅重建 backend、worker、jobs、agent-worker 并刷新内层 proxy，实际镜像摘要未变，按进程职责验证四项凭据可见性、所有真实能力开关为 false、日志/健康响应未泄漏、三个公网健康端点 200、固定出口仍为 `38.55.145.52`、公司 system Docker 未变。旧 env 的 root-only 恢复副本为 `/var/backups/crm-staging/secrets/external-20260923T025011Z/crm-staging.env.before`；第一次尝试因一次性工具的工作目录权限在容器变更前失败，原配置已恢复并独立复核，修正后复用同一恢复副本完成注入。传输用 `/run` 临时文件已删除，实际密钥值和摘要不进入仓库。**这只证明安全注入和应用生效，不证明 TikTok/DeepSeek 平台已接受凭据**；真实 OAuth、Webhook 投递及 DeepSeek 调用仍按 G1/G2/G4 独立验收，production 未变更或发布。
+
+`TIKTOK_WEBHOOK_SECRET` 只服务于本地 Mock 的 `X-TTS-Signature` 回归，不是需要从 Partner Center 单独获取的真实 Webhook 凭据。真实 Webhook 验签使用已注入的 `TIKTOK_APP_SECRET` 对 `TIKTOK_APP_KEY + 原始请求体` 计算 HMAC-SHA256，并与 `Authorization` 比较；该 Mock 字段在 staging 保持空值。此前把它列为外部凭据准备项的说明由本节纠正，不得生成任意值冒充平台密钥。
 
 ### TikTok 固定出口契约
 

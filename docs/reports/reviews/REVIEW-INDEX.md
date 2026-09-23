@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -11,3 +11,4 @@ View: `CURRENT`
 | RR-MVP-001-20260921-R01 | MVP-001 | R01 | APPROVE | `83da7cc67a5e799d1d3aa9a6fb50253abbe523f8` | secret-handling / rollback / database-authentication / minio-authentication / retrieval-token / log-and-response-leakage / fail-closed / workload-isolation | 2026-09-21T16:11:43+08:00 | [`RR-MVP-001-20260921-R01.md`](RR-MVP-001-20260921-R01.md) |
 | RR-MVP-EGRESS-001-20260922-R01 | MVP-EGRESS-001 | R01 | APPROVE | `4c8d08c4728dad5e85f6bd2d0e83751a084ccace` | fixed-egress / fail-closed / rootless-uid / ssh-least-privilege / compose-order / secret-isolation / rollback / production-boundary | 2026-09-22T13:32:27+08:00 | [`RR-MVP-EGRESS-001-20260922-R01.md`](RR-MVP-EGRESS-001-20260922-R01.md) |
 | RR-MVP-EGRESS-001-20260923-R02 | MVP-EGRESS-001 | R02 | APPROVE | `746c10cacf7b2e1e827317e9759e203dc0cc9551` | fixed-egress / fail-closed / staging-proxy-refresh / immutable-image-provenance / company-workload-isolation / production-boundary | 2026-09-23T10:03:33+08:00 | [`RR-MVP-EGRESS-001-20260923-R02.md`](RR-MVP-EGRESS-001-20260923-R02.md) |
+| RR-MVP-001-20260923-R02 | MVP-001 | R02 | APPROVE | `4ffb888a6af59a25333d6c984273fd1a89abff09` | secret-handling / credential-role-isolation / rollback / fail-closed / egress / workload-isolation / production-boundary | 2026-09-23T11:05:00+08:00 | [`RR-MVP-001-20260923-R02.md`](RR-MVP-001-20260923-R02.md) |

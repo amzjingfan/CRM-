@@ -4,7 +4,7 @@
 
 | 门禁 | 范围 | 当前状态 | 阻断条件 / 证据入口 | 下一动作 |
 |---|---|---|---|---|
-| G0 | 基础设施、配置、密钥、备份与回滚 | 部分通过 | `MVP-STAGING-001` 已完成 split-ingress Rootless 真实部署；`MVP-001` 已完成内部 PostgreSQL/MinIO/JWT/检索凭据轮换和 TikTok 加密主密钥注入。`MVP-EGRESS-001` 的 staging 固定出口现场门禁、helper 故障关闭、TikTok 无凭据 TLS 和公司负载零业务漂移已通过，证据见 `release/evidence/staging/crm-staging-tiktok-egress-20260923.json`；本次 staging 镜像复用有用户限定授权，不能外推 production。真实 TikTok/DeepSeek 外部凭据、数据库/对象存储恢复和兼容上一版镜像实际回滚仍缺失 | 先关闭外部凭据阻塞，再执行 `MVP-008` 的恢复/回滚；新镜像与 production 不沿用 staging 例外，未全部通过前 G8 继续阻塞 |
+| G0 | 基础设施、配置、密钥、备份与回滚 | 部分通过 | `MVP-STAGING-001` 已完成 split-ingress Rootless 真实部署；`MVP-001` 已完成内部凭据轮换和四项外部凭据的 staging 安全注入，证据见 `release/evidence/staging/crm-staging-external-credentials-20260923.json`；真实平台接受仍待 G1/G2/G4。`MVP-EGRESS-001` 固定出口现场门禁、故障关闭和公司负载零业务漂移已通过；本次 staging 镜像复用有用户限定授权，不能外推 production。数据库/对象存储恢复和兼容上一版镜像实际回滚仍缺失 | 执行 `MVP-008` 的恢复/回滚；真实平台验收按 G1/G2/G4 分开执行；新镜像与 production 不沿用 staging 例外，未全部通过前 G8 继续阻塞 |
 | G1 | TikTok OAuth 与只读 | 已实现，待真实验证 | 确定性 OAuth/只读检查已通过；缺真实店铺授权、Scope、Token 生命周期、订单/物流/会话及隔离证据 | 用专用测试店铺执行授权和只读清单 |
 | G2 | TikTok Webhook | 已实现，待真实验证 | 签名、幂等和内部回归已覆盖；缺 Partner Center 实际投递、重试与乱序证据 | 注册真实订阅并验证投递、重放和审计 |
 | G3 | 人工确认普通消息 | 已实现，待真实验证 | 确定性发送、`unknown`、对账已覆盖；缺真实发送、对账和回滚证据 | 以低风险测试会话发送一次并制造/收敛不确定状态 |
