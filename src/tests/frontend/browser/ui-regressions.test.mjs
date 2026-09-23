@@ -1,0 +1,575 @@
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import { after, before, test } from "node:test";
+
+const require = createRequire(new URL("../../../frontend/package.json", import.meta.url));
+const { chromium } = require("playwright-core");
+
+const baseUrl = process.env.UI_BASE_URL ?? "http://127.0.0.1:3101";
+const target = new URL(baseUrl);
+if (!["127.0.0.1", "localhost", "::1"].includes(target.hostname)) {
+  throw new Error("UI regression tests only run against a local server");
+}
+const origin = target.origin;
+const user = {
+  id: "00000000-0000-4000-8000-000000000001",
+  name: "Test Admin",
+  email: "admin@example.invalid",
+  role: "admin",
+  avatar: null,
+  permissions: ["marketing.manage"],
+  store_ids: [],
+};
+const store = {
+  id: "00000000-0000-4000-8000-0000000000f1",
+  name: "US Demo Store",
+  code: "us_demo",
+  status: "active",
+  timezone: "America/Los_Angeles",
+  currency: "USD",
+  created_at: "2026-09-01T00:00:00Z",
+};
+const agent = {
+  id: "00000000-0000-4000-8000-0000000000a1",
+  store_id: store.id,
+  name: "Service Agent",
+  code: "service_agent",
+  description: null,
+  status: "enabled",
+  enabled_tools: [],
+  knowledge_scope: {},
+  runtime: {
+    available: true,
+    llm_provider: "deepseek",
+    llm_model: "test-model",
+    embedding_provider: "local_bge",
+    embedding_model: "BAAI/bge-m3",
+    reranker_model: "test-reranker",
+    prompt_versions: {},
+    auto_reply_threshold: 0.85,
+    human_review_threshold: 0.5,
+    token_streaming: false,
+  },
+  created_at: "2026-09-01T00:00:00Z",
+  updated_at: "2026-09-01T00:00:00Z",
+};
+
+let browser;
+
+before(async () => {
+  browser = await chromium.launch({ channel: "chrome", headless: true });
+});
+
+after(async () => {
+  await browser?.close();
+});
+
+async function openPage(path, responses = {}, setup = async () => {}) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await context.route("**/v1/**", async (route) => {
+    const request = route.request();
+    const pathname = new URL(request.url()).pathname;
+    const headers = {
+      "access-control-allow-origin": origin,
+      "access-control-allow-credentials": "true",
+      "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+      "access-control-allow-headers": "content-type,idempotency-key,x-csrf-token",
+    };
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers });
+      return;
+    }
+    const response = responses[`${request.method()} ${pathname}`] ??
+      (pathname === "/v1/auth/me" ? user : []);
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers,
+      body: JSON.stringify({ code: 0, message: "ok", data: response }),
+    });
+  });
+  await setup(context);
+  const page = await context.newPage();
+  await page.goto(`${baseUrl}${path}`);
+  await page.getByRole("link", { name: "数据看板" }).waitFor();
+  return { context, page };
+}
+
+test("knowledge with no authorized store offers store setup instead of loading forever", async () => {
+  const { context, page } = await openPage("/knowledge");
+  try {
+    await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await page.getByRole("status", { name: /加载中/ }).count(), 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("marketing with no authorized store offers store setup instead of loading forever", async () => {
+  const { context, page } = await openPage("/marketing");
+  try {
+    await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await page.getByText(/正在加载营销流程/).count(), 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("stale store URL cannot bypass knowledge and marketing setup guidance", async () => {
+  for (const path of ["/knowledge", "/marketing"]) {
+    const { context, page } = await openPage(`${path}?store_id=stale-store`);
+    try {
+      await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
+      assert.equal(await page.getByRole("button", { name: path === "/knowledge" ? "新增知识" : "新建流程" }).isDisabled(), true);
+    } finally {
+      await context.close();
+    }
+  }
+});
+
+test("knowledge creation controls stay disabled until a store is available", async () => {
+  const { context, page } = await openPage("/knowledge");
+  try {
+    await page.getByRole("link", { name: "创建店铺" }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "新增知识" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "管理分类" }).isDisabled(), true);
+    assert.equal(await page.locator('input[type="file"]').isDisabled(), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("marketing workflow creation stays disabled until a store is available", async () => {
+  const { context, page } = await openPage("/marketing");
+  try {
+    await page.getByRole("link", { name: "创建店铺" }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "新建流程" }).isDisabled(), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("store code with punctuation is rejected by browser validation", async () => {
+  const { context, page } = await openPage("/settings/stores");
+  try {
+    const code = page.locator('input[name="code"]');
+    await code.fill("c's");
+    assert.equal(await code.evaluate((input) => input.validity.valid), false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("store creation error is visibly announced", async () => {
+  const { context, page } = await openPage("/settings/stores");
+  try {
+    await context.route("**/v1/settings/stores", async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      await route.fulfill({
+        status: 422,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 422, message: "编码格式不正确", data: null }),
+      });
+    });
+    await page.locator('input[name="name"]').fill("Test Store");
+    await page.locator('input[name="code"]').fill("test_store");
+    await page.getByRole("button", { name: "创建店铺" }).click();
+    await page.getByRole("status").getByText("编码格式不正确").waitFor({ state: "visible", timeout: 5000 });
+  } finally {
+    await context.close();
+  }
+});
+
+test("channel authorization without an internal store explains the prerequisite", async () => {
+  const { context, page } = await openPage("/settings/channels");
+  try {
+    await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await page.getByRole("button", { name: "授权 TikTok Shop" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "添加 Mock 渠道" }).isDisabled(), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("channel authorization failure is visibly announced", async () => {
+  const { context, page } = await openPage("/settings/channels", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+  });
+  try {
+    await context.route("**/v1/settings/channels/tiktok/oauth/start*", async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 503, message: "授权服务暂不可用", data: null }),
+      });
+    });
+    await page.getByRole("button", { name: "授权 TikTok Shop" }).click();
+    const status = page.getByRole("status").filter({ hasText: "授权服务暂不可用" });
+    await status.waitFor({ state: "visible", timeout: 5000 });
+    assert.ok((await status.boundingBox()).y < 400, "OAuth error should be near the page header");
+  } finally {
+    await context.close();
+  }
+});
+
+test("failed channel and team loads do not claim there are no stores", async () => {
+  for (const [path, endpoint] of [["/settings/channels", "/v1/settings/channels"], ["/settings/team", "/v1/settings/team"]]) {
+    const { context, page } = await openPage(path, {}, async (context) => {
+      await context.route(`**${endpoint}`, async (route) => {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+          body: JSON.stringify({ code: 503, message: "配置加载失败", data: null }),
+        });
+      });
+    });
+    try {
+      await page.getByRole("alert").getByText("配置加载失败").waitFor();
+      assert.equal(await page.getByRole("link", { name: "创建店铺" }).count(), 0);
+    } finally {
+      await context.close();
+    }
+  }
+});
+
+test("Agent code with punctuation is rejected by browser validation", async () => {
+  const { context, page } = await openPage("/agents", {
+    "GET /v1/agents": [],
+    "GET /v1/settings/stores": [store],
+  });
+  try {
+    const code = page.locator('input[name="code"]');
+    await code.fill("c's");
+    assert.equal(await code.evaluate((input) => input.validity.valid), false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("Agent save failure is visibly announced", async () => {
+  const { context, page } = await openPage("/agents", {
+    "GET /v1/agents": [],
+    "GET /v1/settings/stores": [store],
+  }, async (context) => {
+    await context.route("**/v1/agents", async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      await route.fulfill({
+        status: 422,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 422, message: "Agent 配置无效", data: null }),
+      });
+    });
+  });
+  try {
+    await page.getByRole("button", { name: "保存运营配置" }).click();
+    const status = page.getByRole("status").filter({ hasText: "Agent 配置无效" });
+    await status.waitFor({ state: "visible", timeout: 5000 });
+    assert.ok((await status.boundingBox()).y < 400, "Agent save error should be near the page header");
+  } finally {
+    await context.close();
+  }
+});
+
+test("Agent log request failure is not shown as an empty log", async () => {
+  const { context, page } = await openPage("/agents", {
+    "GET /v1/agents": [agent],
+    "GET /v1/settings/stores": [store],
+  }, async (context) => {
+    await context.route("**/v1/agents/*/logs*", async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 503, message: "日志服务不可用", data: null }),
+      });
+    });
+  });
+  try {
+    await page.getByRole("alert").getByText("日志服务不可用").waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await page.getByText("暂无运行日志").count(), 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("late Agent log error cannot replace the newly selected Agent logs", async () => {
+  const agentA = { ...agent, name: "Agent A" };
+  const agentB = { ...agent, id: "00000000-0000-4000-8000-0000000000a2", name: "Agent B" };
+  let releaseA;
+  let startedA;
+  const startedAPromise = new Promise((resolve) => { startedA = resolve; });
+  const { context, page } = await openPage("/agents", {
+    "GET /v1/agents": [agentA, agentB],
+    "GET /v1/settings/stores": [store],
+  }, async (context) => {
+    await context.route("**/v1/agents/*/logs*", async (route) => {
+      const isA = route.request().url().includes(agentA.id);
+      if (isA) await new Promise((resolve) => { releaseA = resolve; startedA(); });
+      await route.fulfill({
+        status: isA ? 503 : 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify(isA ? { code: 503, message: "A 日志不可用", data: null } : { code: 0, message: "ok", data: {
+          items: [{ id: "run-B", status: "success", action: "B ACTION", intent: "reply", model_provider: "test", model_name: "test-model", latency_ms: 10, trace_id: "trace-B" }],
+          page: 1, page_size: 20, total: 1,
+        } }),
+      });
+    });
+  });
+  try {
+    await startedAPromise;
+    await page.locator(".agent-summary-card").filter({ hasText: "Agent B" }).getByRole("button", { name: "配置" }).click();
+    await page.getByText("B ACTION").waitFor();
+    const oldResponse = page.waitForResponse((response) => response.url().includes(agentA.id) && response.url().includes("/logs"));
+    releaseA();
+    await oldResponse;
+    await page.waitForTimeout(150);
+    assert.equal(await page.getByText("B ACTION").isVisible(), true);
+    assert.equal(await page.getByText("A 日志不可用").count(), 0);
+  } finally {
+    releaseA?.();
+    await context.close();
+  }
+});
+
+test("knowledge archive failure is visibly announced", async () => {
+  const entry = {
+    id: "00000000-0000-4000-8000-0000000000e1",
+    store_id: store.id,
+    category_id: null,
+    question: "Shipping time?",
+    answer: "Three days.",
+    source: null,
+    tags: [],
+    status: "draft",
+    vectorization_status: "ready",
+    document_version: 1,
+    usage_count: 0,
+    satisfaction_rate: null,
+    statement_type: "policy",
+    customer_scope: "none",
+    publication_approval: "draft",
+    semantic_schema_version: 1,
+    approved_by: null,
+    approved_at: null,
+    published_at: null,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  };
+  const { context, page } = await openPage("/knowledge", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/knowledge/categories": [],
+    "GET /v1/knowledge/entries": { items: [entry], page: 1, page_size: 20, total: 1 },
+    "GET /v1/knowledge/vectorization/status": {
+      store_id: store.id,
+      worker_enabled: true,
+      provider: "local_bge",
+      model: "BAAI/bge-m3",
+      dimensions: 1024,
+      counts: { pending: 0, processing: 0, ready: 1, failed: 0 },
+    },
+  }, async (context) => {
+    await context.route("**/v1/knowledge/entries/*/archive", async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 503, message: "归档服务不可用", data: null }),
+      });
+    });
+  });
+  try {
+    await page.getByRole("button", { name: "归档" }).click();
+    await page.getByRole("status").getByText("归档服务不可用").waitFor({ state: "visible", timeout: 5000 });
+  } finally {
+    await context.close();
+  }
+});
+
+test("Agent form without a store disables save and points to store setup", async () => {
+  const { context, page } = await openPage("/agents");
+  try {
+    await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await page.getByRole("button", { name: "保存运营配置" }).isDisabled(), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("team form without a store disables employee creation and points to setup", async () => {
+  const { context, page } = await openPage("/settings/team");
+  try {
+    await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await page.getByRole("button", { name: "创建员工" }).isDisabled(), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("team form permits system admin without store and resets to disabled agent role", async () => {
+  const { context, page } = await openPage("/settings/team", {}, async (context) => {
+    await context.route("**/v1/settings/team", async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 0, message: "ok", data: {
+          id: "00000000-0000-4000-8000-0000000000c1",
+          name: "Admin Two",
+          email: "admin2@example.invalid",
+          status: "active",
+          assignments: [{ role: "admin", store_id: null }],
+          last_login_at: null,
+          created_at: "2026-09-23T00:00:00Z",
+        } }),
+      });
+    });
+  });
+  try {
+    await page.locator('select[name="role"]').selectOption("admin");
+    assert.equal(await page.getByRole("button", { name: "创建员工" }).isEnabled(), true);
+    await page.locator('input[name="name"]').fill("Admin Two");
+    await page.locator('input[name="email"]').fill("admin2@example.invalid");
+    await page.locator('input[name="temporary_password"]').fill("ExamplePass123!");
+    await page.getByRole("button", { name: "创建员工" }).click();
+    await page.getByRole("status").getByText(/员工已创建/).waitFor();
+    assert.equal(await page.locator('select[name="role"]').inputValue(), "agent");
+    assert.equal(await page.getByRole("button", { name: "创建员工" }).isDisabled(), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("conversation filter replaces a detail that is no longer in the list", async () => {
+  const customer = (name) => ({ id: `customer-${name}`, name, email: null, avatar: null, tags: [] });
+  const session = (name, unread) => ({
+    id: `session-${name}`,
+    store_id: "00000000-0000-4000-8000-0000000000f1",
+    platform: "tiktok",
+    status: "open",
+    unread_count: unread,
+    assigned_user_id: null,
+    last_message_at: "2026-09-23T00:00:00Z",
+    last_message: `Message from ${name}`,
+    customer: customer(name),
+  });
+  const alice = session("Alice", 0);
+  const bob = session("Bob", 2);
+  const { context, page } = await openPage("/workspace", {}, async (context) => {
+    await context.route("**/v1/workspace/sessions*", async (route) => {
+      if (new URL(route.request().url()).pathname !== "/v1/workspace/sessions") return route.fallback();
+      const filter = new URL(route.request().url()).searchParams.get("filter");
+      const items = filter === "unread" ? [bob] : [alice, bob];
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 0, message: "ok", data: { items, pagination: { page: 1, page_size: 30, total: items.length } } }),
+      });
+    });
+    await context.route("**/v1/workspace/sessions/*/messages*", async (route) => {
+      const selected = route.request().url().includes("session-Bob") ? bob : alice;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 0, message: "ok", data: {
+          session: selected,
+          messages: [],
+          customer: selected.customer,
+          recent_orders: [],
+          ai_suggestion: null,
+          pagination: { page: 1, page_size: 100, total: 0 },
+          send_mode: "disabled",
+          requires_confirmation: true,
+        } }),
+      });
+    });
+  });
+  try {
+    await page.getByLabel("聊天窗口").getByRole("heading", { name: "Alice" }).waitFor();
+    await page.getByRole("button", { name: "未读" }).click();
+    await page.locator(".conversation-card").filter({ hasText: "Bob" }).waitFor();
+    assert.equal(await page.locator(".conversation-card").filter({ hasText: "Bob" }).getAttribute("aria-pressed"), "true");
+    await page.getByLabel("聊天窗口").getByRole("heading", { name: "Bob" }).waitFor();
+  } finally {
+    await context.close();
+  }
+});
+
+test("older conversation filter response cannot replace the latest list", async () => {
+  const session = (name) => ({
+    id: `session-${name}`,
+    store_id: store.id,
+    platform: "tiktok",
+    status: "open",
+    unread_count: name === "Bob" ? 1 : 0,
+    assigned_user_id: null,
+    last_message_at: "2026-09-23T00:00:00Z",
+    last_message: `Message from ${name}`,
+    customer: { id: `customer-${name}`, name, email: null, avatar: null, tags: [] },
+  });
+  const alice = session("Alice");
+  const bob = session("Bob");
+  let releaseUnread;
+  let unreadStarted;
+  const unreadStartedPromise = new Promise((resolve) => { unreadStarted = resolve; });
+  let secondAll;
+  const secondAllPromise = new Promise((resolve) => { secondAll = resolve; });
+  let allCount = 0;
+  const { context, page } = await openPage("/workspace", {}, async (context) => {
+    await context.route("**/v1/workspace/sessions*", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname !== "/v1/workspace/sessions") return route.fallback();
+      const unread = url.searchParams.get("filter") === "unread";
+      if (unread) {
+        await new Promise((resolve) => { releaseUnread = resolve; unreadStarted(); });
+      } else {
+        allCount += 1;
+      }
+      const items = unread ? [bob] : [alice];
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 0, message: "ok", data: { items, pagination: { page: 1, page_size: 30, total: items.length } } }),
+      });
+      if (!unread && allCount === 2) secondAll();
+    });
+    await context.route("**/v1/workspace/sessions/*/messages*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 0, message: "ok", data: {
+          session: alice, messages: [], customer: alice.customer, recent_orders: [], ai_suggestion: null,
+          pagination: { page: 1, page_size: 100, total: 0 }, send_mode: "disabled", requires_confirmation: true,
+        } }),
+      });
+    });
+  });
+  try {
+    await page.getByLabel("聊天窗口").getByRole("heading", { name: "Alice" }).waitFor();
+    await page.getByRole("button", { name: "未读" }).click();
+    await unreadStartedPromise;
+    await page.getByText(/正在加载会话/).waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "全部" }).click();
+    await secondAllPromise;
+    await page.getByText(/正在加载会话/).waitFor({ state: "hidden" });
+    const unreadResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/v1/workspace/sessions" && new URL(response.url()).searchParams.get("filter") === "unread");
+    releaseUnread();
+    await unreadResponse;
+    await page.waitForTimeout(150);
+    assert.equal(await page.locator(".conversation-card").filter({ hasText: "Bob" }).count(), 0);
+    assert.equal(await page.locator(".conversation-card").filter({ hasText: "Alice" }).getAttribute("aria-pressed"), "true");
+  } finally {
+    releaseUnread?.();
+    await context.close();
+  }
+});

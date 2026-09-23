@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AppShell } from "../../../components/AppShell";
 import { SettingsNav } from "../../../components/SettingsNav";
@@ -115,6 +116,7 @@ export default function ChannelsPage() {
           <span className="status-badge disabled">Controlled rollout</span>
         </section>
         <SettingsNav />
+        {notice ? <div className="inline-status" role="status">{notice}</div> : null}
         <section className="grid gap-4 xl:grid-cols-[1fr_380px]">
           <article className="management-card">
             <h3>{en ? "Channel accounts" : "渠道账号"}</h3>
@@ -142,6 +144,7 @@ export default function ChannelsPage() {
               <h3>TikTok Shop OAuth</h3>
               <label className="field-label">{en ? "Internal store" : "内部店铺"}<select className="compact-field" value={selectedStoreId} onChange={(event) => setSelectedStoreId(event.target.value)} disabled={authorizing}>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
               <button className="primary-button" type="button" disabled={!selectedStoreId || authorizing} onClick={() => void beginOAuth()}>{authorizing ? (en ? "Redirecting…" : "正在跳转…") : (en ? "Authorize TikTok Shop" : "授权 TikTok Shop")}</button>
+              {!loading && !error && !stores.length ? <p>{en ? "Create an internal store before authorization." : "请先创建内部店铺，再进行授权。"} <Link className="text-button" href="/settings/stores">{en ? "Create store" : "创建店铺"}</Link></p> : null}
               <small>{en ? "Tokens are encrypted on the server and are never returned to this page." : "Token 仅在服务端加密保存，不会返回到页面。"}</small>
             </article>
             <form className="management-card space-y-4" onSubmit={(event) => void submitMock(event)}>
@@ -151,11 +154,10 @@ export default function ChannelsPage() {
               <label className="field-label">{en ? "Platform store ID" : "平台店铺 ID"}<input className="compact-field" name="external_store_id" required /></label>
               <label className="field-label">{en ? "Display name" : "显示名称"}<input className="compact-field" name="display_name" required /></label>
               <label className="field-label">{en ? "Credential reference" : "凭证引用"}<input className="compact-field" name="access_token_ref" required placeholder="secret://platform/account" /><small>{en ? "Enter only a secret-manager reference." : "仅填写密钥管理引用。"}</small></label>
-              <button className="primary-button" type="submit">{en ? "Add Mock channel" : "添加 Mock 渠道"}</button>
+              <button className="primary-button" disabled={!stores.length} type="submit">{en ? "Add Mock channel" : "添加 Mock 渠道"}</button>
             </form>
           </div>
         </section>
-        <div aria-live="polite" className="sr-only">{notice}</div>
       </main>
     </AppShell>
   );

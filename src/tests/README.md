@@ -9,6 +9,7 @@
 | `src/tests/backend/` | `test_*.py`，由 `src/backend/pyproject.toml` 的 `../tests/backend` 发现 | 按 `agent`、`auth_security`、`domain`、`platform` 和 `runtime_infrastructure` 分类的后端测试 |
 | `src/tests/integration/postgres/` | `test_*.py`，由同一 pytest 配置的 `../tests/integration/postgres` 发现 | 真实 PostgreSQL/pgvector 跨模块集成测试 |
 | `src/tests/frontend/contract/` | `*.test.mjs`，由 `src/frontend/package.json` 的 `npm run test` 执行 | 前端组合、API 使用与安全契约 |
+| `src/tests/frontend/browser/` | `*.test.mjs`，在本地 Next 服务和 Chrome 就绪时由 `npm run test:ui` 执行 | 拦截外部请求、使用合成数据的交互回归；不代表真实平台验收 |
 | `src/tests/frontend/helpers/` | 由前端契约测试显式导入 | 统一提供仓库、`src/`、前端和测试 URL 根 |
 | `src/tests/ai/datasets/` | 版本化 JSONL/manifest | AI/RAG 评测输入，不由普通 pytest 自动执行 |
 | `src/tests/ai/results/` | 经审查的版本化普通 eval 结果 | 保留已登记、低敏、可追踪的普通评测结果 |
@@ -47,6 +48,8 @@ npm run test
 npm run build
 Set-Location ../..
 ```
+
+隔离浏览器交互回归另需本机 Chrome 与本地 Next 服务。先在 `src/frontend/` 运行 `npm run dev -- --hostname 127.0.0.1 --port 3101`，再在同目录的另一个终端执行 `npm run test:ui`；默认目标为 `http://127.0.0.1:3101`，需要其他地址时用 `UI_BASE_URL` 环境变量指定。测试拦截 `/v1/` 请求并只使用合成数据，不访问真实店铺、TikTok 或 staging；该命令不替代 `npm run test` 与真实平台门禁。
 
 依赖已由可信缓存或当前工作区完整提供时，可按任务风险跳过重复安装，但必须记录实际环境。生产构建只证明前端构建成功，不替代浏览器、真实网络或 staging 验收。
 

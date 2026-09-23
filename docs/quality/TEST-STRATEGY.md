@@ -15,6 +15,7 @@ src/tests/
 ├─ backend/
 ├─ frontend/
 │  ├─ contract/
+│  ├─ browser/
 │  └─ helpers/
 ├─ integration/
 │  └─ postgres/
@@ -33,6 +34,7 @@ src/tests/
 | 后端安全 | `src/tests/backend/auth_security/` 及相关领域测试 | 适用 | 认证、权限、店铺隔离、CSRF、DLP、幂等和失败关闭 |
 | 跨模块集成 | `src/tests/integration/postgres/test_*.py` | 适用 | 真实 PostgreSQL/pgvector、迁移后的数据结构和跨模块事务行为 |
 | 前端契约与行为 | `src/tests/frontend/contract/*.test.mjs` | 适用 | 页面组合、API 使用、安全约束和 TikTok OAuth 前端契约 |
+| 隔离浏览器交互回归 | `src/tests/frontend/browser/*.test.mjs` | 适用（本地 Next 服务和 Chrome） | 合成店铺与拦截 API 下验证空状态、表单反馈、筛选与错误提示；不证明真实平台闭环 |
 | 启动与健康冒烟 | `src/tests/backend/runtime_infrastructure/test_health.py` 与已登记的 `src/backend/scripts/verify_*.py` | 适用 | 健康检查和需要显式环境的专项运行时核对 |
 | AI/RAG eval | `src/tests/ai/datasets/`、`src/tests/ai/results/` 与对应评测脚本 | 适用 | 版本化意图、RAG、回复安全和真实模型门禁 |
 | 浏览器核心闭环 E2E | 无权威自动化路径 | `N/A` | 当前真实 TikTok/DeepSeek 闭环需要隔离 staging、真实授权和低敏冻结数据；建立独立可重复入口后启用 |

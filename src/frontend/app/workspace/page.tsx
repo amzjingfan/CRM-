@@ -49,6 +49,7 @@ export default function WorkspacePage() {
   const [suggestionStatus, setSuggestionStatus] = useState("");
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const suggestionController = useRef<AbortController | null>(null);
+  const listRequestId = useRef(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,17 +60,20 @@ export default function WorkspacePage() {
   useEffect(() => () => suggestionController.current?.abort(), []);
 
   const loadList = useCallback(async () => {
+    const requestId = ++listRequestId.current;
     setLoading(true); setError("");
     const query = new URLSearchParams({ filter, page: "1", page_size: "30" });
     if (platform) query.set("platform", platform); if (storeId) query.set("store_id", storeId);
     try {
-      const data = await listSessions(query); setList(data);
-      setSelectedId((current) => current ?? data.items[0]?.id ?? null);
-    } catch (caught) { setError(caught instanceof Error ? caught.message : en ? "Failed to load conversations" : "会话加载失败"); }
-    finally { setLoading(false); }
+      const data = await listSessions(query);
+      if (requestId !== listRequestId.current) return;
+      setList(data);
+      setSelectedId((current) => data.items.some((item) => item.id === current) ? current : data.items[0]?.id ?? null);
+    } catch (caught) { if (requestId === listRequestId.current) setError(caught instanceof Error ? caught.message : en ? "Failed to load conversations" : "会话加载失败"); }
+    finally { if (requestId === listRequestId.current) setLoading(false); }
   }, [en, filter, platform, storeId]);
 
-  useEffect(() => { void loadList(); }, [loadList]);
+  useEffect(() => { void loadList(); return () => { listRequestId.current += 1; }; }, [loadList]);
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedId) params.set("session", selectedId); if (platform) params.set("platform", platform); if (storeId) params.set("store_id", storeId); if (filter !== "all") params.set("filter", filter);

@@ -47,12 +47,12 @@ test("Phase 4 English mode covers Agent forms and workspace SSE content", async 
   assert.match(workspace, /Transfer to human/);
 });
 
-test("workspace ignores stale conversation detail responses and updates read state", async () => {
+test("workspace ignores stale detail, updates read state, and clears filtered-out selection", async () => {
   const source = await read("app/workspace/page.tsx");
   assert.match(source, /let isCurrentRequest = true/);
   assert.match(source, /return \(\) => \{ isCurrentRequest = false; \}/);
   assert.match(source, /item\.id === selectedId \? \{ \.\.\.item, unread_count: 0 \}/);
-  assert.match(source, /setSelectedId\(\(current\) => current \?\?/);
+  assert.match(source, /setSelectedId\(\(current\) => data\.items\.some\(\(item\) => item\.id === current\)/);
 });
 
 test("application shell exposes a retryable authentication error state", async () => {

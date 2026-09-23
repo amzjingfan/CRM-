@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ArrowUpRight,
   ChartLineUp,
@@ -102,10 +103,16 @@ export default function MarketingPage() {
       setStores(user.store_ids);
       setPermissions(user.permissions);
       const params = new URLSearchParams(window.location.search);
-      setStoreId(params.get("store_id") ?? user.store_ids[0] ?? "");
+      const requestedStoreId = params.get("store_id");
+      const nextStoreId = requestedStoreId && user.store_ids.includes(requestedStoreId) ? requestedStoreId : user.store_ids[0] ?? "";
+      setStoreId(nextStoreId);
+      if (!nextStoreId) setLoading(false);
       setPage(Number(params.get("page") || 1));
     }).catch((caught: unknown) => {
-      if (!isAuthenticationError(caught)) setError(caught instanceof Error ? caught.message : (en ? "User loading failed" : "用户信息加载失败"));
+      if (!isAuthenticationError(caught)) {
+        setError(caught instanceof Error ? caught.message : (en ? "User loading failed" : "用户信息加载失败"));
+        setLoading(false);
+      }
     });
   }, [en]);
 
@@ -205,10 +212,10 @@ export default function MarketingPage() {
   }, [events]);
 
   return <AppShell><main className="management-page prototype-page">
-    <section className="prototype-page-header"><div className="prototype-title"><span className="prototype-title-icon marketing"><ChartLineUp size={25} weight="duotone" /></span><div><h2>{en ? "Smart marketing" : "智能营销"}<span>{en ? "Proactive outreach · Automated workflows" : "主动触达 · 自动化流程"}</span></h2></div></div><div className="prototype-actions"><select aria-label={en ? "Store" : "店铺"} className="compact-field header-select" onChange={(event) => { setPage(1); setStoreId(event.target.value); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{id.slice(0, 8)}</option>)}</select><button className="primary-button" onClick={() => { setEditing(null); setEditorOpen(true); }} type="button"><Plus size={18} weight="bold" />{en ? "New workflow" : "新建流程"}</button></div></section>
+    <section className="prototype-page-header"><div className="prototype-title"><span className="prototype-title-icon marketing"><ChartLineUp size={25} weight="duotone" /></span><div><h2>{en ? "Smart marketing" : "智能营销"}<span>{en ? "Proactive outreach · Automated workflows" : "主动触达 · 自动化流程"}</span></h2></div></div><div className="prototype-actions"><select aria-label={en ? "Store" : "店铺"} className="compact-field header-select" onChange={(event) => { setPage(1); setStoreId(event.target.value); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{id.slice(0, 8)}</option>)}</select><button className="primary-button" disabled={!storeId} onClick={() => { setEditing(null); setEditorOpen(true); }} type="button"><Plus size={18} weight="bold" />{en ? "New workflow" : "新建流程"}</button></div></section>
 
     {notice ? <section aria-live="polite" className="inline-status" role="status"><span>{notice}</span></section> : null}
-    {loading ? <LoadingState label={en ? "Loading marketing workflows…" : "正在加载营销流程…"} /> : error ? <ErrorState message={error} retry={() => void load()} /> : <>
+    {loading ? <LoadingState label={en ? "Loading marketing workflows…" : "正在加载营销流程…"} /> : error ? <ErrorState message={error} retry={() => void load()} /> : !storeId ? <div className="state-box" role="status"><p>{en ? "Create a store to manage marketing workflows." : "请先创建店铺，再管理营销流程。"}</p><Link className="secondary-button mt-3" href="/settings/stores">{en ? "Create store" : "创建店铺"}</Link></div> : <>
       <section className="campaign-grid" aria-label={en ? "Marketing workflows" : "营销流程"}>{campaigns.length ? campaigns.map((campaign) => {
         const campaignEvents = eventCounts.get(campaign.id) ?? { total: 0, converted: 0 };
         const Icon = campaign.trigger_type === "bad_review" ? Star : ShoppingCart;

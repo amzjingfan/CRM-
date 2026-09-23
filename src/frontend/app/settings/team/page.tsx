@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "../../../components/AppShell";
@@ -26,6 +27,7 @@ export default function TeamPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+  const [newRole, setNewRole] = useState("agent");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +65,7 @@ export default function TeamPage() {
         assignments: assignment(String(data.get("role")), String(data.get("store_id"))),
       });
       form.reset();
+      setNewRole("agent");
       setNotice(en ? "Employee created; send the temporary password through a secure channel" : "员工已创建，请通过安全渠道发送临时密码");
       await load();
     } catch (caught) {
@@ -215,16 +218,17 @@ export default function TeamPage() {
 
           <form className="management-card space-y-4" onSubmit={(event) => void submit(event)}>
             <h3>{en ? "Add employee" : "新增员工"}</h3>
+            {!loading && !error && !stores.length ? <p>{en ? "Create a store before assigning an agent or supervisor." : "请先创建店铺，再为坐席或主管分配店铺。"} <Link className="text-button" href="/settings/stores">{en ? "Create store" : "创建店铺"}</Link></p> : null}
             <label className="field-label">{en ? "Name" : "姓名"}<input className="compact-field" name="name" required /></label>
             <label className="field-label">{en ? "Email" : "邮箱"}<input className="compact-field" name="email" type="email" required /></label>
             <label className="field-label">{en ? "Temporary password" : "临时密码"}<input className="compact-field" name="temporary_password" type="password" minLength={12} required autoComplete="new-password" /></label>
-            <label className="field-label">{en ? "Role" : "角色"}<select className="compact-field" name="role"><option value="agent">agent</option><option value="supervisor">supervisor</option><option value="admin">admin</option></select></label>
+            <label className="field-label">{en ? "Role" : "角色"}<select className="compact-field" name="role" onChange={(event) => setNewRole(event.target.value)} value={newRole}><option value="agent">agent</option><option value="supervisor">supervisor</option><option value="admin">admin</option></select></label>
             <label className="field-label">
               {en ? "Store scope" : "店铺范围"}
               <select className="compact-field" name="store_id">{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}</select>
               <small>{en ? "admin automatically uses system-wide scope." : "admin 将自动使用系统级范围。"}</small>
             </label>
-            <button className="primary-button" type="submit">{en ? "Create employee" : "创建员工"}</button>
+            <button className="primary-button" disabled={loading || Boolean(error) || (!stores.length && newRole !== "admin")} type="submit">{en ? "Create employee" : "创建员工"}</button>
           </form>
         </section>
       </main>
