@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -13,3 +13,4 @@ View: `CURRENT`
 | RR-MVP-EGRESS-001-20260923-R02 | MVP-EGRESS-001 | R02 | APPROVE | `746c10cacf7b2e1e827317e9759e203dc0cc9551` | fixed-egress / fail-closed / staging-proxy-refresh / immutable-image-provenance / company-workload-isolation / production-boundary | 2026-09-23T10:03:33+08:00 | [`RR-MVP-EGRESS-001-20260923-R02.md`](RR-MVP-EGRESS-001-20260923-R02.md) |
 | RR-MVP-001-20260923-R02 | MVP-001 | R02 | APPROVE | `4ffb888a6af59a25333d6c984273fd1a89abff09` | secret-handling / credential-role-isolation / rollback / fail-closed / egress / workload-isolation / production-boundary | 2026-09-23T11:05:00+08:00 | [`RR-MVP-001-20260923-R02.md`](RR-MVP-001-20260923-R02.md) |
 | RR-MVP-UI-001-20260923-R01 | MVP-UI-001 | R01 | APPROVE | `8c13a9f1df0e71e3c3e7bb7916a1f1422b5a1820` | correctness / no-store-state / stale-requests / test-isolation / production-boundary | 2026-09-23T17:10:10+08:00 | [`RR-MVP-UI-001-20260923-R01.md`](RR-MVP-UI-001-20260923-R01.md) |
+| RR-MVP-UI-DEPLOY-001-20260923-R01 | MVP-UI-DEPLOY-001 | R01 | APPROVE | `58263b1108e96d0d6afa21a6bbfae271fb5c7a87` | staging-only / immutable-image-provenance / explicit-model-exception / rollback-point / company-workload-isolation / production-boundary | 2026-09-23T18:42:00+08:00 | [`RR-MVP-UI-DEPLOY-001-20260923-R01.md`](RR-MVP-UI-DEPLOY-001-20260923-R01.md) |

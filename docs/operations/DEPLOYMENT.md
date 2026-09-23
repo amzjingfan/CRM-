@@ -57,6 +57,8 @@ python scripts/verify_tiktok_egress.py
 
 本次用户仅限 staging 授权继续使用已验证的 backend/frontend 不可变摘要（与候选 `746c10c` 的构建输入零差异）和旧检索镜像摘要（检索服务源码与 Dockerfile 不变，但依赖锁文件**不同**）。新摘要 GHCR 下载失败/停滞不能写成已部署；下次镜像升级和 production 必须重新通过独立摘要与供应链门禁，不能沿用此例外。production 仍仅有可复用配置契约，未选择出口服务器、创建账号/密钥或实施部署。
 
+2026-09-23 UI 修复合并后，`main` 的 `58263b1` 已单独发布到 staging：新 frontend `e5d6bbfc...`、backend/helper `a3bb63c4...` 正在运行且健康，门禁 `35849490309`、固定出口、迁移头和三个公网健康端点均通过。全量同源尝试 `35845426383` 在新检索镜像下载阶段取消，取消前没有容器切换；用户为**这一次 staging UI 部署**另行批准保留当前健康的旧检索摘要 `bc99dfa3...`。检索服务源码/Dockerfile 相同，但依赖锁不同；这是明确的运行版本偏差，不是新检索镜像已部署或 production 供应链通过。恢复点、前后保护基线和未测项见 `release/evidence/staging/crm-staging-ui-rollout-20260923.json` 与 `MVP-UI-DEPLOY-001` R01。前一段固定出口任务的历史豁免仍只属于那次验收，本次授权不能延伸到下一次镜像升级。
+
 ## TikTok 与 DeepSeek
 
 - TikTok OAuth 回调在 staging 使用 `staging.overselfx.com`、在 production 使用 `www.overselfx.com` 的 HTTPS 固定地址，state 默认 600 秒、哈希存储并原子消费。

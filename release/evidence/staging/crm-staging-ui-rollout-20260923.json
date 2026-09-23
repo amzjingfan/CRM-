@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_ui_rollout",
+  "captured_at_utc": "2026-09-23T10:40:00Z",
+  "environment": "staging",
+  "status": "passed_with_explicit_staging_model_exception",
+  "production_release": false,
+  "source_main_sha": "58263b1108e96d0d6afa21a6bbfae271fb5c7a87",
+  "ui_change_subject_sha": "8c13a9f1df0e71e3c3e7bb7916a1f1422b5a1820",
+  "image_publish_run_id": 35844221980,
+  "full_image_attempt": {
+    "validate_run_id": 35845274792,
+    "deploy_run_id": 35845426383,
+    "status": "cancelled_during_retrieval_image_pull_before_container_switch",
+    "new_backend_and_frontend_images_downloaded": true,
+    "new_retrieval_image_downloaded": false
+  },
+  "approved_staging_exception": {
+    "scope": "this staging UI rollout only",
+    "authorization": "User explicitly approved retaining the existing healthy retrieval image if the new 8 GB image could not be downloaded; production and later releases do not inherit this exception.",
+    "old_retrieval_source_sha": "5099fc08d1ab0efbc30d679649bee32a7395ec36",
+    "service_source_and_dockerfile_equal_to_current_main": true,
+    "dependency_lock_equal_to_current_main": false,
+    "different_files": ["src/backend/pyproject.toml", "src/backend/uv.lock"]
+  },
+  "successful_gate": {
+    "validate_run_id": 35849293069,
+    "deploy_run_id": 35849490309,
+    "status": "passed",
+    "database_migration": "heads_applied",
+    "tiktok_egress_configured_ip": "38.55.145.52",
+    "tiktok_egress_observed_ip": "38.55.145.52",
+    "real_capabilities": "all_false"
+  },
+  "running_images": {
+    "backend_worker_jobs_agent_worker_and_egress": "ghcr.io/cp11-gh/crm-backend@sha256:a3bb63c47acee9f78682e9ea8837d415a7008635aa3a8c91e76dfe49b423f6c7",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:e5d6bbfc6cab8ba9c912ac3c95d8ff43f4ae9d8f6d12927124686b07cd9c1f0f",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:bc99dfa3ce36bc3332480b456da5d82a0d1495a2f9bbfd1b2bb56d4df2f02112",
+    "inspected_live_digest_match": true,
+    "key_health": "healthy"
+  },
+  "recovery": {
+    "root_only_backup": "/var/backups/crm-staging/releases/20260923T094858Z-58263b1",
+    "postgres_dump_readable_by_pg_restore": true,
+    "minio_snapshot_structure_checked": true,
+    "environment_file_backed_up_and_permissions_0600": true,
+    "database_or_object_restore_drill": "not_executed_separate_MVP-008"
+  },
+  "independent_checks": {
+    "database_migration_head": "023_marketing_review_idempotency",
+    "public_health": {"/healthz": 200, "/v1/health": 200, "/v1/health/ready": 200},
+    "ui_routes": {"/login": 200, "/settings/channels": 200, "/knowledge": 200, "/marketing": 200},
+    "next_static_javascript": 200,
+    "business_system_docker_before_sha256": "81595784015cb20f12aa88698ac0f6208bb4d04807472ae9c924782c22d0169e",
+    "business_system_docker_after_sha256": "81595784015cb20f12aa88698ac0f6208bb4d04807472ae9c924782c22d0169e",
+    "protected_listener_before_sha256": "bfadf6e35bdb8c0f0c0adbed87856389a1df0022543ab999293f11c2914e5003",
+    "protected_listener_after_sha256": "bfadf6e35bdb8c0f0c0adbed87856389a1df0022543ab999293f11c2914e5003",
+    "ingress_tunnel": "active/running",
+    "authenticated_ui_button_smoke": "not_executed_in_this_deployment"
+  },
+  "remaining_boundaries": [
+    "new retrieval model digest not deployed",
+    "real TikTok OAuth/Webhook/read/message and DeepSeek evaluation not enabled or accepted",
+    "database/object-store restore and compatible rollback drill remain separate G0 work",
+    "production not deployed or approved"
+  ],
+  "sensitive_values_included": false
+}
