@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_fixed_egress",
+  "verification_date_utc": "2026-09-23",
+  "environment": "staging",
+  "status": "passed_with_explicit_staging_image_exceptions",
+  "production_release": false,
+  "candidate_subject_sha": "746c10cacf7b2e1e827317e9759e203dc0cc9551",
+  "implementation_pr": 34,
+  "proxy_refresh_fix_pr": 37,
+  "staging_gate": {
+    "validated_main_sha": "746c10cacf7b2e1e827317e9759e203dc0cc9551",
+    "validate_run_id": 35808949842,
+    "deploy_run_id": 35806983990,
+    "deploy_status": "passed",
+    "database_migration": "heads_applied",
+    "rootless_compose_project": "crm-staging",
+    "docker_transport": "rootless_unix_socket",
+    "egress_configured_ip": "38.55.145.52",
+    "egress_observed_ip": "38.55.145.52",
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    }
+  },
+  "running_images": {
+    "backend_and_helper": "ghcr.io/cp11-gh/crm-backend@sha256:38fbb3f118a59101ad5ce1f3583850c1777d0b84a56e56491b55459d7b599bee",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:f18724708567209da7bc3e5dfb339b1e83955f034df2f4cc5802d2a758956d13",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:bc99dfa3ce36bc3332480b456da5d82a0d1495a2f9bbfd1b2bb56d4df2f02112",
+    "key_services_healthy_after_optional_pull_cancelled": true
+  },
+  "image_provenance": {
+    "backend_frontend_publish_run_id": 35691757958,
+    "backend_frontend_source_sha": "6babeb7a392f9cb76c751d217caeb1d6f9df81bf",
+    "backend_frontend_build_inputs_equal_candidate": true,
+    "backend_frontend_comparison": "git diff --quiet 6babeb7a392f9cb76c751d217caeb1d6f9df81bf..746c10cacf7b2e1e827317e9759e203dc0cc9551 -- src/backend src/frontend src/docker/Dockerfile.backend src/docker/Dockerfile.frontend.prod",
+    "backend_frontend_comparison_exit_code": 0,
+    "retrieval_publish_run_id": 35428767732,
+    "retrieval_source_sha": "5099fc08d1ab0efbc30d679649bee32a7395ec36",
+    "retrieval_service_source_and_dockerfile_unchanged": true,
+    "retrieval_build_inputs_equal_candidate": false,
+    "retrieval_build_input_differences": [
+      "src/backend/pyproject.toml",
+      "src/backend/uv.lock"
+    ],
+    "new_candidate_publish_run_id": 35807103091,
+    "new_candidate_validate_run_id": 35807497334,
+    "new_candidate_deploy_attempt_run_id": 35807746987,
+    "new_candidate_deploy_attempt_status": "cancelled_during_ghcr_pull_before_container_change",
+    "exception_authorization": "User explicitly approved both existing backend/frontend build-input-equivalent digests and the existing retrieval digest for this staging fixed-egress verification only; the retrieval dependency difference is not represented as identical.",
+    "exception_applies_to_production": false
+  },
+  "failure_closure": {
+    "target": "staging_tiktok_egress_helper_only",
+    "helper_stopped": true,
+    "backend_verifier_exit_while_stopped": 1,
+    "backend_established_direct_443_snapshot": 0,
+    "jobs_established_direct_443_snapshot": 0,
+    "helper_restored_healthy": true,
+    "restored_configured_ip": "38.55.145.52",
+    "restored_observed_ip": "38.55.145.52"
+  },
+  "unauthenticated_tiktok_tls": {
+    "proxy_scheme": "socks5h",
+    "token_endpoint_http_status": 200,
+    "authorized_shops_http_status": 400,
+    "tls_verification_succeeded": true,
+    "business_credentials_sent": false
+  },
+  "protected_baselines": {
+    "business_system_docker_unchanged": true,
+    "business_ingress_tunnel_argv_unchanged": true,
+    "business_protected_listeners_unchanged": true,
+    "edge_nonstaging_vhosts_unchanged": true,
+    "edge_ingress_authorized_keys_unchanged": true,
+    "edge_ingress_sshd_policy_unchanged": true,
+    "edge_protected_listener_addresses_ports_and_process_names_unchanged": true,
+    "edge_listener_pid_and_fd_changed_due_to_normal_tunnel_process_lifecycle": true,
+    "edge_nginx_config_valid": true,
+    "public_and_tunnel_health_unchanged": true
+  },
+  "real_capabilities": "all_false",
+  "remaining_boundaries": [
+    "production_not_deployed_or_approved",
+    "real_tiktok_oauth_webhook_read_and_message_not_enabled",
+    "deepseek_real_evaluation_not_enabled",
+    "database_object_store_restore_and_compatible_rollback_remain_separate_g0_work"
+  ]
+}

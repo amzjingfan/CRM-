@@ -9,9 +9,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/tiktok-fixed-egress
+Working branch at this snapshot: docs/mvp-egress-staging-evidence
 Governance base SHA: 99800c3bfac29df31392a05344e7dcb9a2d34fb1
-CANDIDATE_SUBJECT_SHA: 4c8d08c4728dad5e85f6bd2d0e83751a084ccace
+CANDIDATE_SUBJECT_SHA: 746c10cacf7b2e1e827317e9759e203dc0cc9551
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -20,7 +20,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-001` 已在真实 staging 完成内部凭据轮换：PostgreSQL、MinIO、JWT、检索令牌和 TikTok 凭据加密主密钥的新配置已注入容器，新 PostgreSQL/MinIO/检索值接受、旧值拒绝，响应/日志扫描通过，三个公网健康端点为 200。TikTok Partner Center 与 DeepSeek 外部凭据仍为空，因此任务状态为 `BLOCKED`、TR 为 `PARTIAL`，production 和真实能力继续关闭。
 
-`MVP-EGRESS-001` 已在分支 `feature/tiktok-fixed-egress` 完成应用级 SOCKS5H 失败关闭、独立 Rootless helper、最小权限 `crm-egress` 安装器、出口验证器和 staging/回滚门禁，当前状态为 `VERIFYING`。staging 目标出口固定为 `38.55.145.52`，入口 `crm-tunnel` 与出口 `crm-egress` 不复用账号、密钥或权限。PR #34 首轮后端 CI 仅发现两份测试文件未通过 Ruff format，机械格式化后的候选已完成全量复验；live staging 尚未执行，必须先合并实现并发布 merged-main 不可变镜像；production 仅有配置契约且未部署。
+`MVP-EGRESS-001` 的应用级 SOCKS5H 失败关闭、独立 Rootless helper、最小权限 `crm-egress` 安装器、出口验证器和 staging/回滚门禁已合入 `main`。staging 实际部署运行 `35806983990` 通过，固定出口配置和观测均为 `38.55.145.52`，故障关闭、TikTok 无凭据 TLS、双服务器保护基线和公网健康已验收；最终镜像摘要预检 `35808949842` 通过。业务机 GHCR 下载不稳定，用户明确批准仅本次 staging 保留构建输入等价的旧 backend/frontend 镜像及有依赖差异的旧检索镜像；差异和残余风险见 R02 记录及机器证据。证据分支待合并，任务仍为 `VERIFYING`；production 未部署或放行。
 
 入口服务器 root 家目录清理候选为 `85602c3c2702c33cbf00cf554afdfdc8c5ab0aa7`：3.1 GB staging 备份已原子迁入 `/var/backups/crm-staging`，退役 Python 缓存和误生成探针文件已进入 root-only 隔离目录；`/root` 顶层 CRM 项目匹配项为 0。迁移未删除数据，staging vhost、回环隧道与公网健康保持不变。
 
@@ -57,7 +57,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - MVP-DOMAIN-001 实施、测试与审查记录：[`../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md`](../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md`](../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md`](../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md)。三个派生索引从本地 `main` 读取时为 `CURRENT`。
 - MVP-STAGING-001 定稿实施、测试与审查记录：[`../records/implementation/IR-MVP-STAGING-001-20260919-R01.md`](../records/implementation/IR-MVP-STAGING-001-20260919-R01.md)、[`../reports/tests/TR-MVP-STAGING-001-20260919-R01.md`](../reports/tests/TR-MVP-STAGING-001-20260919-R01.md)、[`../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md`](../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md)；工作流与绑定最终 subject 的终态低敏证据见 [`../../release/evidence/staging/crm-staging-deploy-35561109568.json`](../../release/evidence/staging/crm-staging-deploy-35561109568.json) 和 [`../../release/evidence/staging/crm-staging-final-state-20260921.json`](../../release/evidence/staging/crm-staging-final-state-20260921.json)。
 - MVP-001 当前 revision：[`../records/implementation/IR-MVP-001-20260921-R01.md`](../records/implementation/IR-MVP-001-20260921-R01.md)、[`../reports/tests/TR-MVP-001-20260921-R01.md`](../reports/tests/TR-MVP-001-20260921-R01.md)、[`../reports/reviews/RR-MVP-001-20260921-R01.md`](../reports/reviews/RR-MVP-001-20260921-R01.md)；低敏机器证据见 [`../../release/evidence/staging/crm-staging-credential-rotation-20260921.json`](../../release/evidence/staging/crm-staging-credential-rotation-20260921.json)。
-- MVP-EGRESS-001 预部署 R01：[`../records/implementation/IR-MVP-EGRESS-001-20260922-R01.md`](../records/implementation/IR-MVP-EGRESS-001-20260922-R01.md)、[`../reports/tests/TR-MVP-EGRESS-001-20260922-R01.md`](../reports/tests/TR-MVP-EGRESS-001-20260922-R01.md)、[`../reports/reviews/RR-MVP-EGRESS-001-20260922-R01.md`](../reports/reviews/RR-MVP-EGRESS-001-20260922-R01.md)；派生索引在分支上标记为 `CANDIDATE_VIEW`，live-staging 明确为未执行。
+- MVP-EGRESS-001 staging 定稿候选 R02：[`../records/implementation/IR-MVP-EGRESS-001-20260923-R02.md`](../records/implementation/IR-MVP-EGRESS-001-20260923-R02.md)、[`../reports/tests/TR-MVP-EGRESS-001-20260923-R02.md`](../reports/tests/TR-MVP-EGRESS-001-20260923-R02.md)、[`../reports/reviews/RR-MVP-EGRESS-001-20260923-R02.md`](../reports/reviews/RR-MVP-EGRESS-001-20260923-R02.md)；低敏机器证据见 [`../../release/evidence/staging/crm-staging-tiktok-egress-20260923.json`](../../release/evidence/staging/crm-staging-tiktok-egress-20260923.json)。R01 为历史预部署记录，不再代表 live 结果；派生索引在证据分支上为 `CANDIDATE_VIEW`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
@@ -68,9 +68,9 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 阻塞、决定与风险
 
 - G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
-- `MVP-001` 的内部凭据轮换已通过；解除任务阻塞仍需用户提供 TikTok App Key、Service ID、App Secret、Webhook Secret 和 DeepSeek API Key，并经服务器受限通道注入。固定出口白名单必须在 `MVP-EGRESS-001` live staging 观察到 `38.55.145.52` 后再按平台流程确认。
+- `MVP-001` 的内部凭据轮换已通过；解除任务阻塞仍需用户提供 TikTok App Key、Service ID、App Secret、Webhook Secret 和 DeepSeek API Key，并经服务器受限通道注入。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单仍需用户按平台流程确认。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- staging DNS/TLS、`18080 → 18081` 反向隧道和 Rootless CRM 当前可用；临时 registry 代理已撤除，后续镜像更新依赖业务机到 GitHub/GHCR 的出网稳定性。
+- staging DNS/TLS、`18080 → 18081` 反向隧道和 Rootless CRM 当前可用；临时 registry 代理已撤除。业务机 GHCR CDN 拉取反复中断，新镜像升级必须另行取得实际下载、摘要和部署验证，不得继承本次 staging 豁免。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
@@ -79,6 +79,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 推送 `MVP-EGRESS-001` 的格式门禁修复与重绑定证据，待 PR #34 必需检查通过后合并，并发布 merged-main backend 不可变镜像。
-2. 用该 RepoDigest 部署 staging 固定出口，验证 `38.55.145.52`、断隧道无直连回退、入口与公司负载零变化，再以证据分支定稿任务。
-3. 用户准备并受限注入 TikTok Partner Center 与 DeepSeek 外部凭据，随后关闭 `MVP-001` 并启动 `MVP-002`；production 继续关闭。
+1. 合并 `MVP-EGRESS-001` 的 R02 证据分支，随后以状态收尾分支把任务标记 `DONE` 并复核合并结果。
+2. 用户确认 TikTok Partner Center 固定出口白名单 `38.55.145.52`，准备并受限注入 TikTok 与 DeepSeek 外部凭据，解除 `MVP-001` 阻塞。
+3. 业务机 GHCR 下载恢复时重新验证新镜像摘要；在 G0～G8 分项门禁齐备前，production 继续关闭。

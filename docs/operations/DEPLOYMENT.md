@@ -49,7 +49,9 @@ python scripts/verify_tiktok_egress.py
 
 验证器经应用实际使用的 SOCKS5H 路径访问固定检查地址，只有 `configured_ip` 与 `observed_ip` 都精确为 `38.55.145.52` 才通过；代理失败、格式错误或 IP 不一致均失败关闭，不尝试直连。staging 回滚只把应用切换到已验证的上一 RepoDigest，helper 继续使用包含当前隧道资产的候选 backend 镜像，全部真实 TikTok/LLM/自动回复开关保持 false。
 
-当前分支只完成自动化实现与本地门禁；真实 staging 出口、隧道断开无回退和公司负载复核必须等待合并 main 的不可变镜像，因此在对应现场证据产生前为 `NOT_EXECUTED`。production 仅获得可复用 Compose/config 契约，没有选择出口服务器、创建账号/密钥或实施部署。
+2026-09-23 已在真实 staging 用合并 `main` 的部署门禁完成固定出口验收：workflow `35806983990` 精确观测 `38.55.145.52`、迁移头和三个公网 200；仅停止 helper 的故障演练得到验证器非零，恢复后同一出口再次通过。两个 TikTok 官方端点经应用 SOCKS5H 路径完成无凭据 TLS 请求；公司 system Docker、入口策略、非 staging 站点和保护监听复核未发生业务漂移。最终低敏证据为 `release/evidence/staging/crm-staging-tiktok-egress-20260923.json`，R02 IR/TR/RR 解释初次 502、proxy 刷新修复和镜像例外。
+
+本次用户仅限 staging 授权继续使用已验证的 backend/frontend 不可变摘要（与候选 `746c10c` 的构建输入零差异）和旧检索镜像摘要（检索服务源码与 Dockerfile 不变，但依赖锁文件**不同**）。新摘要 GHCR 下载失败/停滞不能写成已部署；下次镜像升级和 production 必须重新通过独立摘要与供应链门禁，不能沿用此例外。production 仍仅有可复用配置契约，未选择出口服务器、创建账号/密钥或实施部署。
 
 ## TikTok 与 DeepSeek
 
