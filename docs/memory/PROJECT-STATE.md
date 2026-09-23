@@ -9,7 +9,7 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp001-external-credential-evidence
+Working branch at this snapshot: docs/mvp001-status-closure
 Governance base SHA: 55395fa4a4f8ddbe72274d95fb6c496827e8e3f0
 CANDIDATE_SUBJECT_SHA: 4ffb888a6af59a25333d6c984273fd1a89abff09
 EVIDENCE_HEAD_SHA: READ_AT_GATE
@@ -18,7 +18,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
-`MVP-001` 已在真实 staging 完成内部凭据轮换和 TikTok App Key、Service ID、App Secret、DeepSeek API Key 四项外部凭据的安全注入；R02 现场职责矩阵、失败关闭、响应/日志无泄漏、固定出口和三个公网健康端点均通过。一次性工具首次因 cwd 权限在变更前失败，独立复核原配置与健康后修正重试成功。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不需向平台获取并保持空。R02 TR 为 `PASS`；任务正在证据合并门禁中，真实平台接受、G0 恢复/回滚及 production 仍未通过。
+`MVP-001` 已在真实 staging 完成内部凭据轮换和 TikTok App Key、Service ID、App Secret、DeepSeek API Key 四项外部凭据的安全注入；R02 现场职责矩阵、失败关闭、响应/日志无泄漏、固定出口和三个公网健康端点均通过。一次性工具首次因 cwd 权限在变更前失败，独立复核原配置与健康后修正重试成功。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不需向平台获取并保持空。R02 TR 为 `PASS`，证据已由 PR #40 合入 main；任务状态收尾为 `DONE`。真实平台接受、G0 恢复/回滚及 production 仍未通过。
 
 `MVP-EGRESS-001` 的应用级 SOCKS5H 失败关闭、独立 Rootless helper、最小权限 `crm-egress` 安装器、出口验证器和 staging/回滚门禁已合入 `main`。staging 实际部署运行 `35806983990` 通过，固定出口配置和观测均为 `38.55.145.52`，故障关闭、TikTok 无凭据 TLS、双服务器保护基线和公网健康已验收；最终镜像摘要预检 `35808949842` 通过。业务机 GHCR 下载不稳定，用户明确批准仅本次 staging 保留构建输入等价的旧 backend/frontend 镜像及有依赖差异的旧检索镜像；差异和残余风险见 R02 记录及机器证据。R02 证据已通过 PR #38 合入 `main`；状态收尾分支将任务标为 `DONE`，production 未部署或放行。
 
@@ -43,7 +43,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001`、`MVP-EGRESS-001` 与四个维护清理任务已关闭；`MVP-001` 外部凭据注入已通过、状态为 `VERIFYING`，MVP-002～MVP-009 保持 `BACKLOG`。
+- `REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001`、`MVP-EGRESS-001`、`MVP-001` 与四个维护清理任务已关闭；MVP-002～MVP-009 保持 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -56,7 +56,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - TEST-001 审查记录：[`../reports/reviews/RR-TEST-001-20260916-R01.md`](../reports/reviews/RR-TEST-001-20260916-R01.md)。三个派生索引已从全部源记录重建为 `CURRENT`。
 - MVP-DOMAIN-001 实施、测试与审查记录：[`../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md`](../records/implementation/IR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md`](../reports/tests/TR-MVP-DOMAIN-001-20260917-R01.md)、[`../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md`](../reports/reviews/RR-MVP-DOMAIN-001-20260917-R01.md)。三个派生索引从本地 `main` 读取时为 `CURRENT`。
 - MVP-STAGING-001 定稿实施、测试与审查记录：[`../records/implementation/IR-MVP-STAGING-001-20260919-R01.md`](../records/implementation/IR-MVP-STAGING-001-20260919-R01.md)、[`../reports/tests/TR-MVP-STAGING-001-20260919-R01.md`](../reports/tests/TR-MVP-STAGING-001-20260919-R01.md)、[`../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md`](../reports/reviews/RR-MVP-STAGING-001-20260919-R01.md)；工作流与绑定最终 subject 的终态低敏证据见 [`../../release/evidence/staging/crm-staging-deploy-35561109568.json`](../../release/evidence/staging/crm-staging-deploy-35561109568.json) 和 [`../../release/evidence/staging/crm-staging-final-state-20260921.json`](../../release/evidence/staging/crm-staging-final-state-20260921.json)。
-- MVP-001 当前 R02：[`../records/implementation/IR-MVP-001-20260923-R02.md`](../records/implementation/IR-MVP-001-20260923-R02.md)、[`../reports/tests/TR-MVP-001-20260923-R02.md`](../reports/tests/TR-MVP-001-20260923-R02.md)、[`../reports/reviews/RR-MVP-001-20260923-R02.md`](../reports/reviews/RR-MVP-001-20260923-R02.md)；外部凭据低敏机器证据见 [`../../release/evidence/staging/crm-staging-external-credentials-20260923.json`](../../release/evidence/staging/crm-staging-external-credentials-20260923.json)。R01 仅代表此前内部轮换；三个派生索引本分支为 `CANDIDATE_VIEW`。
+- MVP-001 当前 R02：[`../records/implementation/IR-MVP-001-20260923-R02.md`](../records/implementation/IR-MVP-001-20260923-R02.md)、[`../reports/tests/TR-MVP-001-20260923-R02.md`](../reports/tests/TR-MVP-001-20260923-R02.md)、[`../reports/reviews/RR-MVP-001-20260923-R02.md`](../reports/reviews/RR-MVP-001-20260923-R02.md)；外部凭据低敏机器证据见 [`../../release/evidence/staging/crm-staging-external-credentials-20260923.json`](../../release/evidence/staging/crm-staging-external-credentials-20260923.json)。R01 仅代表此前内部轮换；三个派生索引已从 main 合并源记录重建为 `CURRENT`。
 - MVP-EGRESS-001 staging 定稿 R02：[`../records/implementation/IR-MVP-EGRESS-001-20260923-R02.md`](../records/implementation/IR-MVP-EGRESS-001-20260923-R02.md)、[`../reports/tests/TR-MVP-EGRESS-001-20260923-R02.md`](../reports/tests/TR-MVP-EGRESS-001-20260923-R02.md)、[`../reports/reviews/RR-MVP-EGRESS-001-20260923-R02.md`](../reports/reviews/RR-MVP-EGRESS-001-20260923-R02.md)；低敏机器证据见 [`../../release/evidence/staging/crm-staging-tiktok-egress-20260923.json`](../../release/evidence/staging/crm-staging-tiktok-egress-20260923.json)。R01 为历史预部署记录，不再代表 live 结果；派生索引从 `main` 已合并源记录重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
@@ -79,6 +79,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 合并 `MVP-001` R02 证据并将任务收尾为 `DONE`，保持 G0 部分通过。
-2. 准备专用测试店铺、Partner Center 回调/Scope 与操作账户，启动 `MVP-002` 的真实 OAuth、Token 生命周期和只读隔离验收；真实开关在门禁通过前继续关闭。
-3. 安排 `MVP-008` 恢复/回滚；业务机 GHCR 下载恢复后另行验证新镜像，G0～G8 未齐前 production 继续关闭。
+1. 准备专用测试店铺、Partner Center 回调/Scope 与操作账户，启动 `MVP-002` 的真实 OAuth、Token 生命周期和只读隔离验收；真实开关在门禁通过前继续关闭。
+2. 安排 `MVP-008` 数据库/对象存储恢复与兼容上一版镜像实际回滚。
+3. 业务机 GHCR 下载恢复后另行验证新镜像；G0～G8 未齐前 production 继续关闭。
