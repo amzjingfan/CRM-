@@ -7,7 +7,7 @@
 | 主题 | 已有结论 | 尚缺内容 |
 |---|---|---|
 | M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，新值接受、旧值拒绝；外部四项凭据已安全注入 staging 且真实能力保持关闭 | 外部平台实际接受验证、备份恢复、兼容镜像回滚和 production 放行 |
-| M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；MVP-UI-001 本机合成数据浏览器回归 20/20、前端契约 41/41；合并 UI 镜像已部署到 staging，公开路由和静态资源冒烟通过 | 带身份的真实 staging 浏览器逐按钮回归 |
+| M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；MVP-UI-CACHE-001 本机生产构建浏览器 22/22、前端契约 41/41，HTML `no-store`、JS `immutable`；既有 UI 镜像已部署到 staging | 新缓存修复尚未部署 staging，仍需精确无 query 路径及带身份浏览器复验 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查 | 真实店铺 OAuth/Scope/投递/消息/对账；Shopee/Amazon 真实接入未做 |
 | M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖；固定综合集为 32/36（88.89%） | 真实 DeepSeek 质量、50 客户端 SSE、5 日稳定性；公开自动回复/营销未放行 |
@@ -30,6 +30,8 @@
 - 未完成备份恢复、实际回滚及最终联合签署。
 
 ## 管理端本机交互回归
+
+`MVP-UI-CACHE-001` 的 subject `7617647965278198b2712b678007bc3ad6fbbe98` 在本机生产构建服务、合成 API 响应上完成 22/22 浏览器测试、0 跳过；三个 HTML 路由返回 `no-store`，带指纹 JS 仍为 `immutable`，无店铺营销页显示创建店铺引导。前端契约 41/41、类型检查、构建与 lint（0 error、既有 2 warning）通过。修复前生产构建的 `/login` 为 `s-maxage=31536000`。这是本机候选结论，staging 实际部署与入口缓存另验，见 `TR-MVP-UI-CACHE-001-20260924-R01`。
 
 候选 `8c13a9f1df0e71e3c3e7bb7916a1f1422b5a1820` 在本机 Chrome、合成 `/v1/` 响应上完成 20/20 浏览器用例，开发服务和 production build 两次均通过；前端契约 41/41，lint 0 error/2 条既有 warning，typecheck、build 与生产依赖 audit 通过。PR #43 的前后端 CI 均通过，已 squash 合入 main `c9e49b88f54807f37b72c4c93ad1d66e554acc7d`。覆盖无店铺加载、过期 URL 店铺范围、表单与 OAuth 前置反馈、Agent 日志和会话筛选旧请求竞态。详见 `TR-MVP-UI-001-20260923-R01`。这不替代真实 staging、TikTok 店铺授权或 production 验收；含开发依赖的既有 `js-yaml` 高危项仍待独立处理。
 

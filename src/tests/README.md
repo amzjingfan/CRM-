@@ -51,6 +51,8 @@ Set-Location ../..
 
 隔离浏览器交互回归另需本机 Chrome 与本地 Next 服务。先在 `src/frontend/` 运行 `npm run dev -- --hostname 127.0.0.1 --port 3101`，再在同目录的另一个终端执行 `npm run test:ui`；默认目标为 `http://127.0.0.1:3101`，需要其他地址时用 `UI_BASE_URL` 环境变量指定。测试拦截 `/v1/` 请求并只使用合成数据，不访问真实店铺、TikTok 或 staging；该命令不替代 `npm run test` 与真实平台门禁。
 
+验证跨版本 HTML 缓存时必须改用**生产构建**：先 `npm run build`，停止占用 3101 的开发服务，再在 `src/frontend/` 启动 `node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3101`；另一个 PowerShell 终端执行 `$env:UI_CACHE_EXPECT_PRODUCTION='1'; npm run test:ui`。此模式不会跳过带指纹 JS 的 `immutable` 断言，同时在生产构建上检查营销页无店铺引导。普通开发模式的 `test:ui` 会明确跳过该生产专用断言，不能作为发布缓存验收证据。
+
 依赖已由可信缓存或当前工作区完整提供时，可按任务风险跳过重复安装，但必须记录实际环境。生产构建只证明前端构建成功，不替代浏览器、真实网络或 staging 验收。
 
 ## 隔离 PostgreSQL/pgvector 集成测试
