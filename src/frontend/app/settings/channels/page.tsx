@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from "../../../components/States
 import {
   createChannel,
   deleteChannel,
+  getTikTokOAuthJobStatus,
   listChannels,
   listStores,
   startTikTokOAuth,
@@ -43,18 +44,55 @@ export default function ChannelsPage() {
 
   useEffect(() => {
     void load();
-    // OAuth 回调只携带低敏状态，展示后立即清理 URL，避免刷新重复提示。
+    // 任务 UUID 只用于查本人进度；保留至终态使刷新后仍可恢复轮询。
     const params = new URLSearchParams(window.location.search);
     if (params.get("oauth") === "tiktok") {
-      const connected = params.get("status") === "connected";
+      const status = params.get("status");
+      const jobId = params.get("job");
+      if (status === "processing" && jobId && /^[0-9a-f-]{36}$/i.test(jobId)) {
+        let cancelled = false;
+        let timer: number | undefined;
+        let attempts = 0;
+        setNotice(en ? "TikTok Shop authorization is being verified…" : "正在验证 TikTok Shop 授权…");
+        const poll = async () => {
+          try {
+            const result = await getTikTokOAuthJobStatus(jobId);
+            if (cancelled) return;
+            if (result.status === "connected") {
+              setNotice(en ? "TikTok Shop authorization completed. Read APIs remain disabled until the next gate." : "TikTok Shop 授权已完成；只读 API 仍需下一阶段放行。");
+              window.history.replaceState({}, "", window.location.pathname);
+              void load();
+              return;
+            }
+            if (result.status === "failed" || result.status === "denied") {
+              setNotice(en ? "TikTok Shop authorization failed. Please authorize again." : "TikTok Shop 授权未完成，请重新授权。");
+              window.history.replaceState({}, "", window.location.pathname);
+              return;
+            }
+          } catch (caught) {
+            if (cancelled) return;
+            setNotice(caught instanceof Error ? caught.message : en ? "Could not check authorization status." : "无法查询授权状态。");
+            return;
+          }
+          attempts += 1;
+          if (attempts >= 30) {
+            setNotice(en ? "Authorization is taking longer than expected. Refresh this page to check again." : "授权处理时间较长，请刷新页面继续查询。");
+            return;
+          }
+          timer = window.setTimeout(() => void poll(), 2000);
+        };
+        timer = window.setTimeout(() => void poll(), 500);
+        return () => { cancelled = true; window.clearTimeout(timer); };
+      }
+      const connected = status === "connected";
       setNotice(
         connected
           ? en
             ? "TikTok Shop authorization completed. Read APIs remain disabled until the next gate."
             : "TikTok Shop 授权已完成；只读 API 仍需下一阶段放行。"
           : en
-            ? "TikTok Shop authorization was cancelled."
-            : "TikTok Shop 授权已取消。",
+            ? "TikTok Shop authorization was cancelled or failed."
+            : "TikTok Shop 授权已取消或失败。",
       );
       window.history.replaceState({}, "", window.location.pathname);
     }

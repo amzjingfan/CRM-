@@ -6,7 +6,7 @@ from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.dashboard.models import MetricDaily
-from app.integrations.models import WebhookEvent
+from app.integrations.models import TikTokOAuthJob, WebhookEvent
 from app.knowledge_base.models import KnowledgeCategory, KnowledgeChunk, KnowledgeDocument, KnowledgeImportJob
 from app.marketing.models import CustomerReview, MarketingCampaign, MarketingEvent
 from app.orders.models import Order, OrderItem
@@ -38,6 +38,7 @@ __all__ = [
     "Role",
     "Store",
     "ToolCall",
+    "TikTokOAuthJob",
     "User",
     "WebhookEvent",
 ]

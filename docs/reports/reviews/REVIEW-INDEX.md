@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -16,3 +16,4 @@ View: `CURRENT`
 | RR-MVP-UI-DEPLOY-001-20260923-R01 | MVP-UI-DEPLOY-001 | R01 | APPROVE | `58263b1108e96d0d6afa21a6bbfae271fb5c7a87` | staging-only / immutable-image-provenance / explicit-model-exception / rollback-point / company-workload-isolation / production-boundary | 2026-09-23T18:42:00+08:00 | [`RR-MVP-UI-DEPLOY-001-20260923-R01.md`](RR-MVP-UI-DEPLOY-001-20260923-R01.md) |
 | RR-MVP-UI-CACHE-001-20260924-R01 | MVP-UI-CACHE-001 | R01 | APPROVE | `7617647965278198b2712b678007bc3ad6fbbe98` | correctness / cache-boundary / production-test-evidence / staging-only | 2026-09-24T10:36:00+08:00 | [`RR-MVP-UI-CACHE-001-20260924-R01.md`](RR-MVP-UI-CACHE-001-20260924-R01.md) |
 | RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01 | MVP-UI-CACHE-DEPLOY-001 | R01 | APPROVE | `a9d36c04fb8f71d163deabc22d64b5ce5efbe3e3` | cache-boundary / ingress-redirect / rollback / immutable-image-provenance / company-workload-isolation / staging-only | 2026-09-24T12:44:00+08:00 | [`RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md`](RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md) |
+| RR-MVP-OAUTH-REDIRECT-001-20260924-R01 | MVP-OAUTH-REDIRECT-001 | R01 | APPROVE | `8a1b81f44478f2c71c4f275873cb68d0b8f4528f` | oauth-state-replay / tenant-boundary / atomic-commit / worker-race / credential-secrecy / staging-only | 2026-09-24T16:23:00+08:00 | [`RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md) |

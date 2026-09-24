@@ -14,7 +14,7 @@
 - MinIO：受控对象存储。
 - 模型服务：本地 BGE-M3 Embedding、bge-reranker-large 和受控 DeepSeek Provider。
 
-当前数据库迁移头为 `023_marketing_review_idempotency`。迁移顺序是部署契约的一部分，禁止跳过或手工修改生产结构。
+当前数据库迁移头为 `024_tiktok_oauth_jobs`。迁移顺序是部署契约的一部分，禁止跳过或手工修改生产结构。
 
 ## 请求与消息流
 
@@ -42,7 +42,7 @@ Agent 只能调用注册的白名单工具。工具层承担参数模型、店�
 
 ## 真实平台与失败关闭
 
-TikTok OAuth Token 加密保存，state 哈希绑定并原子消费。Webhook 在真实模式只按官方签名验证。消息写入只允许人工确认的普通文本；平台超时或结果不确定时记录 `unknown`，随后按消息标识对账，禁止自动重复发送。
+TikTok OAuth Token 加密保存，state 哈希绑定并由现有 jobs worker 原子消费。公开 callback 将 state/code 认证加密到短期任务并快速站内回跳；任务按 state 摘要去重，终态清除密文，过期和崩溃不重用一次性 code。状态查询同时核对原发起用户与店铺权限。Webhook 在真实模式只按官方签名验证。消息写入只允许人工确认的普通文本；平台超时或结果不确定时记录 `unknown`，随后按消息标识对账，禁止自动重复发送。
 
 `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 是当前安全基线。Shopee/Amazon 真实适配、公开自动回复、自动营销和高风险写入不属于 v0.1。
 

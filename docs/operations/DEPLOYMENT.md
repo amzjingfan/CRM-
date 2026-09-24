@@ -87,7 +87,7 @@ BGE 运行基线为 1024 维、Dense Top-20、Rerank Top-5、阈值 0.52。质�
 
 ## 迁移、备份与回滚
 
-1. 在维护窗口验证镜像、配置、模型哈希和数据库迁移，当前迁移头为 `023_marketing_review_idempotency`。
+1. 在维护窗口验证镜像、配置、模型哈希和数据库迁移；当前代码迁移头为 `024_tiktok_oauth_jobs`，staging 运行库在独立 OAuth 回跳部署任务前仍为 `023_marketing_review_idempotency`，不得将代码迁移验证当作现场升级。
 2. 部署前完成数据库和对象存储备份，并验证可读取性。
 3. 先迁移再启动应用；健康检查、Webhook、SSE 和关键人工流程通过后再切入口。
 4. 回滚使用已验证的上一镜像和兼容迁移路径；禁止 `git reset --hard` 或手工改生产表。

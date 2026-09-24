@@ -22,6 +22,8 @@ test("TikTok channel page displays only low-sensitive authorization state", asyn
 
   assert.equal(page.includes("channel.scopes"), true);
   assert.equal(page.includes("channel.last_sync_at"), true);
-  assert.equal(page.includes('params.get("status") === "connected"'), true);
+  assert.equal(page.includes('status === "connected"'), true);
+  assert.equal(page.includes("getTikTokOAuthJobStatus(jobId)"), true);
+  assert.equal(page.includes("window.history.replaceState"), true);
   assert.equal(page.includes("localStorage"), false);
 });

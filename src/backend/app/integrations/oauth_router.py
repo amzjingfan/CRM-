@@ -8,8 +8,13 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
 
 from app.auth.dependencies import get_current_user, require_permission
-from app.integrations.oauth_schemas import TikTokOAuthStart
-from app.integrations.oauth_service import complete_tiktok_oauth, start_tiktok_oauth
+from app.integrations.oauth_schemas import TikTokOAuthJobStatus, TikTokOAuthStart
+from app.integrations.oauth_service import (
+    complete_tiktok_oauth,
+    get_tiktok_oauth_job_status,
+    queue_tiktok_oauth,
+    start_tiktok_oauth,
+)
 from app.shared.config.settings import TIKTOK_OAUTH_CALLBACK_ROUTE
 from app.shared.database.base import User
 from app.shared.database.session import DbSession
@@ -33,6 +38,21 @@ async def begin_tiktok_oauth(
     return ApiResponse(data=await start_tiktok_oauth(session, user, store_id, return_to))
 
 
+@router.get(
+    "/settings/channels/tiktok/oauth/jobs/{job_id}",
+    response_model=ApiResponse[TikTokOAuthJobStatus],
+    dependencies=[Depends(require_permission("settings.channels"))],
+)
+async def tiktok_oauth_job_status(
+    job_id: uuid.UUID,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[TikTokOAuthJobStatus]:
+    """只把当前用户的低敏授权进度返回给管理端。"""
+    status = await get_tiktok_oauth_job_status(session, user, job_id)
+    return ApiResponse(data=TikTokOAuthJobStatus.model_validate({"status": status}))
+
+
 @router.get(TIKTOK_OAUTH_CALLBACK_ROUTE, response_model=None)
 async def tiktok_oauth_callback(
     session: DbSession,
@@ -41,6 +61,11 @@ async def tiktok_oauth_callback(
     error: Annotated[str | None, Query(max_length=100)] = None,
 ) -> RedirectResponse:
     """消费 state 并完成授权，允许 TikTok 在独立卖家浏览器中回调。"""
-    completion = await complete_tiktok_oauth(session, state, code, error)
-    query = urlencode({"oauth": "tiktok", "status": completion.status})
-    return RedirectResponse(f"{completion.return_to}?{query}", status_code=303)
+    if error or not code or code == "null":
+        completion = await complete_tiktok_oauth(session, state, code, error)
+        query = urlencode({"oauth": "tiktok", "status": completion.status})
+        return RedirectResponse(f"{completion.return_to}?{query}", status_code=303)
+    job = await queue_tiktok_oauth(session, state, code)
+    status = job.status if job.status in {"connected", "denied", "failed"} else "processing"
+    query = urlencode({"oauth": "tiktok", "status": status, "job": str(job.id)})
+    return RedirectResponse(f"/settings/channels?{query}", status_code=303)

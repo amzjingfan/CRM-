@@ -13,6 +13,12 @@ class TikTokOAuthStart(BaseModel):
     expires_in: int
 
 
+class TikTokOAuthJobStatus(BaseModel):
+    """管理端可见的低敏后台授权结果。"""
+
+    status: Literal["pending", "processing", "connected", "denied", "failed"]
+
+
 class TikTokOAuthState(BaseModel):
     """Redis 一次性 state 绑定内容。"""
 

@@ -215,6 +215,33 @@ test("channel authorization failure is visibly announced", async () => {
   }
 });
 
+test("TikTok OAuth processing return polls and shows the verified result", async () => {
+  const jobId = "00000000-0000-4000-8000-0000000000e1";
+  let polls = 0;
+  const { context, page } = await openPage(
+    `/settings/channels?oauth=tiktok&status=processing&job=${jobId}`,
+    { "GET /v1/settings/stores": [store] },
+    async (browserContext) => {
+      await browserContext.route(`**/v1/settings/channels/tiktok/oauth/jobs/${jobId}`, async (route) => {
+        polls += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+          body: JSON.stringify({ code: 0, message: "ok", data: { status: polls === 1 ? "processing" : "connected" } }),
+        });
+      });
+    },
+  );
+  try {
+    await page.getByRole("status").getByText("授权已完成").waitFor({ timeout: 8000 });
+    assert.ok(polls >= 2);
+    assert.equal(new URL(page.url()).search, "");
+  } finally {
+    await context.close();
+  }
+});
+
 test("failed channel and team loads do not claim there are no stores", async () => {
   for (const [path, endpoint] of [["/settings/channels", "/v1/settings/channels"], ["/settings/team", "/v1/settings/team"]]) {
     const { context, page } = await openPage(path, {}, async (context) => {

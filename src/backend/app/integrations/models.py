@@ -1,4 +1,4 @@
-"""Webhook 原始事件 ORM 模型。"""
+"""第三方 Webhook 与 OAuth 短期任务 ORM 模型。"""
 
 import uuid
 from datetime import datetime
@@ -31,3 +31,19 @@ class WebhookEvent(TimestampMixin, Base):
     retry_count: Mapped[int] = mapped_column(default=0)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class TikTokOAuthJob(TimestampMixin, Base):
+    """一次性授权回调任务；state 和 code 仅以短期认证密文暂存。"""
+
+    __tablename__ = "tiktok_oauth_jobs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    store_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("stores.id", ondelete="CASCADE"), index=True)
+    state_cipher: Mapped[str | None] = mapped_column(String(1200), nullable=True)
+    code_cipher: Mapped[str | None] = mapped_column(String(1200), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

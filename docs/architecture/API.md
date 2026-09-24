@@ -53,7 +53,8 @@
 
 ### TikTok OAuth 与 Webhook
 
-- OAuth 发起和 callback 由 `/integrations/tiktok/oauth` 路由提供。随机 `state` 默认 600 秒有效，以哈希形式绑定用户、店铺和回跳地址，并原子消费。
+- `GET /settings/channels/tiktok/oauth/start` 创建默认 600 秒的随机 `state`，哈希键绑定用户、店铺与固定站内回跳地址。公开 callback 不依赖 CRM Cookie；成功路径只创建一次短期加密任务并立即 303 至 `/settings/channels?oauth=tiktok&status=processing&job=<UUID>`，不等待 TikTok 外部 API。已有任务的重复 callback 不二次交换 Token。拒绝/缺失 code 沿用即时失败回跳。
+- `GET /settings/channels/tiktok/oauth/jobs/{job_id}` 需要 `settings.channels`、原发起用户和仍有效的店铺访问权；仅返回 `pending/processing/connected/denied/failed`。现有 jobs worker 原子消费 `state`，完成 Token 与店铺校验并清除临时密文；失败或中断要求重新授权，不重放 code。
 - Token 刷新是内部能力，没有公开 Refresh API；解密、刷新或契约校验失败时渠道转为 `expired`。
 - `DELETE /settings/channels/{channel_id}` 撤销本地 Token 可用性并保留审计，不物理删除授权证据。
 - `POST /webhooks/tiktok` 在真实模式只接受官方 `Authorization` 签名，以原始请求体进行常量时间校验。

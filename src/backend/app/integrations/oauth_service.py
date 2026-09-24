@@ -5,6 +5,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,11 +13,12 @@ from app.audit.models import AuditLog
 from app.auth.repository import find_user_by_id
 from app.auth.store_access import ensure_store_access
 from app.integrations.credential_crypto import decrypt_credential, encrypt_credential
+from app.integrations.models import TikTokOAuthJob
 from app.integrations.oauth_schemas import TikTokOAuthCompletion, TikTokOAuthStart, TikTokOAuthState, TikTokTokenData
 from app.integrations.tiktok_oauth import TikTokOAuthClient, build_authorization_url
 from app.shared.config.settings import Settings, get_settings
 from app.shared.database.base import User
-from app.shared.database.redis import consume_tiktok_oauth_state, save_tiktok_oauth_state
+from app.shared.database.redis import consume_tiktok_oauth_state, peek_tiktok_oauth_state, save_tiktok_oauth_state
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount
 from app.stores.repository import (
@@ -28,6 +30,7 @@ from app.stores.repository import (
 
 SELLER_USER_TYPES = {0, 4, 5}
 DEFAULT_RETURN_TO = "/settings/channels"
+OAUTH_JOB_RETENTION_SECONDS = 86400
 
 
 def validate_return_to(value: str) -> str:
@@ -161,6 +164,71 @@ async def _record_failed_oauth(
     await session.commit()
 
 
+async def queue_tiktok_oauth(
+    session: AsyncSession,
+    state: str,
+    auth_code: str,
+    settings: Settings | None = None,
+) -> TikTokOAuthJob:
+    """先入加密、去重短期任务并快速返回；不在 callback 中访问 TikTok。"""
+    runtime = settings or get_settings()
+    validate_oauth_runtime(runtime)
+    job_id = uuid.UUID(bytes=hashlib.sha256(state.encode()).digest()[:16])
+    existing = await session.get(TikTokOAuthJob, job_id)
+    if existing is not None:
+        return existing
+    try:
+        raw_state = await peek_tiktok_oauth_state(state)
+        bound = TikTokOAuthState.model_validate(raw_state) if raw_state else None
+    except Exception as exc:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "OAuth state 无效或已过期", 400) from exc
+    if bound is None:
+        # 首次查询可能早于另一个 callback 的提交，而 Redis state 随后已被 worker 消费。
+        existing = await session.get(TikTokOAuthJob, job_id)
+        if existing is not None:
+            return existing
+        raise AppError(ErrorCode.VALIDATION_ERROR, "OAuth state 无效或已过期", 400)
+    validate_return_to(bound.return_to)
+    user = await find_user_by_id(session, bound.user_id)
+    if user is None or user.status != "active":
+        raise AppError(ErrorCode.PERMISSION_DENIED, "OAuth 发起用户不可用", 403)
+    await ensure_store_access(session, user, bound.store_id)
+    if await get_active_store(session, bound.store_id) is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
+    key = _credential_key(runtime)
+    state_cipher = encrypt_credential(state, key, f"tiktok:oauth-job:{job_id}:state")
+    code_cipher = encrypt_credential(auth_code, key, f"tiktok:oauth-job:{job_id}:code")
+    if len(state_cipher) > 1200 or len(code_cipher) > 1200:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "OAuth 授权参数过长", 400)
+    job = TikTokOAuthJob(
+        id=job_id,
+        user_id=bound.user_id,
+        store_id=bound.store_id,
+        state_cipher=state_cipher,
+        code_cipher=code_cipher,
+        status="pending",
+    )
+    session.add(job)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        existing = await session.get(TikTokOAuthJob, job_id)
+        if existing is None:
+            raise
+        return existing
+    return job
+
+
+async def get_tiktok_oauth_job_status(session: AsyncSession, user: User, job_id: uuid.UUID) -> str:
+    """仅原发起用户且仍有店铺访问权可查看低敏进度。"""
+    job = await session.get(TikTokOAuthJob, job_id)
+    if job is None or job.user_id != user.id:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
+    await ensure_store_access(session, user, job.store_id)
+    return job.status
+
+
 async def complete_tiktok_oauth(
     session: AsyncSession,
     state: str,
@@ -168,8 +236,10 @@ async def complete_tiktok_oauth(
     provider_error: str | None,
     settings: Settings | None = None,
     client: TikTokOAuthClient | None = None,
+    *,
+    commit: bool = True,
 ) -> TikTokOAuthCompletion:
-    """原子消费 state，并恢复发起用户后完成跨浏览器卖家授权。"""
+    """原子消费 state；worker 可将渠道、审计和任务终态合并提交。"""
     runtime = settings or get_settings()
     validate_oauth_runtime(runtime)
     try:
@@ -257,16 +327,98 @@ async def complete_tiktok_oauth(
                 result="succeeded",
             )
         )
-        await session.commit()
+        if commit:
+            await session.commit()
         return TikTokOAuthCompletion(status="connected", return_to=bound.return_to)
     except IntegrityError as exc:
-        await session.rollback()
-        await _record_failed_oauth(session, user, bound.store_id, ErrorCode.RESOURCE_CONFLICT.value)
+        if commit:
+            await session.rollback()
+            await _record_failed_oauth(session, user, bound.store_id, ErrorCode.RESOURCE_CONFLICT.value)
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "TikTok 店铺授权已存在", 409) from exc
     except AppError as exc:
-        await session.rollback()
-        await _record_failed_oauth(session, user, bound.store_id, exc.code.value)
+        if commit:
+            await session.rollback()
+            await _record_failed_oauth(session, user, bound.store_id, exc.code.value)
         raise
+
+
+async def _finish_tiktok_oauth_job(
+    session: AsyncSession, job_id: uuid.UUID, status: str, error_code: str | None = None
+) -> None:
+    """终态即抹除一次性材料；对外只保留低敏状态。"""
+    job = await session.get(TikTokOAuthJob, job_id)
+    if job is None:
+        return
+    job.status = status
+    job.error_code = error_code
+    job.state_cipher = None
+    job.code_cipher = None
+    job.completed_at = datetime.now(UTC)
+    if status == "failed" and error_code is not None:
+        session.add(
+            AuditLog(
+                store_id=job.store_id,
+                actor_type="user",
+                actor_id=job.user_id,
+                action="channel.oauth",
+                resource_type="channel_account",
+                result="failed",
+                after_data={"platform": "tiktok", "error_code": error_code},
+            )
+        )
+    await session.commit()
+
+
+async def process_tiktok_oauth_job(
+    session: AsyncSession,
+    settings: Settings | None = None,
+    client: TikTokOAuthClient | None = None,
+) -> bool:
+    """行锁贯穿平台调用和终态提交，崩溃时回滚并禁止并行重复兑换。"""
+    runtime = settings or get_settings()
+    now = datetime.now(UTC)
+    job = await session.scalar(
+        select(TikTokOAuthJob)
+        .where(TikTokOAuthJob.status == "pending")
+        .order_by(TikTokOAuthJob.created_at)
+        .with_for_update(skip_locked=True)
+        .limit(1)
+    )
+    if job is None:
+        return False
+    if job.created_at < now - timedelta(seconds=runtime.tiktok_oauth_state_ttl_seconds):
+        await _finish_tiktok_oauth_job(session, job.id, "failed", "STATE_EXPIRED")
+        return True
+    job.status = "processing"
+    job.started_at = now
+    try:
+        key = _credential_key(runtime)
+        if job.state_cipher is None or job.code_cipher is None:
+            raise ValueError("一次性材料缺失")
+        state = decrypt_credential(job.state_cipher, key, f"tiktok:oauth-job:{job.id}:state")
+        code = decrypt_credential(job.code_cipher, key, f"tiktok:oauth-job:{job.id}:code")
+        # 保存点回滚部分渠道写入，外层事务持续持有任务行锁直到失败或成功终态提交。
+        async with session.begin_nested():
+            completion = await complete_tiktok_oauth(session, state, code, None, runtime, client, commit=False)
+    except AppError as exc:
+        await _finish_tiktok_oauth_job(session, job.id, "failed", exc.code.value)
+    except (ValueError, UnicodeError):
+        await _finish_tiktok_oauth_job(session, job.id, "failed", "INVALID_JOB_CREDENTIAL")
+    else:
+        await _finish_tiktok_oauth_job(session, job.id, completion.status)
+    return True
+
+
+async def cleanup_tiktok_oauth_jobs(session: AsyncSession) -> None:
+    """清除一天前的终态收据，避免授权元数据无限留存。"""
+    cutoff = datetime.now(UTC) - timedelta(seconds=OAUTH_JOB_RETENTION_SECONDS)
+    await session.execute(
+        delete(TikTokOAuthJob).where(
+            TikTokOAuthJob.status.in_(("connected", "denied", "failed")),
+            TikTokOAuthJob.completed_at < cutoff,
+        )
+    )
+    await session.commit()
 
 
 async def refresh_tiktok_channel_token(

@@ -29,7 +29,7 @@ BGE-M3 与 `bge-reranker-large` 固定版本模型已经接入单实例内部模
 - `src/backend/app/customers|conversations|orders|audit`：Phase 2 领域模型。
 - `src/tests`：统一收纳分类后的后端、前端与 PostgreSQL 测试，AI/RAG 版本化数据集与结果，以及已忽略的项目内临时输出根 `src/tests/.artifacts/`。
 - `src/deploy/models`：本地 BGE 模型说明和资产清单；大体积权重由 `.gitignore` 排除。
-- `src/backend/migrations`：001–023 可逆迁移；019 强制一个内部店铺只能绑定一个 TikTok 渠道，020 增加知识语义审批，021 增加平台写结果 `unknown` 消息状态，022 增加 AI 交付与营销复核，023 加固营销复核幂等。
+- `src/backend/migrations`：001–024 可逆迁移；019 强制一个内部店铺只能绑定一个 TikTok 渠道，020 增加知识语义审批，021 增加平台写结果 `unknown` 消息状态，022 增加 AI 交付与营销复核，023 加固营销复核幂等，024 增加 TikTok OAuth 短期加密任务。
 - `src/frontend/app/workspace|dashboard|knowledge|marketing|agents|settings`：工作台、看板、知识库、营销、Agent 运营和系统设置。
 - `src/compose/docker-compose.yml`：基础服务和默认关闭的 `ai` Profile；`src/compose/docker-compose.ai.yml` 在启用本地 BGE 时增加模型健康门禁和 1024 维运行配置；`src/compose/docker-compose.gpu.yml` 只增加 GPU 设备预留。
 
@@ -256,7 +256,7 @@ docker-compose -f src/compose/docker-compose.yml exec backend python scripts/ver
 
 AI 叠加文件会显式启用 `EMBEDDING_ENABLED=true`，并让 backend、jobs 等待 `retrieval-model-service` 健康后启动，避免 Worker 抢跑把待回填 FAQ 批量标记为失败。应用启动时还会校验 `local_bge + BAAI/bge-m3 + 1024`、内部服务 URL 和 Token 强度；配置不一致时直接失败。迁移会清理旧 1536 维切片，并把已发布 FAQ 重置为 `pending`；必须等待全量重新向量化完成后再开放正式检索。当前固定 Revision、RTX 4060 单实例、候选上限 20 和短查询负载的质量与容量门禁已通过，Dense 门禁为 0.52；模型、数据、批量、候选长度或 GPU 变化后必须重新评测。
 
-当前迁移 head 为 `023_marketing_review_idempotency`。`/v1/health/ready` 会真实检查 PostgreSQL、Redis、MinIO；启用 Embedding 后还会校验模型服务返回 BGE-M3/1024 维契约。响应只包含组件级状态，不包含 URL、模型路径、Token 或底层异常。
+当前代码迁移 head 为 `024_tiktok_oauth_jobs`（staging 运行库需在单独部署任务升级）。`/v1/health/ready` 会真实检查 PostgreSQL、Redis、MinIO；启用 Embedding 后还会校验模型服务返回 BGE-M3/1024 维契约。响应只包含组件级状态，不包含 URL、模型路径、Token 或底层异常。
 
 > 2026-08-21 已将本地模型运行时升级并锁定为 `torch 2.13.0` 和 `transformers 5.5.4`；`uv audit --locked` 对 123 个包未发现已知漏洞。测试工程师已完成新镜像包版本、GPU、Embedding、Reranker、质量、50 并发、冷启动和 OOM 实测；质量报告与性能报告已关闭 R-AI-BGE-004、OBS-M04-001。生产运行仍需持续监控尾延迟、队列、显存、错误率和数据漂移。
 

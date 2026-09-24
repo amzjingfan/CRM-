@@ -9,7 +9,7 @@
 | M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，新值接受、旧值拒绝；外部四项凭据已安全注入 staging 且真实能力保持关闭 | 外部平台实际接受验证、备份恢复、兼容镜像回滚和 production 放行 |
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
-| M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查 | 真实店铺 OAuth/Scope/投递/消息/对账；Shopee/Amazon 真实接入未做 |
+| M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查；快速回跳源码候选 `dc5dff4` 在隔离 PostgreSQL 的双 worker、崩溃和 303 测试通过；最终 subject `8a1b81f` 仅增加迁移说明校正 | 快速回跳尚未部署 staging，真实店铺 OAuth/Scope/投递/消息/对账仍缺；Shopee/Amazon 真实接入未做 |
 | M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖；固定综合集为 32/36（88.89%） | 真实 DeepSeek 质量、50 客户端 SSE、5 日稳定性；公开自动回复/营销未放行 |
 
 ## BGE 正式基线
@@ -22,6 +22,8 @@
 这些结果固定模型、硬件、数据集与当时配置，不自动外推到其他模型 Revision、GPU、并发模型或生产网络。
 
 ## 当前未关闭风险
+
+- `MVP-OAUTH-REDIRECT-001` 的本机最终候选后端 1662 passed、3 skipped，前端契约 41/41、生产模式合成浏览器 23/23，迁移升降级通过；独立复审无 Critical/Important。该结论尚待 PR/CI/合并与单独 staging 部署，不代表 TikTok 真实回跳已修复。普通 Chrome 授权当前被官方卖家类型门禁拒绝，未请求 callback；见 `TR-MVP-OAUTH-REDIRECT-001-20260924-R01`。
 
 - G4 的 4 个未通过用例尚未形成生产 AI 质量闭环；危险逃逸为 0、合法输入误拦截为 0，但综合正确率不能替代逐项关闭。
 - 未执行真实 TikTok 店铺端到端验收，不能确认生产 Scope、回调、投递和消息行为。

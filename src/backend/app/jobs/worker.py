@@ -6,7 +6,11 @@ import time
 import uuid
 
 from app.agent.factory import build_knowledge_vectorization_service
-from app.integrations.oauth_service import process_tiktok_token_refresh_cycle
+from app.integrations.oauth_service import (
+    cleanup_tiktok_oauth_jobs,
+    process_tiktok_oauth_job,
+    process_tiktok_token_refresh_cycle,
+)
 from app.knowledge_base.importer import process_import_job
 from app.shared.config.settings import get_settings
 from app.shared.database.session import session_factory
@@ -25,11 +29,14 @@ async def run_worker() -> None:
     next_marketing_at = 0.0
     next_metrics_at = 0.0
     next_tiktok_refresh_at = 0.0
+    next_oauth_cleanup_at = 0.0
     while True:
         processed = False
         try:
             async with session_factory() as session:
-                processed = await process_import_job(session)
+                processed = await process_tiktok_oauth_job(session, settings)
+            async with session_factory() as session:
+                processed = await process_import_job(session) or processed
             if vectorization_service is not None:
                 async with session_factory() as session:
                     vectorization_result = await vectorization_service.process_cycle(session)
@@ -52,6 +59,10 @@ async def run_worker() -> None:
                     refreshed = await process_tiktok_token_refresh_cycle(session, settings)
                 processed = refreshed > 0 or processed
                 next_tiktok_refresh_at = time.monotonic() + settings.tiktok_token_refresh_poll_seconds
+            if time.monotonic() >= next_oauth_cleanup_at:
+                async with session_factory() as session:
+                    await cleanup_tiktok_oauth_jobs(session)
+                next_oauth_cleanup_at = time.monotonic() + 3600
         except Exception:
             logger.exception(
                 "Jobs 后台任务执行失败",

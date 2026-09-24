@@ -140,3 +140,16 @@ async def consume_tiktok_oauth_state(state: str) -> dict[str, str] | None:
     ):
         return None
     return parsed
+
+
+async def peek_tiktok_oauth_state(state: str) -> dict[str, str] | None:
+    """回调入队前只读校验 state；最终仍由 worker GETDEL 原子消费。"""
+    raw = await redis_client.get(_tiktok_oauth_state_key(state))
+    if raw is None:
+        return None
+    parsed = json.loads(raw)
+    if not isinstance(parsed, dict) or not all(
+        isinstance(key, str) and isinstance(value, str) for key, value in parsed.items()
+    ):
+        return None
+    return parsed
