@@ -7,7 +7,7 @@
 | 主题 | 已有结论 | 尚缺内容 |
 |---|---|---|
 | M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，新值接受、旧值拒绝；外部四项凭据已安全注入 staging 且真实能力保持关闭 | 外部平台实际接受验证、备份恢复、兼容镜像回滚和 production 放行 |
-| M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；MVP-UI-CACHE-001 本机生产构建浏览器 22/22、前端契约 41/41，HTML `no-store`、JS `immutable`；既有 UI 镜像已部署到 staging | 新缓存修复尚未部署 staging，仍需精确无 query 路径及带身份浏览器复验 |
+| M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查 | 真实店铺 OAuth/Scope/投递/消息/对账；Shopee/Amazon 真实接入未做 |
 | M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖；固定综合集为 32/36（88.89%） | 真实 DeepSeek 质量、50 客户端 SSE、5 日稳定性；公开自动回复/营销未放行 |
@@ -37,7 +37,7 @@
 
 ## 管理端 staging 镜像部署冒烟
 
-2026-09-24 新 HTML 缓存修复的三镜像已从合并 `main=118ba775...` 发布，三摘要无变更预检通过；现场部署 `35949846192` 因新检索镜像下载极慢而在容器切换前取消。旧容器与健康、公司 system Docker、入口 vhost 均未变，环境文件已恢复为变更前字节一致；精确 `/marketing` 仍返回旧的 `s-maxage=31536000`，因此**本次缓存修复尚未部署 staging**。见 `release/evidence/staging/crm-staging-html-cache-rollout-attempt-20260924.json`。旧检索摘要的上次例外不适用本轮。
+2026-09-24 首次三新摘要部署 `35949846192` 因新检索镜像下载停滞而在容器切换前取消，失败事实保留于 `release/evidence/staging/crm-staging-html-cache-rollout-attempt-20260924.json`。用户随后仅对**本次 staging** 重新授权复用旧检索摘要；混合摘要预检 `35953530870` 和部署 `35953792293` 通过，新 backend/frontend 实际运行，旧检索镜像依赖锁偏差如实保留。PR #49 的 staging vhost 关闭继承代理缓存，PR #50 的入口脚本接受唯一合法首页 307；两者已合并。公网无 query 的 `/login`、`/marketing`、`/knowledge`、`/settings/stores` 均 200/no-store，指纹 JS 200/immutable，三条健康 200，双机最终入口脚本通过；公司 system Docker 和其他 vhost 摘要不变。详见 `TR-MVP-UI-CACHE-DEPLOY-001-20260924-R01` 与终态机器证据。带身份 staging 全按钮和真实 TikTok 仍未执行，production 不变。
 
 `main=58263b1...` 的新 backend/frontend 摘要已由 staging 工作流 `35849490309` 部署并经现场 inspect 确认；旧检索镜像只按本次明确授权保留，依赖锁偏差见 `TR-MVP-UI-DEPLOY-001-20260923-R01`。入口、迁移头、固定出口和三个公网健康端点通过，`/login`、渠道、知识、营销公开路由及 Next 静态 JavaScript 返回 200。此为部署冒烟，不等于带身份的逐按钮浏览器回归、真实店铺授权或 production 验收。
 

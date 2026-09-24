@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_html_cache_rollout_final",
+  "captured_at_utc": "2026-09-24T04:44:00Z",
+  "environment": "staging",
+  "status": "passed_with_scoped_retrieval_image_exception",
+  "production_release": false,
+  "task_id": "MVP-UI-CACHE-DEPLOY-001",
+  "source_main_sha": "118ba775e291b88998bd033b7bca3410e29f8b88",
+  "final_config_and_verifier_main_sha": "a9d36c04fb8f71d163deabc22d64b5ce5efbe3e3",
+  "frontend_backend_build_inputs_unchanged_between_shas": true,
+  "image_publish_run_id": 35948442592,
+  "mixed_digest_validate_run_id": 35953530870,
+  "mixed_digest_validate_status": "success",
+  "mixed_digest_deploy_run_id": 35953792293,
+  "mixed_digest_deploy_status": "success",
+  "running_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:772c3ff342dd179f307d3a7f25bfadc6ca3cac43abd9aa50008af23f9ddfcdd5",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:86fe5f16b37a92e94e1ac0fa9e9e66b55e70065a9309cb7898809fc3b5112a83",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:bc99dfa3ce36bc3332480b456da5d82a0d1495a2f9bbfd1b2bb56d4df2f02112",
+    "backend_frontend_retrieval_healthy": true
+  },
+  "retrieval_exception": {
+    "authorization": "User explicitly approved reusing the old retrieval digest for this staging rollout only on 2026-09-24",
+    "reason": "New approximately 8 GB retrieval image repeatedly stalled during GHCR download",
+    "deviation": "Retrieval model service source and Dockerfile inputs are equal, but backend dependency manifest and lock differ; the old retrieval image is not declared equivalent",
+    "future_rollouts_authorized": false,
+    "production_authorized": false
+  },
+  "recovery": {
+    "business_root_only_directory": "/var/backups/crm-staging/releases/20260924T035948Z-118ba775",
+    "postgres_dump_listed_with_pg_restore": true,
+    "minio_archive_listed_with_tar": true,
+    "staging_env_backup_byte_equal_before_deploy": true,
+    "edge_vhost_root_only_directory": "/var/backups/crm-staging/vhosts/20260924T041840Z-504f288",
+    "database_or_object_restore_drill": "not_executed_separate_MVP-008"
+  },
+  "edge_configuration": {
+    "staging_vhost_before_sha256": "1c5d047eba1a9b02b7984691ded2c813d4499d34aa7b9e96c72899444ab52a6a",
+    "staging_vhost_after_sha256": "a0a3c2b527047d198f7b0f5c740fab25c66917875d03f0566461ff9e42cc3842",
+    "other_vhosts_before_and_after_sha256": "61a631835508f2fc810e7d8d289988a831296fbd6551a118bf833c731385b7f4",
+    "nginx_config_test": "passed",
+    "public_loopback_listener": "127.0.0.1:18080"
+  },
+  "business_system_docker_before_and_after_sha256": "bf370603c23ead759c7c47938465c2ebc165dfad03b13623685d38919516238c",
+  "public_exact_paths_after_edge_reload": {
+    "/login": "200; private, no-cache, no-store, max-age=0, must-revalidate; no X-Nextjs-Cache HIT",
+    "/marketing": "200; private, no-cache, no-store, max-age=0, must-revalidate; no X-Nextjs-Cache HIT",
+    "/knowledge": "200; private, no-cache, no-store, max-age=0, must-revalidate; no X-Nextjs-Cache HIT",
+    "/settings/stores": "200; private, no-cache, no-store, max-age=0, must-revalidate; no X-Nextjs-Cache HIT",
+    "/": "307; Location: /dashboard",
+    "/healthz": 200,
+    "/v1/health": 200,
+    "/v1/health/ready": 200,
+    "/_next/static/chunks/1u5zan5bs9a7v.js": "200; public, max-age=31536000, immutable"
+  },
+  "merged_ingress_verifier": {
+    "public_host": "passed",
+    "business_host": "passed",
+    "exactly_one_dashboard_location_required": true
+  },
+  "local_synthetic_browser_production_build": "22 passed, 0 skipped",
+  "live_authenticated_staging_button_matrix": "not_executed",
+  "real_tiktok_oauth_or_messages": "not_executed",
+  "sensitive_values_included": false
+}
