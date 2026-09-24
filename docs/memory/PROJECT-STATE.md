@@ -9,16 +9,18 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/staging-html-cache-20260924
-Governance base SHA: 7890f4acf12e956544c0acbd34033857dce88d81
-CANDIDATE_SUBJECT_SHA: 7617647965278198b2712b678007bc3ad6fbbe98
+Working branch at this snapshot: fix/staging-html-cache-deploy-20260924
+Governance base SHA: 118ba775e291b88998bd033b7bca3410e29f8b88
+CANDIDATE_SUBJECT_SHA: 118ba775e291b88998bd033b7bca3410e29f8b88
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
-`MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，候选根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。当前任务为 `VERIFYING`，待 PR CI/合并；合并后只部署 staging，production 不变。此前旧检索摘要例外仅适用 2026-09-23 的部署，不能继承到新发布。
+`MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
+
+独立 `MVP-UI-CACHE-DEPLOY-001` 当前为 `BLOCKED`：三个合并 main 镜像发布 `35948442592` 成功、三摘要预检 `35949282895` 通过；部署 `35949846192` 新检索镜像拉取超过半小时仍无法在门禁时限内完成，已在容器切换前取消。旧容器健康、公开健康 200，staging 环境文件与受限备份字节一致，公司 system Docker、staging vhost 和其他站点前后摘要一致。现场精确营销路径仍返回 `s-maxage=31536000`，所以新缓存修复**未部署**；详细低敏事实见 `../../release/evidence/staging/crm-staging-html-cache-rollout-attempt-20260924.json`。此前旧检索摘要例外仅适用 2026-09-23 的部署，不能继承；需新镜像可下载或用户对本次 staging 旧检索摘要另行明确授权。production 不变。
 
 `MVP-001` 已在真实 staging 完成内部凭据轮换和 TikTok App Key、Service ID、App Secret、DeepSeek API Key 四项外部凭据的安全注入；R02 现场职责矩阵、失败关闭、响应/日志无泄漏、固定出口和三个公网健康端点均通过。一次性工具首次因 cwd 权限在变更前失败，独立复核原配置与健康后修正重试成功。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不需向平台获取并保持空。R02 TR 为 `PASS`，证据已由 PR #40 合入 main；任务状态收尾为 `DONE`。真实平台接受、G0 恢复/回滚及 production 仍未通过。
 
@@ -49,7 +51,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `MVP-UI-CACHE-001` 为 `VERIFYING`；`REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001`、`MVP-EGRESS-001`、`MVP-001`、`MVP-UI-001`、`MVP-UI-DEPLOY-001` 与四个维护清理任务已关闭；MVP-002～MVP-009 保持 `BACKLOG`。
+- `MVP-UI-CACHE-DEPLOY-001` 为 `BLOCKED`；`MVP-UI-CACHE-001`、`REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001`、`MVP-EGRESS-001`、`MVP-001`、`MVP-UI-001`、`MVP-UI-DEPLOY-001` 与四个维护清理任务已关闭；MVP-002～MVP-009 保持 `BACKLOG`。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -79,7 +81,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；真实 TikTok/DeepSeek 平台是否接受尚未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台流程确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- staging DNS/TLS、`18080 → 18081` 反向隧道和 Rootless CRM 当前可用；临时 registry 代理已撤除。新 backend/frontend 摘要已完成实际下载、部署和健康验证；新检索镜像仍受 GHCR CDN 下载阻断，旧摘要只按本次 UI staging 授权保留。下一次镜像升级不得继承此次或此前固定出口任务的豁免。
+- staging DNS/TLS、`18080 → 18081` 反向隧道和 Rootless CRM 当前可用；临时 registry 代理已撤除。2026-09-23 的 backend/frontend 摘要仍在运行且健康，旧检索摘要当时只按那次 UI staging 授权保留；2026-09-24 新镜像已发布但因业务机 GHCR 下载未完成而**没有部署**。下一次镜像升级不得继承此前豁免。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
@@ -89,6 +91,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 用独立测试账号与隔离数据在已部署 staging 执行带身份的管理端逐按钮浏览器冒烟，并独立启动 `MVP-002` 真实 OAuth/只读验收；真实开关在门禁通过前保持关闭。
-2. 安排 `MVP-008` 数据库/对象存储恢复与兼容上一版镜像实际回滚。
-3. 业务机 GHCR 下载恢复后补齐新检索镜像的同源部署验证；G0～G8 未齐前 production 继续关闭。
+1. 待新检索镜像能在业务机下载，或取得用户对**本次** staging 旧检索镜像例外的明确授权后，恢复 `MVP-UI-CACHE-DEPLOY-001`、重做预检与部署，并在精确无 query 路径及带身份浏览器中复验；production 不变。
+2. 用独立测试账号与隔离数据启动 `MVP-002` 真实 OAuth/只读验收；真实开关在门禁通过前保持关闭。
+3. 安排 `MVP-008` 数据库/对象存储恢复与兼容上一版镜像实际回滚；G0～G8 未齐前 production 继续关闭。

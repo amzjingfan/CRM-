@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_html_cache_rollout_attempt",
+  "captured_at_utc": "2026-09-24T03:38:00Z",
+  "environment": "staging",
+  "status": "blocked_before_container_switch",
+  "production_release": false,
+  "source_main_sha": "118ba775e291b88998bd033b7bca3410e29f8b88",
+  "ui_change_subject_sha": "7617647965278198b2712b678007bc3ad6fbbe98",
+  "image_publish_run_id": 35948442592,
+  "image_publish_status": "success_three_digests",
+  "first_validate_run_id": 35948860245,
+  "first_validate_status": "failed_old_retrieval_reference_in_staging_env_before_deploy",
+  "successful_validate_run_id": 35949282895,
+  "successful_validate_status": "validated_three_candidate_digests",
+  "deploy_run_id": 35949846192,
+  "deploy_status": "cancelled_during_retrieval_image_pull_after_more_than_30_minutes_without_feasible_progress",
+  "running_images_unchanged": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:a3bb63c47acee9f78682e9ea8837d415a7008635aa3a8c91e76dfe49b423f6c7",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:e5d6bbfc6cab8ba9c912ac3c95d8ff43f4ae9d8f6d12927124686b07cd9c1f0f",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:bc99dfa3ce36bc3332480b456da5d82a0d1495a2f9bbfd1b2bb56d4df2f02112",
+    "inspected_healthy": true
+  },
+  "recovery": {
+    "restricted_backup_directory": "/var/backups/crm-staging/releases/20260924T025500Z-118ba775",
+    "postgres_dump_readable_by_pg_restore": true,
+    "minio_volume_archive_readable_by_tar": true,
+    "staging_env_restored_byte_equal_to_protected_previous_copy": true,
+    "database_or_object_restore_drill": "not_executed_separate_MVP-008"
+  },
+  "independent_checks": {
+    "public_healthz_after_cancel": 200,
+    "marketing_exact_path_before_deploy_cache_control": "s-maxage=31536000",
+    "marketing_exact_path_after_cancel_checked_at_utc": "2026-09-24T03:46:23Z",
+    "marketing_exact_path_after_cancel_status": 200,
+    "marketing_exact_path_after_cancel_nextjs_cache": "HIT",
+    "marketing_exact_path_after_cancel_cache_control": "s-maxage=31536000",
+    "business_system_docker_before_sha256": "990b59a5c87dd4c502de285fe01f961c009e2de75390ac8edee2a0e6d6c55117",
+    "business_system_docker_after_sha256": "990b59a5c87dd4c502de285fe01f961c009e2de75390ac8edee2a0e6d6c55117",
+    "staging_vhost_before_sha256": "1c5d047eba1a9b02b7984691ded2c813d4499d34aa7b9e96c72899444ab52a6a",
+    "staging_vhost_after_sha256": "1c5d047eba1a9b02b7984691ded2c813d4499d34aa7b9e96c72899444ab52a6a",
+    "other_vhosts_before_sha256": "14ab642923d5ffbb9468ca4a8aeaa0199ed2b83640ff6c7f190a0d89f2fbc422",
+    "other_vhosts_after_sha256": "14ab642923d5ffbb9468ca4a8aeaa0199ed2b83640ff6c7f190a0d89f2fbc422"
+  },
+  "decision_needed": "Only a fresh explicit user authorization can permit reusing the old retrieval digest for this later staging rollout; otherwise wait for a viable new-image download path.",
+  "sensitive_values_included": false
+}
