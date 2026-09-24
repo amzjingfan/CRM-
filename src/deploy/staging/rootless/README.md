@@ -168,6 +168,8 @@ Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 
 同时从外部验证首页、`/healthz`、`/v1/health` 和 `/v1/health/ready`。随后只重启一次旧服务器用户级 `crm-staging-tunnel.service`，记录断开期间 `502/503`、重新监听和健康恢复时间；不得重启 sshd、Nginx、系统 Docker 或公司容器。
 
+前端镜像或入口缓存配置变化时，还必须从**公网无查询参数**对 `/login`、`/marketing`、`/knowledge`、`/settings/stores` 分别执行 GET（例如 `curl -sS -D - -o /dev/null https://staging.overselfx.com/marketing`）：四个路径均为 200，`Cache-Control` 含 `no-store`，不出现旧 `x-nextjs-cache: HIT` 或长期 `s-maxage`。再从页面引用的 `/_next/static/` 指纹 JS 取样确认 200 和 `immutable`。随机 query 命中新的缓存键不能替代精确路径检查；任一项失败都不得把 UI 部署标为完成，须按入口与回环分层定位并保留恢复点。
+
 ### 4.11 复核公司负载和其他站点
 
 重新生成旧服务器系统 Docker 的六字段规范化摘要，与 4.1 基线逐字比较。复核新服务器其他 vhost 文件摘要和选定站点 HTTP 状态。任一非 staging 漂移都恢复 staging HTTP `503`、停止后续步骤并交由运维判断，不自动“修复”公司负载。

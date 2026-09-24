@@ -12,6 +12,8 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 管理端所有 HTML 由 Next.js 按请求动态生成并返回 `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`，避免切换镜像后浏览器继续使用旧构建页面；`/_next/static/` 下带指纹的 JS/CSS 仍可长期 `immutable` 缓存。staging 切换前后须同时核对 HTML 响应头、页面引用的构建资源和无店铺页面的指引状态，不能只用健康端点判定 UI 已更新。
 
+宝塔 Nginx 的 `http` 级配置启用了共享 `proxy_cache cache_one`，所以仅让 Next 返回 `no-store` 不会使已缓存的旧 HTML 立即消失。正式 staging vhost 在 HTTPS `server` 级显式设置 `proxy_cache off;`，不修改全局缓存或其他站点；验收必须对公网**无查询参数**的 `/login`、`/marketing`、`/knowledge` 执行 GET，确认不再返回旧 `x-nextjs-cache: HIT` 与长期 `s-maxage`，并复核业务机回环响应和静态指纹资源。不得通过加随机 query 代替精确路径验收。
+
 当前 staging 固定使用双服务器入口分离：`staging.overselfx.com:443 → 38.55.145.52 宝塔 Nginx/TLS → 127.0.0.1:18080 → SSH 反向隧道 → 192.168.110.210:127.0.0.1:18081 → crmdeploy Rootless CRM`。Compose 项目名为 `crm-staging`，Docker socket 为 `unix:///run/user/1004/docker.sock`，数据和模型均留在 `/home/crmdeploy`。
 
 旧服务器系统 Docker 的 GitLab 已占用 `10080/10443`，这些容器、端口、卷、网络和 data-root 禁止修改。CRM 只发布单个回环 HTTP 端口 `18081`，不在旧服务器终止 TLS；历史同机 systemd 入口只作为 Git 历史，不是当前操作路径。新服务器只承载宝塔 Nginx、站点证书和回环隧道监听，不运行 CRM 数据或模型服务。

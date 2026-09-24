@@ -565,6 +565,14 @@ def test_public_vhost_replaces_inner_security_headers_once() -> None:
         assert f"proxy_hide_header {header};" in https_server_preamble
 
 
+def test_public_vhost_disables_inherited_proxy_cache_for_html() -> None:
+    """宝塔 http 级全局缓存不能覆盖新版 Next HTML 的 no-store 响应。"""
+    source = PUBLIC_HTTPS_VHOST.read_text(encoding="utf-8")
+    https_server_preamble = source.rsplit("server {", 1)[1].split("location =", 1)[0]
+
+    assert "proxy_cache off;" in https_server_preamble
+
+
 def test_split_ingress_verifier_checks_public_and_loopback_boundaries() -> None:
     """全链路验证必须拒绝错误 DNS、证书、监听、GitLab 响应和不安全 TLS。"""
     source = SPLIT_INGRESS_VERIFIER.read_text(encoding="utf-8")
