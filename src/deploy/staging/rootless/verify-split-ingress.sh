@@ -20,6 +20,20 @@ check_loopback_listener() {
     [[ $listener_count == 1 ]] || fail "Unexpected loopback listener"
 }
 
+assert_dashboard_redirect() {
+    local headers=$1 location
+    location=$(awk '
+        tolower($0) ~ /^location:/ {
+            count++
+            value=substr($0, index($0, ":") + 1)
+            sub(/^[[:space:]]*/, "", value)
+            sub(/[[:space:]]*$/, "", value)
+        }
+        END { if (count != 1) exit 2; print value }
+    ' "$headers") || fail "CRM home returned ambiguous Location headers"
+    [[ $location == /dashboard ]] || fail "CRM home redirected to an unexpected target"
+}
+
 [[ $# -eq 1 ]] || fail "Usage: verify-split-ingress.sh public|business"
 role=$1
 case "$role" in
@@ -68,7 +82,12 @@ for path in / /healthz /v1/health /v1/health/ready; do
     http_code=$(curl --fail --silent --show-error --output "$payload_file" --dump-header "$headers_file" \
         --write-out '%{http_code}' --proto '=https' --tlsv1.2 --connect-timeout 5 --max-time 20 \
         "https://$DOMAIN$path") || fail "HTTPS endpoint check failed"
-    [[ $http_code == 200 ]] || fail "HTTPS endpoint returned a non-success status"
+    if [[ $path == / ]]; then
+        [[ $http_code == 307 ]] || fail "CRM home did not redirect to the dashboard"
+        assert_dashboard_redirect "$headers_file"
+    else
+        [[ $http_code == 200 ]] || fail "HTTPS endpoint returned a non-success status"
+    fi
     if grep -Eiq '^(x-gitlab-|location:.*?/users/sign_in)' "$headers_file" ||
         grep -Fq '/users/sign_in' "$payload_file"; then
         fail "GitLab response detected at the CRM staging entry"

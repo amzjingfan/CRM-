@@ -594,3 +594,47 @@ def test_split_ingress_verifier_checks_public_and_loopback_boundaries() -> None:
     assert "curl -k" not in source
     assert "--insecure" not in source
     assert "privkey.pem" not in source
+
+
+def test_split_ingress_verifier_accepts_only_dashboard_home_redirect() -> None:
+    """首页的合法 307 不能使全链路检查误报，也不能接受任意跳转目标。"""
+    source = SPLIT_INGRESS_VERIFIER.read_text(encoding="utf-8")
+
+    assert "if [[ $path == / ]]; then" in source
+    assert "[[ $http_code == 307 ]]" in source
+    assert 'assert_dashboard_redirect "$headers_file"' in source
+
+
+@pytest.mark.parametrize(
+    ("headers", "accepted"),
+    [
+        ("HTTP/1.1 307 Temporary Redirect\r\nLocation: /dashboard\r\n", True),
+        ("HTTP/1.1 307 Temporary Redirect\r\nLocation: /evil\r\nLocation: /dashboard\r\n", False),
+        ("HTTP/1.1 307 Temporary Redirect\r\nLocation: /dashboard\r\nLocation: /evil\r\n", False),
+        ("HTTP/1.1 307 Temporary Redirect\r\nLocation: /evil\r\n", False),
+        ("HTTP/1.1 307 Temporary Redirect\r\n", False),
+    ],
+)
+def test_split_ingress_verifier_rejects_ambiguous_home_location(tmp_path: Path, headers: str, accepted: bool) -> None:
+    """同时出现合法与恶意 Location 时必须拒绝，不能只匹配其中一行。"""
+    source = SPLIT_INGRESS_VERIFIER.read_text(encoding="utf-8")
+    assert "assert_dashboard_redirect() {" in source
+    function_body = source.split("assert_dashboard_redirect() {", 1)[1].split("\n}\n", 1)[0]
+    bash = shutil.which("bash")
+    if os.name == "nt":
+        git = shutil.which("git")
+        assert git is not None
+        bash = str(Path(git).resolve().parent.parent / "bin" / "bash.exe")
+    assert bash is not None
+    fixture = tmp_path / "headers.txt"
+    fixture.write_bytes(headers.encode("ascii"))
+    fixture_arg = fixture.as_posix()
+    if os.name == "nt":
+        fixture_arg = f"/{fixture.drive[0].lower()}/{fixture_arg[3:]}"
+    exercise = (
+        f'fail() {{ exit 37; }}\nassert_dashboard_redirect() {{{function_body}\n}}\nassert_dashboard_redirect "$1"'
+    )
+
+    result = subprocess.run([bash, "-c", exercise, "--", fixture_arg], capture_output=True, text=True, check=False)
+
+    assert (result.returncode == 0) is accepted, result.stderr
