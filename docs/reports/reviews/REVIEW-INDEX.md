@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -18,3 +18,4 @@ View: `CURRENT`
 | RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01 | MVP-UI-CACHE-DEPLOY-001 | R01 | APPROVE | `a9d36c04fb8f71d163deabc22d64b5ce5efbe3e3` | cache-boundary / ingress-redirect / rollback / immutable-image-provenance / company-workload-isolation / staging-only | 2026-09-24T12:44:00+08:00 | [`RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md`](RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md) |
 | RR-MVP-OAUTH-REDIRECT-001-20260924-R01 | MVP-OAUTH-REDIRECT-001 | R01 | APPROVE | `8a1b81f44478f2c71c4f275873cb68d0b8f4528f` | oauth-state-replay / tenant-boundary / atomic-commit / worker-race / credential-secrecy / staging-only | 2026-09-24T16:23:00+08:00 | [`RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md) |
 | RR-MVP-READONLY-LOG-001-20260928-R01 | MVP-READONLY-LOG-001 | R01 | APPROVE | `a2f4da8e12ae10efb27adea400f96b9e037cd6ea` | signed-url-secrecy / exception-chain-secrecy / count-output / staging-boundary | 2026-09-28T09:33:00+08:00 | [`RR-MVP-READONLY-LOG-001-20260928-R01.md`](RR-MVP-READONLY-LOG-001-20260928-R01.md) |
+| RR-MVP-G1-NONLOG-001-20260928-R01 | MVP-G1-NONLOG-001 | R01 | APPROVE | `3568f037782a183ea99775515eafe45b5d42fa45` | evidence-integrity / credential-safety / tenant-isolation / fail-closed / release-boundary | 2026-09-28T16:24:47+08:00 | [`RR-MVP-G1-NONLOG-001-20260928-R01.md`](RR-MVP-G1-NONLOG-001-20260928-R01.md) |

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g1_nonlogistics_preflight",
+  "captured_at_utc": "2026-09-28T08:00:03Z",
+  "provenance_rechecked_at_utc": "2026-09-28T08:20:18Z",
+  "environment": "staging",
+  "status": "nonlogistics_checks_passed_g1_partial",
+  "deployed_backend_source_sha": "c99df142bb987a8afd65410998298e39b0ae50a7",
+  "local_verification_sha": "3568f037782a183ea99775515eafe45b5d42fa45",
+  "nonlogistics_readonly": {
+    "exit_code": 0,
+    "shops": 1,
+    "webhook_subscriptions": 0,
+    "orders": 20,
+    "order_details": 1,
+    "conversations": 20,
+    "messages": 2,
+    "all_six_paths_executed": true,
+    "enhanced_tracking_executed": false,
+    "raw_identifiers_or_message_bodies_emitted": false,
+    "probe_event": "g1_nonlog_readonly_probe",
+    "probe_methods": ["get_active_shops", "get_webhooks", "search_orders", "get_order_details", "get_conversations", "get_conversation_messages"]
+  },
+  "oauth_and_scope_inventory": {
+    "active_internal_stores": 2,
+    "connected_tiktok_channels": 1,
+    "successful_channel_authorize_audits": 3,
+    "required_scopes_present": true,
+    "required_scope_names": ["seller.authorization.info", "seller.customer_service", "seller.logistics", "seller.order.info"],
+    "missing_required_scopes": [],
+    "access_and_refresh_references_encrypted": true,
+    "access_token_expiry_in_future": true,
+    "refresh_token_expiry_in_future": true,
+    "retained_oauth_jobs_at_inventory": 0,
+    "live_oauth_job_terminal_or_duplicate_callback_verified_at_inventory": false,
+    "subsequent_job_observed": true,
+    "subsequent_job_terminal_and_duplicate_callback_in_this_record": false
+  },
+  "cross_store_transaction_probe": {
+    "authorized_store_count": 1,
+    "visible_channel_count": 0,
+    "other_store_access": "denied_404",
+    "other_store_oauth_start": "denied_404",
+    "synthetic_user_persisted_after_rollback": false,
+    "probe_event": "g1_nonlog_cross_store_probe"
+  },
+  "token_refresh_not_due_probe": {
+    "refresh_cycle_processed": 0,
+    "encrypted_references_and_channel_status_unchanged": true,
+    "channel_remained_connected": true,
+    "live_successful_refresh_verified": false,
+    "successful_refresh_audits_at_inventory": 0,
+    "probe_event": "g1_nonlog_refresh_and_oauth_job_probe",
+    "precondition": "token_expires_at > now_utc + configured_refresh_lead_seconds"
+  },
+  "local_backend_tests": {
+    "passed": 1650,
+    "skipped": 18,
+    "warnings": 2
+  },
+  "remaining_boundaries": [
+    "Enhanced 202604 tracking separately fails with platform code 11007009; it was not called in this preflight.",
+    "At 08:00:03Z no retained OAuth job existed; a later job was observed but its terminal and duplicate callback are outside this preflight record.",
+    "The active token was not due; forcing real credential rotation was not attempted.",
+    "Webhook subscription count zero does not prove real delivery, signature, replay or ordering.",
+    "G1 and production release remain unapproved."
+  ],
+  "production_changed": false,
+  "sensitive_values_included": false
+}
