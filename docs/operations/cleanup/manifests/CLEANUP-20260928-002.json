@@ -1,0 +1,33 @@
+{
+  "task_id": "MAINT-CLEANUP-20260928-002",
+  "batch_id": "CLEANUP-20260928-002",
+  "base_sha": "289f1981ec3342e7e9cab8787b173305a0f4a5ae",
+  "state": "DELETED",
+  "authorized_root": ".worktrees",
+  "approved_at": "2026-09-28T14:15:38+08:00",
+  "deleted_at": "2026-09-28T14:19:31+08:00",
+  "freed_bytes": 997590721,
+  "retention_until": "N/A - explicit user authorization for this exact worktree and its local key copies and diagnostics",
+  "items": [
+    {
+      "task_id": "MAINT-CLEANUP-20260928-002",
+      "batch_id": "CLEANUP-20260928-002",
+      "base_sha": "289f1981ec3342e7e9cab8787b173305a0f4a5ae",
+      "original_path": ".worktrees/fix-staging-ui-feedback-20260923",
+      "kind": "directory",
+      "category": "merged-worktree",
+      "git_status": "clean tracked checkout; ignored caches and explicitly authorized local diagnostics and key copies",
+      "size_bytes": 997590721,
+      "sha256": "N/A - directory; tracked tree bound to HEAD 144774b2edac745a52bf08b858e9ebf6b3cd5726; private-key digests withheld",
+      "modified_at": "2026-09-23T16:15:28.7900837+08:00",
+      "reason": "PR #52 merged; user separately authorized deletion of local diagnostic evidence and two identical private-key copies",
+      "reference_checks": ["PR #52 MERGED to main", "remote short branch absent", "git status clean", "no reparse points", "two private-key copies match external originals by SHA-256", "no docs/release path references to local diagnostic files"],
+      "related_tasks_or_worktrees": ["MVP-UI-001", "PR #52"],
+      "action": "deleted",
+      "quarantine_path": "N/A - explicitly authorized deletion; Git history preserves tracked content only",
+      "retention_until": "N/A - explicit user authorization",
+      "restore_method": "Recreate tracked checkout from PR #52 or commit 144774b2edac745a52bf08b858e9ebf6b3cd5726; reinstall dependencies; local diagnostics are intentionally not recoverable; external key originals remain",
+      "verification": ["exact worktree path and registration absent", "local docs/close-staging-html-cache-deploy-20260924 branch absent", "external private-key originals unchanged by SHA-256", "origin/main unchanged during deletion at 289f1981ec3342e7e9cab8787b173305a0f4a5ae"]
+    }
+  ]
+}
