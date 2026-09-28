@@ -27,7 +27,7 @@
       "quarantine_path": "N/A - explicitly authorized deletion; Git history preserves tracked content only",
       "retention_until": "N/A - explicit user authorization",
       "restore_method": "Recreate tracked checkout from PR #52 or commit 144774b2edac745a52bf08b858e9ebf6b3cd5726; reinstall dependencies; local diagnostics are intentionally not recoverable; external key originals remain",
-      "verification": ["exact worktree path and registration absent", "local docs/close-staging-html-cache-deploy-20260924 branch absent", "external private-key originals unchanged by SHA-256", "origin/main unchanged during deletion at 289f1981ec3342e7e9cab8787b173305a0f4a5ae"]
+      "verification": ["exact worktree path and registration absent", "local docs/close-staging-html-cache-deploy-20260924 branch absent", "external private-key originals unchanged by SHA-256", "origin/main unchanged during deletion at 289f1981ec3342e7e9cab8787b173305a0f4a5ae", "cleanup record PR #59 CI passed and merged as f3a83c518d0934576a3f13a26c76d45df3b5cc9d"]
     }
   ]
 }
