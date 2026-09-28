@@ -9,16 +9,18 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp002-oauth-redirect-20260924
-Governance base SHA: 7adb26927a717b3fca04056e779bd09bd05d9c75
-CANDIDATE_SUBJECT_SHA: 8a1b81f44478f2c71c4f275873cb68d0b8f4528f
+Working branch at this snapshot: fix/mvp002-readonly-log-safety-20260928
+Governance base SHA: c72406349c56f55f9e433b64523b3626682c4adb
+CANDIDATE_SUBJECT_SHA: a2f4da8e12ae10efb27adea400f96b9e037cd6ea
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
-`MVP-OAUTH-REDIRECT-001` 当前处于 `VERIFYING`：TikTok 成功 callback 的 Token/店铺查询已移至现有 jobs worker，callback 提交短期加密任务后立即 303；重复回调去重、任务状态隔离、成功/失败原子提交和崩溃失败关闭已实现。最终 subject `8a1b81f` 只在源码候选 `dc5dff4` 后补正 README/部署文档迁移头说明；源码候选本机隔离数据库全量后端 1662 passed/3 skipped，前端契约 41/41、合成数据生产模式浏览器 23/23，迁移升降级通过；独立只读复审 Critical/Important 为 0。尚待 PR/CI/合并；staging 部署属独立任务，production 未变。普通 Chrome 重新授权被 TikTok 官方以卖家类型不适用拒绝，未进入 callback，需由用户在 Partner Center 核对美国市场 HK 跨境卖家目标类型，不能将代码测试冒充真实回跳。
+`MVP-OAUTH-REDIRECT-001` 已由 PR #53 合入 `main`。用户重新选择 North America seller 与 US 后完成 TikTok 授权，成功页自动返回 CRM；此前卖家类型拒绝系操作选择错误，不再作为当前阻塞。现场只读预检中旧版物流 `202309` 成功，增强物流 `202604` 返回业务码 `11007009`，含义未确认，不能将两者混同；Token 生命周期、店铺隔离和重复回调现场证据仍未关闭 G1。production 未变。
+
+`MVP-READONLY-LOG-001` 当前 `VERIFYING`：真实只读冒烟入口的第三方 URL 与异常链输出已改为低敏事件，成功只输出六项聚合整数。最终 subject `a2f4da8` 上本机后端 1650 passed/18 skipped，静态门禁通过；首次审查的异常 traceback 泄漏已用红绿测试修复。IR/TR/RR 为本分支候选，PR/CI/合并及 staging 新镜像均未完成，不能宣称现场日志泄漏已消除。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -53,8 +55,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `MVP-UI-CACHE-DEPLOY-001`、`MVP-UI-CACHE-001`、`REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001`、`MVP-EGRESS-001`、`MVP-001`、`MVP-UI-001`、`MVP-UI-DEPLOY-001` 与四个维护清理任务已关闭；MVP-002～MVP-009 保持 `BACKLOG`。
-- `MVP-OAUTH-REDIRECT-001` 在 `VERIFYING`，`MVP-OAUTH-REDIRECT-DEPLOY-001` 等待合并后单独 staging 部署，`MVP-002` 的 G1 真实只读门禁仍保持 `BACKLOG`。
+- `MVP-OAUTH-REDIRECT-001`、`MVP-UI-CACHE-DEPLOY-001`、`MVP-UI-CACHE-001`、`REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001`、`MVP-EGRESS-001`、`MVP-001`、`MVP-UI-001`、`MVP-UI-DEPLOY-001` 与四个维护清理任务已关闭；MVP-002～MVP-009 保持 `BACKLOG`。
+- `MVP-READONLY-LOG-001` 在 `VERIFYING`，待 PR/CI/合并和独立 staging 部署；`MVP-002` 的 G1 Token、隔离与增强物流仍保持未关闭。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -73,7 +75,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - MVP-UI-DEPLOY-001 staging R01：[`../records/implementation/IR-MVP-UI-DEPLOY-001-20260923-R01.md`](../records/implementation/IR-MVP-UI-DEPLOY-001-20260923-R01.md)、[`../reports/tests/TR-MVP-UI-DEPLOY-001-20260923-R01.md`](../reports/tests/TR-MVP-UI-DEPLOY-001-20260923-R01.md)、[`../reports/reviews/RR-MVP-UI-DEPLOY-001-20260923-R01.md`](../reports/reviews/RR-MVP-UI-DEPLOY-001-20260923-R01.md)；低敏现场证据为 [`../../release/evidence/staging/crm-staging-ui-rollout-20260923.json`](../../release/evidence/staging/crm-staging-ui-rollout-20260923.json)。三个派生索引从 main 已合并源记录重建为 `CURRENT`。
 - MVP-UI-CACHE-001 定稿 R01：[`../records/implementation/IR-MVP-UI-CACHE-001-20260924-R01.md`](../records/implementation/IR-MVP-UI-CACHE-001-20260924-R01.md)、[`../reports/tests/TR-MVP-UI-CACHE-001-20260924-R01.md`](../reports/tests/TR-MVP-UI-CACHE-001-20260924-R01.md)、[`../reports/reviews/RR-MVP-UI-CACHE-001-20260924-R01.md`](../reports/reviews/RR-MVP-UI-CACHE-001-20260924-R01.md)。
 - MVP-UI-CACHE-DEPLOY-001 staging 定稿 R01：[`../records/implementation/IR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md`](../records/implementation/IR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md)、[`../reports/tests/TR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md`](../reports/tests/TR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md)、[`../reports/reviews/RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md`](../reports/reviews/RR-MVP-UI-CACHE-DEPLOY-001-20260924-R01.md)；现场终态证据为 [`../../release/evidence/staging/crm-staging-html-cache-rollout-20260924.json`](../../release/evidence/staging/crm-staging-html-cache-rollout-20260924.json)。三个派生索引从已合并的 main 源记录重建为 `CURRENT`。
-- MVP-OAUTH-REDIRECT-001 本机候选 R01：[`../records/implementation/IR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](../records/implementation/IR-MVP-OAUTH-REDIRECT-001-20260924-R01.md)、[`../reports/tests/TR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](../reports/tests/TR-MVP-OAUTH-REDIRECT-001-20260924-R01.md)、[`../reports/reviews/RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](../reports/reviews/RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md)。三个派生索引在任务分支为 `CANDIDATE_VIEW`，待合并后从 main 重建为 `CURRENT`。
+- MVP-OAUTH-REDIRECT-001 已合入 R01：[`../records/implementation/IR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](../records/implementation/IR-MVP-OAUTH-REDIRECT-001-20260924-R01.md)、[`../reports/tests/TR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](../reports/tests/TR-MVP-OAUTH-REDIRECT-001-20260924-R01.md)、[`../reports/reviews/RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md`](../reports/reviews/RR-MVP-OAUTH-REDIRECT-001-20260924-R01.md)。
+- MVP-READONLY-LOG-001 本机候选 R01：[`../records/implementation/IR-MVP-READONLY-LOG-001-20260928-R01.md`](../records/implementation/IR-MVP-READONLY-LOG-001-20260928-R01.md)、[`../reports/tests/TR-MVP-READONLY-LOG-001-20260928-R01.md`](../reports/tests/TR-MVP-READONLY-LOG-001-20260928-R01.md)、[`../reports/reviews/RR-MVP-READONLY-LOG-001-20260928-R01.md`](../reports/reviews/RR-MVP-READONLY-LOG-001-20260928-R01.md)。本分支索引为 `CANDIDATE_VIEW`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
@@ -84,8 +87,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 阻塞、决定与风险
 
 - G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
-- TikTok 官方“app is not available for your seller type”发生于新回调之前；当前已连接渠道不证明本次 Chrome 重新授权可成功。用户需核对 Partner Center 的美国市场 HK 跨境卖家目标类型，再亲自授权复测；不得绕过平台门禁或凭借回调代码测试宣称现场通过。
-- `MVP-001` 的内部轮换及外部四项凭据注入已通过；真实 TikTok/DeepSeek 平台是否接受尚未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台流程确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
+- 用户已重新选择 North America seller/US 完成授权并自动返回 CRM；仍需现场低敏任务终态、Token 生命周期、店铺隔离与重复回调证据，不得将前端回跳单独视为 G1 全通过。
+- `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
 - staging DNS/TLS、`18080 → 18081` 反向隧道和 Rootless CRM 当前可用；临时 registry 代理已撤除。2026-09-24 新 backend/frontend 摘要已运行且健康；旧检索摘要仅按本次 staging 的重新授权保留，依赖锁有差异。下一次镜像升级不得继承此次豁免。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
@@ -97,6 +100,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 完成 `MVP-OAUTH-REDIRECT-001` PR/CI 合并，然后独立执行仅 staging 的迁移、不可变镜像发布、健康与恢复点门禁；production 保持不变。
-2. 用户核对 Partner Center 美国 HK 跨境卖家目标类型后亲自重新授权；取得真实 callback 303、任务 connected 与渠道绑定证据，再推进 `MVP-002` G1 只读验收。
+1. 完成 `MVP-READONLY-LOG-001` PR/CI 合并；另立 staging 部署门禁后才重新运行真实只读冒烟，production 保持不变。
+2. 对 G1 的 Token 生命周期、店铺隔离及增强物流 `202604` 业务码 `11007009` 继续只读核对，不臆测错误含义或扩大写入权限。
 3. 安排 `MVP-008` 数据库/对象存储恢复与兼容上一版镜像实际回滚；G0～G8 未齐前 production 继续关闭。

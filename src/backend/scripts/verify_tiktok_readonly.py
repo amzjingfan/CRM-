@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import json
 import logging
 import uuid
 
@@ -9,9 +10,8 @@ from app.integrations.tiktok_read import TikTokReadClient
 from app.shared.config.settings import get_settings
 from app.shared.database.session import engine, session_factory
 from app.shared.exceptions.errors import AppError, ErrorCode
+from app.shared.logging.setup import configure_logging
 from app.stores.models import ChannelAccount
-
-logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -49,15 +49,19 @@ async def verify(channel_id: uuid.UUID) -> None:
         if conversations:
             messages, _next_message, _ = await client.get_conversation_messages(conversations[0].id)
             message_count = len(messages)
-        logger.info(
-            "tiktok_readonly_smoke_succeeded shops=%d webhooks=%d orders=%d "
-            "tracking_packages=%d conversations=%d messages=%d",
-            len(shops),
-            len(webhooks),
-            len(orders),
-            tracking_package_count,
-            len(conversations),
-            message_count,
+        print(
+            json.dumps(
+                {
+                    "event": "tiktok_readonly_smoke_succeeded",
+                    "shops": len(shops),
+                    "webhooks": len(webhooks),
+                    "orders": len(orders),
+                    "tracking_packages": tracking_package_count,
+                    "conversations": len(conversations),
+                    "messages": message_count,
+                },
+                separators=(",", ":"),
+            )
         )
 
 
@@ -71,5 +75,12 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    asyncio.run(main())
+    configure_logging("INFO")
+    try:
+        asyncio.run(main())
+    except Exception:
+        # 平台响应校验异常可能携带店铺、订单或客户字段；默认 traceback 会绕过低敏日志出口。
+        logging.getLogger(__name__).exception(
+            "tiktok_readonly_smoke_failed", extra={"event": "tiktok_readonly_smoke_failed"}
+        )
+        raise SystemExit(1) from None

@@ -69,6 +69,7 @@ Set-Location ../..
 
 - `src/tests/backend/runtime_infrastructure/test_health.py` 是确定性健康检查入口。
 - `src/backend/scripts/verify_*.py` 只在其 README、任务或门禁明确要求的环境运行；脚本存在不代表真实环境已验收。
+- `src/backend/scripts/verify_tiktok_readonly.py` 在真实只读冒烟成功时只向标准输出写入店铺、Webhook、订单、物流、会话和消息的聚合计数 JSON；第三方 HTTP 日志通过项目低敏结构化日志出口，不输出带签名的请求 URL。调用失败仍是非零退出，不得把部分成功计为 G1 通过。
 - 真实 TikTok、真实 DeepSeek、50 客户端 SSE、五日稳定性、备份和回滚需要隔离 integration/staging、精确授权、低敏数据和对应门禁记录。
 - `src/tests/ai/datasets/` 中的数据集和 `src/tests/ai/results/` 中的版本化结果受版本、摘要、Provider、环境和数据用途约束。普通测试不得静默替换数据集、阈值或模型。
 - 生产环境不运行真实模型离线评测或破坏性测试。
