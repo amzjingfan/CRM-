@@ -26,7 +26,7 @@
       "quarantine_path": "N/A: recoverable from Git PR and branch commit",
       "retention_until": "N/A: merged Git checkout",
       "restore_method": "git worktree add from commit 749abeb133304c57115a5aab4137e64e9dc9f011; reinstall dependencies and regenerate caches",
-      "verification": ["git worktree list no longer contains the exact path", "local fix/mvp002-oauth-redirect-20260924 branch absent", "origin/main unchanged at c99df142bb987a8afd65410998298e39b0ae50a7"]
+      "verification": ["git worktree list no longer contains the exact path", "local fix/mvp002-oauth-redirect-20260924 branch absent", "origin/main unchanged during deletion at c99df142bb987a8afd65410998298e39b0ae50a7", "cleanup record PR #57 CI passed and merged as c64572492c72053b5722c6a859634891da48c2b5"]
     }
   ]
 }
