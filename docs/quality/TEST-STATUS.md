@@ -23,7 +23,7 @@
 
 ## 当前未关闭风险
 
-- `MVP-READONLY-LOG-001` 的最终 subject `a2f4da8` 本机全量后端 1650 passed、18 skipped、2 个既有弃用 warning；Ruff、格式、mypy、锁文件通过。仅为本机结论，PR/CI、staging 新镜像和真实只读重测尚未完成；见 `TR-MVP-READONLY-LOG-001-20260928-R01`。
+- `MVP-READONLY-LOG-001` 的最终 subject `a2f4da8` 本机全量后端 1650 passed、18 skipped、2 个既有弃用 warning；Ruff、格式、mypy、锁文件通过。PR #54 前后端 CI 通过并已合入 main；staging 新镜像和真实只读重测尚未完成，不能将源码结论冒充现场验收；见 `TR-MVP-READONLY-LOG-001-20260928-R01`。
 
 - G4 的 4 个未通过用例尚未形成生产 AI 质量闭环；危险逃逸为 0、合法输入误拦截为 0，但综合正确率不能替代逐项关闭。
 - 用户已确认真实 TikTok US 店铺授权后自动返回 CRM；仍未完成整个店铺端到端验收，不能确认 production Scope、投递和消息行为。
