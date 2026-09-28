@@ -5,7 +5,7 @@
 | 门禁 | 范围 | 当前状态 | 阻断条件 / 证据入口 | 下一动作 |
 |---|---|---|---|---|
 | G0 | 基础设施、配置、密钥、备份与回滚 | 部分通过 | `MVP-STAGING-001` 已完成 split-ingress Rootless 真实部署；`MVP-001` 已完成内部凭据轮换和四项外部凭据的 staging 安全注入，证据见 `release/evidence/staging/crm-staging-external-credentials-20260923.json`；真实平台接受仍待 G1/G2/G4。`MVP-EGRESS-001` 固定出口现场门禁、故障关闭和公司负载零业务漂移已通过；本次 staging 镜像复用有用户限定授权，不能外推 production。数据库/对象存储恢复和兼容上一版镜像实际回滚仍缺失 | 执行 `MVP-008` 的恢复/回滚；真实平台验收按 G1/G2/G4 分开执行；新镜像与 production 不沿用 staging 例外，未全部通过前 G8 继续阻塞 |
-| G1 | TikTok OAuth 与只读 | 部分通过，未签署 | staging 已有真实店铺授权并自动回跳；六项非物流只读查询、Scope/密文盘点及未提交合成账号的跨店失败关闭已通过，见 `release/evidence/staging/crm-staging-g1-nonlog-20260928.json`。08:00:03Z 盘点时 OAuth job 为零，后续复核已见新 job；终态与重复回调仍待单独验收。真实成功 Token 刷新未验；增强物流 `202604` 返回 `11007009`，不以旧版或其他接口成功替代；Webhook 订阅查询为零不代表 G2 通过 | 核对本次 OAuth job 终态/重放；按刷新窗口验证 Token 生命周期；另查 `202604` 平台错误，维持 production No-Go |
+| G1 | TikTok OAuth 与只读 | 部分通过，未签署 | 用户确认 staging 美国测试店铺授权后自动回到 CRM；最新任务 `connected`、code/state 已清空、匹配成功审计一条，异人读取 404，证据见 `release/evidence/staging/crm-staging-oauth-reauth-20260928.json`。六项非物流只读和跨店失败关闭见 `crm-staging-g1-nonlog-20260928.json`。同一真实 callback 的现场重放、真实成功 Token 刷新未验；增强物流 `202604` 返回 `11007009`，不能以旧版或其他接口成功替代；Webhook 订阅查询为零不代表 G2 通过 | 单独验收重复 callback、自然刷新窗口和 `202604` 平台错误；维持 production No-Go |
 | G2 | TikTok Webhook | 已实现，待真实验证 | 签名、幂等和内部回归已覆盖；缺 Partner Center 实际投递、重试与乱序证据 | 注册真实订阅并验证投递、重放和审计 |
 | G3 | 人工确认普通消息 | 已实现，待真实验证 | 确定性发送、`unknown`、对账已覆盖；缺真实发送、对账和回滚证据 | 以低风险测试会话发送一次并制造/收敛不确定状态 |
 | G4 | DeepSeek、RAG、DLP 与知识审批 | 部分通过 | 固定综合集 32/36=88.89%，危险逃逸 0、合法输入误拦截 0；BGE 证据见 `release/evidence/retrieval/`。生产翻译、公开回复、营销和数据出境未验收；后三者不属 v0.1 | 完成 v0.1 AI 建议真实质量与数据边界复测 |

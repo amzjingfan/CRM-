@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_oauth_reauthorization_readonly_check",
+  "captured_at_utc": "2026-09-28T09:05:12Z",
+  "environment": "staging",
+  "verification_base_sha": "fd750c15b6c2970b250de4f7218a4d456a3257aa",
+  "deployed_backend_source_sha": "c99df142bb987a8afd65410998298e39b0ae50a7",
+  "backend_compose_rootless_source_diff_from_deployed": false,
+  "browser": {
+    "source": "user_confirmation",
+    "automatically_returned_to_crm": true,
+    "us_test_store_displayed_connected": true
+  },
+  "oauth_job": {
+    "jobs_since_2026_09_28_08_00_utc": 1,
+    "latest_created_at_utc": "2026-09-28T08:18:47.826483+00:00",
+    "latest_status": "connected",
+    "completed_at_present": true,
+    "state_cipher_cleared": true,
+    "code_cipher_cleared": true,
+    "error_code_present": false,
+    "matching_successful_authorization_audits": 1
+  },
+  "channel": {
+    "connected": true,
+    "access_reference_encrypted": true,
+    "refresh_reference_encrypted": true,
+    "access_expiry_in_future": true
+  },
+  "job_status_access_probe": {
+    "owner_first": "connected",
+    "owner_second": "connected",
+    "different_user_same_store_service_error_status_code": 404,
+    "authorization_audits_unchanged": true,
+    "synthetic_user_persisted": false,
+    "first_probe_attempt_failed_after_rollback_due_to_detached_object": true,
+    "corrected_probe_exit_code": 0
+  },
+  "runtime": {
+    "migration_head": "024_tiktok_oauth_jobs",
+    "backend_healthy": true,
+    "jobs_running": true,
+    "public_ready_http_status": 200,
+    "public_tls_verify_result": 0
+  },
+  "local_oauth_tests": {
+    "passed": 36,
+    "failed": 0,
+    "base_sha": "fd750c15b6c2970b250de4f7218a4d456a3257aa"
+  },
+  "live_duplicate_callback_replay_verified": false,
+  "live_successful_token_refresh_verified": false,
+  "enhanced_tracking_202604_verified": false,
+  "g1_signed": false,
+  "production_changed": false,
+  "sensitive_values_included": false
+}
