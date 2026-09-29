@@ -43,24 +43,38 @@ if (Test-Path -LiteralPath $EvidenceFile) {
     throw "Image prefetch evidence path already exists; use a unique path for each attempt."
 }
 
+function Test-LocalImageDigest {
+    param([Parameter(Mandatory = $true)][string]$Reference)
+
+    $digestJson = & docker image inspect --format '{{json .RepoDigests}}' $Reference 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace([string]$digestJson)) {
+        return $false
+    }
+    $repoDigests = @($digestJson | ConvertFrom-Json)
+    return ($repoDigests -ccontains $Reference)
+}
+
 $savedDockerHost = [Environment]::GetEnvironmentVariable("DOCKER_HOST", "Process")
 $savedDockerContext = [Environment]::GetEnvironmentVariable("DOCKER_CONTEXT", "Process")
 try {
     $env:DOCKER_HOST = $DockerHost
     [Environment]::SetEnvironmentVariable("DOCKER_CONTEXT", $null, "Process")
-    foreach ($image in $images) {
+    for ($index = 0; $index -lt $images.Count; $index++) {
+        $image = $images[$index]
+        Write-Output "Checking immutable staging image $($index + 1)/$($images.Count): $($image.reference)"
+        if (Test-LocalImageDigest -Reference $image.reference) {
+            Write-Output "Exact image digest is already available locally."
+            continue
+        }
+        Write-Output "Pulling immutable staging image $($index + 1)/$($images.Count)."
         & docker pull $image.reference | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            throw "Immutable staging image pull failed."
+            throw "Immutable staging image pull failed for image $($index + 1)/$($images.Count): $($image.reference)"
         }
-        $digestJson = & docker image inspect --format '{{json .RepoDigests}}' $image.reference
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($digestJson)) {
-            throw "Pulled staging image cannot be inspected."
-        }
-        $repoDigests = @($digestJson | ConvertFrom-Json)
-        if (-not ($repoDigests -ccontains $image.reference)) {
+        if (-not (Test-LocalImageDigest -Reference $image.reference)) {
             throw "Pulled staging image digest does not match the requested reference."
         }
+        Write-Output "Exact pulled image digest verified."
     }
     $evidence = [ordered]@{
         evidence_type = "staging_rollback_image_prefetch"

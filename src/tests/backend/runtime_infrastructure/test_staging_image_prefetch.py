@@ -32,6 +32,7 @@ def fake_docker(tmp_path: Path) -> tuple[dict[str, str], Path]:
         """import json, os, sys
 from pathlib import Path
 args = sys.argv[1:]
+cache = Path(os.environ['FAKE_DOCKER_CACHE'])
 with Path(os.environ['FAKE_DOCKER_LOG']).open('a', encoding='utf-8') as output:
     payload = {'args': args, 'host': os.environ.get('DOCKER_HOST')}
     payload['context'] = os.environ.get('DOCKER_CONTEXT')
@@ -39,8 +40,16 @@ with Path(os.environ['FAKE_DOCKER_LOG']).open('a', encoding='utf-8') as output:
 if args[:1] == ['pull']:
     if args[1] == os.environ.get('FAKE_DOCKER_FAIL_IMAGE'):
         sys.exit(42)
+    with cache.open('a', encoding='utf-8') as output:
+        output.write(args[1] + '\\n')
     sys.exit(0)
 if args[:2] == ['image', 'inspect']:
+    if not cache.exists() or args[-1] not in cache.read_text(encoding='utf-8').splitlines():
+        print('No such image', file=sys.stderr)
+        sys.exit(1)
+    if args[-1] == os.environ.get('FAKE_DOCKER_WRONG_DIGEST_IMAGE'):
+        print(json.dumps(['ghcr.io/cp11-gh/other@sha256:' + '0' * 64]))
+        sys.exit(0)
     print(json.dumps([args[-1]]))
     sys.exit(0)
 sys.exit(99)
@@ -63,6 +72,7 @@ sys.exit(99)
             "FAKE_DOCKER_PYTHON": sys.executable,
             "FAKE_DOCKER_SCRIPT": str(runtime),
             "FAKE_DOCKER_LOG": str(log),
+            "FAKE_DOCKER_CACHE": str(tmp_path / "cached-images.txt"),
             "DOCKER_CONTEXT": "unsafe-system-context",
         }
     )
@@ -147,6 +157,36 @@ def test_prefetch_pull_failure_never_reports_pass(tmp_path: Path) -> None:
     assert result.returncode != 0
     commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
     assert [args for args in commands if args[0] == "pull"] == [["pull", image] for image in IMAGES[:3]]
+    assert not (tmp_path / "evidence.json").exists()
+
+
+def test_prefetch_resumes_verified_images_after_a_failed_pull(tmp_path: Path) -> None:
+    """一次中断后只重新拉取未核对的摘要，最终仍需六项全部核对。"""
+    environment, log = fake_docker(tmp_path)
+    environment["FAKE_DOCKER_FAIL_IMAGE"] = IMAGES[2]
+    first = invoke(tmp_path, environment)
+    assert first.returncode != 0
+    assert not (tmp_path / "evidence.json").exists()
+
+    environment.pop("FAKE_DOCKER_FAIL_IMAGE")
+    second = invoke(tmp_path, environment)
+    assert second.returncode == 0, second.stdout + second.stderr
+    commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
+    assert [args for args in commands if args[0] == "pull"] == [["pull", image] for image in (*IMAGES[:3], *IMAGES[2:])]
+    assert IMAGES[2] in first.stdout
+    assert IMAGES[2] in second.stdout
+    evidence = json.loads((tmp_path / "evidence.json").read_text("utf-8"))
+    assert evidence["image_count"] == 6
+    assert evidence["image_references"] == list(IMAGES)
+
+
+def test_prefetch_rejects_wrong_local_repo_digest_after_pull(tmp_path: Path) -> None:
+    environment, log = fake_docker(tmp_path)
+    environment["FAKE_DOCKER_WRONG_DIGEST_IMAGE"] = IMAGES[1]
+    result = invoke(tmp_path, environment)
+    assert result.returncode != 0
+    commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
+    assert [args for args in commands if args[0] == "pull"] == [["pull", image] for image in IMAGES[:2]]
     assert not (tmp_path / "evidence.json").exists()
 
 
