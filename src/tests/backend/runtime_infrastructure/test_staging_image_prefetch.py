@@ -220,24 +220,33 @@ def test_staging_workflow_exposes_prefetch_without_expanding_token_permissions()
     )
 
 
-def test_staging_workflow_rejects_a_stale_checkout_before_docker_access() -> None:
-    """Runner 上的 main 若落后于调度 SHA，不得用旧门禁操作 staging。"""
+def test_staging_workflow_verifies_reviewed_source_before_docker_access() -> None:
+    """Runner Git 路径不可用时，其他 staging 门禁仍须验证精确提交的源码包。"""
     workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
-    steps = workflow["jobs"]["staging"]["steps"]
-    checkout = next(step for step in steps if step["name"] == "Check out reviewed main")
-    assert checkout["if"] == "${{ inputs.operation != 'prefetch' }}"
+    source_job = workflow["jobs"]["prepare_source"]
+    assert source_job["if"] == "${{ inputs.operation != 'prefetch' }}"
+    assert source_job["permissions"] == {"contents": "read"}
+    source_steps = source_job["steps"]
+    checkout = next(step for step in source_steps if step["name"] == "Check out reviewed main")
     assert checkout["with"]["ref"] == "${{ github.sha }}"
-    verify = next(step for step in steps if step["name"] == "Verify checked-out dispatch commit")
+    pack = next(step for step in source_steps if step["name"] == "Pack exact staging source")
+    assert '"$(git rev-parse HEAD)" != "$GITHUB_SHA"' in pack["run"]
+    assert "git archive" in pack["run"]
+    assert "source_sha256" in source_job["outputs"]
+    steps = workflow["jobs"]["staging"]["steps"]
+    download = next(step for step in steps if step["name"] == "Download reviewed staging source")
+    verify = next(step for step in steps if step["name"] == "Verify reviewed staging source")
     assert verify["if"] == "${{ inputs.operation != 'prefetch' }}"
-    assert steps.index(verify) == steps.index(checkout) + 1
+    assert steps.index(verify) == steps.index(download) + 1
     assert steps.index(verify) < next(
         i for i, step in enumerate(steps) if step["name"] == "Log in to GHCR for immutable image pulls"
     )
-    assert "(& git rev-parse HEAD).Trim()" in verify["run"]
     assert '$env:GITHUB_REF -cne "refs/heads/main"' in verify["run"]
-    assert "$checkedOutSha -cne $env:GITHUB_SHA" in verify["run"]
-    assert 'throw "Staging checkout does not match the dispatched commit."' in verify["run"]
+    assert "$actualDigest -cne $env:SOURCE_SHA256" in verify["run"]
+    assert "tar -xf" in verify["run"]
     assert verify["id"] == "verify_dispatch_commit"
+    gate = next(step for step in steps if step["name"] == "Run the selected staging gate")
+    assert "crm-reviewed-source-" in gate["working-directory"]
     api_source = next(step for step in steps if step["name"] == "Verify exact prefetch source through GitHub API")
     assert api_source["if"] == "${{ inputs.operation == 'prefetch' }}"
     assert api_source["id"] == "verify_prefetch_source"

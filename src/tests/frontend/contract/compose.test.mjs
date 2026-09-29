@@ -172,7 +172,9 @@ test("staging workflow cannot target production or a generic hosted runner", asy
   assert.match(workflow, /docker logout ghcr\.io/);
   assert.match(workflow, /if: \$\{\{ always\(\) && \(steps\.verify_dispatch_commit\.outcome == 'success' \|\| steps\.verify_prefetch_source\.outcome == 'success'\) \}\}/);
   assert.doesNotMatch(workflow, /if: \$\{\{ always\(\) \}\}/);
-  assert.doesNotMatch(workflow, /ubuntu-latest/);
+  const stagingJob = workflow.split(/\n  staging:\n/)[1];
+  assert.ok(stagingJob);
+  assert.doesNotMatch(stagingJob, /ubuntu-latest/);
   assert.doesNotMatch(workflow, /environment:\s+production/);
 });
 

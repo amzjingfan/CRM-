@@ -50,32 +50,91 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  prepare_source:
+    name: Pack reviewed staging source
+    if: ${{ inputs.operation != 'prefetch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    outputs:
+      source_sha256: ${{ steps.pack.outputs.source_sha256 }}
+    steps:
+      - name: Check out reviewed main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Pack exact staging source
+        id: pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]]; then
+            echo "Staging source does not match the dispatched main commit." >&2
+            exit 1
+          fi
+          archive="$RUNNER_TEMP/crm-staging-source.tar"
+          git archive --format=tar --output="$archive" "$GITHUB_SHA"
+          digest="$(sha256sum "$archive" | cut -d' ' -f1)"
+          printf 'source_sha256=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Upload reviewed staging source
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: crm-staging-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crm-staging-source.tar
+          if-no-files-found: error
+          retention-days: 1
+
   staging:
     name: Run staging-only gate
+    needs: prepare_source
+    if: ${{ always() && !cancelled() && (inputs.operation == 'prefetch' || needs.prepare_source.result == 'success') }}
     environment: staging
     runs-on: [self-hosted, linux, x64, crm-staging]
     # The immutable retrieval image is about 8 GiB and the staging host has a slow GHCR path.
     timeout-minutes: 120
     steps:
-      - name: Check out reviewed main
+      - name: Download reviewed staging source
         if: ${{ inputs.operation != 'prefetch' }}
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          ref: ${{ github.sha }}
+          name: crm-staging-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crm-staging-source-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Verify checked-out dispatch commit
+      - name: Verify reviewed staging source
         if: ${{ inputs.operation != 'prefetch' }}
         id: verify_dispatch_commit
         shell: pwsh
+        env:
+          SOURCE_SHA256: ${{ needs.prepare_source.outputs.source_sha256 }}
         run: |
-          if ($env:GITHUB_REF -cne "refs/heads/main") {
+          if ($env:GITHUB_REF -cne "refs/heads/main" -or $env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$') {
             throw "Staging operations must be dispatched from main."
           }
-          $checkedOutSha = (& git rev-parse HEAD).Trim()
-          if ($LASTEXITCODE -ne 0 -or $checkedOutSha -cne $env:GITHUB_SHA) {
-            throw "Staging checkout does not match the dispatched commit."
+          if ($env:SOURCE_SHA256 -cnotmatch '^[0-9a-f]{64}$') {
+            throw "The reviewed staging source digest is invalid."
           }
-          Write-Output "Verified staging dispatch commit $checkedOutSha."
+          $archive = Join-Path $env:RUNNER_TEMP "crm-staging-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT/crm-staging-source.tar"
+          if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
+            throw "The reviewed staging source archive is missing."
+          }
+          $actualDigest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualDigest -cne $env:SOURCE_SHA256) {
+            throw "The reviewed staging source digest does not match the hosted job."
+          }
+          $sourceRoot = Join-Path $env:RUNNER_TEMP "crm-reviewed-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          if (Test-Path -LiteralPath $sourceRoot) {
+            throw "The staging source directory already exists."
+          }
+          New-Item -ItemType Directory -Path $sourceRoot | Out-Null
+          & tar -xf $archive -C $sourceRoot
+          if ($LASTEXITCODE -ne 0) { throw "Unable to extract the reviewed staging source." }
+          & git -C $sourceRoot init --quiet
+          if ($LASTEXITCODE -ne 0) { throw "Unable to establish the staging source boundary." }
+          Write-Output "Verified staging source artifact for dispatch SHA $env:GITHUB_SHA."
 
       - name: Verify exact prefetch source through GitHub API
         if: ${{ inputs.operation == 'prefetch' }}
@@ -180,6 +239,7 @@ jobs:
       - name: Run the selected staging gate
         if: ${{ inputs.operation != 'prefetch' }}
         shell: pwsh
+        working-directory: ${{ runner.temp }}/crm-reviewed-source-${{ github.run_id }}-${{ github.run_attempt }}
         env:
           OPERATION: ${{ inputs.operation }}
           CONFIRM_TARGET: ${{ inputs.confirm_target }}
