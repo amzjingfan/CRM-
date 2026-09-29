@@ -93,7 +93,7 @@ BGE 运行基线为 1024 维、Dense Top-20、Rerank Top-5、阈值 0.52。质�
 4. 回滚使用已验证的上一镜像和兼容迁移路径；禁止 `git reset --hard` 或手工改生产表。
 5. 真实恢复和回滚演练证据缺失时，发布门禁保持阻塞。
 
-staging 镜像回滚准备阶段使用 `staging-gates.yml` 的 `prefetch` 操作：自托管 Runner 仅凭当次 `GITHUB_TOKEN` 的 `packages: read` 权限，将候选与上一版的后端、前端、检索服务六个不可变摘要拉到 `crmdeploy` Rootless Docker 并核对本地 RepoDigest。该操作不读取 staging 环境文件、不重建容器、不改活动数据，也不代表回滚通过。只有独立恢复库上的旧版兼容性检查、镜像预取、受限备份和切返路径都确认后，才可在维护窗口执行实际切回/切返；现有 `rollback` 操作本身**不会自动切返**，必须单独验证恢复候选运行态。production 不使用本操作。
+staging 镜像回滚准备阶段使用 `staging-gates.yml` 的 `prefetch` 操作：自托管 Runner 仅凭当次 `GITHUB_TOKEN` 的 `packages: read` 权限，将候选与上一版的后端、前端、检索服务六个不可变摘要拉到 `crmdeploy` Rootless Docker 并核对本地 RepoDigest。该操作不读取 staging 环境文件、不重建容器、不改活动数据，也不代表回滚通过。只有独立恢复库上的旧版兼容性检查、镜像预取、受限备份和切返路径都确认后，才可在维护窗口执行实际切回/切返。`rollback -Execute` 在容器变更前还须核对正在运行的后端、前端和检索服务均为输入的候选摘要；如果 staging 仍保留旧检索镜像，先完成候选三镜像部署及验收。现有 `rollback` 操作本身**不会自动切返**，必须单独验证恢复候选运行态。production 不使用本操作。
 
 ## 发布入口
 

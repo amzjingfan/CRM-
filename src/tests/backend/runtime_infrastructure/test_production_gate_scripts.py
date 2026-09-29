@@ -391,6 +391,28 @@ if "config" in arguments:
         sys.exit(43)
     print(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
     sys.exit(int(os.environ.get("FAKE_DOCKER_CONFIG_EXIT_CODE", "0")))
+if "ps" in arguments and "-q" in arguments:
+    if (
+        os.environ.get("FAKE_DOCKER_PAUSED_RETRIEVAL") == "1"
+        and "--status" in arguments
+        and arguments[arguments.index("--status") + 1] == "running"
+        and arguments[-1] == "retrieval-model-service"
+    ):
+        sys.exit(0)
+    print("candidate-" + arguments[-1])
+    sys.exit(0)
+if arguments[:2] == ["inspect", "--format"]:
+    service = arguments[-1].removeprefix("candidate-")
+    references = {
+        "backend": "ghcr.io/cp11-gh/crm-backend@sha256:" + "a" * 64,
+        "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:" + "b" * 64,
+        "retrieval-model-service": os.environ.get(
+            "FAKE_DOCKER_LIVE_RETRIEVAL_IMAGE",
+            "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "e" * 64,
+        ),
+    }
+    print(references[service])
+    sys.exit(0)
 if arguments[-6:] == ["run", "--rm", "--no-deps", "backend", "python", "scripts/verify_tiktok_egress.py"]:
     exit_code = int(os.environ.get("FAKE_DOCKER_VERIFY_EXIT_CODE", "0"))
     if exit_code:
@@ -462,8 +484,12 @@ def create_directory_link(link_path: Path, target_path: Path) -> None:
 def assert_compose_invocations_use_fixed_staging_target(command_log: Path) -> None:
     """校验真正交给 CLI 的每个操作参数，捕获项目名、profile 或任一覆盖层丢失。"""
     commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
-    # CLI 探测 compose version 不接收项目配置；其余 config/pull/up 均必须隔离。
-    operations = [arguments for arguments in commands if arguments[:2] != ["compose", "version"]]
+    # 容器镜像只允许通过只读 inspect 核对；Compose 的 config/ps/pull/up 均必须隔离。
+    direct_operations = [arguments for arguments in commands if arguments[0] != "compose"]
+    assert all(arguments[:2] == ["inspect", "--format"] for arguments in direct_operations)
+    operations = [
+        arguments for arguments in commands if arguments[0] == "compose" and arguments[:2] != ["compose", "version"]
+    ]
     assert operations, "gate must reach a real Compose operation"
     for arguments in operations:
         assert arguments[0] == "compose"
@@ -1676,6 +1702,90 @@ def test_rollback_keeps_candidate_egress_image_while_switching_applications(
             "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
         ):
             assert record[capability] == "false"
+
+
+def test_rollback_rejects_non_candidate_live_retrieval_before_mutation(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """当前检索镜像仍是旧摘要时，不得把镜像更换报告为候选回滚。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_LIVE_RETRIEVAL_IMAGE"] = UNREVIEWED_RETRIEVAL_MODEL_IMAGE
+    evidence_file = tmp_path / "rollback-wrong-live-image.json"
+    result = run_powershell(
+        ROLLBACK_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(ROLLBACK_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Execute",
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    assert result.returncode != 0
+    assert "retrieval-model-service" in normalized_process_output(result)
+    assert not any("pull" in command or "up" in command for command in commands)
+    assert not evidence_file.exists()
+
+
+def test_rollback_rejects_paused_candidate_retrieval_before_mutation(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """镜像摘要虽正确，检索容器未运行时也不得开始切换。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_PAUSED_RETRIEVAL"] = "1"
+    evidence_file = tmp_path / "rollback-paused-live-image.json"
+    result = run_powershell(
+        ROLLBACK_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(ROLLBACK_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Execute",
+        "-Confirm:$false",
+        environment=environment,
+    )
+
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    assert result.returncode != 0
+    assert "retrieval-model-service" in normalized_process_output(result)
+    assert not any("pull" in command or "up" in command for command in commands)
+    assert not evidence_file.exists()
 
 
 def test_rollback_rejects_floating_external_image(

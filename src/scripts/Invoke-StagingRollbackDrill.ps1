@@ -275,6 +275,28 @@ function Invoke-Compose {
     }
 }
 
+function Assert-LiveCandidateImages {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$ComposeArguments,
+        [Parameter(Mandatory = $true)][hashtable]$ExpectedImages
+    )
+
+    # 真实回滚必须从正在运行的候选三镜像开始；配置文件中的摘要不能证明现场版本。
+    foreach ($serviceName in @("backend", "frontend", "retrieval-model-service")) {
+        $containerIds = @(& $Command.Executable @($Command.Prefix + $ComposeArguments + @("ps", "--status", "running", "-q", $serviceName)))
+        if ($LASTEXITCODE -ne 0 -or $containerIds.Count -ne 1 -or
+            [string]::IsNullOrWhiteSpace([string]$containerIds[0])) {
+            throw "Exactly one running candidate container is required for service: $serviceName"
+        }
+        $runningImages = @(& $Command.Executable inspect --format '{{.Config.Image}}' $containerIds[0])
+        if ($LASTEXITCODE -ne 0 -or $runningImages.Count -ne 1 -or
+            [string]$runningImages[0] -cne $ExpectedImages[$serviceName]) {
+            throw "Running staging image does not match the candidate digest for service: $serviceName"
+        }
+    }
+}
+
 function Set-DisabledCapabilities {
     foreach ($name in $DisabledCapabilityVariables) {
         [Environment]::SetEnvironmentVariable($name, "false", "Process")
@@ -593,6 +615,7 @@ try {
     if (-not $Execute) {
         throw "A live rollback requires -Execute; use -ValidateOnly for a non-mutating plan check."
     }
+    Assert-LiveCandidateImages -Command $compose -ComposeArguments $composeArguments -ExpectedImages $expectedImages
     if (-not $PSCmdlet.ShouldProcess("staging", "disable real capabilities and deploy previous immutable images")) {
         Write-Evidence -Status "not_executed" -CompletedSteps @() -HealthChecks @()
         Write-Output "Staging rollback was not executed; production_release=false."
