@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp008-staging-git-transport-20260929
-Governance base SHA: 6d2188a9b23aec04ef03df7a0548d6943d22983e
-CANDIDATE_SUBJECT_SHA: 604cd740a125b3537a13b183c4f3ad69a0572ac3
+Working branch at this snapshot: fix/mvp008-prefetch-api-checkout-20260929
+Governance base SHA: 8183ba874a11daf6cb4efb1c5d9c93d69cba9216
+CANDIDATE_SUBJECT_SHA: 72905512761ff498b188ce91e71ca22e47b3c072
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -28,7 +28,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-008-RESTORE-001` 的 2026-09-29 staging 隔离恢复已现场执行：PostgreSQL 备份恢复后 `024`、29 表/85 行逐表计数一致；MinIO 原桶为空，隔离实例中用合成对象验证第二次备份恢复后字节/SHA 一致。临时数据库/容器/卷/网络已移除，受限备份保留；公司系统 Docker 基线及三个公网健康未变。用户人工审阅、独立只读复审与前后端 CI 通过后，证据由 PR #65 合入 main `ad86ce141c1a467b535378665c0e71179036f3a6`；仅隔离恢复子项可标记 DONE，兼容上一版镜像实际回滚和 G0/production 仍未通过。
 
-`MVP-008` 的候选三镜像现场核对、六镜像逐项进度和续跑、调度 SHA 检出门禁已由 PR #68/#71/#72 合入 main `6d2188a9b23aec04ef03df7a0548d6943d22983e`。run `36530940311` 因调度参数格式错误立即失败；run `36531208916` 以 `5f024c6` 触发但 Runner 检出旧 `7b6de23`，随后 GHCR TCP 重置；新 run `36535392094` 精确检出 `6d2188a` 时，Runner 的 Git HTTPS 在三次尝试中均返回 `upload-pack: not our ref`，校验、GHCR 登录、预取和 logout 全部跳过。本机 HTTPS/SSH 均读到 `6d2188a`，异常限于 Runner 路径，机制尚未查明。三次均无通过证据或服务切换。当前候选提供 Runner 上 GitHub API、Git HTTPS 分支视图和精确 SHA 获取的只读诊断；旧检索运行、实际切回/切返和 G0 仍未通过。
+`MVP-008` 的候选三镜像现场核对、六镜像逐项进度和续跑、调度 SHA 检出门禁已由 PR #68/#71/#72 合入 main `6d2188a9b23aec04ef03df7a0548d6943d22983e`。run `36530940311` 因调度参数格式错误立即失败；run `36531208916` 以 `5f024c6` 触发但 Runner 检出旧 `7b6de23`，随后 GHCR TCP 重置；run `36535392094` 精确检出 `6d2188a` 时，Runner 的 Git HTTPS 三次返回 `upload-pack: not our ref`，未进入 Docker。PR #73 合入 main `8183ba8` 后只读诊断 `36538863633` 证明 API 的 main SHA 正确、Runner Git HTTPS `ls-remote` 为 `128/transport`、精确 fetch 为 `128/other`，无代理或 URL 重写，未进入 Docker。当前候选仅让预取从 API 读取调度 SHA 的脚本并核对 Git blob；GHCR 可靠性、六镜像预取、旧检索运行、实际切回/切返和 G0 均未通过。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -113,4 +113,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 合并只读 Git 路径诊断后从 `main` 新建 `workflow_dispatch`，对比 Runner 的 API、Git ref 和精确 SHA 获取；修复该路径后才以相同六摘要预取、验证旧检索并实施切回/切返。G0～G8 未齐前 production 继续关闭。
+3. 合并预取专用 API 脚本路径后从 `main` 新建 `workflow_dispatch`，以相同六摘要验证预取；再单独修复其他 staging 操作的 Git checkout，验证旧检索并实施切回/切返。G0～G8 未齐前 production 继续关闭。

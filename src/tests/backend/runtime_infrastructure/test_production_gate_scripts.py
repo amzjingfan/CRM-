@@ -67,7 +67,10 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
     assert '$common["DockerHost"] = $dockerHost' in gate
     assert gate.index("$runnerUid =") < gate.index("$common =") < gate.index("switch ($env:OPERATION)")
     logout = next(step for step in steps if step["name"] == "Log out from GHCR")
-    assert logout["if"] == "${{ always() && steps.verify_dispatch_commit.outcome == 'success' }}"
+    assert logout["if"] == (
+        "${{ always() && (steps.verify_dispatch_commit.outcome == 'success' || "
+        "steps.verify_prefetch_source.outcome == 'success') }}"
+    )
     assert logout["env"]["DOCKER_CONFIG"] == "${{ runner.temp }}/crm-staging-docker-config"
     assert "docker logout ghcr.io" in logout["run"]
 

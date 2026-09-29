@@ -209,7 +209,7 @@ def test_staging_workflow_exposes_prefetch_without_expanding_token_permissions()
     prefetch = next(step for step in steps if step["name"] == "Prefetch immutable rollback images")
     assert prefetch["if"] == "${{ inputs.operation == 'prefetch' }}"
     assert "CRM_STAGING_ENV_FILE" not in prefetch["env"]
-    assert "Prepare-StagingRollbackImages.ps1" in prefetch["run"]
+    assert "& $env:PREFETCH_SCRIPT" in prefetch["run"]
     assert "$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json" in prefetch["run"]
     gate = next(step for step in steps if step["name"] == "Run the selected staging gate")
     assert gate["if"] == "${{ inputs.operation != 'prefetch' }}"
@@ -225,8 +225,10 @@ def test_staging_workflow_rejects_a_stale_checkout_before_docker_access() -> Non
     workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     steps = workflow["jobs"]["staging"]["steps"]
     checkout = next(step for step in steps if step["name"] == "Check out reviewed main")
+    assert checkout["if"] == "${{ inputs.operation != 'prefetch' }}"
     assert checkout["with"]["ref"] == "${{ github.sha }}"
     verify = next(step for step in steps if step["name"] == "Verify checked-out dispatch commit")
+    assert verify["if"] == "${{ inputs.operation != 'prefetch' }}"
     assert steps.index(verify) == steps.index(checkout) + 1
     assert steps.index(verify) < next(
         i for i, step in enumerate(steps) if step["name"] == "Log in to GHCR for immutable image pulls"
@@ -236,5 +238,19 @@ def test_staging_workflow_rejects_a_stale_checkout_before_docker_access() -> Non
     assert "$checkedOutSha -cne $env:GITHUB_SHA" in verify["run"]
     assert 'throw "Staging checkout does not match the dispatched commit."' in verify["run"]
     assert verify["id"] == "verify_dispatch_commit"
+    api_source = next(step for step in steps if step["name"] == "Verify exact prefetch source through GitHub API")
+    assert api_source["if"] == "${{ inputs.operation == 'prefetch' }}"
+    assert api_source["id"] == "verify_prefetch_source"
+    login = next(step for step in steps if step["name"] == "Log in to GHCR for immutable image pulls")
+    assert steps.index(api_source) < steps.index(login)
+    assert "?ref=$env:GITHUB_SHA" in api_source["run"]
+    assert '"blob $($scriptBytes.Length)`0"' in api_source["run"]
+    assert "$actualBlobSha -cne $source.sha" in api_source["run"]
+    prefetch = next(step for step in steps if step["name"] == "Prefetch immutable rollback images")
+    assert "steps.verify_prefetch_source.outputs.script_path" in prefetch["env"]["PREFETCH_SCRIPT"]
+    assert "& $env:PREFETCH_SCRIPT" in prefetch["run"]
     logout = next(step for step in steps if step["name"] == "Log out from GHCR")
-    assert logout["if"] == "${{ always() && steps.verify_dispatch_commit.outcome == 'success' }}"
+    assert logout["if"] == (
+        "${{ always() && (steps.verify_dispatch_commit.outcome == 'success' || "
+        "steps.verify_prefetch_source.outcome == 'success') }}"
+    )
