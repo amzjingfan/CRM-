@@ -20,7 +20,7 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 活动运行手册和恢复顺序位于 `src/deploy/staging/rootless/README.md`：先建立公司负载与站点保护基线，上传与 main SHA 绑定的版本化资产，把公网入口置为 HTTP `503`，再切换 `18080 → 18081` 隧道；完成不可变镜像/配置 validate 和 Rootless deploy 后，通过宝塔签发证书，安装正式 HTTPS vhost，执行动态健康、隧道重连和公司负载复核。任何阶段失败都恢复 staging `503`、停止候选并保留数据卷，不切回 GitLab。
 
-该路径已于 2026-09-21 在两台真实服务器上完成部署与验收：DNS、Let's Encrypt SAN/证书链、公网健康、迁移头、Rootless 容器、隧道自恢复和公司负载零变化通过，见 `MVP-STAGING-001` 定稿 IR/TR/RR 与 `release/evidence/staging/`。数据库/对象存储恢复和兼容版本回滚仍是后续 G0 门禁；staging 通过不等于 production 放行。
+该路径已于 2026-09-21 在两台真实服务器上完成部署与验收：DNS、Let's Encrypt SAN/证书链、公网健康、迁移头、Rootless 容器、隧道自恢复和公司负载零变化通过，见 `MVP-STAGING-001` 定稿 IR/TR/RR 与 `release/evidence/staging/`。2026-09-29 已从活动 PostgreSQL/MinIO 建立受限备份，恢复至独立数据库和无公网端口的隔离 MinIO 实例；原业务桶为空，合成对象仅在隔离实例中验证二次备份与字节恢复，见 `MVP-008-RESTORE-001` 记录。兼容上一版镜像的实际回滚仍缺，G0 与 production 不放行。
 
 ### Staging 凭据终态
 

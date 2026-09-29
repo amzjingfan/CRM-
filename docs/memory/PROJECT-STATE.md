@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp002-oauth-reauth-close-20260928
-Governance base SHA: 1f1286f8538b1298e91b1be57c2f8f6ccea48940
-CANDIDATE_SUBJECT_SHA: 1f1286f8538b1298e91b1be57c2f8f6ccea48940
+Working branch at this snapshot: docs/mvp008-staging-recovery-20260929
+Governance base SHA: b08fc76b2a9c6de04d6daf7e1e0c2ed784ab5184
+CANDIDATE_SUBJECT_SHA: 675b362cd7b0a8c69384a38815ae3b2351f5b6db
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -25,6 +25,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 `MVP-READONLY-LOG-001` 源码已由 PR #54 合入 main；staging 部署和增强物流失败的独立记录仍在 PR #56 草稿中。2026-09-28 本轮非物流预检在现有 staging 后端执行六项真实只读查询成功，未提交合成用户跨店读/OAuth 发起均 404，当前 connected 渠道的 Scope、密文和未到期刷新调度核对通过；后端本机 1650 passed/18 skipped。08:00:03Z 盘点时 OAuth job 为零，后续复核已见新 job；授权审计与该初次零值均不能证明新任务终态，成功刷新和 `202604` 增强物流仍未过。证据见下文 `MVP-G1-NONLOG-001`，G1 保持部分通过，production 不变。
 
 `MVP-OAUTH-REAUTH-001` 本次 staging 事实：用户确认美国测试店铺授权后自动返回 CRM 并显示已连接；08:00Z 后唯一新 OAuth job 已完成为 connected、code/state 清空，同一发起用户/店铺/渠道的成功审计一条；原用户可重复读取状态，同店异人 404，合成用户已回滚。运行库迁移头 `024_tiktok_oauth_jobs`，backend/jobs 与公网 ready 健康；OAuth 聚焦 36 passed。首次权限探针在回滚后因 detached ORM 对象退出 1，修正复测通过。真实 callback 重放和 Token 成功刷新仍未验，G1/production 不放行；低敏证据见下文记录入口。
+
+`MVP-008-RESTORE-001` 的 2026-09-29 staging 隔离恢复已现场执行：PostgreSQL 备份恢复后 `024`、29 表/85 行逐表计数一致；MinIO 原桶为空，隔离实例中用合成对象验证第二次备份恢复后字节/SHA 一致。临时数据库/容器/卷/网络已移除，受限备份保留；公司系统 Docker 基线及三个公网健康未变。本分支证据处于审查中，不能提前标记 DONE；兼容上一版镜像实际回滚和 G0/production 仍未通过。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -83,6 +85,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - MVP-READONLY-LOG-001 定稿 R01：[`../records/implementation/IR-MVP-READONLY-LOG-001-20260928-R01.md`](../records/implementation/IR-MVP-READONLY-LOG-001-20260928-R01.md)、[`../reports/tests/TR-MVP-READONLY-LOG-001-20260928-R01.md`](../reports/tests/TR-MVP-READONLY-LOG-001-20260928-R01.md)、[`../reports/reviews/RR-MVP-READONLY-LOG-001-20260928-R01.md`](../reports/reviews/RR-MVP-READONLY-LOG-001-20260928-R01.md)。三个派生索引从已合并 main 的源记录重建为 `CURRENT`。
 - MVP-G1-NONLOG-001 非物流预检 R01 已由 PR #61 合入 main：[`../records/implementation/IR-MVP-G1-NONLOG-001-20260928-R01.md`](../records/implementation/IR-MVP-G1-NONLOG-001-20260928-R01.md)、[`../reports/tests/TR-MVP-G1-NONLOG-001-20260928-R01.md`](../reports/tests/TR-MVP-G1-NONLOG-001-20260928-R01.md)、[`../reports/reviews/RR-MVP-G1-NONLOG-001-20260928-R01.md`](../reports/reviews/RR-MVP-G1-NONLOG-001-20260928-R01.md)；低敏机器证据为 [`../../release/evidence/staging/crm-staging-g1-nonlog-20260928.json`](../../release/evidence/staging/crm-staging-g1-nonlog-20260928.json)。三个派生索引从已合并 main 的源记录重建为 `CURRENT`。
 - MVP-OAUTH-REAUTH-001 staging R01 已由 PR #63 合入 main：[`../records/implementation/IR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../records/implementation/IR-MVP-OAUTH-REAUTH-001-20260928-R01.md)、[`../reports/tests/TR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../reports/tests/TR-MVP-OAUTH-REAUTH-001-20260928-R01.md)、[`../reports/reviews/RR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../reports/reviews/RR-MVP-OAUTH-REAUTH-001-20260928-R01.md)；低敏证据为 [`../../release/evidence/staging/crm-staging-oauth-reauth-20260928.json`](../../release/evidence/staging/crm-staging-oauth-reauth-20260928.json)。三个派生索引从已合并 main 源记录重建为 `CURRENT`。
+- MVP-008-RESTORE-001 staging R01 候选记录：[`../records/implementation/IR-MVP-008-RESTORE-001-20260929-R01.md`](../records/implementation/IR-MVP-008-RESTORE-001-20260929-R01.md)、[`../reports/tests/TR-MVP-008-RESTORE-001-20260929-R01.md`](../reports/tests/TR-MVP-008-RESTORE-001-20260929-R01.md)、[`../reports/reviews/RR-MVP-008-RESTORE-001-20260929-R01.md`](../reports/reviews/RR-MVP-008-RESTORE-001-20260929-R01.md)；低敏证据为 [`../../release/evidence/staging/crm-staging-isolated-restore-20260929.json`](../../release/evidence/staging/crm-staging-isolated-restore-20260929.json)。审查及索引收尾前不得标记 DONE。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
@@ -108,4 +111,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 安排 `MVP-008` 数据库/对象存储恢复与兼容上一版镜像实际回滚；G0～G8 未齐前 production 继续关闭。
+3. 完成 `MVP-008-RESTORE-001` 的证据审查/合并，再为 `MVP-008` 找到受审兼容的上一版镜像三摘要并执行实际切回/切返；G0～G8 未齐前 production 继续关闭。

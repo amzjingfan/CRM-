@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_isolated_postgres_minio_restore",
+  "captured_at_utc": "2026-09-29T01:19:48Z",
+  "environment": "staging",
+  "verification_base_sha": "b08fc76b2a9c6de04d6daf7e1e0c2ed784ab5184",
+  "candidate_subject_sha": "675b362cd7b0a8c69384a38815ae3b2351f5b6db",
+  "deployed_backend_frontend_source_sha": "c99df142bb987a8afd65410998298e39b0ae50a7",
+  "production_changed": false,
+  "postgres": {
+    "backup_format": "pg_dump_custom",
+    "backup_bytes": 107609,
+    "backup_sha256": "2c26401cd94bc07955b0290439ba5083614b7f80e60f4f3dbb60e80706c2ea22",
+    "archive_list_lines": 229,
+    "restored_to_separate_database": true,
+    "source_and_restore_migration_head": "024_tiktok_oauth_jobs",
+    "source_and_restore_table_count": 29,
+    "source_and_restore_total_rows": 85,
+    "ordered_per_table_counts_sha256": "d291f42ac695ae73ef10ef404c598713a8a732ff20cfcfedddb8d136002432a7",
+    "active_source_ordered_per_table_counts_sha256_after_cleanup": "d291f42ac695ae73ef10ef404c598713a8a732ff20cfcfedddb8d136002432a7"
+  },
+  "minio": {
+    "source_bucket_present": true,
+    "source_business_object_count": 0,
+    "source_backup_file_count_including_internal_metadata": 12,
+    "restored_bucket_present": true,
+    "restored_business_object_count": 0,
+    "isolated_fixture_backup_file_count": 20,
+    "isolated_fixture_restored_object_count": 1,
+    "isolated_fixture_sha256_before_and_after": "dc2e55aa67c8fcef4eb8a5dacd029846d8c60658331e66d0342d2b440da2a4cd",
+    "isolated_fixture_bytes_match": true,
+    "active_bucket_object_count_after": 0,
+    "host_ports_published_by_verification_containers": 0
+  },
+  "safety": {
+    "backup_directory_mode": "0700",
+    "postgres_backup_file_mode": "0600",
+    "isolated_database_container_volumes_and_network_removed": true,
+    "system_docker_baseline_sha256_before_and_after": "b6b1ace2ddb3c57aca5d6ac3fe37af91ea57f69547232a73ae385cab68b9b293",
+    "active_rootless_crm_container_count_before_and_after": 11,
+    "active_rootless_crm_containers_started_before_drill": true,
+    "active_rootless_container_id_baseline_captured": false,
+    "public_health_http_statuses_before": [200, 200, 200],
+    "public_health_http_statuses_after": [200, 200, 200],
+    "public_tls_verify_results_before": [0, 0, 0],
+    "public_tls_verify_results_after": [0, 0, 0]
+  },
+  "actual_previous_image_rollback_verified": false,
+  "g0_signed": false,
+  "sensitive_values_included": false
+}

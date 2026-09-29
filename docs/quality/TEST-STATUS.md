@@ -6,7 +6,7 @@
 
 | 主题 | 已有结论 | 尚缺内容 |
 |---|---|---|
-| M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，新值接受、旧值拒绝；外部四项凭据已安全注入 staging 且真实能力保持关闭 | 外部平台实际接受验证、备份恢复、兼容镜像回滚和 production 放行 |
+| M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，外部四项凭据已安全注入；2026-09-29 的 PostgreSQL/MinIO 备份已在隔离目标恢复并核对，活动数据未覆盖 | 外部平台实际接受验证、兼容镜像实际回滚和 production 放行；MinIO 原业务桶为空，真实对象恢复尚无样本 |
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查；staging 真实重新授权已自动回跳，job connected/密文清空/审计匹配，同店异人 job 查询 404；六项非物流只读和跨店失败关闭通过；本轮 OAuth 聚焦 36 passed | `202604` 增强物流仍返回 `11007009`；同一真实 callback 的现场重放、真实成功 Token 刷新、Webhook 投递、消息和对账未验；Shopee/Amazon 真实接入未做 |
@@ -30,7 +30,7 @@
 - `MVP-OAUTH-REAUTH-001` 的一次真实 staging 重新授权任务终态、临时材料清除、审计匹配及 job 查询原用户边界已核对，详见 `TR-MVP-OAUTH-REAUTH-001-20260928-R01`；重复状态轮询与确定性测试不等于同一真实 callback 重放，G1 仍未签署。
 - TikTok Partner Center 与 DeepSeek 外部四项凭据已安全注入 staging，但尚未执行真实平台接受验证；真实能力继续失败关闭。
 - 未执行真实 DeepSeek 50 客户端 SSE 和连续 5 日 99.5% 稳定性。
-- 未完成备份恢复、实际回滚及最终联合签署。
+- 隔离备份恢复子项见 `TR-MVP-008-RESTORE-001-20260929-R01`，只证明 staging 独立数据库与隔离 MinIO 的恢复，不证明活动卷可直接覆盖、兼容上一版实际镜像回滚或最终联合签署。
 
 ## 管理端本机交互回归
 

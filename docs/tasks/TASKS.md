@@ -45,7 +45,8 @@ DOING/VERIFYING → BLOCKED
 | MVP-005 | 用冻结低敏数据完成 DeepSeek 建议质量、DLP、结构化声明、引用与转人工复测 | G4 | BACKLOG | | MVP-001 | | | required | |
 | MVP-006 | 完成 50 客户端 SSE 容量门禁并记录延迟、错误、断连、队列和资源证据 | G5 | BACKLOG | | MVP-005 | | | required | |
 | MVP-007 | 连续运行五日并达到 99.5% 可用性，验证告警、积压、资源和故障恢复 | G6 | BACKLOG | | MVP-002, MVP-003, MVP-004, MVP-005, MVP-006 | | | required | |
-| MVP-008 | 完成数据库、对象存储恢复与上一版本实际回滚演练 | G0 | BACKLOG | | MVP-001 | | | required | |
+| MVP-008-RESTORE-001 | 仅在 staging 对 PostgreSQL 与 MinIO 建立受限备份并恢复至隔离目标，验证迁移、数据与对象完整性且活动服务及公司负载不变；不替代实际镜像回滚 | G0 子项；用户 2026-09-29 确认隔离演练；AC-01 备份受限且可读取；AC-02 隔离 PostgreSQL 恢复并核对 `024`、表和行数；AC-03 隔离 MinIO 恢复并核对对象数/校验值；AC-04 活动数据、容器、健康和公司负载前后不变（容器无演练前 ID 快照，结论限定为运行/启动时间）；`BASE_SHA=b08fc76b2a9c6de04d6daf7e1e0c2ed784ab5184`；对象业务桶为空，另用隔离合成对象验证字节恢复；production 不变 | VERIFYING | docs/mvp008-staging-recovery-20260929 | MVP-001 | [IR](../records/implementation/IR-MVP-008-RESTORE-001-20260929-R01.md) | [TR](../reports/tests/TR-MVP-008-RESTORE-001-20260929-R01.md) | [RR](../reports/reviews/RR-MVP-008-RESTORE-001-20260929-R01.md) | 675b362cd7b0a8c69384a38815ae3b2351f5b6db |
+| MVP-008 | 完成数据库、对象存储恢复与上一版本实际回滚演练 | G0 | BACKLOG | | MVP-001, MVP-008-RESTORE-001 | | | required | |
 | MVP-009 | 汇总 G0～G6 证据并取得最终 Go/No-Go 决定 | G8 | BACKLOG | | MVP-001～MVP-008 | | | required | |
 
 ## P1：v0.1 之后
