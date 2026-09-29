@@ -94,8 +94,8 @@ jobs:
     if: ${{ always() && !cancelled() && (inputs.operation == 'prefetch' || needs.prepare_source.result == 'success') }}
     environment: staging
     runs-on: [self-hosted, linux, x64, crm-staging]
-    # The immutable retrieval image is about 8 GiB and the staging host has a slow GHCR path.
-    timeout-minutes: 120
+    # The immutable retrieval image is about 8 GiB; prefetch can need more than one GHCR attempt.
+    timeout-minutes: ${{ inputs.operation == 'prefetch' && 240 || 120 }}
     steps:
       - name: Download reviewed staging source
         if: ${{ inputs.operation != 'prefetch' }}

@@ -66,13 +66,24 @@ try {
             Write-Output "Exact image digest is already available locally."
             continue
         }
-        Write-Output "Pulling immutable staging image $($index + 1)/$($images.Count)."
-        & docker pull $image.reference | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            throw "Immutable staging image pull failed for image $($index + 1)/$($images.Count): $($image.reference)"
-        }
-        if (-not (Test-LocalImageDigest -Reference $image.reference)) {
-            throw "Pulled staging image digest does not match the requested reference."
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            Write-Output "Pulling immutable staging image $($index + 1)/$($images.Count), attempt $attempt/3."
+            & docker pull $image.reference | Out-Null
+            $pullExit = $LASTEXITCODE
+            if ($pullExit -eq 0) {
+                if (-not (Test-LocalImageDigest -Reference $image.reference)) {
+                    throw "Pulled staging image digest does not match the requested reference."
+                }
+                break
+            }
+            if (Test-LocalImageDigest -Reference $image.reference) {
+                break
+            }
+            if ($attempt -eq 3) {
+                throw "Immutable staging image pull failed after three attempts for image $($index + 1)/$($images.Count): $($image.reference)"
+            }
+            Write-Output "Immutable pull failed; retrying the same digest."
+            Start-Sleep -Seconds (2 * $attempt)
         }
         Write-Output "Exact pulled image digest verified."
     }

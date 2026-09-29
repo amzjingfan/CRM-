@@ -40,6 +40,10 @@ with Path(os.environ['FAKE_DOCKER_LOG']).open('a', encoding='utf-8') as output:
 if args[:1] == ['pull']:
     if args[1] == os.environ.get('FAKE_DOCKER_FAIL_IMAGE'):
         sys.exit(42)
+    if args[1] == os.environ.get('FAKE_DOCKER_FAIL_ONCE_IMAGE'):
+        pulls = [json.loads(line)['args'] for line in Path(os.environ['FAKE_DOCKER_LOG']).read_text().splitlines()]
+        if sum(command == args for command in pulls) == 1:
+            sys.exit(42)
     with cache.open('a', encoding='utf-8') as output:
         output.write(args[1] + '\\n')
     sys.exit(0)
@@ -156,7 +160,11 @@ def test_prefetch_pull_failure_never_reports_pass(tmp_path: Path) -> None:
     result = invoke(tmp_path, environment)
     assert result.returncode != 0
     commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
-    assert [args for args in commands if args[0] == "pull"] == [["pull", image] for image in IMAGES[:3]]
+    assert [args for args in commands if args[0] == "pull"] == [
+        ["pull", IMAGES[0]],
+        ["pull", IMAGES[1]],
+        *([["pull", IMAGES[2]]] * 3),
+    ]
     assert not (tmp_path / "evidence.json").exists()
 
 
@@ -172,12 +180,31 @@ def test_prefetch_resumes_verified_images_after_a_failed_pull(tmp_path: Path) ->
     second = invoke(tmp_path, environment)
     assert second.returncode == 0, second.stdout + second.stderr
     commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
-    assert [args for args in commands if args[0] == "pull"] == [["pull", image] for image in (*IMAGES[:3], *IMAGES[2:])]
+    assert [args for args in commands if args[0] == "pull"] == [
+        ["pull", IMAGES[0]],
+        ["pull", IMAGES[1]],
+        *([["pull", IMAGES[2]]] * 3),
+        *[["pull", image] for image in IMAGES[2:]],
+    ]
     assert IMAGES[2] in first.stdout
     assert IMAGES[2] in second.stdout
     evidence = json.loads((tmp_path / "evidence.json").read_text("utf-8"))
     assert evidence["image_count"] == 6
     assert evidence["image_references"] == list(IMAGES)
+
+
+def test_prefetch_retries_one_transient_pull_failure_and_still_verifies_digest(tmp_path: Path) -> None:
+    environment, log = fake_docker(tmp_path)
+    environment["FAKE_DOCKER_FAIL_ONCE_IMAGE"] = IMAGES[2]
+    result = invoke(tmp_path, environment)
+    assert result.returncode == 0, result.stdout + result.stderr
+    commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
+    assert [args for args in commands if args[0] == "pull"] == [
+        *[["pull", image] for image in IMAGES[:3]],
+        ["pull", IMAGES[2]],
+        *[["pull", image] for image in IMAGES[3:]],
+    ]
+    assert json.loads((tmp_path / "evidence.json").read_text("utf-8"))["image_count"] == 6
 
 
 def test_prefetch_rejects_wrong_local_repo_digest_after_pull(tmp_path: Path) -> None:
