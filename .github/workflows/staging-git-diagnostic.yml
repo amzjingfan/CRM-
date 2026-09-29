@@ -1,0 +1,103 @@
+name: Staging Git transport diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Compare staging runner Git views
+    environment: staging
+    runs-on: [self-hosted, linux, x64, crm-staging]
+    timeout-minutes: 10
+    steps:
+      - name: Compare dispatch, API, and Git refs
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ($env:GITHUB_REF -cne "refs/heads/main" -or $env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$') {
+            throw "The Git diagnostic must be dispatched from main."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
+            throw "The read-only GitHub token is unavailable."
+          }
+          function Get-GitFailureCategory {
+            param([int]$ExitCode, [string]$Output)
+            if ($ExitCode -eq 0) { return "none" }
+            if ($Output -match 'not our ref|unadvertised object') { return "ref_unavailable" }
+            if ($Output -match 'Authentication failed|401|403|could not read Username|Repository not found') { return "authorization" }
+            if ($Output -match 'Could not resolve host|Name or service not known') { return "dns" }
+            if ($Output -match 'timed out|Failed to connect|connection reset|SSL|TLS') { return "transport" }
+            return "other"
+          }
+          $hasProxyEnvironment = -not [string]::IsNullOrWhiteSpace($env:HTTPS_PROXY)
+          $hasGitProxy = -not [string]::IsNullOrWhiteSpace((& git config --global --get http.proxy 2>$null))
+          $hasGitUrlRewrite = @(& git config --global --name-only --get-regexp '^url\..*\.insteadof$' 2>$null).Count -gt 0
+          Write-Output "HTTPS proxy environment configured: $hasProxyEnvironment"
+          Write-Output "Git global proxy configured: $hasGitProxy"
+          Write-Output "Git global URL rewrite configured: $hasGitUrlRewrite"
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+          $apiSha = ""
+          $apiStatus = "success"
+          try {
+            $apiRef = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/git/ref/heads/main" -Headers $headers
+            $apiSha = [string]$apiRef.object.sha
+            if ($apiSha -cnotmatch '^[0-9a-f]{40}$') { $apiStatus = "invalid_sha" }
+          }
+          catch {
+            $apiStatus = "transport_or_http_error"
+          }
+
+          $authBytes = [Text.Encoding]::UTF8.GetBytes("x-access-token:$env:GH_TOKEN")
+          $savedCount = [Environment]::GetEnvironmentVariable("GIT_CONFIG_COUNT", "Process")
+          $savedKey = [Environment]::GetEnvironmentVariable("GIT_CONFIG_KEY_0", "Process")
+          $savedValue = [Environment]::GetEnvironmentVariable("GIT_CONFIG_VALUE_0", "Process")
+          $probePath = Join-Path $env:RUNNER_TEMP "crm-git-probe-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          New-Item -ItemType Directory -Path $probePath | Out-Null
+          & git -C $probePath init --quiet
+          if ($LASTEXITCODE -ne 0) { throw "Cannot initialize temporary Git probe." }
+          & git -C $probePath remote add origin https://github.com/CP11-gh/CRM.git
+          if ($LASTEXITCODE -ne 0) { throw "Cannot configure temporary Git probe." }
+          try {
+            $env:GIT_CONFIG_COUNT = "1"
+            $env:GIT_CONFIG_KEY_0 = "http.https://github.com/.extraheader"
+            $env:GIT_CONFIG_VALUE_0 = "AUTHORIZATION: basic " + [Convert]::ToBase64String($authBytes)
+            $gitOutput = & git -C $probePath ls-remote origin refs/heads/main 2>&1
+            $gitExit = $LASTEXITCODE
+            $fetchOutput = & git -C $probePath fetch --no-tags --depth=1 origin $env:GITHUB_SHA 2>&1
+            $fetchExit = $LASTEXITCODE
+          }
+          finally {
+            [Environment]::SetEnvironmentVariable("GIT_CONFIG_COUNT", $savedCount, "Process")
+            [Environment]::SetEnvironmentVariable("GIT_CONFIG_KEY_0", $savedKey, "Process")
+            [Environment]::SetEnvironmentVariable("GIT_CONFIG_VALUE_0", $savedValue, "Process")
+          }
+          $gitCategory = Get-GitFailureCategory -ExitCode $gitExit -Output ($gitOutput | Out-String)
+          $fetchCategory = Get-GitFailureCategory -ExitCode $fetchExit -Output ($fetchOutput | Out-String)
+          Write-Output "Dispatch SHA: $env:GITHUB_SHA"
+          Write-Output "GitHub API status: $apiStatus"
+          if ($apiStatus -ceq "success") { Write-Output "GitHub API main SHA: $apiSha" }
+          Write-Output "Git HTTPS ls-remote exit/category: $gitExit/$gitCategory"
+          Write-Output "Exact-SHA Git fetch exit/category: $fetchExit/$fetchCategory"
+          if ($gitExit -ne 0) {
+            throw "Git HTTPS ls-remote failed; no deployment operation was attempted."
+          }
+          $gitMatch = [regex]::Match(($gitOutput | Out-String), '(?m)^([0-9a-f]{40})\s+refs/heads/main\r?$')
+          if (-not $gitMatch.Success) {
+            throw "Git HTTPS returned an invalid main ref."
+          }
+          $gitSha = $gitMatch.Groups[1].Value
+          Write-Output "Runner Git HTTPS main SHA: $gitSha"
+          if ($apiStatus -cne "success" -or $apiSha -cne $gitSha -or $fetchExit -ne 0) {
+            throw "Staging runner Git views disagree; no deployment operation was attempted."
+          }
+          if ($apiSha -cne $env:GITHUB_SHA) {
+            Write-Output "main advanced after dispatch; exact dispatched SHA fetch still succeeded."
+          }

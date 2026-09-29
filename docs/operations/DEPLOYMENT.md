@@ -95,6 +95,8 @@ BGE 运行基线为 1024 维、Dense Top-20、Rerank Top-5、阈值 0.52。质�
 
 staging 镜像回滚准备阶段使用 `staging-gates.yml` 的 `prefetch` 操作：自托管 Runner 仅凭当次 `GITHUB_TOKEN` 的 `packages: read` 权限，将候选与上一版的后端、前端、检索服务六个不可变摘要拉到 `crmdeploy` Rootless Docker 并核对本地 RepoDigest。工作流只接受从 `main` 调度的提交，并在任何 Docker 操作前核对实际检出的 `HEAD` 与调度 `GITHUB_SHA`；检出陈旧或无法获取该提交时失败关闭。修复合并后必须从 `main` 新建 `workflow_dispatch`，不得用旧 run 的 Re-run 验证，因为旧 run 仍绑定原调度提交。该操作不读取 staging 环境文件、不重建容器、不改活动数据，也不代表回滚通过。失败或作业超时后用相同六摘要重新运行时，脚本逐项报告当前镜像，并跳过本地 RepoDigest 已精确匹配的镜像；只有六项全部核对后才写入通过证据。只有独立恢复库上的旧版兼容性检查、镜像预取、受限备份和切返路径都确认后，才可在维护窗口执行实际切回/切返。`rollback -Execute` 在容器变更前还须核对正在运行的后端、前端和检索服务均为输入的候选摘要；如果 staging 仍保留旧检索镜像，先完成候选三镜像部署及验收。现有 `rollback` 操作本身**不会自动切返**，必须单独验证恢复候选运行态。production 不使用本操作。
 
+2026-09-29 新预取 `36535392094` 在检出调度 SHA `6d2188a` 时，Runner 的 Git HTTPS 三次返回 `upload-pack: not our ref`，因此未执行 Docker。诊断入口 `staging-git-diagnostic.yml` 仅用临时 `GITHUB_TOKEN` 的 `contents: read` 权限，在同一 Runner 上比较调度 SHA、GitHub API 的 `main`，以及同一全新临时仓库中的 Git HTTPS `main` 和精确 SHA fetch；仅输出 SHA、退出码、白名单错误类别与代理/URL 重写配置是否存在，不输出原始 Git 错误或凭据。实时 `main` 可在调度后前进，诊断以 API/Git 分支视图一致及精确调度 SHA 可获取为判断依据。它不读取 staging 环境文件或运行 Docker；真实结果仍待执行。
+
 ## 发布入口
 
 当前发布状态见 `docs/operations/RELEASE-GATES.md`，最新测试摘要见 `docs/quality/TEST-STATUS.md`，固定资产与评测集见 `release/baselines/` 和 `release/evidence/`。部署说明不替代真实签署。
