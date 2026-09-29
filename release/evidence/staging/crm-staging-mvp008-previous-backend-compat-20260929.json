@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_previous_application_isolated_compatibility",
+  "captured_at_utc": "2026-09-29T02:31:49Z",
+  "environment": "staging",
+  "previous_source_sha": "118ba775e291b88998bd033b7bca3410e29f8b88",
+  "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:772c3ff342dd179f307d3a7f25bfadc6ca3cac43abd9aa50008af23f9ddfcdd5",
+  "previous_frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:86fe5f16b37a92e94e1ac0fa9e9e66b55e70065a9309cb7898809fc3b5112a83",
+  "restore_source_backup_sha256": "2c26401cd94bc07955b0290439ba5083614b7f80e60f4f3dbb60e80706c2ea22",
+  "isolated_database": {
+    "source": "retained_restricted_staging_backup",
+    "migration_head": "024_tiktok_oauth_jobs",
+    "read_queries_succeeded": ["stores", "users", "tiktok_oauth_jobs"],
+    "previous_image_health_http_statuses": {"/v1/health": 200, "/v1/health/ready": 200},
+    "removed_after_probe": true
+  },
+  "isolated_frontend": {
+    "network": "none",
+    "host_ports_published": 0,
+    "login_http_status": 200,
+    "temporary_container_removed": true
+  },
+  "active_staging_public_health_after": {"/healthz": 200, "tls_verify_result": 0},
+  "previous_retrieval_runtime_verified": false,
+  "six_image_prefetch_verified": false,
+  "actual_image_switch_or_return_verified": false,
+  "g0_signed": false,
+  "production_targeted": false,
+  "sensitive_values_included": false
+}

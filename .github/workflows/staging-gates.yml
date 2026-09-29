@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Validate, deploy, or roll back the staging candidate
+        description: Prefetch, validate, deploy, or roll back the staging candidate
         required: true
         type: choice
         options:
+          - prefetch
           - validate
           - deploy
           - rollback
@@ -28,15 +29,15 @@ on:
         required: true
         type: string
       previous_backend_image:
-        description: Previous backend digest; required for rollback
+        description: Previous backend digest; required for prefetch or rollback
         required: false
         type: string
       previous_frontend_image:
-        description: Previous frontend digest; required for rollback
+        description: Previous frontend digest; required for prefetch or rollback
         required: false
         type: string
       previous_retrieval_model_image:
-        description: Previous retrieval model service digest; required for rollback
+        description: Previous retrieval model service digest; required for prefetch or rollback
         required: false
         type: string
 
@@ -86,7 +87,39 @@ jobs:
             throw "GHCR login failed"
           }
 
+      - name: Prefetch immutable rollback images
+        if: ${{ inputs.operation == 'prefetch' }}
+        shell: pwsh
+        env:
+          CONFIRM_TARGET: ${{ inputs.confirm_target }}
+          BACKEND_IMAGE_INPUT: ${{ inputs.backend_image }}
+          FRONTEND_IMAGE_INPUT: ${{ inputs.frontend_image }}
+          RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.retrieval_model_image }}
+          PREVIOUS_BACKEND_IMAGE_INPUT: ${{ inputs.previous_backend_image }}
+          PREVIOUS_FRONTEND_IMAGE_INPUT: ${{ inputs.previous_frontend_image }}
+          PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.previous_retrieval_model_image }}
+          DOCKER_CONFIG: ${{ runner.temp }}/crm-staging-docker-config
+        run: |
+          if ($env:CONFIRM_TARGET -cne "staging") {
+            throw "confirm_target must equal staging"
+          }
+          $runnerUid = (& id -u).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runnerUid -notmatch '^[1-9][0-9]*$') {
+            throw "Unable to resolve the self-hosted runner UID"
+          }
+          $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
+          & ./src/scripts/Prepare-StagingRollbackImages.ps1 `
+            -Environment staging -ConfirmTarget staging -DockerHost $dockerHost `
+            -EvidenceFile (Join-Path $env:RUNNER_TEMP "crm-staging-prefetch-evidence-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json") `
+            -CandidateBackendImage $env:BACKEND_IMAGE_INPUT `
+            -CandidateFrontendImage $env:FRONTEND_IMAGE_INPUT `
+            -CandidateRetrievalModelImage $env:RETRIEVAL_MODEL_IMAGE_INPUT `
+            -PreviousBackendImage $env:PREVIOUS_BACKEND_IMAGE_INPUT `
+            -PreviousFrontendImage $env:PREVIOUS_FRONTEND_IMAGE_INPUT `
+            -PreviousRetrievalModelImage $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
+
       - name: Run the selected staging gate
+        if: ${{ inputs.operation != 'prefetch' }}
         shell: pwsh
         env:
           OPERATION: ${{ inputs.operation }}
@@ -175,10 +208,19 @@ jobs:
           }
 
       - name: Upload low-sensitive staging evidence
-        if: success()
+        if: ${{ success() && inputs.operation != 'prefetch' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: staging-${{ inputs.operation }}-evidence-${{ github.run_id }}
           path: ${{ runner.temp }}/crm-staging-${{ inputs.operation }}-evidence.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload low-sensitive prefetch evidence
+        if: ${{ success() && inputs.operation == 'prefetch' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: staging-prefetch-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crm-staging-prefetch-evidence-${{ github.run_id }}-${{ github.run_attempt }}.json
           if-no-files-found: error
           retention-days: 30

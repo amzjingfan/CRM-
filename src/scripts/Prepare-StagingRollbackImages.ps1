@@ -1,0 +1,85 @@
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)][string]$Environment,
+    [Parameter(Mandatory = $true)][string]$ConfirmTarget,
+    [Parameter(Mandatory = $true)][string]$DockerHost,
+    [Parameter(Mandatory = $true)][string]$EvidenceFile,
+    [Parameter(Mandatory = $true)][string]$CandidateBackendImage,
+    [Parameter(Mandatory = $true)][string]$CandidateFrontendImage,
+    [Parameter(Mandatory = $true)][string]$CandidateRetrievalModelImage,
+    [Parameter(Mandatory = $true)][string]$PreviousBackendImage,
+    [Parameter(Mandatory = $true)][string]$PreviousFrontendImage,
+    [Parameter(Mandatory = $true)][string]$PreviousRetrievalModelImage
+)
+
+$ErrorActionPreference = "Stop"
+if ($Environment -cne "staging" -or $ConfirmTarget -cne "staging") {
+    throw "Image prefetch is staging-only."
+}
+if ($DockerHost -cne "unix:///run/user/1004/docker.sock") {
+    throw "Image prefetch requires the crmdeploy Rootless Docker socket."
+}
+
+$images = @(
+    @{ repository = "ghcr.io/cp11-gh/crm-backend"; reference = $CandidateBackendImage },
+    @{ repository = "ghcr.io/cp11-gh/crm-frontend"; reference = $CandidateFrontendImage },
+    @{ repository = "ghcr.io/cp11-gh/crm-retrieval-model-service"; reference = $CandidateRetrievalModelImage },
+    @{ repository = "ghcr.io/cp11-gh/crm-backend"; reference = $PreviousBackendImage },
+    @{ repository = "ghcr.io/cp11-gh/crm-frontend"; reference = $PreviousFrontendImage },
+    @{ repository = "ghcr.io/cp11-gh/crm-retrieval-model-service"; reference = $PreviousRetrievalModelImage }
+)
+foreach ($image in $images) {
+    $expected = "^$([regex]::Escape($image.repository))@sha256:[0-9a-f]{64}$"
+    if ($image.reference -cnotmatch $expected) {
+        throw "All staging images must use the reviewed GHCR repository and an immutable lowercase SHA-256 digest."
+    }
+}
+for ($index = 0; $index -lt 3; $index++) {
+    if ($images[$index].reference -ceq $images[$index + 3].reference) {
+        throw "Candidate and previous image digests must differ."
+    }
+}
+if (Test-Path -LiteralPath $EvidenceFile) {
+    throw "Image prefetch evidence path already exists; use a unique path for each attempt."
+}
+
+$savedDockerHost = [Environment]::GetEnvironmentVariable("DOCKER_HOST", "Process")
+$savedDockerContext = [Environment]::GetEnvironmentVariable("DOCKER_CONTEXT", "Process")
+try {
+    $env:DOCKER_HOST = $DockerHost
+    [Environment]::SetEnvironmentVariable("DOCKER_CONTEXT", $null, "Process")
+    foreach ($image in $images) {
+        & docker pull $image.reference | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Immutable staging image pull failed."
+        }
+        $digestJson = & docker image inspect --format '{{json .RepoDigests}}' $image.reference
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($digestJson)) {
+            throw "Pulled staging image cannot be inspected."
+        }
+        $repoDigests = @($digestJson | ConvertFrom-Json)
+        if (-not ($repoDigests -ccontains $image.reference)) {
+            throw "Pulled staging image digest does not match the requested reference."
+        }
+    }
+    $evidence = [ordered]@{
+        evidence_type = "staging_rollback_image_prefetch"
+        status = "passed"
+        environment = "staging"
+        image_count = $images.Count
+        image_references = @($images | ForEach-Object { $_.reference })
+        service_mutation = $false
+        production_release = $false
+        observed_at_utc = [DateTime]::UtcNow.ToString("o")
+    }
+    $parent = Split-Path -Parent $EvidenceFile
+    if (-not [string]::IsNullOrWhiteSpace($parent)) {
+        New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    }
+    $evidence | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $EvidenceFile -Encoding utf8
+    Write-Output "Six immutable staging images are available locally; no services were changed."
+}
+finally {
+    [Environment]::SetEnvironmentVariable("DOCKER_HOST", $savedDockerHost, "Process")
+    [Environment]::SetEnvironmentVariable("DOCKER_CONTEXT", $savedDockerContext, "Process")
+}
