@@ -60,7 +60,20 @@ jobs:
       - name: Check out reviewed main
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
+
+      - name: Verify checked-out dispatch commit
+        id: verify_dispatch_commit
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -cne "refs/heads/main") {
+            throw "Staging operations must be dispatched from main."
+          }
+          $checkedOutSha = (& git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $checkedOutSha -cne $env:GITHUB_SHA) {
+            throw "Staging checkout does not match the dispatched commit."
+          }
+          Write-Output "Verified staging dispatch commit $checkedOutSha."
 
       - name: Validate staging target
         shell: pwsh
@@ -197,7 +210,7 @@ jobs:
           }
 
       - name: Log out from GHCR
-        if: ${{ always() }}
+        if: ${{ always() && steps.verify_dispatch_commit.outcome == 'success' }}
         shell: pwsh
         env:
           DOCKER_CONFIG: ${{ runner.temp }}/crm-staging-docker-config

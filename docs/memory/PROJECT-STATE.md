@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp008-resumable-image-prefetch-20260929
-Governance base SHA: 9e78fd8d5a9ec943928bf15dbe615119a95e9cd4
-CANDIDATE_SUBJECT_SHA: 40234ceef841c275082642cd1102efe595aeeec3
+Working branch at this snapshot: fix/mvp008-pin-staging-checkout-20260929
+Governance base SHA: 5f024c63b0d8316c532881bce167840f633bf835
+CANDIDATE_SUBJECT_SHA: 90c91d643a5b0d18544439703b26811cbe7ae2ab
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -28,7 +28,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-008-RESTORE-001` 的 2026-09-29 staging 隔离恢复已现场执行：PostgreSQL 备份恢复后 `024`、29 表/85 行逐表计数一致；MinIO 原桶为空，隔离实例中用合成对象验证第二次备份恢复后字节/SHA 一致。临时数据库/容器/卷/网络已移除，受限备份保留；公司系统 Docker 基线及三个公网健康未变。用户人工审阅、独立只读复审与前后端 CI 通过后，证据由 PR #65 合入 main `ad86ce141c1a467b535378665c0e71179036f3a6`；仅隔离恢复子项可标记 DONE，兼容上一版镜像实际回滚和 G0/production 仍未通过。
 
-`MVP-008` 的候选三镜像现场核对已由 PR #68 合入 main `ff1565fa78810bd10bee5dd6dc9098ef117c7916`。六镜像预取 run `36515930005` 第 2 次于 2026-09-29 03:55 UTC 因 GHCR TCP 连接重置失败，第 3 次于 05:58 UTC 达 120 分钟作业上限取消；两次均未写入通过证据、未切换服务。当前候选 subject `40234ceef841c275082642cd1102efe595aeeec3` 为预取增加逐镜像进度及已核对本地摘要的续跑能力，须合并并在 staging 重跑后才能继续旧检索运行验证和切回/切返。
+`MVP-008` 的候选三镜像现场核对已由 PR #68 合入 main，六镜像逐项进度和续跑由 PR #71 合入 main `5f024c63b0d8316c532881bce167840f633bf835`。run `36530940311` 因调度器传入错误格式的六项字符串而立即失败；修正实参后的 run `36531208916` 以该合并提交触发，但 Runner 实际检出旧 `7b6de23f5487932f0c873d0cf879586eda40f032`，执行了旧脚本，12 分钟后 GHCR TCP 连接重置。没有通过证据或服务切换。当前候选将 staging checkout 固定到调度 SHA 并在 Docker 操作前复核；Runner 检出陈旧原因尚未确定，须现场重跑验证。旧检索运行、实际切回/切返和 G0 仍未通过。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -113,4 +113,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 合并 `MVP-008` 可续跑预取候选后，在 staging 用相同六摘要重跑并核对 RepoDigest；随后验证旧检索运行态，再执行实际切回/切返。G0～G8 未齐前 production 继续关闭。
+3. 合并 staging checkout SHA 门禁后，从 `main` 新建 `workflow_dispatch`（不得 Re-run 旧 run），以相同六摘要预取并核对实际检出提交与 RepoDigest；随后验证旧检索运行态，再执行实际切回/切返。G0～G8 未齐前 production 继续关闭。

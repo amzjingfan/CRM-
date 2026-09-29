@@ -170,7 +170,8 @@ test("staging workflow cannot target production or a generic hosted runner", asy
   assert.match(workflow, /GHCR_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
   assert.match(workflow, /DOCKER_CONFIG: \$\{\{ runner\.temp \}\}\/crm-staging-docker-config/);
   assert.match(workflow, /docker logout ghcr\.io/);
-  assert.match(workflow, /if: \$\{\{ always\(\) \}\}/);
+  assert.match(workflow, /if: \$\{\{ always\(\) && steps\.verify_dispatch_commit\.outcome == 'success' \}\}/);
+  assert.doesNotMatch(workflow, /if: \$\{\{ always\(\) \}\}/);
   assert.doesNotMatch(workflow, /ubuntu-latest/);
   assert.doesNotMatch(workflow, /environment:\s+production/);
 });

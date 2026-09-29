@@ -218,3 +218,23 @@ def test_staging_workflow_exposes_prefetch_without_expanding_token_permissions()
     assert upload["with"]["path"] == (
         "${{ runner.temp }}/crm-staging-prefetch-evidence-${{ github.run_id }}-${{ github.run_attempt }}.json"
     )
+
+
+def test_staging_workflow_rejects_a_stale_checkout_before_docker_access() -> None:
+    """Runner 上的 main 若落后于调度 SHA，不得用旧门禁操作 staging。"""
+    workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    steps = workflow["jobs"]["staging"]["steps"]
+    checkout = next(step for step in steps if step["name"] == "Check out reviewed main")
+    assert checkout["with"]["ref"] == "${{ github.sha }}"
+    verify = next(step for step in steps if step["name"] == "Verify checked-out dispatch commit")
+    assert steps.index(verify) == steps.index(checkout) + 1
+    assert steps.index(verify) < next(
+        i for i, step in enumerate(steps) if step["name"] == "Log in to GHCR for immutable image pulls"
+    )
+    assert "(& git rev-parse HEAD).Trim()" in verify["run"]
+    assert '$env:GITHUB_REF -cne "refs/heads/main"' in verify["run"]
+    assert "$checkedOutSha -cne $env:GITHUB_SHA" in verify["run"]
+    assert 'throw "Staging checkout does not match the dispatched commit."' in verify["run"]
+    assert verify["id"] == "verify_dispatch_commit"
+    logout = next(step for step in steps if step["name"] == "Log out from GHCR")
+    assert logout["if"] == "${{ always() && steps.verify_dispatch_commit.outcome == 'success' }}"
