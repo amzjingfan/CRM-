@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp008-prefetch-pull-retry-20260929
-Governance base SHA: b766645ab9f695478a1be4607d713960cdb7f9b9
-CANDIDATE_SUBJECT_SHA: 6706056a95399971d43d1b21f2fe768d81767bf9
+Working branch at this snapshot: fix/mvp008-registry-manifest-20260930
+Governance base SHA: d63fc0267debbb896010d17a483ac6c0607d9183
+CANDIDATE_SUBJECT_SHA: 83d8513bb87076b636201ae7400455460a8d4b59
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -28,7 +28,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-008-RESTORE-001` 的 2026-09-29 staging 隔离恢复已现场执行：PostgreSQL 备份恢复后 `024`、29 表/85 行逐表计数一致；MinIO 原桶为空，隔离实例中用合成对象验证第二次备份恢复后字节/SHA 一致。临时数据库/容器/卷/网络已移除，受限备份保留；公司系统 Docker 基线及三个公网健康未变。用户人工审阅、独立只读复审与前后端 CI 通过后，证据由 PR #65 合入 main `ad86ce141c1a467b535378665c0e71179036f3a6`；仅隔离恢复子项可标记 DONE，兼容上一版镜像实际回滚和 G0/production 仍未通过。
 
-`MVP-008` 的候选三镜像现场核对、六镜像逐项进度和续跑、调度 SHA 检出门禁已由 PR #68/#71/#72 合入 main `6d2188a9b23aec04ef03df7a0548d6943d22983e`。run `36530940311` 因调度参数格式错误立即失败；run `36531208916` 以 `5f024c6` 触发但 Runner 检出旧 `7b6de23`，随后 GHCR TCP 重置；run `36535392094` 精确检出 `6d2188a` 时，Runner 的 Git HTTPS 三次返回 `upload-pack: not our ref`，未进入 Docker。PR #73 合入 main `8183ba8` 后只读诊断 `36538863633` 证明 API 的 main SHA 正确、Runner Git HTTPS `ls-remote` 为 `128/transport`、精确 fetch 为 `128/other`，无代理或 URL 重写，未进入 Docker。PR #74 合入 main `06b65a6` 后，预取 `36542000513` 通过 API 源码核对、目标核对及 GHCR 登录，前两摘要已在本地，第 3 项候选检索镜像拉取约 62 分钟后发生 GHCR TCP 重置，六摘要未通过。PR #75 合入 main `b766645` 后，首次只读 `validate` 因误用旧检索摘要失败；以当前 staging 配置的 `bc99dfa3...` 重跑 `36549567208`，托管 Runner 精确 SHA 打包、Runner SHA-256 核对及当前混合镜像 Compose 预检通过，未执行部署或迁移。当前候选给缺失摘要增加有界重试；旧检索运行、实际切回/切返和 G0 均未通过。
+`MVP-008` 的候选三镜像现场核对、六镜像逐项进度和续跑、调度 SHA 检出门禁已由 PR #68/#71/#72 合入 main `6d2188a9b23aec04ef03df7a0548d6943d22983e`。run `36530940311` 因调度参数格式错误立即失败；run `36531208916` 以 `5f024c6` 触发但 Runner 检出旧 `7b6de23`，随后 GHCR TCP 重置；run `36535392094` 精确检出 `6d2188a` 时，Runner 的 Git HTTPS 三次返回 `upload-pack: not our ref`，未进入 Docker。PR #73 合入 main `8183ba8` 后只读诊断 `36538863633` 证明 API 的 main SHA 正确、Runner Git HTTPS `ls-remote` 为 `128/transport`、精确 fetch 为 `128/other`，无代理或 URL 重写，未进入 Docker。PR #74 合入 main `06b65a6` 后，预取 `36542000513` 通过 API 源码核对、目标核对及 GHCR 登录，前两摘要已在本地，第 3 项候选检索镜像拉取约 62 分钟后发生 GHCR TCP 重置，六摘要未通过。PR #75 合入 main `b766645` 后，首次只读 `validate` 因误用旧检索摘要失败；以当前 staging 配置的 `bc99dfa3...` 重跑 `36549567208`，托管 Runner 精确 SHA 打包、Runner SHA-256 核对及当前混合镜像 Compose 预检通过，未执行部署或迁移。PR #76 有界重试已合入 main `d63fc026`；预取 `36551693111` 的第 3 项候选检索镜像三次拉取分别约 103、44、27 分钟后均被 GHCR CDN 连接重置，前两摘要已核对，无六项通过证据，未变更服务。当前分支只读检查候选及上一版检索镜像的压缩层；旧检索运行、实际切回/切返和 G0 均未通过。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -113,4 +113,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 针对第 3 项 GHCR 连接重置合并有界拉取重试，从 `main` 以相同六摘要再预取并核对；当前 staging 混合组合的只读预检 `36549567208` 已通过。全部摘要通过后再验证旧检索并实施切回/切返；G0～G8 未齐前 production 继续关闭。
+3. 读取候选与上一版检索镜像的 GHCR manifest 压缩层信息，依据真实体积及共享层选择可验证的传输方案；`36551693111` 三次拉取均遇 TCP 重置。全部六摘要核对后再验证旧检索并实施切回/切返；G0～G8 未齐前 production 继续关闭。

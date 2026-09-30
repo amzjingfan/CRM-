@@ -1,0 +1,76 @@
+name: Inspect staging retrieval image manifests
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_target:
+        description: Type staging to inspect reviewed retrieval images
+        required: true
+        type: string
+      candidate_image:
+        description: Candidate retrieval image repository@sha256 digest
+        required: true
+        type: string
+      previous_image:
+        description: Previous retrieval image repository@sha256 digest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  inspect:
+    name: Read GHCR manifests without pulling layers
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate staging and immutable inputs
+        shell: bash
+        env:
+          CONFIRM_TARGET: ${{ inputs.confirm_target }}
+          CANDIDATE_IMAGE: ${{ inputs.candidate_image }}
+          PREVIOUS_IMAGE: ${{ inputs.previous_image }}
+        run: |
+          set -euo pipefail
+          [[ "$CONFIRM_TARGET" == staging ]] || exit 1
+          pattern='^ghcr\.io/cp11-gh/crm-retrieval-model-service@sha256:[0-9a-f]{64}$'
+          [[ "$CANDIDATE_IMAGE" =~ $pattern && "$PREVIOUS_IMAGE" =~ $pattern ]] || exit 1
+          [[ "$CANDIDATE_IMAGE" != "$PREVIOUS_IMAGE" ]] || exit 1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report compressed linux amd64 layers
+        shell: bash
+        env:
+          CANDIDATE_IMAGE: ${{ inputs.candidate_image }}
+          PREVIOUS_IMAGE: ${{ inputs.previous_image }}
+        run: |
+          set -euo pipefail
+          docker buildx version
+          inspect_image() {
+            local reference="$1" raw child total
+            raw="$(docker buildx imagetools inspect "$reference" --raw)"
+            if jq -e 'has("manifests")' >/dev/null <<<"$raw"; then
+              child="$(jq -er '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64") | .digest] | if length == 1 then .[0] else error("expected one linux/amd64 image") end' <<<"$raw")"
+              raw="$(docker buildx imagetools inspect "${reference%@sha256:*}@${child}" --raw)"
+            fi
+            jq -e '(.layers | type == "array" and length > 0) and all(.layers[]; (.digest | test("^sha256:[0-9a-f]{64}$")) and (.size | type == "number" and . >= 0))' >/dev/null <<<"$raw"
+            total="$(jq '[.layers[].size] | add // 0' <<<"$raw")"
+            printf 'image=%s layers=%s compressed_bytes=%s\n' "$reference" "$(jq '.layers | length' <<<"$raw")" "$total"
+            jq -r '.layers | sort_by(.size) | reverse | .[] | "layer=\(.digest) compressed_bytes=\(.size)"' <<<"$raw"
+          }
+          inspect_image "$CANDIDATE_IMAGE"
+          inspect_image "$PREVIOUS_IMAGE"
+
+      - name: Log out from GHCR
+        if: always()
+        shell: bash
+        run: docker logout ghcr.io
