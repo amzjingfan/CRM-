@@ -160,7 +160,8 @@ jobs:
           }
           foreach ($script in @(
             @{ source = 'Prepare-StagingRollbackImages.ps1'; output = 'script_path'; prefix = 'crm-prefetch-source' },
-            @{ source = 'Set-StagingDockerPullMode.ps1'; output = 'mode_script_path'; prefix = 'crm-pull-mode-source' }
+            @{ source = 'Set-StagingDockerPullMode.ps1'; output = 'mode_script_path'; prefix = 'crm-pull-mode-source' },
+            @{ source = 'prefetch_ghcr_oci.py'; output = 'oci_script_path'; prefix = 'crm-oci-prefetch-source' }
           )) {
             $source = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/contents/src/scripts/$($script.source)?ref=$env:GITHUB_SHA" -Headers $headers
             if ($source.type -cne "file" -or $source.encoding -cne "base64" -or
@@ -178,11 +179,12 @@ jobs:
             if ($actualBlobSha -cne $source.sha) {
               throw "GitHub API prefetch source failed Git blob verification."
             }
-            $scriptPath = Join-Path $env:RUNNER_TEMP "$($script.prefix)-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.ps1"
+            $extension = [IO.Path]::GetExtension($script.source)
+            $scriptPath = Join-Path $env:RUNNER_TEMP "$($script.prefix)-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT$extension"
             [IO.File]::WriteAllBytes($scriptPath, $scriptBytes)
             "$($script.output)=$scriptPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           }
-          Write-Output "Verified both staging prefetch scripts at dispatch SHA $env:GITHUB_SHA."
+          Write-Output "Verified all staging prefetch scripts at dispatch SHA $env:GITHUB_SHA."
 
       - name: Validate staging target
         shell: pwsh
@@ -223,6 +225,7 @@ jobs:
           DOCKER_CONFIG: ${{ runner.temp }}/crm-staging-docker-config
           PREFETCH_SCRIPT: ${{ steps.verify_prefetch_source.outputs.script_path }}
           PULL_MODE_SCRIPT: ${{ steps.verify_prefetch_source.outputs.mode_script_path }}
+          OCI_PREFETCH_SCRIPT: ${{ steps.verify_prefetch_source.outputs.oci_script_path }}
         run: |
           if ($env:CONFIRM_TARGET -cne "staging") {
             throw "confirm_target must equal staging"
@@ -243,6 +246,10 @@ jobs:
               throw "Prefetch requires distinct candidate and previous immutable digests from reviewed GHCR repositories."
             }
           }
+          & python3 -c 'import requests; assert tuple(map(int, requests.__version__.split(".")[:2])) >= (2, 32)'
+          if ($LASTEXITCODE -ne 0) {
+            throw "The staging Runner lacks the reviewed Python HTTP client for resumable OCI transfer."
+          }
           $configPath = '/home/crmdeploy/.config/docker/daemon.json'
           $backupPath = "$configPath.crm-prefetch-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.backup"
           $entered = $false
@@ -257,7 +264,8 @@ jobs:
               -CandidateRetrievalModelImage $env:RETRIEVAL_MODEL_IMAGE_INPUT `
               -PreviousBackendImage $env:PREVIOUS_BACKEND_IMAGE_INPUT `
               -PreviousFrontendImage $env:PREVIOUS_FRONTEND_IMAGE_INPUT `
-              -PreviousRetrievalModelImage $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
+              -PreviousRetrievalModelImage $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT `
+              -ResumableOciScript $env:OCI_PREFETCH_SCRIPT
           }
           finally {
             if ($entered) {

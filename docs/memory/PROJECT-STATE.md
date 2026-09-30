@@ -11,7 +11,7 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp008-layered-images-20260930
+Working branch at this snapshot: fix/mvp008-ghcr-resumable-20260930
 Governance base SHA: 33d80bd4acc1dfb9c93ec687086ee466d99682c6
 CANDIDATE_SUBJECT_SHA: READ_AT_GATE
 EVIDENCE_HEAD_SHA: READ_AT_GATE
@@ -115,4 +115,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 解决 run `36684323365` 在第 3/6 项的 GHCR TCP 重置，完成六摘要精确校验；随后受控切换 staging 候选配置、预检并演练旧版切回与候选切返。G0 与 production 继续关闭。
+3. 用已核对源码的分段续传与 OCI 导入完成六摘要精确校验；随后受控切换 staging 候选配置、预检并演练旧版切回与候选切返。G0 与 production 继续关闭。

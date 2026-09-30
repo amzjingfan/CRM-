@@ -83,7 +83,12 @@ sys.exit(99)
     return environment, log
 
 
-def invoke(tmp_path: Path, environment: dict[str, str], *overrides: str) -> subprocess.CompletedProcess[str]:
+def invoke(
+    tmp_path: Path,
+    environment: dict[str, str],
+    *overrides: str,
+    resumable_script: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
     assert POWERSHELL is not None
     args = [
         POWERSHELL,
@@ -115,6 +120,8 @@ def invoke(tmp_path: Path, environment: dict[str, str], *overrides: str) -> subp
         args += [f"-{name}", image]
     for name, value in zip(overrides[::2], overrides[1::2], strict=True):
         args[args.index(name) + 1] = value
+    if resumable_script is not None:
+        args += ["-ResumableOciScript", str(resumable_script)]
     return subprocess.run(
         args,
         capture_output=True,
@@ -235,6 +242,52 @@ def test_prefetch_rejects_existing_evidence_before_pull(tmp_path: Path) -> None:
     assert evidence.read_text("utf-8") == '{"status":"passed"}'
 
 
+def test_retrieval_images_use_checked_resumable_import(tmp_path: Path) -> None:
+    environment, log = fake_docker(tmp_path)
+    bin_dir = tmp_path / "bin"
+    oci_script = tmp_path / "verified-oci-source.py"
+    oci_script.write_text("# Exact source fetched by workflow\n", encoding="utf-8")
+    fake_oci = bin_dir / "fake_oci.py"
+    fake_oci.write_text(
+        """import json, os, sys
+from pathlib import Path
+args = sys.argv[1:]
+image = args[args.index('--image') + 1]
+with Path(os.environ['FAKE_OCI_LOG']).open('a', encoding='utf-8') as output:
+    output.write(json.dumps(args) + '\\n')
+with Path(os.environ['FAKE_DOCKER_CACHE']).open('a', encoding='utf-8') as output:
+    output.write(image + '\\n')
+""",
+        encoding="utf-8",
+    )
+    if os.name == "nt":
+        (bin_dir / "python3.cmd").write_text(
+            '@echo off\r\n"%FAKE_DOCKER_PYTHON%" "%FAKE_OCI_SCRIPT%" %*\r\n',
+            encoding="utf-8",
+        )
+    else:
+        wrapper = bin_dir / "python3"
+        wrapper.write_text('#!/bin/sh\nexec "$FAKE_DOCKER_PYTHON" "$FAKE_OCI_SCRIPT" "$@"\n')
+        wrapper.chmod(0o755)
+    oci_log = tmp_path / "oci.jsonl"
+    environment.update(
+        {
+            "FAKE_OCI_SCRIPT": str(fake_oci),
+            "FAKE_OCI_LOG": str(oci_log),
+            "DOCKER_CONFIG": str(tmp_path),
+        }
+    )
+    result = invoke(tmp_path, environment, resumable_script=oci_script)
+    assert result.returncode == 0, result.stdout + result.stderr
+    commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
+    assert [args for args in commands if args[0] == "pull"] == [
+        ["pull", image] for image in (IMAGES[0], IMAGES[1], IMAGES[3], IMAGES[4])
+    ]
+    calls = [json.loads(line) for line in oci_log.read_text("utf-8").splitlines()]
+    assert [args[args.index("--image") + 1] for args in calls] == [IMAGES[2], IMAGES[5]]
+    assert json.loads((tmp_path / "evidence.json").read_text("utf-8"))["image_count"] == 6
+
+
 def test_staging_workflow_exposes_prefetch_without_expanding_token_permissions() -> None:
     workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
     assert "prefetch" in workflow[True]["workflow_dispatch"]["inputs"]["operation"]["options"]
@@ -290,9 +343,13 @@ def test_staging_workflow_verifies_reviewed_source_before_docker_access() -> Non
     assert '"blob $($scriptBytes.Length)`0"' in api_source["run"]
     assert "$actualBlobSha -cne $source.sha" in api_source["run"]
     assert "Set-StagingDockerPullMode.ps1" in api_source["run"]
+    assert "prefetch_ghcr_oci.py" in api_source["run"]
     prefetch = next(step for step in steps if step["name"] == "Prefetch immutable rollback images")
     assert "steps.verify_prefetch_source.outputs.script_path" in prefetch["env"]["PREFETCH_SCRIPT"]
     assert "steps.verify_prefetch_source.outputs.mode_script_path" in prefetch["env"]["PULL_MODE_SCRIPT"]
+    assert "steps.verify_prefetch_source.outputs.oci_script_path" in prefetch["env"]["OCI_PREFETCH_SCRIPT"]
+    assert "-ResumableOciScript $env:OCI_PREFETCH_SCRIPT" in prefetch["run"]
+    assert prefetch["run"].index("& python3 -c") < prefetch["run"].index("-Mode Enter")
     assert "-Mode Enter" in prefetch["run"]
     assert "-Mode Restore" in prefetch["run"]
     assert "& $env:PREFETCH_SCRIPT" in prefetch["run"]

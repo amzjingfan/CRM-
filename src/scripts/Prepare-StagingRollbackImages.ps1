@@ -9,7 +9,8 @@ param(
     [Parameter(Mandatory = $true)][string]$CandidateRetrievalModelImage,
     [Parameter(Mandatory = $true)][string]$PreviousBackendImage,
     [Parameter(Mandatory = $true)][string]$PreviousFrontendImage,
-    [Parameter(Mandatory = $true)][string]$PreviousRetrievalModelImage
+    [Parameter(Mandatory = $true)][string]$PreviousRetrievalModelImage,
+    [string]$ResumableOciScript
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,6 +65,26 @@ try {
         Write-Output "Checking immutable staging image $($index + 1)/$($images.Count): $($image.reference)"
         if (Test-LocalImageDigest -Reference $image.reference) {
             Write-Output "Exact image digest is already available locally."
+            continue
+        }
+        if ($index -in @(2, 5) -and -not [string]::IsNullOrWhiteSpace($ResumableOciScript)) {
+            if (-not (Test-Path -LiteralPath $ResumableOciScript -PathType Leaf)) {
+                throw "Verified resumable OCI source is missing."
+            }
+            if ([string]::IsNullOrWhiteSpace($env:DOCKER_CONFIG)) {
+                throw "GHCR Docker credentials are unavailable for resumable OCI transfer."
+            }
+            Write-Output "Fetching immutable retrieval image $($index + 1)/$($images.Count) through verified resumable OCI ranges."
+            & python3 -u $ResumableOciScript `
+                --image $image.reference `
+                --docker-config (Join-Path $env:DOCKER_CONFIG 'config.json') `
+                --cache-dir '/home/crmdeploy/.cache/crm-ghcr-prefetch' `
+                --ctr-socket '/run/user/1004/docker/containerd/containerd.sock' `
+                --workers 8
+            if ($LASTEXITCODE -ne 0 -or -not (Test-LocalImageDigest -Reference $image.reference)) {
+                throw "Verified resumable OCI import failed for image $($index + 1)/$($images.Count): $($image.reference)"
+            }
+            Write-Output "Exact imported retrieval image digest verified."
             continue
         }
         for ($attempt = 1; $attempt -le 3; $attempt++) {
