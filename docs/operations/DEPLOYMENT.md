@@ -101,6 +101,8 @@ PR #76 的有界重试已合入 main `d63fc0267debbb896010d17a483ac6c0607d9183`�
 
 检索镜像的构建定义现将锁定的 Torch/CUDA wheel 分六组安装，并在末尾执行原有的完整 `uv sync --frozen --no-dev --extra retrieval-model`；不改 `uv.lock`、运行命令、模型资产或服务配置。2026-09-30 本机直接构建该 Dockerfile 时，首次 Torch 下载被 PyPI TLS EOF 打断，未生成正式构建结果。随后在已忽略的测试材料中使用既有镜像的 uv 缓存做等价依赖命令的隔离探针：六组和最终完整同步均按当前锁文件成功，`torch 2.13.0+cu130`、`transformers 5.10.4`、`fastapi 0.141.1` 在无网络容器中可导入。Docker 历史显示六个提前安装层约 480 MB–1.13 GB（未压缩），最后完整同步层约 1.25 GB（未压缩）。探针使用临时缓存挂载及补齐一个缺失小包，不能把未压缩本机层大小等同于待发布 GHCR 的压缩层，也不能证明正式 Dockerfile 构建、完整检索服务运行或目标 Runner 下载成功。现有 `publish-images.yml` 只接受当前 `main` SHA；上一版源码和锁文件若要生成新分层摘要，须另建立来源可核对的受审构建路径，不能把当前锁文件冒充旧版。正式构建、运行时检查、两版新摘要发布及 staging 六项预取仍须分别留存证据。
 
+上一版专用的 `publish-previous-retrieval-image.yml` 为这条受审路径：源码和锁文件固定在 `118ba775e291b88998bd033b7bca3410e29f8b88`，分层 Dockerfile 固定在 `fb6b2f9d18403ea77d80f039b6b68aba437e2ccb`。它只允许当前 `main` 的手动 `workflow_dispatch`，输入必须为 `staging-rollback`，并使用既有 `image-publishing` 环境；验证三个 checkout SHA 后才登录 GHCR、构建并发布单个上一版检索镜像。唯一运行标签含 run ID/attempt，结果记录不可变 RepoDigest、锁文件与 Dockerfile 的 SHA-256 与实际压缩层大小；若发布后清单读取失败，仍上传标为 `UNVERIFIED` 的摘要证据，不能将镜像视为通过。该工作流的合入不会自行触发发布；首次运行仍受私有镜像资源授权约束。新旧分层镜像生成后，必须以摘要分别完成清单检查、六项预取和回滚前置核对。
+
 ## 发布入口
 
 当前发布状态见 `docs/operations/RELEASE-GATES.md`，最新测试摘要见 `docs/quality/TEST-STATUS.md`，固定资产与评测集见 `release/baselines/` 和 `release/evidence/`。部署说明不替代真实签署。

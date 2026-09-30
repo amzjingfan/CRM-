@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp008-retrieval-image-layers-20260930
-Governance base SHA: 3dde221758ee97440e543ad25ea16f35b061b2c2
-CANDIDATE_SUBJECT_SHA: a1984b70345b7ec49bdd7e16d373a17424d67b09
+Working branch at this snapshot: fix/mvp008-previous-image-build-20260930
+Governance base SHA: fb6b2f9d18403ea77d80f039b6b68aba437e2ccb
+CANDIDATE_SUBJECT_SHA: ff75755d062fe251d02909163ac18ee74d6948eb
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -30,7 +30,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-008` 的候选三镜像现场核对、六镜像逐项进度和续跑、调度 SHA 检出门禁已由 PR #68/#71/#72 合入 main `6d2188a9b23aec04ef03df7a0548d6943d22983e`。run `36530940311` 因调度参数格式错误立即失败；run `36531208916` 以 `5f024c6` 触发但 Runner 检出旧 `7b6de23`，随后 GHCR TCP 重置；run `36535392094` 精确检出 `6d2188a` 时，Runner 的 Git HTTPS 三次返回 `upload-pack: not our ref`，未进入 Docker。PR #73 合入 main `8183ba8` 后只读诊断 `36538863633` 证明 API 的 main SHA 正确、Runner Git HTTPS `ls-remote` 为 `128/transport`、精确 fetch 为 `128/other`，无代理或 URL 重写，未进入 Docker。PR #74 合入 main `06b65a6` 后，预取 `36542000513` 通过 API 源码核对、目标核对及 GHCR 登录，前两摘要已在本地，第 3 项候选检索镜像拉取约 62 分钟后发生 GHCR TCP 重置，六摘要未通过。PR #75 合入 main `b766645` 后，首次只读 `validate` 因误用旧检索摘要失败；以当前 staging 配置的 `bc99dfa3...` 重跑 `36549567208`，托管 Runner 精确 SHA 打包、Runner SHA-256 核对及当前混合镜像 Compose 预检通过，未执行部署或迁移。PR #76 有界重试已合入 main `d63fc026`；预取 `36551693111` 的第 3 项候选检索镜像三次拉取分别约 103、44、27 分钟后均被 GHCR CDN 连接重置，前两摘要已核对，无六项通过证据，未变更服务。PR #77 已合入 main `ec410b5`；只读清单 `36653973420` 核对候选和上一版检索镜像各为约 2.88 GB 压缩量，其中不同摘要的单个约 2.81 GB 大层各占 97.54%，仅 70,464,540 字节层可共享；未下载完整镜像。旧检索运行、实际切回/切返和 G0 均未通过。
 
-2026-09-30 检索 Dockerfile 分层候选未发布：本机直接构建被 PyPI TLS EOF 中断；缓存辅助探针按当前锁文件完成六组及最终同步，无网络容器导入 Torch/Transformers/FastAPI 通过，最大本机文件系统层约 1.25 GB 未压缩。独立只读审查未发现分层依赖阻断，但指出现有发布工作流只接受当前 main，上一版需另建保留旧源码与锁文件的受审路径。GHCR 实际压缩层、正式构建、两版摘要传输及 staging 切换尚无通过证据。
+2026-09-30 检索 Dockerfile 分层定义已由 PR #79 合入 main `fb6b2f9`，尚未发布新镜像：本机直接构建被 PyPI TLS EOF 中断；缓存辅助探针按当前锁文件完成六组及最终同步，无网络容器导入 Torch/Transformers/FastAPI 通过，最大本机文件系统层约 1.25 GB 未压缩。独立只读审查未发现分层依赖阻断，但指出现有发布工作流只接受当前 main。上一版专用的未触发手动工作流现已固定旧源码/锁文件 `118ba775` 与分层 Dockerfile `fb6b2f9`；其合入也不会自行发布。GHCR 实际压缩层、正式构建、两版摘要传输及 staging 切换尚无通过证据。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -115,4 +115,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 完成检索 Dockerfile 分层 PR 和正式构建验证；本机缓存辅助探针的完整锁定同步与关键依赖导入已通过，最大本机层约 1.25 GB 未压缩，但正式构建曾遇 PyPI TLS EOF。为上一版源码/锁文件建立受审构建路径；新私有镜像发布先确认资源授权，六摘要全部核对后再验证旧检索并实施切回/切返。G0 与 production 继续关闭。
+3. 完成上一版定源构建工作流的 PR 与审查；新私有镜像发布先确认资源授权，再分别构建候选和上一版并读取实际压缩层。六摘要全部核对后验证旧检索并实施切回/切返；G0 与 production 继续关闭。

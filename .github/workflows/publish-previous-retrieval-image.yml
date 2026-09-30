@@ -1,0 +1,154 @@
+name: Publish previous retrieval image for staging rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_target:
+        description: Type staging-rollback to publish the fixed previous-source image
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-previous-retrieval-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PREVIOUS_SOURCE_SHA: 118ba775e291b88998bd033b7bca3410e29f8b88
+  BUILD_DEFINITION_SHA: fb6b2f9d18403ea77d80f039b6b68aba437e2ccb
+  IMAGE_REPOSITORY: ghcr.io/cp11-gh/crm-retrieval-model-service
+
+jobs:
+  publish:
+    name: Build fixed previous source with reviewed split Dockerfile
+    if: github.ref == 'refs/heads/main'
+    environment: image-publishing
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out dispatched workflow source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: policy
+
+      - name: Check out fixed previous source and lockfile
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.PREVIOUS_SOURCE_SHA }}
+          path: previous
+          persist-credentials: false
+
+      - name: Check out reviewed split Dockerfile
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.BUILD_DEFINITION_SHA }}
+          path: builder
+          persist-credentials: false
+
+      - name: Validate exact source and build inputs
+        id: validate
+        shell: bash
+        env:
+          CONFIRM_TARGET: ${{ inputs.confirm_target }}
+        run: |
+          set -euo pipefail
+          [[ "$CONFIRM_TARGET" == staging-rollback ]] || exit 1
+          [[ "$(git -C policy rev-parse HEAD)" == "$GITHUB_SHA" ]] || exit 1
+          git -C policy fetch --no-tags --depth=1 origin main
+          [[ "$(git -C policy rev-parse FETCH_HEAD)" == "$GITHUB_SHA" ]] || exit 1
+          [[ "$(git -C previous rev-parse HEAD)" == "$PREVIOUS_SOURCE_SHA" ]] || exit 1
+          [[ "$(git -C builder rev-parse HEAD)" == "$BUILD_DEFINITION_SHA" ]] || exit 1
+          test -s previous/src/backend/pyproject.toml
+          test -s previous/src/backend/uv.lock
+          test -s builder/src/docker/Dockerfile.model-service
+          tag="previous-${PREVIOUS_SOURCE_SHA:0:12}-split-${BUILD_DEFINITION_SHA:0:12}-r${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "lock_sha256=$(sha256sum previous/src/backend/uv.lock | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+          echo "dockerfile_sha256=$(sha256sum builder/src/docker/Dockerfile.model-service | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push previous retrieval image
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./previous/src/backend
+          file: ./builder/src/docker/Dockerfile.model-service
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ steps.validate.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ env.PREVIOUS_SOURCE_SHA }}
+            com.cp11.crm.dockerfile-revision=${{ env.BUILD_DEFINITION_SHA }}
+            com.cp11.crm.workflow-revision=${{ github.sha }}
+
+      - name: Record immutable digest and compressed layers
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_TAG: ${{ steps.validate.outputs.tag }}
+          LOCK_SHA256: ${{ steps.validate.outputs.lock_sha256 }}
+          DOCKERFILE_SHA256: ${{ steps.validate.outputs.dockerfile_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || exit 1
+          reference="$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+          mkdir -p image-evidence
+          jq -n \
+            --arg source_sha "$PREVIOUS_SOURCE_SHA" \
+            --arg build_definition_sha "$BUILD_DEFINITION_SHA" \
+            --arg workflow_sha "$GITHUB_SHA" \
+            --arg lock_sha256 "$LOCK_SHA256" \
+            --arg dockerfile_sha256 "$DOCKERFILE_SHA256" \
+            --arg reference "$reference" \
+            --arg tag "$IMAGE_REPOSITORY:$IMAGE_TAG" \
+            '{schema_version: 1, source_sha: $source_sha, build_definition_sha: $build_definition_sha, workflow_sha: $workflow_sha, lock_sha256: $lock_sha256, dockerfile_sha256: $dockerfile_sha256, platform: "linux/amd64", reference: $reference, tag: $tag, compressed_bytes: null, largest_layer_bytes: null, manifest_status: "UNVERIFIED", production_release: false}' > image-evidence/previous-retrieval.json
+          raw="$(docker buildx imagetools inspect "$reference" --raw)"
+          if jq -e 'has("manifests")' >/dev/null <<<"$raw"; then
+            child="$(jq -er '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64") | .digest] | if length == 1 then .[0] else error("expected one linux/amd64 image") end' <<<"$raw")"
+            raw="$(docker buildx imagetools inspect "$IMAGE_REPOSITORY@$child" --raw)"
+          fi
+          jq -e '(.layers | type == "array" and length > 0) and all(.layers[]; (.digest | test("^sha256:[0-9a-f]{64}$")) and (.size | type == "number" and . >= 0))' >/dev/null <<<"$raw"
+          total="$(jq '[.layers[].size] | add' <<<"$raw")"
+          largest="$(jq '[.layers[].size] | max' <<<"$raw")"
+          jq -n \
+            --arg source_sha "$PREVIOUS_SOURCE_SHA" \
+            --arg build_definition_sha "$BUILD_DEFINITION_SHA" \
+            --arg workflow_sha "$GITHUB_SHA" \
+            --arg lock_sha256 "$LOCK_SHA256" \
+            --arg dockerfile_sha256 "$DOCKERFILE_SHA256" \
+            --arg reference "$reference" \
+            --arg tag "$IMAGE_REPOSITORY:$IMAGE_TAG" \
+            --argjson compressed_bytes "$total" \
+            --argjson largest_layer_bytes "$largest" \
+            '{schema_version: 1, source_sha: $source_sha, build_definition_sha: $build_definition_sha, workflow_sha: $workflow_sha, lock_sha256: $lock_sha256, dockerfile_sha256: $dockerfile_sha256, platform: "linux/amd64", reference: $reference, tag: $tag, compressed_bytes: $compressed_bytes, largest_layer_bytes: $largest_layer_bytes, manifest_status: "PASS", production_release: false}' > image-evidence/previous-retrieval.json
+          printf 'Previous retrieval image: `%s`\n\nLargest compressed layer: %s bytes\n' "$reference" "$largest" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload digest evidence
+        if: always() && steps.build.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: previous-retrieval-image-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: image-evidence/previous-retrieval.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Log out from GHCR
+        if: always()
+        shell: bash
+        run: docker logout ghcr.io
