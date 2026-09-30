@@ -4,7 +4,7 @@
 
 | 门禁 | 范围 | 当前状态 | 阻断条件 / 证据入口 | 下一动作 |
 |---|---|---|---|---|
-| G0 | 基础设施、配置、密钥、备份与回滚 | 部分通过 | `MVP-STAGING-001` 已完成 split-ingress Rootless 真实部署；`MVP-001` 已完成内部凭据轮换和四项外部凭据的 staging 安全注入；`MVP-EGRESS-001` 固定出口现场门禁通过。2026-09-29 staging PostgreSQL 受限备份恢复到隔离库，迁移头及 29 表/85 行逐表计数一致；MinIO 原桶为空，隔离空桶恢复及合成对象的二次备份/恢复与 SHA 一致，见 `release/evidence/staging/crm-staging-isolated-restore-20260929.json`。上一版 `118ba775` 后端在该备份再次恢复的隔离库上通过 `024` 数据库读查询和应用健康 200，旧前端在无网络/端口的临时容器中登录页返回 200，见 `crm-staging-mvp008-previous-backend-compat-20260929.json`；旧检索、六镜像预取和实际切回/切返仍未验。staging 旧检索摘要例外不外推 production | 完成受审兼容上一版三镜像与实际切回/切返；真实平台验收按 G1/G2/G4 分开执行；G0～G6 未齐前 G8 继续阻塞 |
+| G0 | 基础设施、配置、密钥、备份与回滚 | 通过（staging） | `MVP-STAGING-001` split-ingress Rootless 部署、`MVP-001` 凭据轮换/安全注入、`MVP-EGRESS-001` 固定出口均有现场证据；`MVP-008-RESTORE-001` 已在隔离 PostgreSQL/MinIO 验证备份恢复。2026-09-30 六个不可变镜像摘要预取、候选部署、上一版三镜像实际切回及候选切返均通过，切返后候选三摘要、迁移头 `024`、11 容器、三个公网健康接口 200 和固定出口 `38.55.145.52` 已核对，见 [G0 现场证据](../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json)。活动 MinIO 业务桶为空，真实对象字节恢复只在隔离合成对象上验证；不外推 production | 转向 G1～G6 的真实平台、模型、容量和持续运行验收；G8 仍阻塞 |
 | G1 | TikTok OAuth 与只读 | 部分通过，未签署 | 用户确认 staging 美国测试店铺授权后自动回到 CRM；最新任务 `connected`、code/state 已清空、匹配成功审计一条，异人读取 404，证据见 `release/evidence/staging/crm-staging-oauth-reauth-20260928.json`。六项非物流只读和跨店失败关闭见 `crm-staging-g1-nonlog-20260928.json`。同一真实 callback 的现场重放、真实成功 Token 刷新未验；增强物流 `202604` 返回 `11007009`，不能以旧版或其他接口成功替代；Webhook 订阅查询为零不代表 G2 通过 | 单独验收重复 callback、自然刷新窗口和 `202604` 平台错误；维持 production No-Go |
 | G2 | TikTok Webhook | 已实现，待真实验证 | 签名、幂等和内部回归已覆盖；缺 Partner Center 实际投递、重试与乱序证据 | 注册真实订阅并验证投递、重放和审计 |
 | G3 | 人工确认普通消息 | 已实现，待真实验证 | 确定性发送、`unknown`、对账已覆盖；缺真实发送、对账和回滚证据 | 以低风险测试会话发送一次并制造/收敛不确定状态 |

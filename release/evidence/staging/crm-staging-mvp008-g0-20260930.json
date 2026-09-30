@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g0_recovery_and_rollback",
+  "environment": "staging",
+  "source_sha": "3b091055908a4fd374dc95518dfd31d8d8960a47",
+  "production_release": false,
+  "prefetch": {
+    "run_id": 36699523917,
+    "artifact_id": 11088924855,
+    "artifact_sha256": "983e5d9dd7d3de72baf46cf31f4e6223c02c603c533310ba117fc8ba62595641",
+    "status": "passed",
+    "image_count": 6,
+    "candidate_images": [
+      "ghcr.io/cp11-gh/crm-backend@sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+      "ghcr.io/cp11-gh/crm-frontend@sha256:8a0b99aff74251c083362eeef57cefa91e8cc930c92182b06a37a18cfea54d56",
+      "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+    ],
+    "previous_images": [
+      "ghcr.io/cp11-gh/crm-backend@sha256:772c3ff342dd179f307d3a7f25bfadc6ca3cac43abd9aa50008af23f9ddfcdd5",
+      "ghcr.io/cp11-gh/crm-frontend@sha256:86fe5f16b37a92e94e1ac0fa9e9e66b55e70065a9309cb7898809fc3b5112a83",
+      "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9"
+    ],
+    "service_mutation": false
+  },
+  "validate": {
+    "run_id": 36700668599,
+    "artifact_id": 11089976284,
+    "artifact_sha256": "f00c7acac508704ad057ccd95b95b4a2a386da3b2e79322bfcba21e3e0a5232b",
+    "status": "validated"
+  },
+  "candidate_deploy": {
+    "run_id": 36701049769,
+    "artifact_id": 11090106816,
+    "artifact_sha256": "6198d36394d42e51a557f728b5f3023652f158db7dd450f441eae1a2e0518f1c",
+    "status": "passed",
+    "database_migration": "heads_applied",
+    "health_status_codes": [200, 200, 200],
+    "tiktok_egress_observed_ip": "38.55.145.52"
+  },
+  "previous_rollback": {
+    "run_id": 36701815122,
+    "artifact_id": 11089948787,
+    "artifact_sha256": "2738f888420218cfdcbcca1ec283c64ef480f28ce80f230bf331d11563e83298",
+    "status": "passed",
+    "completed_steps": ["disable_real_capabilities", "deploy_previous_image_digests", "verify_health"],
+    "health_status_codes": [200, 200, 200],
+    "previous_three_image_digests_inspected": true
+  },
+  "candidate_switchback": {
+    "run_id": 36702556391,
+    "artifact_id": 11091160484,
+    "artifact_sha256": "acb0a504a97b32874d46aa740adce6c88d855ead805b099c0949a3ece296de73",
+    "status": "passed",
+    "database_migration": "heads_applied",
+    "health_status_codes": [200, 200, 200],
+    "tiktok_egress_observed_ip": "38.55.145.52",
+    "candidate_three_image_digests_inspected_after": true,
+    "container_count_after": 11,
+    "database_head_after": "024_tiktok_oauth_jobs",
+    "public_health_status_codes_after": [200, 200, 200]
+  },
+  "runtime_guard": {
+    "docker_config_sha256_restored": "e705c43d20ae8f5fe1289c305455f3872fb7ec6713937e803a9ef121d23e9284",
+    "docker_daemon_id_preserved": "93818b49-d418-441a-9743-018dbe0e7e80",
+    "staging_env_backup_mode": "0600",
+    "staging_env_current_mode": "0600",
+    "auto_reply_enabled": false,
+    "real_tiktok_high_risk_write_enabled": false,
+    "real_tiktok_message_write_enabled": false,
+    "ai_marketing_enabled": false
+  }
+}

@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp008-ghcr-resumable-20260930
-Governance base SHA: 33d80bd4acc1dfb9c93ec687086ee466d99682c6
-CANDIDATE_SUBJECT_SHA: READ_AT_GATE
+Working branch at this snapshot: docs/mvp008-g0-completion-20260930
+Governance base SHA: 3b091055908a4fd374dc95518dfd31d8d8960a47
+CANDIDATE_SUBJECT_SHA: 58f095b730022fa5f792a751f991aca2ee1d5fce
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -28,9 +28,9 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-008-RESTORE-001` 的 2026-09-29 staging 隔离恢复已现场执行：PostgreSQL 备份恢复后 `024`、29 表/85 行逐表计数一致；MinIO 原桶为空，隔离实例中用合成对象验证第二次备份恢复后字节/SHA 一致。临时数据库/容器/卷/网络已移除，受限备份保留；公司系统 Docker 基线及三个公网健康未变。用户人工审阅、独立只读复审与前后端 CI 通过后，证据由 PR #65 合入 main `ad86ce141c1a467b535378665c0e71179036f3a6`；仅隔离恢复子项可标记 DONE，兼容上一版镜像实际回滚和 G0/production 仍未通过。
 
-`MVP-008` 的候选三镜像现场核对、六镜像逐项进度和续跑、调度 SHA 检出门禁已由 PR #68/#71/#72 合入 main `6d2188a9b23aec04ef03df7a0548d6943d22983e`。run `36530940311` 因调度参数格式错误立即失败；run `36531208916` 以 `5f024c6` 触发但 Runner 检出旧 `7b6de23`，随后 GHCR TCP 重置；run `36535392094` 精确检出 `6d2188a` 时，Runner 的 Git HTTPS 三次返回 `upload-pack: not our ref`，未进入 Docker。PR #73 合入 main `8183ba8` 后只读诊断 `36538863633` 证明 API 的 main SHA 正确、Runner Git HTTPS `ls-remote` 为 `128/transport`、精确 fetch 为 `128/other`，无代理或 URL 重写，未进入 Docker。PR #74 合入 main `06b65a6` 后，预取 `36542000513` 通过 API 源码核对、目标核对及 GHCR 登录，前两摘要已在本地，第 3 项候选检索镜像拉取约 62 分钟后发生 GHCR TCP 重置，六摘要未通过。PR #75 合入 main `b766645` 后，首次只读 `validate` 因误用旧检索摘要失败；以当前 staging 配置的 `bc99dfa3...` 重跑 `36549567208`，托管 Runner 精确 SHA 打包、Runner SHA-256 核对及当前混合镜像 Compose 预检通过，未执行部署或迁移。PR #76 有界重试已合入 main `d63fc026`；预取 `36551693111` 的第 3 项候选检索镜像三次拉取分别约 103、44、27 分钟后均被 GHCR CDN 连接重置，前两摘要已核对，无六项通过证据，未变更服务。PR #77 已合入 main `ec410b5`；只读清单 `36653973420` 核对候选和上一版检索镜像各为约 2.88 GB 压缩量，其中不同摘要的单个约 2.81 GB 大层各占 97.54%，仅 70,464,540 字节层可共享；未下载完整镜像。旧检索运行、实际切回/切返和 G0 均未通过。
+`MVP-008` 早期预取连续受 GHCR/CDN TCP 重置和 Runner 自动更新超时阻断；PR #79～#83 形成分层检索镜像、Runner 2.337.0 恢复及可校验 OCI 续传。历史失败运行与原因见 `../operations/DEPLOYMENT.md`，不得将其当作当前门禁状态。
 
-2026-09-30 检索 Dockerfile 分层定义由 PR #79 合入 main `fb6b2f9`，上一版定源发布工作流由 PR #80 合入 main `33d80bd`。用户单独授权的四个私有镜像已发布：候选三镜像运行 `36660691623`，上一版检索运行 `36661103062`；只读清单运行 `36661448273` 核对两检索镜像各约 2.88 GB 压缩量，最大单层从旧版约 2.81 GB 降至约 523 MB。低敏摘要和 artifact SHA-256 见 `../../release/evidence/staging/crm-staging-mvp008-layered-images-20260930.json`。六摘要预取 `36661590529` 在候选检索第 3/6 项三次失败：两次连接重置，一次 371,825,409 字节层只收到 41,943,040 字节即 EOF；没有六项通过证据，也没有 staging 候选部署、旧版切回或切返证据。预取期间三个公网健康端点返回 200。staging 环境文件仍指向旧检索摘要，现有 `validate/deploy` 要求它与候选输入一致，后续需先完成受控配置切换；G0 与 production 均未放行。PR #81 的可恢复 Rootless Docker 单层下载并发设置已由前后端 CI 通过并合入 main `2dc12ae`；新调度 `36677814365`、`36678234455` 均在任何步骤开始前因 self-hosted Runner 未领取作业而被 GitHub 取消，首次两个新调度尚未执行低并发，六摘要仍未通过。Runner API 显示在线，排队时短暂显示 busy，结束后恢复 idle；用户提供主机密钥后只读诊断确认：Runner `2.336.0` 自动升级 `2.337.0` 的官方包三次下载超时，作业领取因此中断。官方 226,430,031 字节归档经 SHA-256 核对并经内网传输后，已备份旧安装并升级 Runner；GitHub API 显示原 ID `22` 在线、版本 `2.337.0`，注册文件哈希不变。11 个 staging 容器 ID 均未改变，三个公网健康端点均为 200。低敏证据见 `../../release/evidence/staging/crm-staging-runner-recovery-20260930.json`。Runner 2.337.0 已成功领取预取 `36684323365`，但候选检索镜像第 3/6 项在 `07:52:28`、`08:02:52`、`08:14:41` UTC 三次遇到 GHCR 数据节点 TCP 重置。临时 `max-concurrent-downloads=1` 已实际执行，原 Docker 配置随后逐字节恢复，Docker 身份和 11 个 staging 容器未改变，三个公网健康端点均为 200；仍无六摘要通过证据。同一 523,019,509 字节层的 1 MiB HTTP Range 请求在 staging 用时 74.2 秒，本机用时 5.0 秒，均返回 `206` 和预期 Content-Range。下一步需要可校验、可断点续传的传输与准确摘要导入，再做 staging 候选部署及回滚演练。
+2026-09-30 已完成六摘要预取 `36699523917`、候选预检 `36700668599`、候选部署 `36701049769`、上一版三镜像实际切回 `36701815122`、候选切返 `36702556391`。切返后独立核对候选三摘要、11 个容器、数据库迁移头 `024`、三个公网健康 200 及固定出口；Docker 配置原始 SHA 恢复，环境文件 `0600` 恢复副本保留。原始 artifact 摘要见 `../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json`。G0 的 staging 恢复/回滚证据已齐；G1～G6、G8 和 production 未放行。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -65,8 +65,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 里程碑与活动任务
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
-- `MVP-OAUTH-REDIRECT-001`、`MVP-UI-CACHE-DEPLOY-001`、`MVP-UI-CACHE-001`、`REPO-001`、`TEST-001`、`MVP-DOMAIN-001`、`MVP-STAGING-001`、`MVP-EGRESS-001`、`MVP-001`、`MVP-UI-001`、`MVP-UI-DEPLOY-001` 与四个维护清理任务已关闭；`MVP-008` 仍为 `DOING`，其余状态以任务表为准。
-- `MVP-G1-NONLOG-001` 的非物流预检已由 PR #61 合入 main；`MVP-OAUTH-REAUTH-001` 的窄范围重新授权证据已由 PR #63 合入 main；`MVP-008-RESTORE-001` 的隔离恢复证据已由 PR #65 合入 main。`MVP-002` 的真实刷新、真实 callback 重放与增强物流，以及 `MVP-008` 的实际镜像回滚仍未关闭。
+- `MVP-008` 已完成 staging 现场预取、候选部署、旧版回滚和切返，证据定稿与 PR 合并中；任务状态以 `../tasks/TASKS.md` 为准。
+- `MVP-G1-NONLOG-001` 与 `MVP-OAUTH-REAUTH-001` 已合入 main；`MVP-002` 的真实 Token 刷新、callback 重放与增强物流 `202604` 仍未关闭。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -90,6 +90,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - MVP-G1-NONLOG-001 非物流预检 R01 已由 PR #61 合入 main：[`../records/implementation/IR-MVP-G1-NONLOG-001-20260928-R01.md`](../records/implementation/IR-MVP-G1-NONLOG-001-20260928-R01.md)、[`../reports/tests/TR-MVP-G1-NONLOG-001-20260928-R01.md`](../reports/tests/TR-MVP-G1-NONLOG-001-20260928-R01.md)、[`../reports/reviews/RR-MVP-G1-NONLOG-001-20260928-R01.md`](../reports/reviews/RR-MVP-G1-NONLOG-001-20260928-R01.md)；低敏机器证据为 [`../../release/evidence/staging/crm-staging-g1-nonlog-20260928.json`](../../release/evidence/staging/crm-staging-g1-nonlog-20260928.json)。三个派生索引从已合并 main 的源记录重建为 `CURRENT`。
 - MVP-OAUTH-REAUTH-001 staging R01 已由 PR #63 合入 main：[`../records/implementation/IR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../records/implementation/IR-MVP-OAUTH-REAUTH-001-20260928-R01.md)、[`../reports/tests/TR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../reports/tests/TR-MVP-OAUTH-REAUTH-001-20260928-R01.md)、[`../reports/reviews/RR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../reports/reviews/RR-MVP-OAUTH-REAUTH-001-20260928-R01.md)；低敏证据为 [`../../release/evidence/staging/crm-staging-oauth-reauth-20260928.json`](../../release/evidence/staging/crm-staging-oauth-reauth-20260928.json)。三个派生索引从已合并 main 源记录重建为 `CURRENT`。
 - MVP-008-RESTORE-001 staging R01 已由 PR #65 合入 main：[`../records/implementation/IR-MVP-008-RESTORE-001-20260929-R01.md`](../records/implementation/IR-MVP-008-RESTORE-001-20260929-R01.md)、[`../reports/tests/TR-MVP-008-RESTORE-001-20260929-R01.md`](../reports/tests/TR-MVP-008-RESTORE-001-20260929-R01.md)、[`../reports/reviews/RR-MVP-008-RESTORE-001-20260929-R01.md`](../reports/reviews/RR-MVP-008-RESTORE-001-20260929-R01.md)；低敏证据为 [`../../release/evidence/staging/crm-staging-isolated-restore-20260929.json`](../../release/evidence/staging/crm-staging-isolated-restore-20260929.json)。三个派生索引从已合并 main 的源记录重建为 `CURRENT`；本任务不代表 G0 签署。
+- MVP-008 staging G0 R01 候选记录：[`../records/implementation/IR-MVP-008-20260930-R01.md`](../records/implementation/IR-MVP-008-20260930-R01.md)、[`../reports/tests/TR-MVP-008-20260930-R01.md`](../reports/tests/TR-MVP-008-20260930-R01.md)、[`../reports/reviews/RR-MVP-008-20260930-R01.md`](../reports/reviews/RR-MVP-008-20260930-R01.md)；[低敏 G0 现场证据](../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json)。三个索引在短期分支标为 `CANDIDATE_VIEW`，合入 main 后按源记录重建为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
@@ -99,11 +100,11 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 阻塞、决定与风险
 
-- G0～G6 尚未全部取得真实环境证据，G8 保持阻塞；工程实现、Mock 或历史确定性测试不能替代生产验收。
+- G0 staging 恢复/回滚现场通过；G1～G6 尚未全部取得真实环境证据，G8 保持阻塞，production 未部署。
 - 用户已重新选择 North America seller/US 完成授权并自动返回 CRM；job 终态和任务读取权限已有本次低敏核对，仍需真实 callback 重放、Token 生命周期与增强物流，不得将前端回跳或本次窄范围验收视为 G1 全通过。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- staging DNS/TLS、`18080 → 18081` 反向隧道和 Rootless CRM 当前可用；临时 registry 代理已撤除。2026-09-24 新 backend/frontend 摘要已运行且健康；旧检索摘要仅按本次 staging 的重新授权保留，依赖锁有差异。下一次镜像升级不得继承此次豁免。
+- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；切返后运行候选后端、前端及分层检索三个不可变摘要，固定出口 `38.55.145.52` 和三个公网健康端点已复核。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
@@ -115,4 +116,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 用已核对源码的分段续传与 OCI 导入完成六摘要精确校验；随后受控切换 staging 候选配置、预检并演练旧版切回与候选切返。G0 与 production 继续关闭。
+3. 完成 `MVP-008` 证据 PR 的 CI 和合并，再将任务标记 `DONE`；随后按 `../operations/RELEASE-GATES.md` 推进 G1～G6，production 仍为 No-Go。
