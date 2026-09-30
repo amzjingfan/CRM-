@@ -158,26 +158,31 @@ jobs:
           if ([string]$commit.sha -cne $env:GITHUB_SHA) {
             throw "GitHub API commit does not match the staging dispatch."
           }
-          $source = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/contents/src/scripts/Prepare-StagingRollbackImages.ps1?ref=$env:GITHUB_SHA" -Headers $headers
-          if ($source.type -cne "file" -or $source.encoding -cne "base64" -or
-              [string]$source.sha -cnotmatch '^[0-9a-f]{40}$' -or
-              [string]::IsNullOrWhiteSpace([string]$source.content)) {
-            throw "GitHub API did not return the exact prefetch source file."
+          foreach ($script in @(
+            @{ source = 'Prepare-StagingRollbackImages.ps1'; output = 'script_path'; prefix = 'crm-prefetch-source' },
+            @{ source = 'Set-StagingDockerPullMode.ps1'; output = 'mode_script_path'; prefix = 'crm-pull-mode-source' }
+          )) {
+            $source = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/contents/src/scripts/$($script.source)?ref=$env:GITHUB_SHA" -Headers $headers
+            if ($source.type -cne "file" -or $source.encoding -cne "base64" -or
+                [string]$source.sha -cnotmatch '^[0-9a-f]{40}$' -or
+                [string]::IsNullOrWhiteSpace([string]$source.content)) {
+              throw "GitHub API did not return the exact prefetch source file."
+            }
+            $scriptBytes = [Convert]::FromBase64String([string]$source.content)
+            if ($scriptBytes.Length -eq 0 -or $scriptBytes.Length -gt 200000) {
+              throw "GitHub API prefetch source size is invalid."
+            }
+            $blobPrefix = [Text.Encoding]::ASCII.GetBytes("blob $($scriptBytes.Length)`0")
+            [byte[]]$blobInput = $blobPrefix + $scriptBytes
+            $actualBlobSha = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData($blobInput)).ToLowerInvariant()
+            if ($actualBlobSha -cne $source.sha) {
+              throw "GitHub API prefetch source failed Git blob verification."
+            }
+            $scriptPath = Join-Path $env:RUNNER_TEMP "$($script.prefix)-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.ps1"
+            [IO.File]::WriteAllBytes($scriptPath, $scriptBytes)
+            "$($script.output)=$scriptPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           }
-          $scriptBytes = [Convert]::FromBase64String([string]$source.content)
-          if ($scriptBytes.Length -eq 0 -or $scriptBytes.Length -gt 200000) {
-            throw "GitHub API prefetch source size is invalid."
-          }
-          $blobPrefix = [Text.Encoding]::ASCII.GetBytes("blob $($scriptBytes.Length)`0")
-          [byte[]]$blobInput = $blobPrefix + $scriptBytes
-          $actualBlobSha = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData($blobInput)).ToLowerInvariant()
-          if ($actualBlobSha -cne $source.sha) {
-            throw "GitHub API prefetch source failed Git blob verification."
-          }
-          $scriptPath = Join-Path $env:RUNNER_TEMP "crm-prefetch-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.ps1"
-          [IO.File]::WriteAllBytes($scriptPath, $scriptBytes)
-          "script_path=$scriptPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Output "Verified staging prefetch source at dispatch SHA $env:GITHUB_SHA."
+          Write-Output "Verified both staging prefetch scripts at dispatch SHA $env:GITHUB_SHA."
 
       - name: Validate staging target
         shell: pwsh
@@ -217,6 +222,7 @@ jobs:
           PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT: ${{ inputs.previous_retrieval_model_image }}
           DOCKER_CONFIG: ${{ runner.temp }}/crm-staging-docker-config
           PREFETCH_SCRIPT: ${{ steps.verify_prefetch_source.outputs.script_path }}
+          PULL_MODE_SCRIPT: ${{ steps.verify_prefetch_source.outputs.mode_script_path }}
         run: |
           if ($env:CONFIRM_TARGET -cne "staging") {
             throw "confirm_target must equal staging"
@@ -226,15 +232,50 @@ jobs:
             throw "Unable to resolve the self-hosted runner UID"
           }
           $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
-          & $env:PREFETCH_SCRIPT `
-            -Environment staging -ConfirmTarget staging -DockerHost $dockerHost `
-            -EvidenceFile (Join-Path $env:RUNNER_TEMP "crm-staging-prefetch-evidence-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json") `
-            -CandidateBackendImage $env:BACKEND_IMAGE_INPUT `
-            -CandidateFrontendImage $env:FRONTEND_IMAGE_INPUT `
-            -CandidateRetrievalModelImage $env:RETRIEVAL_MODEL_IMAGE_INPUT `
-            -PreviousBackendImage $env:PREVIOUS_BACKEND_IMAGE_INPUT `
-            -PreviousFrontendImage $env:PREVIOUS_FRONTEND_IMAGE_INPUT `
-            -PreviousRetrievalModelImage $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
+          $imagePairs = @(
+            @('ghcr.io/cp11-gh/crm-backend', $env:BACKEND_IMAGE_INPUT, $env:PREVIOUS_BACKEND_IMAGE_INPUT),
+            @('ghcr.io/cp11-gh/crm-frontend', $env:FRONTEND_IMAGE_INPUT, $env:PREVIOUS_FRONTEND_IMAGE_INPUT),
+            @('ghcr.io/cp11-gh/crm-retrieval-model-service', $env:RETRIEVAL_MODEL_IMAGE_INPUT, $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT)
+          )
+          foreach ($pair in $imagePairs) {
+            $expected = "^$([regex]::Escape($pair[0]))@sha256:[0-9a-f]{64}$"
+            if ($pair[1] -cnotmatch $expected -or $pair[2] -cnotmatch $expected -or $pair[1] -ceq $pair[2]) {
+              throw "Prefetch requires distinct candidate and previous immutable digests from reviewed GHCR repositories."
+            }
+          }
+          $configPath = '/home/crmdeploy/.config/docker/daemon.json'
+          $backupPath = "$configPath.crm-prefetch-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.backup"
+          $entered = $false
+          try {
+            & $env:PULL_MODE_SCRIPT -Mode Enter -DockerHost $dockerHost -ConfigPath $configPath -BackupPath $backupPath
+            $entered = $true
+            & $env:PREFETCH_SCRIPT `
+              -Environment staging -ConfirmTarget staging -DockerHost $dockerHost `
+              -EvidenceFile (Join-Path $env:RUNNER_TEMP "crm-staging-prefetch-evidence-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json") `
+              -CandidateBackendImage $env:BACKEND_IMAGE_INPUT `
+              -CandidateFrontendImage $env:FRONTEND_IMAGE_INPUT `
+              -CandidateRetrievalModelImage $env:RETRIEVAL_MODEL_IMAGE_INPUT `
+              -PreviousBackendImage $env:PREVIOUS_BACKEND_IMAGE_INPUT `
+              -PreviousFrontendImage $env:PREVIOUS_FRONTEND_IMAGE_INPUT `
+              -PreviousRetrievalModelImage $env:PREVIOUS_RETRIEVAL_MODEL_IMAGE_INPUT
+          }
+          finally {
+            if ($entered) {
+              & $env:PULL_MODE_SCRIPT -Mode Restore -DockerHost $dockerHost -ConfigPath $configPath -BackupPath $backupPath
+            }
+          }
+
+      - name: Recover Rootless Docker pull configuration
+        if: ${{ always() && inputs.operation == 'prefetch' && steps.verify_prefetch_source.outcome == 'success' }}
+        shell: pwsh
+        env:
+          PULL_MODE_SCRIPT: ${{ steps.verify_prefetch_source.outputs.mode_script_path }}
+        run: |
+          $configPath = '/home/crmdeploy/.config/docker/daemon.json'
+          $backupPath = "$configPath.crm-prefetch-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.backup"
+          if (Test-Path -LiteralPath $backupPath) {
+            & $env:PULL_MODE_SCRIPT -Mode Restore -DockerHost 'unix:///run/user/1004/docker.sock' -ConfigPath $configPath -BackupPath $backupPath
+          }
 
       - name: Run the selected staging gate
         if: ${{ inputs.operation != 'prefetch' }}

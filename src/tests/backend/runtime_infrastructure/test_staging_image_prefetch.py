@@ -116,7 +116,14 @@ def invoke(tmp_path: Path, environment: dict[str, str], *overrides: str) -> subp
     for name, value in zip(overrides[::2], overrides[1::2], strict=True):
         args[args.index(name) + 1] = value
     return subprocess.run(
-        args, capture_output=True, text=True, encoding="utf-8", errors="replace", env=environment, timeout=30
+        args,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=environment,
+        timeout=30,
+        check=False,
     )
 
 
@@ -282,9 +289,16 @@ def test_staging_workflow_verifies_reviewed_source_before_docker_access() -> Non
     assert "?ref=$env:GITHUB_SHA" in api_source["run"]
     assert '"blob $($scriptBytes.Length)`0"' in api_source["run"]
     assert "$actualBlobSha -cne $source.sha" in api_source["run"]
+    assert "Set-StagingDockerPullMode.ps1" in api_source["run"]
     prefetch = next(step for step in steps if step["name"] == "Prefetch immutable rollback images")
     assert "steps.verify_prefetch_source.outputs.script_path" in prefetch["env"]["PREFETCH_SCRIPT"]
+    assert "steps.verify_prefetch_source.outputs.mode_script_path" in prefetch["env"]["PULL_MODE_SCRIPT"]
+    assert "-Mode Enter" in prefetch["run"]
+    assert "-Mode Restore" in prefetch["run"]
     assert "& $env:PREFETCH_SCRIPT" in prefetch["run"]
+    recovery = next(step for step in steps if step["name"] == "Recover Rootless Docker pull configuration")
+    assert "always()" in recovery["if"]
+    assert "-Mode Restore" in recovery["run"]
     logout = next(step for step in steps if step["name"] == "Log out from GHCR")
     assert logout["if"] == (
         "${{ always() && (steps.verify_dispatch_commit.outcome == 'success' || "
