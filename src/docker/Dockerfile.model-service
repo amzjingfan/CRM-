@@ -7,10 +7,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1 \
+    UV_NO_CACHE=1 \
+    UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 
 COPY pyproject.toml uv.lock ./
+# 锁定依赖保持不变；把大型 Torch/CUDA wheel 分到独立层，避免一次 GHCR
+# 连接重置就必须重新传输整个约 2.81 GB 的依赖层。
+RUN uv sync --frozen --no-dev --extra retrieval-model --only-install-package torch --inexact
+RUN uv sync --frozen --no-dev --extra retrieval-model --only-install-package nvidia-cublas --inexact
+RUN uv sync --frozen --no-dev --extra retrieval-model --only-install-package nvidia-cudnn-cu13 --inexact
+RUN uv sync --frozen --no-dev --extra retrieval-model --only-install-package nvidia-cufft --only-install-package nvidia-nccl-cu13 --inexact
+RUN uv sync --frozen --no-dev --extra retrieval-model --only-install-package nvidia-cusolver --only-install-package nvidia-cusparselt-cu13 --inexact
+RUN uv sync --frozen --no-dev --extra retrieval-model --only-install-package nvidia-cusparse --only-install-package nvidia-cuda-nvrtc --only-install-package nvidia-nvshmem-cu13 --only-install-package nvidia-curand --inexact
 RUN uv sync --frozen --no-dev --extra retrieval-model
 
 # 模型目录以只读卷挂载；推理进程使用无特权用户，降低容器逃逸后的写入面。
