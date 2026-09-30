@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_runner_recovery",
+  "observed_at_utc": "2026-09-30T07:40:28Z",
+  "environment": "staging",
+  "runner_name": "crm-staging-192-168-110-210",
+  "runner_id": 22,
+  "failure": {
+    "dispatch_run_ids": [36677814365, 36678234455],
+    "result": "FAILED_BEFORE_STEPS",
+    "github_annotation": "The job was not acquired by Runner of type self-hosted even after multiple attempts",
+    "observed_cause": "Runner 2.336.0 automatic update to 2.337.0 timed out on all three release-asset downloads"
+  },
+  "recovery": {
+    "from_version": "2.336.0",
+    "to_version": "2.337.0",
+    "official_linux_x64_package_bytes": 226430031,
+    "official_linux_x64_package_sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+    "download_method": "verified_http_ranges_then_private_lan_transfer",
+    "registered_runner_id_preserved": true,
+    "registration_file_digests_unchanged": true,
+    "preupgrade_backup_bytes": 685291520,
+    "preupgrade_backup_sha256": "8cb2e3cb62515c791cbe188f24ba3dae9692221f0e777c253dcc9f9e5585749c",
+    "preupgrade_backup_mode": "0600",
+    "runner_service_active_after": true,
+    "github_runner_online_after": true,
+    "github_runner_version_after": "2.337.0"
+  },
+  "application_baseline": {
+    "container_count": 11,
+    "container_ids_unchanged": true,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    },
+    "production_release": false
+  },
+  "post_recovery_prefetch_run_id": 36684323365,
+  "post_recovery_prefetch_result": "FAILED_ON_CANDIDATE_RETRIEVAL_IMAGE_AFTER_THREE_GHCR_TCP_RESETS",
+  "post_recovery_prefetch_attempt_started_at_utc": [
+    "2026-09-30T07:35:15Z",
+    "2026-09-30T07:52:30Z",
+    "2026-09-30T08:02:56Z"
+  ],
+  "post_recovery_prefetch_attempt_failed_at_utc": [
+    "2026-09-30T07:52:28Z",
+    "2026-09-30T08:02:52Z",
+    "2026-09-30T08:14:41Z"
+  ],
+  "post_recovery_prefetch_remote_ip_addresses": [
+    "185.199.109.154",
+    "185.199.110.154",
+    "185.199.110.154"
+  ],
+  "post_recovery_prefetch_original_docker_config_restored": true,
+  "post_recovery_prefetch_docker_identity_unchanged": true,
+  "post_recovery_prefetch_staging_container_count_after": 11,
+  "post_recovery_prefetch_public_health_after": {
+    "/healthz": 200,
+    "/v1/health": 200,
+    "/v1/health/ready": 200
+  },
+  "ghcr_range_probe": {
+    "blob_size_bytes": 523019509,
+    "requested_range": "bytes=0-1048575",
+    "response_status": 206,
+    "response_content_range": "bytes 0-1048575/523019509",
+    "staging_host_elapsed_seconds": 74.2,
+    "local_windows_elapsed_seconds": 5.0,
+    "probe_scope": "single_1_mib_range_only"
+  }
+}

@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp008-previous-image-build-20260930
-Governance base SHA: fb6b2f9d18403ea77d80f039b6b68aba437e2ccb
-CANDIDATE_SUBJECT_SHA: ff75755d062fe251d02909163ac18ee74d6948eb
+Working branch at this snapshot: docs/mvp008-layered-images-20260930
+Governance base SHA: 33d80bd4acc1dfb9c93ec687086ee466d99682c6
+CANDIDATE_SUBJECT_SHA: READ_AT_GATE
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -30,7 +30,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-008` 的候选三镜像现场核对、六镜像逐项进度和续跑、调度 SHA 检出门禁已由 PR #68/#71/#72 合入 main `6d2188a9b23aec04ef03df7a0548d6943d22983e`。run `36530940311` 因调度参数格式错误立即失败；run `36531208916` 以 `5f024c6` 触发但 Runner 检出旧 `7b6de23`，随后 GHCR TCP 重置；run `36535392094` 精确检出 `6d2188a` 时，Runner 的 Git HTTPS 三次返回 `upload-pack: not our ref`，未进入 Docker。PR #73 合入 main `8183ba8` 后只读诊断 `36538863633` 证明 API 的 main SHA 正确、Runner Git HTTPS `ls-remote` 为 `128/transport`、精确 fetch 为 `128/other`，无代理或 URL 重写，未进入 Docker。PR #74 合入 main `06b65a6` 后，预取 `36542000513` 通过 API 源码核对、目标核对及 GHCR 登录，前两摘要已在本地，第 3 项候选检索镜像拉取约 62 分钟后发生 GHCR TCP 重置，六摘要未通过。PR #75 合入 main `b766645` 后，首次只读 `validate` 因误用旧检索摘要失败；以当前 staging 配置的 `bc99dfa3...` 重跑 `36549567208`，托管 Runner 精确 SHA 打包、Runner SHA-256 核对及当前混合镜像 Compose 预检通过，未执行部署或迁移。PR #76 有界重试已合入 main `d63fc026`；预取 `36551693111` 的第 3 项候选检索镜像三次拉取分别约 103、44、27 分钟后均被 GHCR CDN 连接重置，前两摘要已核对，无六项通过证据，未变更服务。PR #77 已合入 main `ec410b5`；只读清单 `36653973420` 核对候选和上一版检索镜像各为约 2.88 GB 压缩量，其中不同摘要的单个约 2.81 GB 大层各占 97.54%，仅 70,464,540 字节层可共享；未下载完整镜像。旧检索运行、实际切回/切返和 G0 均未通过。
 
-2026-09-30 检索 Dockerfile 分层定义已由 PR #79 合入 main `fb6b2f9`，尚未发布新镜像：本机直接构建被 PyPI TLS EOF 中断；缓存辅助探针按当前锁文件完成六组及最终同步，无网络容器导入 Torch/Transformers/FastAPI 通过，最大本机文件系统层约 1.25 GB 未压缩。独立只读审查未发现分层依赖阻断，但指出现有发布工作流只接受当前 main。上一版专用的未触发手动工作流现已固定旧源码/锁文件 `118ba775` 与分层 Dockerfile `fb6b2f9`；其合入也不会自行发布。GHCR 实际压缩层、正式构建、两版摘要传输及 staging 切换尚无通过证据。
+2026-09-30 检索 Dockerfile 分层定义由 PR #79 合入 main `fb6b2f9`，上一版定源发布工作流由 PR #80 合入 main `33d80bd`。用户单独授权的四个私有镜像已发布：候选三镜像运行 `36660691623`，上一版检索运行 `36661103062`；只读清单运行 `36661448273` 核对两检索镜像各约 2.88 GB 压缩量，最大单层从旧版约 2.81 GB 降至约 523 MB。低敏摘要和 artifact SHA-256 见 `../../release/evidence/staging/crm-staging-mvp008-layered-images-20260930.json`。六摘要预取 `36661590529` 在候选检索第 3/6 项三次失败：两次连接重置，一次 371,825,409 字节层只收到 41,943,040 字节即 EOF；没有六项通过证据，也没有 staging 候选部署、旧版切回或切返证据。预取期间三个公网健康端点返回 200。staging 环境文件仍指向旧检索摘要，现有 `validate/deploy` 要求它与候选输入一致，后续需先完成受控配置切换；G0 与 production 均未放行。PR #81 的可恢复 Rootless Docker 单层下载并发设置已由前后端 CI 通过并合入 main `2dc12ae`；新调度 `36677814365`、`36678234455` 均在任何步骤开始前因 self-hosted Runner 未领取作业而被 GitHub 取消，首次两个新调度尚未执行低并发，六摘要仍未通过。Runner API 显示在线，排队时短暂显示 busy，结束后恢复 idle；用户提供主机密钥后只读诊断确认：Runner `2.336.0` 自动升级 `2.337.0` 的官方包三次下载超时，作业领取因此中断。官方 226,430,031 字节归档经 SHA-256 核对并经内网传输后，已备份旧安装并升级 Runner；GitHub API 显示原 ID `22` 在线、版本 `2.337.0`，注册文件哈希不变。11 个 staging 容器 ID 均未改变，三个公网健康端点均为 200。低敏证据见 `../../release/evidence/staging/crm-staging-runner-recovery-20260930.json`。Runner 2.337.0 已成功领取预取 `36684323365`，但候选检索镜像第 3/6 项在 `07:52:28`、`08:02:52`、`08:14:41` UTC 三次遇到 GHCR 数据节点 TCP 重置。临时 `max-concurrent-downloads=1` 已实际执行，原 Docker 配置随后逐字节恢复，Docker 身份和 11 个 staging 容器未改变，三个公网健康端点均为 200；仍无六摘要通过证据。同一 523,019,509 字节层的 1 MiB HTTP Range 请求在 staging 用时 74.2 秒，本机用时 5.0 秒，均返回 `206` 和预期 Content-Range。下一步需要可校验、可断点续传的传输与准确摘要导入，再做 staging 候选部署及回滚演练。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -115,4 +115,4 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
-3. 完成上一版定源构建工作流的 PR 与审查；新私有镜像发布先确认资源授权，再分别构建候选和上一版并读取实际压缩层。六摘要全部核对后验证旧检索并实施切回/切返；G0 与 production 继续关闭。
+3. 解决 run `36684323365` 在第 3/6 项的 GHCR TCP 重置，完成六摘要精确校验；随后受控切换 staging 候选配置、预检并演练旧版切回与候选切返。G0 与 production 继续关闭。
