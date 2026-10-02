@@ -32,6 +32,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-09-30 已完成六摘要预取 `36699523917`、候选预检 `36700668599`、候选部署 `36701049769`、上一版三镜像实际切回 `36701815122`、候选切返 `36702556391`。切返后独立核对候选三摘要、11 个容器、数据库迁移头 `024`、三个公网健康 200 及固定出口；Docker 配置原始 SHA 恢复，环境文件 `0600` 恢复副本保留。原始 artifact 摘要见 `../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json`。G0 的 staging 恢复/回滚证据已齐；G1～G6、G8 和 production 未放行。
 
+2026-10-02 恢复点：G1 真实 callback 重放的低敏验收流程已由 PR #86 合入 `main=c707731c0d09b610938585088653875a0a377063`，见 [`../operations/RELEASE-GATES.md`](../operations/RELEASE-GATES.md)。同日 staging 11 个 CRM 容器运行，过去 24 小时新增 OAuth job 与授权/刷新审计均为零；现有访问 Token 到期时间为 2026-10-05T10:05:17Z，按当前提前一天的配置，自然刷新窗口约从 2026-10-04T10:05:17Z 开始。真实重放、成功刷新和增强物流 `202604` 仍未取得通过证据；G1 维持部分通过。
+
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
 独立 `MVP-UI-CACHE-DEPLOY-001` 的首次三新摘要尝试因新检索镜像拉取停滞，在容器切换前取消，失败事实保留。用户随后明确批准**仅本次 staging**复用有依赖锁偏差的旧检索摘要；混合预检 `35953530870`、部署 `35953792293` 通过，新 backend/frontend 已运行。PR #49 合并并仅在 staging vhost 关闭继承的代理缓存；PR #50 合并并修正首页 307 入口验证器；证据 PR #51 前后端 CI 通过并合入 main `8038ad99c3ceb47787bb29b489611a28d012c575`。现场精确无 query 的四个 HTML 路径 200/no-store、指纹 JS immutable、三个健康 200，双机最终验证器通过，其他 vhost/公司负载未变。终态低敏证据见 `../../release/evidence/staging/crm-staging-html-cache-rollout-20260924.json`。任务标为 `DONE`；带身份 staging 全按钮、真实 TikTok、恢复演练和 production 不在此次完成范围。
@@ -114,6 +116,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 单独设计安全的真实 callback 重放验收；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
+1. 按 `../operations/RELEASE-GATES.md` 中已合并的流程，在用户浏览器再次完成 staging 授权后验证**同一真实 callback** 的第二次 GET；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
 2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
 3. 按 `../operations/RELEASE-GATES.md` 推进 G1～G6 的真实门禁；G8 与 production 仍为 No-Go。
