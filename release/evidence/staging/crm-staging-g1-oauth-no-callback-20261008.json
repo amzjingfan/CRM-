@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_oauth_start_without_observed_callback",
+  "captured_at_utc": "2026-10-08T04:09:21Z",
+  "environment": "staging",
+  "verification_base_sha": "09535485af085166645a5a7cca6ec66bb249a42b",
+  "observation_window_utc": {
+    "from": "2026-10-08T03:46:07Z",
+    "to": "2026-10-08T04:09:21Z"
+  },
+  "oauth_start": {
+    "public_ingress_at_utc": "2026-10-08T03:48:17Z",
+    "public_ingress_http_status": 200,
+    "staging_proxy_http_status": 200
+  },
+  "oauth_callback": {
+    "authorized_callback_observed_at_public_ingress": false,
+    "authorized_callback_observed_at_staging_proxy": false,
+    "new_oauth_jobs": 0,
+    "new_successful_authorization_audits": 0,
+    "browser_network_error_detail_available": false,
+    "user_reported_browser": "Codex in-app browser"
+  },
+  "diagnostic_navigation": {
+    "no_parameter_callback_probe_at_utc": "2026-10-08T03:58:05Z",
+    "no_parameter_callback_http_status": 422,
+    "health_probe_http_status": 200,
+    "browser_automation_reported_err_blocked_by_client": true,
+    "interpretation": "The same automation error appeared after requests reached public ingress. It does not establish that the user OAuth callback was blocked by the in-app browser."
+  },
+  "runtime": {
+    "public_ready_http_status": 200,
+    "crm_containers_running": 11,
+    "live_oauth_states_at_2026_10_08_04_02_utc": 0,
+    "oauth_jobs_total_after_attempt": 1,
+    "successful_authorization_audits_total_after_attempt": 6
+  },
+  "post_attempt_tiktok_readonly": {
+    "observed_at_utc": "2026-10-08T04:09:21Z",
+    "authorized_shops_request_succeeded": true,
+    "authorized_shop_count": 1,
+    "bound_shop_still_present": true,
+    "token_or_shop_identifier_emitted": false
+  },
+  "verification": {
+    "failure_boundary": "before_public_ingress_or_before_authorization_redirect",
+    "root_cause_confirmed": false,
+    "live_same_callback_replay_verified": false,
+    "g1_signed": false,
+    "production_changed": false,
+    "sensitive_values_included": false
+  }
+}
