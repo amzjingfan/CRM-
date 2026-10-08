@@ -117,6 +117,12 @@ PR #83 合入 main `3b091055908a4fd374dc95518dfd31d8d8960a47` 后，预取工作
 
 受控切换 staging 环境文件中的检索镜像摘要前保存 `0600` 恢复副本；工作流 `36700668599` 的 `validate` 通过。候选部署 `36701049769`、上一版三镜像实际切回 `36701815122`、候选切返 `36702556391` 均通过，并各自产生工作流证据。切回时先关闭真实能力，再部署上一版三摘要并验证三个健康接口；切返后独立现场检查候选三摘要、11 个活动容器、`024_tiktok_oauth_jobs` 迁移头、三个公网 HTTPS 健康接口 200 和固定出口 `38.55.145.52`。当前 staging 运行候选三摘要。低敏汇总及原始工作流 artifact SHA-256 见 [G0 现场证据](../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json)。此次仅关闭 staging G0 的恢复与镜像回滚条件，不代表 G1～G6 或生产发布通过。
 
+### staging 前端单镜像更新路径
+
+渠道页 OAuth 状态修复已合入 main，staging 仍运行旧前端摘要。`publish-frontend-image.yml` 提供仅前端的手动发布入口：必须从当前 main 调度、输入完整且等于当前 main 的 `source_sha`、填写 `staging-frontend`，经既有 `image-publishing` 环境发布一个 GHCR 私有前端镜像。工作流生成带 run ID 的唯一标签，记录不可变 RepoDigest 和 linux/amd64 压缩层大小；清单未核对通过时证据为 `UNVERIFIED`，不得部署。原三镜像发布工作流保持独立。
+
+此更新只复用现场与 G0 证据一致的后端 `fb1bffec...` 和检索 `feeee5a3...` 摘要。取得前端新摘要后，以 `staging-gates.yml` 的 `prefetch` 核对候选三项和部署前运行的三项；后端、检索两组候选与上一版摘要允许相同，但至少前端一组必须不同。六个服务角色仍逐项核对不可变 RepoDigest，不能把相同摘要重复计作六个不同镜像。然后执行 `validate` 和 `deploy`；回滚目标为部署前实际运行的三摘要。部署前复核 staging 环境文件的检索摘要、Rootless 容器、持久代理配置与三个公网健康接口；部署后核对运行镜像摘要、迁移头、健康和渠道页旧连接提示。发布或健康通过均不等于真实 OAuth callback 重放通过，G1 与 production 继续按独立门禁判断。
+
 ### 2026-10-08 staging 代理配置挂载恢复
 
 按用户要求重启 staging 现有 CRM 容器时，Rootless proxy 因 `/etc/nginx/nginx.conf` 的宿主机 bind 来源位于已清理的 Runner 临时源码目录而无法重新启动，公网 ready 短暂返回 502。已从持久、已审核源码复制 SHA-256 相同的 `nginx-tunnel.conf` 到原挂载位置，proxy 恢复健康，公网 `/login`、`/healthz` 和 ready 返回 200，固定出口仍实测为 `38.55.145.52`；系统 Docker 的其他业务容器 ID 未变。这个现场恢复只恢复当前容器，下一次 Runner 清理仍可能删除临时来源。

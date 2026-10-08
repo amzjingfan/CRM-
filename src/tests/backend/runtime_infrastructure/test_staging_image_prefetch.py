@@ -152,6 +152,47 @@ def test_prefetch_pulls_exact_six_digests_without_service_mutation(tmp_path: Pat
     assert evidence["production_release"] is False
 
 
+def test_prefetch_reuses_unchanged_backend_and_retrieval_digests(tmp_path: Path) -> None:
+    """A frontend-only update verifies six roles but downloads only two distinct images."""
+    environment, log = fake_docker(tmp_path)
+    result = invoke(
+        tmp_path,
+        environment,
+        "-PreviousBackendImage",
+        IMAGES[0],
+        "-PreviousRetrievalModelImage",
+        IMAGES[2],
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
+    assert [args for args in commands if args[0] == "pull"] == [
+        ["pull", IMAGES[0]],
+        ["pull", IMAGES[1]],
+        ["pull", IMAGES[2]],
+        ["pull", IMAGES[4]],
+    ]
+    evidence = json.loads((tmp_path / "evidence.json").read_text("utf-8"))
+    assert evidence["image_count"] == 6
+    assert evidence["image_references"] == [*IMAGES[:3], IMAGES[0], IMAGES[4], IMAGES[2]]
+
+
+def test_prefetch_rejects_identical_candidate_and_previous_sets(tmp_path: Path) -> None:
+    environment, log = fake_docker(tmp_path)
+    result = invoke(
+        tmp_path,
+        environment,
+        "-PreviousBackendImage",
+        IMAGES[0],
+        "-PreviousFrontendImage",
+        IMAGES[1],
+        "-PreviousRetrievalModelImage",
+        IMAGES[2],
+    )
+    assert result.returncode != 0
+    assert not log.exists()
+    assert not (tmp_path / "evidence.json").exists()
+
+
 @pytest.mark.parametrize(
     "override",
     [

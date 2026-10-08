@@ -150,6 +150,26 @@ test("GHCR publisher uses least privilege and immutable GitHub Actions", async (
   }
 });
 
+test("staging frontend publisher cannot publish backend or retrieval images", async () => {
+  const workflow = await readFile(
+    new URL(".github/workflows/publish-frontend-image.yml", repositoryRoot),
+    "utf8",
+  );
+
+  assert.match(workflow, /^    if: github\.ref == 'refs\/heads\/main'$/m);
+  assert.match(workflow, /environment:\s+image-publishing/);
+  assert.match(workflow, /"\$CONFIRM_TARGET" == staging-frontend/);
+  assert.match(workflow, /"\$\(git rev-parse FETCH_HEAD\)" == "\$SOURCE_SHA"/);
+  assert.match(workflow, /IMAGE_REPOSITORY: ghcr\.io\/cp11-gh\/crm-frontend/);
+  assert.match(workflow, /context: src\/frontend/);
+  assert.match(workflow, /file: src\/docker\/Dockerfile\.frontend\.prod/);
+  assert.doesNotMatch(workflow, /ghcr\.io\/cp11-gh\/crm-(?:backend|retrieval-model-service)/);
+  assert.match(workflow, /manifest_status: "UNVERIFIED"/);
+  assert.match(workflow, /manifest_status: "PASS"/);
+  assert.match(workflow, /steps\.build\.outcome == 'success'/);
+  assert.doesNotMatch(workflow, /uses:\s+[^\s]+@(v\d+|main|master)\s*$/m);
+});
+
 test("staging workflow cannot target production or a generic hosted runner", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/staging-gates.yml", repositoryRoot),

@@ -1,0 +1,125 @@
+name: Publish frontend image for staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Full current main commit SHA to build
+        required: true
+        type: string
+      confirm_target:
+        description: Type staging-frontend to publish one private frontend image
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SOURCE_SHA: ${{ inputs.source_sha }}
+  IMAGE_REPOSITORY: ghcr.io/cp11-gh/crm-frontend
+
+jobs:
+  publish:
+    name: Build and publish frontend only
+    if: github.ref == 'refs/heads/main'
+    environment: image-publishing
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out requested source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+
+      - name: Verify exact current main and staging scope
+        id: metadata
+        shell: bash
+        env:
+          CONFIRM_TARGET: ${{ inputs.confirm_target }}
+        run: |
+          set -euo pipefail
+          [[ "$CONFIRM_TARGET" == staging-frontend ]] || exit 1
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_SHA" ]] || exit 1
+          git fetch --no-tags --depth=1 origin main
+          [[ "$(git rev-parse FETCH_HEAD)" == "$SOURCE_SHA" ]] || exit 1
+          test -s src/frontend/package-lock.json
+          test -s src/docker/Dockerfile.frontend.prod
+          echo "tag=candidate-${SOURCE_SHA:0:12}-frontend-r${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push frontend
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: src/frontend
+          file: src/docker/Dockerfile.frontend.prod
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ steps.metadata.outputs.tag }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=/v1
+            NPM_REGISTRY=https://registry.npmjs.org
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ env.SOURCE_SHA }}
+
+      - name: Verify immutable digest and compressed layers
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_TAG: ${{ steps.metadata.outputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || exit 1
+          reference="$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+          mkdir -p image-evidence
+          jq -n --arg source_sha "$SOURCE_SHA" --arg reference "$reference" \
+            --arg tag "$IMAGE_REPOSITORY:$IMAGE_TAG" \
+            '{schema_version: 1, source_sha: $source_sha, platform: "linux/amd64", reference: $reference, tag: $tag, compressed_bytes: null, largest_layer_bytes: null, manifest_status: "UNVERIFIED", production_release: false}' \
+            > image-evidence/frontend.json
+          raw="$(docker buildx imagetools inspect "$reference" --raw)"
+          if jq -e 'has("manifests")' >/dev/null <<<"$raw"; then
+            child="$(jq -er '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64") | .digest] | if length == 1 then .[0] else error("expected one linux/amd64 image") end' <<<"$raw")"
+            raw="$(docker buildx imagetools inspect "$IMAGE_REPOSITORY@$child" --raw)"
+          fi
+          jq -e '(.layers | type == "array" and length > 0) and all(.layers[]; (.digest | test("^sha256:[0-9a-f]{64}$")) and (.size | type == "number" and . >= 0))' >/dev/null <<<"$raw"
+          total="$(jq '[.layers[].size] | add' <<<"$raw")"
+          largest="$(jq '[.layers[].size] | max' <<<"$raw")"
+          jq -n --arg source_sha "$SOURCE_SHA" --arg reference "$reference" \
+            --arg tag "$IMAGE_REPOSITORY:$IMAGE_TAG" --argjson compressed_bytes "$total" \
+            --argjson largest_layer_bytes "$largest" \
+            '{schema_version: 1, source_sha: $source_sha, platform: "linux/amd64", reference: $reference, tag: $tag, compressed_bytes: $compressed_bytes, largest_layer_bytes: $largest_layer_bytes, manifest_status: "PASS", production_release: false}' \
+            > image-evidence/frontend.json
+          printf 'Frontend image: `%s`\n\nLargest compressed layer: %s bytes\n' "$reference" "$largest" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload digest evidence
+        if: always() && steps.build.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontend-image-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: image-evidence/frontend.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Log out from GHCR
+        if: always()
+        shell: bash
+        run: docker logout ghcr.io

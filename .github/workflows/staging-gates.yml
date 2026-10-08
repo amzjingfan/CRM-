@@ -254,9 +254,14 @@ jobs:
           )
           foreach ($pair in $imagePairs) {
             $expected = "^$([regex]::Escape($pair[0]))@sha256:[0-9a-f]{64}$"
-            if ($pair[1] -cnotmatch $expected -or $pair[2] -cnotmatch $expected -or $pair[1] -ceq $pair[2]) {
-              throw "Prefetch requires distinct candidate and previous immutable digests from reviewed GHCR repositories."
+            if ($pair[1] -cnotmatch $expected -or $pair[2] -cnotmatch $expected) {
+              throw "Prefetch requires immutable digests from reviewed GHCR repositories."
             }
+          }
+          if ($imagePairs[0][1] -ceq $imagePairs[0][2] -and
+              $imagePairs[1][1] -ceq $imagePairs[1][2] -and
+              $imagePairs[2][1] -ceq $imagePairs[2][2]) {
+            throw "Prefetch requires at least one changed application image digest."
           }
           & python3 -c 'import requests; assert tuple(map(int, requests.__version__.split(".")[:2])) >= (2, 32)'
           if ($LASTEXITCODE -ne 0) {

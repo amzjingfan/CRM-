@@ -1651,6 +1651,96 @@ def test_rollback_plan_disables_capabilities_before_switching_images(
     assert len(evidence["tiktok_egress_overlay_sha256"]) == 64
 
 
+def test_rollback_plan_allows_frontend_only_change(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    result = run_powershell(
+        ROLLBACK_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-CandidateBackendImage",
+        BACKEND_IMAGE,
+        "-CandidateFrontendImage",
+        FRONTEND_IMAGE,
+        "-CandidateRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-PreviousBackendImage",
+        BACKEND_IMAGE,
+        "-PreviousFrontendImage",
+        PREVIOUS_FRONTEND_IMAGE,
+        "-PreviousRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(tmp_path / "frontend-rollback.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+        environment=environment,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads((tmp_path / "frontend-rollback.json").read_text("utf-8-sig"))["status"] == "validated"
+
+
+def test_rollback_rejects_identical_candidate_and_previous_sets(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    result = run_powershell(
+        ROLLBACK_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-CandidateBackendImage",
+        BACKEND_IMAGE,
+        "-CandidateFrontendImage",
+        FRONTEND_IMAGE,
+        "-CandidateRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-PreviousBackendImage",
+        BACKEND_IMAGE,
+        "-PreviousFrontendImage",
+        FRONTEND_IMAGE,
+        "-PreviousRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://staging.example.com",
+        "-EvidenceFile",
+        str(tmp_path / "identical-rollback.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+        environment=environment,
+    )
+    assert result.returncode != 0
+    assert not (tmp_path / "identical-rollback.json").exists()
+
+
 def test_rollback_keeps_candidate_egress_image_while_switching_applications(
     staging_env_file: Path,
     tmp_path: Path,
@@ -1705,6 +1795,58 @@ def test_rollback_keeps_candidate_egress_image_while_switching_applications(
             "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
         ):
             assert record[capability] == "false"
+
+
+def test_frontend_only_rollback_pulls_only_previous_frontend(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    result = run_powershell(
+        ROLLBACK_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        "-CandidateBackendImage",
+        BACKEND_IMAGE,
+        "-CandidateFrontendImage",
+        FRONTEND_IMAGE,
+        "-CandidateRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-PreviousBackendImage",
+        BACKEND_IMAGE,
+        "-PreviousFrontendImage",
+        PREVIOUS_FRONTEND_IMAGE,
+        "-PreviousRetrievalModelImage",
+        RETRIEVAL_MODEL_IMAGE,
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(tmp_path / "frontend-only-live-rollback.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Execute",
+        "-Confirm:$false",
+        environment=environment,
+    )
+    assert result.returncode != 0  # Isolated fake has no public health endpoint.
+    records = [
+        json.loads(line) for line in (tmp_path / "fake-docker-environment.jsonl").read_text("utf-8").splitlines()
+    ]
+    pull_commands = [record["arguments"] for record in records if "pull" in record["arguments"]]
+    assert len(pull_commands) == 2
+    assert pull_commands[1][pull_commands[1].index("pull") + 1 :] == ["frontend"]
 
 
 def test_rollback_rejects_non_candidate_live_retrieval_before_mutation(

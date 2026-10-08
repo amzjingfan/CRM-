@@ -35,10 +35,10 @@ foreach ($image in $images) {
         throw "All staging images must use the reviewed GHCR repository and an immutable lowercase SHA-256 digest."
     }
 }
-for ($index = 0; $index -lt 3; $index++) {
-    if ($images[$index].reference -ceq $images[$index + 3].reference) {
-        throw "Candidate and previous image digests must differ."
-    }
+if ($CandidateBackendImage -ceq $PreviousBackendImage -and
+    $CandidateFrontendImage -ceq $PreviousFrontendImage -and
+    $CandidateRetrievalModelImage -ceq $PreviousRetrievalModelImage) {
+    throw "At least one candidate image digest must differ from its previous digest."
 }
 if (Test-Path -LiteralPath $EvidenceFile) {
     throw "Image prefetch evidence path already exists; use a unique path for each attempt."
@@ -123,7 +123,7 @@ try {
         New-Item -ItemType Directory -Force -Path $parent | Out-Null
     }
     $evidence | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $EvidenceFile -Encoding utf8
-    Write-Output "Six immutable staging images are available locally; no services were changed."
+    Write-Output "All six staging image roles have verified immutable digests; no services were changed."
 }
 finally {
     [Environment]::SetEnvironmentVariable("DOCKER_HOST", $savedDockerHost, "Process")

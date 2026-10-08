@@ -511,10 +511,10 @@ $PreviousFrontendImage = Assert-ImmutableImage -Name "PreviousFrontendImage" -Re
     -Repository "ghcr.io/cp11-gh/crm-frontend"
 $PreviousRetrievalModelImage = Assert-ImmutableImage -Name "PreviousRetrievalModelImage" `
     -Reference $PreviousRetrievalModelImage -Repository "ghcr.io/cp11-gh/crm-retrieval-model-service"
-if ($CandidateBackendImage -eq $PreviousBackendImage -or
-    $CandidateFrontendImage -eq $PreviousFrontendImage -or
-    $CandidateRetrievalModelImage -eq $PreviousRetrievalModelImage) {
-    throw "Rollback images must differ from the candidate image digests."
+if ($CandidateBackendImage -ceq $PreviousBackendImage -and
+    $CandidateFrontendImage -ceq $PreviousFrontendImage -and
+    $CandidateRetrievalModelImage -ceq $PreviousRetrievalModelImage) {
+    throw "Rollback requires at least one changed application image digest."
 }
 
 $environmentValues = Read-EnvironmentFile -Path $EnvFile
@@ -634,9 +634,18 @@ try {
     $env:BACKEND_IMAGE = $PreviousBackendImage
     $env:FRONTEND_IMAGE = $PreviousFrontendImage
     $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $PreviousRetrievalModelImage
-    Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "pull", "backend", "worker", "jobs", "agent-worker", "frontend", "retrieval-model-service"
-    ))
+    # 未变化的服务沿用已核对的本地摘要，避免对大模型镜像再次请求 GHCR。
+    $changedServices = @()
+    if ($CandidateBackendImage -cne $PreviousBackendImage) {
+        $changedServices += @("backend", "worker", "jobs", "agent-worker")
+    }
+    if ($CandidateFrontendImage -cne $PreviousFrontendImage) {
+        $changedServices += "frontend"
+    }
+    if ($CandidateRetrievalModelImage -cne $PreviousRetrievalModelImage) {
+        $changedServices += "retrieval-model-service"
+    }
+    Invoke-Compose -Command $compose -Arguments ($composeArguments + @("pull") + $changedServices)
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "backend", "worker", "jobs", "agent-worker",
         "frontend", "proxy", "retrieval-model-service"
