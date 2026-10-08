@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_oauth_reauthorization_readonly_snapshot",
+  "captured_at_utc": "2026-10-08T03:23:27Z",
+  "environment": "staging",
+  "verification_base_sha": "9532bc4db9efc65c054fd232a6759d1a963b2882",
+  "deployed_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+  "observation_window_start_utc": "2026-10-08T02:30:00Z",
+  "authorization": {
+    "source": "user_report_and_readonly_staging_probe",
+    "new_oauth_jobs": 1,
+    "job_created_at_utc": "2026-10-08T03:13:24.238166Z",
+    "job_status": "connected",
+    "job_completed": true,
+    "code_cipher_cleared": true,
+    "state_cipher_cleared": true,
+    "matching_successful_authorization_audits": 1,
+    "channel_connected": true,
+    "required_scopes_present": true,
+    "scope_count": 23,
+    "access_reference_encrypted": true,
+    "refresh_reference_encrypted": true,
+    "access_expiry_in_future": true
+  },
+  "callback_access_log": {
+    "source": "staging_proxy_safe_uri_only_log",
+    "get_303_timestamps_utc": [
+      "2026-10-08T03:13:24Z",
+      "2026-10-08T03:13:29Z"
+    ],
+    "same_request_browser_replay_proven": false
+  },
+  "post_authorization_readonly_recheck": {
+    "oauth_job_count_unchanged": true,
+    "successful_authorization_audit_count_unchanged": true,
+    "credential_ciphertext_unchanged": true,
+    "public_ready_http_status": 200
+  },
+  "verification": {
+    "live_same_callback_browser_replay_verified": false,
+    "enhanced_logistics_202604_verified": false,
+    "g1_signed": false,
+    "production_changed": false,
+    "sensitive_values_included": false
+  }
+}
