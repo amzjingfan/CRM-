@@ -58,6 +58,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-DOMAIN-001` 的 `staging.overselfx.com` / `www.overselfx.com` 契约已合入远端 `main`；staging DNS/TLS 已由 `MVP-STAGING-001` 落地，production 与 Partner Center 仍未放行或变更。
 
+2026-10-08 下午复核：13:32、13:51 两次 OAuth start 返回 200，但至 14:32 公网入口没有新 callback，授权任务与成功审计未新增；CRM 的 connected 仍对应 11:13 的旧授权。低敏证据见 [再次核对证据](../../release/evidence/staging/crm-staging-g1-oauth-no-new-callback-20261008-pm.json)。渠道页误导性成功提示已由 PR #94 合并修复，尚未部署 staging；G1 继续部分通过，production 不变。
+
 ## 权威入口
 
 - 产品范围与验收：[`../product/PRODUCT.md`](../product/PRODUCT.md)
