@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-STAGING-PROXY-PERSIST-001",
+  "environment": "staging",
+  "production_deployed": false,
+  "reviewed_main_sha": "dcddb26cbb6ecc92db30a11a2f504d034e6ec048",
+  "source_archive_sha256_verified_by_workflow": true,
+  "running_image_revision": "33d80bd4acc1dfb9c93ec687086ee466d99682c6",
+  "image_build_inputs_unchanged_from_running_revision": true,
+  "validate": {
+    "workflow_run_id": 37716193186,
+    "conclusion": "success",
+    "artifact_sha256": "b55bce01f83c883d924bd2a13f18ff88b126c8582c8ab2dbeae73f645b3a870e"
+  },
+  "deploy": {
+    "workflow_run_id": 37716402745,
+    "conclusion": "success",
+    "artifact_sha256": "7a53f985a8b5ae3bade85021e6d569d23b352f29de58eb40f3978f043c7f86d7",
+    "database_migration": "heads_applied",
+    "workflow_health_status_codes": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    }
+  },
+  "proxy_after_deploy_and_explicit_restart": {
+    "container_id": "ee4da0d0bba383ab79e8d1c782f4fb4ce6eba89a915a7241fea87d820114813a",
+    "started_at_utc": "2026-10-08T02:14:03.383132278Z",
+    "state": "running",
+    "health": "healthy",
+    "nginx_config_mount_source": "/home/crmdeploy/src/crm-reviewed-source-37716402745-1/src/deploy/nginx/nginx-tunnel.conf",
+    "nginx_config_mount_read_only": true,
+    "source_tree_mode": "0750",
+    "nginx_config_source_type": "regular_file",
+    "nginx_config_sha256": "faba4cccfe7c6368ee6853fa95106e5bcb017f16668bff4b622b2bd2dde92c73"
+  },
+  "public_after_explicit_restart": {
+    "root": 307,
+    "login": 200,
+    "healthz": 200,
+    "v1_health": 200,
+    "v1_health_ready": 200,
+    "tls_verify_result": 0
+  },
+  "tiktok_egress_after_restart": {
+    "status": "ok",
+    "configured_ip": "38.55.145.52",
+    "observed_ip": "38.55.145.52"
+  },
+  "system_docker": {
+    "other_business_container_count": 12,
+    "container_ids_unchanged": true
+  },
+  "scope_limit": "This verifies staging proxy source persistence and restart only; TikTok authorization, G1, G6, and production release remain separate."
+}

@@ -6,10 +6,10 @@
 
 | 主题 | 已有结论 | 尚缺内容 |
 |---|---|---|
-| M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，外部四项凭据已安全注入；PostgreSQL/MinIO 备份已在隔离目标恢复；2026-09-30 六摘要预取、候选部署、上一版实际切回和候选切返均通过，见 `TR-MVP-008-20260930-R01` | 外部平台实际接受验证和 production 放行；MinIO 原业务桶为空，真实业务对象恢复尚无样本 |
+| M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，外部四项凭据已安全注入；PostgreSQL/MinIO 备份已在隔离目标恢复；2026-09-30 六摘要预取、候选部署、上一版实际切回和候选切返均通过，见 `TR-MVP-008-20260930-R01`。2026-10-08 代理配置改用持久源码后正式部署和再次重启通过，见 `TR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01` | 外部平台实际接受验证和 production 放行；MinIO 原业务桶为空，真实业务对象恢复尚无样本；G6 连续五日仍未验证 |
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
-| M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查；staging 真实重新授权已自动回跳，job connected/密文清空/审计匹配，同店异人 job 查询 404；六项非物流只读和跨店失败关闭通过；2026-10-04 后台 job 自然成功刷新 Token；既有 OAuth 聚焦 36 passed | `202604` 增强物流仍返回 `11007009`；同一真实 callback 的现场重放、Webhook 投递、消息和对账未验；2026-10-08 新授权受 TikTok 账号登录问题阻断；Shopee/Amazon 真实接入未做 |
+| M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查；staging 真实重新授权已自动回跳，job connected/密文清空/审计匹配，同店异人 job 查询 404；六项非物流只读和跨店失败关闭通过；2026-10-04 后台 job 自然成功刷新 Token；既有 OAuth 聚焦 36 passed | `202604` 增强物流仍返回 `11007009`；同一真实 callback 的现场重放、Webhook 投递、消息和对账未验；2026-10-08 新授权在 TikTok 商家中心授权页提示“连接失败”，原因未确认；Shopee/Amazon 真实接入未做 |
 | M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖；固定综合集为 32/36（88.89%） | 真实 DeepSeek 质量、50 客户端 SSE、5 日稳定性；公开自动回复/营销未放行 |
 
 ## BGE 正式基线

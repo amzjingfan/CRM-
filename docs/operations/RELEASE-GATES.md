@@ -5,7 +5,7 @@
 | 门禁 | 范围 | 当前状态 | 阻断条件 / 证据入口 | 下一动作 |
 |---|---|---|---|---|
 | G0 | 基础设施、配置、密钥、备份与回滚 | 通过（staging） | `MVP-STAGING-001` split-ingress Rootless 部署、`MVP-001` 凭据轮换/安全注入、`MVP-EGRESS-001` 固定出口均有现场证据；`MVP-008-RESTORE-001` 已在隔离 PostgreSQL/MinIO 验证备份恢复。2026-09-30 六个不可变镜像摘要预取、候选部署、上一版三镜像实际切回及候选切返均通过，切返后候选三摘要、迁移头 `024`、11 容器、三个公网健康接口 200 和固定出口 `38.55.145.52` 已核对，见 [G0 现场证据](../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json)。2026-10-08 固定出口 helper 被发现退出，已只启动该容器并复核健康与固定 IP，见 [恢复证据](../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json)；该运行中断须计入 G6。活动 MinIO 业务桶为空，真实对象字节恢复只在隔离合成对象上验证；不外推 production | 转向 G1～G6 的真实平台、模型、容量和持续运行验收；G8 仍阻塞 |
-| G1 | TikTok OAuth 与只读 | 部分通过，未签署 | 用户确认 staging 美国测试店铺授权后自动回到 CRM；既有任务 `connected`、code/state 已清空、匹配成功审计一条，异人读取 404，证据见 `release/evidence/staging/crm-staging-oauth-reauth-20260928.json`。六项非物流只读和跨店失败关闭见 `crm-staging-g1-nonlog-20260928.json`。2026-10-04 后台 job 真实成功刷新 Token，渠道保持 connected，见 [自然刷新证据](../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json)。同一真实 callback 的现场重放仍未验，2026-10-08 再授权受 TikTok 账号登录问题阻断；增强物流 `202604` 返回 `11007009`，不能以旧版或其他接口成功替代；Webhook 订阅查询为零不代表 G2 通过 | 账号恢复后从 CRM 新发起授权并验收同一 callback 重放；单独确认 `202604` 平台错误；维持 production No-Go |
+| G1 | TikTok OAuth 与只读 | 部分通过，未签署 | 用户确认 staging 美国测试店铺授权后自动回到 CRM；既有任务 `connected`、code/state 已清空、匹配成功审计一条，异人读取 404，证据见 `release/evidence/staging/crm-staging-oauth-reauth-20260928.json`。六项非物流只读和跨店失败关闭见 `crm-staging-g1-nonlog-20260928.json`。2026-10-04 后台 job 真实成功刷新 Token，渠道保持 connected，见 [自然刷新证据](../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json)。同一真实 callback 的现场重放仍未验；2026-10-08 新截图显示已进入 TikTok 商家中心，但授权页报“连接失败”，本次没有新 callback 证据。增强物流 `202604` 返回 `11007009`，不能以旧版或其他接口成功替代；Webhook 订阅查询为零不代表 G2 通过 | 定位平台授权页失败后从 CRM 新发起授权并验收同一 callback 重放；单独确认 `202604` 平台错误；维持 production No-Go |
 | G2 | TikTok Webhook | 已实现，待真实验证 | 签名、幂等和内部回归已覆盖；缺 Partner Center 实际投递、重试与乱序证据 | 注册真实订阅并验证投递、重放和审计 |
 | G3 | 人工确认普通消息 | 已实现，待真实验证 | 确定性发送、`unknown`、对账已覆盖；缺真实发送、对账和回滚证据 | 以低风险测试会话发送一次并制造/收敛不确定状态 |
 | G4 | DeepSeek、RAG、DLP 与知识审批 | 部分通过 | 固定综合集 32/36=88.89%，危险逃逸 0、合法输入误拦截 0；BGE 证据见 `release/evidence/retrieval/`。生产翻译、公开回复、营销和数据出境未验收；后三者不属 v0.1 | 完成 v0.1 AI 建议真实质量与数据边界复测 |
@@ -13,6 +13,8 @@
 | G6 | 连续 5 日稳定性 | 未开始 | 缺 99.5% 可用性、队列、资源、告警和恢复证据；2026-10-06～10-08 固定出口 helper 退出且未自行恢复，本次中断不得计入稳定运行 | G1～G5 完成并处理固定出口运行中断风险后，重新开始 5 日观察 |
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G0～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
+
+2026-10-08 staging proxy 的临时配置挂载在容器重启时导致短暂 502；PR #89 的持久源码部署和作业结束后再次重启已通过，见 [持久挂载证据](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。G0 的本次运行恢复已复测，G6 仍需重新开始连续五日观察。
 
 ## 判定规则
 

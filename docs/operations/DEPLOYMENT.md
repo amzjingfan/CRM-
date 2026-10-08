@@ -121,7 +121,7 @@ PR #83 合入 main `3b091055908a4fd374dc95518dfd31d8d8960a47` 后，预取工作
 
 按用户要求重启 staging 现有 CRM 容器时，Rootless proxy 因 `/etc/nginx/nginx.conf` 的宿主机 bind 来源位于已清理的 Runner 临时源码目录而无法重新启动，公网 ready 短暂返回 502。已从持久、已审核源码复制 SHA-256 相同的 `nginx-tunnel.conf` 到原挂载位置，proxy 恢复健康，公网 `/login`、`/healthz` 和 ready 返回 200，固定出口仍实测为 `38.55.145.52`；系统 Docker 的其他业务容器 ID 未变。这个现场恢复只恢复当前容器，下一次 Runner 清理仍可能删除临时来源。
 
-`MVP-STAGING-PROXY-PERSIST-001` 将正式 `deploy`/`rollback` 的已校验源码包放入 `/home/crmdeploy/src/crm-reviewed-source-<run-id>-<attempt>/`，使 proxy 的相对只读 bind 来自持久路径。代码合入和真实重部署、再次重启验证前，不得声称该持久性缺陷已关闭；运行中的源码目录不得作为普通 Runner 临时材料清理。
+`MVP-STAGING-PROXY-PERSIST-001` 已由 PR #89 合入 `main=dcddb26cbb6ecc92db30a11a2f504d034e6ec048`。正式 `validate` 运行 `37716193186`、`deploy` 运行 `37716402745` 通过；后者将已校验源码包放入 `/home/crmdeploy/src/crm-reviewed-source-37716402745-1/`，proxy 的相对只读 bind 来自该持久路径。作业结束后再次显式重启 proxy 成功并健康，公网首页 307、登录与三个健康接口 200，配置文件 SHA-256 与仓库一致，其他公司容器 ID 不变。低敏证据见 [代理持久挂载复测](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。运行中的源码目录不得作为普通 Runner 临时材料清理；此结论不替代 G6 连续五日稳定性。
 
 ## 发布入口
 

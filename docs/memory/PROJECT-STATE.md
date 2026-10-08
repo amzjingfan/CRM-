@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp008-g0-done-20260930
+Working branch at this snapshot: docs/staging-proxy-persist-evidence-20261008
 Governance base SHA: 8fae4fb85c4ed9c8cdf862f99d839c3de60e55ab
-CANDIDATE_SUBJECT_SHA: 58f095b730022fa5f792a751f991aca2ee1d5fce
+CANDIDATE_SUBJECT_SHA: dcddb26cbb6ecc92db30a11a2f504d034e6ec048
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -36,7 +36,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-08 恢复点：自然 Token 刷新已由后台 job 于 10-04T10:05Z 真实成功完成，渠道保持 connected，低敏证据见 [`../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json`](../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json)。同日发现固定出口 helper 自 10-06T18:01Z 退出，Docker 最后错误为 systemd cgroup scope 创建超时；仅重启该既有容器后健康，应用 SOCKS5H 实测仍从 `38.55.145.52` 出站，见 [`../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json`](../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json)。历史 Network 303 被排除为本次重放证据；新的 OAuth 发起未收到 callback，用户报告 TikTok 账号无法登录。G1 继续部分通过，G6 的五日稳定性不得包含本次出口中断。
 
-同日 staging 全容器重启暴露 proxy 配置 bind 来源在已清理的 Runner 临时目录：proxy 首次重启失败且公网 ready 返回 502。用哈希一致的持久受审源码恢复原挂载文件后，proxy、11 个常驻容器和公网登录/健康恢复；同机系统 Docker 容器 ID 不变。`MVP-STAGING-PROXY-PERSIST-001` 正在把正式部署/回滚的受审源码放到持久目录，并需在重部署后再次重启验证。用户新截图显示已进入 TikTok 商家中心，但授权页提示“连接失败”；CRM 起始链接仅含 `service_id`/`state`，尚无证据说明平台页失败原因或收到新的 callback，不复用截图中的状态参数。
+同日 staging 全容器重启暴露 proxy 配置 bind 来源在已清理的 Runner 临时目录：proxy 首次重启失败且公网 ready 返回 502。用哈希一致的持久受审源码恢复原挂载文件后，PR #89 改为从持久目录部署；`main=dcddb26cbb6ecc92db30a11a2f504d034e6ec048` 的预检/部署 `37716193186`/`37716402745` 通过，作业结束后再次重启 proxy 健康，公网登录和三个健康接口 200，固定出口仍为 `38.55.145.52`，同机系统 Docker 容器 ID 不变。低敏证据见 [`../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json`](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。用户新截图显示已进入 TikTok 商家中心，但授权页提示“连接失败”；CRM 起始链接仅含 `service_id`/`state`，尚无证据说明平台页失败原因或收到新的 callback，不复用截图中的状态参数。
 
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
@@ -97,6 +97,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - MVP-OAUTH-REAUTH-001 staging R01 已由 PR #63 合入 main：[`../records/implementation/IR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../records/implementation/IR-MVP-OAUTH-REAUTH-001-20260928-R01.md)、[`../reports/tests/TR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../reports/tests/TR-MVP-OAUTH-REAUTH-001-20260928-R01.md)、[`../reports/reviews/RR-MVP-OAUTH-REAUTH-001-20260928-R01.md`](../reports/reviews/RR-MVP-OAUTH-REAUTH-001-20260928-R01.md)；低敏证据为 [`../../release/evidence/staging/crm-staging-oauth-reauth-20260928.json`](../../release/evidence/staging/crm-staging-oauth-reauth-20260928.json)。三个派生索引从已合并 main 源记录重建为 `CURRENT`。
 - MVP-008-RESTORE-001 staging R01 已由 PR #65 合入 main：[`../records/implementation/IR-MVP-008-RESTORE-001-20260929-R01.md`](../records/implementation/IR-MVP-008-RESTORE-001-20260929-R01.md)、[`../reports/tests/TR-MVP-008-RESTORE-001-20260929-R01.md`](../reports/tests/TR-MVP-008-RESTORE-001-20260929-R01.md)、[`../reports/reviews/RR-MVP-008-RESTORE-001-20260929-R01.md`](../reports/reviews/RR-MVP-008-RESTORE-001-20260929-R01.md)；低敏证据为 [`../../release/evidence/staging/crm-staging-isolated-restore-20260929.json`](../../release/evidence/staging/crm-staging-isolated-restore-20260929.json)。三个派生索引从已合并 main 的源记录重建为 `CURRENT`；本任务不代表 G0 签署。
 - MVP-008 staging G0 R01 已由 PR #84 合入 main：[`../records/implementation/IR-MVP-008-20260930-R01.md`](../records/implementation/IR-MVP-008-20260930-R01.md)、[`../reports/tests/TR-MVP-008-20260930-R01.md`](../reports/tests/TR-MVP-008-20260930-R01.md)、[`../reports/reviews/RR-MVP-008-20260930-R01.md`](../reports/reviews/RR-MVP-008-20260930-R01.md)；[低敏 G0 现场证据](../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json)。三个派生索引已从 main 的源记录重建为 `CURRENT`。
+- MVP-STAGING-PROXY-PERSIST-001 staging R01 候选记录：[`../records/implementation/IR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md`](../records/implementation/IR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md)、[`../reports/tests/TR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md`](../reports/tests/TR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md)、[`../reports/reviews/RR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md`](../reports/reviews/RR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md)；[低敏持久挂载证据](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。本分支三份索引为 `CANDIDATE_VIEW`，合入后从 main 复核并改为 `CURRENT`。
 - 发布基线与低敏机器证据：[`../../release/`](../../release/)。
 - 目录卫生：`frontend/` 空缓存树与 `.test-tmp/` 零字节测试残留已移出活动根并进入 `.maintenance/` 持久隔离；`CLEANUP-20260916-001` 状态为 `VERIFIED_UNUSED`，从实际隔离时间起保留满 7 天后，最早永久删除时间为 2026-09-23T14:00:00+08:00。
 - `CLEANUP-20260916-002` 已将主 checkout 中唯一的旧 `src/backend/tests/` pytest 缓存隔离到 `.maintenance/`，状态为 `VERIFIED_UNUSED`，最早永久删除时间为 2026-09-23T18:05:00+08:00，恢复方法和摘要见 [`../operations/cleanup/CLEANUP-20260916-002.md`](../operations/cleanup/CLEANUP-20260916-002.md)。
@@ -120,6 +121,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 合入 `MVP-STAGING-PROXY-PERSIST-001`，以持久受审源码重部署现有 staging 摘要，核对 proxy bind、再次重启和公网健康；不得清理活动挂载目录。
+1. 证据 PR 合入后将 `MVP-STAGING-PROXY-PERSIST-001` 标为 `DONE` 并从 `main` 重建三份索引；保持活动 proxy 的持久源码目录。
 2. 另行定位 TikTok 商家中心授权页“连接失败”，从 CRM **重新发起**授权后按 `../operations/RELEASE-GATES.md` 验证同一真实 callback 重放；不得读取、保存或传播 `code/state`，历史 303 不算证据。
 3. 单独核对增强物流 `202604` 的平台适用条件和固定出口告警，继续 G1～G6；G8 与 production 仍为 No-Go。
