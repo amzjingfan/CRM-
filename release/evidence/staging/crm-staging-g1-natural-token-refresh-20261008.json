@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_natural_token_refresh",
+  "captured_at_utc": "2026-10-08T00:55:01Z",
+  "environment": "staging",
+  "deployed_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+  "refresh": {
+    "successful_audit_count": 1,
+    "failed_audit_count": 0,
+    "audit_actor_type": "job",
+    "audit_created_at_utc": "2026-10-04T10:05:24.429060Z",
+    "audit_result": "succeeded",
+    "channel_last_sync_at_utc": "2026-10-04T10:05:27.084331Z",
+    "channel_status": "connected",
+    "channel_oauth_status": "refreshed",
+    "scope_count": 23,
+    "access_token_expires_at_utc": "2026-10-11T10:05:25Z"
+  },
+  "verification": {
+    "read_only_database_probe": true,
+    "channel_identifier_emitted": false,
+    "token_or_ciphertext_emitted": false,
+    "oauth_code_or_state_emitted": false,
+    "live_successful_token_refresh_verified": true,
+    "live_duplicate_callback_replay_verified": false,
+    "enhanced_tracking_202604_verified": false,
+    "g1_signed": false,
+    "production_changed": false
+  },
+  "sensitive_values_included": false
+}

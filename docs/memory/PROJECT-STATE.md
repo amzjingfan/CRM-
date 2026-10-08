@@ -34,6 +34,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-02 恢复点：G1 真实 callback 重放的低敏验收流程已由 PR #86 合入 `main=c707731c0d09b610938585088653875a0a377063`，见 [`../operations/RELEASE-GATES.md`](../operations/RELEASE-GATES.md)。同日 staging 11 个 CRM 容器运行，过去 24 小时新增 OAuth job 与授权/刷新审计均为零；现有访问 Token 到期时间为 2026-10-05T10:05:17Z，按当前提前一天的配置，自然刷新窗口约从 2026-10-04T10:05:17Z 开始。真实重放、成功刷新和增强物流 `202604` 仍未取得通过证据；G1 维持部分通过。
 
+2026-10-08 恢复点：自然 Token 刷新已由后台 job 于 10-04T10:05Z 真实成功完成，渠道保持 connected，低敏证据见 [`../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json`](../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json)。同日发现固定出口 helper 自 10-06T18:01Z 退出，Docker 最后错误为 systemd cgroup scope 创建超时；仅重启该既有容器后健康，应用 SOCKS5H 实测仍从 `38.55.145.52` 出站，见 [`../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json`](../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json)。历史 Network 303 被排除为本次重放证据；新的 OAuth 发起未收到 callback，用户报告 TikTok 账号无法登录。G1 继续部分通过，G6 的五日稳定性不得包含本次出口中断。
+
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
 独立 `MVP-UI-CACHE-DEPLOY-001` 的首次三新摘要尝试因新检索镜像拉取停滞，在容器切换前取消，失败事实保留。用户随后明确批准**仅本次 staging**复用有依赖锁偏差的旧检索摘要；混合预检 `35953530870`、部署 `35953792293` 通过，新 backend/frontend 已运行。PR #49 合并并仅在 staging vhost 关闭继承的代理缓存；PR #50 合并并修正首页 307 入口验证器；证据 PR #51 前后端 CI 通过并合入 main `8038ad99c3ceb47787bb29b489611a28d012c575`。现场精确无 query 的四个 HTML 路径 200/no-store、指纹 JS immutable、三个健康 200，双机最终验证器通过，其他 vhost/公司负载未变。终态低敏证据见 `../../release/evidence/staging/crm-staging-html-cache-rollout-20260924.json`。任务标为 `DONE`；带身份 staging 全按钮、真实 TikTok、恢复演练和 production 不在此次完成范围。
@@ -103,10 +105,10 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 阻塞、决定与风险
 
 - G0 staging 恢复/回滚现场通过；G1～G6 尚未全部取得真实环境证据，G8 保持阻塞，production 未部署。
-- 用户已重新选择 North America seller/US 完成授权并自动返回 CRM；job 终态和任务读取权限已有本次低敏核对，仍需真实 callback 重放、Token 生命周期与增强物流，不得将前端回跳或本次窄范围验收视为 G1 全通过。
+- 用户此前选择 North America seller/US 完成授权并自动返回 CRM；job 终态和任务读取权限已有低敏核对，2026-10-04 自然 Token 刷新也已通过。当前仍需同一真实 callback 重放与增强物流 `202604`；2026-10-08 TikTok 账号登录问题阻断新的浏览器授权，不得把历史 Network 303 当成本次重放。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；切返后运行候选后端、前端及分层检索三个不可变摘要，固定出口 `38.55.145.52` 和三个公网健康端点已复核。
+- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；切返后运行候选后端、前端及分层检索三个不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复健康并复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
@@ -116,6 +118,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 按 `../operations/RELEASE-GATES.md` 中已合并的流程，在用户浏览器再次完成 staging 授权后验证**同一真实 callback** 的第二次 GET；不得读取、保存或传播回调 `code/state`，也不能把重复 job 轮询冒充重放。
-2. 在自然刷新窗口验证 Token 成功刷新，并单独核对增强物流 `202604` 业务码 `11007009`；不要把六项只读成功外推为 G1 全过。
+1. 用户恢复 TikTok 官方账号登录后，从 staging CRM **重新发起**授权，按 `../operations/RELEASE-GATES.md` 验证同一真实 callback 的第二次 GET；不得读取、保存或传播 `code/state`，也不能把历史 303 或重复 job 轮询冒充重放。
+2. 单独核对增强物流 `202604` 业务码 `11007009` 的平台适用条件，并复查固定出口 helper 异常退出后的持续运行与告警；自然 Token 刷新已有真实成功证据。
 3. 按 `../operations/RELEASE-GATES.md` 推进 G1～G6 的真实门禁；G8 与 production 仍为 No-Go。

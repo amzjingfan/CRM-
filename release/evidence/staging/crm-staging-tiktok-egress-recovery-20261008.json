@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_egress_runtime_recovery",
+  "environment": "staging",
+  "affected_service": "tiktok-egress",
+  "deployed_image_digest": "sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+  "observed_failure": {
+    "finished_at_utc": "2026-10-06T18:01:28.768236897Z",
+    "container_state": "exited",
+    "exit_code": 255,
+    "oom_killed": false,
+    "restart_count_before_recovery": 13,
+    "last_docker_state_error_class": "systemd_cgroup_scope_creation_timeout",
+    "same_host_other_docker_healthcheck_start_timeouts_observed": true,
+    "root_cause_beyond_host_runtime_timeout_confirmed": false
+  },
+  "recovery": {
+    "operation": "start_existing_rootless_tiktok_egress_container_only",
+    "container_started_at_utc": "2026-10-08T01:10:37.203688837Z",
+    "container_state_after": "running",
+    "health_after": "healthy",
+    "restart_count_after": 0,
+    "application_socks5h_egress_check_status": "ok",
+    "observed_egress_ip": "38.55.145.52",
+    "configured_egress_ip": "38.55.145.52",
+    "public_ready_http_status": 200,
+    "public_tls_verify_result": 0
+  },
+  "scope": {
+    "other_containers_restarted": false,
+    "production_changed": false,
+    "long_term_stability_verified": false,
+    "callback_replay_verified": false
+  },
+  "sensitive_values_included": false
+}

@@ -59,6 +59,8 @@ python scripts/verify_tiktok_egress.py
 
 2026-09-23 已在真实 staging 用合并 `main` 的部署门禁完成固定出口验收：workflow `35806983990` 精确观测 `38.55.145.52`、迁移头和三个公网 200；仅停止 helper 的故障演练得到验证器非零，恢复后同一出口再次通过。两个 TikTok 官方端点经应用 SOCKS5H 路径完成无凭据 TLS 请求；公司 system Docker、入口策略、非 staging 站点和保护监听复核未发生业务漂移。最终低敏证据为 `release/evidence/staging/crm-staging-tiktok-egress-20260923.json`，R02 IR/TR/RR 解释初次 502、proxy 刷新修复和镜像例外。
 
+2026-10-08 staging 运行检查发现现有 `tiktok-egress` 容器已退出；Docker 保存的最后启动错误是 systemd 创建该容器 cgroup scope 超时，同一时段同机多个容器的健康检查也出现启动超时，未见该容器 OOM。仅启动原容器后其健康检查恢复，并从 backend 执行 `python scripts/verify_tiktok_egress.py` 再次实测固定出口 `38.55.145.52`；其他 CRM 容器未重启，公网 ready 为 200。低敏事实见 [`crm-staging-tiktok-egress-recovery-20261008.json`](../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json)。此恢复不证明 systemd 超时不会再发；每次真实 TikTok 门禁前先核对 helper `running/healthy` 并运行同一出口验证器，G6 还需覆盖 helper 退出告警及连续运行。
+
 本次用户仅限 staging 授权继续使用已验证的 backend/frontend 不可变摘要（与候选 `746c10c` 的构建输入零差异）和旧检索镜像摘要（检索服务源码与 Dockerfile 不变，但依赖锁文件**不同**）。新摘要 GHCR 下载失败/停滞不能写成已部署；下次镜像升级和 production 必须重新通过独立摘要与供应链门禁，不能沿用此例外。production 仍仅有可复用配置契约，未选择出口服务器、创建账号/密钥或实施部署。
 
 2026-09-23 UI 修复合并后，`main` 的 `58263b1` 已单独发布到 staging：新 frontend `e5d6bbfc...`、backend/helper `a3bb63c4...` 正在运行且健康，门禁 `35849490309`、固定出口、迁移头和三个公网健康端点均通过。全量同源尝试 `35845426383` 在新检索镜像下载阶段取消，取消前没有容器切换；用户为**这一次 staging UI 部署**另行批准保留当前健康的旧检索摘要 `bc99dfa3...`。检索服务源码/Dockerfile 相同，但依赖锁不同；这是明确的运行版本偏差，不是新检索镜像已部署或 production 供应链通过。恢复点、前后保护基线和未测项见 `release/evidence/staging/crm-staging-ui-rollout-20260923.json` 与 `MVP-UI-DEPLOY-001` R01。前一段固定出口任务的历史豁免仍只属于那次验收，本次授权不能延伸到下一次镜像升级。
