@@ -117,6 +117,12 @@ PR #83 合入 main `3b091055908a4fd374dc95518dfd31d8d8960a47` 后，预取工作
 
 受控切换 staging 环境文件中的检索镜像摘要前保存 `0600` 恢复副本；工作流 `36700668599` 的 `validate` 通过。候选部署 `36701049769`、上一版三镜像实际切回 `36701815122`、候选切返 `36702556391` 均通过，并各自产生工作流证据。切回时先关闭真实能力，再部署上一版三摘要并验证三个健康接口；切返后独立现场检查候选三摘要、11 个活动容器、`024_tiktok_oauth_jobs` 迁移头、三个公网 HTTPS 健康接口 200 和固定出口 `38.55.145.52`。当前 staging 运行候选三摘要。低敏汇总及原始工作流 artifact SHA-256 见 [G0 现场证据](../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json)。此次仅关闭 staging G0 的恢复与镜像回滚条件，不代表 G1～G6 或生产发布通过。
 
+### 2026-10-08 staging 代理配置挂载恢复
+
+按用户要求重启 staging 现有 CRM 容器时，Rootless proxy 因 `/etc/nginx/nginx.conf` 的宿主机 bind 来源位于已清理的 Runner 临时源码目录而无法重新启动，公网 ready 短暂返回 502。已从持久、已审核源码复制 SHA-256 相同的 `nginx-tunnel.conf` 到原挂载位置，proxy 恢复健康，公网 `/login`、`/healthz` 和 ready 返回 200，固定出口仍实测为 `38.55.145.52`；系统 Docker 的其他业务容器 ID 未变。这个现场恢复只恢复当前容器，下一次 Runner 清理仍可能删除临时来源。
+
+`MVP-STAGING-PROXY-PERSIST-001` 将正式 `deploy`/`rollback` 的已校验源码包放入 `/home/crmdeploy/src/crm-reviewed-source-<run-id>-<attempt>/`，使 proxy 的相对只读 bind 来自持久路径。代码合入和真实重部署、再次重启验证前，不得声称该持久性缺陷已关闭；运行中的源码目录不得作为普通 Runner 临时材料清理。
+
 ## 发布入口
 
 当前发布状态见 `docs/operations/RELEASE-GATES.md`，最新测试摘要见 `docs/quality/TEST-STATUS.md`，固定资产与评测集见 `release/baselines/` 和 `release/evidence/`。部署说明不替代真实签署。

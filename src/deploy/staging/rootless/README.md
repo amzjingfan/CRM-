@@ -118,6 +118,8 @@ Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 
 从镜像发布 artifact 程序化读取三条 RepoDigest，核对 `source_sha`、manifest digest 和 OCI `org.opencontainers.image.revision`。使用 `Staging production gates` 的 `validate` 操作；非零退出、证据缺失或任何 digest 漂移都停止。门禁固定按 `docker-compose.yml → docker-compose.prod.yml → docker-compose.tiktok-egress.yml → docker-compose.rootless-staging.yml` 顺序解析，拒绝缺少 overlay、helper 发布端口、错误网络、可写根文件系统、额外能力、非只读密钥挂载或应用容器取得密钥。
 
+`Staging production gates` 的 `validate` 可在 Runner 临时目录解包受审源码；`deploy` 与 `rollback` 必须在 `/home/crmdeploy/src/crm-reviewed-source-<run-id>-<attempt>/` 解包同一已校验 SHA-256 的源码包。Rootless Compose 的 proxy 相对配置路径由该持久目录解析，不能指向 Runner 临时目录。每次运行使用唯一目录，目标已存在即失败；运行中的 proxy 仍引用该目录时不得清理。部署后用 Rootless `docker inspect` 核对 `/etc/nginx/nginx.conf` 的只读 bind 来源和源文件摘要，再做一次代理重启与公网健康复测。
+
 ### 4.6 部署 Rootless CRM
 
 用与 validate 完全相同的三条 RepoDigest 触发 `deploy`。门禁固定使用 `crm-staging`、Rootless socket、上述四个 Compose 文件、`ai` profile、`--no-build --wait --wait-timeout 600`，并强制所有真实能力关闭。helper 使用候选 `BACKEND_IMAGE`，不使用浮动镜像或目标机 build。执行顺序固定为：

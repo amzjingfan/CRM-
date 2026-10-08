@@ -36,6 +36,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-08 恢复点：自然 Token 刷新已由后台 job 于 10-04T10:05Z 真实成功完成，渠道保持 connected，低敏证据见 [`../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json`](../../release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json)。同日发现固定出口 helper 自 10-06T18:01Z 退出，Docker 最后错误为 systemd cgroup scope 创建超时；仅重启该既有容器后健康，应用 SOCKS5H 实测仍从 `38.55.145.52` 出站，见 [`../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json`](../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json)。历史 Network 303 被排除为本次重放证据；新的 OAuth 发起未收到 callback，用户报告 TikTok 账号无法登录。G1 继续部分通过，G6 的五日稳定性不得包含本次出口中断。
 
+同日 staging 全容器重启暴露 proxy 配置 bind 来源在已清理的 Runner 临时目录：proxy 首次重启失败且公网 ready 返回 502。用哈希一致的持久受审源码恢复原挂载文件后，proxy、11 个常驻容器和公网登录/健康恢复；同机系统 Docker 容器 ID 不变。`MVP-STAGING-PROXY-PERSIST-001` 正在把正式部署/回滚的受审源码放到持久目录，并需在重部署后再次重启验证。用户新截图显示已进入 TikTok 商家中心，但授权页提示“连接失败”；CRM 起始链接仅含 `service_id`/`state`，尚无证据说明平台页失败原因或收到新的 callback，不复用截图中的状态参数。
+
 `MVP-UI-CACHE-001` 针对 staging 精确 `/marketing` 路径仍命中旧 HTML/JS 的问题，根布局改为按需生成 HTML；本机生产构建 22/22 浏览器测试、41/41 契约及构建/类型/lint 通过，独立只读复审批准。PR #47 前后端 CI 均通过并 squash 合入远端 `main=118ba775e291b88998bd033b7bca3410e29f8b88`，任务为 `DONE`，production 不变。
 
 独立 `MVP-UI-CACHE-DEPLOY-001` 的首次三新摘要尝试因新检索镜像拉取停滞，在容器切换前取消，失败事实保留。用户随后明确批准**仅本次 staging**复用有依赖锁偏差的旧检索摘要；混合预检 `35953530870`、部署 `35953792293` 通过，新 backend/frontend 已运行。PR #49 合并并仅在 staging vhost 关闭继承的代理缓存；PR #50 合并并修正首页 307 入口验证器；证据 PR #51 前后端 CI 通过并合入 main `8038ad99c3ceb47787bb29b489611a28d012c575`。现场精确无 query 的四个 HTML 路径 200/no-store、指纹 JS immutable、三个健康 200，双机最终验证器通过，其他 vhost/公司负载未变。终态低敏证据见 `../../release/evidence/staging/crm-staging-html-cache-rollout-20260924.json`。任务标为 `DONE`；带身份 staging 全按钮、真实 TikTok、恢复演练和 production 不在此次完成范围。
@@ -118,6 +120,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 用户恢复 TikTok 官方账号登录后，从 staging CRM **重新发起**授权，按 `../operations/RELEASE-GATES.md` 验证同一真实 callback 的第二次 GET；不得读取、保存或传播 `code/state`，也不能把历史 303 或重复 job 轮询冒充重放。
-2. 单独核对增强物流 `202604` 业务码 `11007009` 的平台适用条件，并复查固定出口 helper 异常退出后的持续运行与告警；自然 Token 刷新已有真实成功证据。
-3. 按 `../operations/RELEASE-GATES.md` 推进 G1～G6 的真实门禁；G8 与 production 仍为 No-Go。
+1. 合入 `MVP-STAGING-PROXY-PERSIST-001`，以持久受审源码重部署现有 staging 摘要，核对 proxy bind、再次重启和公网健康；不得清理活动挂载目录。
+2. 另行定位 TikTok 商家中心授权页“连接失败”，从 CRM **重新发起**授权后按 `../operations/RELEASE-GATES.md` 验证同一真实 callback 重放；不得读取、保存或传播 `code/state`，历史 303 不算证据。
+3. 单独核对增强物流 `202604` 的平台适用条件和固定出口告警，继续 G1～G6；G8 与 production 仍为 No-Go。

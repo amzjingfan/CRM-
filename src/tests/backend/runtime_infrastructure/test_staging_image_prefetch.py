@@ -333,7 +333,7 @@ def test_staging_workflow_verifies_reviewed_source_before_docker_access() -> Non
     assert "tar -xf" in verify["run"]
     assert verify["id"] == "verify_dispatch_commit"
     gate = next(step for step in steps if step["name"] == "Run the selected staging gate")
-    assert "crm-reviewed-source-" in gate["working-directory"]
+    assert gate["working-directory"] == "${{ steps.verify_dispatch_commit.outputs.source_root }}"
     api_source = next(step for step in steps if step["name"] == "Verify exact prefetch source through GitHub API")
     assert api_source["if"] == "${{ inputs.operation == 'prefetch' }}"
     assert api_source["id"] == "verify_prefetch_source"
@@ -361,3 +361,17 @@ def test_staging_workflow_verifies_reviewed_source_before_docker_access() -> Non
         "${{ always() && (steps.verify_dispatch_commit.outcome == 'success' || "
         "steps.verify_prefetch_source.outcome == 'success') }}"
     )
+
+
+def test_live_staging_proxy_mount_survives_runner_temp_cleanup() -> None:
+    """部署和回滚的相对 Nginx bind 来源必须位于持久目录。"""
+    workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    steps = workflow["jobs"]["staging"]["steps"]
+    verify = next(step for step in steps if step["name"] == "Verify reviewed staging source")
+    gate = next(step for step in steps if step["name"] == "Run the selected staging gate")
+
+    assert verify["env"]["OPERATION"] == "${{ inputs.operation }}"
+    assert "/home/crmdeploy/src/crm-reviewed-source-" in verify["run"]
+    assert '"deploy", "rollback"' in verify["run"]
+    assert "source_root=$sourceRoot" in verify["run"]
+    assert gate["working-directory"] == "${{ steps.verify_dispatch_commit.outputs.source_root }}"
