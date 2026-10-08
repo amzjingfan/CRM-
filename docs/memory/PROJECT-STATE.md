@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/staging-proxy-persist-done-20261008
+Working branch at this snapshot: docs/frontend-staging-deploy-evidence-20261008
 Governance base SHA: 8fae4fb85c4ed9c8cdf862f99d839c3de60e55ab
-CANDIDATE_SUBJECT_SHA: dcddb26cbb6ecc92db30a11a2f504d034e6ec048
+CANDIDATE_SUBJECT_SHA: f268408f3d9e396444e95cf2106141f0aae98188
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -58,7 +58,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 `MVP-DOMAIN-001` 的 `staging.overselfx.com` / `www.overselfx.com` 契约已合入远端 `main`；staging DNS/TLS 已由 `MVP-STAGING-001` 落地，production 与 Partner Center 仍未放行或变更。
 
-2026-10-08 下午复核：13:32、13:51 两次 OAuth start 返回 200，但至 14:32 公网入口没有新 callback，授权任务与成功审计未新增；CRM 的 connected 仍对应 11:13 的旧授权。低敏证据见 [再次核对证据](../../release/evidence/staging/crm-staging-g1-oauth-no-new-callback-20261008-pm.json)。渠道页误导性成功提示已由 PR #94 合并修复，尚未部署 staging；G1 继续部分通过，production 不变。
+2026-10-08 下午复核：13:32、13:51 两次 OAuth start 返回 200，但至 14:32 公网入口没有新 callback，授权任务与成功审计未新增；CRM 的 connected 仍对应 11:13 的旧授权。低敏证据见 [再次核对证据](../../release/evidence/staging/crm-staging-g1-oauth-no-new-callback-20261008-pm.json)。渠道页误导性成功提示已由 PR #94 合并修复；随后 PR #96 的单前端发布路径合入 main `f268408f3d9e396444e95cf2106141f0aae98188`，前端新摘要仅部署 staging，发布 `37742119116`、预取 `37742409755`、预检 `37743493147`、部署 `37743848722` 均通过。现场复核前端新摘要、原后端/检索、11 容器、迁移头、持久 proxy、三个公网健康 200 和固定出口；后续公网五路径也返回 200，见 [低敏发布证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。用户撤回此前“有顶部成功提示”的回答并称内置浏览器无法刷新，带身份页面观察仍缺；G1 继续部分通过，production 不变。
 
 ## 权威入口
 
@@ -117,7 +117,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 - 用户此前选择 North America seller/US 完成授权并自动返回 CRM；job 终态和任务读取权限已有低敏核对，2026-10-04 自然 Token 刷新也已通过。2026-10-08 新授权已落库，当前仍需同一真实 callback 的浏览器受控重放与增强物流 `202604`；代理中两次 303 不能单独证明满足重放操作条件；03:48Z 后续尝试未到公网入口，根因尚未定位。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；切返后运行候选后端、前端及分层检索三个不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复健康并复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
+- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 G0 后端/分层检索摘要及 2026-10-08 新前端不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复健康并复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
@@ -127,6 +127,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 在普通 Chrome 中从 CRM 发起新授权并开启 Network Preserve log，按 `../operations/RELEASE-GATES.md` 核对同一真实 callback 的受控重放；若仍未到公网入口，记录低敏浏览器错误及 TikTok 授权页状态，不读取、保存或传播 `code/state`。
+1. 在普通 Chrome 中核对 staging 新前端的旧连接顶部提示；之后从 CRM 发起新授权并开启 Network Preserve log，按 `../operations/RELEASE-GATES.md` 核对同一真实 callback 的受控重放；若仍未到公网入口，记录低敏浏览器错误及 TikTok 授权页状态，不读取、保存或传播 `code/state`。
 2. 单独核对增强物流 `202604` 的平台适用条件和固定出口告警；保持活动 proxy 的持久源码目录。
 3. 继续 G1～G6 的真实门禁；G8 与 production 仍为 No-Go。

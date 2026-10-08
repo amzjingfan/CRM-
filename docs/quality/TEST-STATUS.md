@@ -12,6 +12,8 @@
 | M03 平台集成 | TikTok OAuth、只读、Webhook、人工消息、`unknown` 对账实现并通过确定性检查；staging 真实重新授权已自动回跳，job connected/密文清空/审计匹配，同店异人 job 查询 404；六项非物流只读和跨店失败关闭通过；2026-10-04 后台 job 自然成功刷新 Token；既有 OAuth 聚焦 36 passed | `202604` 增强物流仍返回 `11007009`；同一真实 callback 的现场重放、Webhook 投递、消息和对账未验；2026-10-08 新授权在 TikTok 商家中心授权页提示“连接失败”，原因未确认；Shopee/Amazon 真实接入未做 |
 | M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖；固定综合集为 32/36（88.89%） | 真实 DeepSeek 质量、50 客户端 SSE、5 日稳定性；公开自动回复/营销未放行 |
 
+2026-10-08 渠道页状态修复仅更新了 staging 前端：PR #96 的前后端 CI 通过，单镜像发布、六角色预取、预检和部署通过；现场前端摘要、11 容器、迁移头与三个公网健康接口已核对，随后公网五路径仍为 200，见 [低敏证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。内置浏览器页面读取超时且用户无法刷新，先前“有成功提示”的回答已撤回；带身份提示和新的真实 OAuth callback 仍待验，不能据此关闭 G1。
+
 ## BGE 正式基线
 
 - 质量：Dense Recall@20 = 100%，Rerank Recall@5 = 100%，MRR = 1，nDCG = 1，引用合法率 = 100%，无答案拒判率 = 100%。

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_frontend_only_rollout",
+  "environment": "staging",
+  "source_sha": "f268408f3d9e396444e95cf2106141f0aae98188",
+  "production_release": false,
+  "image_publication": {
+    "run_id": 37742119116,
+    "artifact_id": 11534735064,
+    "evidence_json_sha256": "4a76ee457d145d489eb1e00ccc067e06979535d09338bd0d27fb47ea2435f788",
+    "manifest_status": "PASS",
+    "published_repository_count": 1,
+    "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:c56443c8a291c84b2437190f6ce120c8cb29544f98d503f6a660722a29d0248a",
+    "frontend_oci_revision_matches_source": true,
+    "compressed_bytes": 63954223,
+    "largest_layer_bytes": 42989014
+  },
+  "unchanged_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "rollback_frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:8a0b99aff74251c083362eeef57cefa91e8cc930c92182b06a37a18cfea54d56",
+  "prefetch": {
+    "run_id": 37742409755,
+    "artifact_id": 11534536688,
+    "evidence_json_sha256": "bbe9212e1cf6bc8b3676d4fd532b005af4309d75459f3af68cd559e4817abb9f",
+    "status": "passed",
+    "checked_roles": 6,
+    "distinct_image_digests": 4,
+    "service_mutation": false
+  },
+  "validate": {
+    "run_id": 37743493147,
+    "artifact_id": 11534244606,
+    "evidence_json_sha256": "2a9e14beb629451453cdaaf2bdd7e09232d942439f2afe0ff05acd87a9f29f3c7",
+    "status": "validated",
+    "database_migration": "not_executed"
+  },
+  "deploy": {
+    "run_id": 37743848722,
+    "artifact_id": 11535317285,
+    "evidence_json_sha256": "d80a1e0b98b9d82cda9c25f3c054d6942f7d50fe390382ebb052dc0bc0f53758",
+    "status": "passed",
+    "database_migration": "heads_applied",
+    "database_head_independent_check": "024_tiktok_oauth_jobs",
+    "health_status_codes": [200, 200, 200],
+    "tiktok_egress_observed_ip": "38.55.145.52",
+    "post_deploy_container_count": 11,
+    "post_deploy_frontend_image_matches": true,
+    "post_deploy_backend_and_retrieval_unchanged": true,
+    "persistent_proxy_config_bind": true
+  },
+  "browser_live_status_validation": "UI_UNAVAILABLE",
+  "browser_validation_note": "User withdrew earlier success-banner answer and reports that refresh in the Codex in-app browser keeps spinning. Authenticated page behavior remains unverified.",
+  "independent_public_probe": {
+    "observed_at_utc": "2026-10-08T07:48:05Z",
+    "paths": ["/healthz", "/v1/health", "/v1/health/ready", "/login", "/settings/channels"],
+    "status_codes": [200, 200, 200, 200, 200],
+    "rootless_container_count": 11,
+    "frontend_container_healthy": true
+  },
+  "independent_unauthenticated_api_probe": {
+    "paths": ["/v1/settings/channels", "/v1/settings/stores", "/v1/auth/me"],
+    "status_codes": [401, 401, 401],
+    "elapsed_ms": [1804, 1567, 1339]
+  },
+  "same_callback_replay_validated": false,
+  "g1_status": "partial"
+}
