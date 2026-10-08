@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_oauth_new_attempt_not_observed_at_callback",
+  "captured_at_utc": "2026-10-08T06:32:20Z",
+  "environment": "staging",
+  "observation_window_utc": {
+    "from": "2026-10-08T05:32:00Z",
+    "to": "2026-10-08T06:32:20Z"
+  },
+  "public_ingress_and_staging_proxy": {
+    "oauth_starts": [
+      {"at_utc": "2026-10-08T05:32:49Z", "http_status": 200},
+      {"at_utc": "2026-10-08T05:51:07Z", "http_status": 200}
+    ],
+    "authorized_callback_requests_after_starts": 0
+  },
+  "database": {
+    "oauth_jobs_total": 1,
+    "latest_completed_oauth_job_at_utc": "2026-10-08T03:13:38Z",
+    "successful_authorization_audits_total": 6
+  },
+  "browser_observation": {
+    "user_reported_success_on_crm_channel_page": true,
+    "in_app_browser_existing_channel_last_sync_at_local": "2026-10-08T11:13:38+08:00",
+    "current_attempt_verified_connected": false
+  },
+  "configuration": {
+    "redirect_host": "staging.overselfx.com",
+    "redirect_path": "/v1/integrations/tiktok/oauth/callback",
+    "market": "US"
+  },
+  "conclusion": {
+    "existing_channel_connected": true,
+    "new_authorization_success_proven": false,
+    "failure_boundary": "before_public_ingress_or_before_authorization_redirect",
+    "root_cause_confirmed": false,
+    "g1_signed": false,
+    "production_changed": false,
+    "sensitive_values_included": false
+  }
+}

@@ -49,7 +49,7 @@ export default function ChannelsPage() {
     if (params.get("oauth") === "tiktok") {
       const status = params.get("status");
       const jobId = params.get("job");
-      if (status === "processing" && jobId && /^[0-9a-f-]{36}$/i.test(jobId)) {
+      if ((status === "processing" || status === "connected") && jobId && /^[0-9a-f-]{36}$/i.test(jobId)) {
         let cancelled = false;
         let timer: number | undefined;
         let attempts = 0;
@@ -84,12 +84,11 @@ export default function ChannelsPage() {
         timer = window.setTimeout(() => void poll(), 500);
         return () => { cancelled = true; window.clearTimeout(timer); };
       }
-      const connected = status === "connected";
       setNotice(
-        connected
+        status === "connected" || status === "processing"
           ? en
-            ? "TikTok Shop authorization completed. Read APIs remain disabled until the next gate."
-            : "TikTok Shop 授权已完成；只读 API 仍需下一阶段放行。"
+            ? "Could not verify this TikTok Shop authorization. Please authorize again."
+            : "无法确认此次 TikTok Shop 授权，请重新授权。"
           : en
             ? "TikTok Shop authorization was cancelled or failed."
             : "TikTok Shop 授权已取消或失败。",
@@ -100,6 +99,7 @@ export default function ChannelsPage() {
 
   async function beginOAuth() {
     if (!selectedStoreId || authorizing) return;
+    setNotice("");
     setAuthorizing(true);
     try {
       const result = await startTikTokOAuth(selectedStoreId);

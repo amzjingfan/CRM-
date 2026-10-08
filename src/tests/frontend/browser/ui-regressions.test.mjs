@@ -242,6 +242,43 @@ test("TikTok OAuth processing return polls and shows the verified result", async
   }
 });
 
+test("TikTok OAuth connected URL does not claim success without a verified job", async () => {
+  const jobId = "00000000-0000-4000-8000-0000000000e2";
+  const { context, page } = await openPage(
+    `/settings/channels?oauth=tiktok&status=connected&job=${jobId}`,
+    { "GET /v1/settings/stores": [store] },
+    async (browserContext) => {
+      await browserContext.route(`**/v1/settings/channels/tiktok/oauth/jobs/${jobId}`, async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+          body: JSON.stringify({ code: 0, message: "ok", data: { status: "failed" } }),
+        });
+      });
+    },
+  );
+  try {
+    await page.getByRole("status").getByText("授权未完成").waitFor({ timeout: 8000 });
+    assert.equal(await page.getByRole("status").getByText("授权已完成").count(), 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("TikTok OAuth connected URL without a job asks for a new authorization", async () => {
+  const { context, page } = await openPage(
+    "/settings/channels?oauth=tiktok&status=connected",
+    { "GET /v1/settings/stores": [store] },
+  );
+  try {
+    await page.getByRole("status").getByText("无法确认此次 TikTok Shop 授权").waitFor();
+    assert.equal(await page.getByRole("status").getByText("授权已完成").count(), 0);
+  } finally {
+    await context.close();
+  }
+});
+
 test("failed channel and team loads do not claim there are no stores", async () => {
   for (const [path, endpoint] of [["/settings/channels", "/v1/settings/channels"], ["/settings/team", "/v1/settings/team"]]) {
     const { context, page } = await openPage(path, {}, async (context) => {
