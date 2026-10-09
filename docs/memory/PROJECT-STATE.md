@@ -11,16 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp003-g2-live-validation
-Governance base SHA: 81ed505bf85e70ecf09c11594ad4479be262a346
-CANDIDATE_SUBJECT_SHA: c46f3d4b1016cd6fa004450c5202207b121f682a
+Working branch at this snapshot: feature/mvp003-g2-subscription-validation
+Governance base SHA: 4707e531845f4c016081341c17032e12e6fb408a
+CANDIDATE_SUBJECT_SHA: 4bb25c9ee6e12caf1a956598658b6ca2bd800877
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
-2026-10-09 G2 代码预备 PR #101 已合入 `main`；获授权的单后端镜像发布、六角色不可变摘要预取及 staging 显式 G2 模式 validate/deploy 均通过。部署证据显示受审后端摘要、迁移头、三个公网健康接口、固定出口与只读/Webhook 模式符合预期；消息写入、高风险写入、自动回复仍关闭。当前尚未只读查询订阅，也未接收官方真实事件；PR #102 准备在 staging Runner 核对运行后端摘要并读取低敏订阅摘要。`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录见 [IR](../records/implementation/IR-MVP-003-20261009-R02.md)、[TR](../reports/tests/TR-MVP-003-20261009-R02.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R02.md)、[预检](../../release/evidence/staging/crm-staging-g2-preflight-20261009.json)与[部署部分证据](../../release/evidence/staging/crm-staging-g2-backend-rollout-20261009.json)。合并后的主分支三个索引仍标为 `CANDIDATE_VIEW`，需从主分支源记录重建为 `CURRENT`，当前标记 `INDEX_STALE`。
+2026-10-09 G2 代码预备 PR #101 和只读诊断 PR #102 已合入 `main`；单后端镜像发布、六角色不可变摘要预取及 staging 显式 G2 模式 validate/deploy 均通过，消息写入、高风险写入、自动回复仍关闭。只读现场诊断核对了运行后端摘要，Partner Center 当前订阅数为 0。新分支已准备固定 `NEW_MESSAGE` 与 staging 回调地址的一次性注册工具，但未获本次外部写入批准，未执行 PUT，也未接收官方真实事件。`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录见 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)、[部署](../../release/evidence/staging/crm-staging-g2-backend-rollout-20261009.json)与[订阅读取](../../release/evidence/staging/crm-staging-g2-subscription-read-20261009.json)。合并后的主分支三个索引仍标为 `CANDIDATE_VIEW`，需从主分支源记录重建为 `CURRENT`，当前标记 `INDEX_STALE`。
 
 `MVP-OAUTH-REDIRECT-001` 已由 PR #53 合入 `main`。用户重新选择 North America seller 与 US 后完成 TikTok 授权，成功页自动返回 CRM；此前卖家类型拒绝系操作选择错误，不再作为当前阻塞。现场只读预检中旧版物流 `202309` 成功，增强物流 `202604` 返回业务码 `11007009`，含义未确认，不能将两者混同；Token 生命周期、店铺隔离和重复回调现场证据仍未关闭 G1。production 未变。
 
@@ -122,7 +122,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 阻塞、决定与风险
 
 - G0 staging 恢复/回滚现场与 G1 核心口径通过；G1-L、G2～G6 尚未全部取得真实环境证据，G8 保持阻塞，production 未部署。
-- 2026-10-09 最新 OAuth 回调和 job 终态真实成功，2026-10-04 自然刷新也已通过。用户决定现场 callback 二次 GET 不阻断 G1 核心；增强物流 `202604` 对五笔不同 TikTok 配送订单仍返回 `11007009`，须取得合格 CBT 首程订单或平台说明并在 G8 前通过。G2 staging 只读与 Webhook 开关现已受控开启，当前订阅尚未重新核对，仍不能把“已部署”当作已投递。
+- 2026-10-09 最新 OAuth 回调和 job 终态真实成功，2026-10-04 自然刷新也已通过。用户决定现场 callback 二次 GET 不阻断 G1 核心；增强物流 `202604` 对五笔不同 TikTok 配送订单仍返回 `11007009`，须取得合格 CBT 首程订单或平台说明并在 G8 前通过。G2 staging 只读与 Webhook 开关已受控开启；最新订阅数 0，尚无官方投递。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
 - staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 2026-10-09 G2 后端、2026-10-08 前端与既有分层检索不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复健康，G2 部署又复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
@@ -135,6 +135,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 合并 PR #102 后从 staging Runner 只读核对当前 TikTok Webhook 订阅；按结果准备精确最小订阅变更与真实投递验收，默认关闭模式的恢复路径仍须现场验证。
+1. 完成一次性 `NEW_MESSAGE` staging 订阅工具的 PR/CI 和主分支合并；核对官方适用版本并取得精确外部写入授权后才执行 PUT 与只读对账。
 2. 将增强物流 `202604` 保留为 G1-L；取得已确认适用的 CBT 首程订单或平台说明后重测，并核对固定出口告警。
-3. 合并只读订阅诊断后核对 Partner Center 当前订阅；精确批准最小主题后完成官方投递、重试、乱序与审计，并重建主分支记录索引。G8 与 production 仍为 No-Go。
+3. 订阅确认后触发官方真实事件，核对签名、店铺绑定、重试、乱序和审计；验证默认关闭模式恢复，并重建主分支记录索引。G8 与 production 仍为 No-Go。

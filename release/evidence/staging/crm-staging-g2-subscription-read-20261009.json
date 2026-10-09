@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_webhook_subscription_read_summary",
+  "captured_at_utc": "2026-10-09T03:27:03.7933458Z",
+  "environment": "staging",
+  "workflow_run_id": 37879307329,
+  "artifact_id": 11593667583,
+  "artifact_json_sha256": "dc9f77033c76c9ee891f32e4d4edcd42c47169bd29c74b7d81013ccb1be568f1",
+  "source_main_sha": "4707e531845f4c016081341c17032e12e6fb408a",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:b889525ff1b68b33ed01894d47973e520f08a40017ac8f3440eb04951c807f53",
+  "status": "passed",
+  "subscription_count": 0,
+  "event_types": [],
+  "matching_address_count": 0,
+  "unexpected_address_count": 0,
+  "subscription_write_executed": false,
+  "official_delivery_verified": false,
+  "production_release": false,
+  "sensitive_values_included": false
+}

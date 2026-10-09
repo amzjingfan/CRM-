@@ -22,6 +22,8 @@
 
 2026-10-09 后续 G2 预备代码由 PR #101 合入 main `81ed505bf85e70ecf09c11594ad4479be262a346`；单个 backend 镜像发布、六角色不可变摘要预取、staging 显式 G2 模式 validate/deploy 均通过。部署证据显示受审后端摘要、迁移头、三个公网健康 200、固定出口及只读/Webhook 开关；独立公网复核 ready/渠道页为 200、无签名 Webhook GET 为 405、TLS 校验为 0。新只读订阅诊断候选 `c46f3d4b1016cd6fa004450c5202207b121f682a` 的后端测试 `1698 passed, 3 skipped, 2 warnings`，Ruff、mypy、工作流 PowerShell 解析及 PR #102 后端/前端 CI 通过；该候选尚未合入或运行。订阅现状和官方真实投递仍未验，G2 未通过。见 [后端发布与部署部分证据](../../release/evidence/staging/crm-staging-g2-backend-rollout-20261009.json)。
 
+2026-10-09 PR #102 此后合入 main `4707e531845f4c016081341c17032e12e6fb408a`，只读运行 `37879307329` 核对当前订阅数 0、预期地址匹配数 0，无外部写入，见[订阅读取证据](../../release/evidence/staging/crm-staging-g2-subscription-read-20261009.json)。一次性 `NEW_MESSAGE` 注册候选 `4bb25c9ee6e12caf1a956598658b6ca2bd800877` 的正确项目入口 `uv run pytest -q` 结果 `1704 passed, 18 skipped, 2 warnings`；六项定向测试、Ruff、mypy 170 文件、YAML 与两个 PowerShell run 块解析通过。第一次显式指定测试目录因未载入项目配置导致 14 个 `_support` 导入在收集阶段失败，已用规定入口重跑通过。注册工具尚未合入、获外部写入授权或执行；官方投递仍无现场证据，G2 未通过。
+
 ## BGE 正式基线
 
 - 质量：Dense Recall@20 = 100%，Rerank Recall@5 = 100%，MRR = 1，nDCG = 1，引用合法率 = 100%，无答案拒判率 = 100%。

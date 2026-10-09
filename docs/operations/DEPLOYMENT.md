@@ -40,6 +40,8 @@ G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-
 
 主机 SSH 不可用时，`inspect-staging-tiktok-webhooks.yml` 可在受审的 `main` 提交和在线 staging Runner 上执行一次只读订阅查询。它先核对运行中 backend 的不可变摘要，再在该容器的新进程中临时启用真实只读能力；要求恰好一个已连接 TikTok 渠道，只调用 `GET /event/202309/webhooks`。机器证据只记录订阅数、主题及与预期回调地址的匹配数，不输出 URL、请求 ID、店铺标识或凭据；工作流不创建、修改、删除订阅，也不切换常驻服务环境。
 
+2026-10-09 只读查询确认当前订阅为 0，见[低敏证据](../../release/evidence/staging/crm-staging-g2-subscription-read-20261009.json)。一次性 `subscribe-staging-tiktok-new-message.yml` 只准备在**另外取得精确外部写入授权后**，从 main 对已核对的 staging backend 执行最多一次 `PUT /event/202309/webhooks`：唯一主题 `NEW_MESSAGE`，唯一地址 `https://staging.overselfx.com/v1/webhooks/tiktok`。调用前重新 GET；若已是精确目标则不写，若有任何其他订阅则失败关闭。PUT 后 GET 对账；连接失败或结果不确定时不自动重试，需另行只读核对。脚本不接受动态主题/地址，输出仅包含状态、数量和 HTTP 状态码。所用 `202309` 路径及正文来自本地 TikTok 官方 OAS；在线 Partner Center 当前端页面未返回完整字段或更新版本，执行前仍须复核官方最新适用版本。此工具不发布镜像、不改生产，也不证明官方事件已投递。
+
 ### TikTok 固定出口契约
 
 staging 的 TikTok 出站与 split-ingress 入口分离：应用只经 `socks5h://tiktok-egress:1080` 访问独立 helper，helper 再以 `crm-egress@38.55.145.52` 建立 SSH 动态转发。公网账号只允许 local/dynamic forwarding 到 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 和门禁专用 `checkip.amazonaws.com:443`；不得复用 `crm-tunnel`、开放代理端口或放宽为任意目标。

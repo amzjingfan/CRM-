@@ -1,0 +1,143 @@
+name: Subscribe staging TikTok NEW_MESSAGE Webhook
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_target:
+        description: Type staging for this staging-only external subscription change
+        required: true
+        type: string
+      confirm_subscription:
+        description: Exact approved NEW_MESSAGE topic and staging callback address
+        required: true
+        type: string
+      expected_backend_image:
+        description: Exact running backend repository@sha256 digest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-staging-production-gates
+  cancel-in-progress: false
+
+jobs:
+  subscribe:
+    name: Register one reviewed TikTok topic
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    runs-on: [self-hosted, linux, x64, crm-staging]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Fetch exact reviewed one-time subscription script
+        id: source
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRM_TARGET: ${{ inputs.confirm_target }}
+          CONFIRM_SUBSCRIPTION: ${{ inputs.confirm_subscription }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          if ($env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
+              $env:CONFIRM_TARGET -cne 'staging' -or
+              $env:CONFIRM_SUBSCRIPTION -cne 'NEW_MESSAGE@https://staging.overselfx.com/v1/webhooks/tiktok' -or
+              $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$') {
+            throw 'The approved staging subscription target or image is invalid.'
+          }
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = 'application/vnd.github+json'
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+          $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/git/commits/$env:GITHUB_SHA" -Headers $headers
+          if ([string]$commit.sha -cne $env:GITHUB_SHA) {
+            throw 'The dispatch SHA is not a GitHub commit.'
+          }
+          $source = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/contents/src/backend/scripts/subscribe_tiktok_new_message_webhook.py?ref=$env:GITHUB_SHA" -Headers $headers
+          if ($source.type -cne 'file' -or $source.encoding -cne 'base64' -or
+              [string]$source.sha -cnotmatch '^[0-9a-f]{40}$') {
+            throw 'The subscription source is invalid.'
+          }
+          $scriptBytes = [Convert]::FromBase64String([string]$source.content)
+          if ($scriptBytes.Length -lt 100 -or $scriptBytes.Length -gt 20000) {
+            throw 'The subscription source size is invalid.'
+          }
+          $blobPrefix = [Text.Encoding]::ASCII.GetBytes("blob $($scriptBytes.Length)`0")
+          [byte[]]$blobInput = $blobPrefix + $scriptBytes
+          $blobSha = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData($blobInput)).ToLowerInvariant()
+          if ($blobSha -cne $source.sha) {
+            throw 'The subscription source failed Git blob verification.'
+          }
+          $scriptPath = Join-Path $env:RUNNER_TEMP "crm-g2-webhook-subscribe-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.py"
+          [IO.File]::WriteAllBytes($scriptPath, $scriptBytes)
+          "script_path=$scriptPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Register at most one topic and reconcile by read
+        id: write
+        shell: pwsh
+        env:
+          CONFIRM_SUBSCRIPTION: ${{ inputs.confirm_subscription }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+          SCRIPT_PATH: ${{ steps.source.outputs.script_path }}
+        run: |
+          $runnerUid = (& id -u).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runnerUid -notmatch '^[1-9][0-9]*$') {
+            throw 'Unable to resolve Rootless Docker UID.'
+          }
+          $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
+          $containers = @(& docker --host $dockerHost ps --filter 'label=com.docker.compose.project=crm-staging' --filter 'label=com.docker.compose.service=backend' --format '{{.ID}}')
+          if ($LASTEXITCODE -ne 0 -or $containers.Count -ne 1) {
+            throw 'Expected exactly one running staging backend.'
+          }
+          $actualImage = (& docker --host $dockerHost inspect --format '{{.Config.Image}}' $containers[0]).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualImage -cne $env:EXPECTED_BACKEND_IMAGE) {
+            throw 'Running backend digest does not match the reviewed input.'
+          }
+          $summaryText = Get-Content -LiteralPath $env:SCRIPT_PATH -Raw -Encoding UTF8 |
+            & docker --host $dockerHost exec -i -e "CRM_G2_WEBHOOK_SUBSCRIPTION_CONFIRM=$env:CONFIRM_SUBSCRIPTION" $containers[0] python -
+          $scriptExit = $LASTEXITCODE
+          if ([string]::IsNullOrWhiteSpace([string]$summaryText)) {
+            throw 'One-time subscription returned no low-sensitive summary.'
+          }
+          $summary = $summaryText | ConvertFrom-Json -AsHashtable
+          $allowedKeys = @('event_type', 'matching_address_count', 'post_read_succeeded', 'status', 'subscription_count', 'write_attempted', 'write_http_status')
+          if ($null -eq $summary -or
+              @($summary.Keys | Where-Object { $_ -notin $allowedKeys }).Count -ne 0 -or
+              [string]$summary.event_type -cne 'NEW_MESSAGE' -or
+              [string]$summary.status -notin @('confirmed', 'already_present', 'unknown')) {
+            throw 'One-time subscription output did not match the low-sensitive schema.'
+          }
+          $evidence = @{
+            schema_version = 1
+            evidence_type = 'staging_tiktok_new_message_subscription'
+            generated_at_utc = [DateTime]::UtcNow.ToString('o')
+            source_sha = $env:GITHUB_SHA
+            backend_image = $actualImage
+            status = [string]$summary.status
+            event_type = 'NEW_MESSAGE'
+            subscription_count = $summary.subscription_count
+            matching_address_count = $summary.matching_address_count
+            write_attempted = [bool]$summary.write_attempted
+            write_http_status = $summary.write_http_status
+            post_read_succeeded = $summary.post_read_succeeded
+            production_release = $false
+          }
+          $evidencePath = Join-Path $env:RUNNER_TEMP "crm-g2-subscription-write-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
+          $evidence | ConvertTo-Json -Depth 5 | Out-File -LiteralPath $evidencePath -Encoding utf8
+          if ($scriptExit -ne 0 -or $summary.status -eq 'unknown') {
+            throw 'External subscription result is unknown; do not retry before a separate read-only reconciliation.'
+          }
+
+      - name: Upload low-sensitive reconciliation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: staging-tiktok-new-message-subscription-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crm-g2-subscription-write-${{ github.run_id }}-${{ github.run_attempt }}.json
+          if-no-files-found: warn
+          retention-days: 30
