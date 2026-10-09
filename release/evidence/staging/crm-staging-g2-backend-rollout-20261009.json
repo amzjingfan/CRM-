@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g2_backend_rollout_partial",
+  "captured_at_utc": "2026-10-09T03:16:30Z",
+  "environment": "staging",
+  "reviewed_main_sha": "81ed505bf85e70ecf09c11594ad4479be262a346",
+  "backend_image_publication": {
+    "run_id": 37875676996,
+    "artifact_id": 11592381152,
+    "artifact_json_sha256": "67535be37fab02daeb7d41c530895b607363c328623234d7e35a6abcd4f1eaef",
+    "source_sha_matches_main": true,
+    "manifest_status": "PASS",
+    "reference": "ghcr.io/cp11-gh/crm-backend@sha256:b889525ff1b68b33ed01894d47973e520f08a40017ac8f3440eb04951c807f53",
+    "compressed_bytes": 110056622,
+    "largest_layer_bytes": 33258433,
+    "published_repository_count": 1
+  },
+  "unchanged_images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:c56443c8a291c84b2437190f6ce120c8cb29544f98d503f6a660722a29d0248a",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+  "validate": {
+    "run_id": 37875812768,
+    "artifact_id": 11592169071,
+    "artifact_json_sha256": "799cae5367f05161d8dd614dd27b760ca4b7193ddf725693bdcfdfc87f677849",
+    "status": "validated",
+    "tiktok_webhook_read_enabled": true,
+    "overlay_sha256": "2b3daa8d36a564028217f1f776bc4a499605c9439676a80efee5cf9c11a07d74",
+    "database_migration": "not_executed"
+  },
+  "prefetch": {
+    "run_id": 37876081650,
+    "artifact_id": 11592788735,
+    "artifact_json_sha256": "f8e9ebc0b3a3c4fa7422b2c0ee7c19d4857d435e8b869ec053eb603daab7ec51",
+    "status": "passed",
+    "image_role_count": 6,
+    "service_mutation": false
+  },
+  "deploy": {
+    "run_id": 37878076137,
+    "artifact_id": 11593336373,
+    "artifact_json_sha256": "97e4667f801b9ba507060be3187a51c2613c87787df1a8c9c7a235374bffca17",
+    "status": "passed",
+    "database_migration": "heads_applied",
+    "tiktok_webhook_read_enabled": true,
+    "health_status_codes": [200, 200, 200],
+    "egress_status": "passed",
+    "observed_egress_ip": "38.55.145.52"
+  },
+  "independent_public_probe": {
+    "ready_status_code": 200,
+    "channels_status_code": 200,
+    "unsigned_webhook_get_status_code": 405,
+    "tls_verify_result": 0,
+    "remote_ip": "38.55.145.52"
+  },
+  "current_subscription_query_executed": false,
+  "official_delivery_verified": false,
+  "g2_accepted": false,
+  "production_changed": false,
+  "sensitive_values_included": false
+}

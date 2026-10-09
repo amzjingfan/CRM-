@@ -16,9 +16,11 @@
 
 2026-10-09 Edge 保留的新 callback 为 303，最新 job `connected`，因此上次 TikTok 授权页的“连接失败”不是本次最新任务的结果。新标签页打开旧 Network 项未产生第二次 callback GET，重放仍未验收。增强物流对五笔不同的 TikTok 配送订单均返回平台业务码 `11007009`；已确认固定出口、所需 Scope 和 `shop_cipher`，但 CBT 首程适用订单及平台开通状态未知。后端 TikTok 只读聚焦测试本次 26 passed。见 [低敏诊断证据](../../release/evidence/staging/crm-staging-g1-live-diagnostics-20261009.json)，G1 未签署。
 
-2026-10-09 后续用户将 G1 本阶段验收限定为首次真实授权完成、Scope/Token 生命周期、非物流只读和隔离，现场二次 callback GET 不再阻断；增强物流 `202604` 独立留在 G1-L，最终 G8 前仍须通过。只读复核最新 job 为 `connected`、完成且无错误、临时密文字段为空、匹配成功审计 1 条、渠道 connected；因此按**新口径**，G1 核心范围在 staging 通过。G2 可启动准备，但 Partner Center 当前订阅数 0，staging 真实只读与 Webhook 开关均为 false，真实投递仍未验证。见 [低敏关闭与预检证据](../../release/evidence/staging/crm-staging-g1-core-closure-20261009.json)；production 和 G8 未放行。
+2026-10-09 后续用户将 G1 本阶段验收限定为首次真实授权完成、Scope/Token 生命周期、非物流只读和隔离，现场二次 callback GET 不再阻断；增强物流 `202604` 独立留在 G1-L，最终 G8 前仍须通过。只读复核最新 job 为 `connected`、完成且无错误、临时密文字段为空、匹配成功审计 1 条、渠道 connected；因此按**新口径**，G1 核心范围在 staging 通过。G2 启动前的当时预检显示 Partner Center 订阅数 0、staging 真实只读与 Webhook 开关均为 false；后续部署状态见下段，真实投递仍未验证。见 [低敏关闭与预检证据](../../release/evidence/staging/crm-staging-g1-core-closure-20261009.json)；production 和 G8 未放行。
 
 2026-10-09 G2 候选分支完成签名先验、重复通知正文校验、未绑定店铺失败关闭、乱序消息会话排序保护及受限 staging 开关的本机预检。另备仅发布当前 main 后端镜像的工作流。TikTok 平台定向测试 33 passed；完整后端 `1696 passed, 3 skipped, 2 warnings`；staging 门禁测试 `151 passed, 3 skipped`；Ruff 检查/格式和 mypy 通过。公网 `/v1/webhooks/tiktok` 的无签名 GET 为 405、ready 为 200、TLS 校验结果 0。当前主机 SSH 公钥被 staging 拒绝，浏览器工具未提供已登录 Partner Center 会话；本次没有新订阅查询、配置切换或真实事件投递。见 [低敏预检证据](../../release/evidence/staging/crm-staging-g2-preflight-20261009.json)。本机通过仅证明代码/配置契约，G2 仍待现场验收。
+
+2026-10-09 后续 G2 预备代码由 PR #101 合入 main `81ed505bf85e70ecf09c11594ad4479be262a346`；单个 backend 镜像发布、六角色不可变摘要预取、staging 显式 G2 模式 validate/deploy 均通过。部署证据显示受审后端摘要、迁移头、三个公网健康 200、固定出口及只读/Webhook 开关；独立公网复核 ready/渠道页为 200、无签名 Webhook GET 为 405、TLS 校验为 0。新只读订阅诊断候选 `c46f3d4b1016cd6fa004450c5202207b121f682a` 的后端测试 `1698 passed, 3 skipped, 2 warnings`，Ruff、mypy、工作流 PowerShell 解析及 PR #102 后端/前端 CI 通过；该候选尚未合入或运行。订阅现状和官方真实投递仍未验，G2 未通过。见 [后端发布与部署部分证据](../../release/evidence/staging/crm-staging-g2-backend-rollout-20261009.json)。
 
 ## BGE 正式基线
 

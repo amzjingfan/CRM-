@@ -38,6 +38,8 @@ G2 的 staging 真实读取与 Webhook 使用部署门禁显式参数 `enable_ti
 
 G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-backend-image.yml` 的 `staging-backend` 确认词，仅发布 `crm-backend` 并核对不可变摘要和压缩层大小；沿用已验证的前端和检索摘要，避免重建大体积检索镜像。私有镜像发布仍按独立授权边界执行，发布后还需 staging 预取、受控部署和真实 Webhook 验收。
 
+主机 SSH 不可用时，`inspect-staging-tiktok-webhooks.yml` 可在受审的 `main` 提交和在线 staging Runner 上执行一次只读订阅查询。它先核对运行中 backend 的不可变摘要，再在该容器的新进程中临时启用真实只读能力；要求恰好一个已连接 TikTok 渠道，只调用 `GET /event/202309/webhooks`。机器证据只记录订阅数、主题及与预期回调地址的匹配数，不输出 URL、请求 ID、店铺标识或凭据；工作流不创建、修改、删除订阅，也不切换常驻服务环境。
+
 ### TikTok 固定出口契约
 
 staging 的 TikTok 出站与 split-ingress 入口分离：应用只经 `socks5h://tiktok-egress:1080` 访问独立 helper，helper 再以 `crm-egress@38.55.145.52` 建立 SSH 动态转发。公网账号只允许 local/dynamic forwarding 到 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 和门禁专用 `checkip.amazonaws.com:443`；不得复用 `crm-tunnel`、开放代理端口或放宽为任意目标。
