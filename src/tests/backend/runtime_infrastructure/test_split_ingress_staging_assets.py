@@ -9,9 +9,11 @@ import time
 from pathlib import Path
 
 import pytest
+import yaml
 from _support import SOURCE_ROOT
 
 ROOTLESS_OVERLAY = SOURCE_ROOT / "compose" / "docker-compose.rootless-staging.yml"
+ROOTLESS_WEBHOOK_OVERLAY = SOURCE_ROOT / "compose" / "docker-compose.rootless-staging-webhook.yml"
 ROOTLESS_TUNNEL_NGINX = SOURCE_ROOT / "deploy" / "nginx" / "nginx-tunnel.conf"
 ROOTLESS_DIR = SOURCE_ROOT / "deploy" / "staging" / "rootless"
 TUNNEL_UNIT = ROOTLESS_DIR / "systemd" / "user" / "crm-staging-tunnel.service"
@@ -23,6 +25,7 @@ PUBLIC_NGINX_DIR = ROOTLESS_DIR / "public-nginx"
 PUBLIC_HTTP_VHOST = PUBLIC_NGINX_DIR / "staging.overselfx.com-http.conf"
 PUBLIC_HTTPS_VHOST = PUBLIC_NGINX_DIR / "staging.overselfx.com.conf"
 SPLIT_INGRESS_VERIFIER = ROOTLESS_DIR / "verify-split-ingress.sh"
+BACKEND_IMAGE_WORKFLOW = SOURCE_ROOT.parent / ".github" / "workflows" / "publish-backend-image.yml"
 
 
 def test_rootless_overlay_exposes_only_split_ingress_http_port() -> None:
@@ -33,6 +36,35 @@ def test_rootless_overlay_exposes_only_split_ingress_http_port() -> None:
     assert "10080" not in source
     assert "10443" not in source
     assert "nginx-tunnel.conf" in source
+
+
+def test_g2_webhook_overlay_only_grants_read_and_receive_to_backend_and_worker() -> None:
+    """G2 临时模式不得扩展到其他进程、写能力、自动回复或入口端口。"""
+    overlay = yaml.safe_load(ROOTLESS_WEBHOOK_OVERLAY.read_text(encoding="utf-8"))
+    services = overlay["services"]
+    assert set(services) == {"backend", "worker"}
+    for service in services.values():
+        assert set(service) == {"environment"}
+        assert service["environment"] == {
+            "REAL_TIKTOK_READ_ENABLED": "true",
+            "REAL_TIKTOK_WEBHOOK_ENABLED": "true",
+            "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": "false",
+            "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": "false",
+            "AUTO_REPLY_ENABLED": "false",
+        }
+
+
+def test_staging_backend_image_can_be_published_without_rebuilding_large_retrieval_image() -> None:
+    """G2 后端更新只构建一个受审镜像，并绑定当前 main 的精确提交。"""
+    source = BACKEND_IMAGE_WORKFLOW.read_text(encoding="utf-8")
+    assert "ghcr.io/cp11-gh/crm-backend" in source
+    assert "staging-backend" in source
+    assert "$(git rev-parse FETCH_HEAD)" in source
+    assert "src/docker/Dockerfile.backend" in source
+    assert "docker/build-push-action@" in source
+    assert "docker buildx imagetools inspect" in source
+    assert "crm-frontend" not in source
+    assert "crm-retrieval-model-service" not in source
 
 
 def test_inner_proxy_preserves_https_origin_without_terminating_tls() -> None:

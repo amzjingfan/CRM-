@@ -31,7 +31,8 @@ param(
     [string]$DockerHost,
 
     [switch]$ValidateOnly,
-    [switch]$Deploy
+    [switch]$Deploy,
+    [switch]$EnableTikTokWebhookRead
 )
 
 Set-StrictMode -Version Latest
@@ -72,6 +73,7 @@ $DisabledCapabilityVariables = @(
     "AI_MARKETING_ENABLED",
     "AUTO_REPLY_ENABLED"
 )
+$WebhookReadCapabilities = @("REAL_TIKTOK_READ_ENABLED", "REAL_TIKTOK_WEBHOOK_ENABLED")
 $StagingTlsInterpolationSentinel = "/__crm_staging_tls_not_used__"
 
 function Assert-StagingTarget {
@@ -292,7 +294,8 @@ function Assert-ProductionComposeContract {
         [Parameter(Mandatory = $true)]$Config,
         [Parameter(Mandatory = $true)][hashtable]$ExpectedImages,
         [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir,
-        [Parameter(Mandatory = $true)][string]$ExpectedEgressSecretDir
+        [Parameter(Mandatory = $true)][string]$ExpectedEgressSecretDir,
+        [switch]$EnableTikTokWebhookRead
     )
 
     foreach ($serviceName in $ExpectedImages.Keys) {
@@ -358,8 +361,10 @@ function Assert-ProductionComposeContract {
             throw "Production Compose must set APP_ENV=staging for service: $serviceName"
         }
         foreach ($capabilityName in $DisabledCapabilityVariables) {
-            if ([string]$applicationEnvironment.$capabilityName -ne "false") {
-                throw "Production Compose must fail closed for capability: $capabilityName"
+            $expectedValue = if ($EnableTikTokWebhookRead -and $serviceName -in @("backend", "worker") -and
+                $capabilityName -in $WebhookReadCapabilities) { "true" } else { "false" }
+            if ([string]$applicationEnvironment.$capabilityName -cne $expectedValue) {
+                throw "Staging Compose capability does not match reviewed mode: $serviceName/$capabilityName"
             }
         }
         if ($serviceName -in @("backend", "worker", "jobs")) {
@@ -525,8 +530,13 @@ function Write-Evidence {
         database_migration = $MigrationStatus
         rootless_overlay_sha256 = (Get-FileHash -LiteralPath $rootlessOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_egress_overlay_sha256 = (Get-FileHash -LiteralPath $egressOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
+        tiktok_webhook_read_enabled = [bool]$EnableTikTokWebhookRead
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
         health_checks = $HealthChecks
+    }
+    if ($EnableTikTokWebhookRead) {
+        $evidence["tiktok_webhook_read_overlay_sha256"] =
+            (Get-FileHash -LiteralPath $webhookReadOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
     }
     if ($null -ne $EgressVerification) {
         $evidence["tiktok_egress"] = $EgressVerification
@@ -574,11 +584,15 @@ if ($configuredRetrievalModelImage -ne $RetrievalModelImage) {
 
 $egressOverlay = Join-Path $sourceRoot "compose/docker-compose.tiktok-egress.yml"
 $rootlessOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging.yml"
+$webhookReadOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-webhook.yml"
 if (-not (Test-Path -LiteralPath $egressOverlay -PathType Leaf)) {
     throw "The repository-fixed TikTok egress overlay does not exist."
 }
 if (-not (Test-Path -LiteralPath $rootlessOverlay -PathType Leaf)) {
     throw "The repository-fixed Rootless staging overlay does not exist."
+}
+if ($EnableTikTokWebhookRead -and -not (Test-Path -LiteralPath $webhookReadOverlay -PathType Leaf)) {
+    throw "The repository-fixed staging Webhook read overlay does not exist."
 }
 
 $savedEnvironment = @{}
@@ -609,6 +623,9 @@ try {
         "-f", (Resolve-Path -LiteralPath $egressOverlay).Path,
         "-f", (Resolve-Path -LiteralPath $rootlessOverlay).Path
     )
+    if ($EnableTikTokWebhookRead) {
+        $composeArguments += @("-f", (Resolve-Path -LiteralPath $webhookReadOverlay).Path)
+    }
     Set-DisabledCapabilities
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
@@ -634,7 +651,8 @@ try {
         "proxy" = $validatedExternalImages["NGINX_IMAGE"]
     }
     Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages `
-        -ExpectedModelAssetDir $modelAssetDir -ExpectedEgressSecretDir $egressSecretDir
+        -ExpectedModelAssetDir $modelAssetDir -ExpectedEgressSecretDir $egressSecretDir `
+        -EnableTikTokWebhookRead:$EnableTikTokWebhookRead
 
     if ($ValidateOnly) {
         Write-Evidence -Status "validated" -HealthChecks @()

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g2_preflight_partial",
+  "captured_at_utc": "2026-10-09T02:32:01Z",
+  "environment": "staging",
+  "repository_base_sha": "26fe6a06f2c8d9cb628cfbfb1e444832599757b5",
+  "candidate_subject_sha": "9988306c7dfeaf0352e963094bdb2aa806072e89",
+  "public_boundary": {
+    "webhook_path": "/v1/webhooks/tiktok",
+    "unsigned_get_http_status": 405,
+    "ready_http_status": 200,
+    "remote_ip": "38.55.145.52",
+    "tls_verify_result": 0,
+    "signed_post_executed": false
+  },
+  "partner_center": {
+    "last_known_subscription_count": 0,
+    "last_known_source": "release/evidence/staging/crm-staging-g1-core-closure-20261009.json",
+    "current_subscription_query_executed": false,
+    "subscription_write_executed": false
+  },
+  "staging_runtime": {
+    "current_container_flags_verified": false,
+    "g2_mode_deployed": false,
+    "ssh_key_offered_but_server_rejected": true,
+    "browser_partner_center_session_available": false
+  },
+  "local_verification": {
+    "targeted_platform_tests": "33 passed in test_tiktok_read.py",
+    "full_backend_tests": "1696 passed, 3 skipped, 2 warnings",
+    "mypy": "168 source files, no issues",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "staging_gate_tests": "151 passed, 3 skipped",
+    "backend_only_publish_workflow_test": "1 passed"
+  },
+  "gate_result": {
+    "g2_real_delivery_verified": false,
+    "g2_retry_and_ordering_live_verified": false,
+    "g2_accepted": false,
+    "production_changed": false,
+    "sensitive_values_included": false
+  }
+}

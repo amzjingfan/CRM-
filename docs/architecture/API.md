@@ -57,7 +57,7 @@
 - `GET /settings/channels/tiktok/oauth/jobs/{job_id}` 需要 `settings.channels`、原发起用户和仍有效的店铺访问权；仅返回 `pending/processing/connected/denied/failed`。现有 jobs worker 原子消费 `state`，完成 Token 与店铺校验并清除临时密文；失败或中断要求重新授权，不重放 code。
 - Token 刷新是内部能力，没有公开 Refresh API；解密、刷新或契约校验失败时渠道转为 `expired`。
 - `DELETE /settings/channels/{channel_id}` 撤销本地 Token 可用性并保留审计，不物理删除授权证据。
-- `POST /webhooks/tiktok` 在真实模式只接受官方 `Authorization` 签名，以原始请求体进行常量时间校验。
+- `POST /webhooks/tiktok` 在真实模式只接受官方 `Authorization` 签名，以原始请求体进行常量时间校验；签名失败在数据库查询/写入前返回 401，不占用通知 ID。相同通知 ID 只有原始正文摘要一致且已绑定店铺时返回成功的重复回执；不同正文返回 409，未知店铺的首次及重复通知均返回 404 且不保存载荷。乱序送达的旧消息照常入库，但不覆盖较新消息的会话排序字段。公网版本前缀为 `/v1`。
 - 内部只读适配器覆盖有效店铺、订单、订单详情、物流、客服会话、消息和 Webhook 订阅核对。
 
 ## 错误与状态

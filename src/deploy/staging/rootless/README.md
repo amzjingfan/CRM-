@@ -67,6 +67,10 @@ AI_MARKETING_ENABLED
 AUTO_REPLY_ENABLED
 ```
 
+G2 Webhook 实测只通过 `Staging production gates` 工作流的 `enable_tiktok_webhook_read=true` 显式模式开启。该模式仅适用于 `validate`、`deploy`，在固定四层 Compose 之后叠加 `docker-compose.rootless-staging-webhook.yml`，并逐服务确认 backend/worker 的真实只读与 Webhook 为 true，其他能力和进程保持 false。仓库外 env 文件仍全部为 false；默认模式与 rollback 继续失败关闭。恢复时以相同受审镜像摘要执行默认 `validate`、`deploy`，核对模式证据、容器环境、健康和公网入口；不得把本模式延伸到 production。
+
+若 G2 仅改变后端，先在当前 main 精确 SHA 上使用 `Publish backend image for staging` 工作流发布单个 backend 私有镜像并核对摘要和层大小，再沿用已验证的 frontend、retrieval-model-service 摘要进行预取及门禁。镜像发布需独立授权；不得为方便而重建大体积检索镜像。
+
 TLS 只由新服务器宝塔管理，旧服务器 staging 环境文件不需要 `TLS_CERT_DIR`。常规部署中 backend、frontend 和 retrieval-model-service 必须使用目标远端 main SHA 发布的 `repository@sha256:` 完整摘要；`release/images/mvp-production-gates.json` 中的历史 `f7c0f9f9` 候选不得复用。本轮根据用户明确的 staging 门禁豁免，部署了 source `5099fc08d1ab0efbc30d679649bee32a7395ec36` 发布的三个不可变摘要；已用 `git diff --quiet 5099fc08...98460796 -- src/backend src/frontend src/docker/Dockerfile.backend src/docker/Dockerfile.frontend.prod src/docker/Dockerfile.model-service` 确认它们的全部构建输入与最终运行 subject 一致。该豁免不自动适用于后续或 production 部署。
 
 ## 4. 活动部署顺序

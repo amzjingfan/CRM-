@@ -16,6 +16,11 @@ on:
         description: Type staging to authorize this staging-only operation
         required: true
         type: string
+      enable_tiktok_webhook_read:
+        description: G2 staging only; enable real TikTok read and Webhook for backend and worker
+        required: false
+        default: false
+        type: boolean
       backend_image:
         description: Candidate backend repository@sha256 digest
         required: true
@@ -308,6 +313,7 @@ jobs:
         working-directory: ${{ steps.verify_dispatch_commit.outputs.source_root }}
         env:
           OPERATION: ${{ inputs.operation }}
+          ENABLE_TIKTOK_WEBHOOK_READ: ${{ inputs.enable_tiktok_webhook_read }}
           CONFIRM_TARGET: ${{ inputs.confirm_target }}
           BACKEND_IMAGE_INPUT: ${{ inputs.backend_image }}
           FRONTEND_IMAGE_INPUT: ${{ inputs.frontend_image }}
@@ -328,6 +334,10 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:CRM_STAGING_BASE_URL)) {
             throw "The staging Environment variable CRM_STAGING_BASE_URL is not configured"
           }
+          $enableWebhookRead = $env:ENABLE_TIKTOK_WEBHOOK_READ -ceq "true"
+          if ($enableWebhookRead -and $env:OPERATION -notin @("validate", "deploy")) {
+            throw "The G2 Webhook read mode is only available for staging validate or deploy."
+          }
 
           $evidence = Join-Path $env:RUNNER_TEMP "crm-staging-$env:OPERATION-evidence.json"
           $runnerUid = (& id -u).Trim()
@@ -342,6 +352,9 @@ jobs:
             EvidenceFile = $evidence
           }
           $common["DockerHost"] = $dockerHost
+          if ($enableWebhookRead) {
+            $common["EnableTikTokWebhookRead"] = $true
+          }
 
           switch ($env:OPERATION) {
             "validate" {

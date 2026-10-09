@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp002-finalize-g2-ready-20261009
-Governance base SHA: 1829991c4b780a63a6912a4652f89eea496584ae
-CANDIDATE_SUBJECT_SHA: 9526109e57fe0113451ed2f80c22c5fb2c739d1e
+Working branch at this snapshot: feature/mvp003-g2-webhook-validation
+Governance base SHA: 26fe6a06f2c8d9cb628cfbfb1e444832599757b5
+CANDIDATE_SUBJECT_SHA: 9988306c7dfeaf0352e963094bdb2aa806072e89
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+
+2026-10-09 G2 当前候选已完成本地 Webhook 验签先行、同通知 ID 正文绑定、未绑定店铺失败关闭和旧消息排序保护；部署门禁准备了仅 staging 的真实只读/Webhook 显式模式，并准备只发布 backend 的镜像工作流。公网路径只读预检正常；staging SSH 拒绝当前公钥，Partner Center 当前订阅未复核，镜像未发布、模式未部署、官方事件未投递。`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录见 [IR](../records/implementation/IR-MVP-003-20261009-R01.md)、[TR](../reports/tests/TR-MVP-003-20261009-R01.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R01.md)和[低敏预检](../../release/evidence/staging/crm-staging-g2-preflight-20261009.json)。本分支三个派生索引为 `CANDIDATE_VIEW`。
 
 `MVP-OAUTH-REDIRECT-001` 已由 PR #53 合入 `main`。用户重新选择 North America seller 与 US 后完成 TikTok 授权，成功页自动返回 CRM；此前卖家类型拒绝系操作选择错误，不再作为当前阻塞。现场只读预检中旧版物流 `202309` 成功，增强物流 `202604` 返回业务码 `11007009`，含义未确认，不能将两者混同；Token 生命周期、店铺隔离和重复回调现场证据仍未关闭 G1。production 未变。
 
@@ -133,6 +135,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 按 `../operations/RELEASE-GATES.md` 启动 G2：先核对 Partner Center 订阅事件与地址、staging 开关和安全边界，再进行受控真实 Webhook 投递与审计验证。
+1. 完成 G2 候选 PR 与 CI，取得 backend 私有镜像发布的精确授权后按当前 main SHA 单镜像发布；核对 staging 受控模式、恢复配置与低敏证据。
 2. 将增强物流 `202604` 保留为 G1-L；取得已确认适用的 CBT 首程订单或平台说明后重测，并核对固定出口告警。
-3. 继续 G2～G6 的真实门禁；G8 与 production 仍为 No-Go。
+3. 恢复 staging 受限访问并查询 Partner Center 当前订阅；精确批准最小主题后完成官方投递、重试、乱序与审计，随后继续 G3～G6。G8 与 production 仍为 No-Go。

@@ -1,0 +1,18 @@
+# G2 显式受控模式：仅 staging 接收器与事件 Worker 开启真实读取和 Webhook。
+# 必须放在 rootless-staging overlay 之后；默认部署和回滚不包含此文件。
+services:
+  backend:
+    environment:
+      REAL_TIKTOK_READ_ENABLED: "true"
+      REAL_TIKTOK_WEBHOOK_ENABLED: "true"
+      REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "false"
+      REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"
+      AUTO_REPLY_ENABLED: "false"
+
+  worker:
+    environment:
+      REAL_TIKTOK_READ_ENABLED: "true"
+      REAL_TIKTOK_WEBHOOK_ENABLED: "true"
+      REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "false"
+      REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"
+      AUTO_REPLY_ENABLED: "false"

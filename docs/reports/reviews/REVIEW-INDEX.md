@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -25,3 +25,4 @@ View: `CURRENT`
 | RR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01 | MVP-STAGING-PROXY-PERSIST-001 | R01 | APPROVE | `dcddb26cbb6ecc92db30a11a2f504d034e6ec048` | staging-path-persistence / archive-integrity / rootless-isolation / restart-recovery / secret-exposure | 2026-10-08T10:18:00+08:00 | [`RR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md`](RR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01.md) |
 | RR-MVP-OAUTH-STATUS-UI-001-20261008-R01 | MVP-OAUTH-STATUS-UI-001 | R01 | APPROVE | `039487e6a4ec0bfe6b7a20f026c07604f02144b1` | oauth-result-integrity / job-authorization / sensitive-data / regression | 2026-10-08T14:35:00+08:00 | [`RR-MVP-OAUTH-STATUS-UI-001-20261008-R01.md`](RR-MVP-OAUTH-STATUS-UI-001-20261008-R01.md) |
 | RR-MVP-002-20261009-R01 | MVP-002 | R01 | APPROVE | `9526109e57fe0113451ed2f80c22c5fb2c739d1e` | evidence-integrity / oauth-result / tenant-isolation / scope-change / release-boundary / sensitive-data | 2026-10-09T09:39:22+08:00 | [`RR-MVP-002-20261009-R01.md`](RR-MVP-002-20261009-R01.md) |
+| RR-MVP-003-20261009-R01 | MVP-003 | R01 | DRAFT | `9988306c7dfeaf0352e963094bdb2aa806072e89` | signature / tenant-isolation / idempotency / ordering / staging-capability / image-supply-chain / release-boundary | 2026-10-09T10:30:13+08:00 | [`RR-MVP-003-20261009-R01.md`](RR-MVP-003-20261009-R01.md) |

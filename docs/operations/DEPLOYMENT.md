@@ -34,6 +34,10 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 `TIKTOK_WEBHOOK_SECRET` 只服务于本地 Mock 的 `X-TTS-Signature` 回归，不是需要从 Partner Center 单独获取的真实 Webhook 凭据。真实 Webhook 验签使用已注入的 `TIKTOK_APP_SECRET` 对 `TIKTOK_APP_KEY + 原始请求体` 计算 HMAC-SHA256，并与 `Authorization` 比较；该 Mock 字段在 staging 保持空值。此前把它列为外部凭据准备项的说明由本节纠正，不得生成任意值冒充平台密钥。
 
+G2 的 staging 真实读取与 Webhook 使用部署门禁显式参数 `enable_tiktok_webhook_read=true`。门禁在原四个 Compose 文件之后叠加 `src/compose/docker-compose.rootless-staging-webhook.yml`，只允许 backend 和 worker 的 `REAL_TIKTOK_READ_ENABLED`、`REAL_TIKTOK_WEBHOOK_ENABLED` 为 `true`；其他进程与消息写入、高风险写入、自动回复仍必须为 `false`。仓库外 env 文件继续保留所有能力开关为 `false`，不靠修改凭据文件启用能力。默认 validate/deploy 和 rollback 不叠加该文件；以相同受审镜像摘要再次执行默认 deploy 可恢复关闭状态。每次切换须先记录当前镜像、Compose 合并配置、健康和代理保护基线，再核对门禁低敏证据的模式与叠加文件摘要。此配置契约不代表 G2 已真实投递通过。
+
+G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-backend-image.yml` 的 `staging-backend` 确认词，仅发布 `crm-backend` 并核对不可变摘要和压缩层大小；沿用已验证的前端和检索摘要，避免重建大体积检索镜像。私有镜像发布仍按独立授权边界执行，发布后还需 staging 预取、受控部署和真实 Webhook 验收。
+
 ### TikTok 固定出口契约
 
 staging 的 TikTok 出站与 split-ingress 入口分离：应用只经 `socks5h://tiktok-egress:1080` 访问独立 helper，helper 再以 `crm-egress@38.55.145.52` 建立 SSH 动态转发。公网账号只允许 local/dynamic forwarding 到 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 和门禁专用 `checkip.amazonaws.com:443`；不得复用 `crm-tunnel`、开放代理端口或放宽为任意目标。

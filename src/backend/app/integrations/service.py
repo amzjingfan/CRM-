@@ -55,6 +55,15 @@ def webhook_event_type(platform: str, payload: dict[str, object]) -> str:
     return str(payload.get("event_type", "unknown"))[:100]
 
 
+def _duplicate_webhook_receipt(existing: WebhookEvent, event_id: str, payload_hash: str) -> WebhookAccepted:
+    """只有同一已验签正文和已绑定店铺可以复用成功回执。"""
+    if not existing.signature_valid or existing.payload_hash != payload_hash:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "Webhook 通知 ID 与已接收事件冲突", 409)
+    if existing.channel_account_id is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "平台店铺未授权", 404)
+    return WebhookAccepted(event_id=event_id, duplicate=True, accepted=True)
+
+
 async def receive_webhook(
     session: AsyncSession,
     platform: str,
@@ -64,8 +73,11 @@ async def receive_webhook(
 ) -> WebhookAccepted:
     """验证后原子保存事件；重复事件稳定返回成功。"""
     adapter = get_platform_adapter(platform)
+    if not adapter.verify_webhook(raw_body, headers):
+        # 先验签再查询或插入：伪造 ID 不能占用唯一键，阻断稍后的官方投递。
+        raise AppError(ErrorCode.TOKEN_INVALID, "Webhook 签名无效", 401)
     event_id = stable_event_id(payload, raw_body)
-    signature_valid = adapter.verify_webhook(raw_body, headers)
+    payload_hash = hashlib.sha256(raw_body).hexdigest()
     existing = await session.scalar(
         select(WebhookEvent).where(
             WebhookEvent.platform == platform,
@@ -73,14 +85,7 @@ async def receive_webhook(
         )
     )
     if existing is not None:
-        # 幂等键不能替代验签；攻击者重放已存在 ID 但伪造正文时仍必须返回 401。
-        if not signature_valid:
-            raise AppError(ErrorCode.TOKEN_INVALID, "Webhook 签名无效", 401)
-        return WebhookAccepted(
-            event_id=event_id,
-            duplicate=True,
-            accepted=existing.signature_valid and existing.channel_account_id is not None,
-        )
+        return _duplicate_webhook_receipt(existing, event_id, payload_hash)
 
     external_store_id = webhook_external_store_id(payload)
     channel = await session.scalar(
@@ -89,18 +94,19 @@ async def receive_webhook(
             ChannelAccount.external_store_id == external_store_id,
         )
     )
+    if channel is None:
+        # 未绑定店铺的通知不得留下客户载荷或占用 ID，稍后授权后可正常重投。
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "平台店铺未授权", 404)
     event = WebhookEvent(
         platform=platform,
-        channel_account_id=channel.id if channel else None,
+        channel_account_id=channel.id,
         external_event_id=event_id,
         event_type=webhook_event_type(platform, payload),
-        signature_valid=signature_valid,
-        payload_hash=hashlib.sha256(raw_body).hexdigest(),
+        signature_valid=True,
+        payload_hash=payload_hash,
         raw_payload=payload,
-        status="received" if signature_valid and channel else "ignored",
-        error_code=None
-        if signature_valid and channel
-        else ("INVALID_SIGNATURE" if not signature_valid else "UNKNOWN_STORE"),
+        status="received",
+        error_code=None,
         received_at=datetime.now(UTC),
     )
     session.add(event)
@@ -108,11 +114,16 @@ async def receive_webhook(
         await session.commit()
     except IntegrityError:
         await session.rollback()
-        return WebhookAccepted(event_id=event_id, duplicate=True, accepted=signature_valid)
-    if not signature_valid:
-        raise AppError(ErrorCode.TOKEN_INVALID, "Webhook 签名无效", 401)
-    if channel is None:
-        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "平台店铺未授权", 404)
+        # 并发插入失败后重新读取事件；没有同键事件时保留原完整性错误。
+        existing = await session.scalar(
+            select(WebhookEvent).where(
+                WebhookEvent.platform == platform,
+                WebhookEvent.external_event_id == event_id,
+            )
+        )
+        if existing is None:
+            raise
+        return _duplicate_webhook_receipt(existing, event_id, payload_hash)
     return WebhookAccepted(event_id=event_id, duplicate=False, accepted=True)
 
 
@@ -192,8 +203,9 @@ async def _process_message(
     )
     session.add(message)
     await session.flush()
-    conversation.last_message_id = message.id
-    conversation.last_message_at = normalized.created_at
+    if conversation.last_message_at is None or normalized.created_at >= conversation.last_message_at:
+        conversation.last_message_id = message.id
+        conversation.last_message_at = normalized.created_at
     conversation.unread_count += 1
     if get_settings().auto_reply_enabled:
         config = await find_enabled_config(session, channel.store_id)

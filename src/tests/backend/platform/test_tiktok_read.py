@@ -12,11 +12,13 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 import app.integrations.adapters as adapters_module
 import app.integrations.service as integration_service
 import app.integrations.tiktok_read as tiktok_read_module
 from app.audit.models import AuditLog
+from app.conversations.models import Conversation
 from app.integrations.adapters import TikTokAdapter
 from app.integrations.credential_crypto import encrypt_credential
 from app.integrations.models import WebhookEvent
@@ -804,6 +806,227 @@ async def test_duplicate_event_id_never_bypasses_signature_verification(monkeypa
     assert caught.value.code == ErrorCode.TOKEN_INVALID
 
 
+@pytest.mark.asyncio
+async def test_invalid_signature_does_not_reserve_notification_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """伪造通知不能先占用官方通知 ID，阻止稍后真实投递。"""
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.touched = False
+
+        async def scalar(self, _statement: object) -> object:
+            self.touched = True
+            return None
+
+        def add(self, _event: object) -> None:
+            self.touched = True
+
+        async def commit(self) -> None:
+            self.touched = True
+
+    class InvalidAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return False
+
+    session = FakeSession()
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: InvalidAdapter())
+    with pytest.raises(AppError) as caught:
+        await integration_service.receive_webhook(
+            session,  # type: ignore[arg-type]
+            "tiktok",
+            b'{"tts_notification_id":"7327112393057371910"}',
+            {"tts_notification_id": "7327112393057371910"},
+            {"authorization": "invalid"},
+        )
+
+    assert caught.value.code == ErrorCode.TOKEN_INVALID
+    assert session.touched is False
+
+
+@pytest.mark.asyncio
+async def test_signed_duplicate_id_with_different_body_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    """同一官方通知 ID 的不同正文不能借幂等回执被当作已接收。"""
+    raw_body = b'{"tts_notification_id":"7327112393057371910","shop_id":"2"}'
+    existing = SimpleNamespace(
+        signature_valid=True,
+        channel_account_id=uuid.uuid4(),
+        payload_hash=hashlib.sha256(b'{"tts_notification_id":"7327112393057371910","shop_id":"1"}').hexdigest(),
+    )
+
+    class FakeSession:
+        async def scalar(self, _statement: object) -> object:
+            return existing
+
+    class SignedAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return True
+
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: SignedAdapter())
+    with pytest.raises(AppError) as caught:
+        await integration_service.receive_webhook(
+            FakeSession(),  # type: ignore[arg-type]
+            "tiktok",
+            raw_body,
+            {"tts_notification_id": "7327112393057371910", "shop_id": "2"},
+            {"authorization": "valid"},
+        )
+
+    assert caught.value.code == ErrorCode.RESOURCE_CONFLICT
+
+
+@pytest.mark.asyncio
+async def test_identical_signed_duplicate_returns_one_accepted_receipt(monkeypatch: pytest.MonkeyPatch) -> None:
+    """同一官方通知正文重投只返回重复回执，不产生第二条事件。"""
+    raw_body = b'{"tts_notification_id":"7327112393057371910","shop_id":"1"}'
+    existing = SimpleNamespace(
+        signature_valid=True,
+        channel_account_id=uuid.uuid4(),
+        payload_hash=hashlib.sha256(raw_body).hexdigest(),
+    )
+
+    class FakeSession:
+        async def scalar(self, _statement: object) -> object:
+            return existing
+
+        def add(self, _event: object) -> None:
+            raise AssertionError("duplicate must not insert")
+
+    class SignedAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return True
+
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: SignedAdapter())
+    receipt = await integration_service.receive_webhook(
+        FakeSession(),  # type: ignore[arg-type]
+        "tiktok",
+        raw_body,
+        {"tts_notification_id": "7327112393057371910", "shop_id": "1"},
+        {"authorization": "valid"},
+    )
+
+    assert receipt.duplicate is True
+    assert receipt.accepted is True
+
+
+@pytest.mark.asyncio
+async def test_unknown_store_duplicate_keeps_not_found_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    """未知店铺的重投不能因已有通知 ID 改成 HTTP 200 成功。"""
+    raw_body = b'{"tts_notification_id":"7327112393057371910","shop_id":"unknown"}'
+    existing = SimpleNamespace(
+        signature_valid=True,
+        channel_account_id=None,
+        payload_hash=hashlib.sha256(raw_body).hexdigest(),
+    )
+
+    class FakeSession:
+        async def scalar(self, _statement: object) -> object:
+            return existing
+
+    class SignedAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return True
+
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: SignedAdapter())
+    with pytest.raises(AppError) as caught:
+        await integration_service.receive_webhook(
+            FakeSession(),  # type: ignore[arg-type]
+            "tiktok",
+            raw_body,
+            {"tts_notification_id": "7327112393057371910", "shop_id": "unknown"},
+            {"authorization": "valid"},
+        )
+
+    assert caught.value.code == ErrorCode.RESOURCE_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_signed_unknown_store_does_not_persist_unbound_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    """未授权店铺的真实通知不得保存客户正文或占用通知 ID。"""
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.lookups = 0
+            self.inserted = False
+
+        async def scalar(self, _statement: object) -> object:
+            self.lookups += 1
+            return None
+
+        def add(self, _event: object) -> None:
+            self.inserted = True
+
+        async def commit(self) -> None:
+            self.inserted = True
+
+    class SignedAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return True
+
+    session = FakeSession()
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: SignedAdapter())
+    with pytest.raises(AppError) as caught:
+        await integration_service.receive_webhook(
+            session,  # type: ignore[arg-type]
+            "tiktok",
+            b'{"tts_notification_id":"7327112393057371910","shop_id":"unknown","data":{"content":"private"}}',
+            {"tts_notification_id": "7327112393057371910", "shop_id": "unknown"},
+            {"authorization": "valid"},
+        )
+
+    assert caught.value.code == ErrorCode.RESOURCE_NOT_FOUND
+    assert session.lookups == 2
+    assert session.inserted is False
+
+
+@pytest.mark.asyncio
+async def test_concurrent_duplicate_rechecks_saved_body_after_unique_conflict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """并发唯一键冲突后也必须核对已落库正文，不能直接返回成功。"""
+    raw_body = b'{"tts_notification_id":"7327112393057371910","shop_id":"2"}'
+    existing = SimpleNamespace(
+        signature_valid=True,
+        channel_account_id=uuid.uuid4(),
+        payload_hash=hashlib.sha256(b'{"tts_notification_id":"7327112393057371910","shop_id":"1"}').hexdigest(),
+    )
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.lookups = 0
+            self.rolled_back = False
+
+        async def scalar(self, _statement: object) -> object:
+            self.lookups += 1
+            return {1: None, 2: SimpleNamespace(id=uuid.uuid4()), 3: existing}[self.lookups]
+
+        def add(self, _event: object) -> None:
+            pass
+
+        async def commit(self) -> None:
+            raise IntegrityError("duplicate", {}, Exception("unique constraint"))
+
+        async def rollback(self) -> None:
+            self.rolled_back = True
+
+    class SignedAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return True
+
+    session = FakeSession()
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: SignedAdapter())
+    with pytest.raises(AppError) as caught:
+        await integration_service.receive_webhook(
+            session,  # type: ignore[arg-type]
+            "tiktok",
+            raw_body,
+            {"tts_notification_id": "7327112393057371910", "shop_id": "2"},
+            {"authorization": "valid"},
+        )
+
+    assert caught.value.code == ErrorCode.RESOURCE_CONFLICT
+    assert session.rolled_back is True
+
+
 def test_official_envelope_fields_drive_idempotency_store_and_event_semantics() -> None:
     """官方通知 ID、shop_id 和数值主题必须进入既有幂等与审计字段。"""
     payload: dict[str, object] = {
@@ -823,3 +1046,64 @@ def test_fallback_event_id_is_raw_body_hash() -> None:
     """平台缺少通知 ID 时仍使用原始正文摘要形成稳定幂等键。"""
     raw = b'{"type":999}'
     assert stable_event_id({}, raw) == hashlib.sha256(raw).hexdigest()
+
+
+@pytest.mark.asyncio
+async def test_late_message_does_not_regress_conversation_preview(monkeypatch: pytest.MonkeyPatch) -> None:
+    """乱序送达的旧消息仍入库，但不能覆盖较新消息的会话排序字段。"""
+    store_id = uuid.uuid4()
+    customer_id = uuid.uuid4()
+    newer_message_id = uuid.uuid4()
+    newer_at = datetime(2026, 10, 9, 2, 0, tzinfo=UTC)
+    conversation = Conversation(
+        id=uuid.uuid4(),
+        store_id=store_id,
+        customer_id=customer_id,
+        platform="tiktok",
+        external_conversation_id="conversation-1",
+        last_message_id=newer_message_id,
+        last_message_at=newer_at,
+        unread_count=1,
+    )
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.lookups = 0
+            self.inserted: list[object] = []
+
+        async def scalar(self, _statement: object) -> object:
+            self.lookups += 1
+            return conversation if self.lookups == 1 else None
+
+        def add(self, record: object) -> None:
+            self.inserted.append(record)
+
+        async def flush(self) -> None:
+            pass
+
+    async def fake_upsert_customer(*_args: object) -> object:
+        return SimpleNamespace(id=customer_id)
+
+    monkeypatch.setattr(integration_service, "_upsert_customer", fake_upsert_customer)
+    monkeypatch.setattr(integration_service, "get_settings", lambda: SimpleNamespace(auto_reply_enabled=False))
+    session = FakeSession()
+    await integration_service._process_message(
+        session,  # type: ignore[arg-type]
+        SimpleNamespace(id=uuid.uuid4(), platform="tiktok"),  # type: ignore[arg-type]
+        SimpleNamespace(store_id=store_id),  # type: ignore[arg-type]
+        MessageCreatedEvent(
+            event_type="message.created",
+            event_id="notification-1",
+            external_store_id="shop-1",
+            external_conversation_id="conversation-1",
+            external_message_id="message-old",
+            customer={"external_id": "customer-1"},  # type: ignore[arg-type]
+            content="older message",
+            created_at=datetime(2026, 10, 9, 1, 0, tzinfo=UTC),
+        ),
+    )
+
+    assert len(session.inserted) == 1
+    assert conversation.last_message_id == newer_message_id
+    assert conversation.last_message_at == newer_at
+    assert conversation.unread_count == 2

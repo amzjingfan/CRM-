@@ -43,6 +43,10 @@ WHITESPACE_PATTERN = re.compile(r"\s+")
 def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -> None:
     """工作流必须把调用者 UID 交给脚本的 1004 门禁，且 GHCR 不依赖长期 PAT。"""
     workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    triggers = workflow.get("on", workflow.get(True))
+    opt_in = triggers["workflow_dispatch"]["inputs"]["enable_tiktok_webhook_read"]
+    assert opt_in["type"] == "boolean"
+    assert opt_in["default"] is False
     assert workflow["permissions"] == {"contents": "read", "packages": "read"}
     assert workflow["jobs"]["staging"]["timeout-minutes"] == ("${{ inputs.operation == 'prefetch' && 240 || 120 }}")
     steps = workflow["jobs"]["staging"]["steps"]
@@ -65,6 +69,8 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
     assert "$runnerUid -notmatch '^[1-9][0-9]*$'" in gate
     assert '$dockerHost = "unix:///run/user/$runnerUid/docker.sock"' in gate
     assert '$common["DockerHost"] = $dockerHost' in gate
+    assert '$common["EnableTikTokWebhookRead"] = $true' in gate
+    assert '"validate", "deploy"' in gate
     assert gate.index("$runnerUid =") < gate.index("$common =") < gate.index("switch ($env:OPERATION)")
     logout = next(step for step in steps if step["name"] == "Log out from GHCR")
     assert logout["if"] == (
@@ -73,6 +79,115 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
     )
     assert logout["env"]["DOCKER_CONFIG"] == "${{ runner.temp }}/crm-staging-docker-config"
     assert "docker logout ghcr.io" in logout["run"]
+
+
+def test_staging_webhook_read_opt_in_only_enables_receiver_and_worker(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """G2 显式模式只让 staging 接收器和 Worker 使用真实只读与 Webhook。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    for service_name in ("backend", "worker"):
+        service_env = config["services"][service_name]["environment"]
+        service_env["REAL_TIKTOK_READ_ENABLED"] = "true"
+        service_env["REAL_TIKTOK_WEBHOOK_ENABLED"] = "true"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    evidence_file = tmp_path / "g2-validate.json"
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableTikTokWebhookRead",
+        "-ValidateOnly",
+        environment=environment,
+    )
+
+    assert result.returncode == 0, normalized_process_output(result)
+    evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
+    assert evidence["tiktok_webhook_read_enabled"] is True
+    assert evidence["tiktok_webhook_read_overlay_sha256"]
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    config_command = next(command for command in commands if "config" in command)
+    assert any(argument.endswith("docker-compose.rootless-staging-webhook.yml") for argument in config_command)
+
+
+@pytest.mark.parametrize(
+    "service_name, capability, value",
+    [
+        ("backend", "REAL_TIKTOK_MESSAGE_WRITE_ENABLED", "true"),
+        ("worker", "REAL_TIKTOK_WEBHOOK_ENABLED", "false"),
+        ("jobs", "REAL_TIKTOK_READ_ENABLED", "true"),
+        ("agent-worker", "REAL_TIKTOK_WEBHOOK_ENABLED", "true"),
+    ],
+)
+def test_staging_webhook_read_opt_in_rejects_other_capability_changes(
+    service_name: str,
+    capability: str,
+    value: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """G2 模式之外的能力扩大或接收器、Worker 缺少开关均失败关闭。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    for enabled_service in ("backend", "worker"):
+        service_env = config["services"][enabled_service]["environment"]
+        service_env["REAL_TIKTOK_READ_ENABLED"] = "true"
+        service_env["REAL_TIKTOK_WEBHOOK_ENABLED"] = "true"
+    config["services"][service_name]["environment"][capability] = value
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(tmp_path / "g2-rejected.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableTikTokWebhookRead",
+        "-ValidateOnly",
+        environment=environment,
+    )
+
+    assert result.returncode != 0
+    assert "does not match reviewed mode" in normalized_process_output(result)
 
 
 @pytest.mark.parametrize(
