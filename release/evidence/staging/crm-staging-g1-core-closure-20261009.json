@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g1_core_acceptance_and_g2_readiness_snapshot",
+  "captured_at_utc": "2026-10-09T01:37:17Z",
+  "environment": "staging",
+  "verification_base_sha": "0b59cde15034112b8e495eaf7d5465692b3d8b65",
+  "acceptance_scope_decision": {
+    "source": "user_instruction_2026-10-09",
+    "first_successful_callback_required": true,
+    "same_callback_live_replay_required_for_g1_core": false,
+    "enhanced_logistics_202604_required_for_g1_core": false,
+    "enhanced_logistics_202604_required_before_g8": true
+  },
+  "first_successful_callback": {
+    "observed_get_303_at_utc": "2026-10-09T00:59:13Z",
+    "latest_job_status": "connected",
+    "latest_job_completed": true,
+    "latest_job_error_absent": true,
+    "code_cipher_cleared": true,
+    "state_cipher_cleared": true,
+    "matching_successful_authorization_audits": 1,
+    "connected_tiktok_channels": 1
+  },
+  "g1_core_prior_evidence": {
+    "natural_token_refresh_verified": true,
+    "six_non_logistics_reads_verified": true,
+    "cross_store_fail_closed_verified": true,
+    "required_scopes_verified": true
+  },
+  "g2_readiness": {
+    "partner_center_subscription_count": 0,
+    "staging_real_tiktok_read_enabled": false,
+    "staging_real_tiktok_webhook_enabled": false,
+    "public_ready_http_status": 200,
+    "public_tls_verified": true,
+    "real_webhook_delivery_verified": false
+  },
+  "verification": {
+    "g1_core_staging_accepted": true,
+    "g1_enhanced_logistics_202604_accepted": false,
+    "g2_may_begin": true,
+    "g2_completed": false,
+    "g8_accepted": false,
+    "production_changed": false,
+    "sensitive_values_included": false
+  }
+}

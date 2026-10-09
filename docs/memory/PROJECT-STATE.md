@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/frontend-staging-deploy-evidence-20261008
-Governance base SHA: 8fae4fb85c4ed9c8cdf862f99d839c3de60e55ab
-CANDIDATE_SUBJECT_SHA: f268408f3d9e396444e95cf2106141f0aae98188
+Working branch at this snapshot: docs/g1-core-close-g2-ready-20261009
+Governance base SHA: 0b59cde15034112b8e495eaf7d5465692b3d8b65
+CANDIDATE_SUBJECT_SHA: 9526109e57fe0113451ed2f80c22c5fb2c739d1e
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -62,6 +62,10 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-09 恢复点：Edge 保留了 00:59:13Z 的真实 OAuth callback 303，最新 job `connected` 且临时密文字段清空；00:57:13Z 的失败 callback 属另一授权。用户从 Network 在新标签页打开原记录只看到 CRM 登录页，代理没有收到第二次 callback GET，故同一真实请求重放尚未验收。固定出口正常，后端只读聚焦测试 26 passed。测试店可见 325 笔订单，对五笔不同的 TikTok 配送订单调用增强物流 `202604` 均返回 `11007009`；官方接口针对 CBT 跨境首程，尚无已确认的合格首程订单或平台开通说明。见 [低敏现场证据](../../release/evidence/staging/crm-staging-g1-live-diagnostics-20261009.json)。G1 保持部分通过，production 未变。
 
+2026-10-09 后续决定与恢复点：用户明确以首次有效 callback 完成授权关闭 G1 核心，现场同一 callback 二次 GET 不再阻断；`202604` 转独立 G1-L，暂不测试但最终 G8 前仍须通过。现场只读复核最新 job `connected`、完成且无错误，code/state 密文清空、匹配成功审计 1 条、渠道 connected；因此 G1 核心 staging 口径通过。Partner Center 订阅数 0，staging 真实只读和 Webhook 开关 false，公网 ready 200/TLS 正常；G2 可开始准备，真实投递未发生。见 [低敏证据](../../release/evidence/staging/crm-staging-g1-core-closure-20261009.json)，production 未变。
+
+`MVP-002` 按上述用户决定形成 [IR](../records/implementation/IR-MVP-002-20261009-R01.md)、[TR](../reports/tests/TR-MVP-002-20261009-R01.md) 和 [RR](../reports/reviews/RR-MVP-002-20261009-R01.md)，绑定候选 subject `9526109e57fe0113451ed2f80c22c5fb2c739d1e`。本分支索引为 `CANDIDATE_VIEW`；合并后须从 main 重建 `CURRENT` 并复核任务终态。未对 G2 执行订阅注册或运行配置切换。
+
 ## 权威入口
 
 - 产品范围与验收：[`../product/PRODUCT.md`](../product/PRODUCT.md)
@@ -80,7 +84,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
 - `MVP-008` 的 staging 现场预取、候选部署、旧版回滚和切返证据已由 PR #84 合入 main `8fae4fb85c4ed9c8cdf862f99d839c3de60e55ab`；任务状态以 `../tasks/TASKS.md` 为准。
-- `MVP-G1-NONLOG-001` 与 `MVP-OAUTH-REAUTH-001` 已合入 main；`MVP-002` 的真实 Token 刷新已通过，callback 重放与增强物流 `202604` 仍未关闭。
+- `MVP-G1-NONLOG-001` 与 `MVP-OAUTH-REAUTH-001` 已合入 main；`MVP-002` 按用户新口径核对首次 OAuth、自然刷新、非物流只读和隔离，增强物流另属 `MVP-G1-LOG-202604-001`，G2 尚待真实投递。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -115,8 +119,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 阻塞、决定与风险
 
-- G0 staging 恢复/回滚现场通过；G1～G6 尚未全部取得真实环境证据，G8 保持阻塞，production 未部署。
-- 用户此前选择 North America seller/US 完成授权并自动返回 CRM；job 终态和任务读取权限已有低敏核对，2026-10-04 自然 Token 刷新也已通过。2026-10-09 新授权成功落库，但同一真实 callback 的第二次 GET 未到代理；增强物流 `202604` 对五笔不同的 TikTok 配送订单均返回 `11007009`。须取得平台适用性说明或符合 CBT 首程条件的测试订单；两项通过前 G1 不签署。
+- G0 staging 恢复/回滚现场与 G1 核心口径通过；G1-L、G2～G6 尚未全部取得真实环境证据，G8 保持阻塞，production 未部署。
+- 2026-10-09 最新 OAuth 回调和 job 终态真实成功，2026-10-04 自然刷新也已通过。用户决定现场 callback 二次 GET 不阻断 G1 核心；增强物流 `202604` 对五笔不同 TikTok 配送订单仍返回 `11007009`，须取得合格 CBT 首程订单或平台说明并在 G8 前通过。G2 当前无订阅，真实读与 Webhook 开关关闭，不能把“可启动”当作已投递。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
 - staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 G0 后端/分层检索摘要及 2026-10-08 新前端不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复健康并复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
@@ -129,6 +133,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 在后续有效新授权中按 `../operations/RELEASE-GATES.md` 完成同一真实 callback 的受控第二次 GET 与任务/审计/凭证不变核对；只留低敏聚合证据。
-2. 向 TikTok Partner Center 核对增强物流 `202604` 的 CBT 首程适用性或取得已确认符合条件的测试订单，再重测；同时核对固定出口告警。
-3. 继续 G1～G6 的真实门禁；G8 与 production 仍为 No-Go。
+1. 按 `../operations/RELEASE-GATES.md` 启动 G2：先核对 Partner Center 订阅事件与地址、staging 开关和安全边界，再进行受控真实 Webhook 投递与审计验证。
+2. 将增强物流 `202604` 保留为 G1-L；取得已确认适用的 CBT 首程订单或平台说明后重测，并核对固定出口告警。
+3. 继续 G2～G6 的真实门禁；G8 与 production 仍为 No-Go。
