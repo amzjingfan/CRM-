@@ -32,6 +32,8 @@
 
 2026-10-09 06:17Z main 745d79f6cacfdb0b1356d2c73aa86928667d7193 的 staging 只读工作流 37892709909 再次成功：运行后端摘要匹配，订阅窗口内 NEW_MESSAGE 事件 0、签名有效 0、入站消息 0、未绑定事件 0。artifact ID/SHA-256 见[低敏复核](../../release/evidence/staging/crm-staging-g2-no-trigger-20261009.json)。用户报告买家侧电脑和手机均无商家聊天入口、无受控测试买家既有会话；此项是用户报告，不是机器对平台入口原因的证明。真实投递、重试、乱序仍未验，G2 不通过。
 
+2026-10-09 G3 顺序例外的离线复核：基线 main `0f80d3f804b425b8aca53e1f8b34939e52b6e89d`，在 Windows 工作树 `src/backend` 执行 `uv run pytest -q -c pyproject.toml ../tests/backend/platform/test_tiktok_write.py ../tests/backend/domain/test_phase3_domain.py ../tests/backend/agent/test_tool_executor.py`，结果 55 passed、1 Starlette/httpx 弃用 warning。检查覆盖 TikTok 单次普通文本请求和签名、固定出口失败不直连、未确认不发送、超时及不完整响应进入 `unknown`、旧未知消息阻断后续真实写、管理员对账记录。以上仅为确定性离线检查；未启用 staging 真实写，未使用受控平台会话，未发送外部消息，不能判定 G3 通过。
+
 ## BGE 正式基线
 
 - 质量：Dense Recall@20 = 100%，Rerank Recall@5 = 100%，MRR = 1，nDCG = 1，引用合法率 = 100%，无答案拒判率 = 100%。

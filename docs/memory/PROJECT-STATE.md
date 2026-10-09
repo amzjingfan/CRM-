@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp003-g2-trigger-blocked-20261009
-Governance base SHA: 745d79f6cacfdb0b1356d2c73aa86928667d7193
-CANDIDATE_SUBJECT_SHA: docs-only; observer subject 06e2bfad86c901a588a0600ce42daa7b136f8779
+Working branch at this snapshot: docs/mvp004-g3-offline-entry-20261009
+Governance base SHA: 0f80d3f804b425b8aca53e1f8b34939e52b6e89d
+CANDIDATE_SUBJECT_SHA: docs-only; no new runtime candidate
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -21,6 +21,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
+
+2026-10-09 G3 顺序例外：用户决定在 G2 真实投递阻塞期间先进入 G3；G2 仍为必过项。main `0f80d3f804b425b8aca53e1f8b34939e52b6e89d` 上三组人工发送、领域和工具执行聚焦测试本轮 55 passed、1 warning；staging G2 overlay 的真实普通消息写仍为 false，没有受控测试买家会话，因此未发送任何外部消息，也不能签署 G3。实施范围与解除条件见[TASKS](../tasks/TASKS.md)及[RELEASE-GATES](../operations/RELEASE-GATES.md)。
 
 2026-10-09 最新 G2 触发阻塞：用户报告电脑与手机买家侧都没有商家聊天入口，Seller Center 的 Customer Messages 存在，但没有受控测试买家的现成会话。既有 G1 低敏证据确认 `seller.customer_service` Scope 和真实会话只读查询；平台端缺入口的具体原因仍未确定。main `745d79f6cacfdb0b1356d2c73aa86928667d7193` 上只读工作流 `37892709909` 于 06:17Z 再确认 `NEW_MESSAGE=0`、入站消息 0，见[最新低敏复核](../../release/evidence/staging/crm-staging-g2-no-trigger-20261009.json)。任务状态以[TASKS](../tasks/TASKS.md)为准；解除条件为平台给出可用测试路径或取得受控真实买家入站消息，production 不变。
 
@@ -139,6 +141,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 请店铺所有者通过 Partner Center 支持确认该 US 跨境店买家聊天入口的适用条件，以及是否提供官方 `NEW_MESSAGE` 测试投递；取得受控真实入站消息后重跑只读观察。不得再执行订阅 PUT，也不得联系真实顾客做测试。
-2. 将增强物流 `202604` 保留为 G1-L；取得已确认适用的 CBT 首程订单或平台说明后重测，并核对固定出口告警。
-3. G2 获得官方真实入站消息后核对签名、绑定、审计、重试与乱序及默认关闭模式恢复，再形成新版 IR/TR/RR；G8 与 production 仍为 No-Go。
+1. G3 先保持 staging 真实普通消息写关闭；由店铺所有者确认可控的 TikTok 测试会话与一条无个人信息的普通文本，再形成精确单次发送、`unknown` 对账和恢复方案；对外发送及开关变更另行确认。
+2. G2 继续由店铺所有者通过 Partner Center 支持确认买家聊天入口条件与官方 `NEW_MESSAGE` 测试投递；取得受控真实入站消息后复测。不得再次执行订阅 PUT。
+3. 将增强物流 `202604` 保留为 G1-L，取得合格 CBT 首程订单或平台说明后重测；G2、G3 与 G1-L 仍阻断 G8，production 保持 No-Go。
