@@ -40,7 +40,9 @@ G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-
 
 主机 SSH 不可用时，`inspect-staging-tiktok-webhooks.yml` 可在受审的 `main` 提交和在线 staging Runner 上执行一次只读订阅查询。它先核对运行中 backend 的不可变摘要，再在该容器的新进程中临时启用真实只读能力；要求恰好一个已连接 TikTok 渠道，只调用 `GET /event/202309/webhooks`。机器证据只记录订阅数、主题及与预期回调地址的匹配数，不输出 URL、请求 ID、店铺标识或凭据；工作流不创建、修改、删除订阅，也不切换常驻服务环境。
 
-2026-10-09 只读查询确认当前订阅为 0，见[低敏证据](../../release/evidence/staging/crm-staging-g2-subscription-read-20261009.json)。一次性 `subscribe-staging-tiktok-new-message.yml` 只准备在**另外取得精确外部写入授权后**，从 main 对已核对的 staging backend 执行最多一次 `PUT /event/202309/webhooks`：唯一主题 `NEW_MESSAGE`，唯一地址 `https://staging.overselfx.com/v1/webhooks/tiktok`。调用前重新 GET；若已是精确目标则不写，若有任何其他订阅则失败关闭。PUT 后 GET 对账；连接失败或结果不确定时不自动重试，需另行只读核对。脚本不接受动态主题/地址，输出仅包含状态、数量和 HTTP 状态码。所用 `202309` 路径及正文来自本地 TikTok 官方 OAS；在线 Partner Center 当前端页面未返回完整字段或更新版本，执行前仍须复核官方最新适用版本。此工具不发布镜像、不改生产，也不证明官方事件已投递。
+2026-10-09 首次只读查询确认当时订阅为 0，见[写入前证据](../../release/evidence/staging/crm-staging-g2-subscription-read-20261009.json)。一次性 `subscribe-staging-tiktok-new-message.yml` 仅能从 main 对已核对的 staging backend 执行最多一次 `PUT /event/202309/webhooks`：唯一主题 `NEW_MESSAGE`，唯一地址 `https://staging.overselfx.com/v1/webhooks/tiktok`。调用前重新 GET；若已是精确目标则不写，若有任何其他订阅则失败关闭。PUT 后 GET 对账；连接失败或结果不确定时不自动重试，需另行只读核对。脚本不接受动态主题/地址，输出仅包含状态、数量和 HTTP 状态码。所用 `202309` 路径及正文来自本地 TikTok 官方 OAS。
+
+用户已精确授权一次外部订阅写入；main `253a6cf0f563aae85b15ea7447a3589f203484b1` 上 workflow `37881350331` 执行一次 PUT 并写后 GET 确认，随后独立只读 workflow `37881477237` 确认 `NEW_MESSAGE` 订阅数 1、预期地址匹配数 1、其他地址数 0，见[低敏证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。已用尽这次写入授权；不要再次触发写入工作流。订阅成功不证明官方事件已投递，也未发布新镜像或改动 production。
 
 ### TikTok 固定出口契约
 
