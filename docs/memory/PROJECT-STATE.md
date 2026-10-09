@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp003-g2-event-observer
-Governance base SHA: 9f474243c70e0b52717e0c159457c525c78acd23
-CANDIDATE_SUBJECT_SHA: 06e2bfad86c901a588a0600ce42daa7b136f8779
+Working branch at this snapshot: docs/mvp003-g2-event-baseline-20261009
+Governance base SHA: 8e1d3cf74ef0cbec2e6c172d620f4cdba66878fe
+CANDIDATE_SUBJECT_SHA: docs-only; observer subject 06e2bfad86c901a588a0600ce42daa7b136f8779
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -22,7 +22,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
-PR #104 已将订阅事实与当前索引合入 main `9f474243c70e0b52717e0c159457c525c78acd23`。当前分支仅准备 staging Runner 的只读 Webhook 事件聚合观测，subject 为 `06e2bfad86c901a588a0600ce42daa7b136f8779`，过程记录见 [IR R04](../records/implementation/IR-MVP-003-20261009-R04.md)、[TR R04](../reports/tests/TR-MVP-003-20261009-R04.md)、[RR R04](../reports/reviews/RR-MVP-003-20261009-R04.md)，分支索引为 `CANDIDATE_VIEW`；不发布镜像、不重复订阅。现场基线和真实投递仍待验证。
+PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c159457c525c78acd23`；PR #105 的只读事件观测工具随后合入 main `8e1d3cf74ef0cbec2e6c172d620f4cdba66878fe`。现场工作流 `37883016283` 核对运行后端摘要后得到零事件、零入站消息的低敏基线，见[基线证据](../../release/evidence/staging/crm-staging-g2-event-baseline-20261009.json)。尚无真实事件，G2 未通过；本分支从 main 的 25 份源记录重建三个 `CURRENT` 索引。过程记录见 [IR R04](../records/implementation/IR-MVP-003-20261009-R04.md)、[TR R04](../reports/tests/TR-MVP-003-20261009-R04.md)、[RR R04](../reports/reviews/RR-MVP-003-20261009-R04.md)。
 
 `MVP-OAUTH-REDIRECT-001` 已由 PR #53 合入 `main`。用户重新选择 North America seller 与 US 后完成 TikTok 授权，成功页自动返回 CRM；此前卖家类型拒绝系操作选择错误，不再作为当前阻塞。现场只读预检中旧版物流 `202309` 成功，增强物流 `202604` 返回业务码 `11007009`，含义未确认，不能将两者混同；Token 生命周期、店铺隔离和重复回调现场证据仍未关闭 G1。production 未变。
 
@@ -137,6 +137,6 @@ PR #104 已将订阅事实与当前索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 建立只读 Webhook 事件观测基线，再触发一条测试店官方 `NEW_MESSAGE`，核对签名、店铺绑定、处理、幂等和审计；不得再执行订阅 PUT。
+1. 由测试买家向已授权 TikTok 店铺发送一条无个人信息的普通测试消息；随后重跑只读事件观测，对比零事件基线，核对签名、店铺绑定、处理与入站消息；不得再执行订阅 PUT。
 2. 将增强物流 `202604` 保留为 G1-L；取得已确认适用的 CBT 首程订单或平台说明后重测，并核对固定出口告警。
 3. 核对真实重试与乱序的现场证据和默认关闭模式恢复，随后形成 G2 的新版 IR/TR/RR 与验收结论；G8 与 production 仍为 No-Go。
