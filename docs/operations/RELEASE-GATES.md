@@ -18,6 +18,8 @@
 
 同日渠道页 OAuth 状态修复已由 PR #96 的单前端镜像部署到 staging，发布、预取、预检、部署以及前端摘要/健康/迁移头现场核对通过，见 [前端更新证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。用户撤回此前“有顶部成功提示”的回答，内置浏览器又无法刷新；公网五路径 200 和容器健康仅证明服务可用，带身份页面提示仍待核对。新授权的同一 callback 重放与增强物流 `202604` 仍缺证据，G1 未签署。
 
+2026-10-09 用户在 Edge 保留了本次 OAuth callback 的 Network 记录，staging 代理见 00:59:13Z 的 303，最新任务为 `connected`，code/state 密文字段已清空；00:57:13Z 的另一次 callback 对应独立授权，因 `RESOURCE_CONFLICT` 失败。原 Network 记录在新标签页打开后只到 CRM 登录页，代理没有收到第二次 callback GET，因此不计作同一请求重放。固定出口实测正常；六项非物流只读的既有证据仍有效。本次遍历测试店可见的 325 笔订单，首批 100 笔包含 78 笔 `shipping_type=TIKTOK`；对五笔不同的已跟踪 TikTok 配送订单调用增强物流 `202604`，平台均返回 `11007009`，错误文字指向订单不受支持。[官方说明](https://partner.tiktokshop.com/docv2/page/8syhoy40)限定该接口用于 CBT 跨境首程；目前没有确认这家店存在符合条件的首程扫描订单，也未确认平台是否已为应用/店铺开放此能力，故不能断言代码缺陷或把接口判为通过。见 [本次低敏诊断证据](../../release/evidence/staging/crm-staging-g1-live-diagnostics-20261009.json)。下一步获取平台适用性说明或合格测试订单，再验 `202604`；另择有效新授权完成同一 callback 的真实二次 GET。G1 仍为部分通过，production No-Go。
+
 ## 判定规则
 
 - Mock、合成数据和确定性测试只能证明实现，不证明真实生产环境。

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g1_oauth_and_enhanced_logistics_readonly_diagnostics",
+  "captured_at_utc": "2026-10-09T01:20:25Z",
+  "environment": "staging",
+  "verification_base_sha": "09557ddf9c5d1332ca5958c62a83c018dd890e83",
+  "oauth": {
+    "callback_get_303_timestamps_utc": [
+      "2026-10-09T00:57:13Z",
+      "2026-10-09T00:59:13Z"
+    ],
+    "first_job_result": "failed_resource_conflict",
+    "latest_job_result": "connected",
+    "latest_job_code_cipher_cleared": true,
+    "latest_job_state_cipher_cleared": true,
+    "connected_channel_count": 1,
+    "same_callback_second_get_observed": false,
+    "live_replay_verified": false,
+    "note": "The two observed callbacks belong to separate authorization starts. Opening the preserved browser record in a new tab showed the CRM login page, but no additional callback GET reached the staging proxy."
+  },
+  "enhanced_logistics_202604": {
+    "path": "/logistics/202604/orders/{order_id}/tracking",
+    "order_list_visible_count": 325,
+    "order_list_fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "first_page_shipping_type_counts": {
+      "TIKTOK": 78,
+      "SELLER": 22
+    },
+    "distinct_tracked_tiktok_shipping_orders_probed": 5,
+    "business_error_code_for_all_probes": 11007009,
+    "platform_message_hint": "order_not_supported",
+    "scope_seller_logistics_present": true,
+    "shop_cipher_present": true,
+    "fixed_egress_observed_ip": "38.55.145.52",
+    "confirmed_eligible_cbt_first_mile_order_available": "unknown",
+    "eligibility_or_feature_rollout_confirmed": false,
+    "per_order_requery_before_8_hours": false
+  },
+  "focused_backend_tests": {
+    "command": "uv run pytest -c pyproject.toml ../tests/backend/platform/test_tiktok_read.py -q",
+    "passed": 26
+  },
+  "verification": {
+    "oauth_connection_observed": true,
+    "live_same_callback_replay_verified": false,
+    "enhanced_logistics_202604_verified": false,
+    "g1_signed": false,
+    "production_changed": false,
+    "sensitive_values_included": false
+  }
+}

@@ -60,6 +60,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-08 下午复核：13:32、13:51 两次 OAuth start 返回 200，但至 14:32 公网入口没有新 callback，授权任务与成功审计未新增；CRM 的 connected 仍对应 11:13 的旧授权。低敏证据见 [再次核对证据](../../release/evidence/staging/crm-staging-g1-oauth-no-new-callback-20261008-pm.json)。渠道页误导性成功提示已由 PR #94 合并修复；随后 PR #96 的单前端发布路径合入 main `f268408f3d9e396444e95cf2106141f0aae98188`，前端新摘要仅部署 staging，发布 `37742119116`、预取 `37742409755`、预检 `37743493147`、部署 `37743848722` 均通过。现场复核前端新摘要、原后端/检索、11 容器、迁移头、持久 proxy、三个公网健康 200 和固定出口；后续公网五路径也返回 200，见 [低敏发布证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。用户撤回此前“有顶部成功提示”的回答并称内置浏览器无法刷新，带身份页面观察仍缺；G1 继续部分通过，production 不变。
 
+2026-10-09 恢复点：Edge 保留了 00:59:13Z 的真实 OAuth callback 303，最新 job `connected` 且临时密文字段清空；00:57:13Z 的失败 callback 属另一授权。用户从 Network 在新标签页打开原记录只看到 CRM 登录页，代理没有收到第二次 callback GET，故同一真实请求重放尚未验收。固定出口正常，后端只读聚焦测试 26 passed。测试店可见 325 笔订单，对五笔不同的 TikTok 配送订单调用增强物流 `202604` 均返回 `11007009`；官方接口针对 CBT 跨境首程，尚无已确认的合格首程订单或平台开通说明。见 [低敏现场证据](../../release/evidence/staging/crm-staging-g1-live-diagnostics-20261009.json)。G1 保持部分通过，production 未变。
+
 ## 权威入口
 
 - 产品范围与验收：[`../product/PRODUCT.md`](../product/PRODUCT.md)
@@ -78,7 +80,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 - 当前里程碑：关闭 TikTok 人工辅助 v0.1 的 G0～G6 真实环境门禁。
 - `MVP-008` 的 staging 现场预取、候选部署、旧版回滚和切返证据已由 PR #84 合入 main `8fae4fb85c4ed9c8cdf862f99d839c3de60e55ab`；任务状态以 `../tasks/TASKS.md` 为准。
-- `MVP-G1-NONLOG-001` 与 `MVP-OAUTH-REAUTH-001` 已合入 main；`MVP-002` 的真实 Token 刷新、callback 重放与增强物流 `202604` 仍未关闭。
+- `MVP-G1-NONLOG-001` 与 `MVP-OAUTH-REAUTH-001` 已合入 main；`MVP-002` 的真实 Token 刷新已通过，callback 重放与增强物流 `202604` 仍未关闭。
 - v0.1 之后的 Shopee/Amazon、生产翻译、公开自动回复、主动营销和高风险写入保持 `BACKLOG`，不得提前描述为已放行。
 
 ## 记录、索引与证据
@@ -114,7 +116,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 ## 阻塞、决定与风险
 
 - G0 staging 恢复/回滚现场通过；G1～G6 尚未全部取得真实环境证据，G8 保持阻塞，production 未部署。
-- 用户此前选择 North America seller/US 完成授权并自动返回 CRM；job 终态和任务读取权限已有低敏核对，2026-10-04 自然 Token 刷新也已通过。2026-10-08 新授权已落库，当前仍需同一真实 callback 的浏览器受控重放与增强物流 `202604`；代理中两次 303 不能单独证明满足重放操作条件；03:48Z 后续尝试未到公网入口，根因尚未定位。
+- 用户此前选择 North America seller/US 完成授权并自动返回 CRM；job 终态和任务读取权限已有低敏核对，2026-10-04 自然 Token 刷新也已通过。2026-10-09 新授权成功落库，但同一真实 callback 的第二次 GET 未到代理；增强物流 `202604` 对五笔不同的 TikTok 配送订单均返回 `11007009`。须取得平台适用性说明或符合 CBT 首程条件的测试订单；两项通过前 G1 不签署。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
 - staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 G0 后端/分层检索摘要及 2026-10-08 新前端不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复健康并复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
@@ -127,6 +129,6 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 ## 最多三个下一动作
 
-1. 在普通 Chrome 中核对 staging 新前端的旧连接顶部提示；之后从 CRM 发起新授权并开启 Network Preserve log，按 `../operations/RELEASE-GATES.md` 核对同一真实 callback 的受控重放；若仍未到公网入口，记录低敏浏览器错误及 TikTok 授权页状态，不读取、保存或传播 `code/state`。
-2. 单独核对增强物流 `202604` 的平台适用条件和固定出口告警；保持活动 proxy 的持久源码目录。
+1. 在后续有效新授权中按 `../operations/RELEASE-GATES.md` 完成同一真实 callback 的受控第二次 GET 与任务/审计/凭证不变核对；只留低敏聚合证据。
+2. 向 TikTok Partner Center 核对增强物流 `202604` 的 CBT 首程适用性或取得已确认符合条件的测试订单，再重测；同时核对固定出口告警。
 3. 继续 G1～G6 的真实门禁；G8 与 production 仍为 No-Go。
