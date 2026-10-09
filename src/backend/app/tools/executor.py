@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from pydantic import ValidationError
-from sqlalchemy import and_, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.models import AuditLog
@@ -18,7 +18,7 @@ from app.integrations.schemas import SendMessageCommand
 from app.orders.models import Order
 from app.shared.database.base import user_roles
 from app.shared.exceptions.errors import AppError
-from app.stores.models import ChannelAccount
+from app.stores.models import ChannelAccount, Store
 from app.tools.contracts import (
     READ_REPLAY_CONTRACT_VERSION,
     TOOL_DEFINITIONS,
@@ -531,21 +531,21 @@ class SqlAlchemyToolExecutor:
                 or not invocation.context.human_confirmed
             ):
                 raise ToolDispatchError("TOOL_HUMAN_CONFIRMATION_REQUIRED")
+            # 同店铺发送在落下 processing 消息前串行化，避免两个并发请求
+            # 都通过未结清检查。若进程在平台调用前后退出，已提交的
+            # processing 必须继续阻断新发送，等待人工核对平台事实。
+            locked_store = await self.session.scalar(
+                select(Store.id).where(Store.id == invocation.context.store_id).with_for_update()
+            )
+            if locked_store is None:
+                raise ToolDispatchError("TOOL_RESOURCE_NOT_FOUND")
             unresolved = await self.session.scalar(
-                select(ToolCall.id)
-                .join(
-                    Message,
-                    and_(
-                        Message.store_id == ToolCall.store_id,
-                        Message.idempotency_key == ToolCall.idempotency_key,
-                    ),
-                )
+                select(Message.id)
                 .where(
-                    ToolCall.store_id == invocation.context.store_id,
-                    ToolCall.tool_name == "send_platform_message",
-                    ToolCall.status == "unknown",
-                    ToolCall.id != tool_call_id,
-                    Message.status == "unknown",
+                    Message.store_id == invocation.context.store_id,
+                    Message.platform == "tiktok",
+                    Message.direction == "outbound",
+                    Message.status.in_(("processing", "unknown")),
                 )
                 .limit(1)
             )

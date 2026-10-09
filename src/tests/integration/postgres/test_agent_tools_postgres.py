@@ -2,6 +2,8 @@
 
 import os
 import uuid
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy import delete, func, select
@@ -9,16 +11,111 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.agent.models import AgentRun
 from app.audit.models import AuditLog
-from app.conversations.models import Conversation
+from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
+from app.integrations.schemas import SendMessageResult
 from app.orders.models import Order
-from app.stores.models import Store
+from app.stores.models import ChannelAccount, Store
+from app.tools import executor as executor_module
 from app.tools.contracts import ToolExecutionContext, ToolInvocation
 from app.tools.executor import SqlAlchemyToolExecutor
 from app.tools.models import ToolCall
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="未提供隔离的 PostgreSQL 测试数据库")
+
+
+@pytest.mark.asyncio
+async def test_real_send_stops_when_prior_send_was_interrupted_after_pending_commit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """上次发送遗留 processing 时，新幂等键也不得再触发平台写入。"""
+    assert TEST_DATABASE_URL is not None
+    engine = create_async_engine(TEST_DATABASE_URL)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    store = Store(name="Interrupted send", code=f"send-orphan-{uuid.uuid4().hex}")
+    send_message = AsyncMock(return_value=SendMessageResult(external_message_id="123456789", status="sent", mock=False))
+    monkeypatch.setattr(
+        executor_module,
+        "get_message_adapter",
+        lambda _platform: SimpleNamespace(real_writes=True, send_message=send_message),
+    )
+    try:
+        async with sessions() as session:
+            session.add(store)
+            await session.flush()
+            store_id = store.id
+            customer = Customer(store_id=store.id, name="受控测试客户")
+            session.add(customer)
+            await session.flush()
+            conversation = Conversation(
+                store_id=store.id,
+                customer_id=customer.id,
+                platform="tiktok",
+                external_conversation_id=f"{uuid.uuid4().int}",
+                status="active",
+            )
+            channel = ChannelAccount(
+                store_id=store.id,
+                platform="tiktok",
+                external_store_id=f"shop-{uuid.uuid4().hex}",
+                display_name="Test shop",
+                access_token_ref="test-only",
+                status="connected",
+            )
+            session.add_all([conversation, channel])
+            await session.flush()
+            session.add_all(
+                [
+                    Message(
+                        store_id=store.id,
+                        conversation_id=conversation.id,
+                        customer_id=customer.id,
+                        platform="tiktok",
+                        external_message_id=f"pending-{uuid.uuid4()}",
+                        idempotency_key="interrupted-send",
+                        role="agent",
+                        direction="outbound",
+                        content="earlier approved text",
+                        status="processing",
+                        raw_payload={"delivery_mode": "unknown"},
+                    ),
+                    ToolCall(
+                        store_id=store.id,
+                        actor_type="user",
+                        actor_id=uuid.uuid4(),
+                        tool_name="send_platform_message",
+                        idempotency_key="interrupted-send",
+                        request_hash="0" * 64,
+                        status="running",
+                        input_summary={},
+                    ),
+                ]
+            )
+            await session.commit()
+
+            result = await SqlAlchemyToolExecutor(session).execute(
+                ToolInvocation(
+                    tool_name="send_platform_message",
+                    idempotency_key=f"next-send-{uuid.uuid4().hex}",
+                    arguments={"conversation_id": str(conversation.id), "content": "next approved text"},
+                    context=ToolExecutionContext(
+                        store_id=store.id,
+                        actor_type="user",
+                        actor_id=uuid.uuid4(),
+                        permissions={"workspace.reply"},
+                        human_confirmed=True,
+                    ),
+                )
+            )
+            assert result.status == "failed"
+            assert result.error_code == "TOOL_RECONCILIATION_REQUIRED"
+            send_message.assert_not_awaited()
+    finally:
+        async with sessions() as session:
+            await session.execute(delete(Store).where(Store.id == store_id))
+            await session.commit()
+        await engine.dispose()
 
 
 @pytest.mark.asyncio

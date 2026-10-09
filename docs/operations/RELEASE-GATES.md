@@ -15,6 +15,8 @@
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G1 核心范围已按 2026-10-09 用户决定通过，但 G1-L、G2～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
 
+2026-10-09 G3 安全补丁在隔离 PostgreSQL 复现并修复了中断后遗留 `processing` 消息未阻断下一次真实发送的问题；候选完整后端回归 `1726 passed, 3 skipped`。该补丁尚未发布或部署，运行中的 staging 仍为真实消息写关闭。若将来出现遗留 `processing`，不得自动重发或直接改写数据库；需先确认没有在途调用、核对平台事实并形成受审恢复路径。补丁和离线测试不替代受控会话的一次真实发送与对账，G3 仍未通过。
+
 2026-10-08 staging proxy 的临时配置挂载在容器重启时导致短暂 502；PR #89 的持久源码部署和作业结束后再次重启已通过，见 [持久挂载证据](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。G0 的本次运行恢复已复测，G6 仍需重新开始连续五日观察。
 
 同日渠道页 OAuth 状态修复已由 PR #96 的单前端镜像部署到 staging，发布、预取、预检、部署以及前端摘要/健康/迁移头现场核对通过，见 [前端更新证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。用户撤回此前“有顶部成功提示”的回答，内置浏览器又无法刷新；公网五路径 200 和容器健康仅证明服务可用，带身份页面提示仍待核对。新授权的同一 callback 重放与增强物流 `202604` 仍缺证据，G1 未签署。

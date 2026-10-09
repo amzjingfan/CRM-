@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp004-g3-offline-entry-20261009
-Governance base SHA: 0f80d3f804b425b8aca53e1f8b34939e52b6e89d
-CANDIDATE_SUBJECT_SHA: docs-only; no new runtime candidate
+Working branch at this snapshot: fix/mvp004-orphan-send-20261009
+Governance base SHA: 9a6d1db4816d352cf14d79ed49fcb43c8e7ecd1f
+CANDIDATE_SUBJECT_SHA: 9ca4eea828f851b76b0fc5e05c750bea4ee80903
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -23,6 +23,10 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
 2026-10-09 G3 顺序例外：用户决定在 G2 真实投递阻塞期间先进入 G3；G2 仍为必过项。main `0f80d3f804b425b8aca53e1f8b34939e52b6e89d` 上三组人工发送、领域和工具执行聚焦测试本轮 55 passed、1 warning；staging G2 overlay 的真实普通消息写仍为 false，没有受控测试买家会话，因此未发送任何外部消息，也不能签署 G3。实施范围与解除条件见[TASKS](../tasks/TASKS.md)及[RELEASE-GATES](../operations/RELEASE-GATES.md)。
+
+2026-10-09 G3 后续安全补丁以 main `9a6d1db4816d352cf14d79ed49fcb43c8e7ecd1f` 为基线，在隔离 PostgreSQL 红测复现遗留 `processing` 未拦截下一次真实发送，并加入同店铺行锁和 `processing/unknown` 双状态阻断。修复后的全新隔离库完整后端回归 `1726 passed, 3 skipped, 2 warnings`；候选尚未发布镜像或部署 staging，真实写保持关闭。遗留 `processing` 的安全人工恢复与受控会话现场发送仍缺证据。
+
+本补丁的候选 [IR](../records/implementation/IR-MVP-004-20261009-R01.md)、[TR](../reports/tests/TR-MVP-004-20261009-R01.md)、[RR](../reports/reviews/RR-MVP-004-20261009-R01.md)绑定 subject `9ca4eea828f851b76b0fc5e05c750bea4ee80903`；三个派生索引在此任务分支为 `CANDIDATE_VIEW`，合入 main 后须复核为 `CURRENT`。
 
 2026-10-09 最新 G2 触发阻塞：用户报告电脑与手机买家侧都没有商家聊天入口，Seller Center 的 Customer Messages 存在，但没有受控测试买家的现成会话。既有 G1 低敏证据确认 `seller.customer_service` Scope 和真实会话只读查询；平台端缺入口的具体原因仍未确定。main `745d79f6cacfdb0b1356d2c73aa86928667d7193` 上只读工作流 `37892709909` 于 06:17Z 再确认 `NEW_MESSAGE=0`、入站消息 0，见[最新低敏复核](../../release/evidence/staging/crm-staging-g2-no-trigger-20261009.json)。任务状态以[TASKS](../tasks/TASKS.md)为准；解除条件为平台给出可用测试路径或取得受控真实买家入站消息，production 不变。
 

@@ -24,6 +24,7 @@
 - 会话列表/详情、消息记录、状态更新和受控工具均位于 `/workspace`。
 - `POST /workspace/sessions/{session_id}/suggest` 返回 AI 建议。
 - `POST /workspace/sessions/{session_id}/messages` 仅发送人工确认的普通文本；TikTok 真实发送要求 `seller.customer_service` Scope、CSRF 和 `Idempotency-Key`。
+- 同店铺已有未结清的 TikTok `processing` 或 `unknown` 出站消息时，新真实发送返回冲突并保持零次新平台调用；旧 `processing` 不能作为确定失败自动重发。现有管理员对账接口只接受 `unknown`，中断遗留的 `processing` 须先经受审恢复路径收敛。
 - `POST /workspace/messages/{message_id}/reconcile` 对账 `unknown` 消息，不能通过重复平台发送猜测结果。
 - `POST /chat/query` 使用 `accepted/status/delta/result/error/done` SSE 事件；`delta` 是安全草稿完成后的传输分块，不表示模型原生 Token。
 

@@ -492,7 +492,7 @@ async def test_real_message_write_is_blocked_until_previous_unknown_is_reconcile
     )
     channel = SimpleNamespace(status="connected")
     session = Mock(spec=AsyncSession)
-    session.scalar = AsyncMock(side_effect=[conversation, channel, uuid.uuid4()])
+    session.scalar = AsyncMock(side_effect=[conversation, channel, store_id, uuid.uuid4()])
     session.add = Mock()
     adapter = SimpleNamespace(real_writes=True)
     monkeypatch.setattr(executor_module, "get_message_adapter", lambda _platform: adapter)
