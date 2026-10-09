@@ -26,6 +26,8 @@
 
 2026-10-09 PR #103 合入 main `253a6cf0f563aae85b15ea7447a3589f203484b1` 后，用户精确授权的一次 workflow `37881350331` 对固定 `NEW_MESSAGE`/staging 地址执行一次 PUT，HTTP 200，写后 GET 确认订阅数 1、地址匹配数 1。独立只读 workflow `37881477237` 再次确认订阅数 1、主题仅 `NEW_MESSAGE`、预期地址匹配数 1、其他地址数 0；两个 artifact 的 SHA-256 见[低敏证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。尚无官方真实事件进入、处理、重试、乱序、审计或恢复切换的现场证据，G2 保持未通过。
 
+2026-10-09 只读事件观测候选分支 `feature/mvp003-g2-event-observer` 的 6 项聚焦测试通过；Ruff 检查/格式、脚本 mypy 和两个工作流 PowerShell run 块语法解析通过。脚本在任何 SELECT 前设置数据库只读事务，输出固定数量字段；工作流将核对 main SHA 与已运行 backend 摘要。尚未合入或在 staging 运行，不能据此推断真实事件已投递。
+
 ## BGE 正式基线
 
 - 质量：Dense Recall@20 = 100%，Rerank Recall@5 = 100%，MRR = 1，nDCG = 1，引用合法率 = 100%，无答案拒判率 = 100%。

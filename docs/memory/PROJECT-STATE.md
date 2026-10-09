@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp003-g2-index-current
-Governance base SHA: 253a6cf0f563aae85b15ea7447a3589f203484b1
-CANDIDATE_SUBJECT_SHA: docs-only; G2 code subject 4bb25c9ee6e12caf1a956598658b6ca2bd800877
+Working branch at this snapshot: feature/mvp003-g2-event-observer
+Governance base SHA: 9f474243c70e0b52717e0c159457c525c78acd23
+CANDIDATE_SUBJECT_SHA: 06e2bfad86c901a588a0600ce42daa7b136f8779
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -21,6 +21,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
+
+PR #104 已将订阅事实与当前索引合入 main `9f474243c70e0b52717e0c159457c525c78acd23`。当前分支仅准备 staging Runner 的只读 Webhook 事件聚合观测，subject 为 `06e2bfad86c901a588a0600ce42daa7b136f8779`，过程记录见 [IR R04](../records/implementation/IR-MVP-003-20261009-R04.md)、[TR R04](../reports/tests/TR-MVP-003-20261009-R04.md)、[RR R04](../reports/reviews/RR-MVP-003-20261009-R04.md)，分支索引为 `CANDIDATE_VIEW`；不发布镜像、不重复订阅。现场基线和真实投递仍待验证。
 
 `MVP-OAUTH-REDIRECT-001` 已由 PR #53 合入 `main`。用户重新选择 North America seller 与 US 后完成 TikTok 授权，成功页自动返回 CRM；此前卖家类型拒绝系操作选择错误，不再作为当前阻塞。现场只读预检中旧版物流 `202309` 成功，增强物流 `202604` 返回业务码 `11007009`，含义未确认，不能将两者混同；Token 生命周期、店铺隔离和重复回调现场证据仍未关闭 G1。production 未变。
 

@@ -1,0 +1,150 @@
+name: Inspect staging TikTok Webhook event aggregates
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_target:
+        description: Type staging to run one read-only event aggregate query
+        required: true
+        type: string
+      expected_backend_image:
+        description: Exact running backend repository@sha256 digest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-staging-production-gates
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    name: Read staging event aggregates
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    runs-on: [self-hosted, linux, x64, crm-staging]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Fetch exact reviewed inspection script
+        id: source
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRM_TARGET: ${{ inputs.confirm_target }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          if ($env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
+              $env:CONFIRM_TARGET -cne 'staging' -or
+              $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$') {
+            throw 'The staging inspection target or image is invalid.'
+          }
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = 'application/vnd.github+json'
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+          $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/git/commits/$env:GITHUB_SHA" -Headers $headers
+          if ([string]$commit.sha -cne $env:GITHUB_SHA) {
+            throw 'The dispatch SHA is not a GitHub commit.'
+          }
+          $source = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/contents/src/backend/scripts/inspect_tiktok_webhook_events.py?ref=$env:GITHUB_SHA" -Headers $headers
+          if ($source.type -cne 'file' -or $source.encoding -cne 'base64' -or
+              [string]$source.sha -cnotmatch '^[0-9a-f]{40}$') {
+            throw 'The inspection source is invalid.'
+          }
+          $scriptBytes = [Convert]::FromBase64String([string]$source.content)
+          if ($scriptBytes.Length -lt 100 -or $scriptBytes.Length -gt 20000) {
+            throw 'The inspection source size is invalid.'
+          }
+          $blobPrefix = [Text.Encoding]::ASCII.GetBytes("blob $($scriptBytes.Length)`0")
+          [byte[]]$blobInput = $blobPrefix + $scriptBytes
+          $blobSha = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData($blobInput)).ToLowerInvariant()
+          if ($blobSha -cne $source.sha) {
+            throw 'The inspection source failed Git blob verification.'
+          }
+          $scriptPath = Join-Path $env:RUNNER_TEMP "crm-g2-event-inspect-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.py"
+          [IO.File]::WriteAllBytes($scriptPath, $scriptBytes)
+          "script_path=$scriptPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Query read-only event counts without disclosing identifiers
+        id: inspect
+        shell: pwsh
+        env:
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+          SCRIPT_PATH: ${{ steps.source.outputs.script_path }}
+        run: |
+          $runnerUid = (& id -u).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runnerUid -notmatch '^[1-9][0-9]*$') {
+            throw 'Unable to resolve Rootless Docker UID.'
+          }
+          $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
+          $containers = @(& docker --host $dockerHost ps --filter 'label=com.docker.compose.project=crm-staging' --filter 'label=com.docker.compose.service=backend' --format '{{.ID}}')
+          if ($LASTEXITCODE -ne 0 -or $containers.Count -ne 1) {
+            throw 'Expected exactly one running staging backend.'
+          }
+          $actualImage = (& docker --host $dockerHost inspect --format '{{.Config.Image}}' $containers[0]).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualImage -cne $env:EXPECTED_BACKEND_IMAGE) {
+            throw 'Running backend digest does not match the reviewed input.'
+          }
+          $output = Get-Content -LiteralPath $env:SCRIPT_PATH -Raw -Encoding UTF8 |
+            & docker --host $dockerHost exec -i $containers[0] python -
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Read-only TikTok event inspection failed.'
+          }
+          $summary = $output | ConvertFrom-Json -AsHashtable
+          $expectedKeys = @('failed_events', 'ignored_events', 'inbound_messages', 'new_message_events', 'other_status_events', 'pending_events', 'retried_events', 'signature_valid_events', 'succeeded_events', 'unbound_tiktok_events')
+          if ($null -eq $summary -or
+              (($summary.Keys | Sort-Object) -join ',') -cne (($expectedKeys | Sort-Object) -join ',')) {
+            throw 'Read-only inspection output did not match the low-sensitive schema.'
+          }
+          foreach ($key in $expectedKeys) {
+            if ($summary[$key] -isnot [int] -and $summary[$key] -isnot [long]) {
+              throw 'Read-only inspection output contained a non-integer count.'
+            }
+            if ([long]$summary[$key] -lt 0) {
+              throw 'Read-only inspection output contained a negative count.'
+            }
+          }
+          if ([long]$summary.succeeded_events + [long]$summary.failed_events + [long]$summary.pending_events +
+              [long]$summary.ignored_events + [long]$summary.other_status_events -ne [long]$summary.new_message_events -or
+              [long]$summary.signature_valid_events -gt [long]$summary.new_message_events -or
+              [long]$summary.retried_events -gt [long]$summary.new_message_events) {
+            throw 'Read-only inspection counts were inconsistent.'
+          }
+          $evidence = @{
+            schema_version = 1
+            evidence_type = 'staging_tiktok_webhook_event_aggregates'
+            generated_at_utc = [DateTime]::UtcNow.ToString('o')
+            source_sha = $env:GITHUB_SHA
+            backend_image = $actualImage
+            status = 'passed'
+            event_window_start_utc = '2026-10-09T03:54:01Z'
+            new_message_events = [long]$summary.new_message_events
+            signature_valid_events = [long]$summary.signature_valid_events
+            succeeded_events = [long]$summary.succeeded_events
+            failed_events = [long]$summary.failed_events
+            pending_events = [long]$summary.pending_events
+            ignored_events = [long]$summary.ignored_events
+            other_status_events = [long]$summary.other_status_events
+            retried_events = [long]$summary.retried_events
+            inbound_messages = [long]$summary.inbound_messages
+            unbound_tiktok_events = [long]$summary.unbound_tiktok_events
+            read_only = $true
+            production_release = $false
+          }
+          $evidencePath = Join-Path $env:RUNNER_TEMP "crm-g2-webhook-events-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
+          $evidence | ConvertTo-Json -Depth 5 | Out-File -LiteralPath $evidencePath -Encoding utf8
+          "evidence_path=$evidencePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Upload low-sensitive event aggregates
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: staging-tiktok-webhook-events-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.inspect.outputs.evidence_path }}
+          if-no-files-found: error
+          retention-days: 30
