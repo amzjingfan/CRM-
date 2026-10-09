@@ -11,8 +11,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp004-orphan-send-20261009
-Governance base SHA: 9a6d1db4816d352cf14d79ed49fcb43c8e7ecd1f
+Working branch at this snapshot: docs/mvp004-evidence-current-20261009
+Governance base SHA: 1eda268cd1f529d36ee53c0e44243ffeba33ba7f
 CANDIDATE_SUBJECT_SHA: 9ca4eea828f851b76b0fc5e05c750bea4ee80903
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
@@ -26,7 +26,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-09 G3 后续安全补丁以 main `9a6d1db4816d352cf14d79ed49fcb43c8e7ecd1f` 为基线，在隔离 PostgreSQL 红测复现遗留 `processing` 未拦截下一次真实发送，并加入同店铺行锁和 `processing/unknown` 双状态阻断。修复后的全新隔离库完整后端回归 `1726 passed, 3 skipped, 2 warnings`；候选尚未发布镜像或部署 staging，真实写保持关闭。遗留 `processing` 的安全人工恢复与受控会话现场发送仍缺证据。
 
-本补丁的候选 [IR](../records/implementation/IR-MVP-004-20261009-R01.md)、[TR](../reports/tests/TR-MVP-004-20261009-R01.md)、[RR](../reports/reviews/RR-MVP-004-20261009-R01.md)绑定 subject `9ca4eea828f851b76b0fc5e05c750bea4ee80903`；三个派生索引在此任务分支为 `CANDIDATE_VIEW`，合入 main 后须复核为 `CURRENT`。
+本补丁的 [IR](../records/implementation/IR-MVP-004-20261009-R01.md)、[TR](../reports/tests/TR-MVP-004-20261009-R01.md)、[RR](../reports/reviews/RR-MVP-004-20261009-R01.md)绑定 subject `9ca4eea828f851b76b0fc5e05c750bea4ee80903`；PR #109 已 squash 合入 main `1eda268cd1f529d36ee53c0e44243ffeba33ba7f`，三个派生索引从主分支源记录核对为 `CURRENT`。任务仍为 `DOING`，G3 未关闭。
 
 2026-10-09 最新 G2 触发阻塞：用户报告电脑与手机买家侧都没有商家聊天入口，Seller Center 的 Customer Messages 存在，但没有受控测试买家的现成会话。既有 G1 低敏证据确认 `seller.customer_service` Scope 和真实会话只读查询；平台端缺入口的具体原因仍未确定。main `745d79f6cacfdb0b1356d2c73aa86928667d7193` 上只读工作流 `37892709909` 于 06:17Z 再确认 `NEW_MESSAGE=0`、入站消息 0，见[最新低敏复核](../../release/evidence/staging/crm-staging-g2-no-trigger-20261009.json)。任务状态以[TASKS](../tasks/TASKS.md)为准；解除条件为平台给出可用测试路径或取得受控真实买家入站消息，production 不变。
 
