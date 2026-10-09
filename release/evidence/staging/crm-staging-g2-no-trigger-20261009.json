@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_webhook_no_trigger_observation",
+  "captured_at_utc": "2026-10-09T06:17:42.4661965Z",
+  "environment": "staging",
+  "source_main_sha": "745d79f6cacfdb0b1356d2c73aa86928667d7193",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:b889525ff1b68b33ed01894d47973e520f08a40017ac8f3440eb04951c807f53",
+  "workflow_run_id": 37892709909,
+  "artifact_id": 11598781583,
+  "artifact_json_sha256": "79cb8da0d2cf714fe5fd8c0e994029c570188a5c5740ddf34b99610c4ad9c2f1",
+  "event_window_start_utc": "2026-10-09T03:54:01Z",
+  "new_message_events": 0,
+  "signature_valid_events": 0,
+  "inbound_messages": 0,
+  "unbound_tiktok_events": 0,
+  "read_only": true,
+  "official_delivery_verified": false,
+  "production_release": false,
+  "sensitive_values_included": false
+}

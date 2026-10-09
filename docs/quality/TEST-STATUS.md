@@ -30,6 +30,8 @@
 
 2026-10-09 PR #105 后端/前端 CI 通过并合入 main `8e1d3cf74ef0cbec2e6c172d620f4cdba66878fe`。只读 staging 工作流 `37883016283` 核对运行中 backend 摘要、只读事务和唯一已连接渠道后成功上传低敏基线：订阅确认时间之后的 `NEW_MESSAGE` 事件 0、签名有效事件 0、处理成功 0、TikTok 入站消息累计 0、未绑定事件 0。artifact SHA-256 见[基线证据](../../release/evidence/staging/crm-staging-g2-event-baseline-20261009.json)。没有可据此判为真实投递的事件，G2 未通过。
 
+2026-10-09 06:17Z main 745d79f6cacfdb0b1356d2c73aa86928667d7193 的 staging 只读工作流 37892709909 再次成功：运行后端摘要匹配，订阅窗口内 NEW_MESSAGE 事件 0、签名有效 0、入站消息 0、未绑定事件 0。artifact ID/SHA-256 见[低敏复核](../../release/evidence/staging/crm-staging-g2-no-trigger-20261009.json)。用户报告买家侧电脑和手机均无商家聊天入口、无受控测试买家既有会话；此项是用户报告，不是机器对平台入口原因的证明。真实投递、重试、乱序仍未验，G2 不通过。
+
 ## BGE 正式基线
 
 - 质量：Dense Recall@20 = 100%，Rerank Recall@5 = 100%，MRR = 1，nDCG = 1，引用合法率 = 100%，无答案拒判率 = 100%。
