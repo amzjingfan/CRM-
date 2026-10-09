@@ -11,8 +11,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g1-core-close-g2-ready-20261009
-Governance base SHA: 0b59cde15034112b8e495eaf7d5465692b3d8b65
+Working branch at this snapshot: docs/mvp002-finalize-g2-ready-20261009
+Governance base SHA: 1829991c4b780a63a6912a4652f89eea496584ae
 CANDIDATE_SUBJECT_SHA: 9526109e57fe0113451ed2f80c22c5fb2c739d1e
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
@@ -64,7 +64,7 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 
 2026-10-09 后续决定与恢复点：用户明确以首次有效 callback 完成授权关闭 G1 核心，现场同一 callback 二次 GET 不再阻断；`202604` 转独立 G1-L，暂不测试但最终 G8 前仍须通过。现场只读复核最新 job `connected`、完成且无错误，code/state 密文清空、匹配成功审计 1 条、渠道 connected；因此 G1 核心 staging 口径通过。Partner Center 订阅数 0，staging 真实只读和 Webhook 开关 false，公网 ready 200/TLS 正常；G2 可开始准备，真实投递未发生。见 [低敏证据](../../release/evidence/staging/crm-staging-g1-core-closure-20261009.json)，production 未变。
 
-`MVP-002` 按上述用户决定形成 [IR](../records/implementation/IR-MVP-002-20261009-R01.md)、[TR](../reports/tests/TR-MVP-002-20261009-R01.md) 和 [RR](../reports/reviews/RR-MVP-002-20261009-R01.md)，绑定候选 subject `9526109e57fe0113451ed2f80c22c5fb2c739d1e`。本分支索引为 `CANDIDATE_VIEW`；合并后须从 main 重建 `CURRENT` 并复核任务终态。未对 G2 执行订阅注册或运行配置切换。
+`MVP-002` 按上述用户决定形成 [IR](../records/implementation/IR-MVP-002-20261009-R01.md)、[TR](../reports/tests/TR-MVP-002-20261009-R01.md) 和 [RR](../reports/reviews/RR-MVP-002-20261009-R01.md)，绑定候选 subject `9526109e57fe0113451ed2f80c22c5fb2c739d1e`。PR #99 双 CI 通过并 squash 合入 main `1829991c4b780a63a6912a4652f89eea496584ae`；三份索引从合并后的源记录核对为 `CURRENT`，`MVP-002` 完成限定的 G1 核心范围，`MVP-003` 进入 G2 准备。未对 G2 执行订阅注册或运行配置切换。
 
 ## 权威入口
 
