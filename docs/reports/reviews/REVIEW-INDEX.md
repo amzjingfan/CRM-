@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -30,3 +30,4 @@ View: `CURRENT`
 | RR-MVP-003-20261009-R03 | MVP-003 | R03 | DRAFT | `4bb25c9ee6e12caf1a956598658b6ca2bd800877` | external-write-authorization / fixed-target / single-put / unknown-reconciliation / secret-redaction / staging-boundary | 2026-10-09T11:40:00+08:00 | [`RR-MVP-003-20261009-R03.md`](RR-MVP-003-20261009-R03.md) |
 | RR-MVP-003-20261009-R04 | MVP-003 | R04 | DRAFT | `06e2bfad86c901a588a0600ce42daa7b136f8779` | read-only-transaction / tenant-selection / secret-redaction / runner-provenance / staging-boundary | 2026-10-09T12:11:00+08:00 | [`RR-MVP-003-20261009-R04.md`](RR-MVP-003-20261009-R04.md) |
 | RR-MVP-004-20261009-R01 | MVP-004 | R01 | APPROVE | `9ca4eea828f851b76b0fc5e05c750bea4ee80903` | tenant-isolation / interrupted-send / concurrency / idempotency / fail-closed / recovery / release-boundary | 2026-10-09T17:06:00+08:00 | [`RR-MVP-004-20261009-R01.md`](RR-MVP-004-20261009-R01.md) |
+| RR-MVP-004-20261010-R02 | MVP-004 | R02 | APPROVE | `6e975148650bfd8e6cb0b7980b86554345caf5d0` | staging-scope / image-supply-chain / message-write-boundary / rollback | 2026-10-10T10:08:26+08:00 | [`RR-MVP-004-20261010-R02.md`](RR-MVP-004-20261010-R02.md) |

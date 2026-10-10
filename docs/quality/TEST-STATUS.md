@@ -34,6 +34,8 @@
 
 2026-10-09 G3 顺序例外的离线复核：基线 main `0f80d3f804b425b8aca53e1f8b34939e52b6e89d`，在 Windows 工作树 `src/backend` 执行 `uv run pytest -q -c pyproject.toml ../tests/backend/platform/test_tiktok_write.py ../tests/backend/domain/test_phase3_domain.py ../tests/backend/agent/test_tool_executor.py`，结果 55 passed、1 Starlette/httpx 弃用 warning。检查覆盖 TikTok 单次普通文本请求和签名、固定出口失败不直连、未确认不发送、超时及不完整响应进入 `unknown`、旧未知消息阻断后续真实写、管理员对账记录。以上仅为确定性离线检查；未启用 staging 真实写，未使用受控平台会话，未发送外部消息，不能判定 G3 通过。
 
+2026-10-10 G3 中断后安全补丁已由 main `6e975148650bfd8e6cb0b7980b86554345caf5d0` 发布为单个 backend 私有镜像；六角色预取、G2 模式预检和 staging 部署通过，迁移头、固定出口、三个公网健康端点和运行后端摘要均核对成功，见 [TR R02](../reports/tests/TR-MVP-004-20261010-R02.md)与[低敏证据](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)。真实消息写仍关闭，`NEW_MESSAGE`/入站消息仍为零，G3 真实发送、`unknown` 对账及恢复未验证。
+
 2026-10-09 G3 安全补丁（PR #109 已合入 main）：隔离 PostgreSQL 红测证明，旧 `processing` 出站消息与 `running` 工具调用存在时，新幂等键原先仍可触发一次平台发送；修复后，同店铺真实 TikTok 发送在提交新的 `processing` 前使用店铺行锁串行化，并同时阻断 `processing` 和 `unknown`。同一回归转绿；全新 `postgres-test` 数据库由项目脚本迁移并完成后端完整回归 `1726 passed, 3 skipped, 2 warnings`，随后只停止并移除该测试容器。`ruff check`、`ruff format --check` 和 `mypy app scripts` 均通过。未发布镜像、未部署 staging、未启用真实写；遗留 `processing` 的人工恢复流程和受控会话真实发送仍待验，G3 不通过。
 
 ## BGE 正式基线

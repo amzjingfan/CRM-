@@ -38,6 +38,8 @@ G2 的 staging 真实读取与 Webhook 使用部署门禁显式参数 `enable_ti
 
 G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-backend-image.yml` 的 `staging-backend` 确认词，仅发布 `crm-backend` 并核对不可变摘要和压缩层大小；沿用已验证的前端和检索摘要，避免重建大体积检索镜像。私有镜像发布仍按独立授权边界执行，发布后还需 staging 预取、受控部署和真实 Webhook 验收。
 
+2026-10-10 G3 中断后安全补丁沿用这一单后端发布路径：源 main `6e975148650bfd8e6cb0b7980b86554345caf5d0`，候选 backend `0a07365e...`，旧版 `b889525f...`。六角色预取和 G2 只读/Webhook 模式预检、部署通过；前端/检索摘要不变，普通消息真实写保持关闭。低敏 artifact ID、文件摘要、固定出口和健康结果见[现场记录](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)。本轮未执行真实消息发送或实际切回；G3 仍须独立验收。
+
 主机 SSH 不可用时，`inspect-staging-tiktok-webhooks.yml` 可在受审的 `main` 提交和在线 staging Runner 上执行一次只读订阅查询。它先核对运行中 backend 的不可变摘要，再在该容器的新进程中临时启用真实只读能力；要求恰好一个已连接 TikTok 渠道，只调用 `GET /event/202309/webhooks`。机器证据只记录订阅数、主题及与预期回调地址的匹配数，不输出 URL、请求 ID、店铺标识或凭据；工作流不创建、修改、删除订阅，也不切换常驻服务环境。
 
 2026-10-09 首次只读查询确认当时订阅为 0，见[写入前证据](../../release/evidence/staging/crm-staging-g2-subscription-read-20261009.json)。一次性 `subscribe-staging-tiktok-new-message.yml` 仅能从 main 对已核对的 staging backend 执行最多一次 `PUT /event/202309/webhooks`：唯一主题 `NEW_MESSAGE`，唯一地址 `https://staging.overselfx.com/v1/webhooks/tiktok`。调用前重新 GET；若已是精确目标则不写，若有任何其他订阅则失败关闭。PUT 后 GET 对账；连接失败或结果不确定时不自动重试，需另行只读核对。脚本不接受动态主题/地址，输出仅包含状态、数量和 HTTP 状态码。所用 `202309` 路径及正文来自本地 TikTok 官方 OAS。
