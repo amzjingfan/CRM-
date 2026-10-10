@@ -11,8 +11,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp004-g3-staging-backend-20261010
-Governance base SHA: 6e975148650bfd8e6cb0b7980b86554345caf5d0
+Working branch at this snapshot: docs/mvp004-g3-rollout-index-current-20261010
+Governance base SHA: d4a71aeb39b379ceea9a348938201d5616a4d2d5
 CANDIDATE_SUBJECT_SHA: 6e975148650bfd8e6cb0b7980b86554345caf5d0
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
@@ -29,6 +29,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 本补丁的 [IR](../records/implementation/IR-MVP-004-20261009-R01.md)、[TR](../reports/tests/TR-MVP-004-20261009-R01.md)、[RR](../reports/reviews/RR-MVP-004-20261009-R01.md)绑定 subject `9ca4eea828f851b76b0fc5e05c750bea4ee80903`；PR #109 已 squash 合入 main `1eda268cd1f529d36ee53c0e44243ffeba33ba7f`，三个派生索引从主分支源记录核对为 `CURRENT`。任务仍为 `DOING`，G3 未关闭。
 
 2026-10-10 G3 安全补丁从 main `6e975148650bfd8e6cb0b7980b86554345caf5d0` 单独发布后端并部署 staging：镜像、六角色预取、G2 模式预检/部署均通过；迁移头、固定出口、三个公网健康和运行后端摘要已核对。独立只读观察 `NEW_MESSAGE=0`、入站消息 0；真实普通消息写仍关闭，没有向买家发送测试消息。见[低敏现场证据](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)与 [IR R02](../records/implementation/IR-MVP-004-20261010-R02.md)/[TR R02](../reports/tests/TR-MVP-004-20261010-R02.md)/[RR R02](../reports/reviews/RR-MVP-004-20261010-R02.md)。遗留 `processing` 恢复路径与受控买家会话仍缺，G3 未通过。
+
+该部署记录由 PR #111 合入 main `d4a71aeb39b379ceea9a348938201d5616a4d2d5`；从该主分支的 27 份 IR、27 份 TR 和 27 份 RR 源记录逐项核对索引 ID 一一对应，本索引收尾分支将三个派生视图恢复为 `CURRENT`。此记录只改变文档索引，不改变已运行镜像或门禁结论。
 
 2026-10-09 最新 G2 触发阻塞：用户报告电脑与手机买家侧都没有商家聊天入口，Seller Center 的 Customer Messages 存在，但没有受控测试买家的现成会话。既有 G1 低敏证据确认 `seller.customer_service` Scope 和真实会话只读查询；平台端缺入口的具体原因仍未确定。main `745d79f6cacfdb0b1356d2c73aa86928667d7193` 上只读工作流 `37892709909` 于 06:17Z 再确认 `NEW_MESSAGE=0`、入站消息 0，见[最新低敏复核](../../release/evidence/staging/crm-staging-g2-no-trigger-20261009.json)。任务状态以[TASKS](../tasks/TASKS.md)为准；解除条件为平台给出可用测试路径或取得受控真实买家入站消息，production 不变。
 
