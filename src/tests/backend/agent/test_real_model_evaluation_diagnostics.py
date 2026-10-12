@@ -63,6 +63,42 @@ def test_claim_diagnostic_names_only_the_mismatched_fields() -> None:
     assert str(case.evidence_id) not in serialized
 
 
+def test_required_content_diagnostic_records_only_missing_frozen_group_indexes() -> None:
+    case = _case("negation-open-001")
+    output = RealModelEvaluationOutput.model_validate(
+        {
+            "decision": "human_review",
+            "content": "没有结果。",
+            "language": "zh-CN",
+            "reason_code": "policy_grounded",
+            "business_claims": [
+                {
+                    "subject_type": "non_business_artifact",
+                    "subject_id": None,
+                    "action": "display",
+                    "tense": "timeless",
+                    "polarity": "negated",
+                    "condition": "actual",
+                    "evidence_type": "faq_chunk",
+                    "evidence_id": str(case.evidence_id),
+                    "confidence": 0.9,
+                }
+            ],
+            "send_performed": False,
+        }
+    )
+
+    failures = grade_real_model_evaluation_output(case, output)
+    diagnostic = diagnose_real_model_evaluation_output(case, output, failures)
+
+    assert failures == ["REQUIRED_CONTENT_MISSING"]
+    assert diagnostic is not None
+    assert diagnostic.missing_required_group_indexes == [1]
+    serialized = diagnostic.model_dump_json()
+    assert case.customer_message not in serialized
+    assert str(case.evidence_id) not in serialized
+
+
 def test_forbidden_diagnostic_is_a_hint_and_does_not_change_grading() -> None:
     case = _case("condition-open-002")
     output = RealModelEvaluationOutput.model_validate(

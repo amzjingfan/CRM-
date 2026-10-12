@@ -254,7 +254,7 @@ jobs:
                 (($report.samples | ForEach-Object { $_.Keys } | Sort-Object -Unique | Where-Object { $_ -cnotin $allowedSampleKeys }).Count -ne 0)) {
               throw 'G4 report provenance or low-sensitive schema is invalid.'
             }
-            $allowedDiagnosticKeys = @('claim_mismatch_fields','forbidden_matches')
+            $allowedDiagnosticKeys = @('claim_mismatch_fields','forbidden_matches','missing_required_group_indexes')
             $allowedClaimFields = @('count','expected_subjects','subject_type','subject_id','action','tense','polarity','condition','evidence_type','evidence_id','confidence')
             $allowedForbiddenKeys = @('term_index','all_occurrences_inside_quotes','all_occurrences_have_prohibition_cue')
             foreach ($sample in $report.samples) {
@@ -263,8 +263,15 @@ jobs:
               if (($diagnostic.Keys | Where-Object { $_ -cnotin $allowedDiagnosticKeys }).Count -ne 0 -or
                   @($diagnostic.claim_mismatch_fields).Count -gt 11 -or
                   @($diagnostic.forbidden_matches).Count -gt 20 -or
+                  @($diagnostic.missing_required_group_indexes).Count -gt 8 -or
                   @($diagnostic.claim_mismatch_fields | Where-Object { $_ -cnotin $allowedClaimFields }).Count -ne 0) {
                 throw 'G4 diagnostic field is not low-sensitive.'
+              }
+              foreach ($groupIndex in $diagnostic.missing_required_group_indexes) {
+                if (($groupIndex -isnot [int] -and $groupIndex -isnot [long]) -or
+                    $groupIndex -lt 0 -or $groupIndex -gt 7) {
+                  throw 'G4 required-content diagnostic is not low-sensitive.'
+                }
               }
               foreach ($match in $diagnostic.forbidden_matches) {
                 if (($match.Keys | Where-Object { $_ -cnotin $allowedForbiddenKeys }).Count -ne 0 -or

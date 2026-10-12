@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -306,6 +306,7 @@ class RealModelEvaluationDiagnostics(BaseModel):
 
     claim_mismatch_fields: list[RealModelClaimMismatchField] = Field(default_factory=list, max_length=11)
     forbidden_matches: list[RealModelForbiddenMatch] = Field(default_factory=list, max_length=20)
+    missing_required_group_indexes: list[Annotated[int, Field(ge=0, le=7)]] = Field(default_factory=list, max_length=8)
 
 
 class RealModelSampleResult(BaseModel):
@@ -621,6 +622,14 @@ def diagnose_real_model_evaluation_output(
     if not failures:
         return None
     claim_fields = _claim_mismatch_fields(case, output) if "BUSINESS_CLAIMS_MISMATCH" in failures else []
+    missing_group_indexes: list[int] = []
+    if "REQUIRED_CONTENT_MISSING" in failures:
+        content = (output.content or "").casefold()
+        missing_group_indexes = [
+            index
+            for index, group in enumerate(case.required_term_groups)
+            if not any(term.casefold() in content for term in group)
+        ]
     matches: list[RealModelForbiddenMatch] = []
     if "FORBIDDEN_CONTENT_PRESENT" in failures:
         content = (output.content or "").casefold()
@@ -653,7 +662,11 @@ def diagnose_real_model_evaluation_output(
                         ),
                     )
                 )
-    return RealModelEvaluationDiagnostics(claim_mismatch_fields=claim_fields, forbidden_matches=matches)
+    return RealModelEvaluationDiagnostics(
+        claim_mismatch_fields=claim_fields,
+        forbidden_matches=matches,
+        missing_required_group_indexes=missing_group_indexes,
+    )
 
 
 def _inside_quotes(content: str, start: int, end: int) -> bool:

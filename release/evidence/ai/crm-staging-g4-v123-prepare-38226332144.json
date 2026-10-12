@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_sha": "5c1b97f21f740fd5e6cc47070cb374c33d48f3bc",
+  "dataset_sha256": "7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94",
+  "provider_calls": 0,
+  "evidence_type": "staging_g4_preflight",
+  "sample_count": 36,
+  "production_release": false,
+  "injected_cases": 2,
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:9f5d60f8c917df0b3f6e5695b233a711ef92306b71d6be44148fb8525742f7fa"
+}

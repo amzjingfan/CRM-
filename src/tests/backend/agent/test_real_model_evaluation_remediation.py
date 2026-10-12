@@ -182,7 +182,25 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.3"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.4"
+
+
+def test_real_model_request_preserves_negative_condition_and_translation_meaning() -> None:
+    """新诊断暴露的三种语义必须在冻结请求的系统契约中明确。"""
+    repo_root = TESTS_ROOT.parents[1]
+    dataset = load_verified_real_model_evaluation_dataset(
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
+    )
+    cases = {case.sample_id: case for case in dataset.cases}
+    run_id = uuid.UUID("44444444-4444-4444-8444-444444444444")
+    for sample_id in ("negation-open-001", "condition-open-002", "translation-open-002"):
+        request = build_real_model_evaluation_request(cases[sample_id], dataset, run_id=run_id)
+        assert "页面未显示不能推断退款完成或失败" in request.system_prompt
+        assert "平台批准是处理的前置条件，不声称具体申请已经获批" in request.system_prompt
+        assert "only if the platform approves" in request.system_prompt
+        assert "in preparation" in request.system_prompt
+        assert "has not shipped" in request.system_prompt
 
 
 def test_real_model_evaluation_request_uses_deterministic_temperature() -> None:

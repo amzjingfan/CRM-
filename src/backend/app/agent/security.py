@@ -71,7 +71,7 @@ SYNTHETIC_DEMO_SYSTEM_PROMPT = (
     "intent 必须与 expected_intent 完全一致。物流工具证据使用 tool_grounded；普通 FAQ 使用 faq_grounded；"
     "证据不足使用 insufficient_evidence；高风险承诺使用 high_risk_review 且 requires_human 必须为 true。"
 )
-REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.3"
+REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.4"
 REAL_MODEL_EVALUATION_REASON_CODES = (
     "grounded_draft",
     "policy_grounded",
@@ -111,11 +111,14 @@ REAL_MODEL_EVALUATION_SYSTEM_PROMPT = (
     "证据不足时改为 transfer_human 且 business_claims 为空数组。"
     "条件政策使用 refund_policy+explain_policy+timeless+affirmed+conditional。"
     "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险，不能写出确定性承诺。"
+    "否定说明必须区分页面展示与真实结果：页面未显示不能推断退款完成或失败；只描述已有证据所显示的事实。"
+    "条件政策只描述审核规则：平台批准是处理的前置条件，不声称具体申请已经获批；不得承诺退款结果。"
+    "英文条件说明使用 only if the platform approves 表达前置条件，不使用表示已经获批的完成式，即使是否定句。"
     "非订单主体的 subject_id 必须为 null；所有业务声明 confidence 必须不低于 0.5。"
     "无证据的退款、补偿款及其同义表达统一使用 insufficient_evidence，不使用 high_risk_review。"
     "transfer_human 时 business_claims 必须为空数组；订单或物流 tool_call 只输出一个与 subject_ref 匹配的声明。"
-    "翻译必须忠实保留状态和否定，不增加业务事实；处理中统一使用 being processed，尚未发货统一使用 "
-    "has not shipped。"
+    "翻译必须忠实保留状态和否定，不增加业务事实；处理中统一使用 being processed，准备中使用 "
+    "in preparation 或 being prepared，尚未发货使用 has not shipped。"
     "任何结果 send_performed 必须为 false。只返回一个有效 JSON 对象，字段固定为 decision、content、language、"
     "reason_code、business_claims、send_performed，不得输出 Markdown 或增加字段。"
     "无声明示例："
