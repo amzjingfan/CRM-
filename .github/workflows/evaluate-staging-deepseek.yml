@@ -37,12 +37,58 @@ jobs:
     environment: staging
     timeout-minutes: 30
     steps:
-      - name: Check out exact reviewed source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          path: g4-source-${{ github.run_id }}-${{ github.run_attempt }}
-          persist-credentials: false
-          clean: false
+      - name: Fetch exact reviewed G4 inputs
+        id: source
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+        run: |
+          if ($env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
+              $env:EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA) {
+            throw 'The reviewed G4 source SHA is invalid.'
+          }
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = 'application/vnd.github+json'
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+          $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/git/commits/$env:GITHUB_SHA" -Headers $headers -TimeoutSec 30
+          if ([string]$commit.sha -cne $env:GITHUB_SHA) {
+            throw 'The dispatch SHA is not the reviewed GitHub commit.'
+          }
+          $sourcePath = Join-Path $env:RUNNER_TEMP "crm-g4-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          foreach ($relative in @(
+              'release/evidence/ai/real-model-independent-v1.0.0.jsonl',
+              'release/evidence/ai/real-model-independent-v1.0.0.manifest.json',
+              'src/backend/app/agent/real_model_evaluation.py',
+              'src/backend/app/agent/providers/deepseek_provider.py',
+              'src/backend/app/shared/config/llm_pricing.py',
+              'src/backend/scripts/evaluate_real_model.py'
+          )) {
+            $uri = "https://api.github.com/repos/CP11-gh/CRM/contents/${relative}?ref=$env:GITHUB_SHA"
+            $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 30
+            if ($source.type -cne 'file' -or $source.encoding -cne 'base64' -or
+                [string]$source.sha -cnotmatch '^[0-9a-f]{40}$') {
+              throw 'A reviewed G4 source file could not be verified.'
+            }
+            [byte[]]$sourceBytes = [Convert]::FromBase64String([string]$source.content)
+            if ($sourceBytes.Length -lt 1 -or $sourceBytes.Length -gt 100000) {
+              throw 'A reviewed G4 source file has an unexpected size.'
+            }
+            $blobPrefix = [Text.Encoding]::ASCII.GetBytes("blob $($sourceBytes.Length)`0")
+            [byte[]]$blobInput = $blobPrefix + $sourceBytes
+            $blobSha = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData($blobInput)).ToLowerInvariant()
+            if ($blobSha -cne [string]$source.sha) {
+              throw 'A reviewed G4 source file failed Git blob verification.'
+            }
+            $target = Join-Path $sourcePath $relative
+            $null = New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force
+            [IO.File]::WriteAllBytes($target, $sourceBytes)
+          }
+          "source_path=$sourcePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Output 'Reviewed G4 inputs fetched by exact GitHub commit and blob SHA.'
 
       - name: Check frozen inputs and staging runtime
         id: preflight
@@ -52,6 +98,7 @@ jobs:
           EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
           EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
           CONFIRM_LIVE: ${{ inputs.confirm_live }}
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
         run: |
           if ($env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
               $env:EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA -or
@@ -63,10 +110,9 @@ jobs:
               ($env:MODE -ceq 'prepare' -and $env:CONFIRM_LIVE)) {
             throw 'The G4 live confirmation does not match the requested mode.'
           }
-          $sourcePath = Join-Path $env:GITHUB_WORKSPACE "g4-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
-          $actualSourceSha = (& git -C $sourcePath rev-parse HEAD).Trim()
-          if ($LASTEXITCODE -ne 0 -or $actualSourceSha -cne $env:EXPECTED_SOURCE_SHA) {
-            throw 'Checked-out G4 source does not match the reviewed SHA.'
+          $sourcePath = $env:SOURCE_PATH
+          if ([string]::IsNullOrWhiteSpace($sourcePath) -or -not (Test-Path -LiteralPath $sourcePath -PathType Container)) {
+            throw 'The verified G4 source directory is unavailable.'
           }
           $dataset = Join-Path $sourcePath 'release/evidence/ai/real-model-independent-v1.0.0.jsonl'
           $manifest = Join-Path $sourcePath 'release/evidence/ai/real-model-independent-v1.0.0.manifest.json'
