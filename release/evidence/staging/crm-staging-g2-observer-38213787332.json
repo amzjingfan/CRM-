@@ -1,0 +1,21 @@
+{
+  "signature_valid_events": 0,
+  "ignored_events": 0,
+  "retried_events": 0,
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:0a07365ef1c266b67bc42e77e73b074118911cb54841f504160503e03f8f77e5",
+  "source_sha": "5c4d5032252abeb80774f80281e5125398b8b04d",
+  "new_message_events": 0,
+  "unbound_tiktok_events": 0,
+  "succeeded_events": 0,
+  "generated_at_utc": "2026-10-12T06:43:07.6741481Z",
+  "production_release": false,
+  "inbound_messages": 0,
+  "event_window_start_utc": "2026-10-09T03:54:01Z",
+  "failed_events": 0,
+  "pending_events": 0,
+  "status": "passed",
+  "schema_version": 1,
+  "read_only": true,
+  "evidence_type": "staging_tiktok_webhook_event_aggregates",
+  "other_status_events": 0
+}

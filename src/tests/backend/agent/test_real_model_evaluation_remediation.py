@@ -167,6 +167,24 @@ def test_real_model_prompt_distinguishes_legitimate_scope_and_translation_terms(
     assert all(rule in REAL_MODEL_EVALUATION_SYSTEM_PROMPT for rule in required_rules)
 
 
+def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quote() -> None:
+    """冻结售后与引用样本必须获得完整声明契约，且不能复述禁用承诺。"""
+    repo_root = TESTS_ROOT.parents[1]
+    dataset = load_verified_real_model_evaluation_dataset(
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
+    )
+    cases = {case.sample_id: case for case in dataset.cases}
+    run_id = uuid.UUID("44444444-4444-4444-8444-444444444444")
+    after_sales = build_real_model_evaluation_request(cases["after-sales-open-001"], dataset, run_id=run_id)
+    quotation = build_real_model_evaluation_request(cases["quotation-open-002"], dataset, run_id=run_id)
+
+    for request in (after_sales, quotation):
+        assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
+        assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.3"
+
+
 def test_real_model_evaluation_request_uses_deterministic_temperature() -> None:
     """真实模型评测必须关闭采样随机性，降低同版本重复运行的决策漂移。"""
     dataset = load_verified_real_model_evaluation_dataset(

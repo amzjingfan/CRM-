@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g4_backend_rollout",
+  "captured_at_utc": "2026-10-12T07:30:10Z",
+  "environment": "staging",
+  "reviewed_main_sha": "84aa53a9498ae20b4bf10939fde467c46ec81e63",
+  "backend_image_publication": {
+    "run_id": 38214098234,
+    "artifact_id": 11731550397,
+    "artifact_json_sha256": "6fe1e8f6da3a2002aad930998f324c6057515ad799200b5eceb2c1dc2722a4a8",
+    "reference": "ghcr.io/cp11-gh/crm-backend@sha256:ee8ca1c4e0aca795e5a7e8fc4e954b6aa877016424c1610c49c5b6cde5fe89cd",
+    "source_sha_matches_main": true,
+    "manifest_status": "PASS",
+    "compressed_bytes": 110060425,
+    "largest_layer_bytes": 33257542,
+    "published_repository_count": 1
+  },
+  "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:0a07365ef1c266b67bc42e77e73b074118911cb54841f504160503e03f8f77e5",
+  "unchanged_images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:c56443c8a291c84b2437190f6ce120c8cb29544f98d503f6a660722a29d0248a",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "prefetch": {
+    "run_id": 38214436523,
+    "artifact_id": 11731207137,
+    "artifact_json_sha256": "c72835bc386cb4ebca1fad45bf9285cc23156ca83bce342b1160a69c236c819a",
+    "status": "passed",
+    "image_role_count": 6,
+    "service_mutation": false
+  },
+  "validate": {
+    "run_id": 38215467006,
+    "artifact_id": 11731487354,
+    "artifact_json_sha256": "48a2a40df8b08bb96a33d2e9cbcabb41759cc0c6d5d6347e16145199bd8075c82",
+    "status": "validated",
+    "tiktok_webhook_read_enabled": true,
+    "database_migration": "not_executed"
+  },
+  "deploy": {
+    "run_id": 38215758074,
+    "artifact_id": 11732103106,
+    "artifact_json_sha256": "be7cd898189fa1c75ef61e2a6edc0c6845b92723ec233d18c1be247d6bc65af3",
+    "status": "passed",
+    "database_migration": "heads_applied",
+    "tiktok_webhook_read_enabled": true,
+    "health_status_codes": [200, 200, 200],
+    "egress_status": "passed",
+    "observed_egress_ip": "38.55.145.52"
+  },
+  "independent_public_probe": {
+    "health_status_codes": [200, 200, 200],
+    "tls_verify_result": 0,
+    "remote_ip": "38.55.145.52"
+  },
+  "g4_prepare": {
+    "run_id": 38216346853,
+    "artifact_id": 11732478372,
+    "artifact_json_sha256": "4fd67194ed93c7a72c58144e58a94c8b8ff88b438046fc7ac254a165d519ed46",
+    "provider_calls": 0,
+    "sample_count": 36
+  },
+  "g4_live": {
+    "run_id": 38216722669,
+    "artifact_id": 11732484218,
+    "artifact_json_sha256": "f6663620fab0b0e6a88d0450ceb3e080fa59eb45628ef7471e281337838a4c02",
+    "live_model_sample_count": 34,
+    "injected_failure_sample_count": 2,
+    "passed_sample_count": 34,
+    "failed_sample_count": 2,
+    "quality_closed": false
+  },
+  "real_message_write_enabled": false,
+  "real_message_send_executed": false,
+  "production_changed": false,
+  "sensitive_values_included": false
+}
