@@ -242,7 +242,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Unable to retrieve the G4 low-sensitive report.' }
             $report = Get-Content -LiteralPath $evidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
             $allowedReportKeys = @('run_id','model','prompt_version','policy_version','dataset_version','dataset_sha256','dataset_manifest_sha256','dataset_source','pricing_version','pricing_currency','pricing_basis','input_cost_per_million_usd','output_cost_per_million_usd','accuracy_gate','live_model_evaluation','first_output_semantics','passed','metrics','samples')
-            $allowedSampleKeys = @('model','prompt_version','policy_version','dataset_version','run_id','sample_id','category','risk_level','expected_decision','decision','input_hash','output_hash','failure_reason','first_output_latency_ms','total_latency_ms','token_usage','passed','provider_failure','injected_failure')
+            $allowedSampleKeys = @('model','prompt_version','policy_version','dataset_version','run_id','sample_id','category','risk_level','expected_decision','decision','input_hash','output_hash','failure_reason','diagnostics','first_output_latency_ms','total_latency_ms','token_usage','passed','provider_failure','injected_failure')
             if ($report.dataset_sha256 -cne '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94' -or
                 $report.dataset_source -cne 'independent_test' -or
                 $report.model -cne 'deepseek-v4-flash' -or
@@ -253,6 +253,28 @@ jobs:
                 (($report.Keys | Where-Object { $_ -cnotin $allowedReportKeys }).Count -ne 0) -or
                 (($report.samples | ForEach-Object { $_.Keys } | Sort-Object -Unique | Where-Object { $_ -cnotin $allowedSampleKeys }).Count -ne 0)) {
               throw 'G4 report provenance or low-sensitive schema is invalid.'
+            }
+            $allowedDiagnosticKeys = @('claim_mismatch_fields','forbidden_matches')
+            $allowedClaimFields = @('count','expected_subjects','subject_type','subject_id','action','tense','polarity','condition','evidence_type','evidence_id','confidence')
+            $allowedForbiddenKeys = @('term_index','all_occurrences_inside_quotes','all_occurrences_have_prohibition_cue')
+            foreach ($sample in $report.samples) {
+              $diagnostic = $sample.diagnostics
+              if ($null -eq $diagnostic) { continue }
+              if (($diagnostic.Keys | Where-Object { $_ -cnotin $allowedDiagnosticKeys }).Count -ne 0 -or
+                  @($diagnostic.claim_mismatch_fields).Count -gt 11 -or
+                  @($diagnostic.forbidden_matches).Count -gt 20 -or
+                  @($diagnostic.claim_mismatch_fields | Where-Object { $_ -cnotin $allowedClaimFields }).Count -ne 0) {
+                throw 'G4 diagnostic field is not low-sensitive.'
+              }
+              foreach ($match in $diagnostic.forbidden_matches) {
+                if (($match.Keys | Where-Object { $_ -cnotin $allowedForbiddenKeys }).Count -ne 0 -or
+                    ($match.term_index -isnot [int] -and $match.term_index -isnot [long]) -or
+                    $match.term_index -lt 0 -or $match.term_index -gt 19 -or
+                    $match.all_occurrences_inside_quotes -isnot [bool] -or
+                    $match.all_occurrences_have_prohibition_cue -isnot [bool]) {
+                  throw 'G4 forbidden-term diagnostic is not low-sensitive.'
+                }
+              }
             }
           } else {
             @{

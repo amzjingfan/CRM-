@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -36,3 +36,4 @@ View: `CURRENT`
 | RR-MVP-005-20261012-R03 | MVP-005 | R03 | APPROVE | `a06c4305d31492b9a254b3b5397e282316b51304` | generated-file-scope / rootless-container-boundary / fail-closed / production-boundary | 2026-10-12T11:49:26+08:00 | [`RR-MVP-005-20261012-R03.md`](RR-MVP-005-20261012-R03.md) |
 | RR-MVP-005-20261012-R04 | MVP-005 | R04 | APPROVE | `9638222b9e552b32f05b895c58fbc06bc7e0835e` | evidence-integrity / zero-provider-call / source-provenance / release-boundary | 2026-10-12T12:00:01+08:00 | [`RR-MVP-005-20261012-R04.md`](RR-MVP-005-20261012-R04.md) |
 | RR-MVP-005-20261012-R05 | MVP-005 | R05 | APPROVE | `cd21527e129aa2a3f03d73e2b90b784a18e5eca0` | authorization-scope / evidence-integrity / quality-gate / release-boundary | 2026-10-12T13:38:45+08:00 | [`RR-MVP-005-20261012-R05.md`](RR-MVP-005-20261012-R05.md) |
+| RR-MVP-005-20261012-R06 | MVP-005 | R06 | APPROVE | `50efe5241f7779f5608f989f536473f1eca38b50` | low-sensitive-schema / grading-equivalence / failure-closed / frozen-data / authorization-boundary | 2026-10-12T14:21:46+08:00 | [`RR-MVP-005-20261012-R06.md`](RR-MVP-005-20261012-R06.md) |

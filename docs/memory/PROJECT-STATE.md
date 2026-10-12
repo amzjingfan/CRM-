@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-live-index-current-20261012
-Governance base SHA: 105a3d0b1a925cfc13d63645cf3364f119595934
-CANDIDATE_SUBJECT_SHA: cd21527e129aa2a3f03d73e2b90b784a18e5eca0
+Working branch at this snapshot: feature/mvp005-g4-low-sensitive-diagnostics
+Governance base SHA: 071615a2d3114610412f61ba0cfcdabbf3378dfa
+CANDIDATE_SUBJECT_SHA: 50efe5241f7779f5608f989f536473f1eca38b50
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -31,6 +31,8 @@ PR #115 前后端 CI 通过并合入 main `9638222b9e552b32f05b895c58fbc06bc7e08
 R04 证据 PR #116 通过前后端 CI 并合入 main `8b3057a34b832094449dc5bda34ce50983ed6a0e`。从该 main 的 IR、TR、RR 各 31 份源记录逐项复核三个索引：每类 31 条，缺失/重复 ID 均为零，状态与 subject SHA 不一致均为零。此索引收尾分支据此将三个派生视图恢复为 `CURRENT`，没有修改源记录或 G4 结论。
 
 2026-10-12 G4 新恢复点：用户明确批准一次 34 条合成数据的真实 DeepSeek 评测。main `cd21527e129aa2a3f03d73e2b90b784a18e5eca0` 上 [`live` #38208426125](https://github.com/CP11-gh/CRM/actions/runs/38208426125) 成功，34 条 Provider 样本、2 条故障注入，33/36=91.67% 超过预设 85%；危险逃逸、合法误拦与 Provider 失败均 0。历史翻译两条恢复，条件与引用两条仍命中禁用词，新增售后声明不匹配一条。原样[低敏报告](../../release/evidence/ai/crm-staging-g4-live-20261012.json) JSON SHA-256 `8ab440f99253142b9303dd90ab9df8dd7b23ffb2aecb1c5f7d70fdfe2d4fa946`；[IR R05](../records/implementation/IR-MVP-005-20261012-R05.md)/[TR R05](../reports/tests/TR-MVP-005-20261012-R05.md)/[RR R05](../reports/reviews/RR-MVP-005-20261012-R05.md)。证据 PR #118 已合入 main `105a3d0b1a925cfc13d63645cf3364f119595934`；从该 main 的 IR/TR/RR 各 32 份源记录核对索引，无缺失/重复，状态及 SHA 均一致，当前索引为 `CURRENT`。三条失败需逐项诊断，G4 仍部分通过，production No-Go。
+
+2026-10-12 G4 低敏诊断候选：用户批准仅给失败样本增加声明不匹配字段名、禁用词冻结序号及引号/禁止用语布尔提示；subject `50efe5241f7779f5608f989f536473f1eca38b50` 保留既有判分、85% 门槛和冻结数据，工作流增加嵌套白名单。合成测试与完整后端回归已执行，见 [IR R06](../records/implementation/IR-MVP-005-20261012-R06.md)/[TR R06](../reports/tests/TR-MVP-005-20261012-R06.md)/[RR R06](../reports/reviews/RR-MVP-005-20261012-R06.md)。本分支三个索引为 `CANDIDATE_VIEW`；未调用 DeepSeek、发布镜像或部署 staging，旧报告不可回填，G4 仍部分通过。合并后须从 main 重建索引为 `CURRENT`。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
@@ -161,6 +163,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G4 `live` 数值门槛已过，但先诊断条件、引用与售后三条失败的具体字段和语境；不改冻结阈值或重放本次请求，后续真实 Provider 复测需另行精确授权。
+1. 将 G4 低敏诊断候选通过 PR 合入 main；未来另获镜像发布、staging 部署和真实 Provider 复测授权，取得三条新失败的字段与语境后逐项复核，不改冻结阈值或重放旧请求。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。

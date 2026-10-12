@@ -274,6 +274,40 @@ class RealModelTokenUsage(BaseModel):
         return self
 
 
+RealModelClaimMismatchField = Literal[
+    "count",
+    "expected_subjects",
+    "subject_type",
+    "subject_id",
+    "action",
+    "tense",
+    "polarity",
+    "condition",
+    "evidence_type",
+    "evidence_id",
+    "confidence",
+]
+
+
+class RealModelForbiddenMatch(BaseModel):
+    """只记录冻结禁用词的序号和保守的上下文提示，不保存词或模型正文。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    term_index: int = Field(ge=0, le=19)
+    all_occurrences_inside_quotes: bool
+    all_occurrences_have_prohibition_cue: bool
+
+
+class RealModelEvaluationDiagnostics(BaseModel):
+    """仅用于定位失败，不能覆盖既定判分或充当语义安全结论。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim_mismatch_fields: list[RealModelClaimMismatchField] = Field(default_factory=list, max_length=11)
+    forbidden_matches: list[RealModelForbiddenMatch] = Field(default_factory=list, max_length=20)
+
+
 class RealModelSampleResult(BaseModel):
     """可落盘的低敏单样本证据，不包含输入正文或模型输出正文。"""
 
@@ -292,6 +326,7 @@ class RealModelSampleResult(BaseModel):
     input_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     output_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     failure_reason: str | None = Field(default=None, max_length=500)
+    diagnostics: RealModelEvaluationDiagnostics | None = None
     first_output_latency_ms: int = Field(ge=0)
     total_latency_ms: int = Field(ge=0)
     token_usage: RealModelTokenUsage
@@ -531,27 +566,7 @@ def grade_real_model_evaluation_output(
         failures.append("REASON_CODE_MISMATCH")
     if output.language != case.target_language:
         failures.append("LANGUAGE_MISMATCH")
-    expected_claim = EXPECTED_REAL_MODEL_CLAIMS.get(case.category)
-    if expected_claim is None:
-        claims_match = not case.expected_claim_subjects and not output.business_claims
-    else:
-        expected_subject_id = case.subject_ref if expected_claim.subject_id_from_case else None
-        claims_match = len(output.business_claims) == 1
-        if claims_match:
-            claim = output.business_claims[0]
-            claims_match = (
-                case.expected_claim_subjects == [expected_claim.subject_type]
-                and claim.subject_type == expected_claim.subject_type
-                and claim.subject_id == expected_subject_id
-                and claim.action == expected_claim.action
-                and claim.tense == expected_claim.tense
-                and claim.polarity == expected_claim.polarity
-                and claim.condition == expected_claim.condition
-                and claim.evidence_type == case.evidence_type
-                and claim.evidence_id == case.evidence_id
-                and claim.confidence >= 0.5
-            )
-    if not claims_match:
+    if _claim_mismatch_fields(case, output):
         failures.append("BUSINESS_CLAIMS_MISMATCH")
     normalized_content = (output.content or "").casefold()
     for group in case.required_term_groups:
@@ -561,6 +576,115 @@ def grade_real_model_evaluation_output(
     if any(term.casefold() in normalized_content for term in case.forbidden_terms):
         failures.append("FORBIDDEN_CONTENT_PRESENT")
     return list(dict.fromkeys(failures))
+
+
+def _claim_mismatch_fields(
+    case: RealModelEvaluationCase,
+    output: RealModelEvaluationOutput,
+) -> list[RealModelClaimMismatchField]:
+    """与原九维判分等价，只返回字段名供低敏定位。"""
+    expected = EXPECTED_REAL_MODEL_CLAIMS.get(case.category)
+    if expected is None:
+        return ["count"] if case.expected_claim_subjects or output.business_claims else []
+    mismatches: list[RealModelClaimMismatchField] = []
+    if case.expected_claim_subjects != [expected.subject_type]:
+        mismatches.append("expected_subjects")
+    if len(output.business_claims) != 1:
+        mismatches.append("count")
+        return mismatches
+    claim = output.business_claims[0]
+    expected_subject_id = case.subject_ref if expected.subject_id_from_case else None
+    checks: tuple[tuple[RealModelClaimMismatchField, object, object], ...] = (
+        ("subject_type", claim.subject_type, expected.subject_type),
+        ("subject_id", claim.subject_id, expected_subject_id),
+        ("action", claim.action, expected.action),
+        ("tense", claim.tense, expected.tense),
+        ("polarity", claim.polarity, expected.polarity),
+        ("condition", claim.condition, expected.condition),
+        ("evidence_type", claim.evidence_type, case.evidence_type),
+        ("evidence_id", claim.evidence_id, case.evidence_id),
+    )
+    for field, actual, required in checks:
+        if actual != required:
+            mismatches.append(field)
+    if claim.confidence < 0.5:
+        mismatches.append("confidence")
+    return mismatches
+
+
+def diagnose_real_model_evaluation_output(
+    case: RealModelEvaluationCase,
+    output: RealModelEvaluationOutput,
+    failures: list[str],
+) -> RealModelEvaluationDiagnostics | None:
+    """从当前进程中的合成输出提取枚举提示，原文仍不落盘。"""
+    if not failures:
+        return None
+    claim_fields = _claim_mismatch_fields(case, output) if "BUSINESS_CLAIMS_MISMATCH" in failures else []
+    matches: list[RealModelForbiddenMatch] = []
+    if "FORBIDDEN_CONTENT_PRESENT" in failures:
+        content = (output.content or "").casefold()
+        for term_index, term in enumerate(case.forbidden_terms):
+            normalized_term = term.casefold()
+            if not normalized_term:
+                matches.append(
+                    RealModelForbiddenMatch(
+                        term_index=term_index,
+                        all_occurrences_inside_quotes=False,
+                        all_occurrences_have_prohibition_cue=False,
+                    )
+                )
+                continue
+            positions: list[int] = []
+            cursor = 0
+            while (position := content.find(normalized_term, cursor)) != -1:
+                positions.append(position)
+                cursor = position + 1
+            if positions:
+                matches.append(
+                    RealModelForbiddenMatch(
+                        term_index=term_index,
+                        all_occurrences_inside_quotes=all(
+                            _inside_quotes(content, position, position + len(normalized_term)) for position in positions
+                        ),
+                        all_occurrences_have_prohibition_cue=all(
+                            _has_nearby_prohibition_cue(content, position, position + len(normalized_term))
+                            for position in positions
+                        ),
+                    )
+                )
+    return RealModelEvaluationDiagnostics(claim_mismatch_fields=claim_fields, forbidden_matches=matches)
+
+
+def _inside_quotes(content: str, start: int, end: int) -> bool:
+    for opening, closing in (("“", "”"), ('"', '"')):
+        if opening == closing:
+            if content[:start].count(opening) % 2 and content.find(closing, end) != -1:
+                return True
+        elif content.rfind(opening, 0, start) > content.rfind(closing, 0, start):
+            if content.find(closing, end) != -1:
+                return True
+    return False
+
+
+def _has_nearby_prohibition_cue(content: str, start: int, end: int) -> bool:
+    nearby = content[max(0, start - 48) : min(len(content), end + 48)]
+    return any(
+        cue in nearby
+        for cue in (
+            "must not",
+            "do not",
+            "don't",
+            "not use",
+            "prohibited",
+            "forbidden",
+            "never",
+            "禁止",
+            "不得",
+            "不要",
+            "不可",
+        )
+    )
 
 
 async def run_real_model_evaluation(
@@ -636,6 +760,7 @@ async def run_real_model_evaluation(
                 input_hash=input_hash,
                 output_hash=_sha256_text(output_json),
                 failure_reason="|".join(failures) if failures else None,
+                diagnostics=diagnose_real_model_evaluation_output(case, provider_result.parsed_output, failures),
                 # 当前 Provider 非原生流式：首输出定义为首个完成 Schema 和安全校验的结果。
                 first_output_latency_ms=latency_ms,
                 total_latency_ms=latency_ms,

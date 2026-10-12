@@ -15,6 +15,8 @@
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G1 核心范围已按 2026-10-09 用户决定通过，但 G1-L、G2～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
 
+2026-10-12 已在 G4 评测代码中加入低敏失败定位字段及工作流嵌套白名单，合成测试不调用 Provider。该变更尚未发布后端镜像、部署 staging 或产生新的真实评测结果；旧报告不可还原，故本次代码验证不改变 G4 的“部分通过”。后续真实复测须单独授权模型调用及相应镜像发布/部署。
+
 2026-10-09 G3 安全补丁在隔离 PostgreSQL 复现并修复了中断后遗留 `processing` 消息未阻断下一次真实发送的问题；完整后端回归 `1726 passed, 3 skipped`，PR #109 已合入 main。2026-10-10 单后端镜像发布、六角色预取、G2 模式 validate/deploy 和运行摘要核对通过，见[低敏现场证据](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)；staging 真实消息写仍关闭。若将来出现遗留 `processing`，不得自动重发或直接改写数据库；需先确认没有在途调用、核对平台事实并形成受审恢复路径。补丁和部署健康不替代受控会话的一次真实发送与对账，G3 仍未通过。
 
 2026-10-08 staging proxy 的临时配置挂载在容器重启时导致短暂 502；PR #89 的持久源码部署和作业结束后再次重启已通过，见 [持久挂载证据](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。G0 的本次运行恢复已复测，G6 仍需重新开始连续五日观察。

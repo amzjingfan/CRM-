@@ -12,6 +12,8 @@
 | M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 增强物流 `202604` 待合格 CBT 首程订单并须在 G8 前通过；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
 | M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。2026-10-12 staging `prepare` 验证冻结集/运行摘要且零调用；单次获批 `live` [#38208426125](https://github.com/CP11-gh/CRM/actions/runs/38208426125) 的 34 条真实 DeepSeek 合成请求加 2 条故障注入得到 33/36（91.67%），预设 85% 数值门槛通过，危险逃逸/合法误拦/Provider 失败均 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-live-20261012.json) | 条件、引用的 2 条历史失败仍命中禁用词，新增售后声明 1 条不匹配；G4 逐项质量闭环、50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
 
+2026-10-12 G4 失败诊断已增加枚举式低敏提示和报告白名单，并由冻结样本的合成 Provider 输出验证；未再次调用 DeepSeek，也未部署新镜像。此前 `live` 报告仅有哈希和失败码，不能回填三条草稿的字段或语境；G4 仍需另获授权的真实复测与逐项复核。
+
 2026-10-08 渠道页状态修复仅更新了 staging 前端：PR #96 的前后端 CI 通过，单镜像发布、六角色预取、预检和部署通过；现场前端摘要、11 容器、迁移头与三个公网健康接口已核对，随后公网五路径仍为 200，见 [低敏证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。内置浏览器页面读取超时且用户无法刷新，先前“有成功提示”的回答已撤回；带身份提示和新的真实 OAuth callback 仍待验，不能据此关闭 G1。
 
 2026-10-09 Edge 保留的新 callback 为 303，最新 job `connected`，因此上次 TikTok 授权页的“连接失败”不是本次最新任务的结果。新标签页打开旧 Network 项未产生第二次 callback GET，重放仍未验收。增强物流对五笔不同的 TikTok 配送订单均返回平台业务码 `11007009`；已确认固定出口、所需 Scope 和 `shop_cipher`，但 CBT 首程适用订单及平台开通状态未知。后端 TikTok 只读聚焦测试本次 26 passed。见 [低敏诊断证据](../../release/evidence/staging/crm-staging-g1-live-diagnostics-20261009.json)，G1 未签署。
