@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-prepare-evidence-20261012
-Governance base SHA: 9638222b9e552b32f05b895c58fbc06bc7e0835e
-CANDIDATE_SUBJECT_SHA: 9638222b9e552b32f05b895c58fbc06bc7e0835e
+Working branch at this snapshot: docs/mvp005-g4-index-current-20261012
+Governance base SHA: 8b3057a34b832094449dc5bda34ce50983ed6a0e
+CANDIDATE_SUBJECT_SHA: 8b3057a34b832094449dc5bda34ce50983ed6a0e
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -27,6 +27,8 @@ Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并
 PR #114 前后端 CI 通过并合入 main `2f0c57a7086b31e2b9ee80321152be2a426ebe2a`。第二次 `prepare` [#38201088441](https://github.com/CP11-gh/CRM/actions/runs/38201088441) 在 Runner 8 秒内取得六文件，但 `docker cp` 后的清单由 backend 非 root 用户读取时报 `PermissionError`；预检在此停止，未调用 DeepSeek。R03 候选 `a06c4305d31492b9a254b3b5397e282316b51304` 仅给本次生成的两份冻结合成输入 `0644` 读取位，仍待现场验证。见 [IR R03](../records/implementation/IR-MVP-005-20261012-R03.md)/[TR R03](../reports/tests/TR-MVP-005-20261012-R03.md)/[RR R03](../reports/reviews/RR-MVP-005-20261012-R03.md)。G4 未通过。
 
 PR #115 前后端 CI 通过并合入 main `9638222b9e552b32f05b895c58fbc06bc7e0835e`。第三次 `prepare` [#38201755776](https://github.com/CP11-gh/CRM/actions/runs/38201755776) 成功：六文件、冻结独立集 36 条、运行 backend 摘要、容器配置和低敏 artifact 均通过，`live` 跳过，Provider 调用数为 0。artifact ID `11725641941`，JSON SHA-256 `b3e29a8cc162549786e6f92cab461fbf21d9951bf9c4d21faf39c7dd84f803dc`；[入库证据](../../release/evidence/ai/crm-staging-g4-prepare-20261012.json)与下载件哈希一致。R04 [IR](../records/implementation/IR-MVP-005-20261012-R04.md)/[TR](../reports/tests/TR-MVP-005-20261012-R04.md)/[RR](../reports/reviews/RR-MVP-005-20261012-R04.md)仅关闭准备入口；真实 DeepSeek 质量、四个历史失败复测仍待单独授权，G4 未通过。
+
+R04 证据 PR #116 通过前后端 CI 并合入 main `8b3057a34b832094449dc5bda34ce50983ed6a0e`。从该 main 的 IR、TR、RR 各 31 份源记录逐项复核三个索引：每类 31 条，缺失/重复 ID 均为零，状态与 subject SHA 不一致均为零。此索引收尾分支据此将三个派生视图恢复为 `CURRENT`，没有修改源记录或 G4 结论。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
@@ -157,6 +159,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 将 G4 成功 `prepare` 的 R04 低敏证据合入 main；真实 DeepSeek 评测需要针对 34 条合成数据外发和可能费用的单独授权，之后精确执行一次 `live` 并逐项复核历史四条失败。
+1. G4 `prepare` 证据已合入 main；真实 DeepSeek 评测需要针对 34 条合成数据外发和可能费用的单独授权，之后精确执行一次 `live` 并逐项复核历史四条失败。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
