@@ -10,9 +10,9 @@
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 增强物流 `202604` 待合格 CBT 首程订单并须在 G8 前通过；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
-| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。2026-10-12 Prompt `v1.2.3` 后端在 staging 通过[部署门禁](../../release/evidence/staging/crm-staging-g4-v123-rollout-20261012.json)；获批 `prepare` 零调用，[`live` #38226614743](https://github.com/CP11-gh/CRM/actions/runs/38226614743) 的 34 条 DeepSeek 合成请求加 2 条故障注入得到 33/36（91.67%），预设 85% 数值门槛通过，危险逃逸/合法误拦/Provider 失败均 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-v123-live-38226614743.json) | 旧售后与引用失败已过；否定说明、英文条件政策、西语英译共 3 条未关闭。Prompt `v1.2.4` 仅代码候选，未部署/真实复测；G4 逐项质量闭环、50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
+| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。2026-10-12 Prompt `v1.2.4` 后端在 staging 通过[部署门禁](../../release/evidence/staging/crm-staging-g4-v124-rollout-20261012.json)；获批 `prepare` 零调用，[`live` #38233214222](https://github.com/CP11-gh/CRM/actions/runs/38233214222) 的 34 条 DeepSeek 合成请求加 2 条故障注入得到 34/36（94.44%），预设 85% 数值门槛通过，危险逃逸/合法误拦/Provider 失败均 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-v124-live-38233214222.json) | 英文否定说明缺必需内容组 0，英文条件政策仍命中未引用禁用词，共 2 条未关闭；G4 逐项质量闭环、50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
 
-2026-10-12 真实 `v1.2.3` 复测中售后与引用旧失败均已通过；新失败为否定说明缺必需内容、英文条件政策缺必需内容且命中未引用禁用词、西语英译缺必需内容。Prompt `v1.2.4` 候选明确页面展示与真实退款、批准前置与批准结果、准备中与尚未发货的区别；低敏诊断只新增缺失冻结组序号。本机完整测试 `1718 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和工作流静态解析通过；当前 staging 仍运行 `v1.2.3`，候选真实效果未验证。
+2026-10-12 真实 `v1.2.4` 复测中上一轮西语英译与一条否定说明恢复，英文条件政策的必需内容也恢复；`negation-open-002` 缺冻结组 0，`condition-open-002` 仍命中未引用禁用词。原始报告只保留组/词序号及布尔提示，不能还原模型草稿。本机 `v1.2.4` 源码完整测试 `1718 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和工作流静态解析通过；staging 现运行该版本，但两条真实失败仍阻断 G4。
 
 2026-10-08 渠道页状态修复仅更新了 staging 前端：PR #96 的前后端 CI 通过，单镜像发布、六角色预取、预检和部署通过；现场前端摘要、11 容器、迁移头与三个公网健康接口已核对，随后公网五路径仍为 200，见 [低敏证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。内置浏览器页面读取超时且用户无法刷新，先前“有成功提示”的回答已撤回；带身份提示和新的真实 OAuth callback 仍待验，不能据此关闭 G1。
 
@@ -53,7 +53,7 @@
 
 - `MVP-READONLY-LOG-001` 的源码门禁见 `TR-MVP-READONLY-LOG-001-20260928-R01`；staging 现有后端上的六项非物流真实只读重测见 `TR-MVP-G1-NONLOG-001-20260928-R01`。后者只证明这六项路径成功，不覆盖增强物流、重复回调或 G1 签署；真实 Token 自然刷新另见 `release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json`。日志部署与增强物流的单独记录仍在 PR #56 草稿中。
 
-- G4 最新真实复测有 3 个未通过用例，尚未形成 v0.1 AI 建议质量闭环；售后与引用旧失败已过，否定、英文条件与西语英译仍需逐项关闭。危险逃逸与合法输入误拦截为 0，但综合正确率不能替代逐项关闭。低敏报告不保存原文，新增组序号不改变失败判分；新 Prompt 的真实效果待另行验收。
+- G4 最新真实复测有 2 个未通过用例，尚未形成 v0.1 AI 建议质量闭环；英文否定与条件政策仍需逐项关闭。危险逃逸与合法输入误拦截为 0，但综合正确率不能替代逐项关闭。低敏报告不保存原文，组序号不改变失败判分；下一候选需另行验收。
 - 用户已确认真实 TikTok US 店铺授权后自动返回 CRM；仍未完成整个店铺端到端验收，不能确认 production Scope、投递和消息行为。
 - `MVP-OAUTH-REAUTH-001` 的一次真实 staging 重新授权任务终态、临时材料清除、审计匹配及 job 查询原用户边界已核对，详见 `TR-MVP-OAUTH-REAUTH-001-20260928-R01`；重复状态轮询与确定性测试不等于同一真实 callback 重放，G1 仍未签署。
 - TikTok Partner Center 与 DeepSeek 外部四项凭据已安全注入 staging；DeepSeek 已通过本次 34 条合成请求确认接受，TikTok 各真实能力按对应 G1/G2/G3 证据判断；未获放行的能力继续失败关闭。
