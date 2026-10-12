@@ -152,6 +152,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Unable to stage the G4 dataset.' }
           & docker --host $dockerHost cp $manifest "${container}:$containerDir/manifest.json"
           if ($LASTEXITCODE -ne 0) { throw 'Unable to stage the G4 manifest.' }
+          # docker cp creates root-owned files; grant the existing non-root crm process read access only to these frozen inputs.
+          & docker --host $dockerHost exec -u 0 $container chmod 0644 "$containerDir/dataset.jsonl" "$containerDir/manifest.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to make the frozen G4 inputs readable to the backend user.' }
           $inspectionCode = @'
           import json
           import sys
