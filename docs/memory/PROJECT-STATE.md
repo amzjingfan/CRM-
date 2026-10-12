@@ -11,9 +11,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-index-current-20261012
-Governance base SHA: 8b3057a34b832094449dc5bda34ce50983ed6a0e
-CANDIDATE_SUBJECT_SHA: 8b3057a34b832094449dc5bda34ce50983ed6a0e
+Working branch at this snapshot: docs/mvp005-g4-live-evidence-20261012
+Governance base SHA: cd21527e129aa2a3f03d73e2b90b784a18e5eca0
+CANDIDATE_SUBJECT_SHA: cd21527e129aa2a3f03d73e2b90b784a18e5eca0
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
@@ -29,6 +29,8 @@ PR #114 前后端 CI 通过并合入 main `2f0c57a7086b31e2b9ee80321152be2a426eb
 PR #115 前后端 CI 通过并合入 main `9638222b9e552b32f05b895c58fbc06bc7e0835e`。第三次 `prepare` [#38201755776](https://github.com/CP11-gh/CRM/actions/runs/38201755776) 成功：六文件、冻结独立集 36 条、运行 backend 摘要、容器配置和低敏 artifact 均通过，`live` 跳过，Provider 调用数为 0。artifact ID `11725641941`，JSON SHA-256 `b3e29a8cc162549786e6f92cab461fbf21d9951bf9c4d21faf39c7dd84f803dc`；[入库证据](../../release/evidence/ai/crm-staging-g4-prepare-20261012.json)与下载件哈希一致。R04 [IR](../records/implementation/IR-MVP-005-20261012-R04.md)/[TR](../reports/tests/TR-MVP-005-20261012-R04.md)/[RR](../reports/reviews/RR-MVP-005-20261012-R04.md)仅关闭准备入口；真实 DeepSeek 质量、四个历史失败复测仍待单独授权，G4 未通过。
 
 R04 证据 PR #116 通过前后端 CI 并合入 main `8b3057a34b832094449dc5bda34ce50983ed6a0e`。从该 main 的 IR、TR、RR 各 31 份源记录逐项复核三个索引：每类 31 条，缺失/重复 ID 均为零，状态与 subject SHA 不一致均为零。此索引收尾分支据此将三个派生视图恢复为 `CURRENT`，没有修改源记录或 G4 结论。
+
+2026-10-12 G4 新恢复点：用户明确批准一次 34 条合成数据的真实 DeepSeek 评测。main `cd21527e129aa2a3f03d73e2b90b784a18e5eca0` 上 [`live` #38208426125](https://github.com/CP11-gh/CRM/actions/runs/38208426125) 成功，34 条 Provider 样本、2 条故障注入，33/36=91.67% 超过预设 85%；危险逃逸、合法误拦与 Provider 失败均 0。历史翻译两条恢复，条件与引用两条仍命中禁用词，新增售后声明不匹配一条。原样[低敏报告](../../release/evidence/ai/crm-staging-g4-live-20261012.json) JSON SHA-256 `8ab440f99253142b9303dd90ab9df8dd7b23ffb2aecb1c5f7d70fdfe2d4fa946`；[IR R05](../records/implementation/IR-MVP-005-20261012-R05.md)/[TR R05](../reports/tests/TR-MVP-005-20261012-R05.md)/[RR R05](../reports/reviews/RR-MVP-005-20261012-R05.md)。当前分支三份索引为 `CANDIDATE_VIEW`；三条失败需逐项诊断，G4 仍部分通过，production No-Go。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
@@ -147,7 +149,7 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 - G0 staging 恢复/回滚现场与 G1 核心口径通过；G1-L、G2～G6 尚未全部取得真实环境证据，G8 保持阻塞，production 未部署。
 - 2026-10-09 最新 OAuth 回调和 job 终态真实成功，2026-10-04 自然刷新也已通过。用户决定现场 callback 二次 GET 不阻断 G1 核心；增强物流 `202604` 对五笔不同 TikTok 配送订单仍返回 `11007009`，须取得合格 CBT 首程订单或平台说明并在 G8 前通过。G2 staging 只读与 Webhook 开关已受控开启；独立查询确认 `NEW_MESSAGE` 订阅数 1，尚无官方投递。
-- `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台接受仍未测试。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
+- `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台已接受本次 34 条合成评测请求。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
 - staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 2026-10-09 G2 后端、2026-10-08 前端与既有分层检索不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复健康，G2 部署又复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
@@ -159,6 +161,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G4 `prepare` 证据已合入 main；真实 DeepSeek 评测需要针对 34 条合成数据外发和可能费用的单独授权，之后精确执行一次 `live` 并逐项复核历史四条失败。
+1. G4 `live` 数值门槛已过，但先诊断条件、引用与售后三条失败的具体字段和语境；不改冻结阈值或重放本次请求，后续真实 Provider 复测需另行精确授权。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
