@@ -1,0 +1,234 @@
+name: Evaluate staging DeepSeek G4
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Prepare without API calls, or run one frozen live evaluation
+        required: true
+        type: choice
+        options:
+          - prepare
+          - live
+      expected_source_sha:
+        description: Exact reviewed main commit SHA
+        required: true
+        type: string
+      expected_backend_image:
+        description: Exact running crm-backend repository@sha256 digest
+        required: true
+        type: string
+      confirm_live:
+        description: For live only, type send-34-synthetic-cases-to-deepseek
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-staging-production-gates
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, crm-staging]
+    environment: staging
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact reviewed source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: g4-source-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+          clean: false
+
+      - name: Check frozen inputs and staging runtime
+        id: preflight
+        shell: pwsh
+        env:
+          MODE: ${{ inputs.mode }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+          CONFIRM_LIVE: ${{ inputs.confirm_live }}
+        run: |
+          if ($env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
+              $env:EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA -or
+              $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
+              $env:MODE -cnotin @('prepare', 'live')) {
+            throw 'The G4 source, backend image, or mode is invalid.'
+          }
+          if (($env:MODE -ceq 'live' -and $env:CONFIRM_LIVE -cne 'send-34-synthetic-cases-to-deepseek') -or
+              ($env:MODE -ceq 'prepare' -and $env:CONFIRM_LIVE)) {
+            throw 'The G4 live confirmation does not match the requested mode.'
+          }
+          $sourcePath = Join-Path $env:GITHUB_WORKSPACE "g4-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          $actualSourceSha = (& git -C $sourcePath rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualSourceSha -cne $env:EXPECTED_SOURCE_SHA) {
+            throw 'Checked-out G4 source does not match the reviewed SHA.'
+          }
+          $dataset = Join-Path $sourcePath 'release/evidence/ai/real-model-independent-v1.0.0.jsonl'
+          $manifest = Join-Path $sourcePath 'release/evidence/ai/real-model-independent-v1.0.0.manifest.json'
+          if (-not (Test-Path -LiteralPath $dataset -PathType Leaf) -or
+              -not (Test-Path -LiteralPath $manifest -PathType Leaf) -or
+              (Get-FileHash -LiteralPath $dataset -Algorithm SHA256).Hash.ToLowerInvariant() -cne
+                '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94') {
+            throw 'The frozen independent G4 dataset is missing or changed.'
+          }
+          $runnerUid = (& id -u).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runnerUid -notmatch '^[1-9][0-9]*$') {
+            throw 'Unable to resolve Rootless Docker UID.'
+          }
+          $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
+          $containers = @(& docker --host $dockerHost ps --filter 'label=com.docker.compose.project=crm-staging' --filter 'label=com.docker.compose.service=backend' --format '{{.ID}}')
+          if ($LASTEXITCODE -ne 0 -or $containers.Count -ne 1) {
+            throw 'Expected exactly one running staging backend.'
+          }
+          $container = $containers[0]
+          $actualImage = (& docker --host $dockerHost inspect --format '{{.Config.Image}}' $container).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualImage -cne $env:EXPECTED_BACKEND_IMAGE) {
+            throw 'Running backend image does not match the reviewed digest.'
+          }
+          foreach ($relative in @('app/agent/real_model_evaluation.py', 'app/agent/providers/deepseek_provider.py', 'app/shared/config/llm_pricing.py', 'scripts/evaluate_real_model.py')) {
+            $localPath = Join-Path (Join-Path $sourcePath 'src/backend') $relative
+            $localHash = (Get-FileHash -LiteralPath $localPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            $containerHashOutput = & docker --host $dockerHost exec $container sha256sum "/app/$relative"
+            $containerHash = ($containerHashOutput -split '\s+')[0]
+            if ($LASTEXITCODE -ne 0 -or $containerHash -cne $localHash) {
+              throw 'The running G4 evaluator differs from the reviewed main source.'
+            }
+          }
+          $containerDir = "/tmp/crm-g4-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          & docker --host $dockerHost exec $container mkdir $containerDir
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to create unique G4 container workspace.' }
+          & docker --host $dockerHost cp $dataset "${container}:$containerDir/dataset.jsonl"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to stage the G4 dataset.' }
+          & docker --host $dockerHost cp $manifest "${container}:$containerDir/manifest.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to stage the G4 manifest.' }
+          $inspectionCode = @'
+          import json
+          import sys
+          from pathlib import Path
+          from app.agent.real_model_evaluation import load_verified_real_model_evaluation_dataset, validate_real_model_evaluation_environment
+          from app.shared.config.settings import get_settings
+
+          settings = get_settings()
+          data = load_verified_real_model_evaluation_dataset(Path(sys.argv[1]), Path(sys.argv[2]))
+          validate_real_model_evaluation_environment(data, settings.app_env)
+          live_cases = sum(case.dependency_state != "model_timeout" for case in data.cases)
+          safe = (
+              settings.app_env == "staging"
+              and settings.llm_primary_provider == "deepseek"
+              and settings.llm_primary_model == "deepseek-v4-flash"
+              and bool(settings.deepseek_api_key and settings.deepseek_api_key.get_secret_value().strip())
+              and not settings.llm_live_eval
+              and not settings.real_tiktok_message_write_enabled
+              and not settings.auto_reply_enabled
+              and len(data.cases) == 36
+              and live_cases == 34
+              and data.manifest.source == "independent_test"
+          )
+          print(json.dumps({"safe": safe, "samples": len(data.cases), "live_cases": live_cases,
+                            "injected_cases": len(data.cases) - live_cases,
+                            "dataset_sha256": data.manifest.dataset_sha256}))
+          '@
+          $preflightOutput = $inspectionCode | & docker --host $dockerHost exec -i $container python - "$containerDir/dataset.jsonl" "$containerDir/manifest.json"
+          if ($LASTEXITCODE -ne 0) { throw 'G4 in-container dataset and runtime validation failed.' }
+          $preflight = $preflightOutput | ConvertFrom-Json -AsHashtable
+          if ($null -eq $preflight -or -not $preflight.safe -or
+              $preflight.dataset_sha256 -cne '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94') {
+            throw 'G4 runtime or frozen dataset guard failed.'
+          }
+          "container=$container" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "container_dir=$containerDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "docker_host=$dockerHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "backend_image=$actualImage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Output "G4 preflight: 36 frozen synthetic cases, 34 provider calls, 2 injected failures; no external call made."
+
+      - name: Run one live evaluation with the existing backend code
+        id: live
+        if: inputs.mode == 'live'
+        continue-on-error: true
+        shell: pwsh
+        env:
+          CONTAINER: ${{ steps.preflight.outputs.container }}
+          CONTAINER_DIR: ${{ steps.preflight.outputs.container_dir }}
+          DOCKER_HOST: ${{ steps.preflight.outputs.docker_host }}
+        run: |
+          & docker --host $env:DOCKER_HOST exec `
+            -e LLM_ENABLED=true `
+            -e LLM_LIVE_EVAL=true `
+            -e LLM_INPUT_COST_PER_MILLION_USD=0.44 `
+            -e LLM_OUTPUT_COST_PER_MILLION_USD=1.32 `
+            -e LLM_PRICING_VERSION=deepseek-v4-2026-08-16-peak-cache-miss `
+            -e LLM_PRICING_CURRENCY=USD `
+            -e LLM_PRICING_BASIS=conservative_peak_cache_miss `
+            $env:CONTAINER python -m scripts.evaluate_real_model `
+            --dataset "$env:CONTAINER_DIR/dataset.jsonl" `
+            --manifest "$env:CONTAINER_DIR/manifest.json" `
+            --output "$env:CONTAINER_DIR/report.json"
+          if ($LASTEXITCODE -notin @(0, 1)) {
+            throw 'G4 live evaluation failed before producing a quality result.'
+          }
+          "quality_exit_code=$LASTEXITCODE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Validate and retain low-sensitive evidence
+        id: evidence
+        shell: pwsh
+        env:
+          MODE: ${{ inputs.mode }}
+          CONTAINER: ${{ steps.preflight.outputs.container }}
+          CONTAINER_DIR: ${{ steps.preflight.outputs.container_dir }}
+          DOCKER_HOST: ${{ steps.preflight.outputs.docker_host }}
+          BACKEND_IMAGE: ${{ steps.preflight.outputs.backend_image }}
+          QUALITY_EXIT_CODE: ${{ steps.live.outputs.quality_exit_code }}
+        run: |
+          $evidencePath = Join-Path $env:RUNNER_TEMP "crm-g4-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
+          if ($env:MODE -ceq 'live') {
+            if ($env:QUALITY_EXIT_CODE -notin @('0', '1')) {
+              throw 'The G4 provider run did not produce a quality result.'
+            }
+            & docker --host $env:DOCKER_HOST cp "${env:CONTAINER}:$env:CONTAINER_DIR/report.json" $evidencePath
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to retrieve the G4 low-sensitive report.' }
+            $report = Get-Content -LiteralPath $evidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
+            $allowedReportKeys = @('run_id','model','prompt_version','policy_version','dataset_version','dataset_sha256','dataset_manifest_sha256','dataset_source','pricing_version','pricing_currency','pricing_basis','input_cost_per_million_usd','output_cost_per_million_usd','accuracy_gate','live_model_evaluation','first_output_semantics','passed','metrics','samples')
+            $allowedSampleKeys = @('model','prompt_version','policy_version','dataset_version','run_id','sample_id','category','risk_level','expected_decision','decision','input_hash','output_hash','failure_reason','first_output_latency_ms','total_latency_ms','token_usage','passed','provider_failure','injected_failure')
+            if ($report.dataset_sha256 -cne '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94' -or
+                $report.dataset_source -cne 'independent_test' -or
+                $report.model -cne 'deepseek-v4-flash' -or
+                -not $report.live_model_evaluation -or
+                $report.samples.Count -ne 36 -or
+                $report.metrics.live_model_sample_count -ne 34 -or
+                $report.metrics.injected_failure_sample_count -ne 2 -or
+                (($report.Keys | Where-Object { $_ -cnotin $allowedReportKeys }).Count -ne 0) -or
+                (($report.samples | ForEach-Object { $_.Keys } | Sort-Object -Unique | Where-Object { $_ -cnotin $allowedSampleKeys }).Count -ne 0)) {
+              throw 'G4 report provenance or low-sensitive schema is invalid.'
+            }
+          } else {
+            @{
+              schema_version = 1
+              evidence_type = 'staging_g4_preflight'
+              source_sha = $env:GITHUB_SHA
+              backend_image = $env:BACKEND_IMAGE
+              dataset_sha256 = '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94'
+              sample_count = 36
+              provider_calls = 0
+              injected_cases = 2
+              production_release = $false
+            } | ConvertTo-Json | Out-File -LiteralPath $evidencePath -Encoding utf8
+          }
+          "evidence_path=$evidencePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Upload low-sensitive G4 evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: staging-g4-${{ inputs.mode }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.evidence.outputs.evidence_path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Surface quality gate result
+        if: inputs.mode == 'live' && steps.live.outputs.quality_exit_code == '1'
+        shell: pwsh
+        run: throw 'The frozen G4 quality gate did not pass; inspect the low-sensitive artifact.'

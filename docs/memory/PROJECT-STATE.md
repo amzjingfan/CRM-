@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp004-g3-rollout-index-current-20261010
-Governance base SHA: d4a71aeb39b379ceea9a348938201d5616a4d2d5
-CANDIDATE_SUBJECT_SHA: 6e975148650bfd8e6cb0b7980b86554345caf5d0
+Working branch at this snapshot: feature/mvp005-g4-eval-workflow-20261012
+Governance base SHA: a5443670d0af3486ce4de169e420f5474e2d7626
+CANDIDATE_SUBJECT_SHA: 5ca815bbb342042572d7251f1209e72bb517c5bb
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
+
+2026-10-12 G4 恢复点：用户批准先建立冻结独立集的 staging 一次性评测入口；PR #113 候选 subject `5ca815bbb342042572d7251f1209e72bb517c5bb` 提供 `prepare/live` 两模式，`prepare` 不调用 DeepSeek，`live` 的 34 条合成数据外发与费用尚未单独授权。聚焦测试 33 passed，工作流 YAML 与 PowerShell 静态解析通过；staging `prepare` 和真实 `live` 均未执行。过程 [IR](../records/implementation/IR-MVP-005-20261012-R01.md)/[TR](../reports/tests/TR-MVP-005-20261012-R01.md)/[RR](../reports/reviews/RR-MVP-005-20261012-R01.md) 仅覆盖入口；本分支三份索引为 `CANDIDATE_VIEW`，合入后须从 main 复核并重建为 `CURRENT`。G4 仍未通过，production 不变。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
@@ -149,6 +151,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G3 已部署防重复发送补丁，继续保持 staging 真实普通消息写关闭；由店铺所有者确认可控的 TikTok 测试会话与一条无个人信息的普通文本，再形成精确单次发送、`unknown` 对账和遗留 `processing` 的人工恢复方案；对外发送及开关变更另行确认。
-2. G2 继续由店铺所有者通过 Partner Center 支持确认买家聊天入口条件与官方 `NEW_MESSAGE` 测试投递；取得受控真实入站消息后复测。不得再次执行订阅 PUT。
-3. 将增强物流 `202604` 保留为 G1-L，取得合格 CBT 首程订单或平台说明后重测；G2、G3 与 G1-L 仍阻断 G8，production 保持 No-Go。
+1. 完成 PR #113 的适用 CI 与审查后合并；从合并 main 精确 SHA 只运行 G4 `prepare`，复核零 Provider 调用与低敏 artifact。真实 DeepSeek 评测另取单独授权。
+2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
+3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。

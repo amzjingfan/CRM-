@@ -85,6 +85,7 @@ python scripts/verify_tiktok_egress.py
 - Webhook 真实模式使用官方签名和原始请求体；开发签名只能在真实开关关闭时使用。
 - Token 加密保存，刷新失败将渠道置为 `expired`；日志和响应不输出 Token 或凭证引用。
 - DeepSeek Key 只从环境读取，Provider 使用固定正向输入协议、DLP 和结构化输出。
+- G4 一次性入口为 `evaluate-staging-deepseek.yml`：从 `main` 手动派发，必须填写精确的 `expected_source_sha` 与当前运行 `crm-backend` 的 `repository@sha256`。先运行 `prepare`，它校验独立冻结集、36 条样本、34 条真实模型样本、2 条故障注入、staging 配置及代码哈希，只上传低敏准备证据，Provider 调用数为 0。`live` 另需针对 34 条合成数据外发及可能费用的单独批准，并填入工作流要求的确认短语；它只在现有 backend 容器的一次性子进程中启用评测与保守估价，不修改服务配置、TikTok 写开关或 production。质量未达门禁时上传低敏报告后作业失败；报告中的成本是估算，不是账单。历史 32/36 不能代替新现场结果。
 - SSE `delta` 是经安全校验后的草稿分块，不把模型原生流直接暴露给客户端。
 
 ## 模型资产
