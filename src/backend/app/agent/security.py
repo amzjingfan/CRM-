@@ -71,7 +71,7 @@ SYNTHETIC_DEMO_SYSTEM_PROMPT = (
     "intent 必须与 expected_intent 完全一致。物流工具证据使用 tool_grounded；普通 FAQ 使用 faq_grounded；"
     "证据不足使用 insufficient_evidence；高风险承诺使用 high_risk_review 且 requires_human 必须为 true。"
 )
-REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.4"
+REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.5"
 REAL_MODEL_EVALUATION_REASON_CODES = (
     "grounded_draft",
     "policy_grounded",
@@ -114,6 +114,10 @@ REAL_MODEL_EVALUATION_SYSTEM_PROMPT = (
     "否定说明必须区分页面展示与真实结果：页面未显示不能推断退款完成或失败；只描述已有证据所显示的事实。"
     "条件政策只描述审核规则：平台批准是处理的前置条件，不声称具体申请已经获批；不得承诺退款结果。"
     "英文条件说明使用 only if the platform approves 表达前置条件，不使用表示已经获批的完成式，即使是否定句。"
+    "英语否定状态标签只解释标签含义，使用一般现在时正向句式 The status is unconfirmed 或 "
+    "The status is not confirmed 明确状态未确认；不得从标签推断退款成功、失败或实际处理进度。"
+    "英语条件政策只解释通用规则，使用一般现在时正向句式 Processing begins only if the platform "
+    "approves a request，并依据证据调整动作与主体；不得追加具体申请的审批现状或完成时个案说明。"
     "非订单主体的 subject_id 必须为 null；所有业务声明 confidence 必须不低于 0.5。"
     "无证据的退款、补偿款及其同义表达统一使用 insufficient_evidence，不使用 high_risk_review。"
     "transfer_human 时 business_claims 必须为空数组；订单或物流 tool_call 只输出一个与 subject_ref 匹配的声明。"
