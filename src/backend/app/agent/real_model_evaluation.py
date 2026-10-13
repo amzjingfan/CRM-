@@ -382,6 +382,7 @@ class RealModelEvaluationMetrics(BaseModel):
     first_accuracy: float | None = Field(default=None, ge=0, le=1)
     repair_attempt_count: int | None = Field(default=None, ge=0)
     repair_success_count: int | None = Field(default=None, ge=0)
+    repair_final_pass_count: int | None = Field(default=None, ge=0)
     provider_call_count: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
@@ -884,8 +885,8 @@ async def run_real_model_evaluation(
         )
         policy = (
             _policy_draft_result(case, first_output)
-            if first_safety == PromptSafetyState.ALLOWED
-            else PolicyDraftValidation("block", ("DRAFT_DLP_BLOCKED",))
+            if first_safety.state == PromptSafetyState.ALLOWED
+            else PolicyDraftValidation("block", (first_safety.reason_code,))
         )
         final_output = first_output
         repair_attempted = False
@@ -935,9 +936,14 @@ async def run_real_model_evaluation(
                         )
                         repaired_policy = (
                             _policy_draft_result(case, repaired.parsed_output)
-                            if repaired_safety == PromptSafetyState.ALLOWED
-                            else PolicyDraftValidation("block", ("DRAFT_DLP_BLOCKED",))
+                            if repaired_safety.state == PromptSafetyState.ALLOWED
+                            else PolicyDraftValidation("block", (repaired_safety.reason_code,))
                         )
+                        if (
+                            repaired_policy.disposition == "pass"
+                            and repaired.parsed_output.decision == "transfer_human"
+                        ):
+                            repaired_policy = PolicyDraftValidation("block", ("POLICY_REPAIR_NO_DRAFT",))
                         policy_codes = list(dict.fromkeys([*policy_codes, *repaired_policy.reason_codes]))[:3]
                         if repaired_policy.disposition == "pass":
                             final_output = repaired.parsed_output
@@ -1164,6 +1170,11 @@ def build_evaluation_report(
         ),
         repair_success_count=(
             sum(result.repair_outcome == "succeeded" for result in results)
+            if evaluation_flow_version == "policy-repair-v1"
+            else None
+        ),
+        repair_final_pass_count=(
+            sum(result.repair_outcome == "succeeded" and result.passed for result in results)
             if evaluation_flow_version == "policy-repair-v1"
             else None
         ),

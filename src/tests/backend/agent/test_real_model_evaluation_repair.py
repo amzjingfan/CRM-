@@ -17,6 +17,7 @@ from app.agent.real_model_evaluation import (
     load_verified_real_model_evaluation_dataset,
     run_real_model_evaluation,
 )
+from app.agent.security import PromptSafetyState, evaluate_real_model_draft_safety
 
 OutputT = TypeVar("OutputT", bound=RealModelEvaluationOutput)
 DATASET_PATH = TESTS_ROOT / "ai/datasets/real-model-v1.0.0.jsonl"
@@ -133,6 +134,7 @@ async def test_repair_success_keeps_first_failure_and_final_pass_separate() -> N
     assert sample.token_usage.total_tokens == 50
     assert report.metrics.first_passed_sample_count == 0
     assert report.metrics.repair_attempt_count == 1
+    assert report.metrics.repair_final_pass_count == 1
     assert report.metrics.provider_call_count == 2
     serialized = json.dumps(report.model_dump(mode="json"), ensure_ascii=False)
     assert "You may submit a return" not in serialized
@@ -181,7 +183,60 @@ async def test_first_draft_with_personal_email_never_enters_repair() -> None:
     assert len(provider.requests) == 1
     assert sample.decision == "transfer_human"
     assert sample.repair_attempted is False
+    assert sample.policy_reason_codes == ["DRAFT_DLP_BLOCKED_EMAIL"]
     assert "buyer@example.com" not in report.model_dump_json()
+
+
+def test_draft_dlp_reports_only_detector_class() -> None:
+    cases = (
+        ("Contact buyer@example.com", "DRAFT_DLP_BLOCKED_EMAIL"),
+        ("Call +1 415 555 0123", "DRAFT_DLP_BLOCKED_PHONE"),
+        ("Order ABCD-12345678", "DRAFT_DLP_BLOCKED_IDENTIFIER"),
+        ("Bearer abcdefgh12345678", "DRAFT_DLP_BLOCKED_SECRET"),
+    )
+    for content, expected_reason in cases:
+        decision = evaluate_real_model_draft_safety(content, [])
+        assert decision.state == PromptSafetyState.BLOCKED
+        assert decision.reason_code == expected_reason
+        assert content not in decision.reason_code
+
+
+@pytest.mark.asyncio
+async def test_policy_repair_can_succeed_without_final_frozen_quality_pass() -> None:
+    provider = _SequenceProvider(
+        [
+            _policy_output("You may submit a return request within seven days."),
+            _policy_output("The marketplace reviews requests."),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert sample.repair_outcome == "succeeded"
+    assert sample.passed is False
+    assert report.metrics.repair_success_count == 1
+    assert report.metrics.repair_final_pass_count == 0
+
+
+@pytest.mark.asyncio
+async def test_repair_transfer_human_is_not_counted_as_success() -> None:
+    transfer = RealModelEvaluationOutput.model_validate(
+        {
+            "decision": "transfer_human",
+            "content": None,
+            "language": "en",
+            "reason_code": "insufficient_evidence",
+            "business_claims": [],
+            "send_performed": False,
+        }
+    )
+    provider = _SequenceProvider([_policy_output("You may submit a return request within seven days."), transfer])
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert sample.decision == "transfer_human"
+    assert sample.repair_outcome == "failed"
+    assert "POLICY_REPAIR_NO_DRAFT" in sample.policy_reason_codes
+    assert report.metrics.repair_success_count == 0
+    assert report.metrics.repair_final_pass_count == 0
 
 
 @pytest.mark.asyncio

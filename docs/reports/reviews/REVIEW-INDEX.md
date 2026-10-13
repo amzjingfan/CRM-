@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -47,3 +47,4 @@ View: `CURRENT`
 | RR-MVP-005-20261013-R14 | MVP-005 | R14 | APPROVE | `281c2cd0b5b6a68e785f80f16a7f9948b03e07e7` | prompt-safety / strict-grading / frozen-data / test-evidence / authorization-boundary | 2026-10-13T11:07:00+08:00 | [`RR-MVP-005-20261013-R14.md`](RR-MVP-005-20261013-R14.md) |
 | RR-MVP-005-20261013-R15 | MVP-005 | R15 | CHANGES_REQUIRED | `0820d90ae96bf7fc3022f571953f5557684d7798` | live-quality / frozen-data / authorization-boundary / staging-scope / low-sensitive-evidence | 2026-10-13T12:07:00+08:00 | [`RR-MVP-005-20261013-R15.md`](RR-MVP-005-20261013-R15.md) |
 | RR-MVP-005-20261013-R16 | MVP-005 | R16 | APPROVE | `5ec7592ba414dbe1d1c7c2e49c93d19c454ffc4d` | policy-grounding / answer-isolation / repair-dlp / bounded-calls / fail-closed / evidence-minimization | 2026-10-13T14:11:00+08:00 | [`RR-MVP-005-20261013-R16.md`](RR-MVP-005-20261013-R16.md) |
+| RR-MVP-005-20261013-R17 | MVP-005 | R17 | APPROVE | `6359b20d8e7afa54c68291b04f6c605fca029fcd` | g4-quality-failure / dlp-evidence-minimization / repair-accounting / frozen-grader-isolation / fail-closed | 2026-10-13T15:20:00+08:00 | [`RR-MVP-005-20261013-R17.md`](RR-MVP-005-20261013-R17.md) |

@@ -28,6 +28,14 @@ class PromptSafetyDecision:
 
 
 @dataclass(frozen=True, slots=True)
+class RealModelDraftSafetyDecision:
+    """只暴露 DLP 规则类别，不保存触发文本或匹配片段。"""
+
+    state: PromptSafetyState
+    reason_code: str
+
+
+@dataclass(frozen=True, slots=True)
 class RealModelEvaluationSafetyContext:
     """独立评测专用的最小授权上下文。
 
@@ -759,26 +767,34 @@ def _evaluate_authorized_real_model_repair_payload(
     )
 
 
-def evaluate_real_model_draft_safety(content: str | None, subject_ids: list[str | None]) -> PromptSafetyState:
+def evaluate_real_model_draft_safety(
+    content: str | None, subject_ids: list[str | None]
+) -> RealModelDraftSafetyDecision:
     """检查合成模型输出中的敏感文本；无论首轮或修复均不能漏过。"""
     for value in [content, *subject_ids]:
         if value is None:
             continue
         scan_value = ADDRESS_REDACTION_MARKER_PATTERN.sub("", value)
         scan_value = scan_value.replace("[EMAIL]", "").replace("[PHONE]", "")
-        if (
-            EMAIL_PATTERN.search(scan_value)
-            or PHONE_PATTERN.search(scan_value)
-            or ALPHANUMERIC_ID_PATTERN.search(scan_value)
-            or EVALUATION_SECRET_PATTERN.search(scan_value)
+        for pattern, reason in (
+            (EVALUATION_SECRET_PATTERN, "DRAFT_DLP_BLOCKED_SECRET"),
+            (EMAIL_PATTERN, "DRAFT_DLP_BLOCKED_EMAIL"),
+            (PHONE_PATTERN, "DRAFT_DLP_BLOCKED_PHONE"),
+            (ALPHANUMERIC_ID_PATTERN, "DRAFT_DLP_BLOCKED_IDENTIFIER"),
         ):
-            return PromptSafetyState.BLOCKED
+            if pattern.search(scan_value):
+                return RealModelDraftSafetyDecision(PromptSafetyState.BLOCKED, reason)
         location_risk = _structured_location_risk(scan_value)
         if location_risk is not None:
-            return location_risk[0]
+            reason = (
+                "DRAFT_DLP_BLOCKED_ADDRESS"
+                if location_risk[0] == PromptSafetyState.BLOCKED
+                else "DRAFT_DLP_UNCERTAIN_LOCATION"
+            )
+            return RealModelDraftSafetyDecision(location_risk[0], reason)
     if any(value is not None and SYNTHETIC_SUBJECT_PATTERN.fullmatch(value) is None for value in subject_ids):
-        return PromptSafetyState.UNCERTAIN
-    return PromptSafetyState.ALLOWED
+        return RealModelDraftSafetyDecision(PromptSafetyState.UNCERTAIN, "DRAFT_DLP_UNCERTAIN_SUBJECT")
+    return RealModelDraftSafetyDecision(PromptSafetyState.ALLOWED, "DRAFT_DLP_ALLOWED")
 
 
 def _is_unlabeled_building_reference(text: str) -> bool:

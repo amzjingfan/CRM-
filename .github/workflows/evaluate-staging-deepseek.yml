@@ -243,7 +243,7 @@ jobs:
             $report = Get-Content -LiteralPath $evidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
             $allowedReportKeys = @('run_id','model','prompt_version','policy_version','dataset_version','dataset_sha256','dataset_manifest_sha256','dataset_source','pricing_version','pricing_currency','pricing_basis','input_cost_per_million_usd','output_cost_per_million_usd','accuracy_gate','live_model_evaluation','first_output_semantics','passed','metrics','samples','evaluation_flow_version')
             $allowedSampleKeys = @('model','prompt_version','policy_version','dataset_version','run_id','sample_id','category','risk_level','expected_decision','decision','input_hash','output_hash','failure_reason','diagnostics','first_output_latency_ms','total_latency_ms','token_usage','passed','provider_failure','injected_failure','first_passed','first_failure_reason','first_diagnostics','first_output_hash','repair_attempted','repair_outcome','provider_call_count','first_token_usage','repair_token_usage','repair_latency_ms','policy_reason_codes')
-            $allowedMetricsKeys = @('sample_count','live_model_sample_count','injected_failure_sample_count','passed_sample_count','failed_sample_count','accuracy','dangerous_escape_count','legal_false_block_count','transfer_rate','provider_failure_count','p95_first_output_latency_ms','p99_total_latency_ms','total_input_tokens','total_output_tokens','estimated_cost_usd','cost_status','first_passed_sample_count','first_accuracy','repair_attempt_count','repair_success_count','provider_call_count')
+            $allowedMetricsKeys = @('sample_count','live_model_sample_count','injected_failure_sample_count','passed_sample_count','failed_sample_count','accuracy','dangerous_escape_count','legal_false_block_count','transfer_rate','provider_failure_count','p95_first_output_latency_ms','p99_total_latency_ms','total_input_tokens','total_output_tokens','estimated_cost_usd','cost_status','first_passed_sample_count','first_accuracy','repair_attempt_count','repair_success_count','repair_final_pass_count','provider_call_count')
             if ($report.dataset_sha256 -cne '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94' -or
                 $report.dataset_source -cne 'independent_test' -or
                 $report.model -cne 'deepseek-v4-flash' -or
@@ -257,6 +257,7 @@ jobs:
                 $report.metrics.provider_call_count -gt 68 -or
                 $report.metrics.repair_attempt_count -gt 34 -or
                 $report.metrics.repair_success_count -gt $report.metrics.repair_attempt_count -or
+                $report.metrics.repair_final_pass_count -gt $report.metrics.repair_success_count -or
                 (($report.Keys | Where-Object { $_ -cnotin $allowedReportKeys }).Count -ne 0) -or
                 (($report.metrics.Keys | Where-Object { $_ -cnotin $allowedMetricsKeys }).Count -ne 0) -or
                 (($report.samples | ForEach-Object { $_.Keys } | Sort-Object -Unique | Where-Object { $_ -cnotin $allowedSampleKeys }).Count -ne 0)) {
@@ -267,7 +268,7 @@ jobs:
             $allowedForbiddenKeys = @('term_index','all_occurrences_inside_quotes','all_occurrences_have_prohibition_cue')
             $allowedTokenKeys = @('input_tokens','output_tokens','total_tokens')
             $allowedRepairOutcomes = @('not_needed','succeeded','failed','blocked','budget_exhausted','provider_failed')
-            $allowedPolicyReasons = @('POLICY_EVIDENCE_MISMATCH','POLICY_EVIDENCE_UNCERTAIN','POLICY_UNSUPPORTED_APPROVAL_ASSERTION','POLICY_APPROVAL_CONDITION_MISSING','POLICY_REVIEW_STEP_MISSING','DRAFT_DLP_BLOCKED')
+            $allowedPolicyReasons = @('POLICY_EVIDENCE_MISMATCH','POLICY_EVIDENCE_UNCERTAIN','POLICY_UNSUPPORTED_APPROVAL_ASSERTION','POLICY_APPROVAL_CONDITION_MISSING','POLICY_REVIEW_STEP_MISSING','POLICY_REPAIR_NO_DRAFT','DRAFT_DLP_BLOCKED_EMAIL','DRAFT_DLP_BLOCKED_PHONE','DRAFT_DLP_BLOCKED_IDENTIFIER','DRAFT_DLP_BLOCKED_SECRET','DRAFT_DLP_BLOCKED_ADDRESS','DRAFT_DLP_UNCERTAIN_LOCATION','DRAFT_DLP_UNCERTAIN_SUBJECT')
             foreach ($sample in $report.samples) {
               if ($sample.provider_call_count -lt 0 -or $sample.provider_call_count -gt 2 -or
                   $sample.repair_outcome -cnotin $allowedRepairOutcomes -or
