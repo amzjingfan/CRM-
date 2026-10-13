@@ -33,3 +33,15 @@ def test_live_gate_requires_new_flow_and_bounded_provider_calls() -> None:
     assert "$report.metrics.live_model_sample_count -ne 34" in source
     assert "$report.metrics.injected_failure_sample_count -ne 2" in source
     assert "provider_calls = 0" in source
+
+
+def test_live_artifact_accepts_only_fixed_location_shape_codes() -> None:
+    reasons = _allowed_keys(WORKFLOW.read_text(encoding="utf-8"), "allowedPolicyReasons")
+    assert {
+        "DRAFT_DLP_UNCERTAIN_BUSINESS_LOCATION",
+        "DRAFT_DLP_UNCERTAIN_LOCATION_TERMS",
+        "DRAFT_DLP_UNCERTAIN_LOCATION_SCRIPT",
+        "DRAFT_DLP_UNCERTAIN_LOCATION_SEPARATORS",
+        "DRAFT_DLP_UNCERTAIN_LOCATION_NUMBERS",
+    } <= reasons
+    assert not any("CONTENT" in reason or "TEXT" in reason for reason in reasons)

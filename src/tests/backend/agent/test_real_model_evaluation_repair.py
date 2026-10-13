@@ -201,6 +201,23 @@ def test_draft_dlp_reports_only_detector_class() -> None:
         assert content not in decision.reason_code
 
 
+@pytest.mark.parametrize(
+    ("content", "expected_reason"),
+    (
+        ("warehouse 12, floor 2", "DRAFT_DLP_UNCERTAIN_BUSINESS_LOCATION"),
+        ("The street and building information is not shown.", "DRAFT_DLP_UNCERTAIN_LOCATION_TERMS"),
+        ("مرحبا 12", "DRAFT_DLP_UNCERTAIN_LOCATION_SCRIPT"),
+        ("Alpha, beta, gamma", "DRAFT_DLP_UNCERTAIN_LOCATION_SEPARATORS"),
+        ("stage 1, step 2", "DRAFT_DLP_UNCERTAIN_LOCATION_NUMBERS"),
+    ),
+)
+def test_draft_location_uncertainty_reports_only_fixed_shape(content: str, expected_reason: str) -> None:
+    decision = evaluate_real_model_draft_safety(content, [])
+    assert decision.state == PromptSafetyState.UNCERTAIN
+    assert decision.reason_code == expected_reason
+    assert content not in decision.reason_code
+
+
 @pytest.mark.asyncio
 async def test_policy_repair_can_succeed_without_final_frozen_quality_pass() -> None:
     provider = _SequenceProvider(

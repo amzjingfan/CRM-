@@ -489,21 +489,27 @@ def _contains_unknown_script_letters(text: str) -> bool:
     )
 
 
-def _contains_low_confidence_location_shape(text: str) -> bool:
-    """识别无法可靠证明为安全业务文本的开放地址形态。"""
+def _low_confidence_location_shape_reason(text: str) -> str | None:
+    """只返回固定形态码；原始文本仍按原规则失败关闭。"""
     if BUSINESS_NON_ADDRESS_CONTEXT_PATTERN.search(text):
-        return False
+        return None
     separator_count = len(ADDRESS_SEPARATOR_PATTERN.findall(text))
     number_count = len(ADDRESS_NUMBER_PATTERN.findall(text))
     location_term_count = len(MULTILINGUAL_LOCATION_TERM_PATTERN.findall(text))
     alphabetic_count = sum(character.isalpha() for character in text)
     if location_term_count >= 2:
-        return True
+        return "LOCATION_TERMS"
     if _contains_unknown_script_letters(text) and (number_count >= 1 or separator_count >= 1):
-        return True
+        return "LOCATION_SCRIPT"
     if separator_count >= 2 and alphabetic_count >= 8:
-        return True
-    return number_count >= 2 and separator_count >= 1 and alphabetic_count >= 5
+        return "LOCATION_SEPARATORS"
+    if number_count >= 2 and separator_count >= 1 and alphabetic_count >= 5:
+        return "LOCATION_NUMBERS"
+    return None
+
+
+def _contains_low_confidence_location_shape(text: str) -> bool:
+    return _low_confidence_location_shape_reason(text) is not None
 
 
 def _reject_duplicate_json_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
@@ -786,11 +792,13 @@ def evaluate_real_model_draft_safety(
                 return RealModelDraftSafetyDecision(PromptSafetyState.BLOCKED, reason)
         location_risk = _structured_location_risk(scan_value)
         if location_risk is not None:
-            reason = (
-                "DRAFT_DLP_BLOCKED_ADDRESS"
-                if location_risk[0] == PromptSafetyState.BLOCKED
-                else "DRAFT_DLP_UNCERTAIN_LOCATION"
-            )
+            if location_risk[0] == PromptSafetyState.BLOCKED:
+                reason = "DRAFT_DLP_BLOCKED_ADDRESS"
+            elif location_risk[1] == "ADDRESS_CONTEXT_AMBIGUOUS":
+                reason = "DRAFT_DLP_UNCERTAIN_BUSINESS_LOCATION"
+            else:
+                shape = _low_confidence_location_shape_reason(scan_value)
+                reason = f"DRAFT_DLP_UNCERTAIN_{shape}" if shape else "DRAFT_DLP_UNCERTAIN_LOCATION"
             return RealModelDraftSafetyDecision(location_risk[0], reason)
     if any(value is not None and SYNTHETIC_SUBJECT_PATTERN.fullmatch(value) is None for value in subject_ids):
         return RealModelDraftSafetyDecision(PromptSafetyState.UNCERTAIN, "DRAFT_DLP_UNCERTAIN_SUBJECT")
