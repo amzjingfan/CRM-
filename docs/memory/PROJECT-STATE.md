@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp005-g4-dlp-diagnostics-20261013
-Governance base SHA: da114371aa52a1b69e6434e8d341b84dec84ab13
+Working branch at this snapshot: docs/mvp005-g4-r17-index-current-20261013
+Governance base SHA: 5ea72ce88791dfaaa7c19693c7081fa5edec2d0b
 CANDIDATE_SUBJECT_SHA: 6359b20d8e7afa54c68291b04f6c605fca029fcd
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
 2026-10-13 G4 最新恢复点：main `da114371aa52a1b69e6434e8d341b84dec84ab13` 的单后端镜像 `sha256:22fb55db…211102` 已部署 staging，六角色预取、validate/deploy、迁移头、固定出口及三个公网健康通过；Webhook 保持只读。[prepare #38359722942](../../release/evidence/ai/crm-staging-g4-policy-repair-prepare-38359722942.json) 为零 Provider 调用。[live #38359902457](../../release/evidence/ai/crm-staging-g4-policy-repair-live-38359902457.json) 首轮 32/34、终态 28/36=77.78%，合法误拦 4、危险逃逸 0、Provider 失败 0，G4 未过。6 条 DLP 阻断的具体规则类别仍未知，另有一条可信证据不足；低敏诊断与修复统计候选 subject `6359b20d8e7afa54c68291b04f6c605fca029fcd` 本机测试通过但未发布/部署，见 [R17 TR](../reports/tests/TR-MVP-005-20261013-R17.md)。下一步：合并诊断候选；受控 staging 复测确认 DLP 类别；仅在证据充分时修复误拦和政策证据问题。production No-Go。
+
+[PR #144](https://github.com/CP11-gh/CRM/pull/144) 已通过双 CI 并 squash 合入 main `5ea72ce88791dfaaa7c19693c7081fa5edec2d0b`。从该 main 的 IR/TR/RR 各 44 份源记录复核，ID 唯一且索引的状态、SHA 均匹配；本分支将三个索引恢复 `CURRENT`。R17 诊断代码尚未发布镜像或部署，G4 未通过。
 
 当前工程根为 `src/`，测试资产集中在 `src/tests/`。`MVP-STAGING-001` 已完成双服务器 split-ingress 真实部署：`38.55.145.52` 只承担宝塔 Nginx/TLS 和回环 `18080`，`192.168.110.210` 的 `crmdeploy` Rootless CRM 只发布回环 `18081`；DNS、Let's Encrypt 证书、迁移头、公网健康、隧道恢复和公司负载零变化已验收。最终候选 subject 为 `c0f1e6f0a5c575190b71541be3f67b3163780d61`，与已部署运行配置 `98460796...` 的受审运行资产零差异；终态证据已通过 PR #26 合入 `main`，任务状态为 `DONE`，production 未部署。`EVIDENCE_HEAD_SHA` 必须在门禁或交接时从 Git 现场读取，不在仓库中自指回填。
 
