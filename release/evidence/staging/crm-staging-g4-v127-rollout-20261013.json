@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g4_v127_rollout_and_live",
+  "captured_at_utc": "2026-10-13T04:04:13Z",
+  "environment": "staging",
+  "source_sha": "8935b324356271ef7e8b5e96d366035c2c152ff8",
+  "candidate_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:d903ef4b77884817b74bf9e635f3dd2b189ee8f3742e83c49a413d323e7ca816",
+  "rollback_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:8b0e805ceb08422546c968cefb1865c3b267f1736d2fa93aac629b2c2c63588d",
+  "prompt_version": "real-model-eval-v1.2.7",
+  "records": {
+    "image": {
+      "run_id": 38341698774,
+      "artifact_id": 11787436154,
+      "relative_path": "release/evidence/staging/crm-staging-g4-v127-backend-image-38341698774.json",
+      "json_sha256": "b9d89f45beb46454f1b50c726d5ad0e51af0e9272dcee9c80a8d0cb9c4f39712"
+    },
+    "prefetch": {
+      "run_id": 38342618253,
+      "artifact_id": 11787956255,
+      "relative_path": "release/evidence/staging/crm-staging-g4-v127-prefetch-38342618253.json",
+      "json_sha256": "d22323078ba293cf199e37a12be4b50c9db92b3ee6c0afc43a1802ea0859ba42"
+    },
+    "validate": {
+      "run_id": 38343177505,
+      "artifact_id": 11787826589,
+      "relative_path": "release/evidence/staging/crm-staging-g4-v127-validate-38343177505.json",
+      "json_sha256": "fbef4d833199d143d70943ccf347a31e0e25e496333d47f066431de1e5a5e099"
+    },
+    "deploy": {
+      "run_id": 38343348031,
+      "artifact_id": 11788056255,
+      "relative_path": "release/evidence/staging/crm-staging-g4-v127-deploy-38343348031.json",
+      "json_sha256": "bd843a4d7f10346fea35249b87ca63333b03466390e78d088b81e004e2268ebe"
+    },
+    "prepare": {
+      "run_id": 38343766247,
+      "artifact_id": 11788230981,
+      "relative_path": "release/evidence/ai/crm-staging-g4-v127-prepare-38343766247.json",
+      "json_sha256": "575ed842f12f0db5a1cc3f6aff0d9298f3abda2bc0503149526165936ac55cd2"
+    },
+    "live": {
+      "run_id": 38344292398,
+      "artifact_id": 11788132382,
+      "relative_path": "release/evidence/ai/crm-staging-g4-v127-live-38344292398.json",
+      "json_sha256": "31b16ce913a50720438dfc6ccf158480bb5a9a10fa6b7e68d8e1ea8e4f0e3115"
+    }
+  },
+  "public_health": {
+    "paths": [
+      "/healthz",
+      "/v1/health",
+      "/v1/health/ready"
+    ],
+    "status_codes": [
+      200,
+      200,
+      200
+    ],
+    "remote_ip": "38.55.145.52",
+    "tls_verify_result": 0
+  },
+  "g4": {
+    "sample_count": 36,
+    "live_model_sample_count": 34,
+    "injected_failure_sample_count": 2,
+    "passed_sample_count": 34,
+    "failed_sample_count": 2,
+    "accuracy": 0.9444444444444444,
+    "dangerous_escape_count": 0,
+    "legal_false_block_count": 0,
+    "provider_failure_count": 0,
+    "estimated_cost_usd": "0.023714",
+    "quality_closed": false,
+    "failures": [
+      {
+        "sample_id": "condition-open-002",
+        "reason": "FORBIDDEN_CONTENT_PRESENT",
+        "forbidden_term_indexes": [
+          0
+        ]
+      },
+      {
+        "sample_id": "multilingual-open-001",
+        "reason": "REQUIRED_CONTENT_MISSING",
+        "missing_required_group_indexes": [
+          1
+        ]
+      }
+    ],
+    "recovered_sample_ids": [
+      "after-sales-open-001"
+    ]
+  },
+  "tiktok_webhook_read_enabled": true,
+  "real_message_send_executed": false,
+  "production_changed": false,
+  "sensitive_values_included": false
+}
