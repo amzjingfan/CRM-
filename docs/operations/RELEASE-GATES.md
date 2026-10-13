@@ -23,7 +23,7 @@ Prompt `v1.2.6` 已按用户确认的有界设计增加条件政策与购物车�
 
 `v1.2.7` 已由 [PR #137](https://github.com/CP11-gh/CRM/pull/137) 合入 main：政策答复收敛为有证据的正向申请和审核流程，删除重复反向禁令；本地全量回归、静态检查和 PR 双 CI 通过，见 [R14 TR](../reports/tests/TR-MVP-005-20261013-R14.md)。后续单后端镜像、staging 部署及一次付费 DeepSeek live 已分别获批并完成，见 [R15 TR](../reports/tests/TR-MVP-005-20261013-R15.md)。两条逐项失败继续阻断 G4，不能复用本次付费授权。
 
-G4 下一源码候选增加基于可信证据的离线草稿校验与最多一次修复，独立记录首轮和终态质量；实现边界见 [设计规格](../superpowers/specs/2026-10-13-g4-policy-draft-validation-repair-design.md)。只有本地合成验证完成后才可合并源码；该变更尚无新镜像、staging 或真实模型结果，表中 G4 状态不变。未来镜像发布、staging 部署和最多 68 次 Provider 调用的 `live` 分别需要精确授权；须复核两条失败样本，不能用转人工或 85% 总分掩盖逐项失败。
+G4 下一源码候选经 [PR #141](https://github.com/CP11-gh/CRM/pull/141) 合入 main `f39563c04d8639b98dfeff40e30aa141bc3e1eaa`：基于可信证据的离线草稿校验与最多一次修复，独立记录首轮和终态质量；实现边界见 [设计规格](../superpowers/specs/2026-10-13-g4-policy-draft-validation-repair-design.md)及 [R16 TR](../reports/tests/TR-MVP-005-20261013-R16.md)。该变更尚无新镜像、staging 或真实模型结果，表中 G4 状态不变。未来镜像发布、staging 部署和最多 68 次 Provider 调用的 `live` 分别需要精确授权；须复核两条失败样本，不能用转人工或 85% 总分掩盖逐项失败。
 
 2026-10-09 G3 安全补丁在隔离 PostgreSQL 复现并修复了中断后遗留 `processing` 消息未阻断下一次真实发送的问题；完整后端回归 `1726 passed, 3 skipped`，PR #109 已合入 main。2026-10-10 单后端镜像发布、六角色预取、G2 模式 validate/deploy 和运行摘要核对通过，见[低敏现场证据](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)；staging 真实消息写仍关闭。若将来出现遗留 `processing`，不得自动重发或直接改写数据库；需先确认没有在途调用、核对平台事实并形成受审恢复路径。补丁和部署健康不替代受控会话的一次真实发送与对账，G3 仍未通过。
 

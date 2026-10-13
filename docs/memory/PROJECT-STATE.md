@@ -11,8 +11,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-policy-validator-design-20261013
-Governance base SHA: 82a02453154c0069620e2005c4de0b694572f784
+Working branch at this snapshot: docs/mvp005-g4-r16-index-current-20261013
+Governance base SHA: f39563c04d8639b98dfeff40e30aa141bc3e1eaa
 CANDIDATE_SUBJECT_SHA: 5ec7592ba414dbe1d1c7c2e49c93d19c454ffc4d
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
@@ -59,6 +59,8 @@ Prompt 修复与低敏证据 PR [#123](https://github.com/CP11-gh/CRM/pull/123) 
 证据 [PR #139](https://github.com/CP11-gh/CRM/pull/139) 前后端 CI 通过并 squash 合入 main `b41aee2ee482bc28501ea4d2a74ec2f328f173ce`。从该 main 的 IR/TR/RR 各 42 份源记录核对，无缺失、重复、状态或 SHA 偏差；本索引收尾分支只把三个派生视图恢复为 `CURRENT`，不修改 R15 结论或运行服务。G4 保持 `PARTIAL`、production No-Go。
 
 2026-10-13 G4 下一源码候选：从 main `82a02453154c0069620e2005c4de0b694572f784` 按用户确认的[设计](../superpowers/specs/2026-10-13-g4-policy-draft-validation-repair-design.md)增加离线政策校验和最多一次受控修复，subject `5ec7592ba414dbe1d1c7c2e49c93d19c454ffc4d`。Fake Provider 与完整后端回归最终 `1745 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy、工作流 YAML/PowerShell 解析通过；首次全量测试有一项既有 Git Bash 5 秒超时，单独重跑及最终全量均通过。见 [IR R16](../records/implementation/IR-MVP-005-20261013-R16.md)/[TR R16](../reports/tests/TR-MVP-005-20261013-R16.md)/[RR R16](../reports/reviews/RR-MVP-005-20261013-R16.md)。本分支三份索引为 `CANDIDATE_VIEW`，合入 main 后须重建 `CURRENT`。未发布镜像、部署 staging 或调用 DeepSeek；运行仍为 `v1.2.7`，G4 `PARTIAL`、production No-Go。
+
+[PR #141](https://github.com/CP11-gh/CRM/pull/141) 前后端 CI 通过并 squash 合入 main `f39563c04d8639b98dfeff40e30aa141bc3e1eaa`。从该 main 的 IR/TR/RR 各 43 份源记录核对，无缺失、重复、状态或 SHA 偏差；本索引收尾分支将三个派生视图恢复为 `CURRENT`，不修改 R16 结论或运行服务。G4 保持 `PARTIAL`、production No-Go。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
@@ -189,6 +191,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G4 先合并 R16 离线修复源码候选；私有后端镜像、staging 预取/验证/部署和最多 68 次 Provider 调用的付费复测分别取得精确授权，再核对首轮/终态与两条历史失败。冻结集和严格判分不变。
+1. G4 的 R16 源码已合入 main；私有后端镜像、staging 预取/验证/部署和最多 68 次 Provider 调用的付费复测分别取得精确授权，再核对首轮/终态与两条历史失败。冻结集和严格判分不变。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
