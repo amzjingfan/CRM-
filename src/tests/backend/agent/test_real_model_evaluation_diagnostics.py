@@ -216,9 +216,10 @@ async def test_runner_retains_only_low_sensitive_diagnostics_for_failed_sample()
     )
 
     sample = report.samples[0]
-    assert sample.failure_reason == "FORBIDDEN_CONTENT_PRESENT"
-    assert sample.diagnostics is not None
-    assert sample.diagnostics.forbidden_matches[0].term_index == 0
+    assert sample.first_failure_reason == "FORBIDDEN_CONTENT_PRESENT"
+    assert sample.first_diagnostics is not None
+    assert sample.first_diagnostics.forbidden_matches[0].term_index == 0
+    assert sample.decision == "transfer_human"
     serialized = report.model_dump_json()
     assert "has been approved" not in serialized
     assert case.customer_message not in serialized

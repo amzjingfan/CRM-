@@ -80,6 +80,8 @@ src/tests/
 
 先运行最小充分验证。只有新失败、未解决风险、影响面扩大或门禁要求时才扩大范围；不得为证明勤奋重复无关测试。
 
+G4 的 `policy-repair-v1` 候选先用确定性 Fake Provider 验证单次修复、两阶段独立判分、预算上限、标签隔离、DLP 与失败关闭，并静态核对工作流低敏白名单及 PowerShell 语法。此类本地测试不等于真实模型质量。真实 `live` 需要重新精确批准最多 68 次 Provider 调用，报告必须单独核对首轮质量、最终质量、两条历史逐项失败、误拦、Token/费用和延迟；`prepare` 始终为零 Provider 调用。
+
 ## 输出与正式证据
 
 - 测试源码与普通 eval 资产：`src/tests/backend/`、`src/tests/frontend/`、`src/tests/integration/postgres/` 与 `src/tests/ai/`。

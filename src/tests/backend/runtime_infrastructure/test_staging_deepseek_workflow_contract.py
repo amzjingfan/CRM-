@@ -1,0 +1,35 @@
+"""staging G4 工作流必须精确验证新低敏报告和调用上限。"""
+
+import re
+from pathlib import Path
+
+from app.agent.real_model_evaluation import RealModelEvaluationMetrics, RealModelEvaluationReport, RealModelSampleResult
+
+ROOT = Path(__file__).resolve().parents[4]
+WORKFLOW = ROOT / ".github/workflows/evaluate-staging-deepseek.yml"
+
+
+def _allowed_keys(source: str, variable: str) -> set[str]:
+    match = re.search(rf"\${variable} = @\(([^\n]+)\)", source)
+    assert match is not None, f"missing {variable} allowlist"
+    return set(re.findall(r"'([^']+)'", match.group(1)))
+
+
+def test_live_artifact_allowlists_match_pydantic_models() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    assert _allowed_keys(source, "allowedReportKeys") == set(RealModelEvaluationReport.model_fields)
+    assert _allowed_keys(source, "allowedSampleKeys") == set(RealModelSampleResult.model_fields)
+    assert _allowed_keys(source, "allowedMetricsKeys") == set(RealModelEvaluationMetrics.model_fields)
+    assert "content" not in _allowed_keys(source, "allowedSampleKeys")
+    assert "prompt" not in _allowed_keys(source, "allowedSampleKeys")
+
+
+def test_live_gate_requires_new_flow_and_bounded_provider_calls() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    assert "$report.evaluation_flow_version -cne 'policy-repair-v1'" in source
+    assert "$report.metrics.provider_call_count -gt 68" in source
+    assert "$report.metrics.repair_attempt_count -gt 34" in source
+    assert "$report.samples.Count -ne 36" in source
+    assert "$report.metrics.live_model_sample_count -ne 34" in source
+    assert "$report.metrics.injected_failure_sample_count -ne 2" in source
+    assert "provider_calls = 0" in source

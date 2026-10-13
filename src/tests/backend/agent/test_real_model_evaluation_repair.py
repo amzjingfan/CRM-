@@ -1,0 +1,264 @@
+"""G4 双阶段评测必须保存首轮事实、限制修复且失败关闭。"""
+
+import json
+import uuid
+from dataclasses import replace
+from pathlib import Path
+from typing import TypeVar
+
+import pytest
+from _support import TESTS_ROOT
+
+from app.agent.errors import LLMErrorCode, LLMProviderError
+from app.agent.providers.base import LLMProvider, ProviderResult, StructuredRequest
+from app.agent.real_model_evaluation import (
+    RealModelEvaluationOutput,
+    RealModelSampleResult,
+    load_verified_real_model_evaluation_dataset,
+    run_real_model_evaluation,
+)
+
+OutputT = TypeVar("OutputT", bound=RealModelEvaluationOutput)
+DATASET_PATH = TESTS_ROOT / "ai/datasets/real-model-v1.0.0.jsonl"
+MANIFEST_PATH = Path(str(DATASET_PATH).replace(".jsonl", ".manifest.json"))
+
+
+def _dataset(sample_id: str = "multilingual-policy-001"):
+    dataset = load_verified_real_model_evaluation_dataset(DATASET_PATH, MANIFEST_PATH)
+    case = next(item for item in dataset.cases if item.sample_id == sample_id)
+    return replace(dataset, cases=(case,))
+
+
+def _policy_output(content: str) -> RealModelEvaluationOutput:
+    return RealModelEvaluationOutput.model_validate(
+        {
+            "decision": "human_review",
+            "content": content,
+            "language": "en",
+            "reason_code": "policy_grounded",
+            "business_claims": [
+                {
+                    "subject_type": "refund_policy",
+                    "subject_id": None,
+                    "action": "explain_policy",
+                    "tense": "timeless",
+                    "polarity": "affirmed",
+                    "condition": "conditional",
+                    "evidence_type": "faq_chunk",
+                    "evidence_id": "10000000-0000-4000-8000-000000000012",
+                    "confidence": 0.9,
+                }
+            ],
+            "send_performed": False,
+        }
+    )
+
+
+class _SequenceProvider(LLMProvider):
+    provider_name = "test"
+    model_name = "deepseek-v4-flash"
+
+    def __init__(self, outputs: list[RealModelEvaluationOutput | LLMProviderError], *, tokens: int = 20) -> None:
+        self.outputs = outputs
+        self.tokens = tokens
+        self.requests: list[StructuredRequest] = []
+
+    async def generate_structured(
+        self,
+        request: StructuredRequest,
+        response_schema: type[OutputT],
+    ) -> ProviderResult[OutputT]:
+        request.ensure_safe_for_external_provider(response_schema_name=response_schema.__name__)
+        self.requests.append(request)
+        output = self.outputs.pop(0)
+        if isinstance(output, LLMProviderError):
+            raise output
+        return ProviderResult(
+            provider=self.provider_name,
+            model=self.model_name,
+            parsed_output=response_schema.model_validate(output.model_dump()),
+            input_tokens=self.tokens,
+            output_tokens=5,
+            latency_ms=100,
+            provider_request_id=None,
+        )
+
+
+async def _run(provider: _SequenceProvider, *, max_provider_calls: int = 68, max_total_tokens: int = 120000):
+    return await run_real_model_evaluation(
+        _dataset(),
+        provider,
+        run_id=uuid.UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
+        app_env="development",
+        max_provider_calls=max_provider_calls,
+        max_total_tokens=max_total_tokens,
+    )
+
+
+@pytest.mark.asyncio
+async def test_first_pass_skips_repair_and_keeps_first_score() -> None:
+    provider = _SequenceProvider(
+        [_policy_output("A return request may be submitted within seven days, subject to platform review.")]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 1
+    assert sample.first_passed is True
+    assert sample.passed is True
+    assert sample.repair_attempted is False
+    assert sample.provider_call_count == 1
+    assert report.evaluation_flow_version == "policy-repair-v1"
+    assert report.first_output_semantics == "first_schema_validated_output"
+
+
+@pytest.mark.asyncio
+async def test_repair_success_keeps_first_failure_and_final_pass_separate() -> None:
+    provider = _SequenceProvider(
+        [
+            _policy_output("You may submit a return request within seven days."),
+            _policy_output("A return request may be submitted within seven days, subject to platform review."),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 2
+    assert provider.requests[1].is_repair is True
+    assert sample.first_passed is False
+    assert "REQUIRED_CONTENT_MISSING" in sample.first_failure_reason
+    assert sample.passed is True
+    assert sample.repair_attempted is True
+    assert sample.repair_outcome == "succeeded"
+    assert sample.first_output_hash != sample.output_hash
+    assert sample.provider_call_count == 2
+    assert sample.token_usage.total_tokens == 50
+    assert report.metrics.first_passed_sample_count == 0
+    assert report.metrics.repair_attempt_count == 1
+    assert report.metrics.provider_call_count == 2
+    serialized = json.dumps(report.model_dump(mode="json"), ensure_ascii=False)
+    assert "You may submit a return" not in serialized
+    assert "A return request may" not in serialized
+
+
+@pytest.mark.asyncio
+async def test_unsafe_second_draft_fails_closed() -> None:
+    provider = _SequenceProvider(
+        [
+            _policy_output("You may submit a return request within seven days."),
+            _policy_output("Your request has been approved."),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 2
+    assert sample.first_passed is False
+    assert sample.decision == "transfer_human"
+    assert sample.passed is False
+    assert sample.repair_outcome == "failed"
+    assert sample.provider_call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_repaired_draft_with_personal_email_fails_closed() -> None:
+    provider = _SequenceProvider(
+        [
+            _policy_output("You may submit a return request within seven days."),
+            _policy_output("A return request is subject to platform review. Contact buyer@example.com."),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 2
+    assert sample.decision == "transfer_human"
+    assert sample.repair_outcome == "failed"
+    assert "buyer@example.com" not in report.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_first_draft_with_personal_email_never_enters_repair() -> None:
+    provider = _SequenceProvider([_policy_output("Contact buyer@example.com for platform review.")])
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 1
+    assert sample.decision == "transfer_human"
+    assert sample.repair_attempted is False
+    assert "buyer@example.com" not in report.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_repair_provider_timeout_fails_closed_and_counts_failure() -> None:
+    provider = _SequenceProvider(
+        [
+            _policy_output("You may submit a return request within seven days."),
+            LLMProviderError(LLMErrorCode.LLM_TIMEOUT, "timeout", retriable=True),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert sample.decision == "transfer_human"
+    assert sample.provider_failure is True
+    assert sample.first_passed is False
+    assert sample.provider_call_count == 2
+    assert report.metrics.provider_failure_count == 1
+
+
+@pytest.mark.asyncio
+async def test_call_and_token_budgets_stop_before_repair() -> None:
+    for call_limit, token_limit in ((1, 120000), (68, 25)):
+        provider = _SequenceProvider([_policy_output("You may submit a return request within seven days.")])
+        report = await _run(provider, max_provider_calls=call_limit, max_total_tokens=token_limit)
+        sample = report.samples[0]
+        assert len(provider.requests) == 1
+        assert sample.decision == "transfer_human"
+        assert sample.repair_outcome == "budget_exhausted"
+        assert sample.provider_call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_token_budget_cannot_exceed_reviewed_ceiling() -> None:
+    provider = _SequenceProvider([])
+    with pytest.raises(ValueError, match="预算无效"):
+        await _run(provider, max_total_tokens=120001)
+    assert provider.requests == []
+
+
+@pytest.mark.asyncio
+async def test_injected_timeout_never_calls_provider() -> None:
+    provider = _SequenceProvider([])
+    report = await run_real_model_evaluation(
+        _dataset("model-timeout-001"),
+        provider,
+        run_id=uuid.UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
+        app_env="development",
+    )
+    assert provider.requests == []
+    assert report.samples[0].injected_failure is True
+    assert report.samples[0].provider_call_count == 0
+
+
+def test_legacy_sample_has_no_invented_repair_evidence() -> None:
+    old = RealModelSampleResult.model_validate(
+        {
+            "model": "old-model",
+            "prompt_version": "real-model-eval-v1.2.7",
+            "policy_version": "prompt-dlp-v1.3.0",
+            "dataset_version": "real-model-v1.0.0",
+            "run_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            "sample_id": "old-case",
+            "category": "condition",
+            "risk_level": "normal",
+            "expected_decision": "human_review",
+            "decision": "human_review",
+            "input_hash": "a" * 64,
+            "output_hash": "b" * 64,
+            "failure_reason": None,
+            "first_output_latency_ms": 100,
+            "total_latency_ms": 100,
+            "token_usage": {"input_tokens": 20, "output_tokens": 5, "total_tokens": 25},
+            "passed": True,
+            "provider_failure": False,
+            "injected_failure": False,
+        }
+    )
+    assert old.first_passed is None
+    assert old.first_output_hash is None
+    assert old.repair_outcome == "not_enabled"

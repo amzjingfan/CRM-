@@ -10,7 +10,7 @@ import json
 import math
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Annotated, Literal
@@ -19,14 +19,17 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.agent.errors import LLMErrorCode, LLMProviderError
 from app.agent.phase4_evaluation import AgentMetricAction
+from app.agent.policy_draft_validation import PolicyDraftValidation, validate_policy_draft
 from app.agent.providers.base import LLMProvider, StructuredRequest
 from app.agent.security import (
     PROMPT_DLP_POLICY_VERSION,
     REAL_MODEL_EVALUATION_PROMPT_VERSION,
+    REAL_MODEL_EVALUATION_REPAIR_SYSTEM_PROMPT,
     REAL_MODEL_EVALUATION_SYSTEM_PROMPT,
     PromptSafetyState,
     RealModelEvaluationSafetyContext,
     evaluate_prompt_safety,
+    evaluate_real_model_draft_safety,
 )
 from app.shared.config.llm_pricing import validate_approved_llm_pricing
 
@@ -334,6 +337,19 @@ class RealModelSampleResult(BaseModel):
     passed: bool
     provider_failure: bool
     injected_failure: bool
+    first_passed: bool | None = None
+    first_failure_reason: str | None = Field(default=None, max_length=500)
+    first_diagnostics: RealModelEvaluationDiagnostics | None = None
+    first_output_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    repair_attempted: bool = False
+    repair_outcome: Literal[
+        "not_enabled", "not_needed", "succeeded", "failed", "blocked", "budget_exhausted", "provider_failed"
+    ] = "not_enabled"
+    provider_call_count: int = Field(default=0, ge=0, le=2)
+    first_token_usage: RealModelTokenUsage | None = None
+    repair_token_usage: RealModelTokenUsage | None = None
+    repair_latency_ms: int | None = Field(default=None, ge=0)
+    policy_reason_codes: list[str] = Field(default_factory=list, max_length=3)
 
     @model_validator(mode="after")
     def validate_latency(self) -> "RealModelSampleResult":
@@ -362,6 +378,11 @@ class RealModelEvaluationMetrics(BaseModel):
     total_output_tokens: int = Field(ge=0)
     estimated_cost_usd: Decimal | None = Field(default=None, ge=0)
     cost_status: Literal["configured", "not_configured"] = "not_configured"
+    first_passed_sample_count: int | None = Field(default=None, ge=0)
+    first_accuracy: float | None = Field(default=None, ge=0, le=1)
+    repair_attempt_count: int | None = Field(default=None, ge=0)
+    repair_success_count: int | None = Field(default=None, ge=0)
+    provider_call_count: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def validate_cost_status(self) -> "RealModelEvaluationMetrics":
@@ -395,10 +416,11 @@ class RealModelEvaluationReport(BaseModel):
     output_cost_per_million_usd: Decimal | None = Field(default=None, ge=0)
     accuracy_gate: float
     live_model_evaluation: bool
-    first_output_semantics: Literal["first_schema_validated_safe_output"]
+    first_output_semantics: Literal["first_schema_validated_safe_output", "first_schema_validated_output"]
     passed: bool
     metrics: RealModelEvaluationMetrics
     samples: list[RealModelSampleResult]
+    evaluation_flow_version: Literal["single-pass-v1", "policy-repair-v1"] = "single-pass-v1"
 
 
 def _normalized_dataset_text(path: Path) -> str:
@@ -536,6 +558,45 @@ def build_real_model_evaluation_request(
         max_output_tokens=1024,
         temperature=0.0,
         real_model_evaluation_context=dataset.safety_context,
+    )
+
+
+def build_real_model_repair_request(
+    case: RealModelEvaluationCase,
+    dataset: VerifiedRealModelEvaluationDataset,
+    first_output: RealModelEvaluationOutput,
+    reason_codes: tuple[str, ...],
+    *,
+    run_id: uuid.UUID,
+) -> StructuredRequest:
+    """为一条已验证合成输入创建一次性、低敏的修复请求。"""
+    source_hash = _sha256_text(build_real_model_evaluation_payload(case))
+    payload = {
+        "operation": "real_model_evaluation_repair",
+        "schema_version": "1",
+        "source_payload_sha256": source_hash,
+        "customer_message": case.customer_message,
+        "target_language": case.target_language,
+        "synthetic_evidence": case.synthetic_evidence,
+        "evidence_type": case.evidence_type,
+        "evidence_id": str(case.evidence_id) if case.evidence_id else None,
+        "subject_ref": case.subject_ref,
+        "first_output": first_output.model_dump(mode="json", exclude_none=False),
+        "reason_codes": list(reason_codes),
+    }
+    user_prompt = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    repair_context = replace(
+        dataset.safety_context,
+        allowed_repair_payload_hashes=frozenset({_sha256_text(user_prompt)}),
+    )
+    return StructuredRequest(
+        system_prompt=REAL_MODEL_EVALUATION_REPAIR_SYSTEM_PROMPT,
+        user_prompt=user_prompt,
+        trace_id=str(uuid.uuid5(run_id, f"{case.sample_id}:repair")),
+        max_output_tokens=1024,
+        temperature=0.0,
+        is_repair=True,
+        real_model_evaluation_context=repair_context,
     )
 
 
@@ -700,6 +761,42 @@ def _has_nearby_prohibition_cue(content: str, start: int, end: int) -> bool:
     )
 
 
+def _policy_draft_result(case: RealModelEvaluationCase, output: RealModelEvaluationOutput) -> PolicyDraftValidation:
+    """只按本次证据检验政策声明，其他类别维持原评测路径。"""
+    claim = next((item for item in output.business_claims if item.subject_type == "refund_policy"), None)
+    if claim is None:
+        return PolicyDraftValidation("pass", ())
+    return validate_policy_draft(
+        evidence=case.synthetic_evidence,
+        content=output.content,
+        language=output.language,
+        claim_evidence_type=claim.evidence_type,
+        claim_evidence_id=str(claim.evidence_id) if claim.evidence_id else None,
+        expected_evidence_type=case.evidence_type,
+        expected_evidence_id=str(case.evidence_id) if case.evidence_id else None,
+    )
+
+
+def _transfer_human_output(language: Literal["zh-CN", "en"]) -> RealModelEvaluationOutput:
+    """不保留任何未通过校验的草稿或声明。"""
+    return RealModelEvaluationOutput(
+        decision="transfer_human",
+        content=None,
+        language=language,
+        reason_code="insufficient_evidence",
+        business_claims=[],
+        send_performed=False,
+    )
+
+
+def _token_usage(input_tokens: int, output_tokens: int) -> RealModelTokenUsage:
+    return RealModelTokenUsage(
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=input_tokens + output_tokens,
+    )
+
+
 async def run_real_model_evaluation(
     dataset: VerifiedRealModelEvaluationDataset,
     provider: LLMProvider,
@@ -711,10 +808,16 @@ async def run_real_model_evaluation(
     pricing_version: str | None = None,
     pricing_currency: Literal["USD"] = "USD",
     pricing_basis: RealModelPricingBasis = "not_configured",
+    max_provider_calls: int = 68,
+    max_total_tokens: int = 120000,
 ) -> RealModelEvaluationReport:
     """逐条运行真实 Provider；模型超时样本使用显式故障注入验证失败关闭。"""
     validate_real_model_evaluation_environment(dataset, app_env)
+    if not 1 <= max_provider_calls <= 68 or not 1 <= max_total_tokens <= 120000:
+        raise ValueError("G4 Provider 调用或 Token 预算无效")
     results: list[RealModelSampleResult] = []
+    provider_calls = 0
+    used_tokens = 0
     for case in dataset.cases:
         payload = build_real_model_evaluation_payload(case)
         input_hash = _sha256_text(payload)
@@ -734,7 +837,23 @@ async def run_real_model_evaluation(
                 )
             )
             continue
+        if provider_calls >= max_provider_calls or used_tokens >= max_total_tokens:
+            results.append(
+                _build_failure_result(
+                    case,
+                    run_id=run_id,
+                    model=provider.model_name,
+                    input_hash=input_hash,
+                    error_code="LLM_BUDGET_EXHAUSTED",
+                    latency_ms=0,
+                    provider_failure=False,
+                    injected_failure=False,
+                    repair_outcome="budget_exhausted",
+                )
+            )
+            continue
         started_at = time.perf_counter()
+        provider_calls += 1
         try:
             provider_result = await provider.generate_structured(
                 build_real_model_evaluation_request(case, dataset, run_id=run_id),
@@ -752,12 +871,92 @@ async def run_real_model_evaluation(
                     latency_ms=latency_ms,
                     provider_failure=True,
                     injected_failure=False,
+                    provider_call_count=1,
                 )
             )
             continue
-        failures = grade_real_model_evaluation_output(case, provider_result.parsed_output)
-        output_json = provider_result.parsed_output.model_dump_json(exclude_none=False)
-        latency_ms = provider_result.latency_ms
+        first_output = provider_result.parsed_output
+        first_failures = grade_real_model_evaluation_output(case, first_output)
+        first_usage = _token_usage(provider_result.input_tokens, provider_result.output_tokens)
+        used_tokens += first_usage.total_tokens
+        first_safety = evaluate_real_model_draft_safety(
+            first_output.content, [claim.subject_id for claim in first_output.business_claims]
+        )
+        policy = (
+            _policy_draft_result(case, first_output)
+            if first_safety == PromptSafetyState.ALLOWED
+            else PolicyDraftValidation("block", ("DRAFT_DLP_BLOCKED",))
+        )
+        final_output = first_output
+        repair_attempted = False
+        repair_outcome: Literal[
+            "not_enabled", "not_needed", "succeeded", "failed", "blocked", "budget_exhausted", "provider_failed"
+        ] = "not_needed"
+        repair_usage: RealModelTokenUsage | None = None
+        repair_latency_ms: int | None = None
+        sample_calls = 1
+        provider_failure = False
+        policy_codes = list(policy.reason_codes)
+        if policy.disposition == "block":
+            final_output = _transfer_human_output(case.target_language)
+            repair_outcome = "blocked"
+        elif policy.disposition == "repair":
+            if provider_calls >= max_provider_calls or used_tokens >= max_total_tokens:
+                final_output = _transfer_human_output(case.target_language)
+                repair_outcome = "budget_exhausted"
+            else:
+                request = build_real_model_repair_request(
+                    case, dataset, first_output, policy.reason_codes, run_id=run_id
+                )
+                try:
+                    request.ensure_safe_for_external_provider(response_schema_name=RealModelEvaluationOutput.__name__)
+                except LLMProviderError:
+                    final_output = _transfer_human_output(case.target_language)
+                    repair_outcome = "blocked"
+                else:
+                    repair_attempted = True
+                    sample_calls = 2
+                    provider_calls += 1
+                    repair_started_at = time.perf_counter()
+                    try:
+                        repaired = await provider.generate_structured(request, RealModelEvaluationOutput)
+                    except LLMProviderError:
+                        repair_latency_ms = max(0, int((time.perf_counter() - repair_started_at) * 1000))
+                        final_output = _transfer_human_output(case.target_language)
+                        repair_outcome = "provider_failed"
+                        provider_failure = True
+                    else:
+                        repair_latency_ms = repaired.latency_ms
+                        repair_usage = _token_usage(repaired.input_tokens, repaired.output_tokens)
+                        used_tokens += repair_usage.total_tokens
+                        repaired_safety = evaluate_real_model_draft_safety(
+                            repaired.parsed_output.content,
+                            [claim.subject_id for claim in repaired.parsed_output.business_claims],
+                        )
+                        repaired_policy = (
+                            _policy_draft_result(case, repaired.parsed_output)
+                            if repaired_safety == PromptSafetyState.ALLOWED
+                            else PolicyDraftValidation("block", ("DRAFT_DLP_BLOCKED",))
+                        )
+                        policy_codes = list(dict.fromkeys([*policy_codes, *repaired_policy.reason_codes]))[:3]
+                        if repaired_policy.disposition == "pass":
+                            final_output = repaired.parsed_output
+                            repair_outcome = "succeeded"
+                        else:
+                            final_output = _transfer_human_output(case.target_language)
+                            repair_outcome = "failed"
+
+        failures = grade_real_model_evaluation_output(case, final_output)
+        output_json = final_output.model_dump_json(exclude_none=False)
+        first_json = first_output.model_dump_json(exclude_none=False)
+        total_usage = _token_usage(
+            first_usage.input_tokens + (repair_usage.input_tokens if repair_usage else 0),
+            first_usage.output_tokens + (repair_usage.output_tokens if repair_usage else 0),
+        )
+        total_latency_ms = max(
+            provider_result.latency_ms + (repair_latency_ms or 0),
+            int((time.perf_counter() - started_at) * 1000),
+        )
         results.append(
             RealModelSampleResult(
                 model=provider_result.model,
@@ -769,22 +968,29 @@ async def run_real_model_evaluation(
                 category=case.category,
                 risk_level=case.risk_level,
                 expected_decision=case.expected_decision,
-                decision=provider_result.parsed_output.decision,
+                decision=final_output.decision,
                 input_hash=input_hash,
                 output_hash=_sha256_text(output_json),
                 failure_reason="|".join(failures) if failures else None,
-                diagnostics=diagnose_real_model_evaluation_output(case, provider_result.parsed_output, failures),
-                # 当前 Provider 非原生流式：首输出定义为首个完成 Schema 和安全校验的结果。
-                first_output_latency_ms=latency_ms,
-                total_latency_ms=latency_ms,
-                token_usage=RealModelTokenUsage(
-                    input_tokens=provider_result.input_tokens,
-                    output_tokens=provider_result.output_tokens,
-                    total_tokens=provider_result.input_tokens + provider_result.output_tokens,
-                ),
+                diagnostics=diagnose_real_model_evaluation_output(case, final_output, failures),
+                # 首输出只保证 Schema 有效；政策和 DLP 安全要在后续门禁判定。
+                first_output_latency_ms=provider_result.latency_ms,
+                total_latency_ms=total_latency_ms,
+                token_usage=total_usage,
                 passed=not failures,
-                provider_failure=False,
+                provider_failure=provider_failure,
                 injected_failure=False,
+                first_passed=not first_failures,
+                first_failure_reason="|".join(first_failures) if first_failures else None,
+                first_diagnostics=diagnose_real_model_evaluation_output(case, first_output, first_failures),
+                first_output_hash=_sha256_text(first_json),
+                repair_attempted=repair_attempted,
+                repair_outcome=repair_outcome,
+                provider_call_count=sample_calls,
+                first_token_usage=first_usage,
+                repair_token_usage=repair_usage,
+                repair_latency_ms=repair_latency_ms,
+                policy_reason_codes=policy_codes,
             )
         )
     return build_evaluation_report(
@@ -802,6 +1008,7 @@ async def run_real_model_evaluation(
         pricing_version=pricing_version,
         pricing_currency=pricing_currency,
         pricing_basis=pricing_basis,
+        evaluation_flow_version="policy-repair-v1",
     )
 
 
@@ -815,6 +1022,10 @@ def _build_failure_result(
     latency_ms: int,
     provider_failure: bool,
     injected_failure: bool,
+    provider_call_count: int = 0,
+    repair_outcome: Literal[
+        "not_enabled", "not_needed", "succeeded", "failed", "blocked", "budget_exhausted", "provider_failed"
+    ] = "not_needed",
 ) -> RealModelSampleResult:
     """把失败收敛为稳定、无正文的样本证据。"""
     passed = injected_failure and case.expected_decision == "failed" and case.expected_reason_code == error_code
@@ -838,6 +1049,8 @@ def _build_failure_result(
         passed=passed,
         provider_failure=provider_failure,
         injected_failure=injected_failure,
+        provider_call_count=provider_call_count,
+        repair_outcome=repair_outcome,
     )
 
 
@@ -865,6 +1078,7 @@ def build_evaluation_report(
     pricing_version: str | None = None,
     pricing_currency: Literal["USD"] = "USD",
     pricing_basis: RealModelPricingBasis = "not_configured",
+    evaluation_flow_version: Literal["single-pass-v1", "policy-repair-v1"] = "single-pass-v1",
 ) -> RealModelEvaluationReport:
     """聚合 REAL-AI-05 门禁指标并拒绝版本或运行 ID 混用。"""
     parsed_run_id = uuid.UUID(run_id)
@@ -931,6 +1145,33 @@ def build_evaluation_report(
         total_output_tokens=output_tokens,
         estimated_cost_usd=cost.quantize(Decimal("0.000001")) if cost is not None else None,
         cost_status="configured" if cost_configured else "not_configured",
+        first_passed_sample_count=(
+            sum(result.first_passed is True for result in live_results)
+            if evaluation_flow_version == "policy-repair-v1"
+            else None
+        ),
+        first_accuracy=(
+            sum(result.first_passed is True for result in live_results)
+            / sum(result.first_passed is not None for result in live_results)
+            if evaluation_flow_version == "policy-repair-v1"
+            and any(result.first_passed is not None for result in live_results)
+            else None
+        ),
+        repair_attempt_count=(
+            sum(result.repair_attempted for result in results)
+            if evaluation_flow_version == "policy-repair-v1"
+            else None
+        ),
+        repair_success_count=(
+            sum(result.repair_outcome == "succeeded" for result in results)
+            if evaluation_flow_version == "policy-repair-v1"
+            else None
+        ),
+        provider_call_count=(
+            sum(result.provider_call_count for result in results)
+            if evaluation_flow_version == "policy-repair-v1"
+            else None
+        ),
     )
     passed = (
         sample_count > 0
@@ -957,10 +1198,15 @@ def build_evaluation_report(
         output_cost_per_million_usd=output_cost_per_million_usd if cost_configured else None,
         accuracy_gate=REAL_MODEL_ACCURACY_GATE,
         live_model_evaluation=bool(live_results),
-        first_output_semantics="first_schema_validated_safe_output",
+        first_output_semantics=(
+            "first_schema_validated_output"
+            if evaluation_flow_version == "policy-repair-v1"
+            else "first_schema_validated_safe_output"
+        ),
         passed=passed,
         metrics=metrics,
         samples=results,
+        evaluation_flow_version=evaluation_flow_version,
     )
 
 
