@@ -283,7 +283,7 @@ def test_prefetch_rejects_existing_evidence_before_pull(tmp_path: Path) -> None:
     assert evidence.read_text("utf-8") == '{"status":"passed"}'
 
 
-def test_retrieval_images_use_checked_resumable_import(tmp_path: Path) -> None:
+def test_all_missing_images_use_checked_resumable_import(tmp_path: Path) -> None:
     environment, log = fake_docker(tmp_path)
     bin_dir = tmp_path / "bin"
     oci_script = tmp_path / "verified-oci-source.py"
@@ -296,6 +296,8 @@ args = sys.argv[1:]
 image = args[args.index('--image') + 1]
 with Path(os.environ['FAKE_OCI_LOG']).open('a', encoding='utf-8') as output:
     output.write(json.dumps(args) + '\\n')
+if image == os.environ.get('FAKE_OCI_FAIL_IMAGE'):
+    sys.exit(42)
 with Path(os.environ['FAKE_DOCKER_CACHE']).open('a', encoding='utf-8') as output:
     output.write(image + '\\n')
 """,
@@ -318,14 +320,17 @@ with Path(os.environ['FAKE_DOCKER_CACHE']).open('a', encoding='utf-8') as output
             "DOCKER_CONFIG": str(tmp_path),
         }
     )
+    environment["FAKE_OCI_FAIL_IMAGE"] = IMAGES[0]
+    failed = invoke(tmp_path, environment, resumable_script=oci_script)
+    assert failed.returncode != 0
+    assert not (tmp_path / "evidence.json").exists()
+    environment.pop("FAKE_OCI_FAIL_IMAGE")
     result = invoke(tmp_path, environment, resumable_script=oci_script)
     assert result.returncode == 0, result.stdout + result.stderr
     commands = [json.loads(line)["args"] for line in log.read_text("utf-8").splitlines()]
-    assert [args for args in commands if args[0] == "pull"] == [
-        ["pull", image] for image in (IMAGES[0], IMAGES[1], IMAGES[3], IMAGES[4])
-    ]
+    assert [args for args in commands if args[0] == "pull"] == []
     calls = [json.loads(line) for line in oci_log.read_text("utf-8").splitlines()]
-    assert [args[args.index("--image") + 1] for args in calls] == [IMAGES[2], IMAGES[5]]
+    assert [args[args.index("--image") + 1] for args in calls] == [IMAGES[0], *IMAGES]
     assert json.loads((tmp_path / "evidence.json").read_text("utf-8"))["image_count"] == 6
 
 

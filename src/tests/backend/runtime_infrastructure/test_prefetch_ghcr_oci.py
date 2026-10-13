@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import importlib.util
 import json
@@ -77,9 +78,10 @@ def test_small_config_is_downloaded_whole_and_digest_checked(tmp_path: Path) -> 
     assert registry.calls == []
 
 
-def test_oci_wrapper_retains_original_index_digest(tmp_path: Path) -> None:
+@pytest.mark.parametrize("repository", ("crm-backend", "crm-frontend", "crm-retrieval-model-service"))
+def test_oci_wrapper_retains_original_index_digest(tmp_path: Path, repository: str) -> None:
     digest = "sha256:" + "a" * 64
-    image = f"{module.IMAGE_PREFIX}{digest}"
+    image = f"ghcr.io/cp11-gh/{repository}@{digest}"
     module.write_layout(
         tmp_path,
         image,
@@ -88,7 +90,58 @@ def test_oci_wrapper_retains_original_index_digest(tmp_path: Path) -> None:
     wrapper = json.loads((tmp_path / "index.json").read_text(encoding="utf-8"))
     assert wrapper["manifests"][0]["digest"] == digest
     assert wrapper["manifests"][0]["annotations"]["io.containerd.image.name"] == image
+    assert wrapper["manifests"][0]["annotations"]["containerd.io/distribution.source.ghcr.io"] == (
+        f"cp11-gh/{repository}"
+    )
     assert wrapper["manifests"][0]["annotations"]["org.opencontainers.image.ref.name"] == f"@{digest}"
+
+
+@pytest.mark.parametrize("repository", ("crm-backend", "crm-frontend", "crm-retrieval-model-service"))
+def test_only_three_reviewed_repositories_are_accepted(repository: str) -> None:
+    digest = "sha256:" + "a" * 64
+    assert module.checked_image_reference(f"ghcr.io/cp11-gh/{repository}@{digest}") == (
+        f"cp11-gh/{repository}",
+        digest,
+    )
+
+
+@pytest.mark.parametrize(
+    "image",
+    (
+        "ghcr.io/cp11-gh/other@sha256:" + "a" * 64,
+        "ghcr.io/other/crm-backend@sha256:" + "a" * 64,
+        "ghcr.io/cp11-gh/crm-backend:latest",
+        "ghcr.io/cp11-gh/crm-backend@sha256:" + "A" * 64,
+    ),
+)
+def test_rejects_unreviewed_or_mutable_image_reference(image: str) -> None:
+    with pytest.raises(ValueError, match="reviewed GHCR"):
+        module.checked_image_reference(image)
+
+
+def test_registry_token_scope_is_bound_to_selected_repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    auth = base64.b64encode(b"test-user:test-password").decode("ascii")
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"auths": {"ghcr.io": {"auth": auth}}}), encoding="utf-8")
+    observed: list[str] = []
+
+    class TokenResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, object]:
+            return {"token": "test-token", "expires_in": 300}
+
+    def fake_get(_url: str, **kwargs: object) -> TokenResponse:
+        params = kwargs["params"]
+        assert isinstance(params, dict)
+        observed.append(str(params["scope"]))
+        return TokenResponse()
+
+    monkeypatch.setattr(module.requests, "get", fake_get)
+    registry = module.Registry(config, "cp11-gh/crm-backend")
+    assert registry._token() == "test-token"
+    assert observed == ["repository:cp11-gh/crm-backend:pull"]
 
 
 def test_range_request_rejects_full_body_response(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -101,6 +154,7 @@ def test_range_request_rejects_full_body_response(monkeypatch: pytest.MonkeyPatc
             return None
 
     registry = module.Registry.__new__(module.Registry)
+    registry._repository = module.REPOSITORY
     registry._token = lambda force=False: "test-only-token"
     monkeypatch.setattr(module, "RETRIES", 1)
     monkeypatch.setattr(module.requests, "get", lambda *_args, **_kwargs: FullResponse())

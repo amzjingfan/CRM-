@@ -146,6 +146,12 @@ PR #83 合入 main `3b091055908a4fd374dc95518dfd31d8d8960a47` 后，预取工作
 
 `MVP-STAGING-PROXY-PERSIST-001` 已由 PR #89 合入 `main=dcddb26cbb6ecc92db30a11a2f504d034e6ec048`。正式 `validate` 运行 `37716193186`、`deploy` 运行 `37716402745` 通过；后者将已校验源码包放入 `/home/crmdeploy/src/crm-reviewed-source-37716402745-1/`，proxy 的相对只读 bind 来自该持久路径。作业结束后再次显式重启 proxy 成功并健康，公网首页 307、登录与三个健康接口 200，配置文件 SHA-256 与仓库一致，其他公司容器 ID 不变。低敏证据见 [代理持久挂载复测](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。运行中的源码目录不得作为普通 Runner 临时材料清理；此结论不替代 G6 连续五日稳定性。
 
+### 2026-10-13 六摘要预取传输恢复候选
+
+G4 诊断后端镜像 `sha256:bb38fa09…e7d80` 已发布并核对清单；预取 [#38363713490](https://github.com/CP11-gh/CRM/actions/runs/38363713490) 在第 1/6 项候选后端 `docker pull` 内持续约 28 分钟无返回，观察到 30 分钟后受控取消。取消日志确认尚未进入检索镜像，也未生成六项通过证据或切换服务；不能沿用上一轮预取结果批准新部署。故障边界是缺失摘要的原生 `docker pull` 缺少可观测分块进度和单次请求超时，底层网络原因尚未知。
+
+当前修复候选仅调整 `prefetch`：工作流已核对的 `src/scripts/prefetch_ghcr_oci.py` 对三种固定 GHCR 仓库的缺失摘要均使用 1 MiB 分块、每请求超时与有限重试，完成描述符长度和 SHA-256 校验后导入 `crmdeploy` Rootless containerd，并再次要求 Docker `RepoDigests` 精确匹配。已在本地精确命中的摘要继续跳过；失败的分块留在私有缓存供下一次相同摘要续传，任何失败不生成通过证据。只允许三个受审仓库与小写不可变 SHA-256，不增加外部消息、运行配置或 production 范围。旧段落中“后端/前端未缓存时仍由 `docker pull`”描述修复前的历史行为；此候选合入并经现场六摘要通过后才成为新运行事实。
+
 ## 发布入口
 
 当前发布状态见 `docs/operations/RELEASE-GATES.md`，最新测试摘要见 `docs/quality/TEST-STATUS.md`，固定资产与评测集见 `release/baselines/` 和 `release/evidence/`。部署说明不替代真实签署。

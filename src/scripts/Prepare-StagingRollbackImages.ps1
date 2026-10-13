@@ -67,14 +67,14 @@ try {
             Write-Output "Exact image digest is already available locally."
             continue
         }
-        if ($index -in @(2, 5) -and -not [string]::IsNullOrWhiteSpace($ResumableOciScript)) {
+        if (-not [string]::IsNullOrWhiteSpace($ResumableOciScript)) {
             if (-not (Test-Path -LiteralPath $ResumableOciScript -PathType Leaf)) {
                 throw "Verified resumable OCI source is missing."
             }
             if ([string]::IsNullOrWhiteSpace($env:DOCKER_CONFIG)) {
                 throw "GHCR Docker credentials are unavailable for resumable OCI transfer."
             }
-            Write-Output "Fetching immutable retrieval image $($index + 1)/$($images.Count) through verified resumable OCI ranges."
+            Write-Output "Fetching immutable staging image $($index + 1)/$($images.Count) through verified resumable OCI ranges."
             & python3 -u $ResumableOciScript `
                 --image $image.reference `
                 --docker-config (Join-Path $env:DOCKER_CONFIG 'config.json') `
@@ -84,7 +84,7 @@ try {
             if ($LASTEXITCODE -ne 0 -or -not (Test-LocalImageDigest -Reference $image.reference)) {
                 throw "Verified resumable OCI import failed for image $($index + 1)/$($images.Count): $($image.reference)"
             }
-            Write-Output "Exact imported retrieval image digest verified."
+            Write-Output "Exact imported image digest verified."
             continue
         }
         for ($attempt = 1; $attempt -le 3; $attempt++) {

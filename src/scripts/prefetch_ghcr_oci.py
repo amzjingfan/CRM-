@@ -21,6 +21,13 @@ import requests
 
 REPOSITORY = "cp11-gh/crm-retrieval-model-service"
 IMAGE_PREFIX = f"ghcr.io/{REPOSITORY}@"
+ALLOWED_REPOSITORIES = frozenset(
+    {
+        "cp11-gh/crm-backend",
+        "cp11-gh/crm-frontend",
+        REPOSITORY,
+    }
+)
 ACCEPT = ", ".join(
     (
         "application/vnd.oci.image.index.v1+json",
@@ -39,6 +46,13 @@ def checked_digest(value: str) -> str:
     return value.removeprefix("sha256:")
 
 
+def checked_image_reference(image: str) -> tuple[str, str]:
+    match = re.fullmatch(r"ghcr\.io/(cp11-gh/[a-z-]+)@(sha256:[0-9a-f]{64})", image)
+    if match is None or match.group(1) not in ALLOWED_REPOSITORIES:
+        raise ValueError("Only reviewed GHCR repositories and immutable SHA-256 digests are allowed")
+    return match.group(1), match.group(2)
+
+
 def file_matches(path: Path, digest: str, size: int) -> bool:
     if not path.is_file() or path.stat().st_size != size:
         return False
@@ -50,13 +64,16 @@ def file_matches(path: Path, digest: str, size: int) -> bool:
 
 
 class Registry:
-    def __init__(self, docker_config: Path) -> None:
+    def __init__(self, docker_config: Path, repository: str) -> None:
+        if repository not in ALLOWED_REPOSITORIES:
+            raise ValueError("Only reviewed GHCR repositories are allowed")
         with docker_config.open(encoding="utf-8") as source:
             encoded = json.load(source)["auths"]["ghcr.io"]["auth"]
         username, password = base64.b64decode(encoded).decode("utf-8").split(":", 1)
         if not username or not password:
             raise ValueError("GHCR Docker credentials are unavailable")
         self._auth = (username, password)
+        self._repository = repository
         self._bearer = ""
         self._expires_at = 0.0
         self._lock = threading.Lock()
@@ -67,7 +84,7 @@ class Registry:
                 response = requests.get(
                     "https://ghcr.io/token",
                     params={
-                        "scope": f"repository:{REPOSITORY}:pull",
+                        "scope": f"repository:{self._repository}:pull",
                         "service": "ghcr.io",
                     },
                     auth=self._auth,
@@ -90,7 +107,7 @@ class Registry:
                 headers["Range"] = f"bytes={byte_range[0]}-{byte_range[1]}"
             try:
                 response = requests.get(
-                    f"https://ghcr.io/v2/{REPOSITORY}/{path}",
+                    f"https://ghcr.io/v2/{self._repository}/{path}",
                     headers=headers,
                     timeout=(15, 120),
                 )
@@ -216,6 +233,7 @@ def download_blob(registry: Registry, root: Path, descriptor: dict[str, Any], wo
 
 
 def write_layout(root: Path, image: str, descriptor: dict[str, Any]) -> None:
+    repository, _ = checked_image_reference(image)
     (root / "oci-layout").write_text('{"imageLayoutVersion":"1.0.0"}', encoding="ascii")
     wrapper = {
         "schemaVersion": 2,
@@ -224,7 +242,7 @@ def write_layout(root: Path, image: str, descriptor: dict[str, Any]) -> None:
             {
                 **descriptor,
                 "annotations": {
-                    "containerd.io/distribution.source.ghcr.io": REPOSITORY,
+                    "containerd.io/distribution.source.ghcr.io": repository,
                     "io.containerd.image.name": image,
                     "org.opencontainers.image.ref.name": f"@{descriptor['digest']}",
                 },
@@ -235,6 +253,7 @@ def write_layout(root: Path, image: str, descriptor: dict[str, Any]) -> None:
 
 
 def import_layout(root: Path, image: str, digests: list[str], ctr_socket: str) -> None:
+    repository, _ = checked_image_reference(image)
     command = [
         "/usr/bin/ctr",
         "--address",
@@ -248,7 +267,7 @@ def import_layout(root: Path, image: str, digests: list[str], ctr_socket: str) -
         "--platform",
         "linux/amd64",
         "--base-name",
-        IMAGE_PREFIX.removesuffix("@"),
+        f"ghcr.io/{repository}",
         "-",
     ]
     process = subprocess.Popen(command, stdin=subprocess.PIPE)
@@ -277,10 +296,7 @@ def import_layout(root: Path, image: str, digests: list[str], ctr_socket: str) -
 
 
 def prefetch(image: str, docker_config: Path, root: Path, ctr_socket: str, workers: int) -> None:
-    if not image.startswith(IMAGE_PREFIX):
-        raise ValueError("Only the reviewed GHCR retrieval repository is allowed")
-    digest = image.removeprefix(IMAGE_PREFIX)
-    checked_digest(digest)
+    repository, digest = checked_image_reference(image)
     if workers < 1 or workers > 16:
         raise ValueError("Range worker count must be between 1 and 16")
     if ctr_socket != "/run/user/1004/docker/containerd/containerd.sock":
@@ -293,7 +309,7 @@ def prefetch(image: str, docker_config: Path, root: Path, ctr_socket: str, worke
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     if root.is_symlink() or root.stat().st_uid != 1004:
         raise ValueError("OCI cache root must be owned by crmdeploy and not be a symlink")
-    registry = Registry(docker_config)
+    registry = Registry(docker_config, repository)
     index = fetch_manifest(registry, root, digest, None)
     if index.get("mediaType") != "application/vnd.oci.image.index.v1+json":
         raise ValueError("Expected the reviewed OCI image index")
