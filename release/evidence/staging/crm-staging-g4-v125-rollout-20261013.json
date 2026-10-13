@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g4_v125_rollout_and_live",
+  "captured_at_utc": "2026-10-13T01:12:45Z",
+  "environment": "staging",
+  "source_sha": "348154e62397d6eb48804d49cb115e005120de0c",
+  "candidate_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:c377938ced7c37ea2cab8d23ae37810f708b52cc6270c2d970385919175dec2b",
+  "rollback_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:1d42e0eac388a10b76cd95ab2d948cd15f573f46a0b94b067edd1a889eb4912a",
+  "prompt_version": "real-model-eval-v1.2.5",
+  "records": {
+    "image": {"run_id": 38329385397, "artifact_id": 11781473167, "relative_path": "release/evidence/staging/crm-staging-g4-v125-backend-image-38329385397.json", "json_sha256": "8161ca287056124d6b6f77e079cea54e6855c6c2b515cb1d1422c3f016e13dd4"},
+    "prefetch": {"run_id": 38329665846, "artifact_id": 11782124616, "relative_path": "release/evidence/staging/crm-staging-g4-v125-prefetch-38329665846.json", "json_sha256": "365df70b2ac596129654ef9ae3778d82a97c609d75c0e5ab47465dae8a3c29a6"},
+    "validate": {"run_id": 38330013949, "artifact_id": 11782269766, "relative_path": "release/evidence/staging/crm-staging-g4-v125-validate-38330013949.json", "json_sha256": "f80e5d53ed4bd2d1dcd67396b2e245d0881a06ebd7ba8c3250efc039ea43cf37"},
+    "deploy": {"run_id": 38330213997, "artifact_id": 11782885644, "relative_path": "release/evidence/staging/crm-staging-g4-v125-deploy-38330213997.json", "json_sha256": "7fd13b912769367891a29e07a5d9616f499af52aa0a69b6a436a7c34ff5d72d9"},
+    "prepare": {"run_id": 38330607961, "artifact_id": 11781669655, "relative_path": "release/evidence/ai/crm-staging-g4-v125-prepare-38330607961.json", "json_sha256": "706a48156c8a8e02bc6e3f266d35a1426b692dd5d84f26a2835f9ecb00483dea"},
+    "live": {"run_id": 38330782377, "artifact_id": 11783026111, "relative_path": "release/evidence/ai/crm-staging-g4-v125-live-38330782377.json", "json_sha256": "0625158f82674b43c7703f4741a59596165f9b897a5ec73109ba9350c2d88242"}
+  },
+  "public_health": {
+    "paths": ["/healthz", "/v1/health", "/v1/health/ready"],
+    "status_codes": [200, 200, 200],
+    "remote_ip": "38.55.145.52",
+    "tls_verify_result": 0
+  },
+  "g4": {
+    "sample_count": 36,
+    "live_model_sample_count": 34,
+    "injected_failure_sample_count": 2,
+    "passed_sample_count": 34,
+    "failed_sample_count": 2,
+    "accuracy": 0.9444444444444444,
+    "dangerous_escape_count": 0,
+    "legal_false_block_count": 0,
+    "provider_failure_count": 0,
+    "estimated_cost_usd": "0.023493",
+    "quality_closed": false,
+    "failures": [
+      {"sample_id": "condition-open-002", "reason": "FORBIDDEN_CONTENT_PRESENT", "forbidden_term_indexes": [0]},
+      {"sample_id": "abandoned-open-001", "reason": "FORBIDDEN_CONTENT_PRESENT", "forbidden_term_indexes": [1]}
+    ]
+  },
+  "tiktok_webhook_read_enabled": true,
+  "real_message_send_executed": false,
+  "production_changed": false,
+  "sensitive_values_included": false
+}
