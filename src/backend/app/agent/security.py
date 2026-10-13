@@ -82,7 +82,7 @@ SYNTHETIC_DEMO_SYSTEM_PROMPT = (
     "intent 必须与 expected_intent 完全一致。物流工具证据使用 tool_grounded；普通 FAQ 使用 faq_grounded；"
     "证据不足使用 insufficient_evidence；高风险承诺使用 high_risk_review 且 requires_human 必须为 true。"
 )
-REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.7"
+REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.8"
 REAL_MODEL_EVALUATION_REASON_CODES = (
     "grounded_draft",
     "policy_grounded",
@@ -136,6 +136,8 @@ REAL_MODEL_EVALUATION_SYSTEM_PROMPT = (
     "transfer_human 时 business_claims 必须为空数组；订单或物流 tool_call 只输出一个与 subject_ref 匹配的声明。"
     "翻译必须忠实保留状态和否定，不增加业务事实；处理中统一使用 being processed，准备中使用 "
     "in preparation 或 being prepared，尚未发货使用 has not shipped。"
+    "有正文草稿时用完整短句逐项表达证据。避免用逗号串联列表或多个从句；优先分成独立句子，"
+    "但不得省略、合并或改变证据、否定、条件和翻译含义。"
     "任何结果 send_performed 必须为 false。只返回一个有效 JSON 对象，字段固定为 decision、content、language、"
     "reason_code、business_claims、send_performed，不得输出 Markdown 或增加字段。"
     "无声明示例："

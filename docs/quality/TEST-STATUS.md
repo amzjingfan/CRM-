@@ -6,6 +6,8 @@
 
 2026-10-13 最新 G4 现场：main `ad0c8b3` 的低敏形态诊断后端已部署 staging，[prepare](../../release/evidence/ai/crm-staging-g4-location-prepare-38379144472.json) 0 调用；[live #38379386241](https://github.com/CP11-gh/CRM/actions/runs/38379386241) 首轮 32/34，终态 28/36=77.78%，危险逃逸 0、合法误拦 4、Provider 失败 0、配置估算 USD 0.024011（非账单）。[低敏报告](../../release/evidence/ai/crm-staging-g4-location-live-38379386241.json)显示六条 `LOCATION_SEPARATORS`、一条政策证据不足、一条修复无合格草稿。R18 本机完整回归 `1764 passed, 19 skipped, 2 warnings`；本轮是现场复测，未重跑源码回归。G4 与 production 仍未通过。
 
+候选 Prompt `real-model-eval-v1.2.8` 仅要求用完整短句保留证据，减少逗号列表触发；测试先红后绿，完整后端 `1765 passed, 19 skipped, 2 warnings`，mypy、Ruff/格式通过，最终 subject 的受影响测试 `51 passed`。没有发布/部署或为该版本调用 DeepSeek；现行现场结论仍是上段 R19 的 28/36，见 [R20 TR](../reports/tests/TR-MVP-005-20261013-R20.md)。
+
 2026-10-13 G4 诊断候选后端镜像 `sha256:bb38fa09…e7d80` 已发布，但首次六角色预取 #38363713490 在第 1/6 项后端原生 `docker pull` 挂起后受控取消；没有部署。修复候选 `f78350e12b85840e8f5ddc1036c2792caf702339` 把三种受审仓库的全部缺失摘要改用已验证的 OCI 分块续传。本机完整回归 `1758 passed, 19 skipped, 2 warnings`，Ruff/格式、标准 mypy、PowerShell 解析通过。PR #146 已合入 main；新预取 #38369618427 的六摘要通过，第 1 项由 OCI 分块导入，validate #38371623054 与 deploy #38372083732 均通过，运行后端 `sha256:bb38fa09…e7d80`，三健康 200、固定出口匹配、Webhook 只读。G4 质量仍独立验收，production No-Go。
 
 | 主题 | 已有结论 | 尚缺内容 |

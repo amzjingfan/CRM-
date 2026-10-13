@@ -29,6 +29,7 @@ from app.agent.security import (
     REAL_MODEL_EVALUATION_REASON_CODES,
     REAL_MODEL_EVALUATION_SYSTEM_PROMPT,
     PromptSafetyState,
+    evaluate_real_model_draft_safety,
 )
 from app.shared.config.settings import Settings
 from scripts import evaluate_real_model
@@ -182,7 +183,30 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.7"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.8"
+
+
+def test_real_model_request_uses_short_complete_sentences_while_address_dlp_stays_strict() -> None:
+    """真实请求应避免无地址含义的列表标点，仍阻断明确地址。"""
+    repo_root = TESTS_ROOT.parents[1]
+    dataset = load_verified_real_model_evaluation_dataset(
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
+    )
+    case = next(item for item in dataset.cases if item.sample_id == "logistics-open-001")
+    request = build_real_model_evaluation_request(
+        case, dataset, run_id=uuid.UUID("55555555-5555-4555-8555-555555555555")
+    )
+    assert "用完整短句逐项表达证据" in request.system_prompt
+    assert "避免用逗号串联列表或多个从句" in request.system_prompt
+    assert (
+        evaluate_real_model_draft_safety("The parcel is ready. The carrier will scan it later.", []).state
+        == PromptSafetyState.ALLOWED
+    )
+    assert (
+        evaluate_real_model_draft_safety("Deliver to 123 Main Street, Apt 2, Seattle.", []).state
+        == PromptSafetyState.BLOCKED
+    )
 
 
 def test_real_model_request_preserves_negative_condition_and_translation_meaning() -> None:

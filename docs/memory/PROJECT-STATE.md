@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-location-field-evidence-20261013
-Governance base SHA: ad0c8b395e2ad260fb01ebf961b2c3361454f149
-CANDIDATE_SUBJECT_SHA: 666086fe3035a4b1a6c73808bc748e08291ebadc
+Working branch at this snapshot: fix/mvp005-g4-separator-safe-style-20261013
+Governance base SHA: 3c5c4288fa042b1e02c8000921f0455c4dd7fbc3
+CANDIDATE_SUBJECT_SHA: 53be9dc9ba19508130fae1cf39b68e6488cc4800
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
-2026-10-13 G4 当前恢复点：R18 诊断已由 PR #148 合入 main `ad0c8b395e2ad260fb01ebf961b2c3361454f149`，单后端镜像 `sha256:02f348c8…a6d207` 已通过六摘要预取、validate、staging deploy；三健康 200、固定出口匹配、Webhook 只读。[prepare #38379144472](../../release/evidence/ai/crm-staging-g4-location-prepare-38379144472.json) 为 36 条、Provider 0 调用；[live #38379386241](../../release/evidence/ai/crm-staging-g4-location-live-38379386241.json) 首轮 32/34、终态 28/36=77.78%，危险逃逸 0、合法误拦 4、Provider 失败 0。六条被拒输出同属 `LOCATION_SEPARATORS`，另有一条政策证据不足、一条修复无合格草稿；原文未留存，不能据此放宽 DLP。下一步：为普通标点与真实地址构造确定性安全反例；调查政策证据和修复失败；经审查后再做有界复测。G4 未过，production No-Go；见 [R19 TR](../reports/tests/TR-MVP-005-20261013-R19.md)。
+2026-10-13 G4 当前恢复点：R18 诊断已部署 staging，后端 `sha256:02f348c8…a6d207` 的六摘要预取、validate、deploy、三健康及固定出口通过，Webhook 只读。[prepare #38379144472](../../release/evidence/ai/crm-staging-g4-location-prepare-38379144472.json) 为 36 条、Provider 0 调用；[live #38379386241](../../release/evidence/ai/crm-staging-g4-location-live-38379386241.json) 首轮 32/34、终态 28/36=77.78%，危险逃逸 0、合法误拦 4。六条被拒输出同属 `LOCATION_SEPARATORS`，另有一条政策证据不足、一条修复无草稿；原文未留存，不能放宽 DLP。[PR #149](https://github.com/CP11-gh/CRM/pull/149) 已合入 main `3c5c4288fa042b1e02c8000921f0455c4dd7fbc3` 固化证据。候选 subject `53be9dc9ba19508130fae1cf39b68e6488cc4800` 仅引导合成草稿使用完整短句，完整后端 `1765 passed`，尚未发布/复测。下一步：合并候选；再做有界 staging 复测；独立调查政策证据与修复失败。G4 未过，production No-Go；见 [R20 TR](../reports/tests/TR-MVP-005-20261013-R20.md)。
 
 2026-10-13 新恢复点：预取修复 PR #146 已合入 main `9765189e554eef5c632301e674673c2976ddd629`。新预取 #38369618427 以 OCI 分块下载候选后端，六摘要精确通过、服务未切换；validate #38371623054、staging deploy #38372083732 均通过，运行后端 `sha256:bb38fa09…e7d80`，迁移头 `024`、三健康 200、固定出口匹配、Webhook 只读。旧后端 `sha256:22fb55db…211102` 保留为恢复目标；机器 JSON 与哈希见 `release/evidence/staging/crm-staging-g4-dlp-*.json`。`MVP-STAGING-PREFETCH-002` 本分支补齐现场证据后可关闭；G4 真实质量另验，production No-Go。
 
