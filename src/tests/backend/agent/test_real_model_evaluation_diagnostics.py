@@ -225,6 +225,47 @@ async def test_runner_retains_only_low_sensitive_diagnostics_for_failed_sample()
     assert case.customer_message not in serialized
 
 
+@pytest.mark.asyncio
+async def test_runner_accepts_policy_condition_attested_by_synthetic_evidence() -> None:
+    dataset = load_verified_real_model_evaluation_dataset(DATASET_PATH, MANIFEST_PATH)
+    case = _case("condition-open-002")
+    output = RealModelEvaluationOutput.model_validate(
+        {
+            "decision": "human_review",
+            "content": "Processing begins only if the platform approves the request.",
+            "language": "en",
+            "reason_code": "policy_grounded",
+            "business_claims": [
+                {
+                    "subject_type": "refund_policy",
+                    "subject_id": None,
+                    "action": "explain_policy",
+                    "tense": "timeless",
+                    "polarity": "affirmed",
+                    "condition": "conditional",
+                    "evidence_type": "faq_chunk",
+                    "evidence_id": str(case.evidence_id),
+                    "confidence": 0.9,
+                }
+            ],
+            "send_performed": False,
+        }
+    )
+
+    report = await run_real_model_evaluation(
+        replace(dataset, cases=(case,)),
+        _FixedProvider(output),
+        run_id=uuid.UUID("77777777-7777-4777-8777-777777777777"),
+        app_env="staging",
+    )
+
+    sample = report.samples[0]
+    assert sample.policy_reason_codes == []
+    assert sample.repair_outcome == "not_needed"
+    assert sample.failure_reason is None
+    assert sample.passed is True
+
+
 class _FixedProvider(LLMProvider):
     provider_name = "test"
     model_name = "deepseek-v4-flash"

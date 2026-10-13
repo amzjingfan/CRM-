@@ -7,11 +7,18 @@ def _validator():
     return import_module("app.agent.policy_draft_validation").validate_policy_draft
 
 
-def _check(evidence: str | None, content: str | None, *, language: str = "en"):
+def _check(
+    evidence: str | None,
+    content: str | None,
+    *,
+    language: str = "en",
+    customer_message: str | None = None,
+):
     return _validator()(
         evidence=evidence,
         content=content,
         language=language,
+        customer_message=customer_message,
         claim_evidence_type="faq_chunk",
         claim_evidence_id="evidence-1",
         expected_evidence_type="faq_chunk",
@@ -77,3 +84,72 @@ def test_policy_accepts_review_paraphrase_without_frozen_keywords() -> None:
         "The marketplace assesses each return request first.",
     )
     assert result.disposition == "pass"
+
+
+def test_confirmed_conditional_workflow_uses_the_question_as_context_not_as_evidence() -> None:
+    result = _check(
+        "Synthetic policy confirms this conditional workflow; it does not show that any request was approved.",
+        "Processing begins only if the platform approves a request.",
+        customer_message="Explain the rule: processing begins only if the platform approves the request.",
+    )
+    assert result.disposition == "pass"
+
+
+def test_conditional_coreference_requires_positive_attestation_and_a_matching_condition() -> None:
+    question = "Explain the rule: processing begins only if the platform approves the request."
+    content = "Processing begins only if the platform approves a request."
+    assert (
+        _check("This page does not confirm this conditional workflow.", content, customer_message=question).disposition
+        == "block"
+    )
+    assert _check("This page confirms this conditional workflow.", content).disposition == "block"
+    assert (
+        _check(
+            "This page confirms this conditional workflow.", content, customer_message="What is the status?"
+        ).disposition
+        == "block"
+    )
+    assert _check("Unrelated page.", content, customer_message=question).disposition == "block"
+    customer_approval = _check(
+        "This page confirms this conditional workflow.",
+        "Processing begins if the customer approves.",
+        customer_message=question,
+    )
+    assert customer_approval.disposition == "repair"
+    assert "POLICY_APPROVAL_CONDITION_MISSING" in customer_approval.reason_codes
+    unsupported = _check(
+        "This page confirms this conditional workflow; no request was approved.",
+        "Your request has been approved.",
+        customer_message=question,
+    )
+    assert unsupported.disposition == "repair"
+    assert "POLICY_UNSUPPORTED_APPROVAL_ASSERTION" in unsupported.reason_codes
+
+
+def test_later_negation_does_not_cancel_an_earlier_approval_assertion() -> None:
+    result = _check(
+        "This page confirms this conditional workflow; no request was approved.",
+        'The phrase "has been approved" must not be used; processing begins only if the platform approves.',
+        customer_message="Processing begins only if the platform approves a request.",
+    )
+    assert result.disposition == "repair"
+    assert "POLICY_UNSUPPORTED_APPROVAL_ASSERTION" in result.reason_codes
+
+
+def test_unrelated_prior_negation_does_not_cancel_a_later_approval_assertion() -> None:
+    result = _check(
+        "This page confirms this conditional workflow; no request was approved.",
+        "No action is needed. Your request was approved. Processing begins only if the platform approves.",
+        customer_message="Processing begins only if the platform approves a request.",
+    )
+    assert result.disposition == "repair"
+    assert "POLICY_UNSUPPORTED_APPROVAL_ASSERTION" in result.reason_codes
+
+
+def test_negated_conditional_attestation_is_not_trusted() -> None:
+    result = _check(
+        "This page never confirms this conditional workflow.",
+        "Processing begins only if the platform approves.",
+        customer_message="Processing begins only if the platform approves a request.",
+    )
+    assert result.disposition == "block"

@@ -82,6 +82,8 @@ src/tests/
 
 G4 的 `policy-repair-v1` 先用确定性 Fake Provider 验证单次修复、两阶段独立判分、预算上限、标签隔离、DLP 与失败关闭，并静态核对工作流低敏白名单及 PowerShell 语法。此类本地测试不等于真实模型质量。首次 `live` #38359902457 的首轮 32/34、终态 28/36、合法样本误拦 4，说明安全校验通过的修复不能冒充最终质量通过。后续低敏诊断仅允许固定 DLP 规则类别；`repair_success_count` 与 `repair_final_pass_count` 分别报告政策校验与终态冻结判分。真实复测须核对首轮、终态、逐项失败、误拦、Token/费用和延迟；`prepare` 始终为零 Provider 调用。
 
+政策证据指代回归同时覆盖：可信 `faq_chunk` 明确肯定条件规则且合成提问给出平台批准条件时通过；证据否定、无条件提问、错误批准者、跨句否定掩盖个案批准断言及引用不匹配时失败关闭或仅进入一次受控修复。用固定 Provider 跑离线评测入口，验证安全失败与合格草稿的终态分流；本地通过不替代 staging 的 36 条冻结集 live。
+
 ## 输出与正式证据
 
 - 测试源码与普通 eval 资产：`src/tests/backend/`、`src/tests/frontend/`、`src/tests/integration/postgres/` 与 `src/tests/ai/`。

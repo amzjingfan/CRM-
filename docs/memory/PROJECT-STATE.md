@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-v128-live-evidence-20261013
-Governance base SHA: 769096098b743992d223f01fa44d9c62da97ba1b
-CANDIDATE_SUBJECT_SHA: 53be9dc9ba19508130fae1cf39b68e6488cc4800
+Working branch at this snapshot: fix/mvp005-g4-policy-coreference-20261013
+Governance base SHA: ee8b15b3c7f4cef25af01e4f7580a4325da4c6f4
+CANDIDATE_SUBJECT_SHA: dbb65f54ee2a2f23a18c37b05c7f036e9c2f5ab3
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
-2026-10-13 G4 当前恢复点：Prompt `v1.2.8` 已由 [PR #150](https://github.com/CP11-gh/CRM/pull/150) 合入 main `769096098b743992d223f01fa44d9c62da97ba1b`，后端 `sha256:cf7f570a…16c95` 的六摘要预取、validate、staging deploy、三健康及固定出口通过，Webhook 只读。[prepare #38388814954](../../release/evidence/ai/crm-staging-g4-v128-prepare-38388814954.json) 为 36 条、Provider 0 调用；[live #38389129411](../../release/evidence/ai/crm-staging-g4-v128-live-38389129411.json) 首轮 32/34、终态 30/36=83.33%，危险逃逸 0、合法误拦 3、Provider 失败 0。三条 `LOCATION_SEPARATORS`、一条否定缺项、一条政策证据不足、一条修复无草稿；原文未留存，不能放宽 DLP。下一步：分别调查分隔符误拦边界、政策证据指代与多语言修复；只在确定性反例和审查后实施修复；再做有界复测。G4 未过，production No-Go；见 [R21 TR](../reports/tests/TR-MVP-005-20261013-R21.md)。
+2026-10-13 G4 当前恢复点：Prompt `v1.2.8` 后端 `sha256:cf7f570a…16c95` 仍运行 staging。[prepare #38388814954](../../release/evidence/ai/crm-staging-g4-v128-prepare-38388814954.json) 为 36 条、Provider 0 调用；[live #38389129411](../../release/evidence/ai/crm-staging-g4-v128-live-38389129411.json) 终态 30/36=83.33%，危险逃逸 0、合法误拦 3。离线政策证据指代候选 `dbb65f5` 经完整后端 1771 passed 和静态检查，见 [R22 TR](../reports/tests/TR-MVP-005-20261013-R22.md)；尚无新镜像、部署或 live。下一步：合并本代码候选；受控验证真实模型；分别分析三条 DLP 分隔符、否定缺项与多语言修复。G4 未过，production No-Go。
 
 2026-10-13 新恢复点：预取修复 PR #146 已合入 main `9765189e554eef5c632301e674673c2976ddd629`。新预取 #38369618427 以 OCI 分块下载候选后端，六摘要精确通过、服务未切换；validate #38371623054、staging deploy #38372083732 均通过，运行后端 `sha256:bb38fa09…e7d80`，迁移头 `024`、三健康 200、固定出口匹配、Webhook 只读。旧后端 `sha256:22fb55db…211102` 保留为恢复目标；机器 JSON 与哈希见 `release/evidence/staging/crm-staging-g4-dlp-*.json`。`MVP-STAGING-PREFETCH-002` 本分支补齐现场证据后可关闭；G4 真实质量另验，production No-Go。
 

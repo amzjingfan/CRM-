@@ -769,6 +769,7 @@ def _policy_draft_result(case: RealModelEvaluationCase, output: RealModelEvaluat
         return PolicyDraftValidation("pass", ())
     return validate_policy_draft(
         evidence=case.synthetic_evidence,
+        customer_message=case.customer_message,
         content=output.content,
         language=output.language,
         claim_evidence_type=claim.evidence_type,
