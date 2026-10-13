@@ -182,7 +182,7 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.6"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.7"
 
 
 def test_real_model_request_preserves_negative_condition_and_translation_meaning() -> None:
@@ -197,7 +197,7 @@ def test_real_model_request_preserves_negative_condition_and_translation_meaning
     for sample_id in ("negation-open-001", "negation-open-002", "condition-open-002", "translation-open-002"):
         request = build_real_model_evaluation_request(cases[sample_id], dataset, run_id=run_id)
         assert "页面未显示不能推断退款完成或失败" in request.system_prompt
-        assert "平台批准是处理的前置条件，不声称具体申请已经获批" in request.system_prompt
+        assert "政策答复只写证据支持的申请资格、时限和平台审核流程" in request.system_prompt
         assert "only if the platform approves" in request.system_prompt
         assert "in preparation" in request.system_prompt
         assert "has not shipped" in request.system_prompt
@@ -218,11 +218,11 @@ def test_english_negation_and_condition_use_evidence_grounded_present_tense_fram
     assert negation.system_prompt == condition.system_prompt
     assert "The status is unconfirmed" in negation.system_prompt
     assert "Processing begins only if the platform approves a request" in condition.system_prompt
-    assert "不得追加具体申请的审批现状" in condition.system_prompt
+    assert "正文止于申请或处理规则" in condition.system_prompt
 
 
-def test_condition_and_cart_drafts_check_for_prohibited_echoes_before_output() -> None:
-    """通用评测指令须阻止条件审批断言和弃购草稿复述禁用话术。"""
+def test_policy_drafts_use_positive_review_flow_and_cart_avoids_promotional_echoes() -> None:
+    """售后和条件答复只表达有证据的流程，购物车草稿不复述禁用促销话术。"""
     repo_root = TESTS_ROOT.parents[1]
     dataset = load_verified_real_model_evaluation_dataset(
         repo_root / "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
@@ -231,11 +231,14 @@ def test_condition_and_cart_drafts_check_for_prohibited_echoes_before_output() -
     cases = {case.sample_id: case for case in dataset.cases}
     run_id = uuid.UUID("44444444-4444-4444-8444-444444444444")
     condition = build_real_model_evaluation_request(cases["condition-open-002"], dataset, run_id=run_id)
+    after_sales = build_real_model_evaluation_request(cases["after-sales-open-001"], dataset, run_id=run_id)
     cart = build_real_model_evaluation_request(cases["abandoned-open-001"], dataset, run_id=run_id)
 
-    assert condition.system_prompt == cart.system_prompt
-    assert "删除对具体申请是否获批的肯定或否定句" in condition.system_prompt
-    assert "只保留一般现在时的批准前置规则" in condition.system_prompt
+    assert condition.system_prompt == after_sales.system_prompt == cart.system_prompt
+    assert "可提交申请，由平台按规则审核" in after_sales.system_prompt
+    assert "平台批准是处理前置条件" in condition.system_prompt
+    assert "省略个案审批现状、结果保证" in condition.system_prompt
+    assert "删除对具体申请是否获批的肯定或否定句" not in condition.system_prompt
     assert "只描述允许的购物车查看或结算提醒" in cart.system_prompt
     assert "删去对缺席促销或库存紧迫话术的复述，包括否定句" in cart.system_prompt
 

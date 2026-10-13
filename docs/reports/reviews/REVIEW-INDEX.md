@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -44,3 +44,4 @@ View: `CURRENT`
 | RR-MVP-005-20261013-R11 | MVP-005 | R11 | CHANGES_REQUIRED | `3eaa71b7b311b9552df3cf7e01edec73bed79a96` | live-quality / forbidden-content / frozen-data / staging-scope / low-sensitive-evidence | 2026-10-13T09:14:00+08:00 | [`RR-MVP-005-20261013-R11.md`](RR-MVP-005-20261013-R11.md) |
 | RR-MVP-005-20261013-R12 | MVP-005 | R12 | APPROVE | `ac750efd62ac8a6130c4cffdaa7527c7e92a546c` | prompt-safety / strict-grading / frozen-data / test-evidence / authorization-boundary | 2026-10-13T09:49:00+08:00 | [`RR-MVP-005-20261013-R12.md`](RR-MVP-005-20261013-R12.md) |
 | RR-MVP-005-20261013-R13 | MVP-005 | R13 | CHANGES_REQUIRED | `303cbb9c0304bcc126b7420525ba58220f965b37` | live-quality / forbidden-content / frozen-data / staging-scope / low-sensitive-evidence | 2026-10-13T10:28:00+08:00 | [`RR-MVP-005-20261013-R13.md`](RR-MVP-005-20261013-R13.md) |
+| RR-MVP-005-20261013-R14 | MVP-005 | R14 | APPROVE | `281c2cd0b5b6a68e785f80f16a7f9948b03e07e7` | prompt-safety / strict-grading / frozen-data / test-evidence / authorization-boundary | 2026-10-13T11:07:00+08:00 | [`RR-MVP-005-20261013-R14.md`](RR-MVP-005-20261013-R14.md) |

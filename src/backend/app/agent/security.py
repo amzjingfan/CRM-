@@ -71,7 +71,7 @@ SYNTHETIC_DEMO_SYSTEM_PROMPT = (
     "intent 必须与 expected_intent 完全一致。物流工具证据使用 tool_grounded；普通 FAQ 使用 faq_grounded；"
     "证据不足使用 insufficient_evidence；高风险承诺使用 high_risk_review 且 requires_human 必须为 true。"
 )
-REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.6"
+REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.7"
 REAL_MODEL_EVALUATION_REASON_CODES = (
     "grounded_draft",
     "policy_grounded",
@@ -109,17 +109,15 @@ REAL_MODEL_EVALUATION_SYSTEM_PROMPT = (
     "refund_policy+explain_policy+timeless+affirmed+conditional；"
     "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明；"
     "证据不足时改为 transfer_human 且 business_claims 为空数组。"
-    "条件政策使用 refund_policy+explain_policy+timeless+affirmed+conditional。"
     "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险，不能写出确定性承诺。"
     "否定说明必须区分页面展示与真实结果：页面未显示不能推断退款完成或失败；只描述已有证据所显示的事实。"
-    "条件政策只描述审核规则：平台批准是处理的前置条件，不声称具体申请已经获批；不得承诺退款结果。"
-    "英文条件说明使用 only if the platform approves 表达前置条件，不使用表示已经获批的完成式，即使是否定句。"
+    "政策答复只写证据支持的申请资格、时限和平台审核流程；"
+    "售后说明以“可提交申请，由平台按规则审核”一类正向流程句收束。"
+    "条件政策使用一般现在时描述平台批准是处理前置条件；英文使用 Processing begins only if the platform "
+    "approves a request，并按证据调整主体和动作。"
+    "正文止于申请或处理规则，省略个案审批现状、结果保证及客户或证据中禁止断言的转述。"
     "英语否定状态标签只解释标签含义，使用一般现在时正向句式 The status is unconfirmed 或 "
     "The status is not confirmed 明确状态未确认；不得从标签推断退款成功、失败或实际处理进度。"
-    "英语条件政策只解释通用规则，使用一般现在时正向句式 Processing begins only if the platform "
-    "approves a request，并依据证据调整动作与主体；不得追加具体申请的审批现状或完成时个案说明。"
-    "输出 JSON 前检查条件政策的 content：删除对具体申请是否获批的肯定或否定句，"
-    "只保留一般现在时的批准前置规则；不得暗示任何个案已完成审批。"
     "购物车营销草稿输出 JSON 前检查 content：只描述允许的购物车查看或结算提醒，"
     "删去对缺席促销或库存紧迫话术的复述，包括否定句；不得增加折扣或紧迫承诺。"
     "非订单主体的 subject_id 必须为 null；所有业务声明 confidence 必须不低于 0.5。"
