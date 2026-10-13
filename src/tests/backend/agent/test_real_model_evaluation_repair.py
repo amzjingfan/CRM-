@@ -108,7 +108,7 @@ async def test_first_pass_skips_repair_and_keeps_first_score() -> None:
     assert sample.passed is True
     assert sample.repair_attempted is False
     assert sample.provider_call_count == 1
-    assert report.evaluation_flow_version == "policy-repair-v1"
+    assert report.evaluation_flow_version == "policy-repair-dlp-regeneration-v1"
     assert report.first_output_semantics == "first_schema_validated_output"
 
 
@@ -185,6 +185,93 @@ async def test_first_draft_with_personal_email_never_enters_repair() -> None:
     assert sample.repair_attempted is False
     assert sample.policy_reason_codes == ["DRAFT_DLP_BLOCKED_EMAIL"]
     assert "buyer@example.com" not in report.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_uncertain_separators_regenerate_without_rejected_draft() -> None:
+    rejected = "A return request, platform review, next step"
+    provider = _SequenceProvider(
+        [
+            _policy_output(rejected),
+            _policy_output("A return request is subject to platform review."),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 2
+    assert provider.requests[1].is_repair is True
+    assert provider.requests[1].prompt_safety_state == PromptSafetyState.ALLOWED
+    assert provider.requests[1].user_prompt == provider.requests[0].user_prompt
+    assert rejected not in provider.requests[1].user_prompt
+    assert rejected not in provider.requests[1].system_prompt
+    assert sample.regeneration_attempted is True
+    assert sample.regeneration_outcome == "succeeded"
+    assert sample.repair_attempted is False
+    assert sample.provider_call_count == 2
+    assert sample.passed is True
+    assert report.metrics.regeneration_attempt_count == 1
+    assert report.metrics.regeneration_final_pass_count == 1
+    assert rejected not in report.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_regenerated_uncertain_draft_still_fails_closed() -> None:
+    provider = _SequenceProvider(
+        [
+            _policy_output("A return request, platform review, next step"),
+            _policy_output("A request, buyer address, 123 Main Street"),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 2
+    assert sample.decision == "transfer_human"
+    assert sample.regeneration_outcome == "failed"
+    assert sample.provider_call_count == 2
+    assert "123 Main Street" not in report.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_regeneration_never_relays_explicit_address_or_uses_third_call() -> None:
+    provider = _SequenceProvider([_policy_output("Send to 123 Main Street, Seattle, WA 98101")])
+    report = await _run(provider)
+    assert len(provider.requests) == 1
+    assert report.samples[0].regeneration_attempted is False
+    assert report.samples[0].decision == "transfer_human"
+
+    provider = _SequenceProvider(
+        [
+            _policy_output("A return request, platform review, next step"),
+            _policy_output("You may submit a return request within seven days."),
+        ]
+    )
+    report = await _run(provider)
+    assert len(provider.requests) == 2
+    assert report.samples[0].regeneration_attempted is True
+    assert report.samples[0].decision == "transfer_human"
+    assert report.samples[0].provider_call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_regeneration_respects_call_budget_and_provider_failure() -> None:
+    uncertain = _policy_output("A return request, platform review, next step")
+    provider = _SequenceProvider([uncertain])
+    report = await _run(provider, max_provider_calls=1)
+    sample = report.samples[0]
+    assert len(provider.requests) == 1
+    assert sample.regeneration_attempted is False
+    assert sample.regeneration_outcome == "budget_exhausted"
+    assert sample.decision == "transfer_human"
+
+    provider = _SequenceProvider([uncertain, LLMProviderError(LLMErrorCode.LLM_TIMEOUT, "timeout", retriable=True)])
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert len(provider.requests) == 2
+    assert sample.regeneration_attempted is True
+    assert sample.regeneration_outcome == "provider_failed"
+    assert sample.provider_failure is True
+    assert sample.decision == "transfer_human"
+    assert report.metrics.provider_failure_count == 1
 
 
 def test_draft_dlp_reports_only_detector_class() -> None:

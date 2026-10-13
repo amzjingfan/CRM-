@@ -26,9 +26,12 @@ def test_live_artifact_allowlists_match_pydantic_models() -> None:
 
 def test_live_gate_requires_new_flow_and_bounded_provider_calls() -> None:
     source = WORKFLOW.read_text(encoding="utf-8")
-    assert "$report.evaluation_flow_version -cne 'policy-repair-v1'" in source
+    assert "$report.evaluation_flow_version -cne 'policy-repair-dlp-regeneration-v1'" in source
     assert "$report.metrics.provider_call_count -gt 68" in source
     assert "$report.metrics.repair_attempt_count -gt 34" in source
+    assert "$report.metrics.regeneration_attempt_count -gt 34" in source
+    assert "($report.metrics.repair_attempt_count + $report.metrics.regeneration_attempt_count) -gt 34" in source
+    assert "($sample.repair_attempted -and $sample.regeneration_attempted)" in source
     assert "$report.samples.Count -ne 36" in source
     assert "$report.metrics.live_model_sample_count -ne 34" in source
     assert "$report.metrics.injected_failure_sample_count -ne 2" in source

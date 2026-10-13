@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r22-rollout-20261013
-Governance base SHA: 6c6a82d78c9ec68cf7039076cc567dce443f70fc
-CANDIDATE_SUBJECT_SHA: dbb65f54ee2a2f23a18c37b05c7f036e9c2f5ab3
+Working branch at this snapshot: fix/mvp005-g4-dlp-regen-20261013
+Governance base SHA: 9eadf3dce9c3a2bbb4e8328996665ba49f1b0822
+CANDIDATE_SUBJECT_SHA: 7485e1b2847a41f861ad15bc91163c47e451888d
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
-2026-10-13 G4 当前恢复点：[PR #152](https://github.com/CP11-gh/CRM/pull/152) 已合入 main `6c6a82d`；Prompt `v1.2.8` 加离线政策指代修复后端 `sha256:4ab4d7ce…73c50` 已部署 staging，六摘要预取、validate/deploy、三健康及固定出口通过。[prepare #38398089685](../../release/evidence/ai/crm-staging-g4-r22-prepare-38398089685.json) 为 36 条、Provider 0 调用；[live #38398552906](../../release/evidence/ai/crm-staging-g4-r22-live-38398552906.json) 终态 31/36=86.11%，危险逃逸 0、合法误拦 2、机器 `passed=false`。政策指代样本通过，但三条 DLP 分隔符疑似、否定缺项和多语言修复失败仍在；原文未留存，不得放宽 DLP。下一步：合并本轮证据；为 DLP 设计无原文回传的受控再生成及负向反例；分别修复否定缺项与多语言审核流程。G4 未过，production No-Go；见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。
+2026-10-13 G4 源码候选恢复点：main `9eadf3d` 上的 subject `7485e1b` 增加 `v1.2.9` 分隔符疑似首稿的单次再生成，第二次只使用原已验证合成输入，不传被拒原文；明确敏感信息仍阻断，第二稿重过 DLP/政策。精确 subject 完整后端 1775 passed、19 skipped，Ruff/格式/mypy 和工作流脚本解析通过，见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24.md)。尚未发布镜像、部署或调用新 DeepSeek；R23 live 31/36 且 `passed=false` 仍为最新现场。G4 未过，production No-Go。
+
+2026-10-13 G4 上一现场恢复点：[PR #152](https://github.com/CP11-gh/CRM/pull/152) 已合入 main `6c6a82d`；Prompt `v1.2.8` 加离线政策指代修复后端 `sha256:4ab4d7ce…73c50` 已部署 staging，六摘要预取、validate/deploy、三健康及固定出口通过。[prepare #38398089685](../../release/evidence/ai/crm-staging-g4-r22-prepare-38398089685.json) 为 36 条、Provider 0 调用；[live #38398552906](../../release/evidence/ai/crm-staging-g4-r22-live-38398552906.json) 终态 31/36=86.11%，危险逃逸 0、合法误拦 2、机器 `passed=false`。政策指代样本通过，但三条 DLP 分隔符疑似、否定缺项和多语言修复失败仍在；原文未留存，不得放宽 DLP。本轮证据已由 PR #153 合入 main，分隔符再生成候选见上段；否定缺项与多语言审核仍需另验。G4 未过，production No-Go；见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。
 
 2026-10-13 新恢复点：预取修复 PR #146 已合入 main `9765189e554eef5c632301e674673c2976ddd629`。新预取 #38369618427 以 OCI 分块下载候选后端，六摘要精确通过、服务未切换；validate #38371623054、staging deploy #38372083732 均通过，运行后端 `sha256:bb38fa09…e7d80`，迁移头 `024`、三健康 200、固定出口匹配、Webhook 只读。旧后端 `sha256:22fb55db…211102` 保留为恢复目标；机器 JSON 与哈希见 `release/evidence/staging/crm-staging-g4-dlp-*.json`。`MVP-STAGING-PREFETCH-002` 本分支补齐现场证据后可关闭；G4 真实质量另验，production No-Go。
 
@@ -199,6 +201,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G4 R23 证据合并后，先用确定性负向反例定位三条 DLP 分隔符失败；只允许无原文回传的受控再生成。另核对否定缺项与多语言审核修复，冻结集和严格判分不变。
+1. 合并 G4 `v1.2.9` 代码候选并复核门禁；后续镜像、staging 部署和付费 live 分别核准后逐项核对三条分隔符疑似。否定缺项和多语言审核修复另行处理，冻结集和严格判分不变。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。

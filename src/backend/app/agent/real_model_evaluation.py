@@ -23,6 +23,7 @@ from app.agent.policy_draft_validation import PolicyDraftValidation, validate_po
 from app.agent.providers.base import LLMProvider, StructuredRequest
 from app.agent.security import (
     PROMPT_DLP_POLICY_VERSION,
+    REAL_MODEL_EVALUATION_DLP_REGEN_SYSTEM_PROMPT,
     REAL_MODEL_EVALUATION_PROMPT_VERSION,
     REAL_MODEL_EVALUATION_REPAIR_SYSTEM_PROMPT,
     REAL_MODEL_EVALUATION_SYSTEM_PROMPT,
@@ -349,6 +350,12 @@ class RealModelSampleResult(BaseModel):
     first_token_usage: RealModelTokenUsage | None = None
     repair_token_usage: RealModelTokenUsage | None = None
     repair_latency_ms: int | None = Field(default=None, ge=0)
+    regeneration_attempted: bool = False
+    regeneration_outcome: Literal[
+        "not_needed", "succeeded", "failed", "blocked", "budget_exhausted", "provider_failed"
+    ] = "not_needed"
+    regeneration_token_usage: RealModelTokenUsage | None = None
+    regeneration_latency_ms: int | None = Field(default=None, ge=0)
     policy_reason_codes: list[str] = Field(default_factory=list, max_length=3)
 
     @model_validator(mode="after")
@@ -383,6 +390,8 @@ class RealModelEvaluationMetrics(BaseModel):
     repair_attempt_count: int | None = Field(default=None, ge=0)
     repair_success_count: int | None = Field(default=None, ge=0)
     repair_final_pass_count: int | None = Field(default=None, ge=0)
+    regeneration_attempt_count: int | None = Field(default=None, ge=0)
+    regeneration_final_pass_count: int | None = Field(default=None, ge=0)
     provider_call_count: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
@@ -421,7 +430,9 @@ class RealModelEvaluationReport(BaseModel):
     passed: bool
     metrics: RealModelEvaluationMetrics
     samples: list[RealModelSampleResult]
-    evaluation_flow_version: Literal["single-pass-v1", "policy-repair-v1"] = "single-pass-v1"
+    evaluation_flow_version: Literal["single-pass-v1", "policy-repair-v1", "policy-repair-dlp-regeneration-v1"] = (
+        "single-pass-v1"
+    )
 
 
 def _normalized_dataset_text(path: Path) -> str:
@@ -598,6 +609,24 @@ def build_real_model_repair_request(
         temperature=0.0,
         is_repair=True,
         real_model_evaluation_context=repair_context,
+    )
+
+
+def build_real_model_dlp_regeneration_request(
+    case: RealModelEvaluationCase,
+    dataset: VerifiedRealModelEvaluationDataset,
+    *,
+    run_id: uuid.UUID,
+) -> StructuredRequest:
+    """只重发已验证的合成输入，绝不将隐私疑似首稿回传模型。"""
+    return StructuredRequest(
+        system_prompt=REAL_MODEL_EVALUATION_DLP_REGEN_SYSTEM_PROMPT,
+        user_prompt=build_real_model_evaluation_payload(case),
+        trace_id=str(uuid.uuid5(run_id, f"{case.sample_id}:dlp-regeneration")),
+        max_output_tokens=1024,
+        temperature=0.0,
+        is_repair=True,
+        real_model_evaluation_context=dataset.safety_context,
     )
 
 
@@ -896,10 +925,63 @@ async def run_real_model_evaluation(
         ] = "not_needed"
         repair_usage: RealModelTokenUsage | None = None
         repair_latency_ms: int | None = None
+        regeneration_attempted = False
+        regeneration_outcome: Literal[
+            "not_needed", "succeeded", "failed", "blocked", "budget_exhausted", "provider_failed"
+        ] = "not_needed"
+        regeneration_usage: RealModelTokenUsage | None = None
+        regeneration_latency_ms: int | None = None
         sample_calls = 1
         provider_failure = False
         policy_codes = list(policy.reason_codes)
-        if policy.disposition == "block":
+        if first_safety.reason_code == "DRAFT_DLP_UNCERTAIN_LOCATION_SEPARATORS":
+            # 隐私疑似首稿不得进入现有修复请求；仅用已验证的原始合成输入再生成一次。
+            if provider_calls >= max_provider_calls or used_tokens >= max_total_tokens:
+                final_output = _transfer_human_output(case.target_language)
+                regeneration_outcome = "budget_exhausted"
+            else:
+                request = build_real_model_dlp_regeneration_request(case, dataset, run_id=run_id)
+                try:
+                    request.ensure_safe_for_external_provider(response_schema_name=RealModelEvaluationOutput.__name__)
+                except LLMProviderError:
+                    final_output = _transfer_human_output(case.target_language)
+                    regeneration_outcome = "blocked"
+                else:
+                    regeneration_attempted = True
+                    sample_calls = 2
+                    provider_calls += 1
+                    regeneration_started_at = time.perf_counter()
+                    try:
+                        regenerated = await provider.generate_structured(request, RealModelEvaluationOutput)
+                    except LLMProviderError:
+                        regeneration_latency_ms = max(0, int((time.perf_counter() - regeneration_started_at) * 1000))
+                        final_output = _transfer_human_output(case.target_language)
+                        regeneration_outcome = "provider_failed"
+                        provider_failure = True
+                    else:
+                        regeneration_latency_ms = regenerated.latency_ms
+                        regeneration_usage = _token_usage(regenerated.input_tokens, regenerated.output_tokens)
+                        used_tokens += regeneration_usage.total_tokens
+                        regenerated_safety = evaluate_real_model_draft_safety(
+                            regenerated.parsed_output.content,
+                            [claim.subject_id for claim in regenerated.parsed_output.business_claims],
+                        )
+                        regenerated_policy = (
+                            _policy_draft_result(case, regenerated.parsed_output)
+                            if regenerated_safety.state == PromptSafetyState.ALLOWED
+                            else PolicyDraftValidation("block", (regenerated_safety.reason_code,))
+                        )
+                        policy_codes = list(dict.fromkeys([*policy_codes, *regenerated_policy.reason_codes]))[:3]
+                        if (
+                            regenerated_policy.disposition == "pass"
+                            and regenerated.parsed_output.decision != "transfer_human"
+                        ):
+                            final_output = regenerated.parsed_output
+                            regeneration_outcome = "succeeded"
+                        else:
+                            final_output = _transfer_human_output(case.target_language)
+                            regeneration_outcome = "failed"
+        elif policy.disposition == "block":
             final_output = _transfer_human_output(case.target_language)
             repair_outcome = "blocked"
         elif policy.disposition == "repair":
@@ -957,11 +1039,15 @@ async def run_real_model_evaluation(
         output_json = final_output.model_dump_json(exclude_none=False)
         first_json = first_output.model_dump_json(exclude_none=False)
         total_usage = _token_usage(
-            first_usage.input_tokens + (repair_usage.input_tokens if repair_usage else 0),
-            first_usage.output_tokens + (repair_usage.output_tokens if repair_usage else 0),
+            first_usage.input_tokens
+            + (repair_usage.input_tokens if repair_usage else 0)
+            + (regeneration_usage.input_tokens if regeneration_usage else 0),
+            first_usage.output_tokens
+            + (repair_usage.output_tokens if repair_usage else 0)
+            + (regeneration_usage.output_tokens if regeneration_usage else 0),
         )
         total_latency_ms = max(
-            provider_result.latency_ms + (repair_latency_ms or 0),
+            provider_result.latency_ms + (repair_latency_ms or 0) + (regeneration_latency_ms or 0),
             int((time.perf_counter() - started_at) * 1000),
         )
         results.append(
@@ -997,6 +1083,10 @@ async def run_real_model_evaluation(
                 first_token_usage=first_usage,
                 repair_token_usage=repair_usage,
                 repair_latency_ms=repair_latency_ms,
+                regeneration_attempted=regeneration_attempted,
+                regeneration_outcome=regeneration_outcome,
+                regeneration_token_usage=regeneration_usage,
+                regeneration_latency_ms=regeneration_latency_ms,
                 policy_reason_codes=policy_codes,
             )
         )
@@ -1015,7 +1105,7 @@ async def run_real_model_evaluation(
         pricing_version=pricing_version,
         pricing_currency=pricing_currency,
         pricing_basis=pricing_basis,
-        evaluation_flow_version="policy-repair-v1",
+        evaluation_flow_version="policy-repair-dlp-regeneration-v1",
     )
 
 
@@ -1085,7 +1175,9 @@ def build_evaluation_report(
     pricing_version: str | None = None,
     pricing_currency: Literal["USD"] = "USD",
     pricing_basis: RealModelPricingBasis = "not_configured",
-    evaluation_flow_version: Literal["single-pass-v1", "policy-repair-v1"] = "single-pass-v1",
+    evaluation_flow_version: Literal[
+        "single-pass-v1", "policy-repair-v1", "policy-repair-dlp-regeneration-v1"
+    ] = "single-pass-v1",
 ) -> RealModelEvaluationReport:
     """聚合 REAL-AI-05 门禁指标并拒绝版本或运行 ID 混用。"""
     parsed_run_id = uuid.UUID(run_id)
@@ -1154,34 +1246,42 @@ def build_evaluation_report(
         cost_status="configured" if cost_configured else "not_configured",
         first_passed_sample_count=(
             sum(result.first_passed is True for result in live_results)
-            if evaluation_flow_version == "policy-repair-v1"
+            if evaluation_flow_version != "single-pass-v1"
             else None
         ),
         first_accuracy=(
             sum(result.first_passed is True for result in live_results)
             / sum(result.first_passed is not None for result in live_results)
-            if evaluation_flow_version == "policy-repair-v1"
+            if evaluation_flow_version != "single-pass-v1"
             and any(result.first_passed is not None for result in live_results)
             else None
         ),
         repair_attempt_count=(
-            sum(result.repair_attempted for result in results)
-            if evaluation_flow_version == "policy-repair-v1"
-            else None
+            sum(result.repair_attempted for result in results) if evaluation_flow_version != "single-pass-v1" else None
         ),
         repair_success_count=(
             sum(result.repair_outcome == "succeeded" for result in results)
-            if evaluation_flow_version == "policy-repair-v1"
+            if evaluation_flow_version != "single-pass-v1"
             else None
         ),
         repair_final_pass_count=(
             sum(result.repair_outcome == "succeeded" and result.passed for result in results)
-            if evaluation_flow_version == "policy-repair-v1"
+            if evaluation_flow_version != "single-pass-v1"
+            else None
+        ),
+        regeneration_attempt_count=(
+            sum(result.regeneration_attempted for result in results)
+            if evaluation_flow_version == "policy-repair-dlp-regeneration-v1"
+            else None
+        ),
+        regeneration_final_pass_count=(
+            sum(result.regeneration_outcome == "succeeded" and result.passed for result in results)
+            if evaluation_flow_version == "policy-repair-dlp-regeneration-v1"
             else None
         ),
         provider_call_count=(
             sum(result.provider_call_count for result in results)
-            if evaluation_flow_version == "policy-repair-v1"
+            if evaluation_flow_version != "single-pass-v1"
             else None
         ),
     )
@@ -1212,7 +1312,7 @@ def build_evaluation_report(
         live_model_evaluation=bool(live_results),
         first_output_semantics=(
             "first_schema_validated_output"
-            if evaluation_flow_version == "policy-repair-v1"
+            if evaluation_flow_version != "single-pass-v1"
             else "first_schema_validated_safe_output"
         ),
         passed=passed,

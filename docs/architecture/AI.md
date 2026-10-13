@@ -65,4 +65,6 @@ G4 离线评测流程 `policy-repair-v1` 在首个结构化草稿后，以本次
 
 同一 Prompt `v1.2.8` 加离线政策指代修复后的 staging [live #38398552906](../../release/evidence/ai/crm-staging-g4-r22-live-38398552906.json) 为 31/36（86.11%）、危险逃逸 0、合法误拦 2；三条 `LOCATION_SEPARATORS`、一条否定缺项和一条多语言修复无合格草稿仍失败。综合分数虽越过 85%，报告 `passed=false`，不得放宽 DLP 或把固定形态诊断当作安全证据。
 
+候选 `real-model-eval-v1.2.9` 将 G4 离线评测流程标为 `policy-repair-dlp-regeneration-v1`：仅首稿命中固定的 `DRAFT_DLP_UNCERTAIN_LOCATION_SEPARATORS` 时，在预算内用原已验证合成输入和独立注册的系统指令重新生成一次；疑似首稿正文和声明绝不放入第二次请求。明确地址、邮箱、电话、密钥等阻断仍直接转人工。第二稿重新执行 DLP、政策证据和冻结判分，任何安全或政策未通过都隐藏正文并转人工；每条最多两次模型调用，政策修复和 DLP 再生成互斥。低敏报告分别统计两种二次尝试，保留首轮与终态、Token 和时延。冻结集、85% 门槛和真实发送开关不变；此候选尚无 staging 真实模型质量证据。
+
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。

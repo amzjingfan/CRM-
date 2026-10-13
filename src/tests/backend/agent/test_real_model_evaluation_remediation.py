@@ -183,7 +183,7 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.8"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.9"
 
 
 def test_real_model_request_uses_short_complete_sentences_while_address_dlp_stays_strict() -> None:
