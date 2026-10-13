@@ -10,13 +10,13 @@
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 增强物流 `202604` 待合格 CBT 首程订单并须在 G8 前通过；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
-| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。2026-10-13 Prompt `v1.2.5` 后端在 staging 通过[部署门禁](../../release/evidence/staging/crm-staging-g4-v125-rollout-20261013.json)；`prepare` 零调用，[获批 live #38330782377](https://github.com/CP11-gh/CRM/actions/runs/38330782377) 的 34 条 DeepSeek 合成请求加 2 条故障注入得 34/36（94.44%），85% 数值门槛通过，危险逃逸/合法误拦/Provider 失败均 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-v125-live-38330782377.json) | `condition-open-002` 禁用内容序号 0 与 `abandoned-open-001` 序号 1 两条逐项失败；G4 质量闭环、50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
+| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。2026-10-13 Prompt `v1.2.6` 后端在 staging 通过[部署门禁](../../release/evidence/staging/crm-staging-g4-v126-rollout-20261013.json)；`prepare` 零调用，[单次获批 live #38336560477](https://github.com/CP11-gh/CRM/actions/runs/38336560477) 的 34 条 DeepSeek 合成请求加 2 条故障注入得 34/36（94.44%），85% 数值门槛通过，危险逃逸/合法误拦/Provider 失败均 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-v126-live-38336560477.json) | `condition-open-002` 与 `after-sales-open-001` 均命中禁用内容序号 0；G4 质量闭环、50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
 
 2026-10-12 真实 `v1.2.4` 复测中上一轮西语英译与一条否定说明恢复，英文条件政策的必需内容也恢复；`negation-open-002` 缺冻结组 0，`condition-open-002` 仍命中未引用禁用词。原始报告只保留组/词序号及布尔提示，不能还原模型草稿。本机 `v1.2.4` 源码完整测试 `1718 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和工作流静态解析通过；这是已被下一段 `v1.2.5` 现场结果取代的历史快照。
 
 `v1.2.5` 已随 PR #129 合入 main，先红后绿与完整后端回归 `1719 passed, 19 skipped, 2 warnings`、Ruff/格式/mypy 为源码验证。2026-10-13 已分别获批发布、部署及一次 live，见 [R11 TR](../reports/tests/TR-MVP-005-20261013-R11.md)；现场为 34/36，否定说明恢复、条件政策仍失败且弃购样本新失败。模型正文未留存，不以本地或旧版结果代替本次现场事实。
 
-候选 `v1.2.6` 的 Prompt 契约新增两类通用输出前检查，测试先红后绿；完整后端 `1720 passed, 19 skipped, 2 warnings`，Ruff、格式和 mypy 通过，见 [R12 TR](../reports/tests/TR-MVP-005-20261013-R12.md)。这只验证本地代码和请求契约；staging 仍运行 `v1.2.5`，两条现场失败继续阻断 G4。
+`v1.2.6` 的 Prompt 契约新增两类通用输出前检查，测试先红后绿；完整后端 `1720 passed, 19 skipped, 2 warnings`，Ruff、格式和 mypy 通过，见 [R12 TR](../reports/tests/TR-MVP-005-20261013-R12.md)。现已分别获批发布、部署和一次真实模型复测，见 [R13 TR](../reports/tests/TR-MVP-005-20261013-R13.md)：弃购样本通过，条件政策仍失败，售后样本新失败。两条逐项失败继续阻断 G4。
 
 2026-10-08 渠道页状态修复仅更新了 staging 前端：PR #96 的前后端 CI 通过，单镜像发布、六角色预取、预检和部署通过；现场前端摘要、11 容器、迁移头与三个公网健康接口已核对，随后公网五路径仍为 200，见 [低敏证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。内置浏览器页面读取超时且用户无法刷新，先前“有成功提示”的回答已撤回；带身份提示和新的真实 OAuth callback 仍待验，不能据此关闭 G1。
 
