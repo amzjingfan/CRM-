@@ -11,8 +11,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-v127-live-evidence-20261013
-Governance base SHA: 8935b324356271ef7e8b5e96d366035c2c152ff8
+Working branch at this snapshot: docs/mvp005-g4-v127-index-current-r15-20261013
+Governance base SHA: b41aee2ee482bc28501ea4d2a74ec2f328f173ce
 CANDIDATE_SUBJECT_SHA: 0820d90ae96bf7fc3022f571953f5557684d7798
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
@@ -55,6 +55,8 @@ Prompt 修复与低敏证据 PR [#123](https://github.com/CP11-gh/CRM/pull/123) 
 2026-10-13 G4 `v1.2.7` 源码候选：用户确认政策答复正向流程设计，subject `281c2cd0b5b6a68e785f80f16a7f9948b03e07e7` 精简评测 Prompt，保留冻结集、严格判分、85% 门槛与安全开关。测试先红后绿，完整后端 `1720 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 通过；见 [IR R14](../records/implementation/IR-MVP-005-20261013-R14.md)/[TR R14](../reports/tests/TR-MVP-005-20261013-R14.md)/[RR R14](../reports/reviews/RR-MVP-005-20261013-R14.md)。[PR #137](https://github.com/CP11-gh/CRM/pull/137) 双 CI 通过并 squash 合入 main `fcded1830383654b5b0fc903e5c2425417d5844a`；从该 main 的 IR/TR/RR 各 41 份源记录核对无遗漏、重复、状态或 SHA 偏差，本索引收尾分支将三份派生视图恢复为 `CURRENT`。staging 仍运行 `v1.2.6`，无新镜像、部署或付费调用；G4 `PARTIAL`、production No-Go。
 
 2026-10-13 G4 `v1.2.7` 最新现场恢复点：main `8935b324356271ef7e8b5e96d366035c2c152ff8` 的单后端镜像、staging 六角色预取与 validate/deploy、一次 DeepSeek live 均分别获批并通过工作流。运行后端 `sha256:d903ef4b…7ca816`、迁移头、三个公网健康 200、TLS 与固定出口 `38.55.145.52` 均核对；前端/检索不变，Webhook 只读保持。[六份低敏 artifact 汇总](../../release/evidence/staging/crm-staging-g4-v127-rollout-20261013.json)绑定运行号与 SHA-256。[prepare](../../release/evidence/ai/crm-staging-g4-v127-prepare-38343766247.json) 为零 Provider 调用；[live #38344292398](https://github.com/CP11-gh/CRM/actions/runs/38344292398) 为 34/36=94.44%，危险逃逸/合法误拦/Provider 失败均 0，配置估算 USD 0.023714。[低敏报告](../../release/evidence/ai/crm-staging-g4-v127-live-38344292398.json)显示售后本轮恢复，但条件政策仍命中禁用内容序号 0，多语言样本缺审核必需组序号 1。见 [IR R15](../records/implementation/IR-MVP-005-20261013-R15.md)/[TR R15](../reports/tests/TR-MVP-005-20261013-R15.md)/[RR R15](../reports/reviews/RR-MVP-005-20261013-R15.md)；三个派生索引本分支为 `CANDIDATE_VIEW`，合入 main 后须重建 `CURRENT`。G4 仍 `PARTIAL`、production No-Go；本次付费授权不可复用。
+
+证据 [PR #139](https://github.com/CP11-gh/CRM/pull/139) 前后端 CI 通过并 squash 合入 main `b41aee2ee482bc28501ea4d2a74ec2f328f173ce`。从该 main 的 IR/TR/RR 各 42 份源记录核对，无缺失、重复、状态或 SHA 偏差；本索引收尾分支只把三个派生视图恢复为 `CURRENT`，不修改 R15 结论或运行服务。G4 保持 `PARTIAL`、production No-Go。
 
 2026-10-09 G2 代码预备 PR #101、只读诊断 PR #102 和一次性订阅工具 PR #103 已合入 `main` `253a6cf0f563aae85b15ea7447a3589f203484b1`；单后端镜像发布、六角色预取和 staging G2 模式部署通过，消息写入、高风险写入、自动回复仍关闭。用户精确授权后仅执行一次 `NEW_MESSAGE` 订阅 PUT；写后 GET 与独立只读 GET 均确认订阅数 1、目标地址匹配数 1、其他地址数 0，见[低敏订阅证据](../../release/evidence/staging/crm-staging-g2-subscription-confirmed-20261009.json)。当时尚无官方真实事件投递证据，`MVP-003` 仍在 `DOING`，G2 未通过，production 不变。过程记录 [IR](../records/implementation/IR-MVP-003-20261009-R03.md)、[TR](../reports/tests/TR-MVP-003-20261009-R03.md)、[RR](../reports/reviews/RR-MVP-003-20261009-R03.md)是订阅执行前的历史快照；三个记录索引已从 main 的 24 份源记录逐项核对为 `CURRENT`。
 
