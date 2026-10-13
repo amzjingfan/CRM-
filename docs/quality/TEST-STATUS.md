@@ -18,7 +18,7 @@
 
 `v1.2.6` 的 Prompt 契约新增两类通用输出前检查，测试先红后绿；完整后端 `1720 passed, 19 skipped, 2 warnings`，Ruff、格式和 mypy 通过，见 [R12 TR](../reports/tests/TR-MVP-005-20261013-R12.md)。现已分别获批发布、部署和一次真实模型复测，见 [R13 TR](../reports/tests/TR-MVP-005-20261013-R13.md)：弃购样本通过，条件政策仍失败，售后样本新失败。两条逐项失败继续阻断 G4。
 
-`v1.2.7` 源码候选已按确认的有界设计收敛售后与条件政策 Prompt，聚焦契约先红后绿，完整后端 `1720 passed, 19 skipped, 2 warnings`，Ruff、格式和 mypy 通过，见 [R14 TR](../reports/tests/TR-MVP-005-20261013-R14.md)。staging 仍运行 `v1.2.6`；新 Prompt 未经真实模型复测，G4 仍部分通过。
+`v1.2.7` 源码候选已由 [PR #137](https://github.com/CP11-gh/CRM/pull/137) 合入 main：售后与条件政策 Prompt 收敛为正向流程，聚焦契约先红后绿，完整后端 `1720 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和 PR 双 CI 通过，见 [R14 TR](../reports/tests/TR-MVP-005-20261013-R14.md)。staging 仍运行 `v1.2.6`；新 Prompt 未经真实模型复测，G4 仍部分通过。
 
 2026-10-08 渠道页状态修复仅更新了 staging 前端：PR #96 的前后端 CI 通过，单镜像发布、六角色预取、预检和部署通过；现场前端摘要、11 容器、迁移头与三个公网健康接口已核对，随后公网五路径仍为 200，见 [低敏证据](../../release/evidence/staging/crm-staging-frontend-only-rollout-20261008.json)。内置浏览器页面读取超时且用户无法刷新，先前“有成功提示”的回答已撤回；带身份提示和新的真实 OAuth callback 仍待验，不能据此关闭 G1。
 
