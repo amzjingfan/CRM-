@@ -182,7 +182,7 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.5"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.6"
 
 
 def test_real_model_request_preserves_negative_condition_and_translation_meaning() -> None:
@@ -219,6 +219,25 @@ def test_english_negation_and_condition_use_evidence_grounded_present_tense_fram
     assert "The status is unconfirmed" in negation.system_prompt
     assert "Processing begins only if the platform approves a request" in condition.system_prompt
     assert "不得追加具体申请的审批现状" in condition.system_prompt
+
+
+def test_condition_and_cart_drafts_check_for_prohibited_echoes_before_output() -> None:
+    """通用评测指令须阻止条件审批断言和弃购草稿复述禁用话术。"""
+    repo_root = TESTS_ROOT.parents[1]
+    dataset = load_verified_real_model_evaluation_dataset(
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
+    )
+    cases = {case.sample_id: case for case in dataset.cases}
+    run_id = uuid.UUID("44444444-4444-4444-8444-444444444444")
+    condition = build_real_model_evaluation_request(cases["condition-open-002"], dataset, run_id=run_id)
+    cart = build_real_model_evaluation_request(cases["abandoned-open-001"], dataset, run_id=run_id)
+
+    assert condition.system_prompt == cart.system_prompt
+    assert "删除对具体申请是否获批的肯定或否定句" in condition.system_prompt
+    assert "只保留一般现在时的批准前置规则" in condition.system_prompt
+    assert "只描述允许的购物车查看或结算提醒" in cart.system_prompt
+    assert "删去对缺席促销或库存紧迫话术的复述，包括否定句" in cart.system_prompt
 
 
 def test_real_model_evaluation_request_uses_deterministic_temperature() -> None:

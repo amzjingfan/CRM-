@@ -19,6 +19,8 @@
 
 2026-10-13 Prompt `v1.2.5` 已分别获批发布镜像、部署 staging 和运行一次真实 DeepSeek 复测，见 [R11 TR](../reports/tests/TR-MVP-005-20261013-R11.md)。两条禁用内容失败使 G4 保持部分通过；不得将综合 85% 门槛当成逐项通过，也不得复用本次付费授权。
 
+候选 Prompt `v1.2.6` 已按用户确认的有界设计增加条件政策与购物车草稿的通用输出前检查，本机测试见 [R12 TR](../reports/tests/TR-MVP-005-20261013-R12.md)。此候选尚未发布镜像、部署 staging 或运行真实 DeepSeek；上表仍以已部署的 `v1.2.5` 现场结果为准。
+
 2026-10-09 G3 安全补丁在隔离 PostgreSQL 复现并修复了中断后遗留 `processing` 消息未阻断下一次真实发送的问题；完整后端回归 `1726 passed, 3 skipped`，PR #109 已合入 main。2026-10-10 单后端镜像发布、六角色预取、G2 模式 validate/deploy 和运行摘要核对通过，见[低敏现场证据](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)；staging 真实消息写仍关闭。若将来出现遗留 `processing`，不得自动重发或直接改写数据库；需先确认没有在途调用、核对平台事实并形成受审恢复路径。补丁和部署健康不替代受控会话的一次真实发送与对账，G3 仍未通过。
 
 2026-10-08 staging proxy 的临时配置挂载在容器重启时导致短暂 502；PR #89 的持久源码部署和作业结束后再次重启已通过，见 [持久挂载证据](../../release/evidence/staging/crm-staging-proxy-persistent-source-20261008.json)。G0 的本次运行恢复已复测，G6 仍需重新开始连续五日观察。
