@@ -4,9 +4,9 @@
 
 ## 模块状态
 
-2026-10-13 G4 离线政策证据指代修复 subject `dbb65f5`：最终提交上完整后端 `1771 passed, 19 skipped, 2 warnings`，Ruff/格式/mypy 通过；可信条件指代、否定和错误批准者的确定性回归见 [R22 TR](../reports/tests/TR-MVP-005-20261013-R22.md)。该候选尚未发布镜像、部署 staging 或重新调用 DeepSeek；下段 30/36 仍是最新现场结论，G4 与 production 均未放行。
+2026-10-13 最新 G4 现场：离线政策证据指代修复 subject `dbb65f5` 经 [PR #152](https://github.com/CP11-gh/CRM/pull/152) 合入 main `6c6a82d`，后端 `sha256:4ab4d7ce…73c50` 已在 staging 通过六摘要预取、validate/deploy、三健康与固定出口；[prepare](../../release/evidence/ai/crm-staging-g4-r22-prepare-38398089685.json) 0 调用。[live #38398552906](../../release/evidence/ai/crm-staging-g4-r22-live-38398552906.json) 首轮 32/34，终态 31/36=86.11%，危险逃逸 0、合法误拦 2、Provider 失败 0，配置估算 USD 0.024512（非账单）。政策指代样本通过；三条分隔符疑似、一条否定缺项、一条多语言修复无草稿仍失败，机器报告 `passed=false`，G4 与 production 未放行。见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。
 
-2026-10-13 最新 G4 现场：main `7690960` 的 Prompt `v1.2.8` 后端已部署 staging，[prepare](../../release/evidence/ai/crm-staging-g4-v128-prepare-38388814954.json) 0 调用；[live #38389129411](https://github.com/CP11-gh/CRM/actions/runs/38389129411) 首轮 32/34，终态 30/36=83.33%，危险逃逸 0、合法误拦 3、Provider 失败 0、配置估算 USD 0.024482（非账单）。[低敏报告](../../release/evidence/ai/crm-staging-g4-v128-live-38389129411.json)显示三条 `LOCATION_SEPARATORS`、一条否定缺项、一条政策证据不足、一条修复无合格草稿。G4 与 production 仍未通过。
+2026-10-13 上一轮 G4 现场：main `7690960` 的 Prompt `v1.2.8` 后端已部署 staging，[prepare](../../release/evidence/ai/crm-staging-g4-v128-prepare-38388814954.json) 0 调用；[live #38389129411](https://github.com/CP11-gh/CRM/actions/runs/38389129411) 首轮 32/34，终态 30/36=83.33%，危险逃逸 0、合法误拦 3、Provider 失败 0、配置估算 USD 0.024482（非账单）。[低敏报告](../../release/evidence/ai/crm-staging-g4-v128-live-38389129411.json)显示三条 `LOCATION_SEPARATORS`、一条否定缺项、一条政策证据不足、一条修复无合格草稿。G4 与 production 仍未通过。
 
 Prompt `real-model-eval-v1.2.8` 的源码测试先红后绿，完整后端 `1765 passed, 19 skipped, 2 warnings`，mypy、Ruff/格式通过，最终 subject 的受影响测试 `51 passed`。后续现场发布、部署和 live 结果见 [R21 TR](../reports/tests/TR-MVP-005-20261013-R21.md)；模型是否按短句指令稳定输出仍需后续验证。
 
@@ -18,7 +18,7 @@ Prompt `real-model-eval-v1.2.8` 的源码测试先红后绿，完整后端 `1765
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 增强物流 `202604` 待合格 CBT 首程订单并须在 G8 前通过；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
-| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。Prompt `v1.2.8` 后端在 staging 通过预取、validate/deploy；[prepare](../../release/evidence/ai/crm-staging-g4-v128-prepare-38388814954.json) 零 Provider 调用；[live #38389129411](https://github.com/CP11-gh/CRM/actions/runs/38389129411) 首轮 32/34、终态 30/36（83.33%）、危险逃逸 0、合法误拦 3、Provider 失败 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-v128-live-38389129411.json) | 三条分隔符地址疑似、一条否定缺项、一条政策证据不足、一条修复无合格草稿；G4 未过 85% 且逐项失败，不能凭固定码放宽 DLP。50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
+| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。Prompt `v1.2.8` 加离线政策指代修复已部署 staging；[prepare](../../release/evidence/ai/crm-staging-g4-r22-prepare-38398089685.json) 零 Provider 调用；[live #38398552906](https://github.com/CP11-gh/CRM/actions/runs/38398552906) 首轮 32/34、终态 31/36（86.11%）、危险逃逸 0、合法误拦 2、Provider 失败 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-r22-live-38398552906.json) | 三条分隔符地址疑似、一条否定缺项、一条多语言修复无合格草稿；G4 `passed=false`，不能凭固定码放宽 DLP。50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
 
 2026-10-12 真实 `v1.2.4` 复测中上一轮西语英译与一条否定说明恢复，英文条件政策的必需内容也恢复；`negation-open-002` 缺冻结组 0，`condition-open-002` 仍命中未引用禁用词。原始报告只保留组/词序号及布尔提示，不能还原模型草稿。本机 `v1.2.4` 源码完整测试 `1718 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和工作流静态解析通过；这是已被下一段 `v1.2.5` 现场结果取代的历史快照。
 
