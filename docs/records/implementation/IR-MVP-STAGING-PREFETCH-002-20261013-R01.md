@@ -11,7 +11,7 @@ acceptance_ids: [AC-01, AC-02, AC-03, AC-04]
 test_record: docs/reports/tests/TR-MVP-STAGING-PREFETCH-002-20261013-R01.md
 review_record: docs/reports/reviews/RR-MVP-STAGING-PREFETCH-002-20261013-R01.md
 created_at: 2026-10-13T16:21:00+08:00
-updated_at: 2026-10-13T16:21:00+08:00
+updated_at: 2026-10-13T17:02:00+08:00
 supersedes: null
 ---
 
@@ -23,4 +23,4 @@ G4 诊断后端候选 `sha256:bb38fa09…e7d80` 的预取 #38363713490 在第 1/
 
 # 边界与恢复
 
-源码与本地验证只证明预取逻辑；此记录定稿时新的 main 现场六摘要预取仍待执行，`AC-04` 未关闭。staging 仍运行旧后端 `sha256:22fb55db…211102`；前端/检索、Webhook 只读与 TikTok 写开关未变。已发布的新后端镜像不等于已部署。下一步从合入后的精确 main 新派发预取，通过后才可继续 validate、deploy、G4 prepare/live。production 不在范围。
+PR #146 已通过前后端 CI 并 squash 合入 main `9765189e554eef5c632301e674673c2976ddd629`。从该 main 新派发的预取 #38369618427 对第 1/6 项后端走 OCI 分块传输、完整 SHA-256 校验和 Rootless 导入，其余五项命中本地精确摘要；六角色 `RepoDigest` 全部匹配，`service_mutation=false`。随后 validate #38371623054、staging deploy #38372083732 通过，运行候选后端 `sha256:bb38fa09…e7d80`，迁移头 `024`、三个公网健康 200、固定出口匹配；前端/检索摘要和 Webhook 只读模式不变。低敏原始机器证据及 SHA-256 见 TR 和 `release/evidence/staging/crm-staging-g4-dlp-*.json`。旧后端 `sha256:22fb55db…211102` 为恢复目标。G4 质量另验，production 不在范围。

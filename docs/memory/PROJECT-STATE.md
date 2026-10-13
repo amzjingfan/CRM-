@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp008-ghcr-resumable-all-images-20261013
-Governance base SHA: 85035505b620731fafe11e154d3104d2dbfc211d
+Working branch at this snapshot: docs/mvp-staging-prefetch-002-field-evidence-20261013
+Governance base SHA: 9765189e554eef5c632301e674673c2976ddd629
 CANDIDATE_SUBJECT_SHA: f78350e12b85840e8f5ddc1036c2792caf702339
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
-2026-10-13 新恢复点：从 main `85035505b620731fafe11e154d3104d2dbfc211d` 发布的诊断后端 `sha256:bb38fa09…e7d80`，预取 #38363713490 卡在候选后端 1/6 的原生 `docker pull`，30 分钟后受控取消，没有部署或通过证据。修复 subject `f78350e12b85840e8f5ddc1036c2792caf702339` 把六项缺失摘要的正式预取统一转为三仓库白名单 OCI 分块续传；本机回归 `1758 passed, 19 skipped`、静态检查通过。当前 task `MVP-STAGING-PREFETCH-002` 为 VERIFYING；下一步完成 PR/CI 合并，再从新 main 重新预取，成功后才继续 validate、deploy 和 G4 prepare/live。staging 仍为旧后端 `sha256:22fb55db…211102`，G4 28/36，production No-Go。
+2026-10-13 新恢复点：预取修复 PR #146 已合入 main `9765189e554eef5c632301e674673c2976ddd629`。新预取 #38369618427 以 OCI 分块下载候选后端，六摘要精确通过、服务未切换；validate #38371623054、staging deploy #38372083732 均通过，运行后端 `sha256:bb38fa09…e7d80`，迁移头 `024`、三健康 200、固定出口匹配、Webhook 只读。旧后端 `sha256:22fb55db…211102` 保留为恢复目标；机器 JSON 与哈希见 `release/evidence/staging/crm-staging-g4-dlp-*.json`。`MVP-STAGING-PREFETCH-002` 本分支补齐现场证据后可关闭；G4 真实质量另验，production No-Go。
 
 2026-10-13 G4 最新恢复点：main `da114371aa52a1b69e6434e8d341b84dec84ab13` 的单后端镜像 `sha256:22fb55db…211102` 已部署 staging，六角色预取、validate/deploy、迁移头、固定出口及三个公网健康通过；Webhook 保持只读。[prepare #38359722942](../../release/evidence/ai/crm-staging-g4-policy-repair-prepare-38359722942.json) 为零 Provider 调用。[live #38359902457](../../release/evidence/ai/crm-staging-g4-policy-repair-live-38359902457.json) 首轮 32/34、终态 28/36=77.78%，合法误拦 4、危险逃逸 0、Provider 失败 0，G4 未过。6 条 DLP 阻断的具体规则类别仍未知，另有一条可信证据不足；低敏诊断与修复统计候选 subject `6359b20d8e7afa54c68291b04f6c605fca029fcd` 本机测试通过但未发布/部署，见 [R17 TR](../reports/tests/TR-MVP-005-20261013-R17.md)。下一步：合并诊断候选；受控 staging 复测确认 DLP 类别；仅在证据充分时修复误拦和政策证据问题。production No-Go。
 

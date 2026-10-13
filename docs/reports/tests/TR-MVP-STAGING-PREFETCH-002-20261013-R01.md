@@ -2,7 +2,7 @@
 record_id: TR-MVP-STAGING-PREFETCH-002-20261013-R01
 record_type: test
 revision: R01
-status: PARTIAL
+status: PASS
 task_id: MVP-STAGING-PREFETCH-002
 tested_sha: f78350e12b85840e8f5ddc1036c2792caf702339
 implementation_record: docs/records/implementation/IR-MVP-STAGING-PREFETCH-002-20261013-R01.md
@@ -10,7 +10,7 @@ requirement_ids: [MVP-STAGING-PREFETCH-002, G4]
 acceptance_ids: [AC-01, AC-02, AC-03, AC-04]
 environment: Windows PowerShell; uv Python 3.12; staging not mutated
 created_at: 2026-10-13T16:21:00+08:00
-updated_at: 2026-10-13T16:21:00+08:00
+updated_at: 2026-10-13T17:02:00+08:00
 supersedes: null
 ---
 
@@ -22,4 +22,4 @@ supersedes: null
 
 # 尚缺与结论
 
-原生拉取挂起的 #38363713490 已受控取消，没有六摘要通过 artifact，也没有服务变更。本地结果支持代码候选进入 PR；`AC-04` 仍须从合入后的 main 重新派发正式六摘要预取并核对精确摘要。此 TR 不宣称 staging 预取或 G4 通过。
+原生拉取挂起的 #38363713490 已受控取消。修复后的正式预取 #38369618427 绑定 main `9765189e…ddd629`，六项摘要精确匹配，状态 `passed`、`service_mutation=false`、`production_release=false`。日志证实第 1 项后端由 OCI 分块导入并核对 RepoDigest，剩余五项从本地精确缓存通过；原始 JSON SHA-256 `a8a823ff0f7875255840b9e86b3ff0d64fd5274270b27872c58397d756a2801a`。后续 validate #38371623054 为 `validated`、未执行迁移；deploy #38372083732 为 `passed`、迁移头已应用、健康三项 200、固定出口 `38.55.145.52`、Webhook 只读。它们的原始 JSON SHA-256 依次为 `bbc2cc358ac42aa9cb345ce7306b358a1591d7bb8d5e51572783d897262bcd01` 和 `8bc096e2632e41716fee7e7a5e63aaf922a295b9a67095b51738033bf42ac102`。四份低敏镜像/现场证据见 `release/evidence/staging/crm-staging-g4-dlp-*.json`。`AC-04` 现场通过；G4 质量和 production 仍独立判断。
