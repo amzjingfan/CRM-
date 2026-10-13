@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r25-live-20261013
-Governance base SHA: cd366851841d0bd1736a117cb65eb3fa2b7d2888
+Working branch at this snapshot: docs/mvp005-g4-r25-index-20261013
+Governance base SHA: a9c725011e34ddaaff498434b62a0252433eb2fe
 CANDIDATE_SUBJECT_SHA: 7485e1b2847a41f861ad15bc91163c47e451888d
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
 2026-10-13 G4 最新恢复点：`v1.2.9` subject `7485e1b` 经 PR #155 合入 main，PR #156 已将三份索引从源记录恢复 `CURRENT`。main `cd36685` 的后端 `sha256:53913024…3f77b` 已在 staging 经六角色预取、validate/deploy、迁移头、三健康与固定出口核对；旧后端可回滚。[prepare #38411143806](../../release/evidence/ai/crm-staging-g4-r24-prepare-38411143806.json) 零 Provider 调用；[live #38413001338](../../release/evidence/ai/crm-staging-g4-r24-live-38413001338.json) 终态 33/36=91.67%、危险逃逸 0、合法误拦 1、Provider 故障 0，`passed=false`。三次分隔符疑似再生成恢复两次，条件政策仍误拦；否定缺项与多语言修复无草稿仍失败。见 [R25 TR](../reports/tests/TR-MVP-005-20261013-R25.md)。G4 未过，production No-Go。
+
+R25 六份低敏现场证据与 IR/TR/RR 已由 [PR #157](https://github.com/CP11-gh/CRM/pull/157) 合入 main `a9c725011e34ddaaff498434b62a0252433eb2fe`；从该 main 的 IR/TR/RR 各 53 份源记录逐项核对 ID、状态和 SHA，无缺失或重复，三个派生索引在本分支恢复为 `CURRENT`。这不改变 G4 `PARTIAL` 或 production No-Go。
 
 2026-10-13 G4 上一现场恢复点：[PR #152](https://github.com/CP11-gh/CRM/pull/152) 已合入 main `6c6a82d`；Prompt `v1.2.8` 加离线政策指代修复后端 `sha256:4ab4d7ce…73c50` 已部署 staging，六摘要预取、validate/deploy、三健康及固定出口通过。[prepare #38398089685](../../release/evidence/ai/crm-staging-g4-r22-prepare-38398089685.json) 为 36 条、Provider 0 调用；[live #38398552906](../../release/evidence/ai/crm-staging-g4-r22-live-38398552906.json) 终态 31/36=86.11%，危险逃逸 0、合法误拦 2、机器 `passed=false`。政策指代样本通过，但三条 DLP 分隔符疑似、否定缺项和多语言修复失败仍在；原文未留存，不得放宽 DLP。本轮证据已由 PR #153 合入 main，分隔符再生成候选见上段；否定缺项与多语言审核仍需另验。G4 未过，production No-Go；见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。
 
@@ -201,6 +203,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 合并 R25 现场证据并恢复三个索引 `CURRENT`；分别用确定性反例处理条件政策再生成误拦、否定缺项和多语言政策修复无草稿，冻结集、严格 DLP 与门槛不变。新付费复测不得复用本次结果。
+1. 分别用确定性反例处理条件政策再生成误拦、否定缺项和多语言政策修复无草稿；冻结集、严格 DLP 与门槛不变。修复后另行形成新镜像、部署和 live 证据，不复用 R25 的付费结果。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
