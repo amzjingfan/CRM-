@@ -97,6 +97,27 @@ async def _run(provider: _SequenceProvider, *, max_provider_calls: int = 68, max
 
 
 @pytest.mark.asyncio
+async def test_first_provider_failure_records_only_stable_diagnostics() -> None:
+    provider = _SequenceProvider(
+        [
+            LLMProviderError(
+                LLMErrorCode.LLM_OUTPUT_INVALID,
+                "secret model response",
+                retriable=True,
+                output_failure_kind="empty",
+            )
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    payload = sample.model_dump(mode="json")
+    assert sample.provider_failure is True
+    assert payload["provider_error_code"] == "LLM_OUTPUT_INVALID"
+    assert payload["provider_output_failure_kind"] == "empty"
+    assert "secret model response" not in json.dumps(payload)
+
+
+@pytest.mark.asyncio
 async def test_first_pass_skips_repair_and_keeps_first_score() -> None:
     provider = _SequenceProvider(
         [_policy_output("A return request may be submitted within seven days, subject to platform review.")]
@@ -298,6 +319,8 @@ async def test_regeneration_respects_call_budget_and_provider_failure() -> None:
     assert sample.regeneration_outcome == "provider_failed"
     assert sample.second_attempt_disposition == "provider_failed"
     assert sample.provider_failure is True
+    assert sample.provider_error_code == LLMErrorCode.LLM_TIMEOUT
+    assert sample.provider_output_failure_kind is None
     assert sample.decision == "transfer_human"
     assert report.metrics.provider_failure_count == 1
 
@@ -395,10 +418,34 @@ async def test_repair_provider_timeout_fails_closed_and_counts_failure() -> None
     sample = report.samples[0]
     assert sample.decision == "transfer_human"
     assert sample.provider_failure is True
+    assert sample.provider_error_code == LLMErrorCode.LLM_TIMEOUT
+    assert sample.provider_output_failure_kind is None
     assert sample.second_attempt_disposition == "provider_failed"
     assert sample.first_passed is False
     assert sample.provider_call_count == 2
     assert report.metrics.provider_failure_count == 1
+
+
+@pytest.mark.asyncio
+async def test_repair_output_failure_records_subtype_without_raw_response() -> None:
+    provider = _SequenceProvider(
+        [
+            _policy_output("You may submit a return request within seven days."),
+            LLMProviderError(
+                LLMErrorCode.LLM_OUTPUT_INVALID,
+                "secret repaired response",
+                retriable=True,
+                output_failure_kind="invalid_structure",
+            ),
+        ]
+    )
+    report = await _run(provider)
+    sample = report.samples[0]
+    payload = sample.model_dump(mode="json")
+    assert sample.repair_outcome == "provider_failed"
+    assert sample.provider_error_code == LLMErrorCode.LLM_OUTPUT_INVALID
+    assert sample.provider_output_failure_kind == "invalid_structure"
+    assert "secret repaired response" not in json.dumps(payload)
 
 
 @pytest.mark.asyncio

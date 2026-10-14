@@ -580,21 +580,23 @@ async def test_deepseek_length_finish_reason_is_rejected() -> None:
 
     assert captured.value.code == LLMErrorCode.LLM_OUTPUT_INVALID
     assert captured.value.retriable is True
+    assert captured.value.output_failure_kind == "unfinished"
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("finish_reason", "expected_code", "expected_retriable"),
+    ("finish_reason", "expected_code", "expected_retriable", "expected_kind"),
     [
-        ("content_filter", LLMErrorCode.LLM_REFUSAL, False),
-        ("insufficient_system_resource", LLMErrorCode.LLM_PROVIDER_ERROR, True),
-        ("tool_calls", LLMErrorCode.LLM_OUTPUT_INVALID, True),
+        ("content_filter", LLMErrorCode.LLM_REFUSAL, False, "unfinished"),
+        ("insufficient_system_resource", LLMErrorCode.LLM_PROVIDER_ERROR, True, "unfinished"),
+        ("tool_calls", LLMErrorCode.LLM_OUTPUT_INVALID, True, "unfinished"),
     ],
 )
 async def test_deepseek_non_stop_finish_reason_fails_closed(
     finish_reason: str,
     expected_code: LLMErrorCode,
     expected_retriable: bool,
+    expected_kind: str,
 ) -> None:
     """内容过滤、资源中断和意外工具调用都不能进入已验证工作流。"""
     resource = FakeResource(
@@ -624,6 +626,7 @@ async def test_deepseek_non_stop_finish_reason_fails_closed(
 
     assert captured.value.code == expected_code
     assert captured.value.retriable is expected_retriable
+    assert captured.value.output_failure_kind == expected_kind
 
 
 @pytest.mark.asyncio
@@ -653,6 +656,7 @@ async def test_deepseek_empty_or_invalid_output_is_retriable(content: str | None
 
     assert captured.value.code == LLMErrorCode.LLM_OUTPUT_INVALID
     assert captured.value.retriable is True
+    assert captured.value.output_failure_kind == ("empty" if not content else "invalid_structure")
 
 
 @pytest.mark.asyncio

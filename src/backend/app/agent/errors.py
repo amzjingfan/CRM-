@@ -1,6 +1,9 @@
 """定义模型供应商边界的稳定错误类型。"""
 
 from enum import StrEnum
+from typing import Literal
+
+LLMOutputFailureKind = Literal["unfinished", "empty", "invalid_structure"]
 
 
 class LLMErrorCode(StrEnum):
@@ -21,14 +24,23 @@ class LLMErrorCode(StrEnum):
 class LLMProviderError(Exception):
     """表示已经完成安全转换、可以被 Agent 服务处理的模型异常。"""
 
-    def __init__(self, code: LLMErrorCode, message: str, *, retriable: bool) -> None:
+    def __init__(
+        self,
+        code: LLMErrorCode,
+        message: str,
+        *,
+        retriable: bool,
+        output_failure_kind: LLMOutputFailureKind | None = None,
+    ) -> None:
         """初始化模型异常。
 
         Args:
             code: 对内稳定的模型错误码。
             message: 不包含密钥、Prompt 或客户原文的安全消息。
             retriable: 是否允许在总尝试预算内重试或降级。
+            output_failure_kind: 可选的固定输出失败类别，不包含供应商原文。
         """
         self.code = code
         self.retriable = retriable
+        self.output_failure_kind = output_failure_kind
         super().__init__(message)

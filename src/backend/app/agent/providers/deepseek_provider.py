@@ -206,7 +206,7 @@ class DeepSeekProvider(LLMProvider):
                     "error_code": error_code.value,
                 },
             )
-            raise LLMProviderError(error_code, error_message, retriable=retriable)
+            raise LLMProviderError(error_code, error_message, retriable=retriable, output_failure_kind="unfinished")
         content = getattr(message, "content", None)
         if not isinstance(content, str) or not content:
             reasoning_content = getattr(message, "reasoning_content", None)
@@ -224,7 +224,12 @@ class DeepSeekProvider(LLMProvider):
                     "error_code": LLMErrorCode.LLM_OUTPUT_INVALID.value,
                 },
             )
-            raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "DeepSeek 返回空内容", retriable=True)
+            raise LLMProviderError(
+                LLMErrorCode.LLM_OUTPUT_INVALID,
+                "DeepSeek 返回空内容",
+                retriable=True,
+                output_failure_kind="empty",
+            )
 
         try:
             parsed_output = response_schema.model_validate(json.loads(content))
@@ -247,6 +252,7 @@ class DeepSeekProvider(LLMProvider):
                 LLMErrorCode.LLM_OUTPUT_INVALID,
                 "DeepSeek JSON 结构未通过校验",
                 retriable=True,
+                output_failure_kind="invalid_structure",
             ) from error
 
         usage = getattr(response, "usage", None)

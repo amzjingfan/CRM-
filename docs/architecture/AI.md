@@ -73,4 +73,6 @@ G4 离线评测流程 `policy-repair-v1` 在首个结构化草稿后，以本次
 
 `real-model-eval-v1.2.11` 针对 R30 两条逐项失败收紧指令：首稿对有证据的页面否定说明明确写出“未显示/没有显示”完成状态，不据此推断实际退款结果；一次性政策修复在证据同时给出申请时限和平台审核时，保留非空的人工审核草稿、两项事实及有证据的 `refund_policy` 声明。指令不包含冻结样本评分标签或样本答案；冻结集、评分器、DLP、调用上限、安全开关与真实发送模式均不变。[R32 部署](../reports/tests/TR-MVP-005-20261014-R32.md)后的 [R33 现场复测](../reports/tests/TR-MVP-005-20261014-R33.md)为 35/36，否定说明通过；多语言政策首稿仍缺平台审核步骤，第二次调用记为 `provider_failed` 并安全转人工，Provider 故障 1，机器 `passed=false`。工作流日志出现一条未绑定样本的 `deepseek_output_invalid`；低敏报告不能区分输出失败子类型或还原草稿，G4 仍为 `PARTIAL`，production No-Go。
 
+下一版 G4 离线评测仅增加低敏 Provider 失败诊断：每条失败样本保存稳定的 `provider_error_code`，DeepSeek 输出检查可再保存 `provider_output_failure_kind`，取值限定为 `unfinished`、`empty`、`invalid_structure`。未失败样本两个字段均为空；故障注入不计真实 Provider 失败。工作流白名单同时限制字段与枚举，不记录响应正文、Prompt、供应商请求 ID 或原始异常。此信息用于定位下一次受控复测，不回填 R33 历史报告，不改变冻结集、Prompt、评分、85% 门槛、失败关闭、两次调用上限或 TikTok 发送设置；只有新镜像部署后的新报告才含可用诊断。
+
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。
