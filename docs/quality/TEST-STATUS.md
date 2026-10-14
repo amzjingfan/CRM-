@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R40 staging：获批的[六摘要预取 #38550506209](https://github.com/CP11-gh/CRM/actions/runs/38550506209)、[validate #38551198566](https://github.com/CP11-gh/CRM/actions/runs/38551198566)、[deploy #38551532509](https://github.com/CP11-gh/CRM/actions/runs/38551532509) 均从 main `2d164767` 通过；后端运行摘要为 `sha256:ee48ee38…335daa`，迁移头、三健康、固定出口与 Webhook 只读通过。零调用 [prepare #38552161363](https://github.com/CP11-gh/CRM/actions/runs/38552161363) 在 Runner 核对新摘要及冻结 36 条；四份原始证据与哈希见 [R40 TR](../reports/tests/TR-MVP-005-20261014-R40.md)。R37 live 仍是最新模型质量结果：35/36、Provider 故障 1、机器 `passed=false`。G4 `PARTIAL`、production No-Go。
+
 2026-10-14 G4 R39 单次获批后端镜像发布：[工作流 #38548833793](https://github.com/CP11-gh/CRM/actions/runs/38548833793) 从 main `3d8e0d5` 发布 `ghcr.io/cp11-gh/crm-backend@sha256:ee48ee38…35daa`，linux/amd64 manifest `PASS`，压缩层 110,072,001 字节；原样证据及 SHA-256 见 [R39 TR](../reports/tests/TR-MVP-005-20261014-R39.md)。未部署 staging、未调用 DeepSeek；R37 35/36、Provider 故障 1、机器 `passed=false` 仍为真实质量结果，G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R38 低敏诊断源码候选：subject `ae3fa29` 将后续结构失败分为 `invalid_json`/`invalid_schema`，仅 Schema 失败最多记录八组白名单字段路径与错误类型；未知值映射固定枚举，不存原文。受影响测试 102 passed，完整后端在最终类型标注整理前 1782 passed/19 skipped，整理后 mypy 172 源文件通过，PR CI 待验，详见 [R38 TR](../reports/tests/TR-MVP-005-20261014-R38.md)。未发布镜像或部署，R37 的 35/36、Provider 故障 1、机器 `passed=false` 仍为现场事实；G4 `PARTIAL`、production No-Go。
