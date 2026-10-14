@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r28-image-evidence-20261014
-Governance base SHA: c7f464cd48ee75027e2078d791cee7000bb8d57d
-CANDIDATE_SUBJECT_SHA: ff5ecf853df828e4171cc53658522e51b62bdaae
+Working branch at this snapshot: docs/mvp005-g4-r29-rollout-20261014
+Governance base SHA: 284f1f9aae9cb0aacd1e099b5d79abd9089e0892
+CANDIDATE_SUBJECT_SHA: 284f1f9aae9cb0aacd1e099b5d79abd9089e0892
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: ATTENTION — `CLEANUP-20261014-001` 已按精确授权删除业务服务器旧传输缓存；其他隔离物、备份和忽略测试材料不在本批次范围
+Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-14 G4 R29 staging 最新状态：R28 `v1.2.10` 后端 `sha256:a38855fa…5f5da5` 在另次精确授权下经[六摘要预取 #38505712085](https://github.com/CP11-gh/CRM/actions/runs/38505712085)、[validate #38506352089](https://github.com/CP11-gh/CRM/actions/runs/38506352089)、[deploy #38506639141](https://github.com/CP11-gh/CRM/actions/runs/38506639141) 依序通过；旧后端 `sha256:3436335a…6103933` 为回滚目标，前端/检索不变。迁移头、三健康、固定出口 `38.55.145.52`、Webhook 只读均由机器证据核对，外部三健康也各为 200。[prepare #38507054051](https://github.com/CP11-gh/CRM/actions/runs/38507054051) 确认 main `284f1f9`、运行摘要、冻结 36 条与 Provider 0 调用，见 [R29 TR](../reports/tests/TR-MVP-005-20261014-R29.md)。本版未运行 DeepSeek live，R27 `33/36`、`passed=false` 仍是最新质量结论；G4 `PARTIAL`、production No-Go。下一步仅三项：受控真实复测三条失败；按新报告分别修复否定与多语言问题；质量门禁全部满足后再复核 G4。
 
 2026-10-14 G4 R28 源码候选：在 R27 已观察到条件政策第二稿 `dlp_rejected` 后，本地安全对照确认双逗号政策句会触发不确定规则、独立短句可放行、混有政策文字的地址仍被阻断。本次保持 DLP 不变，只在离线评测第二次再生成 Prompt `v1.2.10` 明确限制 `content` 分隔符；首稿不外传，第二稿从头检查，失败转人工。subject `ff5ecf8` 先红后绿，完整后端 `1777 passed, 19 skipped, 2 warnings`，Ruff/格式/mypy 通过，见 [R28 TR](../reports/tests/TR-MVP-005-20261014-R28.md)。[PR #165](https://github.com/CP11-gh/CRM/pull/165) 双 CI 和独立只读审查通过，已 squash 合入 main `66f3f36`；[PR #167](https://github.com/CP11-gh/CRM/pull/167) 从该主分支核对 IR/TR/RR 各 56 份源记录并恢复三个派生索引为 `CURRENT`，合入 main `c7f464c`。一次获批的[镜像发布 #38504855995](https://github.com/CP11-gh/CRM/actions/runs/38504855995) 成功，后端 `sha256:a38855fa…5f5da5`、压缩 110068027 字节，持久[机器证据](../../release/evidence/staging/crm-staging-g4-r28-image-38504855995.json) SHA-256 `bef46f4d24b9ad39a4302f463962f63f9bac34be66a3de44fa2cd74e4062df8e`。尚未部署或付费复测；否定与多语言失败未修复，G4 `PARTIAL`、production No-Go。下一步仅三项：按精确门禁验证 staging 第二稿；分别处理否定与多语言证据缺项；取得新真实报告后复核 G4。
 

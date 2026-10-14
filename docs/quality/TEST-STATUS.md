@@ -6,7 +6,9 @@
 
 2026-10-14 最新 G4 现场：R26 低敏诊断已从 main `60bf105` 发布单后端镜像并部署 staging；六摘要预取、validate/deploy、迁移头、三健康和固定出口通过。[prepare](../../release/evidence/ai/crm-staging-g4-r27-prepare-38496648176.json) 锁定 36 条冻结集且 Provider 0 调用。[live #38496772348](https://github.com/CP11-gh/CRM/actions/runs/38496772348) 终态 33/36=91.67%，危险逃逸 0、合法误拦 1、Provider 故障 0；条件政策第二稿被 DLP 拒绝，多语言政策第二稿由模型转人工，否定说明缺必需组 0。机器 `passed=false`，G4 与 production 未放行；见 [R27 TR](../reports/tests/TR-MVP-005-20261014-R27.md)。配置估算 USD 0.026933，非账单。
 
-2026-10-14 G4 R28 本地候选：`v1.2.10` 仅强化第二次 DLP 再生成的分隔符约束，不改 DLP、冻结评分或安全开关。定向先红后绿，最终 `57 passed`；完整后端 `1777 passed, 19 skipped, 2 warnings`，Ruff 全量/格式与 mypy 通过，见 [R28 TR](../reports/tests/TR-MVP-005-20261014-R28.md)。源码经 PR #165/#167 合入 main `c7f464c`，一次获批的[后端镜像发布](../../release/evidence/staging/crm-staging-g4-r28-image-38504855995.json)已验证摘要与层大小；尚未部署或再次调用 DeepSeek。R27 是最新真实结论，G4 `PARTIAL`。
+2026-10-14 G4 R28 本地候选：`v1.2.10` 仅强化第二次 DLP 再生成的分隔符约束，不改 DLP、冻结评分或安全开关。定向先红后绿，最终 `57 passed`；完整后端 `1777 passed, 19 skipped, 2 warnings`，Ruff 全量/格式与 mypy 通过，见 [R28 TR](../reports/tests/TR-MVP-005-20261014-R28.md)。源码经 PR #165/#167 合入 main `c7f464c`，一次获批的[后端镜像发布](../../release/evidence/staging/crm-staging-g4-r28-image-38504855995.json)已验证摘要与层大小。
+
+2026-10-14 G4 R29 staging：六摘要预取、validate、deploy 和零调用 prepare 均通过，见 [R29 TR](../reports/tests/TR-MVP-005-20261014-R29.md)。后端运行 `sha256:a38855fa…5f5da5`，迁移头已应用、三健康与固定出口通过，Webhook 保持只读；prepare 锁定 36 条样本、Provider 调用 0。尚未运行本版 DeepSeek live；R27 是最新质量结论，G4 `PARTIAL`。
 
 2026-10-13 最新 G4 现场：main `cd36685` 的 `v1.2.9` 后端已在 staging 通过六角色预取、validate/deploy、三健康与固定出口；[prepare](../../release/evidence/ai/crm-staging-g4-r24-prepare-38411143806.json) 确认 36 条冻结集且 Provider 0 调用。[live #38413001338](https://github.com/CP11-gh/CRM/actions/runs/38413001338) 终态 33/36=91.67%，危险逃逸 0、合法误拦 1、Provider 故障 0；三次疑似分隔符再生成成功恢复两次，条件政策仍安全转人工。否定缺项与多语言修复无草稿仍失败；机器 `passed=false`，G4 和 production 未放行。配置估算 USD 0.027002，非账单。见 [R25 TR](../reports/tests/TR-MVP-005-20261013-R25.md)。源码确定性验证见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24.md)。
 

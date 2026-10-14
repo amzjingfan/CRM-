@@ -21,7 +21,7 @@ G4 `v1.2.9` 的源码验证见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24
 
 2026-10-14 [R26 本地诊断](../reports/tests/TR-MVP-005-20261014-R26.md)只增加第二次调用的固定低敏结果类别，未改变判分或安全门禁。它已在 main `60bf105` 发布部署；[R27 现场复测](../reports/tests/TR-MVP-005-20261014-R27.md)提供新字段的真实分类。G4 的合法误拦和三条失败仍阻断签署。
 
-2026-10-14 [R28 源码候选](../reports/tests/TR-MVP-005-20261014-R28.md)只强化疑似分隔符第二稿的生成约束，保留原 DLP 失败关闭及最多两次调用。本地确定性验证不能证明 DeepSeek 现场遵守；候选[单后端镜像](../../release/evidence/staging/crm-staging-g4-r28-image-38504855995.json)已从 main `c7f464c` 发布并验证 manifest，尚未部署或付费复测，G4 仍按 R27 的 `passed=false` 判定。
+2026-10-14 [R28 源码候选](../reports/tests/TR-MVP-005-20261014-R28.md)只强化疑似分隔符第二稿的生成约束，保留原 DLP 失败关闭及最多两次调用。候选[单后端镜像](../../release/evidence/staging/crm-staging-g4-r28-image-38504855995.json)已从 main `c7f464c` 发布并验证 manifest。[R29 staging 门禁](../reports/tests/TR-MVP-005-20261014-R29.md)确认新摘要部署、迁移头、三健康、固定出口及零调用 prepare；真实 DeepSeek 复测尚未运行，G4 仍按 R27 的 `passed=false` 判定。
 
 2026-10-12 G4 `v1.2.4` 的低敏缺失组序号已在一次获批真实复测中产生，历史报告不能回填。本轮仍有两条失败：英文否定状态说明缺组 0、英文条件说明命中未引用禁用词。新增诊断不放宽禁用词规则、阈值或冻结数据；下一次镜像/部署及模型调用须独立授权。
 

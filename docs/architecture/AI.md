@@ -69,6 +69,6 @@ G4 离线评测流程 `policy-repair-v1` 在首个结构化草稿后，以本次
 
 2026-10-14 的低敏诊断为每条样本增加 `second_attempt_disposition` 枚举：`not_attempted`、`accepted`、`model_transfer`、`dlp_rejected`、`policy_rejected` 或 `provider_failed`。它只区分政策修复或 DLP 再生成的第二次调用终态，不保存第二稿内容，不作为评分或安全放行依据；预算耗尽或请求被拦截时仍为 `not_attempted`，具体状态继续由既有 `repair_outcome`/`regeneration_outcome` 表达。冻结集、Prompt `v1.2.9`、判分、调用上限、DLP 与 TikTok 发送开关均未改变。该版随 main `60bf105` 部署 staging；[R27 live](../../release/evidence/ai/crm-staging-g4-r27-live-38496772348.json) 终态 33/36、合法误拦 1：条件政策第二稿 `dlp_rejected`，多语言政策第二稿 `model_transfer`，否定说明未做第二次调用。报告没有草稿原文，不能据形态原因码认定被拒内容安全；G4 未过。
 
-下一源码候选 `real-model-eval-v1.2.10` 仅强化 G4 疑似分隔符草稿的第二次再生成指令：`content` 使用独立完整短句，不使用现有地址分隔符；保留证据含义、否定、条件、翻译及声明。首稿不进入再生成请求，第二稿仍从头执行原 DLP、政策和冻结评分，最多两次调用，失败转人工。普通双逗号政策句和混合政策地址的确定性安全对照见 [R28 TR](../reports/tests/TR-MVP-005-20261014-R28.md)。候选尚未部署或真实复测，不改变 R27 `passed=false`。
+`real-model-eval-v1.2.10` 仅强化 G4 疑似分隔符草稿的第二次再生成指令：`content` 使用独立完整短句，不使用现有地址分隔符；保留证据含义、否定、条件、翻译及声明。首稿不进入再生成请求，第二稿仍从头执行原 DLP、政策和冻结评分，最多两次调用，失败转人工。普通双逗号政策句和混合政策地址的确定性安全对照见 [R28 TR](../reports/tests/TR-MVP-005-20261014-R28.md)。该候选已按 [R29 TR](../reports/tests/TR-MVP-005-20261014-R29.md) 部署 staging 并完成零调用 prepare，尚未进行真实模型复测，不改变 R27 `passed=false`。
 
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。
