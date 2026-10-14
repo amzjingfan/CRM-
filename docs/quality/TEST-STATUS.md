@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R32 staging 部署：经单独授权，从 main `3d6859a` 依序完成[六摘要预取 #38517947272](https://github.com/CP11-gh/CRM/actions/runs/38517947272)、[validate #38519678056](https://github.com/CP11-gh/CRM/actions/runs/38519678056)、[deploy #38520023020](https://github.com/CP11-gh/CRM/actions/runs/38520023020)。运行后端为 R31 `sha256:1c3a8e83…fc21f0`；前端/检索不变，迁移头已应用，三健康 200，固定出口 `38.55.145.52`，Webhook 仍只读。公网只读复核三个健康端点也各为 200。详见 [R32 TR](../reports/tests/TR-MVP-005-20261014-R32.md)。本版尚未运行 `prepare/live`；R30 两条逐项失败仍待复核，G4 `PARTIAL`、production No-Go。
+
 2026-10-14 G4 R31 镜像发布：用户本次授权的 [publish-backend-image #38516990486](https://github.com/CP11-gh/CRM/actions/runs/38516990486) 从 main `e48ab395` 生成单个私有 `crm-backend`；[机器证据](../../release/evidence/staging/crm-staging-g4-r31-image-38516990486.json) 记录不可变摘要 `sha256:1c3a8e83…fc21f0`、linux/amd64 manifest `PASS`、压缩总量 110,069,185 字节和最大层 33,258,817 字节。尚未部署 staging 或调用 DeepSeek；R30 仍是最新 live，G4 `PARTIAL`。
 
 2026-10-14 G4 R31 本地候选：Prompt `real-model-eval-v1.2.11` 对页面否定展示和证据充足的多语言政策修复增加明确约束。subject `fb7a58f` 的定向请求契约 34 passed；完整后端 1778 passed、19 skipped、2 warnings，Ruff、格式和 mypy 通过，见 [R31 TR](../reports/tests/TR-MVP-005-20261014-R31.md)。该源码验证阶段未发布镜像、部署 staging 或调用 DeepSeek；下方 R30 仍是最新现场，G4 `PARTIAL`、production No-Go。
