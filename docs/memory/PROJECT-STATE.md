@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r37-live-20261014
-Governance base SHA: 1aa1dee3a4263c3ef1b86507c1865707665ce811
-CANDIDATE_SUBJECT_SHA: 1aa1dee3a4263c3ef1b86507c1865707665ce811
+Working branch at this snapshot: docs/mvp005-g4-r37-index-20261014
+Governance base SHA: 5bb13510c3f14a02f92e1eb21f17cdfabcd6941a
+CANDIDATE_SUBJECT_SHA: 5bb13510c3f14a02f92e1eb21f17cdfabcd6941a
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R37 最新质量恢复点：从 main `1aa1dee` 的[零调用 prepare #38542493623](https://github.com/CP11-gh/CRM/actions/runs/38542493623) 锁定运行后端 `sha256:61c00d69…95e1881`、冻结 36 条及 Provider 0 调用；用户单独精确授权的 [live #38542949502](https://github.com/CP11-gh/CRM/actions/runs/38542949502) 为 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1、38 次调用，机器 `passed=false`。唯一失败仍是多语言政策：首稿缺审核组 1，第二稿 `LLM_OUTPUT_INVALID / invalid_structure` 并安全转人工；无法从低敏报告再区分 JSON 解析与 Schema 字段校验。两份原始低敏证据及 SHA-256 见 [R37 TR](../reports/tests/TR-MVP-005-20261014-R37.md)。本次付费授权已用完；本分支三个派生索引为 `CANDIDATE_VIEW`，G4 `PARTIAL`、production No-Go。下一步：建立可重复且低敏的结构错误诊断边界，再决定修复；新的付费复测须另行精确授权。
+2026-10-14 G4 R37 最新质量恢复点：从 main `1aa1dee` 的[零调用 prepare #38542493623](https://github.com/CP11-gh/CRM/actions/runs/38542493623) 锁定运行后端 `sha256:61c00d69…95e1881`、冻结 36 条及 Provider 0 调用；用户单独精确授权的 [live #38542949502](https://github.com/CP11-gh/CRM/actions/runs/38542949502) 为 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1、38 次调用，机器 `passed=false`。唯一失败仍是多语言政策：首稿缺审核组 1，第二稿 `LLM_OUTPUT_INVALID / invalid_structure` 并安全转人工；无法从低敏报告再区分 JSON 解析与 Schema 字段校验。两份原始低敏证据及 SHA-256 见 [R37 TR](../reports/tests/TR-MVP-005-20261014-R37.md)。[PR #187](https://github.com/CP11-gh/CRM/pull/187) 双 CI 通过并合入 main `5bb1351`；从该 main 核对 IR/TR/RR 各 65 份源记录，本分支恢复三个派生索引为 `CURRENT`。本次付费授权已用完，G4 `PARTIAL`、production No-Go。下一步：建立可重复且低敏的结构错误诊断边界，再决定修复；新的付费复测须另行精确授权。
 
 2026-10-14 G4 R36 最新 staging 恢复点：用户另行授权后，main `401b0e5` 的[六角色预取 #38536657630](https://github.com/CP11-gh/CRM/actions/runs/38536657630)、[validate #38538873665](https://github.com/CP11-gh/CRM/actions/runs/38538873665)、[deploy #38539305810](https://github.com/CP11-gh/CRM/actions/runs/38539305810) 均通过，运行后端已切到 `sha256:61c00d69…95e1881`，前端/检索不变，旧后端 `sha256:1c3a8e83…fc21f0` 为回滚目标；迁移头、三健康、固定出口和 Webhook 只读通过。只读 [prepare #38540054971](https://github.com/CP11-gh/CRM/actions/runs/38540054971) 在 Runner 上核对实际运行后端、36 条冻结样本与 Provider 0 调用。四份原始低敏证据及 SHA-256 见 [R36 TR](../reports/tests/TR-MVP-005-20261014-R36.md)，经 [PR #185](https://github.com/CP11-gh/CRM/pull/185) 双 CI 通过后合入 main `dccc259`；从该 main 核对 IR/TR/RR 各 64 份源记录的 ID、状态、SHA、更新时间和路径，本分支恢复三个派生索引为 `CURRENT`。本机 SSH 登录被拒绝，Runner 核对与公网三健康 200 已完成。尚未运行新版付费 `live`；R33 `passed=false` 仍是最新真实质量结果，G4 `PARTIAL`、production No-Go。下一步：单独精确批准一次 G4 `live` 后逐项检查 Provider 失败子类型及安全指标；按结果修复或关闭 G4。
 
