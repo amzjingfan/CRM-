@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/cleanup-staging-cache-close-20261014
-Governance base SHA: fc8b321317addc3a76c99bcf2c1a7000ff6ff423
-CANDIDATE_SUBJECT_SHA: 0c73a705fccbdf6550025369d0e0c1e4e6f5d58d
+Working branch at this snapshot: fix/mvp005-g4-dlp-regen-contract-20261014
+Governance base SHA: 032a5229b7dbe5db6c0ce990c848350ef9f1a6f5
+CANDIDATE_SUBJECT_SHA: ff5ecf853df828e4171cc53658522e51b62bdaae
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001` 已按精确授权删除业务服务器旧传输缓存；其他隔离物、备份和忽略测试材料不在本批次范围
 ```
+
+2026-10-14 G4 R28 源码候选：在 R27 已观察到条件政策第二稿 `dlp_rejected` 后，本地安全对照确认双逗号政策句会触发不确定规则、独立短句可放行、混有政策文字的地址仍被阻断。本次保持 DLP 不变，只在离线评测第二次再生成 Prompt `v1.2.10` 明确限制 `content` 分隔符；首稿不外传，第二稿从头检查，失败转人工。subject `ff5ecf8` 先红后绿，完整后端 `1777 passed, 19 skipped, 2 warnings`，Ruff/格式/mypy 通过，见 [R28 TR](../reports/tests/TR-MVP-005-20261014-R28.md)。候选尚未发布、部署或付费复测；否定与多语言失败未修复，G4 `PARTIAL`、production No-Go。下一步仅三项：审查并合并候选；按精确门禁验证 staging 第二稿；分别处理否定与多语言证据缺项。
 
 2026-10-14 业务服务器 `/home/crmdeploy` 清理前约 49 GiB：Rootless Docker 约 29 GiB，历史传输缓存与活动模型构成其余主要占用。用户按 `CLEANUP-20261014-001` 授权删除旧模型传输分片与单个检索镜像中转 blob，`df -B1 /home` 实测净增加可用空间 7,350,595,584 B（约 6.85 GiB），`du -xsh /home/crmdeploy` 清理后约 43 GiB。11 个活动容器 ID 未变化，三个公网健康端点均为 `200`；活动及回滚 Docker 镜像、近期 GHCR 续传缓存和模型资产保留。现场证据已由 [PR #163](https://github.com/CP11-gh/CRM/pull/163) 通过双 CI 并合入 main `fc8b321`；任务在本分支完成状态收尾，见 [清理批次](../operations/cleanup/CLEANUP-20261014-001.md)。
 

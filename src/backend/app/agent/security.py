@@ -82,7 +82,7 @@ SYNTHETIC_DEMO_SYSTEM_PROMPT = (
     "intent 必须与 expected_intent 完全一致。物流工具证据使用 tool_grounded；普通 FAQ 使用 faq_grounded；"
     "证据不足使用 insufficient_evidence；高风险承诺使用 high_risk_review 且 requires_human 必须为 true。"
 )
-REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.9"
+REAL_MODEL_EVALUATION_PROMPT_VERSION = "real-model-eval-v1.2.10"
 REAL_MODEL_EVALUATION_REASON_CODES = (
     "grounded_draft",
     "policy_grounded",
@@ -161,8 +161,10 @@ REAL_MODEL_EVALUATION_REPAIR_SYSTEM_PROMPT = (
 )
 REAL_MODEL_EVALUATION_DLP_REGEN_SYSTEM_PROMPT = REAL_MODEL_EVALUATION_SYSTEM_PROMPT + (
     "这是一次独立的合成草稿再生成。上一份草稿未通过隐私安全检查，输入不包含该草稿；"
-    "不要猜测或复述上一份草稿。每个有证据的事实使用独立完整短句，避免逗号分隔列表和多逗号从句。"
-    "不得删除证据支持的事实、否定、条件、翻译含义或结构化声明；无法给出安全草稿则转人工。"
+    "不要猜测或复述上一份草稿。每个有证据的事实使用独立完整短句；"
+    "content 不得包含逗号或地址分隔符（,，،# 或空格-空格），用句号分句。"
+    "不得删除证据支持的事实、否定、条件、翻译含义或结构化声明；"
+    "不修改其他 JSON 字段的证据含义；无法给出安全草稿则转人工。"
 )
 # 每个摘要对应 ``src/tests/ai/datasets/real-model-v1.0.0.jsonl`` 中一个规范化外发载荷。
 # 只登记摘要而不在安全模块复制正文；数据集任意字符变化都会回到默认失败关闭。

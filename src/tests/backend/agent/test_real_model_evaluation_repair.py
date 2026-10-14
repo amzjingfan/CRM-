@@ -204,6 +204,8 @@ async def test_uncertain_separators_regenerate_without_rejected_draft() -> None:
     assert provider.requests[1].is_repair is True
     assert provider.requests[1].prompt_safety_state == PromptSafetyState.ALLOWED
     assert provider.requests[1].user_prompt == provider.requests[0].user_prompt
+    assert "content 不得包含逗号或地址分隔符" in provider.requests[1].system_prompt
+    assert "不修改其他 JSON 字段的证据含义" in provider.requests[1].system_prompt
     assert rejected not in provider.requests[1].user_prompt
     assert rejected not in provider.requests[1].system_prompt
     assert sample.regeneration_attempted is True
@@ -329,6 +331,17 @@ def test_draft_location_uncertainty_reports_only_fixed_shape(content: str, expec
     assert decision.state == PromptSafetyState.UNCERTAIN
     assert decision.reason_code == expected_reason
     assert content not in decision.reason_code
+
+
+def test_policy_punctuation_and_mixed_address_keep_fail_closed_boundary() -> None:
+    # 两个普通逗号目前仍属不确定，不能为了通过政策样本而放宽地址边界。
+    policy_with_commas = "只有平台审核同意后，退款申请才进入下一步，当前结果仍待平台确认。"
+    policy_with_sentences = "只有平台审核同意后退款申请才进入下一步。当前结果仍待平台确认。"
+    mixed_address = "退款申请须审核。Send to Main Street, Seattle, Washington."
+
+    assert evaluate_real_model_draft_safety(policy_with_commas, []).state == PromptSafetyState.UNCERTAIN
+    assert evaluate_real_model_draft_safety(policy_with_sentences, []).state == PromptSafetyState.ALLOWED
+    assert evaluate_real_model_draft_safety(mixed_address, []).state == PromptSafetyState.BLOCKED
 
 
 @pytest.mark.asyncio
