@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp005-g4-r31-prompt-20261014
-Governance base SHA: 14e8a70fcb9b103698bb66142927924cbf6555c8
+Working branch at this snapshot: docs/mvp005-g4-r31-index-20261014
+Governance base SHA: 9bc96044247a75b6c1a973084d83b0030fd1baf5
 CANDIDATE_SUBJECT_SHA: fb7a58fab0575d8a50bb4b019ecb36281cf96981
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R31 本地候选：R30 的低敏诊断仍有否定说明缺必需组 0、多语言政策第二稿由模型转人工；报告未保存草稿原文。subject `fb7a58f` 将合成评测 Prompt 升到 `v1.2.11`，只明确有证据的页面“未显示/没有显示”和申请时限加平台审核的正向修复规则。先红后绿，最终定向 34 passed；完整后端 1778 passed/19 skipped/2 warnings，Ruff、格式、mypy 通过，见 [R31 IR](../records/implementation/IR-MVP-005-20261014-R31.md)、[TR](../reports/tests/TR-MVP-005-20261014-R31.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R31.md)。本轮未发布镜像、部署 staging 或调用 DeepSeek；R30 仍是最新现场，G4 `PARTIAL`、production No-Go。三个派生索引在任务分支为 `CANDIDATE_VIEW`，合并后需从主分支源记录重建 `CURRENT`。
+2026-10-14 G4 R31 本地候选：R30 的低敏诊断仍有否定说明缺必需组 0、多语言政策第二稿由模型转人工；报告未保存草稿原文。subject `fb7a58f` 将合成评测 Prompt 升到 `v1.2.11`，只明确有证据的页面“未显示/没有显示”和申请时限加平台审核的正向修复规则。先红后绿，最终定向 34 passed；完整后端 1778 passed/19 skipped/2 warnings，Ruff、格式、mypy 通过，见 [R31 IR](../records/implementation/IR-MVP-005-20261014-R31.md)、[TR](../reports/tests/TR-MVP-005-20261014-R31.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R31.md)。[PR #174](https://github.com/CP11-gh/CRM/pull/174) 双 CI 通过并 squash 合入 main `9bc9604`；从该主分支逐项核对 IR/TR/RR 各 59 份源记录，无缺失、重复、状态或 SHA 偏差，本分支将三份派生视图恢复为 `CURRENT`。本轮未发布镜像、部署 staging 或调用 DeepSeek；R30 仍是最新现场，G4 `PARTIAL`、production No-Go。
 
 [PR #172](https://github.com/CP11-gh/CRM/pull/172) 前后端 CI 通过并将 R30 原始低敏证据与 IR/TR/RR squash 合入 main `3aca7dd4a318c3b6dfb5a9768d80e9e1ddbaeff9`。从该主分支逐项核对 IR、TR、RR 各 58 份源记录的 ID、状态、subject SHA 和更新时间，无遗漏或重复；本索引收尾分支将三个派生视图恢复为 `CURRENT`。不改变 R30 的两条逐项失败、G4 `PARTIAL` 或 production No-Go。
 
