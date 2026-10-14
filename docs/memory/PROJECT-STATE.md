@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp005-g4-provider-diagnostics-20261014
-Governance base SHA: 6727cd80bc6ea1305ebefd6abe81c6f9a46cf3ce
+Working branch at this snapshot: docs/mvp005-g4-r34-index-20261014
+Governance base SHA: 53c22e471498624b18f6467bae62b8eae30cb77d
 CANDIDATE_SUBJECT_SHA: beb002f71caa91b43b18535779a295be6ca5a49a
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R34 最新源码候选：基于 main `6727cd8`，按用户确认的有界设计，在 G4 离线评测报告中按样本记录稳定 Provider 错误码与 `unfinished`/`empty`/`invalid_structure` 固定输出类别，工作流白名单同步限制，见 [R34 IR](../records/implementation/IR-MVP-005-20261014-R34.md)、[TR](../reports/tests/TR-MVP-005-20261014-R34.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R34.md)。subject `beb002f` 的本地完整后端 1780 passed/3 skipped/2 warnings，Ruff 与工作流语法通过；本地 mypy 两次无响应后停止，待 CI 核对。本分支三个索引为 `CANDIDATE_VIEW`。未发布镜像、部署或付费调用，staging 仍运行 R31 后端；G4 `PARTIAL`、production No-Go。下一步最多三项：核对 PR CI 并合并源码；从主分支重建 `CURRENT` 索引；若要取得新现场诊断，镜像发布、staging 部署及新的付费复测分别按精确范围处理。
+2026-10-14 G4 R34 最新源码恢复点：基于 main `6727cd8`，按用户确认的有界设计，在 G4 离线评测报告中按样本记录稳定 Provider 错误码与 `unfinished`/`empty`/`invalid_structure` 固定输出类别，工作流白名单同步限制，见 [R34 IR](../records/implementation/IR-MVP-005-20261014-R34.md)、[TR](../reports/tests/TR-MVP-005-20261014-R34.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R34.md)。subject `beb002f` 的本地完整后端 1780 passed/3 skipped/2 warnings，Ruff 与工作流语法通过；本地 mypy 两次无响应后停止，[PR #181](https://github.com/CP11-gh/CRM/pull/181) 前后端 CI（含 mypy）通过并 squash 合入 main `53c22e4`。从该 main 核对 IR/TR/RR 各 62 份源记录的 ID、状态、SHA、更新时间和路径，本分支恢复三个派生索引为 `CURRENT`。未发布镜像、部署或付费调用，staging 仍运行 R31 后端；G4 `PARTIAL`、production No-Go。下一步最多三项：取得 R34 私有后端镜像发布的精确授权并核对摘要；另行确认 staging 部署后运行零调用 prepare；只有在诊断确实需要现场复测时另行确认付费 live。
 
 2026-10-14 G4 R33 现场恢复点：从 main `d262f440` 对 staging 后端 `sha256:1c3a8e83…fc21f0` 的 [prepare #38527631807](https://github.com/CP11-gh/CRM/actions/runs/38527631807) 确认冻结 36 条、Provider 0 调用；用户一次性授权的 [live #38528027351](https://github.com/CP11-gh/CRM/actions/runs/38528027351) 为 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`，配置估算 USD 0.027232（非账单）。否定说明本轮通过；多语言政策首稿缺审核步骤，第二次调用记为 `provider_failed` 并安全转人工。两份原始低敏证据及 SHA-256 见 [R33 TR](../reports/tests/TR-MVP-005-20261014-R33.md)；[PR #179](https://github.com/CP11-gh/CRM/pull/179) 双 CI 通过并合入 main `a871227`。从该 main 核对 IR/TR/RR 各 61 份源记录的 ID、状态、SHA、更新时间和路径，PR #180 双 CI 最终通过后将三个派生索引恢复为 `CURRENT`，合入 main `6727cd8`。低敏日志只显示一次 `deepseek_output_invalid`，不能细分输出失败类型。本次付费授权已用完；G4 `PARTIAL`、production No-Go。
 
