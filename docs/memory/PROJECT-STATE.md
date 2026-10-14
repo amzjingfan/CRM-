@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r39-image-20261014
-Governance base SHA: 3d8e0d5cbe3da93846fa076cc41e90a864b296a3
+Working branch at this snapshot: docs/mvp005-g4-r39-index-20261014
+Governance base SHA: 0098080f4b13c0f08dd9b56c8b630009acb77067
 CANDIDATE_SUBJECT_SHA: 3d8e0d5cbe3da93846fa076cc41e90a864b296a3
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R39 最新镜像恢复点：用户单次精确授权后，[工作流 #38548833793](https://github.com/CP11-gh/CRM/actions/runs/38548833793) 从 main `3d8e0d5` 发布候选 `ghcr.io/cp11-gh/crm-backend@sha256:ee48ee38…35daa`，linux/amd64 manifest `PASS`，压缩层 110,072,001 字节；原样证据 SHA-256 `10d3b9ec3315c1c0f23c9d0e8d57a2be1e898e6ca79d0ecdb60f84c91e29dd56`，见 [R39 TR](../reports/tests/TR-MVP-005-20261014-R39.md)。本分支 IR/TR/RR 索引为 `CANDIDATE_VIEW`。staging 尚未部署，R37 仍为最新模型质量结果；G4 `PARTIAL`、production No-Go。
+2026-10-14 G4 R39 最新镜像恢复点：用户单次精确授权后，[工作流 #38548833793](https://github.com/CP11-gh/CRM/actions/runs/38548833793) 从 main `3d8e0d5` 发布候选 `ghcr.io/cp11-gh/crm-backend@sha256:ee48ee38…35daa`，linux/amd64 manifest `PASS`，压缩层 110,072,001 字节；原样证据 SHA-256 `10d3b9ec3315c1c0f23c9d0e8d57a2be1e898e6ca79d0ecdb60f84c91e29dd56`，见 [R39 TR](../reports/tests/TR-MVP-005-20261014-R39.md)。[PR #191](https://github.com/CP11-gh/CRM/pull/191) 双 CI 通过并合入 main `0098080`；从该 main 核对 IR/TR/RR 各 67 份源记录，本分支恢复三个派生索引为 `CURRENT`。staging 尚未部署，R37 仍为最新模型质量结果；G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R38 最新源码恢复点：main `19c48d0` 上的 subject `ae3fa29` 增加固定 `invalid_json`/`invalid_schema` 与最多八组白名单字段/错误类型，后端测试、Ruff、mypy 和工作流 YAML 检查见 [R38 TR](../reports/tests/TR-MVP-005-20261014-R38.md)。[PR #189](https://github.com/CP11-gh/CRM/pull/189) 前后端 CI 通过并合入 main `7d7ebd9`；从该 main 核对 IR/TR/RR 各 66 份源记录，本分支恢复三个派生索引为 `CURRENT`。源码未发布镜像或部署，R37 仍是最新真实模型质量结果，G4 `PARTIAL`、production No-Go。
 
