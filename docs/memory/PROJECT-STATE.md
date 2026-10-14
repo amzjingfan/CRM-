@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp005-g4-terminal-diagnostics-20261014
-Governance base SHA: cb058a34c84e0fdb6faf10e8c7c8e988429dfa1d
+Working branch at this snapshot: docs/mvp005-g4-r26-index-20261014
+Governance base SHA: 878b3d58c31359828c55570a2d3d41823ecb39b0
 CANDIDATE_SUBJECT_SHA: bcc523523c08a150df7971e3779b1b281f2ab186
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
-2026-10-14 G4 R26 候选：R25 的 33/36 现场报告只显示第二次调用失败关闭，不能从低敏原因码准确区分模型转人工和第二稿拦截。候选 subject `bcc5235` 增加固定枚举 `second_attempt_disposition` 并同步工作流白名单，不记录原文、不改评分、Prompt、DLP 或调用上限。新增断言先红后绿；本机完整后端 `1776 passed, 19 skipped, 2 warnings`，Ruff/格式、mypy 与工作流契约通过，见 [R26 TR](../reports/tests/TR-MVP-005-20261014-R26.md)。尚未发布镜像、部署或调用 DeepSeek，staging 仍是 R25 `v1.2.9`；三份派生索引在此任务分支为 `CANDIDATE_VIEW`。G4 `PARTIAL`、production No-Go。
+2026-10-14 G4 R26：R25 的 33/36 现场报告只显示第二次调用失败关闭，不能从低敏原因码准确区分模型转人工和第二稿拦截。subject `bcc5235` 增加固定枚举 `second_attempt_disposition` 并同步工作流白名单，不记录原文、不改评分、Prompt、DLP 或调用上限。新增断言先红后绿；本机完整后端 `1776 passed, 19 skipped, 2 warnings`，Ruff/格式、mypy 与工作流契约通过，见 [R26 TR](../reports/tests/TR-MVP-005-20261014-R26.md)。[PR #159](https://github.com/CP11-gh/CRM/pull/159) 双 CI 与独立只读审查通过并 squash 合入 main `878b3d58c31359828c55570a2d3d41823ecb39b0`；从该 main 核对 IR/TR/RR 各 54 份源记录与索引行一致，本分支将三份派生索引恢复为 `CURRENT`。尚未发布镜像、部署或调用 DeepSeek，staging 仍是 R25 `v1.2.9`。G4 `PARTIAL`、production No-Go。
 
 2026-10-13 G4 最新恢复点：`v1.2.9` subject `7485e1b` 经 PR #155 合入 main，PR #156 已将三份索引从源记录恢复 `CURRENT`。main `cd36685` 的后端 `sha256:53913024…3f77b` 已在 staging 经六角色预取、validate/deploy、迁移头、三健康与固定出口核对；旧后端可回滚。[prepare #38411143806](../../release/evidence/ai/crm-staging-g4-r24-prepare-38411143806.json) 零 Provider 调用；[live #38413001338](../../release/evidence/ai/crm-staging-g4-r24-live-38413001338.json) 终态 33/36=91.67%、危险逃逸 0、合法误拦 1、Provider 故障 0，`passed=false`。三次分隔符疑似再生成恢复两次，条件政策仍误拦；否定缺项与多语言修复无草稿仍失败。见 [R25 TR](../reports/tests/TR-MVP-005-20261013-R25.md)。G4 未过，production No-Go。
 
@@ -205,6 +205,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 合并 R26 低敏诊断候选，并从主分支源记录重建三个 `CURRENT` 索引；后续受控 staging live 取得第二次调用实际分类，再分别处理条件政策误拦、否定缺项与多语言修复无草稿。冻结集、严格 DLP 与门槛不变。
+1. 用 R26 代码形成受控 staging 证据：单后端镜像、六角色预取与 validate/deploy、`prepare` 和一次 `live` 各按资源边界执行，取得第二次调用实际分类；再分别处理条件政策误拦、否定缺项与多语言修复无草稿。冻结集、严格 DLP 与门槛不变。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
