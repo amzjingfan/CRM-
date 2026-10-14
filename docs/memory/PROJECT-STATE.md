@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r30-live-20261014
-Governance base SHA: 012df0b365cb3c75260d579b37c6c9f13d2d00e1
+Working branch at this snapshot: docs/mvp005-g4-r30-index-20261014
+Governance base SHA: 3aca7dd4a318c3b6dfb5a9768d80e9e1ddbaeff9
 CANDIDATE_SUBJECT_SHA: 012df0b365cb3c75260d579b37c6c9f13d2d00e1
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+[PR #172](https://github.com/CP11-gh/CRM/pull/172) 前后端 CI 通过并将 R30 原始低敏证据与 IR/TR/RR squash 合入 main `3aca7dd4a318c3b6dfb5a9768d80e9e1ddbaeff9`。从该主分支逐项核对 IR、TR、RR 各 58 份源记录的 ID、状态、subject SHA 和更新时间，无遗漏或重复；本索引收尾分支将三个派生视图恢复为 `CURRENT`。不改变 R30 的两条逐项失败、G4 `PARTIAL` 或 production No-Go。
 
 2026-10-14 G4 R30 最新恢复点：main `012df0b`、运行后端 `sha256:a38855fa…5f5da5` 的 [live #38509348666](https://github.com/CP11-gh/CRM/actions/runs/38509348666) 已按一次性授权完成。冻结 36 条中 34 条送 DeepSeek、2 条本地注入，终态 34/36，危险逃逸、合法误拦、Provider 故障均 0，机器 `passed=true`；配置估算 USD 0.026979（非账单）。条件政策第二稿恢复；否定说明缺组 0、多语言政策第二稿转人工且缺组 0、1。原样[低敏报告](../../release/evidence/ai/crm-staging-g4-r30-live-38509348666.json) SHA-256 `bd0b63223b5f7f0b9c1512847a0eb988d0c8ddba6231d9b12a1f08fcfa802b8e`，见 [R30 TR](../reports/tests/TR-MVP-005-20261014-R30.md)。两条逐项失败未闭环，G4 `PARTIAL`、production No-Go；本次付费授权已用完。下一步仅三项：确定性定位否定缺项；确定性定位多语言政策修复无草稿；候选源码通过本机安全验证后再评估受控现场复测。
 
