@@ -23,6 +23,8 @@ G4 `v1.2.9` 的源码验证见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24
 
 2026-10-14 [R28 源码候选](../reports/tests/TR-MVP-005-20261014-R28.md)只强化疑似分隔符第二稿的生成约束，保留原 DLP 失败关闭及最多两次调用。候选[单后端镜像](../../release/evidence/staging/crm-staging-g4-r28-image-38504855995.json)已从 main `c7f464c` 发布并验证 manifest。[R29 staging 门禁](../reports/tests/TR-MVP-005-20261014-R29.md)确认新摘要部署、迁移头、三健康、固定出口及零调用 prepare；[R30 live](../reports/tests/TR-MVP-005-20261014-R30.md) 的机器质量门槛已通过，但两条逐项失败仍阻断完整 G4 签署。
 
+2026-10-14 R31 Prompt `v1.2.11` 已合入 main；单个后端[候选镜像](../../release/evidence/staging/crm-staging-g4-r31-image-38516990486.json)从 main `e48ab395` 获批发布并核对不可变摘要及压缩层。镜像发布不等于 staging 运行或模型验收；新候选尚未经过六摘要预取、validate/deploy、零调用 prepare 和受控 live。G4 仍为部分通过，production 不放行。
+
 2026-10-12 G4 `v1.2.4` 的低敏缺失组序号已在一次获批真实复测中产生，历史报告不能回填。本轮仍有两条失败：英文否定状态说明缺组 0、英文条件说明命中未引用禁用词。新增诊断不放宽禁用词规则、阈值或冻结数据；下一次镜像/部署及模型调用须独立授权。
 
 2026-10-13 Prompt `v1.2.5` 已分别获批发布镜像、部署 staging 和运行一次真实 DeepSeek 复测，见 [R11 TR](../reports/tests/TR-MVP-005-20261013-R11.md)。两条禁用内容失败使 G4 保持部分通过；不得将综合 85% 门槛当成逐项通过，也不得复用本次付费授权。

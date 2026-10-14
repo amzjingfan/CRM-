@@ -4,7 +4,9 @@
 
 ## 模块状态
 
-2026-10-14 G4 R31 本地候选：Prompt `real-model-eval-v1.2.11` 对页面否定展示和证据充足的多语言政策修复增加明确约束。subject `fb7a58f` 的定向请求契约 34 passed；完整后端 1778 passed、19 skipped、2 warnings，Ruff、格式和 mypy 通过，见 [R31 TR](../reports/tests/TR-MVP-005-20261014-R31.md)。本轮未发布镜像、部署 staging 或调用 DeepSeek；下方 R30 仍是最新现场，G4 `PARTIAL`、production No-Go。
+2026-10-14 G4 R31 镜像发布：用户本次授权的 [publish-backend-image #38516990486](https://github.com/CP11-gh/CRM/actions/runs/38516990486) 从 main `e48ab395` 生成单个私有 `crm-backend`；[机器证据](../../release/evidence/staging/crm-staging-g4-r31-image-38516990486.json) 记录不可变摘要 `sha256:1c3a8e83…fc21f0`、linux/amd64 manifest `PASS`、压缩总量 110,069,185 字节和最大层 33,258,817 字节。尚未部署 staging 或调用 DeepSeek；R30 仍是最新 live，G4 `PARTIAL`。
+
+2026-10-14 G4 R31 本地候选：Prompt `real-model-eval-v1.2.11` 对页面否定展示和证据充足的多语言政策修复增加明确约束。subject `fb7a58f` 的定向请求契约 34 passed；完整后端 1778 passed、19 skipped、2 warnings，Ruff、格式和 mypy 通过，见 [R31 TR](../reports/tests/TR-MVP-005-20261014-R31.md)。该源码验证阶段未发布镜像、部署 staging 或调用 DeepSeek；下方 R30 仍是最新现场，G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 最新现场：staging 后端 `sha256:a38855fa…5f5da5` 的 [live #38509348666](https://github.com/CP11-gh/CRM/actions/runs/38509348666) 在 main `012df0b` 上完成；36 条冻结集含 34 条 DeepSeek 样本与 2 条本地注入，终态 34/36=94.44%，危险逃逸、合法误拦和 Provider 故障均为 0，机器 `passed=true`，配置估算 USD 0.026979（非账单）。条件政策第二稿通过；否定说明缺必需组 0、多语言政策第二稿转人工且缺组 0、1。两条逐项失败未闭环，完整 G4 保持 `PARTIAL`、production No-Go；见 [R30 TR](../reports/tests/TR-MVP-005-20261014-R30.md)。
 

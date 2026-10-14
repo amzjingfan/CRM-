@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r31-index-20261014
-Governance base SHA: 9bc96044247a75b6c1a973084d83b0030fd1baf5
+Working branch at this snapshot: docs/mvp005-g4-r31-image-20261014
+Governance base SHA: e48ab395d8013a468efcb87076c21b3dae300f66
 CANDIDATE_SUBJECT_SHA: fb7a58fab0575d8a50bb4b019ecb36281cf96981
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R31 本地候选：R30 的低敏诊断仍有否定说明缺必需组 0、多语言政策第二稿由模型转人工；报告未保存草稿原文。subject `fb7a58f` 将合成评测 Prompt 升到 `v1.2.11`，只明确有证据的页面“未显示/没有显示”和申请时限加平台审核的正向修复规则。先红后绿，最终定向 34 passed；完整后端 1778 passed/19 skipped/2 warnings，Ruff、格式、mypy 通过，见 [R31 IR](../records/implementation/IR-MVP-005-20261014-R31.md)、[TR](../reports/tests/TR-MVP-005-20261014-R31.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R31.md)。[PR #174](https://github.com/CP11-gh/CRM/pull/174) 双 CI 通过并 squash 合入 main `9bc9604`；从该主分支逐项核对 IR/TR/RR 各 59 份源记录，无缺失、重复、状态或 SHA 偏差，本分支将三份派生视图恢复为 `CURRENT`。本轮未发布镜像、部署 staging 或调用 DeepSeek；R30 仍是最新现场，G4 `PARTIAL`、production No-Go。
+2026-10-14 G4 R31 镜像恢复点：用户本次仅授权发布一个私有后端 staging 候选。[工作流 #38516990486](https://github.com/CP11-gh/CRM/actions/runs/38516990486) 从当前 main `e48ab395d8013a468efcb87076c21b3dae300f66` 成功发布 `ghcr.io/cp11-gh/crm-backend@sha256:1c3a8e835f438dd43770571f6c0777bb889e9dd4e9d39470987e5fc9a2fc21f0`；linux/amd64 manifest 为 `PASS`，压缩层共 110,069,185 字节，最大层 33,258,817 字节。[原始低敏证据](../../release/evidence/staging/crm-staging-g4-r31-image-38516990486.json) SHA-256 `69eea19253334663ac226569baafa8aa901f4ce87fc0ad1aa6be17d6644c39ec`。本次尚未预取、验证或部署 staging，也未调用 DeepSeek；运行后端仍以上次 R29/R30 现场为准，G4 `PARTIAL`、production No-Go。下一步需独立确定 staging 部署范围及恢复目标。
+
+2026-10-14 G4 R31 本地候选：R30 的低敏诊断仍有否定说明缺必需组 0、多语言政策第二稿由模型转人工；报告未保存草稿原文。subject `fb7a58f` 将合成评测 Prompt 升到 `v1.2.11`，只明确有证据的页面“未显示/没有显示”和申请时限加平台审核的正向修复规则。先红后绿，最终定向 34 passed；完整后端 1778 passed/19 skipped/2 warnings，Ruff、格式、mypy 通过，见 [R31 IR](../records/implementation/IR-MVP-005-20261014-R31.md)、[TR](../reports/tests/TR-MVP-005-20261014-R31.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R31.md)。[PR #174](https://github.com/CP11-gh/CRM/pull/174) 双 CI 通过并 squash 合入 main `9bc9604`；从该主分支逐项核对 IR/TR/RR 各 59 份源记录，无缺失、重复、状态或 SHA 偏差，本分支将三份派生视图恢复为 `CURRENT`。该源码验证阶段未发布镜像、部署 staging 或调用 DeepSeek；R30 仍是最新现场，G4 `PARTIAL`、production No-Go。
 
 [PR #172](https://github.com/CP11-gh/CRM/pull/172) 前后端 CI 通过并将 R30 原始低敏证据与 IR/TR/RR squash 合入 main `3aca7dd4a318c3b6dfb5a9768d80e9e1ddbaeff9`。从该主分支逐项核对 IR、TR、RR 各 58 份源记录的 ID、状态、subject SHA 和更新时间，无遗漏或重复；本索引收尾分支将三个派生视图恢复为 `CURRENT`。不改变 R30 的两条逐项失败、G4 `PARTIAL` 或 production No-Go。
 
@@ -221,6 +223,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. R31 候选合入后，分别取得单后端镜像、staging 部署和一次受控 DeepSeek live 的精确授权；先做零调用 prepare，再逐项核对否定与多语言政策，冻结集、DLP 与门槛不变。
+1. R31 后端候选镜像已发布；先确定 staging 六摘要、回滚目标与部署范围并单独授权，再依次预取、validate、deploy 和零调用 prepare。之后另行确认一次 DeepSeek live，逐项核对否定与多语言政策；冻结集、DLP 与门槛不变。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
