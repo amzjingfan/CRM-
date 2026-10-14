@@ -67,6 +67,6 @@ G4 离线评测流程 `policy-repair-v1` 在首个结构化草稿后，以本次
 
 `real-model-eval-v1.2.9` 将 G4 离线评测流程标为 `policy-repair-dlp-regeneration-v1`：仅首稿命中固定的 `DRAFT_DLP_UNCERTAIN_LOCATION_SEPARATORS` 时，在预算内用原已验证合成输入和独立注册的系统指令重新生成一次；疑似首稿正文和声明绝不放入第二次请求。明确地址、邮箱、电话、密钥等阻断仍直接转人工。第二稿重新执行 DLP、政策证据和冻结判分，任何安全或政策未通过都隐藏正文并转人工；每条最多两次模型调用，政策修复和 DLP 再生成互斥。低敏报告分别统计两种二次尝试，保留首轮与终态、Token 和时延。冻结集、85% 门槛和真实发送开关不变。[staging live #38413001338](../../release/evidence/ai/crm-staging-g4-r24-live-38413001338.json) 为 33/36、合法误拦 1，G4 未通过。
 
-2026-10-14 的低敏诊断候选为每条样本增加 `second_attempt_disposition` 枚举：`not_attempted`、`accepted`、`model_transfer`、`dlp_rejected`、`policy_rejected` 或 `provider_failed`。它只区分政策修复或 DLP 再生成的第二次调用终态，不保存第二稿内容，不作为评分或安全放行依据；预算耗尽或请求被拦截时仍为 `not_attempted`，具体状态继续由既有 `repair_outcome`/`regeneration_outcome` 表达。冻结集、Prompt `v1.2.9`、判分、调用上限、DLP 与 TikTok 发送开关均未改变。此候选尚未部署 staging，旧 live 报告没有该字段的现场观察值。
+2026-10-14 的低敏诊断为每条样本增加 `second_attempt_disposition` 枚举：`not_attempted`、`accepted`、`model_transfer`、`dlp_rejected`、`policy_rejected` 或 `provider_failed`。它只区分政策修复或 DLP 再生成的第二次调用终态，不保存第二稿内容，不作为评分或安全放行依据；预算耗尽或请求被拦截时仍为 `not_attempted`，具体状态继续由既有 `repair_outcome`/`regeneration_outcome` 表达。冻结集、Prompt `v1.2.9`、判分、调用上限、DLP 与 TikTok 发送开关均未改变。该版随 main `60bf105` 部署 staging；[R27 live](../../release/evidence/ai/crm-staging-g4-r27-live-38496772348.json) 终态 33/36、合法误拦 1：条件政策第二稿 `dlp_rejected`，多语言政策第二稿 `model_transfer`，否定说明未做第二次调用。报告没有草稿原文，不能据形态原因码认定被拒内容安全；G4 未过。
 
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。

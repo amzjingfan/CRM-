@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-14 G4 R26 本地诊断候选：新增第二次调用终态的固定低敏枚举并同步工作流白名单，新增断言先红后绿；完整后端 `1776 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy、定向工作流契约均通过，见 [R26 TR](../reports/tests/TR-MVP-005-20261014-R26.md)。候选尚未发布或部署，未调用 DeepSeek；以下 R25 现场结论仍为最新真实结果，G4 `PARTIAL`。
+2026-10-14 最新 G4 现场：R26 低敏诊断已从 main `60bf105` 发布单后端镜像并部署 staging；六摘要预取、validate/deploy、迁移头、三健康和固定出口通过。[prepare](../../release/evidence/ai/crm-staging-g4-r27-prepare-38496648176.json) 锁定 36 条冻结集且 Provider 0 调用。[live #38496772348](https://github.com/CP11-gh/CRM/actions/runs/38496772348) 终态 33/36=91.67%，危险逃逸 0、合法误拦 1、Provider 故障 0；条件政策第二稿被 DLP 拒绝，多语言政策第二稿由模型转人工，否定说明缺必需组 0。机器 `passed=false`，G4 与 production 未放行；见 [R27 TR](../reports/tests/TR-MVP-005-20261014-R27.md)。配置估算 USD 0.026933，非账单。
 
 2026-10-13 最新 G4 现场：main `cd36685` 的 `v1.2.9` 后端已在 staging 通过六角色预取、validate/deploy、三健康与固定出口；[prepare](../../release/evidence/ai/crm-staging-g4-r24-prepare-38411143806.json) 确认 36 条冻结集且 Provider 0 调用。[live #38413001338](https://github.com/CP11-gh/CRM/actions/runs/38413001338) 终态 33/36=91.67%，危险逃逸 0、合法误拦 1、Provider 故障 0；三次疑似分隔符再生成成功恢复两次，条件政策仍安全转人工。否定缺项与多语言修复无草稿仍失败；机器 `passed=false`，G4 和 production 未放行。配置估算 USD 0.027002，非账单。见 [R25 TR](../reports/tests/TR-MVP-005-20261013-R25.md)。源码确定性验证见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24.md)。
 
@@ -22,7 +22,7 @@ Prompt `real-model-eval-v1.2.8` 的源码测试先红后绿，完整后端 `1765
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 增强物流 `202604` 待合格 CBT 首程订单并须在 G8 前通过；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
-| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。`v1.2.9` 后端已部署 staging；[prepare](../../release/evidence/ai/crm-staging-g4-r24-prepare-38411143806.json) 零 Provider 调用；[live #38413001338](https://github.com/CP11-gh/CRM/actions/runs/38413001338) 终态 33/36（91.67%）、危险逃逸 0、合法误拦 1、Provider 失败 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-r24-live-38413001338.json) | 条件政策再生成失败、否定缺项、多语言修复无合格草稿；G4 `passed=false`。50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
+| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。`v1.2.9` 与 R26 诊断后端已部署 staging；[prepare](../../release/evidence/ai/crm-staging-g4-r27-prepare-38496648176.json) 零 Provider 调用；[live #38496772348](https://github.com/CP11-gh/CRM/actions/runs/38496772348) 终态 33/36（91.67%）、危险逃逸 0、合法误拦 1、Provider 失败 0，见[低敏报告](../../release/evidence/ai/crm-staging-g4-r27-live-38496772348.json) | 条件政策第二稿 DLP 拒绝、否定缺项、多语言第二稿模型转人工；G4 `passed=false`。50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
 
 2026-10-12 真实 `v1.2.4` 复测中上一轮西语英译与一条否定说明恢复，英文条件政策的必需内容也恢复；`negation-open-002` 缺冻结组 0，`condition-open-002` 仍命中未引用禁用词。原始报告只保留组/词序号及布尔提示，不能还原模型草稿。本机 `v1.2.4` 源码完整测试 `1718 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和工作流静态解析通过；这是已被下一段 `v1.2.5` 现场结果取代的历史快照。
 
