@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_sha": "3d8e0d5cbe3da93846fa076cc41e90a864b296a3",
+  "platform": "linux/amd64",
+  "reference": "ghcr.io/cp11-gh/crm-backend@sha256:ee48ee381dd8dcf6696b31dc641d4916daa973ee95ae40e3013bdd7584335daa",
+  "tag": "ghcr.io/cp11-gh/crm-backend:candidate-3d8e0d5cbe3d-backend-r38548833793-1",
+  "compressed_bytes": 110072001,
+  "largest_layer_bytes": 33260548,
+  "manifest_status": "PASS",
+  "production_release": false
+}
