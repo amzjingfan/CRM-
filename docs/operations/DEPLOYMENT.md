@@ -152,6 +152,10 @@ G4 诊断后端镜像 `sha256:bb38fa09…e7d80` 已发布并核对清单；预�
 
 当前修复候选仅调整 `prefetch`：工作流已核对的 `src/scripts/prefetch_ghcr_oci.py` 对三种固定 GHCR 仓库的缺失摘要均使用 1 MiB 分块、每请求超时与有限重试，完成描述符长度和 SHA-256 校验后导入 `crmdeploy` Rootless containerd，并再次要求 Docker `RepoDigests` 精确匹配。已在本地精确命中的摘要继续跳过；失败的分块留在私有缓存供下一次相同摘要续传，任何失败不生成通过证据。只允许三个受审仓库与小写不可变 SHA-256，不增加外部消息、运行配置或 production 范围。旧段落中“后端/前端未缓存时仍由 `docker pull`”描述修复前的历史行为。PR #146 已合入 main `9765189e554eef5c632301e674673c2976ddd629`；新预取 #38369618427 对候选后端使用分块 OCI，六摘要通过、未切换服务。validate #38371623054 与 deploy #38372083732 随后通过；运行后端为 `sha256:bb38fa09…e7d80`，迁移头 `024`、三个公网健康 200、固定出口 `38.55.145.52`，Webhook 保持只读。原始低敏 JSON 见 `release/evidence/staging/crm-staging-g4-dlp-*.json`。网络慢导致第 1 项传输约 15 分钟，恢复点仍为旧后端 `sha256:22fb55db…211102`；G4 质量另验。
 
+### 2026-10-14 G4 R36 后端单镜像 staging 更新
+
+按用户对 staging 的单独授权，main `401b0e5293517aed676ed243d9036506eaa5844c` 顺序运行六摘要预取 `38536657630`、validate `38538873665`、deploy `38539305810`，把后端从 `sha256:1c3a8e83…fc21f0` 切到 `sha256:61c00d69…95e1881`；前端 `sha256:c56443c8…d0248a`、检索 `sha256:feeee5a3…623059` 不变。预取约 17 分钟后通过，`service_mutation=false`；validate 通过且未执行迁移；deploy 通过迁移头、三健康 200、固定出口 `38.55.145.52` 和 Webhook 只读门禁。公网只读复核三健康均为 200，G4 prepare `38540054971` 从运行中容器核对后端摘要、36 条冻结样本、Provider 调用 0。旧后端仍为回滚目标；本机 SSH 身份被拒绝，运行摘要以 Runner 的只读 preflight 为独立核对。原始机器证据与 SHA-256 见 [R36 TR](../reports/tests/TR-MVP-005-20261014-R36.md)。部署与 prepare 不构成 G4 质量通过，最近 live 仍为 R33 机器失败；production No-Go。
+
 ## 发布入口
 
 当前发布状态见 `docs/operations/RELEASE-GATES.md`，最新测试摘要见 `docs/quality/TEST-STATUS.md`，固定资产与评测集见 `release/baselines/` 和 `release/evidence/`。部署说明不替代真实签署。

@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r35-index-20261014
-Governance base SHA: af8e31c1542633b82c277d861b81c2145bca8fd2
-CANDIDATE_SUBJECT_SHA: b6c05fc7313c585afbef0b432e7186e51e138a51
+Working branch at this snapshot: docs/mvp005-g4-r36-deploy-20261014
+Governance base SHA: 401b0e5293517aed676ed243d9036506eaa5844c
+CANDIDATE_SUBJECT_SHA: 401b0e5293517aed676ed243d9036506eaa5844c
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-14 G4 R36 最新 staging 恢复点：用户另行授权后，main `401b0e5` 的[六角色预取 #38536657630](https://github.com/CP11-gh/CRM/actions/runs/38536657630)、[validate #38538873665](https://github.com/CP11-gh/CRM/actions/runs/38538873665)、[deploy #38539305810](https://github.com/CP11-gh/CRM/actions/runs/38539305810) 均通过，运行后端已切到 `sha256:61c00d69…95e1881`，前端/检索不变，旧后端 `sha256:1c3a8e83…fc21f0` 为回滚目标；迁移头、三健康、固定出口和 Webhook 只读通过。只读 [prepare #38540054971](https://github.com/CP11-gh/CRM/actions/runs/38540054971) 在 Runner 上核对实际运行后端、36 条冻结样本与 Provider 0 调用。四份原始低敏证据及 SHA-256 见 [R36 TR](../reports/tests/TR-MVP-005-20261014-R36.md)，本分支三个派生索引为 `CANDIDATE_VIEW`。本机 SSH 登录被拒绝，Runner 核对与公网三健康 200 已完成。尚未运行新版付费 `live`；R33 `passed=false` 仍是最新真实质量结果，G4 `PARTIAL`、production No-Go。下一步：单独精确批准一次 G4 `live` 后逐项检查 Provider 失败子类型及安全指标；按结果修复或关闭 G4。
 
 2026-10-14 G4 R35 最新镜像恢复点：用户单独授权一次 `crm-backend` 私有 staging 候选发布；[工作流 #38534500772](https://github.com/CP11-gh/CRM/actions/runs/38534500772) 从 main `b6c05fc7313c585afbef0b432e7186e51e138a51` 发布 `ghcr.io/cp11-gh/crm-backend@sha256:61c00d69cf305c49afeab6631463d04da36d4d862539fedc53bf4da5f95e1881`，`linux/amd64` manifest `PASS`，压缩层 110,068,396 字节，最大层 33,257,734 字节；原样[证据](../../release/evidence/staging/crm-staging-g4-r35-image-38534500772.json) SHA-256 `cf85c2f9250101ed53b74a17c7adc80016ec0c84436bd7e2d97febe4f230893d`。[R35 TR](../reports/tests/TR-MVP-005-20261014-R35.md) 和原样证据由 [PR #183](https://github.com/CP11-gh/CRM/pull/183) 双 CI 通过后合入 main `af8e31c`；从该 main 核对 IR/TR/RR 各 63 份源记录的 ID、状态、SHA、更新时间和路径，本分支恢复三个派生索引为 `CURRENT`。staging 尚未部署此镜像；本次未调用 DeepSeek 或发送 TikTok 消息，G4 `PARTIAL`、production No-Go。下一步最多三项：取得精确 staging 预取、validate、deploy 授权并核对运行摘要与健康；运行零调用 prepare；新 live 需另行付费授权。
 

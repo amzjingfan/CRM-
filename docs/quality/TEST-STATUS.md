@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R36 staging：用户另行授权的 [六角色预取 #38536657630](https://github.com/CP11-gh/CRM/actions/runs/38536657630)、[validate #38538873665](https://github.com/CP11-gh/CRM/actions/runs/38538873665)、[deploy #38539305810](https://github.com/CP11-gh/CRM/actions/runs/38539305810) 均从 main `401b0e5` 通过；后端切到 `sha256:61c00d69…95e1881`，前端/检索不变，迁移头、三健康和固定出口通过，Webhook 只读。[prepare #38540054971](https://github.com/CP11-gh/CRM/actions/runs/38540054971) 独立核对运行中后端摘要、冻结 36 条且 Provider 调用 0。四份原始低敏证据及哈希见 [R36 TR](../reports/tests/TR-MVP-005-20261014-R36.md)。未运行新版 `live`；R33 的 35/36、Provider 故障 1、机器 `passed=false` 仍是最新真实质量结果。G4 `PARTIAL`、production No-Go。
+
 2026-10-14 G4 R35 镜像发布：用户精确授权的 [publish-backend-image #38534500772](https://github.com/CP11-gh/CRM/actions/runs/38534500772) 从 main `b6c05fc` 发布单个私有后端候选，摘要 `sha256:61c00d69…95e1881`；[原样低敏证据](../../release/evidence/staging/crm-staging-g4-r35-image-38534500772.json) 确认 linux/amd64 manifest `PASS`、压缩层 110,068,396 字节、最大层 33,257,734 字节，见 [R35 TR](../reports/tests/TR-MVP-005-20261014-R35.md)。尚未部署 staging 或再次调用 DeepSeek；G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R34 源码候选：从 main `6727cd8` 增加低敏 Provider 错误码与固定输出失败类别，subject `beb002f` 本地完整后端 1780 passed/3 skipped/2 warnings，Ruff 和工作流 YAML/PowerShell 语法通过；本地 mypy 无响应；PR #181 前后端 CI（含 mypy）通过并合入 main `53c22e4`。未发布镜像、部署 staging 或调用 DeepSeek；最近现场仍是 [R33 live](../reports/tests/TR-MVP-005-20261014-R33.md) 的 35/36、Provider 故障 1、机器 `passed=false`。详见 [R34 TR](../reports/tests/TR-MVP-005-20261014-R34.md)。G4 `PARTIAL`、production No-Go。
