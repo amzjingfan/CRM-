@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r29-index-20261014
-Governance base SHA: f0c2552a96ab461b305cc3f086fed17e63fc9a44
-CANDIDATE_SUBJECT_SHA: 284f1f9aae9cb0aacd1e099b5d79abd9089e0892
+Working branch at this snapshot: docs/mvp005-g4-r30-live-20261014
+Governance base SHA: 012df0b365cb3c75260d579b37c6c9f13d2d00e1
+CANDIDATE_SUBJECT_SHA: 012df0b365cb3c75260d579b37c6c9f13d2d00e1
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R29 staging 最新状态：R28 `v1.2.10` 后端 `sha256:a38855fa…5f5da5` 在另次精确授权下经[六摘要预取 #38505712085](https://github.com/CP11-gh/CRM/actions/runs/38505712085)、[validate #38506352089](https://github.com/CP11-gh/CRM/actions/runs/38506352089)、[deploy #38506639141](https://github.com/CP11-gh/CRM/actions/runs/38506639141) 依序通过；旧后端 `sha256:3436335a…6103933` 为回滚目标，前端/检索不变。迁移头、三健康、固定出口 `38.55.145.52`、Webhook 只读均由机器证据核对，外部三健康也各为 200。[prepare #38507054051](https://github.com/CP11-gh/CRM/actions/runs/38507054051) 确认 main `284f1f9`、运行摘要、冻结 36 条与 Provider 0 调用，见 [R29 TR](../reports/tests/TR-MVP-005-20261014-R29.md)。[PR #170](https://github.com/CP11-gh/CRM/pull/170) 双 CI 通过并将 R29 证据合入 main `f0c2552`；从该主分支源记录核对 IR/TR/RR 各 57 份，本分支恢复三个派生索引为 `CURRENT`。本版未运行 DeepSeek live，R27 `33/36`、`passed=false` 仍是最新质量结论；G4 `PARTIAL`、production No-Go。下一步仅三项：受控真实复测三条失败；按新报告分别修复否定与多语言问题；质量门禁全部满足后再复核 G4。
+2026-10-14 G4 R30 最新恢复点：main `012df0b`、运行后端 `sha256:a38855fa…5f5da5` 的 [live #38509348666](https://github.com/CP11-gh/CRM/actions/runs/38509348666) 已按一次性授权完成。冻结 36 条中 34 条送 DeepSeek、2 条本地注入，终态 34/36，危险逃逸、合法误拦、Provider 故障均 0，机器 `passed=true`；配置估算 USD 0.026979（非账单）。条件政策第二稿恢复；否定说明缺组 0、多语言政策第二稿转人工且缺组 0、1。原样[低敏报告](../../release/evidence/ai/crm-staging-g4-r30-live-38509348666.json) SHA-256 `bd0b63223b5f7f0b9c1512847a0eb988d0c8ddba6231d9b12a1f08fcfa802b8e`，见 [R30 TR](../reports/tests/TR-MVP-005-20261014-R30.md)。两条逐项失败未闭环，G4 `PARTIAL`、production No-Go；本次付费授权已用完。下一步仅三项：确定性定位否定缺项；确定性定位多语言政策修复无草稿；候选源码通过本机安全验证后再评估受控现场复测。
+
+2026-10-14 G4 R29 staging 历史状态：R28 `v1.2.10` 后端 `sha256:a38855fa…5f5da5` 在另次精确授权下经[六摘要预取 #38505712085](https://github.com/CP11-gh/CRM/actions/runs/38505712085)、[validate #38506352089](https://github.com/CP11-gh/CRM/actions/runs/38506352089)、[deploy #38506639141](https://github.com/CP11-gh/CRM/actions/runs/38506639141) 依序通过；旧后端 `sha256:3436335a…6103933` 为回滚目标，前端/检索不变。迁移头、三健康、固定出口 `38.55.145.52`、Webhook 只读均由机器证据核对，外部三健康也各为 200。[prepare #38507054051](https://github.com/CP11-gh/CRM/actions/runs/38507054051) 确认 main `284f1f9`、运行摘要、冻结 36 条与 Provider 0 调用，见 [R29 TR](../reports/tests/TR-MVP-005-20261014-R29.md)。[PR #170](https://github.com/CP11-gh/CRM/pull/170) 双 CI 通过并将 R29 证据合入 main `f0c2552`；从该主分支源记录核对 IR/TR/RR 各 57 份，本分支恢复三个派生索引为 `CURRENT`。在 R29 时尚未运行本版 DeepSeek live；后续结果已记录在上方 R30。
 
 2026-10-14 G4 R28 源码候选：在 R27 已观察到条件政策第二稿 `dlp_rejected` 后，本地安全对照确认双逗号政策句会触发不确定规则、独立短句可放行、混有政策文字的地址仍被阻断。本次保持 DLP 不变，只在离线评测第二次再生成 Prompt `v1.2.10` 明确限制 `content` 分隔符；首稿不外传，第二稿从头检查，失败转人工。subject `ff5ecf8` 先红后绿，完整后端 `1777 passed, 19 skipped, 2 warnings`，Ruff/格式/mypy 通过，见 [R28 TR](../reports/tests/TR-MVP-005-20261014-R28.md)。[PR #165](https://github.com/CP11-gh/CRM/pull/165) 双 CI 和独立只读审查通过，已 squash 合入 main `66f3f36`；[PR #167](https://github.com/CP11-gh/CRM/pull/167) 从该主分支核对 IR/TR/RR 各 56 份源记录并恢复三个派生索引为 `CURRENT`，合入 main `c7f464c`。一次获批的[镜像发布 #38504855995](https://github.com/CP11-gh/CRM/actions/runs/38504855995) 成功，后端 `sha256:a38855fa…5f5da5`、压缩 110068027 字节，持久[机器证据](../../release/evidence/staging/crm-staging-g4-r28-image-38504855995.json) SHA-256 `bef46f4d24b9ad39a4302f463962f63f9bac34be66a3de44fa2cd74e4062df8e`。尚未部署或付费复测；否定与多语言失败未修复，G4 `PARTIAL`、production No-Go。下一步仅三项：按精确门禁验证 staging 第二稿；分别处理否定与多语言证据缺项；取得新真实报告后复核 G4。
 
@@ -205,7 +207,7 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 - 2026-10-09 最新 OAuth 回调和 job 终态真实成功，2026-10-04 自然刷新也已通过。用户决定现场 callback 二次 GET 不阻断 G1 核心；增强物流 `202604` 对五笔不同 TikTok 配送订单仍返回 `11007009`，须取得合格 CBT 首程订单或平台说明并在 G8 前通过。G2 staging 只读与 Webhook 开关已受控开启；独立查询确认 `NEW_MESSAGE` 订阅数 1，尚无官方投递。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台已接受本次 34 条合成评测请求。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 2026-10-13 G4 Prompt `v1.2.9` 后端 `sha256:53913024…3f77b`、原有前端与分层检索不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复，本次部署又复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
+- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 2026-10-14 G4 Prompt `v1.2.10` 后端 `sha256:a38855fa…5f5da5`、原有前端与分层检索不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复，本次部署又复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
@@ -215,6 +217,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 用 R26 代码形成受控 staging 证据：单后端镜像、六角色预取与 validate/deploy、`prepare` 和一次 `live` 各按资源边界执行，取得第二次调用实际分类；再分别处理条件政策误拦、否定缺项与多语言修复无草稿。冻结集、严格 DLP 与门槛不变。
+1. 基于 R30 低敏诊断，分别定位否定说明缺必需组 0 与多语言政策修复无合格草稿；先做确定性安全反例和契约验证，再评估下一候选。冻结集、严格 DLP 与门槛不变。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
