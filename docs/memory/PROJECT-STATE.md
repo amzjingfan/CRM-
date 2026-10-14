@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r27-evidence-20261014
-Governance base SHA: 60bf105d45b5546ed2f0f6d957a62aa0a32e24e4
+Working branch at this snapshot: docs/mvp005-g4-r27-index-20261014
+Governance base SHA: 30e728bedddabe0af8b9bad0bae941df02dca1e3
 CANDIDATE_SUBJECT_SHA: 60bf105d45b5546ed2f0f6d957a62aa0a32e24e4
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20260921-004` 已删除六个已合并本地 worktree；既有隔离保留期、两份 MVP-001 root-only 恢复副本和其他忽略测试材料不在本批次范围
 ```
 
-2026-10-14 G4 最新恢复点：main `60bf105` 的 R26 低敏诊断后端 `sha256:3436335a…6103933` 经单镜像发布、六角色预取、validate 与 staging deploy 通过；旧后端 `sha256:53913024…3f77b` 为回滚目标，前端/检索未变。迁移头、三个健康端点、固定出口和 Webhook 只读通过；[prepare](../../release/evidence/ai/crm-staging-g4-r27-prepare-38496648176.json) 零 Provider 调用。[live #38496772348](https://github.com/CP11-gh/CRM/actions/runs/38496772348) 终态 33/36、危险逃逸 0、合法误拦 1、Provider 故障 0，`passed=false`。条件政策第二稿为 `dlp_rejected`，多语言第二稿为 `model_transfer`，否定说明缺冻结组 0；低敏报告不存草稿，不能断定 DLP 误判。六份证据哈希与限制见 [R27 TR](../reports/tests/TR-MVP-005-20261014-R27.md)。G4 `PARTIAL`、production No-Go；本次付费调用不重复。下一步仅三项：确定性安全反例界定 DLP 边界；分别处理否定与多语言缺项；候选验证后再决定受控复测。
+2026-10-14 G4 最新恢复点：main `60bf105` 的 R26 低敏诊断后端 `sha256:3436335a…6103933` 经单镜像发布、六角色预取、validate 与 staging deploy 通过；旧后端 `sha256:53913024…3f77b` 为回滚目标，前端/检索未变。迁移头、三个健康端点、固定出口和 Webhook 只读通过；[prepare](../../release/evidence/ai/crm-staging-g4-r27-prepare-38496648176.json) 零 Provider 调用。[live #38496772348](https://github.com/CP11-gh/CRM/actions/runs/38496772348) 终态 33/36、危险逃逸 0、合法误拦 1、Provider 故障 0，`passed=false`。条件政策第二稿为 `dlp_rejected`，多语言第二稿为 `model_transfer`，否定说明缺冻结组 0；低敏报告不存草稿，不能断定 DLP 误判。六份证据哈希与限制见 [R27 TR](../reports/tests/TR-MVP-005-20261014-R27.md)，证据 PR [#161](https://github.com/CP11-gh/CRM/pull/161) 已通过双 CI 并 squash 合入 main `30e728b`；从该主分支源记录核对 IR/TR/RR 各 55 份与索引一致，本分支恢复三个派生索引为 `CURRENT`。G4 `PARTIAL`、production No-Go；本次付费调用不重复。下一步仅三项：确定性安全反例界定 DLP 边界；分别处理否定与多语言缺项；候选验证后再决定受控复测。
 
 2026-10-14 G4 R26：R25 的 33/36 现场报告只显示第二次调用失败关闭，不能从低敏原因码准确区分模型转人工和第二稿拦截。subject `bcc5235` 增加固定枚举 `second_attempt_disposition` 并同步工作流白名单，不记录原文、不改评分、Prompt、DLP 或调用上限。新增断言先红后绿；本机完整后端 `1776 passed, 19 skipped, 2 warnings`，Ruff/格式、mypy 与工作流契约通过，见 [R26 TR](../reports/tests/TR-MVP-005-20261014-R26.md)。[PR #159](https://github.com/CP11-gh/CRM/pull/159) 双 CI 与独立只读审查通过并 squash 合入 main `878b3d58c31359828c55570a2d3d41823ecb39b0`；从该 main 核对 IR/TR/RR 各 54 份源记录与索引行一致，本分支将三份派生索引恢复为 `CURRENT`。尚未发布镜像、部署或调用 DeepSeek，staging 仍是 R25 `v1.2.9`。G4 `PARTIAL`、production No-Go。
 
