@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r32-staging-20261014
-Governance base SHA: 3d6859a0d451e258ac82886fb765e26e772f1e31
+Working branch at this snapshot: docs/mvp005-g4-r32-index-20261014
+Governance base SHA: 2fce74603d983efbda07ad644540355d07c205d3
 CANDIDATE_SUBJECT_SHA: 3d6859a0d451e258ac82886fb765e26e772f1e31
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R32 staging 恢复点：R31 后端 `sha256:1c3a8e83…fc21f0` 已按精确授权从 main `3d6859a` 完成[六摘要预取 #38517947272](https://github.com/CP11-gh/CRM/actions/runs/38517947272)、[validate #38519678056](https://github.com/CP11-gh/CRM/actions/runs/38519678056)、[deploy #38520023020](https://github.com/CP11-gh/CRM/actions/runs/38520023020)。回滚后端为 `sha256:a38855fa…5f5da5`，前端/检索不变。机器和外部只读复核均确认三健康 200；迁移头已应用，固定出口 `38.55.145.52`，Webhook 仍只读。三份原始低敏证据及 SHA-256 见 [R32 TR](../reports/tests/TR-MVP-005-20261014-R32.md)。未运行本版 `prepare/live`、未调用 DeepSeek，R30 两条逐项失败未闭环，G4 `PARTIAL`、production No-Go。下一步最多三项：运行零 Provider 调用 `prepare` 锁定当前后端和冻结集；取得单次付费 `live` 精确授权后复核两条失败及全量指标；据真实结果决定是否继续修复。
+2026-10-14 G4 R32 staging 恢复点：R31 后端 `sha256:1c3a8e83…fc21f0` 已按精确授权从 main `3d6859a` 完成[六摘要预取 #38517947272](https://github.com/CP11-gh/CRM/actions/runs/38517947272)、[validate #38519678056](https://github.com/CP11-gh/CRM/actions/runs/38519678056)、[deploy #38520023020](https://github.com/CP11-gh/CRM/actions/runs/38520023020)。回滚后端为 `sha256:a38855fa…5f5da5`，前端/检索不变。机器和外部只读复核均确认三健康 200；迁移头已应用，固定出口 `38.55.145.52`，Webhook 仍只读。三份原始低敏证据及 SHA-256 见 [R32 TR](../reports/tests/TR-MVP-005-20261014-R32.md)；[PR #177](https://github.com/CP11-gh/CRM/pull/177) 双 CI 通过并 squash 合入 main `2fce746`。从该 main 逐份核对 IR/TR/RR 各 60 份源记录的 ID、状态、SHA 和更新时间，本分支恢复三个派生索引为 `CURRENT`。未运行本版 `prepare/live`、未调用 DeepSeek，R30 两条逐项失败未闭环，G4 `PARTIAL`、production No-Go。下一步最多三项：运行零 Provider 调用 `prepare` 锁定当前后端和冻结集；取得单次付费 `live` 精确授权后复核两条失败及全量指标；据真实结果决定是否继续修复。
 
 2026-10-14 G4 R31 镜像历史恢复点：用户单独授权发布一个私有后端 staging 候选。[工作流 #38516990486](https://github.com/CP11-gh/CRM/actions/runs/38516990486) 从 main `e48ab395d8013a468efcb87076c21b3dae300f66` 成功发布 `ghcr.io/cp11-gh/crm-backend@sha256:1c3a8e835f438dd43770571f6c0777bb889e9dd4e9d39470987e5fc9a2fc21f0`；linux/amd64 manifest 为 `PASS`，压缩层共 110,069,185 字节，最大层 33,258,817 字节。[原始低敏证据](../../release/evidence/staging/crm-staging-g4-r31-image-38516990486.json) SHA-256 `69eea19253334663ac226569baafa8aa901f4ce87fc0ad1aa6be17d6644c39ec`。后续部署结果以上方 R32 为准。
 
