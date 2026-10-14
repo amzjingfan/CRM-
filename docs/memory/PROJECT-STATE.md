@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r37-index-20261014
-Governance base SHA: 5bb13510c3f14a02f92e1eb21f17cdfabcd6941a
-CANDIDATE_SUBJECT_SHA: 5bb13510c3f14a02f92e1eb21f17cdfabcd6941a
+Working branch at this snapshot: fix/mvp005-g4-r38-output-diagnostics-20261014
+Governance base SHA: 19c48d066cb9346b1ffd3fb1d80a386675576bf9
+CANDIDATE_SUBJECT_SHA: ae3fa298c333ef8dce1db8031c9815b81897e0d4
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-14 G4 R38 最新源码恢复点：main `19c48d0` 上的 subject `ae3fa29` 增加固定 `invalid_json`/`invalid_schema` 与最多八组白名单字段/错误类型，后端测试、Ruff、mypy 和工作流 YAML 检查见 [R38 TR](../reports/tests/TR-MVP-005-20261014-R38.md)。本分支 IR/TR/RR 索引为 `CANDIDATE_VIEW`。源码未发布镜像或部署，R37 仍是最新真实模型质量结果，G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R37 最新质量恢复点：从 main `1aa1dee` 的[零调用 prepare #38542493623](https://github.com/CP11-gh/CRM/actions/runs/38542493623) 锁定运行后端 `sha256:61c00d69…95e1881`、冻结 36 条及 Provider 0 调用；用户单独精确授权的 [live #38542949502](https://github.com/CP11-gh/CRM/actions/runs/38542949502) 为 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1、38 次调用，机器 `passed=false`。唯一失败仍是多语言政策：首稿缺审核组 1，第二稿 `LLM_OUTPUT_INVALID / invalid_structure` 并安全转人工；无法从低敏报告再区分 JSON 解析与 Schema 字段校验。两份原始低敏证据及 SHA-256 见 [R37 TR](../reports/tests/TR-MVP-005-20261014-R37.md)。[PR #187](https://github.com/CP11-gh/CRM/pull/187) 双 CI 通过并合入 main `5bb1351`；从该 main 核对 IR/TR/RR 各 65 份源记录，本分支恢复三个派生索引为 `CURRENT`。本次付费授权已用完，G4 `PARTIAL`、production No-Go。下一步：建立可重复且低敏的结构错误诊断边界，再决定修复；新的付费复测须另行精确授权。
 
@@ -235,6 +237,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. R37 新版 DeepSeek live 已获单次授权并完成，仍为 35/36、Provider 故障 1、机器 `passed=false`。先在不保存模型正文的前提下细分 `invalid_structure` 并建立可重复诊断，再决定有界修复；任何新付费复测需另行精确授权，冻结集、DLP 与门槛不变。
+1. R38 低敏结构错误诊断源码候选已完成，尚未发布镜像或部署。先完成 PR 与索引，再分别精确处理镜像、staging 和新付费 live；依据新报告的固定类别再决定修复。R37 仍为 35/36、Provider 故障 1、机器 `passed=false`，冻结集、DLP 与门槛不变。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。

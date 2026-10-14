@@ -48,3 +48,13 @@ def test_live_artifact_accepts_only_fixed_location_shape_codes() -> None:
         "DRAFT_DLP_UNCERTAIN_LOCATION_NUMBERS",
     } <= reasons
     assert not any("CONTENT" in reason or "TEXT" in reason for reason in reasons)
+
+
+def test_live_artifact_accepts_only_fixed_schema_diagnostics() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    assert {"invalid_json", "invalid_schema"} <= _allowed_keys(source, "allowedOutputFailureKinds")
+    assert {"business_claims[].confidence", "business_claims[].evidence_id", "unknown"} <= _allowed_keys(
+        source, "allowedOutputSchemaPaths"
+    )
+    assert {"missing", "extra_forbidden", "less_than_equal"} <= _allowed_keys(source, "allowedOutputSchemaErrorTypes")
+    assert "@($sample.provider_output_schema_issues).Count -gt 8" in source

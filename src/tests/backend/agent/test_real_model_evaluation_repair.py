@@ -435,7 +435,8 @@ async def test_repair_output_failure_records_subtype_without_raw_response() -> N
                 LLMErrorCode.LLM_OUTPUT_INVALID,
                 "secret repaired response",
                 retriable=True,
-                output_failure_kind="invalid_structure",
+                output_failure_kind="invalid_schema",
+                output_schema_issues=(("business_claims[].evidence_id", "missing"),),
             ),
         ]
     )
@@ -444,7 +445,8 @@ async def test_repair_output_failure_records_subtype_without_raw_response() -> N
     payload = sample.model_dump(mode="json")
     assert sample.repair_outcome == "provider_failed"
     assert sample.provider_error_code == LLMErrorCode.LLM_OUTPUT_INVALID
-    assert sample.provider_output_failure_kind == "invalid_structure"
+    assert sample.provider_output_failure_kind == "invalid_schema"
+    assert payload["provider_output_schema_issues"] == [["business_claims[].evidence_id", "missing"]]
     assert "secret repaired response" not in json.dumps(payload)
 
 

@@ -3,6 +3,7 @@
 import json
 import logging
 import time
+from typing import cast, get_args
 
 from openai import (
     APIConnectionError,
@@ -18,10 +19,42 @@ from openai import (
 )
 from pydantic import ValidationError
 
-from app.agent.errors import LLMErrorCode, LLMProviderError
+from app.agent.errors import (
+    LLMErrorCode,
+    LLMOutputFailureKind,
+    LLMOutputSchemaErrorType,
+    LLMOutputSchemaIssue,
+    LLMOutputSchemaPath,
+    LLMProviderError,
+)
 from app.agent.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_schema_issues(error: ValidationError) -> tuple[LLMOutputSchemaIssue, ...]:
+    """仅保留预定义字段路径与错误类型，丢弃模型自造字段和所有值。"""
+    allowed_paths = set(get_args(LLMOutputSchemaPath))
+    allowed_types = set(get_args(LLMOutputSchemaErrorType))
+    issues: list[LLMOutputSchemaIssue] = []
+    for detail in error.errors(include_input=False, include_context=False, include_url=False):
+        loc = detail["loc"]
+        path = "root" if not loc else "unknown"
+        if len(loc) == 1 and isinstance(loc[0], str) and loc[0] in allowed_paths:
+            path = loc[0]
+        elif loc and loc[0] == "business_claims":
+            path = "business_claims"
+            if len(loc) == 3 and isinstance(loc[1], int) and isinstance(loc[2], str):
+                candidate = f"business_claims[].{loc[2]}"
+                if candidate in allowed_paths:
+                    path = candidate
+        error_type = detail["type"] if detail["type"] in allowed_types else "other"
+        issue = (cast(LLMOutputSchemaPath, path), cast(LLMOutputSchemaErrorType, error_type))
+        if issue not in issues:
+            issues.append(issue)
+        if len(issues) == 8:
+            break
+    return tuple(issues)
 
 
 class DeepSeekProvider(LLMProvider):
@@ -234,6 +267,16 @@ class DeepSeekProvider(LLMProvider):
         try:
             parsed_output = response_schema.model_validate(json.loads(content))
         except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as error:
+            failure_kind: LLMOutputFailureKind
+            if isinstance(error, json.JSONDecodeError):
+                failure_kind = "invalid_json"
+                schema_issues: tuple[LLMOutputSchemaIssue, ...] = ()
+            elif isinstance(error, ValidationError):
+                failure_kind = "invalid_schema"
+                schema_issues = _safe_schema_issues(error)
+            else:
+                failure_kind = "invalid_schema"
+                schema_issues = (("unknown", "other"),)
             logger.warning(
                 "deepseek_output_invalid",
                 extra={
@@ -252,7 +295,8 @@ class DeepSeekProvider(LLMProvider):
                 LLMErrorCode.LLM_OUTPUT_INVALID,
                 "DeepSeek JSON 结构未通过校验",
                 retriable=True,
-                output_failure_kind="invalid_structure",
+                output_failure_kind=failure_kind,
+                output_schema_issues=schema_issues,
             ) from error
 
         usage = getattr(response, "usage", None)

@@ -17,7 +17,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.agent.errors import LLMErrorCode, LLMOutputFailureKind, LLMProviderError
+from app.agent.errors import LLMErrorCode, LLMOutputFailureKind, LLMOutputSchemaIssue, LLMProviderError
 from app.agent.phase4_evaluation import AgentMetricAction
 from app.agent.policy_draft_validation import PolicyDraftValidation, validate_policy_draft
 from app.agent.providers.base import LLMProvider, StructuredRequest
@@ -339,6 +339,7 @@ class RealModelSampleResult(BaseModel):
     provider_failure: bool
     provider_error_code: LLMErrorCode | None = None
     provider_output_failure_kind: LLMOutputFailureKind | None = None
+    provider_output_schema_issues: list[LLMOutputSchemaIssue] = Field(default_factory=list, max_length=8)
     injected_failure: bool
     first_passed: bool | None = None
     first_failure_reason: str | None = Field(default=None, max_length=500)
@@ -910,6 +911,7 @@ async def run_real_model_evaluation(
                     provider_call_count=1,
                     provider_error_code=error.code,
                     provider_output_failure_kind=error.output_failure_kind,
+                    provider_output_schema_issues=error.output_schema_issues,
                 )
             )
             continue
@@ -945,6 +947,7 @@ async def run_real_model_evaluation(
         provider_failure = False
         provider_error_code: LLMErrorCode | None = None
         provider_output_failure_kind: LLMOutputFailureKind | None = None
+        provider_output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = ()
         policy_codes = list(policy.reason_codes)
         if first_safety.reason_code == "DRAFT_DLP_UNCERTAIN_LOCATION_SEPARATORS":
             # 隐私疑似首稿不得进入现有修复请求；仅用已验证的原始合成输入再生成一次。
@@ -973,6 +976,7 @@ async def run_real_model_evaluation(
                         provider_failure = True
                         provider_error_code = error.code
                         provider_output_failure_kind = error.output_failure_kind
+                        provider_output_schema_issues = error.output_schema_issues
                     else:
                         regeneration_latency_ms = regenerated.latency_ms
                         regeneration_usage = _token_usage(regenerated.input_tokens, regenerated.output_tokens)
@@ -1035,6 +1039,7 @@ async def run_real_model_evaluation(
                         provider_failure = True
                         provider_error_code = error.code
                         provider_output_failure_kind = error.output_failure_kind
+                        provider_output_schema_issues = error.output_schema_issues
                     else:
                         repair_latency_ms = repaired.latency_ms
                         repair_usage = _token_usage(repaired.input_tokens, repaired.output_tokens)
@@ -1108,6 +1113,7 @@ async def run_real_model_evaluation(
                 provider_failure=provider_failure,
                 provider_error_code=provider_error_code,
                 provider_output_failure_kind=provider_output_failure_kind,
+                provider_output_schema_issues=list(provider_output_schema_issues),
                 injected_failure=False,
                 first_passed=not first_failures,
                 first_failure_reason="|".join(first_failures) if first_failures else None,
@@ -1159,6 +1165,7 @@ def _build_failure_result(
     provider_call_count: int = 0,
     provider_error_code: LLMErrorCode | None = None,
     provider_output_failure_kind: LLMOutputFailureKind | None = None,
+    provider_output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = (),
     repair_outcome: Literal[
         "not_enabled", "not_needed", "succeeded", "failed", "blocked", "budget_exhausted", "provider_failed"
     ] = "not_needed",
@@ -1186,6 +1193,7 @@ def _build_failure_result(
         provider_failure=provider_failure,
         provider_error_code=provider_error_code,
         provider_output_failure_kind=provider_output_failure_kind,
+        provider_output_schema_issues=list(provider_output_schema_issues),
         injected_failure=injected_failure,
         provider_call_count=provider_call_count,
         repair_outcome=repair_outcome,

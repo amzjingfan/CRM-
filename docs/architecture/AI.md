@@ -77,4 +77,6 @@ G4 离线评测流程 `policy-repair-v1` 在首个结构化草稿后，以本次
 
 R34 低敏诊断已随 R35 镜像部署 staging。[R37 单次获批 live](../reports/tests/TR-MVP-005-20261014-R37.md) 的新报告确认 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`。唯一失败的多语言政策样本首稿缺审核步骤；第二稿的 `provider_error_code=LLM_OUTPUT_INVALID`、`provider_output_failure_kind=invalid_structure`，随后安全转人工。该类别仅表示 JSON 解析或结构 Schema 校验失败，不含具体字段或原文，不能据此确定模型输出的精确错误。冻结数据、严格评分、85% 门槛、失败关闭和发送开关不变；G4 继续 `PARTIAL`。
 
+R38 候选仅收窄后续 G4 低敏诊断：DeepSeek 结构失败按 `invalid_json` 与 `invalid_schema` 区分，保留历史 `invalid_structure` 枚举兼容既有记录。Schema 失败最多保存八组经固定白名单映射的字段路径和 Pydantic 错误类型；未知字段只记 `unknown`，未知错误只记 `other`，不写模型正文、原始字段名/值、异常消息或供应商请求 ID。工作流复核两层白名单及数量，非 Schema 失败必须没有 Schema 明细。此诊断不改变原有 JSON/Schema 拒绝、失败关闭、评分器、冻结集、85% 门槛、调用上限、Prompt、DLP 或 TikTok 发送开关；现有 staging 镜像不含 R38，R37 原报告不可回填细分原因。部署与新付费 live 均需另行精确授权。
+
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。

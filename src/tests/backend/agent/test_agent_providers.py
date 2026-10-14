@@ -31,6 +31,7 @@ from app.agent.providers.base import StructuredRequest
 from app.agent.providers.deepseek_provider import DeepSeekProvider
 from app.agent.providers.factory import build_provider_pair
 from app.agent.providers.openai_provider import OpenAIProvider
+from app.agent.real_model_evaluation import RealModelEvaluationOutput
 from app.agent.schemas import ClassificationState, IntentModelOutput, IntentName
 from app.agent.security import TRUSTED_PROVIDER_CONTRACT_SYSTEM_PROMPT
 from app.agent.translation import TRANSLATION_SYSTEM_PROMPT, TranslationBundleModelOutput
@@ -656,7 +657,48 @@ async def test_deepseek_empty_or_invalid_output_is_retriable(content: str | None
 
     assert captured.value.code == LLMErrorCode.LLM_OUTPUT_INVALID
     assert captured.value.retriable is True
-    assert captured.value.output_failure_kind == ("empty" if not content else "invalid_structure")
+    expected_kind = "empty" if not content else "invalid_json" if content == "not-json" else "invalid_schema"
+    expected_issues = (("unknown", "missing"),) if content == '{"intent":"general"}' else ()
+    assert captured.value.output_failure_kind == expected_kind
+    assert captured.value.output_schema_issues == expected_issues
+
+
+@pytest.mark.asyncio
+async def test_deepseek_schema_diagnostics_allowlist_paths_and_types() -> None:
+    content = json.dumps(
+        {
+            "decision": "human_review",
+            "content": "Synthetic policy text",
+            "language": "en",
+            "reason_code": "policy_grounded",
+            "business_claims": [{"subject_type": "refund_policy", "confidence": 2}],
+            "send_performed": False,
+            "private_secret_field": "must-never-appear",
+        }
+    )
+    resource = FakeResource(
+        SimpleNamespace(
+            id="req-synthetic-schema-invalid",
+            choices=[SimpleNamespace(finish_reason="stop", message=SimpleNamespace(content=content))],
+            usage=SimpleNamespace(prompt_tokens=12, completion_tokens=8),
+        )
+    )
+    provider = DeepSeekProvider(
+        api_key="test-only",
+        model_name="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+        timeout_seconds=3,
+        client=cast(AsyncOpenAI, SimpleNamespace(chat=SimpleNamespace(completions=resource))),
+    )
+
+    with pytest.raises(LLMProviderError) as captured:
+        await provider.generate_structured(request(), RealModelEvaluationOutput)
+
+    assert captured.value.output_failure_kind == "invalid_schema"
+    assert ("business_claims[].confidence", "less_than_equal") in captured.value.output_schema_issues
+    assert ("unknown", "extra_forbidden") in captured.value.output_schema_issues
+    assert "private_secret_field" not in str(captured.value.output_schema_issues)
+    assert "must-never-appear" not in str(captured.value.output_schema_issues)
 
 
 @pytest.mark.asyncio

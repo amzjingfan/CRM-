@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R38 低敏诊断源码候选：subject `ae3fa29` 将后续结构失败分为 `invalid_json`/`invalid_schema`，仅 Schema 失败最多记录八组白名单字段路径与错误类型；未知值映射固定枚举，不存原文。受影响测试 102 passed，完整后端在最终类型标注整理前 1782 passed/19 skipped，整理后 mypy 172 源文件通过，PR CI 待验，详见 [R38 TR](../reports/tests/TR-MVP-005-20261014-R38.md)。未发布镜像或部署，R37 的 35/36、Provider 故障 1、机器 `passed=false` 仍为现场事实；G4 `PARTIAL`、production No-Go。
+
 2026-10-14 G4 R37 单次获批真实复测：main `1aa1dee` 的 [prepare #38542493623](https://github.com/CP11-gh/CRM/actions/runs/38542493623) 对运行后端 `sha256:61c00d69…95e1881` 锁定 36 条冻结样本且 Provider 0 调用；[live #38542949502](https://github.com/CP11-gh/CRM/actions/runs/38542949502) 调用 34 条合成样本加 2 条本地故障注入，35/36、危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`。多语言政策首稿缺审核组 1，修复调用 `LLM_OUTPUT_INVALID / invalid_structure` 后安全转人工；该类别尚不能细分 JSON 与 Schema 问题。配置估算 USD 0.027265（非账单），本次授权已用完。两份原始低敏证据及哈希见 [R37 TR](../reports/tests/TR-MVP-005-20261014-R37.md)。G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R36 staging：用户另行授权的 [六角色预取 #38536657630](https://github.com/CP11-gh/CRM/actions/runs/38536657630)、[validate #38538873665](https://github.com/CP11-gh/CRM/actions/runs/38538873665)、[deploy #38539305810](https://github.com/CP11-gh/CRM/actions/runs/38539305810) 均从 main `401b0e5` 通过；后端切到 `sha256:61c00d69…95e1881`，前端/检索不变，迁移头、三健康和固定出口通过，Webhook 只读。[prepare #38540054971](https://github.com/CP11-gh/CRM/actions/runs/38540054971) 独立核对运行中后端摘要、冻结 36 条且 Provider 调用 0。四份原始低敏证据及哈希见 [R36 TR](../reports/tests/TR-MVP-005-20261014-R36.md)。未运行新版 `live`；R33 的 35/36、Provider 故障 1、机器 `passed=false` 仍是最新真实质量结果。G4 `PARTIAL`、production No-Go。

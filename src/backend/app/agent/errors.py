@@ -3,7 +3,44 @@
 from enum import StrEnum
 from typing import Literal
 
-LLMOutputFailureKind = Literal["unfinished", "empty", "invalid_structure"]
+LLMOutputFailureKind = Literal["unfinished", "empty", "invalid_structure", "invalid_json", "invalid_schema"]
+LLMOutputSchemaPath = Literal[
+    "root",
+    "unknown",
+    "decision",
+    "content",
+    "language",
+    "reason_code",
+    "business_claims",
+    "send_performed",
+    "business_claims[].subject_type",
+    "business_claims[].subject_id",
+    "business_claims[].action",
+    "business_claims[].tense",
+    "business_claims[].polarity",
+    "business_claims[].condition",
+    "business_claims[].evidence_type",
+    "business_claims[].evidence_id",
+    "business_claims[].confidence",
+]
+LLMOutputSchemaErrorType = Literal[
+    "missing",
+    "extra_forbidden",
+    "literal_error",
+    "string_type",
+    "string_too_short",
+    "string_too_long",
+    "list_type",
+    "too_long",
+    "less_than_equal",
+    "greater_than_equal",
+    "float_parsing",
+    "uuid_parsing",
+    "value_error",
+    "model_type",
+    "other",
+]
+LLMOutputSchemaIssue = tuple[LLMOutputSchemaPath, LLMOutputSchemaErrorType]
 
 
 class LLMErrorCode(StrEnum):
@@ -31,6 +68,7 @@ class LLMProviderError(Exception):
         *,
         retriable: bool,
         output_failure_kind: LLMOutputFailureKind | None = None,
+        output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = (),
     ) -> None:
         """初始化模型异常。
 
@@ -43,4 +81,5 @@ class LLMProviderError(Exception):
         self.code = code
         self.retriable = retriable
         self.output_failure_kind = output_failure_kind
+        self.output_schema_issues = output_schema_issues
         super().__init__(message)
