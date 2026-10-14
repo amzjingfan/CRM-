@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp005-g4-r38-output-diagnostics-20261014
-Governance base SHA: 19c48d066cb9346b1ffd3fb1d80a386675576bf9
+Working branch at this snapshot: docs/mvp005-g4-r38-index-20261014
+Governance base SHA: 7d7ebd9ccf134a28f73ca9ac79d10409f8e0636e
 CANDIDATE_SUBJECT_SHA: ae3fa298c333ef8dce1db8031c9815b81897e0d4
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R38 最新源码恢复点：main `19c48d0` 上的 subject `ae3fa29` 增加固定 `invalid_json`/`invalid_schema` 与最多八组白名单字段/错误类型，后端测试、Ruff、mypy 和工作流 YAML 检查见 [R38 TR](../reports/tests/TR-MVP-005-20261014-R38.md)。本分支 IR/TR/RR 索引为 `CANDIDATE_VIEW`。源码未发布镜像或部署，R37 仍是最新真实模型质量结果，G4 `PARTIAL`、production No-Go。
+2026-10-14 G4 R38 最新源码恢复点：main `19c48d0` 上的 subject `ae3fa29` 增加固定 `invalid_json`/`invalid_schema` 与最多八组白名单字段/错误类型，后端测试、Ruff、mypy 和工作流 YAML 检查见 [R38 TR](../reports/tests/TR-MVP-005-20261014-R38.md)。[PR #189](https://github.com/CP11-gh/CRM/pull/189) 前后端 CI 通过并合入 main `7d7ebd9`；从该 main 核对 IR/TR/RR 各 66 份源记录，本分支恢复三个派生索引为 `CURRENT`。源码未发布镜像或部署，R37 仍是最新真实模型质量结果，G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R37 最新质量恢复点：从 main `1aa1dee` 的[零调用 prepare #38542493623](https://github.com/CP11-gh/CRM/actions/runs/38542493623) 锁定运行后端 `sha256:61c00d69…95e1881`、冻结 36 条及 Provider 0 调用；用户单独精确授权的 [live #38542949502](https://github.com/CP11-gh/CRM/actions/runs/38542949502) 为 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1、38 次调用，机器 `passed=false`。唯一失败仍是多语言政策：首稿缺审核组 1，第二稿 `LLM_OUTPUT_INVALID / invalid_structure` 并安全转人工；无法从低敏报告再区分 JSON 解析与 Schema 字段校验。两份原始低敏证据及 SHA-256 见 [R37 TR](../reports/tests/TR-MVP-005-20261014-R37.md)。[PR #187](https://github.com/CP11-gh/CRM/pull/187) 双 CI 通过并合入 main `5bb1351`；从该 main 核对 IR/TR/RR 各 65 份源记录，本分支恢复三个派生索引为 `CURRENT`。本次付费授权已用完，G4 `PARTIAL`、production No-Go。下一步：建立可重复且低敏的结构错误诊断边界，再决定修复；新的付费复测须另行精确授权。
 
