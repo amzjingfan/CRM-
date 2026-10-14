@@ -18,6 +18,7 @@ from app.agent.real_model_evaluation import (
     RealModelTokenUsage,
     build_evaluation_report,
     build_real_model_evaluation_request,
+    build_real_model_repair_request,
     grade_real_model_evaluation_output,
     load_verified_real_model_evaluation_dataset,
     run_real_model_evaluation,
@@ -183,7 +184,45 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.10"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.11"
+
+
+def test_negation_draft_and_policy_repair_keep_supported_facts_explicit() -> None:
+    """展示否定要写清楚；有申请时限和审核证据时修复稿应保留两者。"""
+    repo_root = TESTS_ROOT.parents[1]
+    dataset = load_verified_real_model_evaluation_dataset(
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
+    )
+    cases = {case.sample_id: case for case in dataset.cases}
+    run_id = uuid.UUID("44444444-4444-4444-8444-444444444444")
+    negation = build_real_model_evaluation_request(cases["negation-open-001"], dataset, run_id=run_id)
+    assert "content 明确写出页面未显示或没有显示完成状态" in negation.system_prompt
+    assert "不得据此推断实际退款成功或失败" in negation.system_prompt
+
+    first_output = RealModelEvaluationOutput.model_validate(
+        {
+            "decision": "human_review",
+            "content": "A request may be submitted within twelve days.",
+            "language": "en",
+            "reason_code": "policy_grounded",
+            "business_claims": [],
+            "send_performed": False,
+        }
+    )
+    repair = build_real_model_repair_request(
+        cases["multilingual-open-001"],
+        dataset,
+        first_output,
+        ("POLICY_REVIEW_STEP_MISSING",),
+        run_id=run_id,
+    )
+    assert "申请时限和平台审核步骤均有证据时，保留非空的 human_review 草稿" in repair.system_prompt
+    assert "需要平台审核不等于证据不足" in repair.system_prompt
+    assert "不得编造个案审核状态或结果" in repair.system_prompt
+    assert "refund_policy 结构化声明" in repair.system_prompt
+    assert "required_term_groups" not in repair.user_prompt
+    assert "expected_decision" not in repair.user_prompt
 
 
 def test_real_model_request_uses_short_complete_sentences_while_address_dlp_stays_strict() -> None:

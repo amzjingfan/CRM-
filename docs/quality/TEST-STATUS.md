@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R31 本地候选：Prompt `real-model-eval-v1.2.11` 对页面否定展示和证据充足的多语言政策修复增加明确约束。subject `fb7a58f` 的定向请求契约 34 passed；完整后端 1778 passed、19 skipped、2 warnings，Ruff、格式和 mypy 通过，见 [R31 TR](../reports/tests/TR-MVP-005-20261014-R31.md)。本轮未发布镜像、部署 staging 或调用 DeepSeek；下方 R30 仍是最新现场，G4 `PARTIAL`、production No-Go。
+
 2026-10-14 G4 最新现场：staging 后端 `sha256:a38855fa…5f5da5` 的 [live #38509348666](https://github.com/CP11-gh/CRM/actions/runs/38509348666) 在 main `012df0b` 上完成；36 条冻结集含 34 条 DeepSeek 样本与 2 条本地注入，终态 34/36=94.44%，危险逃逸、合法误拦和 Provider 故障均为 0，机器 `passed=true`，配置估算 USD 0.026979（非账单）。条件政策第二稿通过；否定说明缺必需组 0、多语言政策第二稿转人工且缺组 0、1。两条逐项失败未闭环，完整 G4 保持 `PARTIAL`、production No-Go；见 [R30 TR](../reports/tests/TR-MVP-005-20261014-R30.md)。
 
 2026-10-14 R27 历史现场：main `60bf105` 的诊断后端[ live #38496772348](https://github.com/CP11-gh/CRM/actions/runs/38496772348) 为 33/36、合法误拦 1、机器 `passed=false`；当时条件政策第二稿被 DLP 拒绝、多语言政策第二稿由模型转人工、否定说明缺必需组 0，见 [R27 TR](../reports/tests/TR-MVP-005-20261014-R27.md)。该结论已被上方 R30 新现场取代。
