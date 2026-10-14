@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r34-index-20261014
-Governance base SHA: 53c22e471498624b18f6467bae62b8eae30cb77d
-CANDIDATE_SUBJECT_SHA: beb002f71caa91b43b18535779a295be6ca5a49a
+Working branch at this snapshot: docs/mvp005-g4-r35-image-20261014
+Governance base SHA: b6c05fc7313c585afbef0b432e7186e51e138a51
+CANDIDATE_SUBJECT_SHA: b6c05fc7313c585afbef0b432e7186e51e138a51
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-14 G4 R34 最新源码恢复点：基于 main `6727cd8`，按用户确认的有界设计，在 G4 离线评测报告中按样本记录稳定 Provider 错误码与 `unfinished`/`empty`/`invalid_structure` 固定输出类别，工作流白名单同步限制，见 [R34 IR](../records/implementation/IR-MVP-005-20261014-R34.md)、[TR](../reports/tests/TR-MVP-005-20261014-R34.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R34.md)。subject `beb002f` 的本地完整后端 1780 passed/3 skipped/2 warnings，Ruff 与工作流语法通过；本地 mypy 两次无响应后停止，[PR #181](https://github.com/CP11-gh/CRM/pull/181) 前后端 CI（含 mypy）通过并 squash 合入 main `53c22e4`。从该 main 核对 IR/TR/RR 各 62 份源记录的 ID、状态、SHA、更新时间和路径，本分支恢复三个派生索引为 `CURRENT`。未发布镜像、部署或付费调用，staging 仍运行 R31 后端；G4 `PARTIAL`、production No-Go。下一步最多三项：取得 R34 私有后端镜像发布的精确授权并核对摘要；另行确认 staging 部署后运行零调用 prepare；只有在诊断确实需要现场复测时另行确认付费 live。
+2026-10-14 G4 R35 最新镜像恢复点：用户单独授权一次 `crm-backend` 私有 staging 候选发布；[工作流 #38534500772](https://github.com/CP11-gh/CRM/actions/runs/38534500772) 从 main `b6c05fc7313c585afbef0b432e7186e51e138a51` 发布 `ghcr.io/cp11-gh/crm-backend@sha256:61c00d69cf305c49afeab6631463d04da36d4d862539fedc53bf4da5f95e1881`，`linux/amd64` manifest `PASS`，压缩层 110,068,396 字节，最大层 33,257,734 字节；原样[证据](../../release/evidence/staging/crm-staging-g4-r35-image-38534500772.json) SHA-256 `cf85c2f9250101ed53b74a17c7adc80016ec0c84436bd7e2d97febe4f230893d`。见 [R35 TR](../reports/tests/TR-MVP-005-20261014-R35.md)。本分支三个索引为 `CANDIDATE_VIEW`。staging 尚未部署此镜像；本次未调用 DeepSeek 或发送 TikTok 消息，G4 `PARTIAL`、production No-Go。下一步最多三项：取得精确 staging 预取、validate、deploy 授权并核对运行摘要与健康；运行零调用 prepare；新 live 需另行付费授权。
+
+2026-10-14 G4 R34 源码恢复点：基于 main `6727cd8`，按用户确认的有界设计，在 G4 离线评测报告中按样本记录稳定 Provider 错误码与 `unfinished`/`empty`/`invalid_structure` 固定输出类别，工作流白名单同步限制，见 [R34 IR](../records/implementation/IR-MVP-005-20261014-R34.md)、[TR](../reports/tests/TR-MVP-005-20261014-R34.md)、[RR](../reports/reviews/RR-MVP-005-20261014-R34.md)。subject `beb002f` 的本地完整后端 1780 passed/3 skipped/2 warnings，Ruff 与工作流语法通过；本地 mypy 两次无响应后停止，[PR #181](https://github.com/CP11-gh/CRM/pull/181) 前后端 CI（含 mypy）通过并 squash 合入 main `53c22e4`。从该 main 核对 IR/TR/RR 各 62 份源记录的 ID、状态、SHA、更新时间和路径，PR #182 双 CI 通过后将三个派生索引恢复为 `CURRENT`，合入 main `b6c05fc`。后续镜像状态以上方 R35 为准。
 
 2026-10-14 G4 R33 现场恢复点：从 main `d262f440` 对 staging 后端 `sha256:1c3a8e83…fc21f0` 的 [prepare #38527631807](https://github.com/CP11-gh/CRM/actions/runs/38527631807) 确认冻结 36 条、Provider 0 调用；用户一次性授权的 [live #38528027351](https://github.com/CP11-gh/CRM/actions/runs/38528027351) 为 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`，配置估算 USD 0.027232（非账单）。否定说明本轮通过；多语言政策首稿缺审核步骤，第二次调用记为 `provider_failed` 并安全转人工。两份原始低敏证据及 SHA-256 见 [R33 TR](../reports/tests/TR-MVP-005-20261014-R33.md)；[PR #179](https://github.com/CP11-gh/CRM/pull/179) 双 CI 通过并合入 main `a871227`。从该 main 核对 IR/TR/RR 各 61 份源记录的 ID、状态、SHA、更新时间和路径，PR #180 双 CI 最终通过后将三个派生索引恢复为 `CURRENT`，合入 main `6727cd8`。低敏日志只显示一次 `deepseek_output_invalid`，不能细分输出失败类型。本次付费授权已用完；G4 `PARTIAL`、production No-Go。
 

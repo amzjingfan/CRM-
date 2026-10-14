@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R35 镜像发布：用户精确授权的 [publish-backend-image #38534500772](https://github.com/CP11-gh/CRM/actions/runs/38534500772) 从 main `b6c05fc` 发布单个私有后端候选，摘要 `sha256:61c00d69…95e1881`；[原样低敏证据](../../release/evidence/staging/crm-staging-g4-r35-image-38534500772.json) 确认 linux/amd64 manifest `PASS`、压缩层 110,068,396 字节、最大层 33,257,734 字节，见 [R35 TR](../reports/tests/TR-MVP-005-20261014-R35.md)。尚未部署 staging 或再次调用 DeepSeek；G4 `PARTIAL`、production No-Go。
+
 2026-10-14 G4 R34 源码候选：从 main `6727cd8` 增加低敏 Provider 错误码与固定输出失败类别，subject `beb002f` 本地完整后端 1780 passed/3 skipped/2 warnings，Ruff 和工作流 YAML/PowerShell 语法通过；本地 mypy 无响应；PR #181 前后端 CI（含 mypy）通过并合入 main `53c22e4`。未发布镜像、部署 staging 或调用 DeepSeek；最近现场仍是 [R33 live](../reports/tests/TR-MVP-005-20261014-R33.md) 的 35/36、Provider 故障 1、机器 `passed=false`。详见 [R34 TR](../reports/tests/TR-MVP-005-20261014-R34.md)。G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R33 现场：[prepare #38527631807](https://github.com/CP11-gh/CRM/actions/runs/38527631807) 在 main `d262f440` 和 R31 后端 `sha256:1c3a8e83…fc21f0` 上锁定冻结 36 条，Provider 0 调用；用户单次授权的 [live #38528027351](https://github.com/CP11-gh/CRM/actions/runs/38528027351) 为 35/36=97.22%，危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`。否定说明已通过；多语言政策首稿缺审核步骤，第二次调用记为 `provider_failed` 并转人工，仍是唯一失败；工作流日志另有一条未绑定样本的 `deepseek_output_invalid`。配置估算 USD 0.027232（非账单）。见 [R33 TR](../reports/tests/TR-MVP-005-20261014-R33.md)。G4 `PARTIAL`、production No-Go，本次付费授权已用完。
