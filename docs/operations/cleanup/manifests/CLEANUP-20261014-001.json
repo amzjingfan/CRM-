@@ -1,0 +1,81 @@
+{
+  "task_id": "MAINT-CLEANUP-20261014-001",
+  "batch_id": "CLEANUP-20261014-001",
+  "base_sha": "60bf105d45b5546ed2f0f6d957a62aa0a32e24e4",
+  "candidate_subject_sha": "0c73a705fccbdf6550025369d0e0c1e4e6f5d58d",
+  "state": "DELETED",
+  "server": "192.168.110.210",
+  "discovered_at": "2026-10-14T09:51:39+08:00",
+  "deletion_authorization": "user explicitly approved permanent deletion of both exact paths in this batch in the 2026-10-14 chat",
+  "quarantined_before": "2026-10-14T09:57:37+08:00",
+  "deleted_before": "2026-10-14T09:57:37+08:00",
+  "verified_at": "2026-10-14T09:57:37+08:00",
+  "filesystem_free_before_bytes": 204866727936,
+  "filesystem_free_after_bytes": 212217323520,
+  "filesystem_net_freed_bytes": 7350595584,
+  "items": [
+    {
+      "task_id": "MAINT-CLEANUP-20261014-001",
+      "batch_id": "CLEANUP-20261014-001",
+      "base_sha": "60bf105d45b5546ed2f0f6d957a62aa0a32e24e4",
+      "original_path": "/home/crmdeploy/cache/model-relay-20260919",
+      "kind": "directory",
+      "category": "duplicate-assets",
+      "git_status": "N/A (remote server)",
+      "size_bytes": 4544960817,
+      "allocated_bytes": 4546228224,
+      "sha256": "N/A (288-file directory); filename:size:mtime inventory digest fd37c7becf89beb3b2720c2dae6fc92b93ac5d648dbb1353285f9d3f9fd8a131",
+      "modified_at": "2026-09-19T20:20:40.912740577+08:00 (directory)",
+      "reason": "Historical model transfer ranges duplicate independently installed and hash-verified active model weights.",
+      "reference_checks": [
+        "288 regular files, 5 directories, zero symlinks",
+        "no file under this directory modified within the 14 days before 2026-10-14T09:51:39+08:00",
+        "deployed bge-m3 and bge-reranker-large weight SHA-256 values match src/deploy/models/model-manifest.json",
+        "no exact path references in current repository or persistent server systemd configuration",
+        "lsof returned no open files for this path; unrelated FUSE mount warnings mean recheck before deletion"
+      ],
+      "related_tasks_or_worktrees": ["MVP-STAGING-001"],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-001/model-relay-20260919",
+      "retention_until": "met before discovery; all files older than 14 days",
+      "restore_method": "No local copy after authorized deletion; recreate the transfer cache from the pinned model source, verify weights against the model manifest, and keep active assets untouched.",
+      "verification": [
+        "fresh pre-delete path, inode, size, age, open-file, model-weight-hash and health checks passed",
+        "same-filesystem quarantine retained inode 143366 and 4546228224 allocated bytes",
+        "original and quarantine paths absent after deletion",
+        "11 active container IDs unchanged and three public health endpoints returned 200"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261014-001",
+      "batch_id": "CLEANUP-20261014-001",
+      "base_sha": "60bf105d45b5546ed2f0f6d957a62aa0a32e24e4",
+      "original_path": "/home/crmdeploy/cache/image-relay/retrieval-layer.blob",
+      "kind": "file",
+      "category": "duplicate-assets",
+      "git_status": "N/A (remote server)",
+      "size_bytes": 2810381334,
+      "allocated_bytes": 2810388480,
+      "sha256": "a7d45f29e12c54266d187f87728859484894627b9df135f2cb73cf33abe68ebc",
+      "modified_at": "2026-09-21T11:25:30.874181142+08:00",
+      "reason": "Historical single-layer retrieval image relay blob; the active and rollback images are already in Rootless Docker, and the relay helper script stays in place.",
+      "reference_checks": [
+        "regular file, link count 1, no changes within the 14 days before discovery",
+        "realpath remains inside /home/crmdeploy/cache/image-relay",
+        "no exact path references in current repository or persistent server systemd configuration",
+        "lsof returned no open handle for the file; unrelated FUSE mount warnings mean recheck before deletion"
+      ],
+      "related_tasks_or_worktrees": ["MVP-008"],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-001/retrieval-layer.blob",
+      "retention_until": "2026-10-05T11:25:30+08:00",
+      "restore_method": "No local copy after authorized deletion; reacquire or regenerate the relay blob from the reviewed GHCR image/layer source and verify its SHA-256 before reuse.",
+      "verification": [
+        "fresh pre-delete path, inode, size, SHA-256, age, open-file and health checks passed",
+        "same-filesystem quarantine retained inode 2787893 and 2810388480 allocated bytes",
+        "original and quarantine paths absent after deletion; image-relay helper script retained",
+        "Rootless Docker kept 37 images, 7 active images and all 11 active container IDs"
+      ]
+    }
+  ]
+}
