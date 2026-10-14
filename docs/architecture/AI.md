@@ -75,4 +75,6 @@ G4 离线评测流程 `policy-repair-v1` 在首个结构化草稿后，以本次
 
 下一版 G4 离线评测仅增加低敏 Provider 失败诊断：每条失败样本保存稳定的 `provider_error_code`，DeepSeek 输出检查可再保存 `provider_output_failure_kind`，取值限定为 `unfinished`、`empty`、`invalid_structure`。未失败样本两个字段均为空；故障注入不计真实 Provider 失败。工作流白名单同时限制字段与枚举，不记录响应正文、Prompt、供应商请求 ID 或原始异常。此信息用于定位下一次受控复测，不回填 R33 历史报告，不改变冻结集、Prompt、评分、85% 门槛、失败关闭、两次调用上限或 TikTok 发送设置；只有新镜像部署后的新报告才含可用诊断。
 
+R34 低敏诊断已随 R35 镜像部署 staging。[R37 单次获批 live](../reports/tests/TR-MVP-005-20261014-R37.md) 的新报告确认 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`。唯一失败的多语言政策样本首稿缺审核步骤；第二稿的 `provider_error_code=LLM_OUTPUT_INVALID`、`provider_output_failure_kind=invalid_structure`，随后安全转人工。该类别仅表示 JSON 解析或结构 Schema 校验失败，不含具体字段或原文，不能据此确定模型输出的精确错误。冻结数据、严格评分、85% 门槛、失败关闭和发送开关不变；G4 继续 `PARTIAL`。
+
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。
