@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R26 本地诊断候选：新增第二次调用终态的固定低敏枚举并同步工作流白名单，新增断言先红后绿；完整后端 `1776 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy、定向工作流契约均通过，见 [R26 TR](../reports/tests/TR-MVP-005-20261014-R26.md)。候选尚未发布或部署，未调用 DeepSeek；以下 R25 现场结论仍为最新真实结果，G4 `PARTIAL`。
+
 2026-10-13 最新 G4 现场：main `cd36685` 的 `v1.2.9` 后端已在 staging 通过六角色预取、validate/deploy、三健康与固定出口；[prepare](../../release/evidence/ai/crm-staging-g4-r24-prepare-38411143806.json) 确认 36 条冻结集且 Provider 0 调用。[live #38413001338](https://github.com/CP11-gh/CRM/actions/runs/38413001338) 终态 33/36=91.67%，危险逃逸 0、合法误拦 1、Provider 故障 0；三次疑似分隔符再生成成功恢复两次，条件政策仍安全转人工。否定缺项与多语言修复无草稿仍失败；机器 `passed=false`，G4 和 production 未放行。配置估算 USD 0.027002，非账单。见 [R25 TR](../reports/tests/TR-MVP-005-20261013-R25.md)。源码确定性验证见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24.md)。
 
 2026-10-13 上一轮 G4 现场：离线政策证据指代修复 subject `dbb65f5` 经 [PR #152](https://github.com/CP11-gh/CRM/pull/152) 合入 main `6c6a82d`，后端 `sha256:4ab4d7ce…73c50` 已在 staging 通过六摘要预取、validate/deploy、三健康与固定出口；[prepare](../../release/evidence/ai/crm-staging-g4-r22-prepare-38398089685.json) 0 调用。[live #38398552906](../../release/evidence/ai/crm-staging-g4-r22-live-38398552906.json) 首轮 32/34，终态 31/36=86.11%，危险逃逸 0、合法误拦 2、Provider 失败 0，配置估算 USD 0.024512（非账单）。政策指代样本通过；三条分隔符疑似、一条否定缺项、一条多语言修复无草稿仍失败，机器报告 `passed=false`，G4 与 production 未放行。见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。

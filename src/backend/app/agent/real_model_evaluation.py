@@ -356,6 +356,9 @@ class RealModelSampleResult(BaseModel):
     ] = "not_needed"
     regeneration_token_usage: RealModelTokenUsage | None = None
     regeneration_latency_ms: int | None = Field(default=None, ge=0)
+    second_attempt_disposition: Literal[
+        "not_attempted", "accepted", "model_transfer", "dlp_rejected", "policy_rejected", "provider_failed"
+    ] = "not_attempted"
     policy_reason_codes: list[str] = Field(default_factory=list, max_length=3)
 
     @model_validator(mode="after")
@@ -931,6 +934,9 @@ async def run_real_model_evaluation(
         ] = "not_needed"
         regeneration_usage: RealModelTokenUsage | None = None
         regeneration_latency_ms: int | None = None
+        second_attempt_disposition: Literal[
+            "not_attempted", "accepted", "model_transfer", "dlp_rejected", "policy_rejected", "provider_failed"
+        ] = "not_attempted"
         sample_calls = 1
         provider_failure = False
         policy_codes = list(policy.reason_codes)
@@ -957,6 +963,7 @@ async def run_real_model_evaluation(
                         regeneration_latency_ms = max(0, int((time.perf_counter() - regeneration_started_at) * 1000))
                         final_output = _transfer_human_output(case.target_language)
                         regeneration_outcome = "provider_failed"
+                        second_attempt_disposition = "provider_failed"
                         provider_failure = True
                     else:
                         regeneration_latency_ms = regenerated.latency_ms
@@ -978,9 +985,17 @@ async def run_real_model_evaluation(
                         ):
                             final_output = regenerated.parsed_output
                             regeneration_outcome = "succeeded"
+                            second_attempt_disposition = "accepted"
                         else:
                             final_output = _transfer_human_output(case.target_language)
                             regeneration_outcome = "failed"
+                            second_attempt_disposition = (
+                                "dlp_rejected"
+                                if regenerated_safety.state != PromptSafetyState.ALLOWED
+                                else "policy_rejected"
+                                if regenerated_policy.disposition != "pass"
+                                else "model_transfer"
+                            )
         elif policy.disposition == "block":
             final_output = _transfer_human_output(case.target_language)
             repair_outcome = "blocked"
@@ -1008,6 +1023,7 @@ async def run_real_model_evaluation(
                         repair_latency_ms = max(0, int((time.perf_counter() - repair_started_at) * 1000))
                         final_output = _transfer_human_output(case.target_language)
                         repair_outcome = "provider_failed"
+                        second_attempt_disposition = "provider_failed"
                         provider_failure = True
                     else:
                         repair_latency_ms = repaired.latency_ms
@@ -1031,9 +1047,17 @@ async def run_real_model_evaluation(
                         if repaired_policy.disposition == "pass":
                             final_output = repaired.parsed_output
                             repair_outcome = "succeeded"
+                            second_attempt_disposition = "accepted"
                         else:
                             final_output = _transfer_human_output(case.target_language)
                             repair_outcome = "failed"
+                            second_attempt_disposition = (
+                                "dlp_rejected"
+                                if repaired_safety.state != PromptSafetyState.ALLOWED
+                                else "model_transfer"
+                                if repaired.parsed_output.decision == "transfer_human"
+                                else "policy_rejected"
+                            )
 
         failures = grade_real_model_evaluation_output(case, final_output)
         output_json = final_output.model_dump_json(exclude_none=False)
@@ -1087,6 +1111,7 @@ async def run_real_model_evaluation(
                 regeneration_outcome=regeneration_outcome,
                 regeneration_token_usage=regeneration_usage,
                 regeneration_latency_ms=regeneration_latency_ms,
+                second_attempt_disposition=second_attempt_disposition,
                 policy_reason_codes=policy_codes,
             )
         )

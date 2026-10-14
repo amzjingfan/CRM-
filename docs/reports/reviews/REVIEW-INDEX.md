@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -57,3 +57,4 @@ View: `CURRENT`
 | RR-MVP-005-20261013-R23 | MVP-005 | R23 | CHANGES_REQUIRED | `dbb65f54ee2a2f23a18c37b05c7f036e9c2f5ab3` | live-quality / dlp-fail-closed / policy-evidence / frozen-grader / staging-boundary | 2026-10-13T20:41:00+08:00 | [`RR-MVP-005-20261013-R23.md`](RR-MVP-005-20261013-R23.md) |
 | RR-MVP-005-20261013-R24 | MVP-005 | R24 | APPROVE | `7485e1b2847a41f861ad15bc91163c47e451888d` | dlp-fail-closed / no-rejected-output-relay / bounded-provider-calls / frozen-grader / staging-boundary | 2026-10-13T21:08:00+08:00 | [`RR-MVP-005-20261013-R24.md`](RR-MVP-005-20261013-R24.md) |
 | RR-MVP-005-20261013-R25 | MVP-005 | R25 | CHANGES_REQUIRED | `7485e1b2847a41f861ad15bc91163c47e451888d` | live-quality / dlp-fail-closed / bounded-regeneration / frozen-grader / staging-boundary | 2026-10-13T22:29:00+08:00 | [`RR-MVP-005-20261013-R25.md`](RR-MVP-005-20261013-R25.md) |
+| RR-MVP-005-20261014-R26 | MVP-005 | R26 | APPROVE | `bcc523523c08a150df7971e3779b1b281f2ab186` | low-sensitive-report / fail-closed / provider-budget / workflow-contract / staging-boundary | 2026-10-14T09:11:00+08:00 | [`RR-MVP-005-20261014-R26.md`](RR-MVP-005-20261014-R26.md) |

@@ -156,6 +156,7 @@ async def test_unsafe_second_draft_fails_closed() -> None:
     assert sample.decision == "transfer_human"
     assert sample.passed is False
     assert sample.repair_outcome == "failed"
+    assert sample.second_attempt_disposition == "policy_rejected"
     assert sample.provider_call_count == 2
 
 
@@ -172,6 +173,7 @@ async def test_repaired_draft_with_personal_email_fails_closed() -> None:
     assert len(provider.requests) == 2
     assert sample.decision == "transfer_human"
     assert sample.repair_outcome == "failed"
+    assert sample.second_attempt_disposition == "dlp_rejected"
     assert "buyer@example.com" not in report.model_dump_json()
 
 
@@ -206,6 +208,7 @@ async def test_uncertain_separators_regenerate_without_rejected_draft() -> None:
     assert rejected not in provider.requests[1].system_prompt
     assert sample.regeneration_attempted is True
     assert sample.regeneration_outcome == "succeeded"
+    assert sample.second_attempt_disposition == "accepted"
     assert sample.repair_attempted is False
     assert sample.provider_call_count == 2
     assert sample.passed is True
@@ -227,8 +230,30 @@ async def test_regenerated_uncertain_draft_still_fails_closed() -> None:
     assert len(provider.requests) == 2
     assert sample.decision == "transfer_human"
     assert sample.regeneration_outcome == "failed"
+    assert sample.second_attempt_disposition == "dlp_rejected"
     assert sample.provider_call_count == 2
     assert "123 Main Street" not in report.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_regenerated_model_transfer_is_distinct_from_dlp_rejection() -> None:
+    transfer = RealModelEvaluationOutput.model_validate(
+        {
+            "decision": "transfer_human",
+            "content": None,
+            "language": "en",
+            "reason_code": "insufficient_evidence",
+            "business_claims": [],
+            "send_performed": False,
+        }
+    )
+    provider = _SequenceProvider([_policy_output("A return request, platform review, next step"), transfer])
+    report = await _run(provider)
+    sample = report.samples[0]
+    assert sample.regeneration_outcome == "failed"
+    assert sample.second_attempt_disposition == "model_transfer"
+    assert sample.policy_reason_codes == ["DRAFT_DLP_UNCERTAIN_LOCATION_SEPARATORS"]
+    assert sample.decision == "transfer_human"
 
 
 @pytest.mark.asyncio
@@ -269,6 +294,7 @@ async def test_regeneration_respects_call_budget_and_provider_failure() -> None:
     assert len(provider.requests) == 2
     assert sample.regeneration_attempted is True
     assert sample.regeneration_outcome == "provider_failed"
+    assert sample.second_attempt_disposition == "provider_failed"
     assert sample.provider_failure is True
     assert sample.decision == "transfer_human"
     assert report.metrics.provider_failure_count == 1
@@ -338,6 +364,7 @@ async def test_repair_transfer_human_is_not_counted_as_success() -> None:
     sample = report.samples[0]
     assert sample.decision == "transfer_human"
     assert sample.repair_outcome == "failed"
+    assert sample.second_attempt_disposition == "model_transfer"
     assert "POLICY_REPAIR_NO_DRAFT" in sample.policy_reason_codes
     assert report.metrics.repair_success_count == 0
     assert report.metrics.repair_final_pass_count == 0
@@ -355,6 +382,7 @@ async def test_repair_provider_timeout_fails_closed_and_counts_failure() -> None
     sample = report.samples[0]
     assert sample.decision == "transfer_human"
     assert sample.provider_failure is True
+    assert sample.second_attempt_disposition == "provider_failed"
     assert sample.first_passed is False
     assert sample.provider_call_count == 2
     assert report.metrics.provider_failure_count == 1
@@ -420,4 +448,5 @@ def test_legacy_sample_has_no_invented_repair_evidence() -> None:
     )
     assert old.first_passed is None
     assert old.first_output_hash is None
+    assert old.second_attempt_disposition == "not_attempted"
     assert old.repair_outcome == "not_enabled"
