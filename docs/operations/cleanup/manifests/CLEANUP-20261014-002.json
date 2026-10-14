@@ -1,0 +1,728 @@
+{
+  "task_id": "MAINT-CLEANUP-20261014-002",
+  "batch_id": "CLEANUP-20261014-002",
+  "base_sha": "032a5229b7dbe5db6c0ce990c848350ef9f1a6f5",
+  "server": "192.168.110.210",
+  "state": "DELETED",
+  "discovered_at": "2026-10-14T10:49:05.125614+08:00",
+  "current_index_digest": "sha256:3436335ab6e5720259c3aadd15e23b08de17c56bfe810934584119d1a6103933",
+  "current_platform_manifest_digest": "sha256:c2e258abbb4c07dae8af044b859fa55558fdc9fc1a79e561caf8586aaed12de8",
+  "excluded_current_index_blob_count": 5,
+  "candidate_count": 31,
+  "candidate_allocated_bytes": 6767788032,
+  "items": [
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/0d9fe3ed097145e208c411e39de06b1eecdb16352e73a3d9e6bd0811f4cd6865",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 11162,
+      "allocated_bytes": 12288,
+      "sha256": "0d9fe3ed097145e208c411e39de06b1eecdb16352e73a3d9e6bd0811f4cd6865",
+      "modified_at": "2026-09-30T17:33:07.964868+08:00",
+      "retention_until": "2026-10-07T17:33:07.964868+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/0d9fe3ed097145e208c411e39de06b1eecdb16352e73a3d9e6bd0811f4cd6865",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/0ea3deed2effec6a6970d55d42225637a774e7e90f31e23d70eb29ba9bd3a37c",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 523019642,
+      "allocated_bytes": 523026432,
+      "sha256": "0ea3deed2effec6a6970d55d42225637a774e7e90f31e23d70eb29ba9bd3a37c",
+      "modified_at": "2026-09-30T17:37:34.497939+08:00",
+      "retention_until": "2026-10-07T17:37:34.497939+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/0ea3deed2effec6a6970d55d42225637a774e7e90f31e23d70eb29ba9bd3a37c",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/211886d9ae38e1d8844e22ae7bfb629bdce1061ace164593514ade22e43d0be1",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 423744105,
+      "allocated_bytes": 423751680,
+      "sha256": "211886d9ae38e1d8844e22ae7bfb629bdce1061ace164593514ade22e43d0be1",
+      "modified_at": "2026-09-30T17:23:53.987995+08:00",
+      "retention_until": "2026-10-07T17:23:53.987995+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/211886d9ae38e1d8844e22ae7bfb629bdce1061ace164593514ade22e43d0be1",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/23c59427ed1ba1f5d067a975e64b5c8191f62789065858a8311f4253a6fa01c8",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 3364,
+      "allocated_bytes": 4096,
+      "sha256": "23c59427ed1ba1f5d067a975e64b5c8191f62789065858a8311f4253a6fa01c8",
+      "modified_at": "2026-09-30T17:33:19.554828+08:00",
+      "retention_until": "2026-10-07T17:33:19.554828+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/23c59427ed1ba1f5d067a975e64b5c8191f62789065858a8311f4253a6fa01c8",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/2eeb8ee0515e4487959f759d6c7a76931cbe487a23b7550f57cd2a320716fd22",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 423744073,
+      "allocated_bytes": 423751680,
+      "sha256": "2eeb8ee0515e4487959f759d6c7a76931cbe487a23b7550f57cd2a320716fd22",
+      "modified_at": "2026-09-30T17:47:22.905173+08:00",
+      "retention_until": "2026-10-07T17:47:22.905173+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/2eeb8ee0515e4487959f759d6c7a76931cbe487a23b7550f57cd2a320716fd22",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/2f559eff67b10befd314316b518a84560896917ca9b1967e34af3fa7c73a353b",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 93,
+      "allocated_bytes": 4096,
+      "sha256": "2f559eff67b10befd314316b518a84560896917ca9b1967e34af3fa7c73a353b",
+      "modified_at": "2026-09-30T17:21:31.5802+08:00",
+      "retention_until": "2026-10-07T17:21:31.5802+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/2f559eff67b10befd314316b518a84560896917ca9b1967e34af3fa7c73a353b",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/420768029506c077e3688e2bfba4d0365cbaf62edeaba4614d2a21934d0535ab",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 11003,
+      "allocated_bytes": 12288,
+      "sha256": "420768029506c077e3688e2bfba4d0365cbaf62edeaba4614d2a21934d0535ab",
+      "modified_at": "2026-09-30T17:14:08.558135+08:00",
+      "retention_until": "2026-10-07T17:14:08.558135+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/420768029506c077e3688e2bfba4d0365cbaf62edeaba4614d2a21934d0535ab",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 856,
+      "allocated_bytes": 4096,
+      "sha256": "4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9",
+      "modified_at": "2026-09-30T17:33:29.701668+08:00",
+      "retention_until": "2026-10-07T17:33:29.701668+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/51884546139f26bcd9b7ea2e2203cd1d7b553e596ec0fb7dda334ddc6d991f60",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 366956567,
+      "allocated_bytes": 366960640,
+      "sha256": "51884546139f26bcd9b7ea2e2203cd1d7b553e596ec0fb7dda334ddc6d991f60",
+      "modified_at": "2026-09-30T17:39:22.283844+08:00",
+      "retention_until": "2026-10-07T17:39:22.283844+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/51884546139f26bcd9b7ea2e2203cd1d7b553e596ec0fb7dda334ddc6d991f60",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/5a5e96dac4cdb4bacc89e3cbf450251cca47ddb5f54e13e37990fa7f0c7c8467",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 371825409,
+      "allocated_bytes": 371826688,
+      "sha256": "5a5e96dac4cdb4bacc89e3cbf450251cca47ddb5f54e13e37990fa7f0c7c8467",
+      "modified_at": "2026-09-30T17:33:43.153782+08:00",
+      "retention_until": "2026-10-07T17:33:43.153782+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/5a5e96dac4cdb4bacc89e3cbf450251cca47ddb5f54e13e37990fa7f0c7c8467",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/6a1951f4ed278aaaba0c50dab8341792cb173f57b693bdf84668c7ad1bf06a14",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 66478,
+      "allocated_bytes": 69632,
+      "sha256": "6a1951f4ed278aaaba0c50dab8341792cb173f57b693bdf84668c7ad1bf06a14",
+      "modified_at": "2026-09-30T17:21:33.38735+08:00",
+      "retention_until": "2026-10-07T17:21:33.38735+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/6a1951f4ed278aaaba0c50dab8341792cb173f57b693bdf84668c7ad1bf06a14",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/791699e783c09ec04da4ac4e5ea96729e0eba40c9eb6d6dd578b9548233e3a67",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 66479,
+      "allocated_bytes": 69632,
+      "sha256": "791699e783c09ec04da4ac4e5ea96729e0eba40c9eb6d6dd578b9548233e3a67",
+      "modified_at": "2026-09-30T17:33:51.180447+08:00",
+      "retention_until": "2026-10-07T17:33:51.180447+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/791699e783c09ec04da4ac4e5ea96729e0eba40c9eb6d6dd578b9548233e3a67",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/79c2db9d0b5a99cffd972cbc830a49a3cc8ddc291c83c2fd71ec06300f00771c",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 371825424,
+      "allocated_bytes": 371826688,
+      "sha256": "79c2db9d0b5a99cffd972cbc830a49a3cc8ddc291c83c2fd71ec06300f00771c",
+      "modified_at": "2026-09-30T17:46:43.665962+08:00",
+      "retention_until": "2026-10-07T17:46:43.665962+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/79c2db9d0b5a99cffd972cbc830a49a3cc8ddc291c83c2fd71ec06300f00771c",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/8814f88b76823705b8d48987c2231c4cccf2ecf7092e0442fe1c783e39e3cf87",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 359012049,
+      "allocated_bytes": 359014400,
+      "sha256": "8814f88b76823705b8d48987c2231c4cccf2ecf7092e0442fe1c783e39e3cf87",
+      "modified_at": "2026-09-30T17:33:55.420798+08:00",
+      "retention_until": "2026-10-07T17:33:55.420798+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/8814f88b76823705b8d48987c2231c4cccf2ecf7092e0442fe1c783e39e3cf87",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/88e3aff837f236d770fac8ac577985d802c8bdcf8c77acd79632c9634b2f9aec",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 3312,
+      "allocated_bytes": 4096,
+      "sha256": "88e3aff837f236d770fac8ac577985d802c8bdcf8c77acd79632c9634b2f9aec",
+      "modified_at": "2026-09-30T17:51:41.549337+08:00",
+      "retention_until": "2026-10-07T17:51:41.549337+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/88e3aff837f236d770fac8ac577985d802c8bdcf8c77acd79632c9634b2f9aec",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/8f1f3e942a20f252eff18fec774d097013ca0f49fc64587c490e7c29e2da570e",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 3309,
+      "allocated_bytes": 4096,
+      "sha256": "8f1f3e942a20f252eff18fec774d097013ca0f49fc64587c490e7c29e2da570e",
+      "modified_at": "2026-09-30T17:33:58.984093+08:00",
+      "retention_until": "2026-10-07T17:33:58.984093+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/8f1f3e942a20f252eff18fec774d097013ca0f49fc64587c490e7c29e2da570e",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/a059d4f501fe4131a59db83c1a570c75febfaa834927e9ad0e44f50f8b6c3866",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 357158,
+      "allocated_bytes": 360448,
+      "sha256": "a059d4f501fe4131a59db83c1a570c75febfaa834927e9ad0e44f50f8b6c3866",
+      "modified_at": "2026-09-30T17:34:00.202194+08:00",
+      "retention_until": "2026-10-07T17:34:00.202194+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/a059d4f501fe4131a59db83c1a570c75febfaa834927e9ad0e44f50f8b6c3866",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/aafc122980888718ba2596728689ad343e82ce52debcf3a23073db25ce615d64",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 421903651,
+      "allocated_bytes": 421908480,
+      "sha256": "aafc122980888718ba2596728689ad343e82ce52debcf3a23073db25ce615d64",
+      "modified_at": "2026-09-30T17:28:40.090686+08:00",
+      "retention_until": "2026-10-07T17:28:40.090686+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/aafc122980888718ba2596728689ad343e82ce52debcf3a23073db25ce615d64",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/b0921bb6281f8950420f6942d37cfee6165245adcf2dab6a7da1f2048c86b9e1",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 366956598,
+      "allocated_bytes": 366964736,
+      "sha256": "b0921bb6281f8950420f6942d37cfee6165245adcf2dab6a7da1f2048c86b9e1",
+      "modified_at": "2026-09-30T17:43:34.669497+08:00",
+      "retention_until": "2026-10-07T17:43:34.669497+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/b0921bb6281f8950420f6942d37cfee6165245adcf2dab6a7da1f2048c86b9e1",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/b278744dee8970fc142d933ed1c71947d8838810c7e8c62af7fb1ad27dc95f18",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 354991,
+      "allocated_bytes": 356352,
+      "sha256": "b278744dee8970fc142d933ed1c71947d8838810c7e8c62af7fb1ad27dc95f18",
+      "modified_at": "2026-09-30T17:51:50.073035+08:00",
+      "retention_until": "2026-10-07T17:51:50.073035+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/b278744dee8970fc142d933ed1c71947d8838810c7e8c62af7fb1ad27dc95f18",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/b9706ccb3f29230334cd835f6f3b9662c423e2af00d2aa24533b3325c1ce9d12",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 342058780,
+      "allocated_bytes": 342061056,
+      "sha256": "b9706ccb3f29230334cd835f6f3b9662c423e2af00d2aa24533b3325c1ce9d12",
+      "modified_at": "2026-09-30T17:51:54.926432+08:00",
+      "retention_until": "2026-10-07T17:51:54.926432+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/b9706ccb3f29230334cd835f6f3b9662c423e2af00d2aa24533b3325c1ce9d12",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/cb1f05f2d3bed856a46c062c5cba0a6cf3c6a91fb622862bd6373df088e3440f",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 93,
+      "allocated_bytes": 4096,
+      "sha256": "cb1f05f2d3bed856a46c062c5cba0a6cf3c6a91fb622862bd6373df088e3440f",
+      "modified_at": "2026-09-30T17:34:04.674564+08:00",
+      "retention_until": "2026-10-07T17:34:04.674564+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/cb1f05f2d3bed856a46c062c5cba0a6cf3c6a91fb622862bd6373df088e3440f",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/cf7b5c71fcf8365957b175dff608c45b148e7a1fb6521768118a39f2f4ce0193",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 421903701,
+      "allocated_bytes": 421908480,
+      "sha256": "cf7b5c71fcf8365957b175dff608c45b148e7a1fb6521768118a39f2f4ce0193",
+      "modified_at": "2026-09-30T17:47:02.762525+08:00",
+      "retention_until": "2026-10-07T17:47:02.762525+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/cf7b5c71fcf8365957b175dff608c45b148e7a1fb6521768118a39f2f4ce0193",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/ebf9b52b5e506f3118642a9fea9cce62561c02c5d9fb3a76b0fd90f3b351132c",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 359012100,
+      "allocated_bytes": 359018496,
+      "sha256": "ebf9b52b5e506f3118642a9fea9cce62561c02c5d9fb3a76b0fd90f3b351132c",
+      "modified_at": "2026-09-30T17:48:52.013464+08:00",
+      "retention_until": "2026-10-07T17:48:52.013464+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/ebf9b52b5e506f3118642a9fea9cce62561c02c5d9fb3a76b0fd90f3b351132c",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/fb43ab1c9e0bb72fd75287f9b308e6268e21e0d91b8c22ceb2ea89be9ac2c7d6",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 342058717,
+      "allocated_bytes": 342065152,
+      "sha256": "fb43ab1c9e0bb72fd75287f9b308e6268e21e0d91b8c22ceb2ea89be9ac2c7d6",
+      "modified_at": "2026-09-30T17:34:11.320114+08:00",
+      "retention_until": "2026-10-07T17:34:11.320114+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/fb43ab1c9e0bb72fd75287f9b308e6268e21e0d91b8c22ceb2ea89be9ac2c7d6",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/fbef479ecfe5adfe58ea1758686756da5d9ff81df53901740d6b48a20ed93233",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 3364,
+      "allocated_bytes": 4096,
+      "sha256": "fbef479ecfe5adfe58ea1758686756da5d9ff81df53901740d6b48a20ed93233",
+      "modified_at": "2026-09-30T17:14:07.371027+08:00",
+      "retention_until": "2026-10-07T17:14:07.371027+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/fbef479ecfe5adfe58ea1758686756da5d9ff81df53901740d6b48a20ed93233",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/fc801358c113e0553d45d89f8b277542ccc0ac8fa00e5367965e190b45e46645",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 523019509,
+      "allocated_bytes": 523026432,
+      "sha256": "fc801358c113e0553d45d89f8b277542ccc0ac8fa00e5367965e190b45e46645",
+      "modified_at": "2026-09-30T17:21:40.720958+08:00",
+      "retention_until": "2026-10-07T17:21:40.720958+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/fc801358c113e0553d45d89f8b277542ccc0ac8fa00e5367965e190b45e46645",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/blobs/sha256/feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+      "kind": "file",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": 856,
+      "allocated_bytes": 4096,
+      "sha256": "feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+      "modified_at": "2026-09-30T17:14:06.574675+08:00",
+      "retention_until": "2026-10-07T17:14:06.574675+08:00",
+      "reason": "2026-09-30 OCI transport blob; not referenced by current linux/amd64 OCI index; SHA-256 verified during discovery",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/blobs/sha256/feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+      "restore_method": "Move same-inode file back to original_path before deletion",
+      "verification": [
+        "SHA-256 equals filename (2026-10-14 read-only audit)"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/parts/2eeb8ee0515e4487959f759d6c7a76931cbe487a23b7550f57cd2a320716fd22",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": null,
+      "allocated_bytes": 423763968,
+      "sha256": "N/A: directory of resumable chunks",
+      "modified_at": "2026-09-30T17:47:19.982127+08:00",
+      "retention_until": "2026-10-07T17:47:19.982127+08:00",
+      "reason": "2026-09-30 resumable chunks for blob excluded by current OCI index",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/parts/2eeb8ee0515e4487959f759d6c7a76931cbe487a23b7550f57cd2a320716fd22",
+      "restore_method": "Move same-inode directory back to original_path before deletion",
+      "verification": [
+        "405 child entries checked for age and symlinks"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/parts/51884546139f26bcd9b7ea2e2203cd1d7b553e596ec0fb7dda334ddc6d991f60",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": null,
+      "allocated_bytes": 366972928,
+      "sha256": "N/A: directory of resumable chunks",
+      "modified_at": "2026-09-30T17:39:18.493534+08:00",
+      "retention_until": "2026-10-07T17:39:18.493534+08:00",
+      "reason": "2026-09-30 resumable chunks for blob excluded by current OCI index",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/parts/51884546139f26bcd9b7ea2e2203cd1d7b553e596ec0fb7dda334ddc6d991f60",
+      "restore_method": "Move same-inode directory back to original_path before deletion",
+      "verification": [
+        "350 child entries checked for age and symlinks"
+      ]
+    },
+    {
+      "original_path": "/home/crmdeploy/.cache/crm-ghcr-prefetch/parts/ebf9b52b5e506f3118642a9fea9cce62561c02c5d9fb3a76b0fd90f3b351132c",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "N/A external cache",
+      "size_bytes": null,
+      "allocated_bytes": 359026688,
+      "sha256": "N/A: directory of resumable chunks",
+      "modified_at": "2026-09-30T17:56:31.79109+08:00",
+      "retention_until": "2026-10-07T17:56:31.79109+08:00",
+      "reason": "2026-09-30 resumable chunks for blob excluded by current OCI index",
+      "reference_checks": [
+        "current OCI index dependency graph excludes digest",
+        "Rootless Docker image/container references separately checked"
+      ],
+      "related_tasks_or_worktrees": [],
+      "action": "deleted",
+      "quarantine_path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261014-002/parts/ebf9b52b5e506f3118642a9fea9cce62561c02c5d9fb3a76b0fd90f3b351132c",
+      "restore_method": "Move same-inode directory back to original_path before deletion",
+      "verification": [
+        "343 child entries checked for age and symlinks"
+      ]
+    }
+  ]
+}
