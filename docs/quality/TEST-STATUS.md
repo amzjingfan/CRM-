@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-14 G4 R33 现场：[prepare #38527631807](https://github.com/CP11-gh/CRM/actions/runs/38527631807) 在 main `d262f440` 和 R31 后端 `sha256:1c3a8e83…fc21f0` 上锁定冻结 36 条，Provider 0 调用；用户单次授权的 [live #38528027351](https://github.com/CP11-gh/CRM/actions/runs/38528027351) 为 35/36=97.22%，危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`。否定说明已通过；多语言政策首稿缺审核步骤，第二次调用记为 `provider_failed` 并转人工，仍是唯一失败；工作流日志另有一条未绑定样本的 `deepseek_output_invalid`。配置估算 USD 0.027232（非账单）。见 [R33 TR](../reports/tests/TR-MVP-005-20261014-R33.md)。G4 `PARTIAL`、production No-Go，本次付费授权已用完。
+
 2026-10-14 G4 R32 staging 部署：经单独授权，从 main `3d6859a` 依序完成[六摘要预取 #38517947272](https://github.com/CP11-gh/CRM/actions/runs/38517947272)、[validate #38519678056](https://github.com/CP11-gh/CRM/actions/runs/38519678056)、[deploy #38520023020](https://github.com/CP11-gh/CRM/actions/runs/38520023020)。运行后端为 R31 `sha256:1c3a8e83…fc21f0`；前端/检索不变，迁移头已应用，三健康 200，固定出口 `38.55.145.52`，Webhook 仍只读。公网只读复核三个健康端点也各为 200。详见 [R32 TR](../reports/tests/TR-MVP-005-20261014-R32.md)。本版尚未运行 `prepare/live`；R30 两条逐项失败仍待复核，G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R31 镜像发布：用户本次授权的 [publish-backend-image #38516990486](https://github.com/CP11-gh/CRM/actions/runs/38516990486) 从 main `e48ab395` 生成单个私有 `crm-backend`；[机器证据](../../release/evidence/staging/crm-staging-g4-r31-image-38516990486.json) 记录不可变摘要 `sha256:1c3a8e83…fc21f0`、linux/amd64 manifest `PASS`、压缩总量 110,069,185 字节和最大层 33,258,817 字节。尚未部署 staging 或调用 DeepSeek；R30 仍是最新 live，G4 `PARTIAL`。
