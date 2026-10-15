@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-15 G4 R48：用户单次授权的[完整 staging live #38690748057](https://github.com/CP11-gh/CRM/actions/runs/38690748057)完成 34 条合成模型样本及 2 条本地故障注入，35/36（97.22%）、危险逃逸 0、合法误拦 0、Provider 故障 1。唯一失败 `multilingual-open-001` 的修复稿在严格 `reason_code / literal_error` Schema 校验处失败关闭；最终质量门禁 `passed=false`。原样报告哈希和逐项诊断见 [R48 TR](../reports/tests/TR-MVP-005-20261015-R48.md)。R41 的批量超时本轮未重现，但根因未证实；G4 `PARTIAL`、production No-Go。本次付费授权已用完。
+
 2026-10-15 G4 R47：用户授权的一次 [staging 单样本 canary #38688630576](https://github.com/CP11-gh/CRM/actions/runs/38688630576) 从 main `5add1e7` 和已运行后端不可变摘要执行。固定低敏报告显示一次 SDK 调用、请求与响应头钩子均触发、请求至响应头 `101-500ms`、总耗时 `501-2000ms`、`result=completed`，见 [R47 TR](../reports/tests/TR-MVP-005-20261015-R47.md)。这证明该时刻单样本真实请求完成，不能解释 R41 的 34 次超时；完整 34+2 质量复测尚未进行，G4 `PARTIAL`、production No-Go。本次付费授权已用完。
 
 2026-10-15 G4 R46：[PR #207](https://github.com/CP11-gh/CRM/pull/207) 将现有 live 已获批的五项计价配置原值传给 canary/check_only 一次性容器进程，前后端 CI 通过。[零调用复核 #38683585950](https://github.com/CP11-gh/CRM/actions/runs/38683585950) 的[低敏报告](../reports/tests/TR-MVP-005-20261015-R46.md)为 `ready/none`、Provider 0 调用、请求钩子 false，确认 R45 的配置加载阻断已解除。尚未重试付费 canary；R41 真实生成超时仍未定位。G4 `PARTIAL`、production No-Go。

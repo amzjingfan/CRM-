@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r47-index-20261015
-Governance base SHA: bb4fbea3a9fe0a281e4327c7f08ef5c69fdcdc28
-CANDIDATE_SUBJECT_SHA: bb4fbea3a9fe0a281e4327c7f08ef5c69fdcdc28
+Working branch at this snapshot: docs/mvp005-g4-r48-live-evidence-20261015
+Governance base SHA: 9cb2a400cc2906dd74649f13ecca72e085822b2d
+CANDIDATE_SUBJECT_SHA: 9cb2a400cc2906dd74649f13ecca72e085822b2d
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-15 G4 R48 最新恢复点：用户精确授权后，从 main `9cb2a400` 仅运行一次[完整 live #38690748057](https://github.com/CP11-gh/CRM/actions/runs/38690748057)，锁定运行后端 `sha256:ee48ee38…335daa` 与 36 条冻结样本。34 条 DeepSeek 合成样本及 2 条本地故障注入为 35/36（97.22%）、危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`。唯一失败 `multilingual-open-001` 首稿缺平台审核步骤，修复稿在严格 `reason_code / literal_error` Schema 校验处失败关闭；原样低敏证据 SHA-256 及逐项字段见 [R48 TR](../reports/tests/TR-MVP-005-20261015-R48.md)。R41 批量超时未重现，根因尚未证实；付费授权已用完，服务与 TikTok 开关未变，G4 `PARTIAL`、production No-Go。下一步最多三项：按已批准设计修复修复 Prompt 并跑确定性测试；经 PR/CI 合入；新的镜像、staging 部署和付费复测分别精确授权。
 
 2026-10-15 G4 R47 最新恢复点：用户在单样本精确付费方案后批准继续；从 main `5add1e7` 仅执行一次 [staging canary #38688630576](https://github.com/CP11-gh/CRM/actions/runs/38688630576)。固定冻结样本 `order-open-001` 的请求与响应头均被观察到，首头 `101-500ms`、总耗时 `501-2000ms`、结果 `completed`、一次 SDK 调用；低敏原样证据及 SHA-256 见 [R47 TR](../reports/tests/TR-MVP-005-20261015-R47.md)。[PR #210](https://github.com/CP11-gh/CRM/pull/210) 双 CI 通过并合入 main `bb4fbea`；从该 main 核对 IR/TR/RR 各 75 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。运行后端、TikTok 开关和 production 未变。本次授权已用完；这一次成功不解释 R41 的 34 次超时，也不构成完整质量复测。G4 `PARTIAL`、production No-Go。下一步最多三项：审查 R41 与本次差异；如需完整 34+2 付费 `live`，先取得精确授权；按逐项结果决定 G4 修复或关闭。
 
