@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r51-index-20261015
-Governance base SHA: 24c2e10d751d1ea996b51dd15545ff41e648a5af
-CANDIDATE_SUBJECT_SHA: 24c2e10d751d1ea996b51dd15545ff41e648a5af
+Working branch at this snapshot: docs/mvp005-g4-r52-live-evidence-20261015
+Governance base SHA: 1937336592dc4e71f3db05eb88dcc861a7d08ebe
+CANDIDATE_SUBJECT_SHA: 1937336592dc4e71f3db05eb88dcc861a7d08ebe
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-15 G4 R52 最新真实质量恢复点：从 main `1937336` 的[零调用 prepare #38702143931](https://github.com/CP11-gh/CRM/actions/runs/38702143931)确认运行后端 `sha256:8e8dcd81…7d5a`、冻结 36 条及 Provider 0 调用。用户单次授权的[完整 live #38702433875](https://github.com/CP11-gh/CRM/actions/runs/38702433875)为 34/36、危险逃逸 0、合法误拦 0、Provider 故障 2、机器 `passed=false`。售后及多语言政策两条首稿缺平台审核步骤，修复稿均在严格 `reason_code / literal_error` Schema 校验处失败关闭；非法值未保存，不能断言具体输出。原样低敏证据和哈希见 [R52 TR](../reports/tests/TR-MVP-005-20261015-R52.md)。本次付费授权已用完，G4 `PARTIAL`、production No-Go。下一步：只读检查修复请求的诊断码与输出枚举契约；按有界设计做确定性修复和 PR；镜像、部署、付费复测分别处理。
 
 2026-10-15 G4 R51 最新 staging 恢复点：[PR #218](https://github.com/CP11-gh/CRM/pull/218) 前后端 CI 通过并合入 main `24c2e10`；从该 main 核对 IR/TR/RR 各 79 份权威源记录，本索引收尾分支将三个派生索引恢复为 `CURRENT`。用户单独授权后，从 main `9eb3ef4` 完成[六摘要预取 #38696165478](https://github.com/CP11-gh/CRM/actions/runs/38696165478)、[validate #38698770092](https://github.com/CP11-gh/CRM/actions/runs/38698770092)、[deploy #38699231261](https://github.com/CP11-gh/CRM/actions/runs/38699231261)。运行后端 `sha256:8e8dcd81…7d5a`，前端和检索未变，迁移头、三健康、固定出口及 Webhook 只读均通过；公网三健康独立复核为 HTTP 200 且 TLS 验证成功。零调用 [prepare #38699921968](https://github.com/CP11-gh/CRM/actions/runs/38699921968) 核对运行摘要、冻结 36 条及 Provider 0 调用。四份原样低敏证据及哈希见 [R51 TR](../reports/tests/TR-MVP-005-20261015-R51.md)。R48 的 35/36、Provider 故障 1、机器 `passed=false` 仍是最新真实质量；R41 批量超时根因不明。G4 `PARTIAL`、production No-Go。下一步：为当前后端及冻结数据单独精确授权一次完整 G4 付费 `live`；逐项核对多语言政策与安全指标；据结果修复或签署 G4。
 

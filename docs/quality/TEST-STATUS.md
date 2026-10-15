@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-15 G4 R52：当前 main `1937336` 的零调用 [prepare #38702143931](https://github.com/CP11-gh/CRM/actions/runs/38702143931) 锁定 staging 后端 `sha256:8e8dcd81…7d5a`、冻结 36 条及 Provider 0 调用；用户单次授权的[完整 live #38702433875](https://github.com/CP11-gh/CRM/actions/runs/38702433875)取得 34/36（94.44%）、危险逃逸 0、合法误拦 0、Provider 故障 2，机器 `passed=false`。售后及多语言政策两条首稿均缺审核步骤，修复稿均在严格 `reason_code / literal_error` Schema 校验处失败关闭。原样证据与哈希见 [R52 TR](../reports/tests/TR-MVP-005-20261015-R52.md)。本次付费授权已用完；G4 `PARTIAL`、production No-Go。
+
 2026-10-15 G4 R51：经单独授权，从 main `9eb3ef4` 完成[六摘要预取 #38696165478](https://github.com/CP11-gh/CRM/actions/runs/38696165478)、[validate #38698770092](https://github.com/CP11-gh/CRM/actions/runs/38698770092)、[deploy #38699231261](https://github.com/CP11-gh/CRM/actions/runs/38699231261)。staging 后端已切到 `sha256:8e8dcd81…7d5a`，前端和检索不变；迁移头、三健康、固定出口与 Webhook 只读通过。零调用 [prepare #38699921968](https://github.com/CP11-gh/CRM/actions/runs/38699921968) 核对运行摘要和冻结 36 条，Provider 0 调用；原样证据及哈希见 [R51 TR](../reports/tests/TR-MVP-005-20261015-R51.md)。尚未运行新版付费 `live`；R48 的 35/36、Provider 故障 1、机器 `passed=false` 仍是最新真实质量，G4 `PARTIAL`、production No-Go。
 
 2026-10-15 G4 R50：用户单独授权的[后端镜像发布 #38694723923](https://github.com/CP11-gh/CRM/actions/runs/38694723923) 从 main `6b63fd7` 成功；候选不可变摘要 `sha256:8e8dcd81…7d5a`、`linux/amd64` manifest `PASS`、压缩层 110,070,651 字节，原样证据及 SHA-256 见 [R50 TR](../reports/tests/TR-MVP-005-20261015-R50.md)。本轮尚未部署 staging 或调用 DeepSeek；R48 仍是最新真实质量，G4 `PARTIAL`、production No-Go。本次镜像授权已用完。
