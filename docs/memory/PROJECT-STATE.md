@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r55-staging-evidence-20261015
-Governance base SHA: 86ac3dd8b182ac3e97f1a0460d5df652b86cfc9a
+Working branch at this snapshot: docs/mvp005-g4-r55-index-20261015
+Governance base SHA: cf362c43e754352b9330d3b6ac438ea5c2d8b2c0
 CANDIDATE_SUBJECT_SHA: 86ac3dd8b182ac3e97f1a0460d5df652b86cfc9a
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R55 staging 恢复点：用户单独授权后，从 main `86ac3dd` 依次完成[六摘要预取 #38710281674](https://github.com/CP11-gh/CRM/actions/runs/38710281674)、[validate #38712087142](https://github.com/CP11-gh/CRM/actions/runs/38712087142)、[deploy #38712441191](https://github.com/CP11-gh/CRM/actions/runs/38712441191) 和零调用 [prepare #38713090896](https://github.com/CP11-gh/CRM/actions/runs/38713090896)。运行后端 `sha256:1045d683…eec363`，前端/检索不变，旧后端 `sha256:8e8dcd81…7d5a` 已预取为回滚目标；迁移头、三健康、固定出口 `38.55.145.52` 和 Webhook 只读通过，公网三健康另复核为 `200 0`。prepare 锁定冻结 36 条且 Provider 0 调用，四份原样证据与哈希见 [R55 TR](../reports/tests/TR-MVP-005-20261015-R55.md)。本分支 IR/TR/RR 各 83 份，索引为 `CANDIDATE_VIEW`。R52 的 34/36、Provider 故障 2、机器 `passed=false` 仍是最新真实质量；G4 `PARTIAL`、production No-Go。下一步：完成本证据 PR/CI 和 main 索引收尾；若需复核新版真实质量，单独精确授权一次 G4 付费 live；按逐项结果决定修复或签署。
+2026-10-15 G4 R55 staging 恢复点：用户单独授权后，从 main `86ac3dd` 依次完成[六摘要预取 #38710281674](https://github.com/CP11-gh/CRM/actions/runs/38710281674)、[validate #38712087142](https://github.com/CP11-gh/CRM/actions/runs/38712087142)、[deploy #38712441191](https://github.com/CP11-gh/CRM/actions/runs/38712441191) 和零调用 [prepare #38713090896](https://github.com/CP11-gh/CRM/actions/runs/38713090896)。运行后端 `sha256:1045d683…eec363`，前端/检索不变，旧后端 `sha256:8e8dcd81…7d5a` 已预取为回滚目标；迁移头、三健康、固定出口 `38.55.145.52` 和 Webhook 只读通过，公网三健康另复核为 `200 0`。prepare 锁定冻结 36 条且 Provider 0 调用，四份原样证据与哈希见 [R55 TR](../reports/tests/TR-MVP-005-20261015-R55.md)。[PR #226](https://github.com/CP11-gh/CRM/pull/226) 前后端 CI 通过并合入 main `cf362c4`；从该 main 核对 IR/TR/RR 各 83 份权威源记录，三个派生索引恢复为 `CURRENT`。R52 的 34/36、Provider 故障 2、机器 `passed=false` 仍是最新真实质量；G4 `PARTIAL`、production No-Go。下一步：单独精确授权一次 G4 付费 live 复核新版真实质量；逐项核对两个政策失败与安全指标；按结果修复或签署。
 
 2026-10-15 G4 R54 镜像恢复点：用户在精确单镜像范围后批准继续，从 main `6e41632` 仅运行一次 [publish-backend-image #38708209437](https://github.com/CP11-gh/CRM/actions/runs/38708209437)。`linux/amd64` 候选 `ghcr.io/cp11-gh/crm-backend@sha256:1045d683a65539727c444b8990ca25768814485e9eb0e62c8cb0d91d87eec363` 已发布；manifest `PASS`，压缩层 110,072,185 字节，原始 artifact 与入库证据 SHA-256 一致，见 [R54 TR](../reports/tests/TR-MVP-005-20261015-R54.md)。[PR #224](https://github.com/CP11-gh/CRM/pull/224) 前后端 CI 通过并合入 main `eda95db`；从该 main 核对 IR/TR/RR 各 82 份权威源记录，三个派生索引恢复为 `CURRENT`。staging 仍运行旧后端 `sha256:8e8dcd81…7d5a`，前端/检索与 TikTok 开关未变；未调用 DeepSeek，R52 仍是最新真实失败，G4 `PARTIAL`、production No-Go。下一步：在单独精确授权下预取/验证/部署新摘要并核对运行摘要、健康与固定出口；运行零调用 prepare；再单独授权付费 G4 live。
 
