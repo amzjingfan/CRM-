@@ -86,6 +86,7 @@ python scripts/verify_tiktok_egress.py
 - Token 加密保存，刷新失败将渠道置为 `expired`；日志和响应不输出 Token 或凭证引用。
 - DeepSeek Key 只从环境读取，Provider 使用固定正向输入协议、DLP 和结构化输出。
 - G4 一次性入口为 `evaluate-staging-deepseek.yml`：从 `main` 手动派发，必须填写精确的 `expected_source_sha` 与当前运行 `crm-backend` 的 `repository@sha256`。Runner 按该提交从 GitHub API 读取所需六个文件并校验 Git blob SHA，避免全仓 Git fetch 卡住。先运行 `prepare`，它校验独立冻结集、36 条样本、34 条真实模型样本、2 条故障注入、staging 配置及代码哈希，只上传低敏准备证据，Provider 调用数为 0。`live` 另需针对 34 条合成数据外发及可能费用的单独批准，并填入工作流要求的确认短语；它只在现有 backend 容器的一次性子进程中启用评测与保守估价，不修改服务配置、TikTok 写开关或 production。质量未达门禁时上传低敏报告后作业失败；报告中的成本是估算，不是账单。历史 32/36 不能代替新现场结果。
+- G4 的全量 Provider 超时可用 `diagnose-staging-deepseek-transport.yml` 做一次性只读定位：从 `main` 填入精确源码 SHA 和运行后端摘要，Runner 与现有 backend 容器分别对固定 `api.deepseek.com` 执行无凭据的 DNS/TCP/TLS/HEAD 检查。报告仅含固定阶段类别、HTTP 状态类别、耗时和代理环境是否存在，不保存地址、响应正文、代理值或凭据。此探针不调用模型、不改服务，不能替代付费 `live` 质量验收。
 - SSE `delta` 是经安全校验后的草稿分块，不把模型原生流直接暴露给客户端。
 
 ## 模型资产

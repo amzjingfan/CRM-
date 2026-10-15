@@ -1,0 +1,172 @@
+name: Diagnose staging DeepSeek transport
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_source_sha:
+        description: Exact reviewed main commit SHA
+        required: true
+        type: string
+      expected_backend_image:
+        description: Exact running crm-backend repository@sha256 digest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-staging-production-gates
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    runs-on: [self-hosted, linux, x64, crm-staging]
+    timeout-minutes: 5
+    steps:
+      - name: Probe runner and running backend without credentials
+        shell: pwsh
+        env:
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
+              $env:GITHUB_SHA -cne $env:EXPECTED_SOURCE_SHA -or
+              $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$') {
+            throw 'The reviewed main source or backend digest is invalid.'
+          }
+          $runnerUid = (& id -u).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runnerUid -notmatch '^[1-9][0-9]*$') {
+            throw 'Unable to resolve Rootless Docker UID.'
+          }
+          $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
+          $containers = @(& docker --host $dockerHost ps --filter 'label=com.docker.compose.project=crm-staging' --filter 'label=com.docker.compose.service=backend' --format '{{.ID}}')
+          if ($LASTEXITCODE -ne 0 -or $containers.Count -ne 1) {
+            throw 'Expected exactly one running staging backend.'
+          }
+          $container = $containers[0]
+          $actualImage = (& docker --host $dockerHost inspect --format '{{.Config.Image}}' $container).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualImage -cne $env:EXPECTED_BACKEND_IMAGE) {
+            throw 'Running backend image does not match the reviewed digest.'
+          }
+
+          # 无凭据 HEAD 只区分传输阶段；丢弃响应正文、地址和原始错误。
+          $clock = [Diagnostics.Stopwatch]::StartNew()
+          $hostCode = & curl --head --silent --max-time 7 --output /dev/null --write-out '%{http_code}' https://api.deepseek.com/ 2>$null
+          $curlExit = $LASTEXITCODE
+          $clock.Stop()
+          $hostCategory = if ($curlExit -eq 0) { 'http_response' }
+            elseif ($curlExit -eq 6) { 'dns_failed' }
+            elseif ($curlExit -eq 7) { 'connect_failed' }
+            elseif ($curlExit -in @(35, 51, 60)) { 'tls_failed' }
+            elseif ($curlExit -eq 28) { 'timeout' }
+            else { 'other_failure' }
+          $hostHttpClass = if ($curlExit -eq 0 -and $hostCode -match '^[2-5][0-9]{2}$') {
+            "$($hostCode.Substring(0, 1))xx"
+          } else { 'no_response' }
+
+          $probeCode = @'
+          import json
+          import os
+          import socket
+          import ssl
+          import time
+          import urllib.error
+          import urllib.request
+          from urllib.parse import urlsplit
+
+          from app.shared.config.settings import get_settings
+
+          started = time.monotonic()
+          parsed = urlsplit(get_settings().deepseek_base_url)
+          config_match = parsed.scheme == "https" and parsed.hostname == "api.deepseek.com" and parsed.port in (None, 443)
+          result = {
+              "config_match": config_match,
+              "dns_status": "not_run",
+              "tcp_status": "not_run",
+              "tls_status": "not_run",
+              "http_status_class": "no_response",
+              "https_proxy_present": bool(os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")),
+              "elapsed_ms": 0,
+          }
+          if config_match:
+              try:
+                  socket.getaddrinfo("api.deepseek.com", 443, type=socket.SOCK_STREAM)
+                  result["dns_status"] = "passed"
+              except (OSError, TimeoutError):
+                  result["dns_status"] = "failed"
+              if result["dns_status"] == "passed":
+                  try:
+                      with socket.create_connection(("api.deepseek.com", 443), timeout=5):
+                          result["tcp_status"] = "passed"
+                  except (OSError, TimeoutError):
+                      result["tcp_status"] = "failed"
+              if result["tcp_status"] == "passed":
+                  try:
+                      with socket.create_connection(("api.deepseek.com", 443), timeout=5) as connection:
+                          with ssl.create_default_context().wrap_socket(connection, server_hostname="api.deepseek.com"):
+                              result["tls_status"] = "passed"
+                  except (OSError, TimeoutError, ssl.SSLError):
+                      result["tls_status"] = "failed"
+              try:
+                  request = urllib.request.Request("https://api.deepseek.com/", method="HEAD")
+                  with urllib.request.urlopen(request, timeout=7) as response:
+                      result["http_status_class"] = f"{response.status // 100}xx"
+              except urllib.error.HTTPError as error:
+                  result["http_status_class"] = f"{error.code // 100}xx"
+              except (OSError, TimeoutError, urllib.error.URLError):
+                  pass
+          result["elapsed_ms"] = max(0, int((time.monotonic() - started) * 1000))
+          print(json.dumps(result, separators=(",", ":")))
+          '@
+          $containerOutput = $probeCode | & docker --host $dockerHost exec -i $container python - 2>$null
+          if ($LASTEXITCODE -ne 0 -or @($containerOutput).Count -ne 1) {
+            throw 'Backend transport probe did not return one safe result.'
+          }
+          $probe = $containerOutput | ConvertFrom-Json -AsHashtable
+          if ($probe.dns_status -cnotin @('not_run', 'passed', 'failed') -or
+              $probe.tcp_status -cnotin @('not_run', 'passed', 'failed') -or
+              $probe.tls_status -cnotin @('not_run', 'passed', 'failed') -or
+              $probe.http_status_class -cnotin @('no_response', '2xx', '3xx', '4xx', '5xx') -or
+              $probe.elapsed_ms -lt 0 -or $probe.elapsed_ms -gt 30000) {
+            throw 'Backend transport probe returned an invalid category.'
+          }
+          $evidence = [ordered]@{
+            schema_version = 1
+            evidence_type = 'staging_deepseek_transport_probe'
+            source_sha = $env:GITHUB_SHA
+            backend_image = $actualImage
+            runner = [ordered]@{
+              category = $hostCategory
+              http_status_class = $hostHttpClass
+              elapsed_ms = [Math]::Max(0, [int]$clock.ElapsedMilliseconds)
+              https_proxy_present = -not [string]::IsNullOrWhiteSpace($env:HTTPS_PROXY)
+            }
+            backend = [ordered]@{
+              config_match = [bool]$probe.config_match
+              dns_status = [string]$probe.dns_status
+              tcp_status = [string]$probe.tcp_status
+              tls_status = [string]$probe.tls_status
+              http_status_class = [string]$probe.http_status_class
+              https_proxy_present = [bool]$probe.https_proxy_present
+              elapsed_ms = [int]$probe.elapsed_ms
+            }
+            provider_calls = 0
+            service_mutation = $false
+            production_release = $false
+          }
+          $evidencePath = Join-Path $env:RUNNER_TEMP "crm-deepseek-transport-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
+          $evidence | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $evidencePath -Encoding utf8
+          "evidence_path=$evidencePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Output 'Read-only DeepSeek transport probe completed.'
+
+      - name: Upload low-sensitive transport evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: staging-deepseek-transport-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crm-deepseek-transport-${{ github.run_id }}-${{ github.run_attempt }}.json
+          if-no-files-found: error
+          retention-days: 7
