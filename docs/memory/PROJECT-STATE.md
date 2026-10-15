@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r46-evidence-20261015
-Governance base SHA: 343d7a1f35ecef505d7e11e7848c64db360fe77b
-CANDIDATE_SUBJECT_SHA: 343d7a1f35ecef505d7e11e7848c64db360fe77b
+Working branch at this snapshot: docs/mvp005-g4-r46-index-20261015
+Governance base SHA: 641e25b529cea7f559546cfc4e6cf525d3ef4613
+CANDIDATE_SUBJECT_SHA: 641e25b529cea7f559546cfc4e6cf525d3ef4613
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R46 最新恢复点：按用户确认的有界修复设计，[PR #207](https://github.com/CP11-gh/CRM/pull/207) 仅将现有 live 的五项获批计价配置原值加入 canary/check_only 一次性进程，双 CI 与独立审查通过并合入 main `343d7a1`。一次 [staging 零调用复核 #38683585950](https://github.com/CP11-gh/CRM/actions/runs/38683585950) 核对源码、冻结集与运行后端后报告 `ready/none`、Provider 0 调用、请求钩子 false；原样证据和哈希见 [R46 TR](../reports/tests/TR-MVP-005-20261015-R46.md)。R45 配置加载阻断已解除，但付费 canary 尚未重试，R41 的 34 次真实生成超时仍待定位。G4 `PARTIAL`、production No-Go。下一步：如需一次新的单样本真实请求，按精确付费范围另行批准；读取低敏阶段证据后再决定超时修复与完整 live。
+2026-10-15 G4 R46 最新恢复点：按用户确认的有界修复设计，[PR #207](https://github.com/CP11-gh/CRM/pull/207) 仅将现有 live 的五项获批计价配置原值加入 canary/check_only 一次性进程，双 CI 与独立审查通过并合入 main `343d7a1`。一次 [staging 零调用复核 #38683585950](https://github.com/CP11-gh/CRM/actions/runs/38683585950) 核对源码、冻结集与运行后端后报告 `ready/none`、Provider 0 调用、请求钩子 false；原样证据和哈希见 [R46 TR](../reports/tests/TR-MVP-005-20261015-R46.md)。[PR #208](https://github.com/CP11-gh/CRM/pull/208) 双 CI 通过并合入 main `641e25b`；从该 main 核对 IR/TR/RR 各 74 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。R45 配置加载阻断已解除，但付费 canary 尚未重试，R41 的 34 次真实生成超时仍待定位。G4 `PARTIAL`、production No-Go。下一步：如需一次新的单样本真实请求，按精确付费范围另行批准；读取低敏阶段证据后再决定超时修复与完整 live。
 
 2026-10-15 G4 R45 历史恢复点：用户授权的一次 [R44 付费 canary #38678589702](https://github.com/CP11-gh/CRM/actions/runs/38678589702) 在生成安全报告前以 `CANARY_SETUP_FAILED` 结束，请求是否发送无法证明，授权没有重用。按用户确认的零调用设计，[PR #204](https://github.com/CP11-gh/CRM/pull/204) 经前后端 CI 及独立复核合入 main `e1db765`；一次 [staging check_only #38681595434](https://github.com/CP11-gh/CRM/actions/runs/38681595434) 核对精确源码、后端摘要和冻结输入后，报告 `settings_validation`、Provider 0 调用、请求钩子 false。原样证据和 SHA-256 见 [R45 TR](../reports/tests/TR-MVP-005-20261015-R45.md)。[PR #205](https://github.com/CP11-gh/CRM/pull/205) 双 CI 通过并合入 main `08043cc`；从该 main 核对 IR/TR/RR 各 73 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。代码对照显示 canary 步骤缺现有 live 步骤使用的五项获批计价配置；修复尚未复核。R41 的真实生成超时仍待定位，G4 `PARTIAL`、production No-Go。下一步最多三项：按用户已确认的有界设计补齐 canary 计价环境并做零调用复核；再按结果判断是否需要一次新的精确付费授权；随后决定超时修复与完整 live。
 
