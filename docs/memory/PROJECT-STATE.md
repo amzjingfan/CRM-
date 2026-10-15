@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r51-staging-evidence-20261015
-Governance base SHA: 9eb3ef41246ac69ec86d555d63a3b9d58000a61f
-CANDIDATE_SUBJECT_SHA: 9eb3ef41246ac69ec86d555d63a3b9d58000a61f
+Working branch at this snapshot: docs/mvp005-g4-r51-index-20261015
+Governance base SHA: 24c2e10d751d1ea996b51dd15545ff41e648a5af
+CANDIDATE_SUBJECT_SHA: 24c2e10d751d1ea996b51dd15545ff41e648a5af
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R51 最新 staging 恢复点：用户单独授权后，从 main `9eb3ef4` 完成[六摘要预取 #38696165478](https://github.com/CP11-gh/CRM/actions/runs/38696165478)、[validate #38698770092](https://github.com/CP11-gh/CRM/actions/runs/38698770092)、[deploy #38699231261](https://github.com/CP11-gh/CRM/actions/runs/38699231261)。运行后端 `sha256:8e8dcd81…7d5a`，前端和检索未变，迁移头、三健康、固定出口及 Webhook 只读均通过；公网三健康独立复核为 HTTP 200 且 TLS 验证成功。零调用 [prepare #38699921968](https://github.com/CP11-gh/CRM/actions/runs/38699921968) 核对运行摘要、冻结 36 条及 Provider 0 调用。四份原样低敏证据及哈希见 [R51 TR](../reports/tests/TR-MVP-005-20261015-R51.md)。R48 的 35/36、Provider 故障 1、机器 `passed=false` 仍是最新真实质量；R41 批量超时根因不明。G4 `PARTIAL`、production No-Go。下一步：为当前后端及冻结数据单独精确授权一次完整 G4 付费 `live`；逐项核对多语言政策与安全指标；据结果修复或签署 G4。
+2026-10-15 G4 R51 最新 staging 恢复点：[PR #218](https://github.com/CP11-gh/CRM/pull/218) 前后端 CI 通过并合入 main `24c2e10`；从该 main 核对 IR/TR/RR 各 79 份权威源记录，本索引收尾分支将三个派生索引恢复为 `CURRENT`。用户单独授权后，从 main `9eb3ef4` 完成[六摘要预取 #38696165478](https://github.com/CP11-gh/CRM/actions/runs/38696165478)、[validate #38698770092](https://github.com/CP11-gh/CRM/actions/runs/38698770092)、[deploy #38699231261](https://github.com/CP11-gh/CRM/actions/runs/38699231261)。运行后端 `sha256:8e8dcd81…7d5a`，前端和检索未变，迁移头、三健康、固定出口及 Webhook 只读均通过；公网三健康独立复核为 HTTP 200 且 TLS 验证成功。零调用 [prepare #38699921968](https://github.com/CP11-gh/CRM/actions/runs/38699921968) 核对运行摘要、冻结 36 条及 Provider 0 调用。四份原样低敏证据及哈希见 [R51 TR](../reports/tests/TR-MVP-005-20261015-R51.md)。R48 的 35/36、Provider 故障 1、机器 `passed=false` 仍是最新真实质量；R41 批量超时根因不明。G4 `PARTIAL`、production No-Go。下一步：为当前后端及冻结数据单独精确授权一次完整 G4 付费 `live`；逐项核对多语言政策与安全指标；据结果修复或签署 G4。
 
 2026-10-15 G4 R50 最新镜像恢复点：[PR #216](https://github.com/CP11-gh/CRM/pull/216) 前后端 CI 通过并合入 main `59f8048`；从该 main 核对 IR/TR/RR 各 78 份权威源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。用户单独授权后，仅从 main `6b63fd7` 执行一次[后端镜像发布 #38694723923](https://github.com/CP11-gh/CRM/actions/runs/38694723923)，候选 `ghcr.io/cp11-gh/crm-backend@sha256:8e8dcd818b1267a1521c8f611b27fe2ac4edc5c7a780946967198bac18d77d5a`、`linux/amd64` manifest `PASS`、压缩层 110,070,651 字节；原样证据 SHA-256 见 [R50 TR](../reports/tests/TR-MVP-005-20261015-R50.md)。候选尚未部署 staging，本次授权已用完；R48 的 35/36 与 Provider 故障 1 仍为最新现场质量，G4 `PARTIAL`、production No-Go。下一步最多三项：另行精确授权 staging 六摘要预取、validate、deploy 并核对运行摘要与健康；运行零调用 prepare；新的付费完整 live 再独立授权。
 
