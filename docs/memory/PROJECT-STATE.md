@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r45-evidence-20261015
-Governance base SHA: e1db76513ac14ce0a6ea8fdbe033623981efe82b
-CANDIDATE_SUBJECT_SHA: e1db76513ac14ce0a6ea8fdbe033623981efe82b
+Working branch at this snapshot: docs/mvp005-g4-r45-index-20261015
+Governance base SHA: 08043ccd91d7be35c273deecc27fa30b64e7fa12
+CANDIDATE_SUBJECT_SHA: 08043ccd91d7be35c273deecc27fa30b64e7fa12
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R45 最新恢复点：用户授权的一次 [R44 付费 canary #38678589702](https://github.com/CP11-gh/CRM/actions/runs/38678589702) 在生成安全报告前以 `CANARY_SETUP_FAILED` 结束，请求是否发送无法证明，授权没有重用。按用户确认的零调用设计，[PR #204](https://github.com/CP11-gh/CRM/pull/204) 经前后端 CI 及独立复核合入 main `e1db765`；一次 [staging check_only #38681595434](https://github.com/CP11-gh/CRM/actions/runs/38681595434) 核对精确源码、后端摘要和冻结输入后，报告 `settings_validation`、Provider 0 调用、请求钩子 false。原样证据和 SHA-256 见 [R45 TR](../reports/tests/TR-MVP-005-20261015-R45.md)。代码对照显示 canary 步骤缺现有 live 步骤使用的五项获批计价配置；修复尚未复核。R41 的真实生成超时仍待定位，G4 `PARTIAL`、production No-Go。下一步最多三项：经有界设计确认后补齐 canary 计价环境并做零调用复核；再按结果判断是否需要一次新的精确付费授权；随后决定超时修复与完整 live。
+2026-10-15 G4 R45 最新恢复点：用户授权的一次 [R44 付费 canary #38678589702](https://github.com/CP11-gh/CRM/actions/runs/38678589702) 在生成安全报告前以 `CANARY_SETUP_FAILED` 结束，请求是否发送无法证明，授权没有重用。按用户确认的零调用设计，[PR #204](https://github.com/CP11-gh/CRM/pull/204) 经前后端 CI 及独立复核合入 main `e1db765`；一次 [staging check_only #38681595434](https://github.com/CP11-gh/CRM/actions/runs/38681595434) 核对精确源码、后端摘要和冻结输入后，报告 `settings_validation`、Provider 0 调用、请求钩子 false。原样证据和 SHA-256 见 [R45 TR](../reports/tests/TR-MVP-005-20261015-R45.md)。[PR #205](https://github.com/CP11-gh/CRM/pull/205) 双 CI 通过并合入 main `08043cc`；从该 main 核对 IR/TR/RR 各 73 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。代码对照显示 canary 步骤缺现有 live 步骤使用的五项获批计价配置；修复尚未复核。R41 的真实生成超时仍待定位，G4 `PARTIAL`、production No-Go。下一步最多三项：按用户已确认的有界设计补齐 canary 计价环境并做零调用复核；再按结果判断是否需要一次新的精确付费授权；随后决定超时修复与完整 live。
 
 2026-10-15 G4 R44 历史恢复点：用户确认有界单样本设计后，[PR #201](https://github.com/CP11-gh/CRM/pull/201) 双 CI 通过并合入 main `19e603f`。`canary` 固定冻结集 `order-open-001`、运行后端摘要和安全开关；单次现有结构化 DeepSeek 请求，禁用重试和修复调用，15 秒 SDK/20 秒外层截止，输出仅低敏固定类别。[零调用 prepare #38673009877](https://github.com/CP11-gh/CRM/actions/runs/38673009877) 已通过：36 条、Provider 0 调用、production false，原样证据和哈希见 [R44 TR](../reports/tests/TR-MVP-005-20261015-R44.md)。[PR #202](https://github.com/CP11-gh/CRM/pull/202) 双 CI 通过并合入 main `170cdcd`；从该主分支核对 IR/TR/RR 各 72 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。当时真实付费 canary 尚未运行，R41 34 次超时根因未定。下一动作：取得该一次付费调用的精确授权；按阶段低敏证据定位超时；之后决定修复和完整 live。G4 `PARTIAL`、production No-Go。
 
@@ -249,6 +249,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G4 R45 零调用现场锁定 `settings_validation`；在有界设计确认后，把现有 live 的五项获批计价配置应用到 canary/check_only 调用并再次零调用核对。真实付费 canary 的旧授权已用完，新调用需单独精确授权；R41 超时尚未解决，G4 保持 `PARTIAL`。
+1. G4 R45 零调用现场锁定 `settings_validation`；按用户已确认的有界设计，把现有 live 的五项获批计价配置应用到 canary/check_only 调用并再次零调用核对。真实付费 canary 的旧授权已用完，新调用需单独精确授权；R41 超时尚未解决，G4 保持 `PARTIAL`。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
