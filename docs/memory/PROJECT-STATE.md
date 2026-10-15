@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r53-index-20261015
-Governance base SHA: 39f18d6c8b8912c337bf1b76a8de67f470d43de4
-CANDIDATE_SUBJECT_SHA: 1d151232a3c2444eb0e6f355b8fe973715f98b30
+Working branch at this snapshot: docs/mvp005-g4-r54-image-evidence-20261015
+Governance base SHA: 6e4163219dd91f9560f54199d1a4204e8b505b7f
+CANDIDATE_SUBJECT_SHA: 6e4163219dd91f9560f54199d1a4204e8b505b7f
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-15 G4 R54 镜像恢复点：用户在精确单镜像范围后批准继续，从 main `6e41632` 仅运行一次 [publish-backend-image #38708209437](https://github.com/CP11-gh/CRM/actions/runs/38708209437)。`linux/amd64` 候选 `ghcr.io/cp11-gh/crm-backend@sha256:1045d683a65539727c444b8990ca25768814485e9eb0e62c8cb0d91d87eec363` 已发布；manifest `PASS`，压缩层 110,072,185 字节，原始 artifact 与入库证据 SHA-256 一致，见 [R54 TR](../reports/tests/TR-MVP-005-20261015-R54.md)。本任务分支的 IR/TR/RR 各 82 份，三个派生索引为 `CANDIDATE_VIEW`。staging 仍运行旧后端 `sha256:8e8dcd81…7d5a`，前端/检索与 TikTok 开关未变；未调用 DeepSeek，R52 仍是最新真实失败，G4 `PARTIAL`、production No-Go。下一步：完成本证据 PR 与 main 索引收尾；在单独精确授权下预取/验证/部署新摘要并核对健康；再单独授权付费 G4 live。
 
 2026-10-15 G4 R53 源码候选恢复点：从 main `5ac6da6` 的 subject `1d15123` 隔离发送给模型的内部政策诊断码，改为固定白名单修复要求，Prompt 升至 `v1.2.13`；有证据首稿的合法 `reason_code` 要求保留。先红后绿，subject 上六个相关文件 92 passed，定向 Ruff 与格式通过；本地 mypy 长时间无输出后中断；[PR #222](https://github.com/CP11-gh/CRM/pull/222) 前后端 CI（含后端类型检查）通过并 squash 合入 main `39f18d6`。从该 main 核对 IR/TR/RR 各 81 份权威源记录，三个派生索引恢复为 `CURRENT`。本次未发布镜像、部署或调用 DeepSeek。R52 的 34/36、Provider 故障 2 和机器 `passed=false` 仍是最新现场；G4 `PARTIAL`、production No-Go。下一步：如继续现场验证，单独精确授权单个后端镜像发布；之后单独授权 staging 部署；再单独授权付费 G4 live。
 
