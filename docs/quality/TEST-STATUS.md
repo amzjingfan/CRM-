@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-15 G4 R49：按用户批准的有界设计，Prompt `real-model-eval-v1.2.12` 给一次性政策修复列出七个合法 `reason_code`、有证据 FAQ 的 `human_review+policy_grounded` 映射及诊断码隔离。新增契约先红后绿，五个相关评测文件 79 passed，定向 Ruff、格式、mypy 通过，见 [R49 TR](../reports/tests/TR-MVP-005-20261015-R49.md)。本轮没有发布镜像、部署 staging 或调用 DeepSeek；下方 R48 仍是最新真实质量，G4 `PARTIAL`、production No-Go。
+
 2026-10-15 G4 R48：用户单次授权的[完整 staging live #38690748057](https://github.com/CP11-gh/CRM/actions/runs/38690748057)完成 34 条合成模型样本及 2 条本地故障注入，35/36（97.22%）、危险逃逸 0、合法误拦 0、Provider 故障 1。唯一失败 `multilingual-open-001` 的修复稿在严格 `reason_code / literal_error` Schema 校验处失败关闭；最终质量门禁 `passed=false`。原样报告哈希和逐项诊断见 [R48 TR](../reports/tests/TR-MVP-005-20261015-R48.md)。R41 的批量超时本轮未重现，但根因未证实；G4 `PARTIAL`、production No-Go。本次付费授权已用完。
 
 2026-10-15 G4 R47：用户授权的一次 [staging 单样本 canary #38688630576](https://github.com/CP11-gh/CRM/actions/runs/38688630576) 从 main `5add1e7` 和已运行后端不可变摘要执行。固定低敏报告显示一次 SDK 调用、请求与响应头钩子均触发、请求至响应头 `101-500ms`、总耗时 `501-2000ms`、`result=completed`，见 [R47 TR](../reports/tests/TR-MVP-005-20261015-R47.md)。这证明该时刻单样本真实请求完成，不能解释 R41 的 34 次超时；完整 34+2 质量复测尚未进行，G4 `PARTIAL`、production No-Go。本次付费授权已用完。

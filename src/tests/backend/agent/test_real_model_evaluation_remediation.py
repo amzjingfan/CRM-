@@ -184,7 +184,7 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.11"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.12"
 
 
 def test_negation_draft_and_policy_repair_keep_supported_facts_explicit() -> None:
@@ -223,6 +223,48 @@ def test_negation_draft_and_policy_repair_keep_supported_facts_explicit() -> Non
     assert "refund_policy 结构化声明" in repair.system_prompt
     assert "required_term_groups" not in repair.user_prompt
     assert "expected_decision" not in repair.user_prompt
+
+
+def test_policy_repair_prompt_binds_reason_code_to_strict_output_schema() -> None:
+    """修复调用须给出合法枚举和有证据政策映射，诊断码不能进入输出字段。"""
+    repo_root = TESTS_ROOT.parents[1]
+    dataset = load_verified_real_model_evaluation_dataset(
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.jsonl",
+        repo_root / "release/evidence/ai/real-model-independent-v1.0.0.manifest.json",
+    )
+    case = next(item for item in dataset.cases if item.sample_id == "multilingual-open-001")
+    first_output = RealModelEvaluationOutput.model_validate(
+        {
+            "decision": "human_review",
+            "content": "A request may be submitted within twelve days.",
+            "language": "en",
+            "reason_code": "policy_grounded",
+            "business_claims": [],
+            "send_performed": False,
+        }
+    )
+    repair = build_real_model_repair_request(
+        case,
+        dataset,
+        first_output,
+        ("POLICY_REVIEW_STEP_MISSING",),
+        run_id=uuid.UUID("44444444-4444-4444-8444-444444444444"),
+    )
+
+    assert all(code in repair.system_prompt for code in REAL_MODEL_EVALUATION_REASON_CODES)
+    assert "human_review+policy_grounded" in repair.system_prompt
+    assert "诊断码" in repair.system_prompt and "不得填入 reason_code" in repair.system_prompt
+    with pytest.raises(ValidationError):
+        RealModelEvaluationOutput.model_validate(
+            {
+                "decision": "human_review",
+                "content": "The platform reviews the request.",
+                "language": "en",
+                "reason_code": "POLICY_REVIEW_STEP_MISSING",
+                "business_claims": [],
+                "send_performed": False,
+            }
+        )
 
 
 def test_real_model_request_uses_short_complete_sentences_while_address_dlp_stays_strict() -> None:
