@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "sample_id": "order-open-001",
+  "check_result": "ready",
+  "failure_stage": "none",
+  "provider_calls": 0,
+  "request_hook_seen": false,
+  "service_mutation": false,
+  "production_release": false,
+  "evidence_type": "staging_g4_canary_setup_check",
+  "source_sha": "343d7a1f35ecef505d7e11e7848c64db360fe77b",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:ee48ee381dd8dcf6696b31dc641d4916daa973ee95ae40e3013bdd7584335daa"
+}
