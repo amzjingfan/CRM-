@@ -4,11 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Prepare, one frozen canary, or the full live evaluation
+        description: Prepare, zero-call canary setup check, one frozen canary, or full live evaluation
         required: true
         type: choice
         options:
           - prepare
+          - check_only
           - canary
           - live
       expected_source_sha:
@@ -105,12 +106,12 @@ jobs:
           if ($env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
               $env:EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA -or
               $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
-              $env:MODE -cnotin @('prepare', 'canary', 'live')) {
+              $env:MODE -cnotin @('prepare', 'check_only', 'canary', 'live')) {
             throw 'The G4 source, backend image, or mode is invalid.'
           }
           if (($env:MODE -ceq 'live' -and $env:CONFIRM_LIVE -cne 'send-34-synthetic-cases-to-deepseek') -or
               ($env:MODE -ceq 'canary' -and $env:CONFIRM_LIVE -cne 'send-one-frozen-case-to-deepseek') -or
-              ($env:MODE -ceq 'prepare' -and $env:CONFIRM_LIVE)) {
+              ($env:MODE -cin @('prepare', 'check_only') -and $env:CONFIRM_LIVE)) {
             throw 'The G4 live confirmation does not match the requested mode.'
           }
           $sourcePath = $env:SOURCE_PATH
@@ -158,6 +159,8 @@ jobs:
           # docker cp creates root-owned files; grant the existing non-root crm process read access only to these frozen inputs.
           & docker --host $dockerHost exec -u 0 $container chmod 0644 "$containerDir/dataset.jsonl" "$containerDir/manifest.json"
           if ($LASTEXITCODE -ne 0) { throw 'Unable to make the frozen G4 inputs readable to the backend user.' }
+          # The zero-call diagnostic must receive invalid settings itself to emit a fixed failure stage.
+          if ($env:MODE -cne 'check_only') {
           $inspectionCode = @'
           import json
           import sys
@@ -192,20 +195,22 @@ jobs:
               $preflight.dataset_sha256 -cne '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94') {
             throw 'G4 runtime or frozen dataset guard failed.'
           }
+          }
           "container=$container" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "container_dir=$containerDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "docker_host=$dockerHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "backend_image=$actualImage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Output "G4 preflight: 36 frozen synthetic cases, 34 eligible provider samples, 2 injected failures; no external call made."
 
-      - name: Run one bounded canary with the existing backend code
-        if: inputs.mode == 'canary'
+      - name: Run bounded canary or zero-call setup check
+        if: inputs.mode == 'canary' || inputs.mode == 'check_only'
         shell: pwsh
         env:
           SOURCE_PATH: ${{ steps.source.outputs.source_path }}
           CONTAINER: ${{ steps.preflight.outputs.container }}
           CONTAINER_DIR: ${{ steps.preflight.outputs.container_dir }}
           DOCKER_HOST: ${{ steps.preflight.outputs.docker_host }}
+          MODE: ${{ inputs.mode }}
         run: |
           $scriptPath = Join-Path $env:SOURCE_PATH 'src/backend/scripts/diagnose_deepseek_canary.py'
           if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
@@ -215,6 +220,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Unable to stage reviewed canary source.' }
           & docker --host $env:DOCKER_HOST exec -u 0 $env:CONTAINER chmod 0644 "$env:CONTAINER_DIR/canary.py"
           if ($LASTEXITCODE -ne 0) { throw 'Unable to read reviewed canary source.' }
+          $checkOnlyFlag = @()
+          if ($env:MODE -ceq 'check_only') { $checkOnlyFlag = @('--check-only') }
           & docker --host $env:DOCKER_HOST exec `
             -e PYTHONPATH=/app `
             -e LLM_ENABLED=true `
@@ -222,7 +229,7 @@ jobs:
             $env:CONTAINER python -B "$env:CONTAINER_DIR/canary.py" `
             --dataset "$env:CONTAINER_DIR/dataset.jsonl" `
             --manifest "$env:CONTAINER_DIR/manifest.json" `
-            --output "$env:CONTAINER_DIR/canary.json"
+            --output "$env:CONTAINER_DIR/canary.json" @checkOnlyFlag
           if ($LASTEXITCODE -ne 0) { throw 'Single canary failed before safe evidence was produced.' }
 
       - name: Run one live evaluation with the existing backend code
@@ -361,6 +368,32 @@ jobs:
                 }
               }
             }
+          } elseif ($env:MODE -ceq 'check_only') {
+            & docker --host $env:DOCKER_HOST cp "${env:CONTAINER}:$env:CONTAINER_DIR/canary.json" $evidencePath
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to retrieve the zero-call setup check.' }
+            try {
+              $check = Get-Content -LiteralPath $evidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
+            } catch { throw 'Zero-call setup evidence could not be parsed safely.' }
+            $allowedCheckKeys = @('schema_version','sample_id','check_result','failure_stage','provider_calls','request_hook_seen','service_mutation','production_release')
+            $allowedFailureStages = @('none','settings_validation','dataset_validation','runtime_environment','runtime_model','runtime_timeout_mismatch','runtime_url','runtime_key_missing','runtime_write_guard','proxy_present','client_initialization')
+            if ($check.Count -ne $allowedCheckKeys.Count -or
+                @($check.Keys | Where-Object { $_ -cnotin $allowedCheckKeys }).Count -ne 0 -or
+                $check.schema_version -ne 1 -or
+                $check.sample_id -cne 'order-open-001' -or
+                $check.check_result -cnotin @('ready','rejected') -or
+                $check.failure_stage -cnotin $allowedFailureStages -or
+                ($check.check_result -ceq 'ready' -and $check.failure_stage -cne 'none') -or
+                ($check.check_result -ceq 'rejected' -and $check.failure_stage -ceq 'none') -or
+                $check.provider_calls -ne 0 -or
+                $check.request_hook_seen -ne $false -or
+                $check.service_mutation -ne $false -or
+                $check.production_release -ne $false) {
+              throw 'Zero-call setup evidence is outside the fixed low-sensitive contract.'
+            }
+            $check['evidence_type'] = 'staging_g4_canary_setup_check'
+            $check['source_sha'] = $env:GITHUB_SHA
+            $check['backend_image'] = $env:BACKEND_IMAGE
+            $check | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $evidencePath -Encoding utf8
           } elseif ($env:MODE -ceq 'canary') {
             & docker --host $env:DOCKER_HOST cp "${env:CONTAINER}:$env:CONTAINER_DIR/canary.json" $evidencePath
             if ($LASTEXITCODE -ne 0) { throw 'Unable to retrieve the single canary result.' }

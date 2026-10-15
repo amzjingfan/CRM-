@@ -71,3 +71,24 @@ def test_single_canary_requires_explicit_mode_and_separate_confirmation() -> Non
     assert "response_headers_seen" in source
     assert "request_to_headers" in source
     assert "service_mutation" in source
+
+
+def test_check_only_mode_has_no_paid_confirmation_or_provider_call() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    assert "- check_only" in source
+    assert "if: inputs.mode == 'canary' || inputs.mode == 'check_only'" in source
+    assert "--check-only" in source
+    assert "provider_calls -ne 0" in source
+    assert "request_hook_seen -ne $false" in source
+    assert "failure_stage" in source
+
+
+def test_check_only_can_report_invalid_settings_after_staging_image_preflight() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    preflight = source.split("- name: Check frozen inputs and staging runtime", 1)[1].split(
+        "- name: Run bounded canary or zero-call setup check", 1
+    )[0]
+    assert "Running backend image does not match the reviewed digest." in preflight
+    assert "The frozen independent G4 dataset is missing or changed." in preflight
+    assert "if ($env:MODE -cne 'check_only') {\n          $inspectionCode = @'" in preflight
+    assert "G4 runtime or frozen dataset guard failed.'\n          }" in preflight

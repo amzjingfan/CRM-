@@ -13,7 +13,14 @@ from pydantic import SecretStr
 from app.agent.errors import LLMErrorCode, LLMProviderError
 from app.agent.providers.deepseek_provider import DeepSeekProvider
 from app.agent.real_model_evaluation import load_verified_real_model_evaluation_dataset
-from scripts.diagnose_deepseek_canary import CANARY_SAMPLE_ID, CanaryTiming, run_one_canary, validate_canary_runtime
+from scripts.diagnose_deepseek_canary import (
+    CANARY_SAMPLE_ID,
+    CanaryTiming,
+    classify_canary_runtime,
+    run_one_canary,
+    run_setup_check,
+    validate_canary_runtime,
+)
 
 ROOT = Path(__file__).resolve().parents[4]
 DATASET = ROOT / "release/evidence/ai/real-model-independent-v1.0.0.jsonl"
@@ -165,6 +172,7 @@ def test_canary_observes_response_headers_through_the_real_sdk_without_network()
         ("llm_timeout_seconds", 30.0),
         ("deepseek_base_url", "https://example.com"),
         ("deepseek_base_url", "https://api.deepseek.com/v1"),
+        ("deepseek_base_url", "https://api.deepseek.com:bad"),
         ("real_tiktok_message_write_enabled", True),
         ("auto_reply_enabled", True),
     ],
@@ -190,3 +198,99 @@ def test_canary_rejects_unsafe_runtime_before_network(
     setattr(settings, override, value)
     with pytest.raises(ValueError, match="CANARY_RUNTIME_INVALID"):
         validate_canary_runtime(settings)
+
+
+@pytest.mark.parametrize(
+    ("override", "value", "failure_stage"),
+    [
+        ("llm_timeout_seconds", 30.0, "runtime_timeout_mismatch"),
+        ("deepseek_base_url", "https://api.deepseek.com:bad", "runtime_url"),
+    ],
+)
+def test_check_only_reports_invalid_runtime_without_network(
+    monkeypatch: pytest.MonkeyPatch, override: str, value: object, failure_stage: str
+) -> None:
+    for name in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
+        monkeypatch.delenv(name, raising=False)
+    settings = SimpleNamespace(
+        app_env="staging",
+        llm_enabled=True,
+        llm_live_eval=True,
+        llm_primary_provider="deepseek",
+        llm_primary_model="deepseek-v4-flash",
+        llm_timeout_seconds=15.0,
+        deepseek_base_url="https://api.deepseek.com",
+        deepseek_api_key=SecretStr("test-only-key"),
+        real_tiktok_message_write_enabled=False,
+        auto_reply_enabled=False,
+    )
+    setattr(settings, override, value)
+    monkeypatch.setattr("scripts.diagnose_deepseek_canary.get_settings", lambda: settings)
+    monkeypatch.setattr("socket.create_connection", lambda *_args, **_kwargs: pytest.fail("network was used"))
+    evidence = asyncio.run(run_setup_check(DATASET, MANIFEST))
+
+    assert evidence == {
+        "schema_version": 1,
+        "sample_id": CANARY_SAMPLE_ID,
+        "check_result": "rejected",
+        "failure_stage": failure_stage,
+        "provider_calls": 0,
+        "request_hook_seen": False,
+        "service_mutation": False,
+        "production_release": False,
+    }
+
+
+def test_check_only_reports_proxy_presence_without_exposing_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = SimpleNamespace(
+        app_env="staging",
+        llm_enabled=True,
+        llm_live_eval=True,
+        llm_primary_provider="deepseek",
+        llm_primary_model="deepseek-v4-flash",
+        llm_timeout_seconds=15.0,
+        deepseek_base_url="https://api.deepseek.com",
+        deepseek_api_key=SecretStr("test-only-key"),
+        real_tiktok_message_write_enabled=False,
+        auto_reply_enabled=False,
+    )
+    monkeypatch.setenv("HTTP_PROXY", "http://secret-should-not-appear")
+    assert classify_canary_runtime(settings) == "proxy_present"
+
+
+def test_check_only_constructs_real_sdk_without_sending_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
+        monkeypatch.delenv(name, raising=False)
+    settings = SimpleNamespace(
+        app_env="staging",
+        llm_enabled=True,
+        llm_live_eval=True,
+        llm_primary_provider="deepseek",
+        llm_primary_model="deepseek-v4-flash",
+        llm_timeout_seconds=15.0,
+        deepseek_base_url="https://api.deepseek.com",
+        deepseek_api_key=SecretStr("test-only-key"),
+        deepseek_thinking_enabled=False,
+        real_tiktok_message_write_enabled=False,
+        auto_reply_enabled=False,
+    )
+    monkeypatch.setattr("scripts.diagnose_deepseek_canary.get_settings", lambda: settings)
+    monkeypatch.setattr("socket.create_connection", lambda *_args, **_kwargs: pytest.fail("network was used"))
+    evidence = asyncio.run(run_setup_check(DATASET, MANIFEST))
+
+    assert evidence["check_result"] == "ready"
+    assert evidence["failure_stage"] == "none"
+    assert evidence["provider_calls"] == 0
+    assert evidence["request_hook_seen"] is False
+
+
+def test_check_only_hides_settings_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_settings() -> None:
+        raise ValueError("secret configuration value")
+
+    monkeypatch.setattr("scripts.diagnose_deepseek_canary.get_settings", fail_settings)
+    evidence = asyncio.run(run_setup_check(DATASET, MANIFEST))
+
+    assert evidence["check_result"] == "rejected"
+    assert evidence["failure_stage"] == "settings_validation"
+    assert "secret configuration value" not in json.dumps(evidence)
