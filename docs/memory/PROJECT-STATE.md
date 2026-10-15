@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp005-g4-r53-repair-contract-20261015
-Governance base SHA: 5ac6da64652d178ff0c572e802ca286179d75a20
+Working branch at this snapshot: docs/mvp005-g4-r53-index-20261015
+Governance base SHA: 39f18d6c8b8912c337bf1b76a8de67f470d43de4
 CANDIDATE_SUBJECT_SHA: 1d151232a3c2444eb0e6f355b8fe973715f98b30
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R53 源码候选恢复点：从 main `5ac6da6` 的 subject `1d15123` 隔离发送给模型的内部政策诊断码，改为固定白名单修复要求，Prompt 升至 `v1.2.13`；有证据首稿的合法 `reason_code` 要求保留。先红后绿，subject 上六个相关文件 92 passed，定向 Ruff 与格式通过；本地 mypy 长时间无输出后中断，须以 PR CI 核对。IR/TR/RR 与三派生索引目前是任务分支 `CANDIDATE_VIEW`。本次未发布镜像、部署或调用 DeepSeek。R52 的 34/36、Provider 故障 2 和机器 `passed=false` 仍是最新现场；G4 `PARTIAL`、production No-Go。下一步：完成 PR 双 CI 并合入；在 main 重建 CURRENT 索引；后续镜像、staging 和付费复测分别按精确范围处理。
+2026-10-15 G4 R53 源码候选恢复点：从 main `5ac6da6` 的 subject `1d15123` 隔离发送给模型的内部政策诊断码，改为固定白名单修复要求，Prompt 升至 `v1.2.13`；有证据首稿的合法 `reason_code` 要求保留。先红后绿，subject 上六个相关文件 92 passed，定向 Ruff 与格式通过；本地 mypy 长时间无输出后中断；[PR #222](https://github.com/CP11-gh/CRM/pull/222) 前后端 CI（含后端类型检查）通过并 squash 合入 main `39f18d6`。从该 main 核对 IR/TR/RR 各 81 份权威源记录，三个派生索引恢复为 `CURRENT`。本次未发布镜像、部署或调用 DeepSeek。R52 的 34/36、Provider 故障 2 和机器 `passed=false` 仍是最新现场；G4 `PARTIAL`、production No-Go。下一步：如继续现场验证，单独精确授权单个后端镜像发布；之后单独授权 staging 部署；再单独授权付费 G4 live。
 
 2026-10-15 G4 R52 最新真实质量恢复点：[PR #220](https://github.com/CP11-gh/CRM/pull/220) 前后端 CI 通过并合入 main `3ad740e`；从该 main 核对 IR/TR/RR 各 80 份权威源记录，本索引收尾分支将三个派生索引恢复为 `CURRENT`。从 main `1937336` 的[零调用 prepare #38702143931](https://github.com/CP11-gh/CRM/actions/runs/38702143931)确认运行后端 `sha256:8e8dcd81…7d5a`、冻结 36 条及 Provider 0 调用。用户单次授权的[完整 live #38702433875](https://github.com/CP11-gh/CRM/actions/runs/38702433875)为 34/36、危险逃逸 0、合法误拦 0、Provider 故障 2、机器 `passed=false`。售后及多语言政策两条首稿缺平台审核步骤，修复稿均在严格 `reason_code / literal_error` Schema 校验处失败关闭；非法值未保存，不能断言具体输出。原样低敏证据和哈希见 [R52 TR](../reports/tests/TR-MVP-005-20261015-R52.md)。本次付费授权已用完，G4 `PARTIAL`、production No-Go。下一步：只读检查修复请求的诊断码与输出枚举契约；按有界设计做确定性修复和 PR；镜像、部署、付费复测分别处理。
 
