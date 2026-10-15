@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r42-index-20261015
-Governance base SHA: d9be490f13cd7581ac8d126e304781cb806cfdc7
-CANDIDATE_SUBJECT_SHA: bea2f2cc64b4041f281e66e3e7b47ee852a974e3
+Working branch at this snapshot: docs/mvp005-g4-r43-request-path-evidence-20261015
+Governance base SHA: 49c8a6035d254ad069e95de8ef8c8d5dbcd0a5b9
+CANDIDATE_SUBJECT_SHA: 49c8a6035d254ad069e95de8ef8c8d5dbcd0a5b9
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-15 G4 R43 最新恢复点：[PR #198](https://github.com/CP11-gh/CRM/pull/198) 的前后端 CI 通过并合入 main `49c8a603`。用户批准的一次[请求路径探针 #38669010532](https://github.com/CP11-gh/CRM/actions/runs/38669010532)核对运行后端摘要后，从 Runner 和 backend 容器各发送一次无凭据、无有效模型参数的空 JSON POST；两处均在 `101-500ms` 总耗时分档收到 4xx，Provider 调用 0，服务未变。原样证据及 SHA-256 见 [R43 TR](../reports/tests/TR-MVP-005-20261015-R43.md)。这不能重现 R41 的认证后真实生成，34 次 `LLM_TIMEOUT` 根因未确定。G4 `PARTIAL`、production No-Go；下一步先取得单个合成样本真实生成的精确付费授权，测量阶段耗时和超时预算，再决定修复与完整 live 复测。本证据分支索引须标记 `CANDIDATE_VIEW`，合入 main 后重建 `CURRENT`。
 
 2026-10-15 G4 R41/R42 最新恢复点：从 main `fdc9346` 的获批 [prepare #38662827895](https://github.com/CP11-gh/CRM/actions/runs/38662827895) 锁定运行后端 `sha256:ee48ee38…335daa`、冻结 36 条和 Provider 零调用；一次 [live #38662963980](https://github.com/CP11-gh/CRM/actions/runs/38662963980) 的 34 条模型样本全部 `LLM_TIMEOUT`，仅 2 条本地故障注入通过，不能判断模型回答质量，见 [R41 TR](../reports/tests/TR-MVP-005-20261015-R41.md)。用户随后批准只读传输探针；[PR #195](https://github.com/CP11-gh/CRM/pull/195) 双 CI 通过并合入 main `bea2f2c`，[探针 #38665764165](https://github.com/CP11-gh/CRM/actions/runs/38665764165) 在 Runner 与运行后端容器均收到无凭据 HTTPS 4xx，容器 DNS/TCP/TLS 通过、Provider 调用 0，见 [R42 TR](../reports/tests/TR-MVP-005-20261015-R42.md)。这只证明探针时刻基础传输通畅，R41 生成超时根因未证实。三份原样低敏证据及哈希见两份 TR。[PR #196](https://github.com/CP11-gh/CRM/pull/196) 双 CI 通过并合入 main `d9be490`；从合并后的主分支核对 IR/TR/RR 各 70 份源记录，本分支将三个派生索引恢复为 `CURRENT`。下一步最多三项：定位模型请求阶段超时；有界修复并验证；重新取得一次付费 live 授权后复测。G4 `PARTIAL`、production No-Go。
 
@@ -243,6 +245,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. R39 新后端镜像已获单次授权发布且摘要核对通过；先完成证据 PR 与索引，再按独立部署边界处理 staging 六摘要预取、validate、deploy 与零调用 prepare。新付费 live 另行精确授权；R37 仍为 35/36、Provider 故障 1、机器 `passed=false`。
+1. G4 R43 仅证明无凭据空请求的路径快速响应；先获得单个合成样本真实生成的精确付费授权，测量响应阶段与 SDK 超时预算，再针对 R41 的 34 次超时决定有界修复和完整 live 复测。G4 保持 `PARTIAL`。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。

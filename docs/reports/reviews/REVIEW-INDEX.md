@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -74,3 +74,4 @@ View: `CURRENT`
 | RR-MVP-005-20261014-R40 | MVP-005 | R40 | APPROVE | `2d16476738e36f608a152f126e580884888fa387` | staging-authorization / immutable-digest / rollback-target / webhook-read-only / runtime-image / low-sensitive-evidence / production-boundary | 2026-10-14T18:51:06+08:00 | [`RR-MVP-005-20261014-R40.md`](RR-MVP-005-20261014-R40.md) |
 | RR-MVP-005-20261015-R41 | MVP-005 | R41 | APPROVE | `fdc934686d17edf38c71e4248ef422883c4298f0` | authorization-scope / frozen-dataset / timeout-classification / low-sensitive-evidence / production-boundary | 2026-10-15T09:29:05+08:00 | [`RR-MVP-005-20261015-R41.md`](RR-MVP-005-20261015-R41.md) |
 | RR-MVP-005-20261015-R42 | MVP-005 | R42 | APPROVE | `bea2f2cc64b4041f281e66e3e7b47ee852a974e3` | staging-scope / immutable-digest / no-credentials / output-allowlist / no-model-call / production-boundary | 2026-10-15T09:29:05+08:00 | [`RR-MVP-005-20261015-R42.md`](RR-MVP-005-20261015-R42.md) |
+| RR-MVP-005-20261015-R43 | MVP-005 | R43 | APPROVE | `49c8a6035d254ad069e95de8ef8c8d5dbcd0a5b9` | staging-scope / immutable-digest / no-credentials / exact-request / output-allowlist / no-model-call / production-boundary | 2026-10-15T10:06:01+08:00 | [`RR-MVP-005-20261015-R43.md`](RR-MVP-005-20261015-R43.md) |

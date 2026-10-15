@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_deepseek_transport_probe",
+  "source_sha": "49c8a6035d254ad069e95de8ef8c8d5dbcd0a5b9",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:ee48ee381dd8dcf6696b31dc641d4916daa973ee95ae40e3013bdd7584335daa",
+  "runner": {
+    "category": "http_response",
+    "http_status_class": "4xx",
+    "elapsed_ms": 176,
+    "https_proxy_present": false
+  },
+  "backend": {
+    "config_match": true,
+    "dns_status": "passed",
+    "tcp_status": "passed",
+    "tls_status": "passed",
+    "http_status_class": "4xx",
+    "https_proxy_present": false,
+    "elapsed_ms": 270
+  },
+  "provider_calls": 0,
+  "service_mutation": false,
+  "production_release": false,
+  "request_path": {
+    "runner": {
+      "category": "http_response",
+      "http_status_class": "4xx",
+      "dns_duration": "0-100ms",
+      "tcp_duration": "0-100ms",
+      "tls_duration": "0-100ms",
+      "request_to_first_byte": "0-100ms",
+      "total_duration": "101-500ms"
+    },
+    "backend": {
+      "category": "http_response",
+      "http_status_class": "4xx",
+      "dns_duration": "0-100ms",
+      "tcp_duration": "0-100ms",
+      "tls_duration": "0-100ms",
+      "request_to_first_byte": "0-100ms",
+      "total_duration": "101-500ms"
+    }
+  }
+}

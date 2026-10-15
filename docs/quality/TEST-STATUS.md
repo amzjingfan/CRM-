@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-15 G4 R43：获准的[请求路径探针 #38669010532](https://github.com/CP11-gh/CRM/actions/runs/38669010532)从 Runner 与运行中 backend 各发送一次无凭据、无有效模型参数的固定 POST，均在 `101-500ms` 总耗时分档收到 4xx；DNS/TCP/TLS 与首字节阶段均为 `0-100ms`。原样证据和 SHA-256 见 [R43 TR](../reports/tests/TR-MVP-005-20261015-R43.md)。这只说明探针时刻该路径可快速拒绝无效请求，不能验证真实生成；R41 的 34 次超时仍未定位。G4 `PARTIAL`、production No-Go。
+
 2026-10-15 G4 R41/R42：一次获批的 [R41 live #38662963980](https://github.com/CP11-gh/CRM/actions/runs/38662963980) 中 34 条真实模型样本全部 `LLM_TIMEOUT`，仅 2 条本地故障注入通过；不能据此判断 Prompt 质量。[R42 只读探针 #38665764165](https://github.com/CP11-gh/CRM/actions/runs/38665764165) 显示 Runner 和运行后端均收到无凭据 HTTPS 4xx，容器 DNS/TCP/TLS 通过，证明当时基础传输通畅，但未重现模型生成超时。原样证据与哈希见 [R41 TR](../reports/tests/TR-MVP-005-20261015-R41.md)、[R42 TR](../reports/tests/TR-MVP-005-20261015-R42.md)。本次付费 live 授权已用完，G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R40 staging：获批的[六摘要预取 #38550506209](https://github.com/CP11-gh/CRM/actions/runs/38550506209)、[validate #38551198566](https://github.com/CP11-gh/CRM/actions/runs/38551198566)、[deploy #38551532509](https://github.com/CP11-gh/CRM/actions/runs/38551532509) 均从 main `2d164767` 通过；后端运行摘要为 `sha256:ee48ee38…335daa`，迁移头、三健康、固定出口与 Webhook 只读通过。零调用 [prepare #38552161363](https://github.com/CP11-gh/CRM/actions/runs/38552161363) 在 Runner 核对新摘要及冻结 36 条；四份原始证据与哈希见 [R40 TR](../reports/tests/TR-MVP-005-20261014-R40.md)。R37 live 仍是最新模型质量结果：35/36、Provider 故障 1、机器 `passed=false`。G4 `PARTIAL`、production No-Go。
