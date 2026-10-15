@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r43-index-20261015
+Working branch at this snapshot: docs/mvp005-g4-r44-canary-readiness-20261015
 Governance base SHA: 188290a09c394af9a2d531c387d1f5c5cd4a7066
-CANDIDATE_SUBJECT_SHA: 188290a09c394af9a2d531c387d1f5c5cd4a7066
+CANDIDATE_SUBJECT_SHA: 19e603f8578d31663393dc190ccb681f3817ef48
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-15 G4 R44 最新恢复点：用户确认有界单样本设计后，[PR #201](https://github.com/CP11-gh/CRM/pull/201) 双 CI 通过并合入 main `19e603f`。`canary` 固定冻结集 `order-open-001`、运行后端摘要和安全开关；单次现有结构化 DeepSeek 请求，禁用重试和修复调用，15 秒 SDK/20 秒外层截止，输出仅低敏固定类别。[零调用 prepare #38673009877](https://github.com/CP11-gh/CRM/actions/runs/38673009877) 已通过：36 条、Provider 0 调用、production false，原样证据和哈希见 [R44 TR](../reports/tests/TR-MVP-005-20261015-R44.md)。本分支记录 R44 IR/TR/RR 与候选索引；真实付费 canary 尚未运行，R41 34 次超时根因未定。下一动作：取得该一次付费调用的精确授权；按阶段低敏证据定位超时；之后决定修复和完整 live。G4 `PARTIAL`、production No-Go。
 
 2026-10-15 G4 R43 最新恢复点：[PR #198](https://github.com/CP11-gh/CRM/pull/198) 的前后端 CI 通过并合入 main `49c8a603`。用户批准的一次[请求路径探针 #38669010532](https://github.com/CP11-gh/CRM/actions/runs/38669010532)核对运行后端摘要后，从 Runner 和 backend 容器各发送一次无凭据、无有效模型参数的空 JSON POST；两处均在 `101-500ms` 总耗时分档收到 4xx，Provider 调用 0，服务未变。原样证据及 SHA-256 见 [R43 TR](../reports/tests/TR-MVP-005-20261015-R43.md)。这不能重现 R41 的认证后真实生成，34 次 `LLM_TIMEOUT` 根因未确定。G4 `PARTIAL`、production No-Go；下一步先取得单个合成样本真实生成的精确付费授权，测量阶段耗时和超时预算，再决定修复与完整 live 复测。[PR #199](https://github.com/CP11-gh/CRM/pull/199) 双 CI 通过并合入 main `188290a`；从该主分支核对 IR/TR/RR 各 71 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。
 
