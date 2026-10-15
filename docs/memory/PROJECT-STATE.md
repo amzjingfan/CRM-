@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r42-transport-evidence-20261015
-Governance base SHA: fb4953517fc13fd6a83e599ba1007c9adaeb4b60
+Working branch at this snapshot: docs/mvp005-g4-r42-index-20261015
+Governance base SHA: d9be490f13cd7581ac8d126e304781cb806cfdc7
 CANDIDATE_SUBJECT_SHA: bea2f2cc64b4041f281e66e3e7b47ee852a974e3
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R41/R42 最新恢复点：从 main `fdc9346` 的获批 [prepare #38662827895](https://github.com/CP11-gh/CRM/actions/runs/38662827895) 锁定运行后端 `sha256:ee48ee38…335daa`、冻结 36 条和 Provider 零调用；一次 [live #38662963980](https://github.com/CP11-gh/CRM/actions/runs/38662963980) 的 34 条模型样本全部 `LLM_TIMEOUT`，仅 2 条本地故障注入通过，不能判断模型回答质量，见 [R41 TR](../reports/tests/TR-MVP-005-20261015-R41.md)。用户随后批准只读传输探针；[PR #195](https://github.com/CP11-gh/CRM/pull/195) 双 CI 通过并合入 main `bea2f2c`，[探针 #38665764165](https://github.com/CP11-gh/CRM/actions/runs/38665764165) 在 Runner 与运行后端容器均收到无凭据 HTTPS 4xx，容器 DNS/TCP/TLS 通过、Provider 调用 0，见 [R42 TR](../reports/tests/TR-MVP-005-20261015-R42.md)。这只证明探针时刻基础传输通畅，R41 生成超时根因未证实。三份原样低敏证据及哈希见两份 TR。本分支新增 R41/R42 IR/TR/RR，派生索引待合入主分支后重建。下一步最多三项：定位模型请求阶段超时；有界修复并验证；重新取得一次付费 live 授权后复测。G4 `PARTIAL`、production No-Go。
+2026-10-15 G4 R41/R42 最新恢复点：从 main `fdc9346` 的获批 [prepare #38662827895](https://github.com/CP11-gh/CRM/actions/runs/38662827895) 锁定运行后端 `sha256:ee48ee38…335daa`、冻结 36 条和 Provider 零调用；一次 [live #38662963980](https://github.com/CP11-gh/CRM/actions/runs/38662963980) 的 34 条模型样本全部 `LLM_TIMEOUT`，仅 2 条本地故障注入通过，不能判断模型回答质量，见 [R41 TR](../reports/tests/TR-MVP-005-20261015-R41.md)。用户随后批准只读传输探针；[PR #195](https://github.com/CP11-gh/CRM/pull/195) 双 CI 通过并合入 main `bea2f2c`，[探针 #38665764165](https://github.com/CP11-gh/CRM/actions/runs/38665764165) 在 Runner 与运行后端容器均收到无凭据 HTTPS 4xx，容器 DNS/TCP/TLS 通过、Provider 调用 0，见 [R42 TR](../reports/tests/TR-MVP-005-20261015-R42.md)。这只证明探针时刻基础传输通畅，R41 生成超时根因未证实。三份原样低敏证据及哈希见两份 TR。[PR #196](https://github.com/CP11-gh/CRM/pull/196) 双 CI 通过并合入 main `d9be490`；从合并后的主分支核对 IR/TR/RR 各 70 份源记录，本分支将三个派生索引恢复为 `CURRENT`。下一步最多三项：定位模型请求阶段超时；有界修复并验证；重新取得一次付费 live 授权后复测。G4 `PARTIAL`、production No-Go。
 
 2026-10-14 G4 R40 最新 staging 恢复点：用户另行精确授权后，从 main `2d164767` 完成[六摘要预取 #38550506209](https://github.com/CP11-gh/CRM/actions/runs/38550506209)、[validate #38551198566](https://github.com/CP11-gh/CRM/actions/runs/38551198566) 和[deploy #38551532509](https://github.com/CP11-gh/CRM/actions/runs/38551532509)，运行后端已切到 `sha256:ee48ee38…335daa`，前端/检索不变，旧后端作回滚目标；迁移头、三健康、固定出口与 Webhook 只读通过。[零调用 prepare #38552161363](https://github.com/CP11-gh/CRM/actions/runs/38552161363) 在 Runner 核对实际运行摘要和冻结 36 条。四份原始低敏证据及 SHA-256 见 [R40 TR](../reports/tests/TR-MVP-005-20261014-R40.md)。[PR #193](https://github.com/CP11-gh/CRM/pull/193) 双 CI 通过并合入 main `fb495351`；从该 main 核对 IR/TR/RR 各 68 份源记录，本分支恢复三个派生索引为 `CURRENT`。R37 live 仍为最新模型质量，35/36、Provider 故障 1、机器 `passed=false`；G4 `PARTIAL`、production No-Go。下一步：另行精确授权一次 G4 live，按低敏 JSON/Schema 诊断定位并修复逐项失败。
 
