@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r47-canary-evidence-20261015
-Governance base SHA: 5add1e7d2df984e5783c5df959e90bdc305810ea
-CANDIDATE_SUBJECT_SHA: 5add1e7d2df984e5783c5df959e90bdc305810ea
+Working branch at this snapshot: docs/mvp005-g4-r47-index-20261015
+Governance base SHA: bb4fbea3a9fe0a281e4327c7f08ef5c69fdcdc28
+CANDIDATE_SUBJECT_SHA: bb4fbea3a9fe0a281e4327c7f08ef5c69fdcdc28
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R47 最新恢复点：用户在单样本精确付费方案后批准继续；从 main `5add1e7` 仅执行一次 [staging canary #38688630576](https://github.com/CP11-gh/CRM/actions/runs/38688630576)。固定冻结样本 `order-open-001` 的请求与响应头均被观察到，首头 `101-500ms`、总耗时 `501-2000ms`、结果 `completed`、一次 SDK 调用；低敏原样证据及 SHA-256 见 [R47 TR](../reports/tests/TR-MVP-005-20261015-R47.md)。运行后端、TikTok 开关和 production 未变。本次授权已用完；这一次成功不解释 R41 的 34 次超时，也不构成完整质量复测。G4 `PARTIAL`、production No-Go。下一步最多三项：审查 R41 与本次差异；如需完整 34+2 付费 `live`，先取得精确授权；按逐项结果决定 G4 修复或关闭。
+2026-10-15 G4 R47 最新恢复点：用户在单样本精确付费方案后批准继续；从 main `5add1e7` 仅执行一次 [staging canary #38688630576](https://github.com/CP11-gh/CRM/actions/runs/38688630576)。固定冻结样本 `order-open-001` 的请求与响应头均被观察到，首头 `101-500ms`、总耗时 `501-2000ms`、结果 `completed`、一次 SDK 调用；低敏原样证据及 SHA-256 见 [R47 TR](../reports/tests/TR-MVP-005-20261015-R47.md)。[PR #210](https://github.com/CP11-gh/CRM/pull/210) 双 CI 通过并合入 main `bb4fbea`；从该 main 核对 IR/TR/RR 各 75 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。运行后端、TikTok 开关和 production 未变。本次授权已用完；这一次成功不解释 R41 的 34 次超时，也不构成完整质量复测。G4 `PARTIAL`、production No-Go。下一步最多三项：审查 R41 与本次差异；如需完整 34+2 付费 `live`，先取得精确授权；按逐项结果决定 G4 修复或关闭。
 
 2026-10-15 G4 R46 最新恢复点：按用户确认的有界修复设计，[PR #207](https://github.com/CP11-gh/CRM/pull/207) 仅将现有 live 的五项获批计价配置原值加入 canary/check_only 一次性进程，双 CI 与独立审查通过并合入 main `343d7a1`。一次 [staging 零调用复核 #38683585950](https://github.com/CP11-gh/CRM/actions/runs/38683585950) 核对源码、冻结集与运行后端后报告 `ready/none`、Provider 0 调用、请求钩子 false；原样证据和哈希见 [R46 TR](../reports/tests/TR-MVP-005-20261015-R46.md)。[PR #208](https://github.com/CP11-gh/CRM/pull/208) 双 CI 通过并合入 main `641e25b`；从该 main 核对 IR/TR/RR 各 74 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。R45 配置加载阻断已解除，但付费 canary 尚未重试，R41 的 34 次真实生成超时仍待定位。G4 `PARTIAL`、production No-Go。下一步：如需一次新的单样本真实请求，按精确付费范围另行批准；读取低敏阶段证据后再决定超时修复与完整 live。
 
