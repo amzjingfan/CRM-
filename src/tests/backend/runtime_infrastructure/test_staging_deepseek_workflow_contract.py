@@ -58,3 +58,16 @@ def test_live_artifact_accepts_only_fixed_schema_diagnostics() -> None:
     )
     assert {"missing", "extra_forbidden", "less_than_equal"} <= _allowed_keys(source, "allowedOutputSchemaErrorTypes")
     assert "@($sample.provider_output_schema_issues).Count -gt 8" in source
+
+
+def test_single_canary_requires_explicit_mode_and_separate_confirmation() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    assert "- canary" in source
+    assert "send-one-frozen-case-to-deepseek" in source
+    assert "diagnose_deepseek_canary.py" in source
+    assert '--output "$env:CONTAINER_DIR/canary.json"' in source
+    assert "if: inputs.mode == 'canary'" in source
+    assert "sdk_call_count -ne 1" in source
+    assert "response_headers_seen" in source
+    assert "request_to_headers" in source
+    assert "service_mutation" in source

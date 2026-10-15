@@ -85,7 +85,8 @@ python scripts/verify_tiktok_egress.py
 - Webhook 真实模式使用官方签名和原始请求体；开发签名只能在真实开关关闭时使用。
 - Token 加密保存，刷新失败将渠道置为 `expired`；日志和响应不输出 Token 或凭证引用。
 - DeepSeek Key 只从环境读取，Provider 使用固定正向输入协议、DLP 和结构化输出。
-- G4 一次性入口为 `evaluate-staging-deepseek.yml`：从 `main` 手动派发，必须填写精确的 `expected_source_sha` 与当前运行 `crm-backend` 的 `repository@sha256`。Runner 按该提交从 GitHub API 读取所需六个文件并校验 Git blob SHA，避免全仓 Git fetch 卡住。先运行 `prepare`，它校验独立冻结集、36 条样本、34 条真实模型样本、2 条故障注入、staging 配置及代码哈希，只上传低敏准备证据，Provider 调用数为 0。`live` 另需针对 34 条合成数据外发及可能费用的单独批准，并填入工作流要求的确认短语；它只在现有 backend 容器的一次性子进程中启用评测与保守估价，不修改服务配置、TikTok 写开关或 production。质量未达门禁时上传低敏报告后作业失败；报告中的成本是估算，不是账单。历史 32/36 不能代替新现场结果。
+- G4 一次性入口为 `evaluate-staging-deepseek.yml`：从 `main` 手动派发，必须填写精确的 `expected_source_sha` 与当前运行 `crm-backend` 的 `repository@sha256`。Runner 按该提交从 GitHub API 读取所需文件并校验 Git blob SHA，避免全仓 Git fetch 卡住。先运行 `prepare`，它校验独立冻结集、36 条样本、34 条真实模型样本、2 条故障注入、staging 配置及代码哈希，只上传低敏准备证据，Provider 调用数为 0。`live` 另需针对 34 条合成数据外发及可能费用的单独批准，并填入工作流要求的确认短语；它只在现有 backend 容器的一次性子进程中启用评测与保守估价，不修改服务配置、TikTok 写开关或 production。质量未达门禁时上传低敏报告后作业失败；报告中的成本是估算，不是账单。历史 32/36 不能代替新现场结果。
+- G4 超时诊断可在同一工作流选独立 `canary` 模式，但真实付费调用须另行精确授权并填入该模式专用短语。它复用精确源码、运行镜像、独立冻结集和安全开关前检，只取 `order-open-001` 发起一次与现有评测首稿同格式的结构化请求；SDK 禁止重试，保持 15 秒超时，外层 20 秒截止，不进入修复或重生成。结果仅保留请求钩子、响应头是否到达、到响应头和总耗时分档、稳定错误码及 Token 数；HTTPX 请求钩子表示 SDK 进入发送阶段，不单独证明字节已抵达供应商。任何 Prompt、模型正文、请求 ID 或原始异常都不写证据。该诊断不改变运行服务，不替代 36 条 `live` 的质量门禁。
 - G4 的全量 Provider 超时可用 `diagnose-staging-deepseek-transport.yml` 做一次性只读定位：从 `main` 填入精确源码 SHA 和运行后端摘要。默认 `transport` 模式让 Runner 与现有 backend 容器分别对固定 `api.deepseek.com` 执行无凭据的 DNS/TCP/TLS/HEAD 检查。另行选 `request_path` 时，额外各向固定 `/chat/completions` 路径发送一次无凭据、仅含空 JSON 的 POST；存在 HTTPS 代理配置时拒绝发送，意外收到 2xx 时立即失败关闭。新增证据只保留固定失败类别、HTTP 状态类别与 DNS/TCP/TLS/请求至首字节/总耗时分档，不保留响应正文、原始异常、代理值或凭据。该 POST 不含有效模型请求，不能验证真实生成阶段；探针不改服务，也不能替代付费 `live` 质量验收。
 - SSE `delta` 是经安全校验后的草稿分块，不把模型原生流直接暴露给客户端。
 

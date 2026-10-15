@@ -4,11 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Prepare without API calls, or run one frozen live evaluation
+        description: Prepare, one frozen canary, or the full live evaluation
         required: true
         type: choice
         options:
           - prepare
+          - canary
           - live
       expected_source_sha:
         description: Exact reviewed main commit SHA
@@ -19,7 +20,7 @@ on:
         required: true
         type: string
       confirm_live:
-        description: For live only, type send-34-synthetic-cases-to-deepseek
+        description: For canary type send-one-frozen-case-to-deepseek; for live type send-34-synthetic-cases-to-deepseek
         required: false
         type: string
 
@@ -65,7 +66,8 @@ jobs:
               'src/backend/app/agent/real_model_evaluation.py',
               'src/backend/app/agent/providers/deepseek_provider.py',
               'src/backend/app/shared/config/llm_pricing.py',
-              'src/backend/scripts/evaluate_real_model.py'
+              'src/backend/scripts/evaluate_real_model.py',
+              'src/backend/scripts/diagnose_deepseek_canary.py'
           )) {
             $uri = "https://api.github.com/repos/CP11-gh/CRM/contents/${relative}?ref=$env:GITHUB_SHA"
             $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 30
@@ -103,10 +105,11 @@ jobs:
           if ($env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
               $env:EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA -or
               $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
-              $env:MODE -cnotin @('prepare', 'live')) {
+              $env:MODE -cnotin @('prepare', 'canary', 'live')) {
             throw 'The G4 source, backend image, or mode is invalid.'
           }
           if (($env:MODE -ceq 'live' -and $env:CONFIRM_LIVE -cne 'send-34-synthetic-cases-to-deepseek') -or
+              ($env:MODE -ceq 'canary' -and $env:CONFIRM_LIVE -cne 'send-one-frozen-case-to-deepseek') -or
               ($env:MODE -ceq 'prepare' -and $env:CONFIRM_LIVE)) {
             throw 'The G4 live confirmation does not match the requested mode.'
           }
@@ -193,7 +196,34 @@ jobs:
           "container_dir=$containerDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "docker_host=$dockerHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "backend_image=$actualImage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Output "G4 preflight: 36 frozen synthetic cases, 34 provider calls, 2 injected failures; no external call made."
+          Write-Output "G4 preflight: 36 frozen synthetic cases, 34 eligible provider samples, 2 injected failures; no external call made."
+
+      - name: Run one bounded canary with the existing backend code
+        if: inputs.mode == 'canary'
+        shell: pwsh
+        env:
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
+          CONTAINER: ${{ steps.preflight.outputs.container }}
+          CONTAINER_DIR: ${{ steps.preflight.outputs.container_dir }}
+          DOCKER_HOST: ${{ steps.preflight.outputs.docker_host }}
+        run: |
+          $scriptPath = Join-Path $env:SOURCE_PATH 'src/backend/scripts/diagnose_deepseek_canary.py'
+          if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+            throw 'Reviewed canary source is missing.'
+          }
+          & docker --host $env:DOCKER_HOST cp $scriptPath "${env:CONTAINER}:$env:CONTAINER_DIR/canary.py"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to stage reviewed canary source.' }
+          & docker --host $env:DOCKER_HOST exec -u 0 $env:CONTAINER chmod 0644 "$env:CONTAINER_DIR/canary.py"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to read reviewed canary source.' }
+          & docker --host $env:DOCKER_HOST exec `
+            -e PYTHONPATH=/app `
+            -e LLM_ENABLED=true `
+            -e LLM_LIVE_EVAL=true `
+            $env:CONTAINER python -B "$env:CONTAINER_DIR/canary.py" `
+            --dataset "$env:CONTAINER_DIR/dataset.jsonl" `
+            --manifest "$env:CONTAINER_DIR/manifest.json" `
+            --output "$env:CONTAINER_DIR/canary.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Single canary failed before safe evidence was produced.' }
 
       - name: Run one live evaluation with the existing backend code
         id: live
@@ -331,6 +361,41 @@ jobs:
                 }
               }
             }
+          } elseif ($env:MODE -ceq 'canary') {
+            & docker --host $env:DOCKER_HOST cp "${env:CONTAINER}:$env:CONTAINER_DIR/canary.json" $evidencePath
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to retrieve the single canary result.' }
+            try {
+              $canary = Get-Content -LiteralPath $evidencePath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
+            } catch { throw 'Single canary evidence could not be parsed safely.' }
+            $allowedCanaryKeys = @('schema_version','sample_id','dataset_sha256','model','sdk_timeout_seconds','hard_timeout_seconds','sdk_call_count','request_hook_seen','response_headers_seen','request_to_headers','total_duration','result','error_code','input_tokens','output_tokens','service_mutation','production_release')
+            $allowedBuckets = @('not_reached','0-100ms','101-500ms','501-2000ms','2001-7000ms','7001-15000ms','>15000ms')
+            $allowedCanaryErrors = @('LLM_TIMEOUT','LLM_RATE_LIMITED','LLM_CONNECTION_ERROR','LLM_AUTHENTICATION_ERROR','LLM_PERMISSION_DENIED','LLM_INVALID_REQUEST','LLM_PROVIDER_ERROR','LLM_OUTPUT_INVALID','LLM_REFUSAL','LLM_CONFIGURATION_ERROR','CANARY_HARD_TIMEOUT','CANARY_INTERNAL_FAILURE')
+            if ($canary.Count -ne $allowedCanaryKeys.Count -or
+                @($canary.Keys | Where-Object { $_ -cnotin $allowedCanaryKeys }).Count -ne 0 -or
+                $canary.schema_version -ne 1 -or
+                $canary.sample_id -cne 'order-open-001' -or
+                $canary.dataset_sha256 -cne '7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94' -or
+                $canary.model -cne 'deepseek-v4-flash' -or
+                $canary.sdk_timeout_seconds -ne 15 -or
+                $canary.hard_timeout_seconds -ne 20 -or
+                $canary.sdk_call_count -ne 1 -or
+                $canary.request_hook_seen -isnot [bool] -or
+                $canary.response_headers_seen -isnot [bool] -or
+                ($canary.response_headers_seen -and -not $canary.request_hook_seen) -or
+                $canary.request_to_headers -cnotin $allowedBuckets -or
+                $canary.total_duration -cnotin $allowedBuckets -or
+                $canary.result -cnotin @('completed','provider_failure','hard_timeout','internal_failure') -or
+                ($canary.result -ceq 'completed' -and $null -ne $canary.error_code) -or
+                ($canary.result -cne 'completed' -and $canary.error_code -cnotin $allowedCanaryErrors) -or
+                $canary.input_tokens -lt 0 -or $canary.input_tokens -gt 1000000 -or
+                $canary.output_tokens -lt 0 -or $canary.output_tokens -gt 1000000 -or
+                $canary.service_mutation -ne $false -or $canary.production_release -ne $false) {
+              throw 'Single canary evidence is outside the fixed low-sensitive contract.'
+            }
+            $canary['evidence_type'] = 'staging_g4_single_canary'
+            $canary['source_sha'] = $env:GITHUB_SHA
+            $canary['backend_image'] = $env:BACKEND_IMAGE
+            $canary | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $evidencePath -Encoding utf8
           } else {
             @{
               schema_version = 1
