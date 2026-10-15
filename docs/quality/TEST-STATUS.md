@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-15 G4 R54 单镜像发布：用户在精确范围后批准继续；从 main `6e41632` 仅运行一次[后端发布 #38708209437](https://github.com/CP11-gh/CRM/actions/runs/38708209437)，生成 `ghcr.io/cp11-gh/crm-backend@sha256:1045d683…eec363`。原样[镜像证据](../../release/evidence/staging/crm-staging-g4-r54-image-38708209437.json)确认 `linux/amd64` manifest `PASS`、压缩层 110,072,185 字节、最大层 33,257,532 字节；原始/入库哈希一致，见 [R54 TR](../reports/tests/TR-MVP-005-20261015-R54.md)。本轮未部署 staging 或调用 DeepSeek；R52 仍是最新真实质量，G4 `PARTIAL`、production No-Go。
+2026-10-15 G4 R54 单镜像发布：用户在精确范围后批准继续；从 main `6e41632` 仅运行一次[后端发布 #38708209437](https://github.com/CP11-gh/CRM/actions/runs/38708209437)，生成 `ghcr.io/cp11-gh/crm-backend@sha256:1045d683…eec363`。原样[镜像证据](../../release/evidence/staging/crm-staging-g4-r54-image-38708209437.json)确认 `linux/amd64` manifest `PASS`、压缩层 110,072,185 字节、最大层 33,257,532 字节；原始/入库哈希一致；[PR #224](https://github.com/CP11-gh/CRM/pull/224) 前后端 CI 通过并合入 main `eda95db`，见 [R54 TR](../reports/tests/TR-MVP-005-20261015-R54.md)。本轮未部署 staging 或调用 DeepSeek；R52 仍是最新真实质量，G4 `PARTIAL`、production No-Go。
 
 2026-10-15 G4 R53 源码候选：从 main `5ac6da6` 的 subject `1d15123` 将内部政策诊断码从模型修复请求移出，改用固定白名单自然语言要求，Prompt 升至 `real-model-eval-v1.2.13` 并保留严格 `reason_code` 枚举。先红后绿，subject 上六个相关文件 92 passed；定向 Ruff 和格式通过，本地 mypy 长时间无输出后中断；[PR #222](https://github.com/CP11-gh/CRM/pull/222) 前后端 CI（含后端类型检查）通过并合入 main `39f18d6`。见 [R53 TR](../reports/tests/TR-MVP-005-20261015-R53.md)。尚未发布镜像、部署或调用 DeepSeek；下方 R52 仍是最新现场，G4 `PARTIAL`、production No-Go。
 
