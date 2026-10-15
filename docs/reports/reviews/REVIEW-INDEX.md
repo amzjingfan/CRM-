@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -76,3 +76,4 @@ View: `CURRENT`
 | RR-MVP-005-20261015-R42 | MVP-005 | R42 | APPROVE | `bea2f2cc64b4041f281e66e3e7b47ee852a974e3` | staging-scope / immutable-digest / no-credentials / output-allowlist / no-model-call / production-boundary | 2026-10-15T09:29:05+08:00 | [`RR-MVP-005-20261015-R42.md`](RR-MVP-005-20261015-R42.md) |
 | RR-MVP-005-20261015-R43 | MVP-005 | R43 | APPROVE | `49c8a6035d254ad069e95de8ef8c8d5dbcd0a5b9` | staging-scope / immutable-digest / no-credentials / exact-request / output-allowlist / no-model-call / production-boundary | 2026-10-15T10:06:01+08:00 | [`RR-MVP-005-20261015-R43.md`](RR-MVP-005-20261015-R43.md) |
 | RR-MVP-005-20261015-R44 | MVP-005 | R44 | APPROVE | `19e603f8578d31663393dc190ccb681f3817ef48` | single-sample / exact-source / immutable-digest / no-retry / deadline / output-allowlist / fail-closed / production-boundary | 2026-10-15T10:53:00+08:00 | [`RR-MVP-005-20261015-R44.md`](RR-MVP-005-20261015-R44.md) |
+| RR-MVP-005-20261015-R45 | MVP-005 | R45 | APPROVE | `e1db76513ac14ce0a6ea8fdbe033623981efe82b` | exact-source / immutable-digest / no-provider-call / failure-stage-allowlist / fail-closed / production-boundary | 2026-10-15T12:30:54+08:00 | [`RR-MVP-005-20261015-R45.md`](RR-MVP-005-20261015-R45.md) |

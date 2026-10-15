@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r44-index-20261015
-Governance base SHA: 170cdcd98166d780e5f47a58feaf9a14a5bd1e68
-CANDIDATE_SUBJECT_SHA: 170cdcd98166d780e5f47a58feaf9a14a5bd1e68
+Working branch at this snapshot: docs/mvp005-g4-r45-evidence-20261015
+Governance base SHA: e1db76513ac14ce0a6ea8fdbe033623981efe82b
+CANDIDATE_SUBJECT_SHA: e1db76513ac14ce0a6ea8fdbe033623981efe82b
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-15 G4 R44 最新恢复点：用户确认有界单样本设计后，[PR #201](https://github.com/CP11-gh/CRM/pull/201) 双 CI 通过并合入 main `19e603f`。`canary` 固定冻结集 `order-open-001`、运行后端摘要和安全开关；单次现有结构化 DeepSeek 请求，禁用重试和修复调用，15 秒 SDK/20 秒外层截止，输出仅低敏固定类别。[零调用 prepare #38673009877](https://github.com/CP11-gh/CRM/actions/runs/38673009877) 已通过：36 条、Provider 0 调用、production false，原样证据和哈希见 [R44 TR](../reports/tests/TR-MVP-005-20261015-R44.md)。[PR #202](https://github.com/CP11-gh/CRM/pull/202) 双 CI 通过并合入 main `170cdcd`；从该主分支核对 IR/TR/RR 各 72 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。真实付费 canary 尚未运行，R41 34 次超时根因未定。下一动作：取得该一次付费调用的精确授权；按阶段低敏证据定位超时；之后决定修复和完整 live。G4 `PARTIAL`、production No-Go。
+2026-10-15 G4 R45 最新恢复点：用户授权的一次 [R44 付费 canary #38678589702](https://github.com/CP11-gh/CRM/actions/runs/38678589702) 在生成安全报告前以 `CANARY_SETUP_FAILED` 结束，请求是否发送无法证明，授权没有重用。按用户确认的零调用设计，[PR #204](https://github.com/CP11-gh/CRM/pull/204) 经前后端 CI 及独立复核合入 main `e1db765`；一次 [staging check_only #38681595434](https://github.com/CP11-gh/CRM/actions/runs/38681595434) 核对精确源码、后端摘要和冻结输入后，报告 `settings_validation`、Provider 0 调用、请求钩子 false。原样证据和 SHA-256 见 [R45 TR](../reports/tests/TR-MVP-005-20261015-R45.md)。代码对照显示 canary 步骤缺现有 live 步骤使用的五项获批计价配置；修复尚未复核。R41 的真实生成超时仍待定位，G4 `PARTIAL`、production No-Go。下一步最多三项：经有界设计确认后补齐 canary 计价环境并做零调用复核；再按结果判断是否需要一次新的精确付费授权；随后决定超时修复与完整 live。
+
+2026-10-15 G4 R44 历史恢复点：用户确认有界单样本设计后，[PR #201](https://github.com/CP11-gh/CRM/pull/201) 双 CI 通过并合入 main `19e603f`。`canary` 固定冻结集 `order-open-001`、运行后端摘要和安全开关；单次现有结构化 DeepSeek 请求，禁用重试和修复调用，15 秒 SDK/20 秒外层截止，输出仅低敏固定类别。[零调用 prepare #38673009877](https://github.com/CP11-gh/CRM/actions/runs/38673009877) 已通过：36 条、Provider 0 调用、production false，原样证据和哈希见 [R44 TR](../reports/tests/TR-MVP-005-20261015-R44.md)。[PR #202](https://github.com/CP11-gh/CRM/pull/202) 双 CI 通过并合入 main `170cdcd`；从该主分支核对 IR/TR/RR 各 72 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。当时真实付费 canary 尚未运行，R41 34 次超时根因未定。下一动作：取得该一次付费调用的精确授权；按阶段低敏证据定位超时；之后决定修复和完整 live。G4 `PARTIAL`、production No-Go。
 
 2026-10-15 G4 R43 最新恢复点：[PR #198](https://github.com/CP11-gh/CRM/pull/198) 的前后端 CI 通过并合入 main `49c8a603`。用户批准的一次[请求路径探针 #38669010532](https://github.com/CP11-gh/CRM/actions/runs/38669010532)核对运行后端摘要后，从 Runner 和 backend 容器各发送一次无凭据、无有效模型参数的空 JSON POST；两处均在 `101-500ms` 总耗时分档收到 4xx，Provider 调用 0，服务未变。原样证据及 SHA-256 见 [R43 TR](../reports/tests/TR-MVP-005-20261015-R43.md)。这不能重现 R41 的认证后真实生成，34 次 `LLM_TIMEOUT` 根因未确定。G4 `PARTIAL`、production No-Go；下一步先取得单个合成样本真实生成的精确付费授权，测量阶段耗时和超时预算，再决定修复与完整 live 复测。[PR #199](https://github.com/CP11-gh/CRM/pull/199) 双 CI 通过并合入 main `188290a`；从该主分支核对 IR/TR/RR 各 71 份源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。
 
@@ -237,7 +239,7 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 - 2026-10-09 最新 OAuth 回调和 job 终态真实成功，2026-10-04 自然刷新也已通过。用户决定现场 callback 二次 GET 不阻断 G1 核心；增强物流 `202604` 对五笔不同 TikTok 配送订单仍返回 `11007009`，须取得合格 CBT 首程订单或平台说明并在 G8 前通过。G2 staging 只读与 Webhook 开关已受控开启；独立查询确认 `NEW_MESSAGE` 订阅数 1，尚无官方投递。
 - `MVP-001` 的内部轮换及外部四项凭据注入已通过；TikTok OAuth 已获用户确认，DeepSeek 平台已接受本次 34 条合成评测请求。固定出口已在 live staging 观测为 `38.55.145.52`；Partner Center 白名单只有用户截图，仍需真实平台出口证据确认。Mock 专用 `TIKTOK_WEBHOOK_SECRET` 不是外部待准备凭据。
 - `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 继续作为安全基线。
-- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；现运行 2026-10-14 G4 Prompt `v1.2.10` 后端 `sha256:a38855fa…5f5da5`、原有前端与分层检索不可变摘要。固定出口 helper 曾异常退出，2026-10-08 已恢复，本次部署又复测 `38.55.145.52`；后续须核对是否再发以及告警覆盖。
+- staging DNS/TLS、`18080 → 18081` 隧道和 Rootless CRM 可用；最新 R45 前检核对运行后端为 `sha256:ee48ee38…335daa`，前端与检索未改。固定出口 helper 曾异常退出，2026-10-08 已恢复；后续须核对是否再发以及告警覆盖。
 - 入口服务器仍有一个失败且非持久的 `crm-external-image-prepare.service` transient unit，引用已不存在的退役脚本；本清理批次未扩大范围修改它，当前不监听端口且不影响 staging。
 - TEST-001 独立审查 Critical 0、Important 0；非阻塞 Minor 建议是未来在 `src/tests/README.md` 说明 sibling-path 聚焦 pytest 需要 `-c pyproject.toml`，本候选未因此改变。
 - TEST-001 仍保留两个既有前端 lint warning、两个 Python 弃用 warning 与一个 npm high severity audit 项；依赖升级另立任务，ignored temp 清理须遵守独立清理治理。
@@ -247,6 +249,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G4 R43 仅证明无凭据空请求的路径快速响应；先获得单个合成样本真实生成的精确付费授权，测量响应阶段与 SDK 超时预算，再针对 R41 的 34 次超时决定有界修复和完整 live 复测。G4 保持 `PARTIAL`。
+1. G4 R45 零调用现场锁定 `settings_validation`；在有界设计确认后，把现有 live 的五项获批计价配置应用到 canary/check_only 调用并再次零调用核对。真实付费 canary 的旧授权已用完，新调用需单独精确授权；R41 超时尚未解决，G4 保持 `PARTIAL`。
 2. G2 由店铺所有者经 Partner Center 确认买家聊天入口或官方测试投递；取得受控真实入站后复测，不再执行订阅 PUT。G3 保持真实写关闭，待受控会话、单次消息授权与 `unknown` 对账方案。
 3. G1-L 增强物流待合格 CBT 首程订单或平台说明；G2、G3、G1-L 和 G4～G6 仍阻断 G8，production 保持 No-Go。
