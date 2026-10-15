@@ -92,3 +92,23 @@ def test_check_only_can_report_invalid_settings_after_staging_image_preflight() 
     assert "The frozen independent G4 dataset is missing or changed." in preflight
     assert "if ($env:MODE -cne 'check_only') {\n          $inspectionCode = @'" in preflight
     assert "G4 runtime or frozen dataset guard failed.'\n          }" in preflight
+
+
+def test_canary_and_check_only_use_existing_approved_live_pricing() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    canary_step = source.split("- name: Run bounded canary or zero-call setup check", 1)[1].split(
+        "- name: Run one live evaluation with the existing backend code", 1
+    )[0]
+    live_step = source.split("- name: Run one live evaluation with the existing backend code", 1)[1].split(
+        "- name: Validate and retain low-sensitive evidence", 1
+    )[0]
+    approved = {
+        "LLM_INPUT_COST_PER_MILLION_USD": "0.44",
+        "LLM_OUTPUT_COST_PER_MILLION_USD": "1.32",
+        "LLM_PRICING_VERSION": "deepseek-v4-2026-08-16-peak-cache-miss",
+        "LLM_PRICING_CURRENCY": "USD",
+        "LLM_PRICING_BASIS": "conservative_peak_cache_miss",
+    }
+    for name, value in approved.items():
+        assert f"-e {name}={value} `" in live_step
+        assert f"-e {name}={value} `" in canary_step

@@ -226,6 +226,11 @@ jobs:
             -e PYTHONPATH=/app `
             -e LLM_ENABLED=true `
             -e LLM_LIVE_EVAL=true `
+            -e LLM_INPUT_COST_PER_MILLION_USD=0.44 `
+            -e LLM_OUTPUT_COST_PER_MILLION_USD=1.32 `
+            -e LLM_PRICING_VERSION=deepseek-v4-2026-08-16-peak-cache-miss `
+            -e LLM_PRICING_CURRENCY=USD `
+            -e LLM_PRICING_BASIS=conservative_peak_cache_miss `
             $env:CONTAINER python -B "$env:CONTAINER_DIR/canary.py" `
             --dataset "$env:CONTAINER_DIR/dataset.jsonl" `
             --manifest "$env:CONTAINER_DIR/manifest.json" `
