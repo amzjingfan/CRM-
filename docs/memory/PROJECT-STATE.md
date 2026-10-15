@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r49-index-20261015
-Governance base SHA: d9546c0d394e863a6b6a0e0457f27c314b1cf93e
-CANDIDATE_SUBJECT_SHA: d9546c0d394e863a6b6a0e0457f27c314b1cf93e
+Working branch at this snapshot: docs/mvp005-g4-r50-image-evidence-20261015
+Governance base SHA: 6b63fd7b836533ff42a0c0b2c833478fc31bae2d
+CANDIDATE_SUBJECT_SHA: 6b63fd7b836533ff42a0c0b2c833478fc31bae2d
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-15 G4 R50 最新镜像恢复点：用户单独授权后，仅从 main `6b63fd7` 执行一次[后端镜像发布 #38694723923](https://github.com/CP11-gh/CRM/actions/runs/38694723923)，候选 `ghcr.io/cp11-gh/crm-backend@sha256:8e8dcd818b1267a1521c8f611b27fe2ac4edc5c7a780946967198bac18d77d5a`、`linux/amd64` manifest `PASS`、压缩层 110,070,651 字节；原样证据 SHA-256 见 [R50 TR](../reports/tests/TR-MVP-005-20261015-R50.md)。候选尚未部署 staging，本次授权已用完；R48 的 35/36 与 Provider 故障 1 仍为最新现场质量，G4 `PARTIAL`、production No-Go。下一步最多三项：另行精确授权 staging 六摘要预取、validate、deploy 并核对运行摘要与健康；运行零调用 prepare；新的付费完整 live 再独立授权。
 
 2026-10-15 G4 R49 最新源码恢复点：[PR #214](https://github.com/CP11-gh/CRM/pull/214) 前后端 CI 通过并合入 main `d9546c0`；从该 main 核对 IR/TR/RR 各 77 份权威源记录，本索引收尾分支恢复三个派生索引为 `CURRENT`。从 main `44ec63f` 的 subject `406ede8` 将 G4 离线修复 Prompt 升为 `v1.2.12`，明确七个合法原因码、有证据 FAQ 的 `human_review+policy_grounded` 和诊断码不得填入输出。新增契约先红后绿，五个相关评测文件 79 passed，定向 Ruff、格式和 mypy 通过；见 [R49 TR](../reports/tests/TR-MVP-005-20261015-R49.md)。未发布镜像、部署或调用 DeepSeek，R48 的 35/36、Provider 故障 1 仍是最新现场质量，G4 `PARTIAL`、production No-Go。下一步最多三项：如需新镜像与 staging 部署分别精确授权；在新镜像上运行零调用 prepare；再单独授权完整 live 复核多语言失败与全部安全指标。
 

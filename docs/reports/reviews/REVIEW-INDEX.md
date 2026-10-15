@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -81,3 +81,4 @@ View: `CURRENT`
 | RR-MVP-005-20261015-R47 | MVP-005 | R47 | APPROVE | `5add1e7d2df984e5783c5df959e90bdc305810ea` | single-authorization / exact-source / immutable-digest / frozen-data / one-provider-call / low-sensitive-evidence / fail-closed / production-boundary | 2026-10-15T13:52:00+08:00 | [`RR-MVP-005-20261015-R47.md`](RR-MVP-005-20261015-R47.md) |
 | RR-MVP-005-20261015-R48 | MVP-005 | R48 | APPROVE | `9cb2a400cc2906dd74649f13ecca72e085822b2d` | G4 / AC-01～AC-04 | 2026-10-15T14:16:00+08:00 | [`RR-MVP-005-20261015-R48.md`](RR-MVP-005-20261015-R48.md) |
 | RR-MVP-005-20261015-R49 | MVP-005 | R49 | APPROVE | `406ede802b5e4eee300fc751d5ec54a50274368a` | G4 / AC-01～AC-04 | 2026-10-15T14:37:00+08:00 | [`RR-MVP-005-20261015-R49.md`](RR-MVP-005-20261015-R49.md) |
+| RR-MVP-005-20261015-R50 | MVP-005 | R50 | APPROVE | `6b63fd7b836533ff42a0c0b2c833478fc31bae2d` | G4 / AC-01～AC-04 | 2026-10-15T14:50:00+08:00 | [`RR-MVP-005-20261015-R50.md`](RR-MVP-005-20261015-R50.md) |
