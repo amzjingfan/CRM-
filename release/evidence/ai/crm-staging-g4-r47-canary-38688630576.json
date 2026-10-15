@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "sample_id": "order-open-001",
+  "dataset_sha256": "7f7c7084ac37e9aef5c9b1a947a9f44250cd89e290f5ae18990ec558e5c6df94",
+  "model": "deepseek-v4-flash",
+  "sdk_timeout_seconds": 15,
+  "hard_timeout_seconds": 20,
+  "sdk_call_count": 1,
+  "request_hook_seen": true,
+  "response_headers_seen": true,
+  "request_to_headers": "101-500ms",
+  "total_duration": "501-2000ms",
+  "result": "completed",
+  "error_code": null,
+  "input_tokens": 1433,
+  "output_tokens": 121,
+  "service_mutation": false,
+  "production_release": false,
+  "evidence_type": "staging_g4_single_canary",
+  "source_sha": "5add1e7d2df984e5783c5df959e90bdc305810ea",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:ee48ee381dd8dcf6696b31dc641d4916daa973ee95ae40e3013bdd7584335daa"
+}

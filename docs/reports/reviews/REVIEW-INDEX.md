@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -78,3 +78,4 @@ View: `CURRENT`
 | RR-MVP-005-20261015-R44 | MVP-005 | R44 | APPROVE | `19e603f8578d31663393dc190ccb681f3817ef48` | single-sample / exact-source / immutable-digest / no-retry / deadline / output-allowlist / fail-closed / production-boundary | 2026-10-15T10:53:00+08:00 | [`RR-MVP-005-20261015-R44.md`](RR-MVP-005-20261015-R44.md) |
 | RR-MVP-005-20261015-R45 | MVP-005 | R45 | APPROVE | `e1db76513ac14ce0a6ea8fdbe033623981efe82b` | exact-source / immutable-digest / no-provider-call / failure-stage-allowlist / fail-closed / production-boundary | 2026-10-15T12:30:54+08:00 | [`RR-MVP-005-20261015-R45.md`](RR-MVP-005-20261015-R45.md) |
 | RR-MVP-005-20261015-R46 | MVP-005 | R46 | APPROVE | `343d7a1f35ecef505d7e11e7848c64db360fe77b` | approved-pricing / shared-canary-invocation / no-provider-call / fail-closed / low-sensitive-evidence / production-boundary | 2026-10-15T12:52:59+08:00 | [`RR-MVP-005-20261015-R46.md`](RR-MVP-005-20261015-R46.md) |
+| RR-MVP-005-20261015-R47 | MVP-005 | R47 | APPROVE | `5add1e7d2df984e5783c5df959e90bdc305810ea` | single-authorization / exact-source / immutable-digest / frozen-data / one-provider-call / low-sensitive-evidence / fail-closed / production-boundary | 2026-10-15T13:52:00+08:00 | [`RR-MVP-005-20261015-R47.md`](RR-MVP-005-20261015-R47.md) |

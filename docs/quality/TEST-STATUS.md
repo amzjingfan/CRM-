@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-15 G4 R47：用户授权的一次 [staging 单样本 canary #38688630576](https://github.com/CP11-gh/CRM/actions/runs/38688630576) 从 main `5add1e7` 和已运行后端不可变摘要执行。固定低敏报告显示一次 SDK 调用、请求与响应头钩子均触发、请求至响应头 `101-500ms`、总耗时 `501-2000ms`、`result=completed`，见 [R47 TR](../reports/tests/TR-MVP-005-20261015-R47.md)。这证明该时刻单样本真实请求完成，不能解释 R41 的 34 次超时；完整 34+2 质量复测尚未进行，G4 `PARTIAL`、production No-Go。本次付费授权已用完。
+
 2026-10-15 G4 R46：[PR #207](https://github.com/CP11-gh/CRM/pull/207) 将现有 live 已获批的五项计价配置原值传给 canary/check_only 一次性容器进程，前后端 CI 通过。[零调用复核 #38683585950](https://github.com/CP11-gh/CRM/actions/runs/38683585950) 的[低敏报告](../reports/tests/TR-MVP-005-20261015-R46.md)为 `ready/none`、Provider 0 调用、请求钩子 false，确认 R45 的配置加载阻断已解除。尚未重试付费 canary；R41 真实生成超时仍未定位。G4 `PARTIAL`、production No-Go。
 
 2026-10-15 G4 R45：用户获批的 [canary #38678589702](https://github.com/CP11-gh/CRM/actions/runs/38678589702) 在安全报告生成前以 `CANARY_SETUP_FAILED` 结束，请求是否发出无法证明且授权未重用。[PR #204](https://github.com/CP11-gh/CRM/pull/204) 增加零调用分类，最终双 CI 通过；[staging check_only #38681595434](https://github.com/CP11-gh/CRM/actions/runs/38681595434) 的[低敏报告](../reports/tests/TR-MVP-005-20261015-R45.md)为 `settings_validation`、Provider 0 调用、请求钩子 false。现有 canary 步骤缺 live 使用的五项获批计价配置，当时待修复与零调用复核；R41 生成超时未解决。G4 `PARTIAL`、production No-Go。
