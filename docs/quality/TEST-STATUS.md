@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-15 G4 R51：经单独授权，从 main `9eb3ef4` 完成[六摘要预取 #38696165478](https://github.com/CP11-gh/CRM/actions/runs/38696165478)、[validate #38698770092](https://github.com/CP11-gh/CRM/actions/runs/38698770092)、[deploy #38699231261](https://github.com/CP11-gh/CRM/actions/runs/38699231261)。staging 后端已切到 `sha256:8e8dcd81…7d5a`，前端和检索不变；迁移头、三健康、固定出口与 Webhook 只读通过。零调用 [prepare #38699921968](https://github.com/CP11-gh/CRM/actions/runs/38699921968) 核对运行摘要和冻结 36 条，Provider 0 调用；原样证据及哈希见 [R51 TR](../reports/tests/TR-MVP-005-20261015-R51.md)。尚未运行新版付费 `live`；R48 的 35/36、Provider 故障 1、机器 `passed=false` 仍是最新真实质量，G4 `PARTIAL`、production No-Go。
+
 2026-10-15 G4 R50：用户单独授权的[后端镜像发布 #38694723923](https://github.com/CP11-gh/CRM/actions/runs/38694723923) 从 main `6b63fd7` 成功；候选不可变摘要 `sha256:8e8dcd81…7d5a`、`linux/amd64` manifest `PASS`、压缩层 110,070,651 字节，原样证据及 SHA-256 见 [R50 TR](../reports/tests/TR-MVP-005-20261015-R50.md)。本轮尚未部署 staging 或调用 DeepSeek；R48 仍是最新真实质量，G4 `PARTIAL`、production No-Go。本次镜像授权已用完。
 
 2026-10-15 G4 R49：按用户批准的有界设计，Prompt `real-model-eval-v1.2.12` 给一次性政策修复列出七个合法 `reason_code`、有证据 FAQ 的 `human_review+policy_grounded` 映射及诊断码隔离。新增契约先红后绿，五个相关评测文件 79 passed，定向 Ruff、格式、mypy 及 [PR #214](https://github.com/CP11-gh/CRM/pull/214) 前后端 CI 通过，见 [R49 TR](../reports/tests/TR-MVP-005-20261015-R49.md)。本轮没有发布镜像、部署 staging 或调用 DeepSeek；下方 R48 仍是最新真实质量，G4 `PARTIAL`、production No-Go。
