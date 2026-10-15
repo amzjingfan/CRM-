@@ -27,6 +27,7 @@ from app.agent.security import (
     REAL_MODEL_EVALUATION_PROMPT_VERSION,
     REAL_MODEL_EVALUATION_REPAIR_SYSTEM_PROMPT,
     REAL_MODEL_EVALUATION_SYSTEM_PROMPT,
+    REAL_MODEL_REPAIR_REQUIREMENTS,
     PromptSafetyState,
     RealModelEvaluationSafetyContext,
     evaluate_prompt_safety,
@@ -588,6 +589,12 @@ def build_real_model_repair_request(
     run_id: uuid.UUID,
 ) -> StructuredRequest:
     """为一条已验证合成输入创建一次性、低敏的修复请求。"""
+    if (
+        not reason_codes
+        or len(reason_codes) > 3
+        or any(reason not in REAL_MODEL_REPAIR_REQUIREMENTS for reason in reason_codes)
+    ):
+        raise ValueError("评测修复原因码不在固定白名单内")
     source_hash = _sha256_text(build_real_model_evaluation_payload(case))
     payload = {
         "operation": "real_model_evaluation_repair",
@@ -600,7 +607,7 @@ def build_real_model_repair_request(
         "evidence_id": str(case.evidence_id) if case.evidence_id else None,
         "subject_ref": case.subject_ref,
         "first_output": first_output.model_dump(mode="json", exclude_none=False),
-        "reason_codes": list(reason_codes),
+        "repair_requirements": [REAL_MODEL_REPAIR_REQUIREMENTS[reason] for reason in reason_codes],
     }
     user_prompt = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     repair_context = replace(

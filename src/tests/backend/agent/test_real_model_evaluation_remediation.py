@@ -184,7 +184,7 @@ def test_real_model_request_requires_policy_claim_and_paraphrases_prohibited_quo
     for request in (after_sales, quotation):
         assert "售后政策说明即使交给人工复核，也必须输出一条有证据的 refund_policy 结构化声明" in request.system_prompt
         assert "禁止用语即使出现在引用反例中，也不要在 content 中逐字复述；应概述其风险" in request.system_prompt
-    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.12"
+    assert REAL_MODEL_EVALUATION_PROMPT_VERSION == "real-model-eval-v1.2.13"
 
 
 def test_negation_draft_and_policy_repair_keep_supported_facts_explicit() -> None:
@@ -251,9 +251,10 @@ def test_policy_repair_prompt_binds_reason_code_to_strict_output_schema() -> Non
         run_id=uuid.UUID("44444444-4444-4444-8444-444444444444"),
     )
 
-    assert all(code in repair.system_prompt for code in REAL_MODEL_EVALUATION_REASON_CODES)
+    assert all(code in repair.system_prompt for code in ("policy_grounded", "insufficient_evidence"))
     assert "human_review+policy_grounded" in repair.system_prompt
-    assert "诊断码" in repair.system_prompt and "不得填入 reason_code" in repair.system_prompt
+    assert "first_output" in repair.system_prompt and "保持 reason_code 不变" in repair.system_prompt
+    assert "POLICY_REVIEW_STEP_MISSING" not in repair.user_prompt
     with pytest.raises(ValidationError):
         RealModelEvaluationOutput.model_validate(
             {

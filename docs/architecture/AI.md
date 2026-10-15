@@ -75,6 +75,8 @@ G4 离线评测流程 `policy-repair-v1` 在首个结构化草稿后，以本次
 
 `real-model-eval-v1.2.12` 只收紧 G4 离线政策修复 Prompt 的输出契约：列出严格 Schema 允许的七个 `reason_code`；有证据的 FAQ 政策人工复核使用 `human_review+policy_grounded`；输入中的政策诊断码只作修复提示，不得填入输出字段。R48 的低敏证据仅证明修复稿 `reason_code / literal_error` 并安全失败关闭，未保留非法原值；本修复仍须新镜像、staging 部署及另一次精确获批的真实 live 复测验证。冻结样本、Schema、评分、DLP、85% 门槛、最多两次调用和 TikTok 发送开关均不变。
 
+[R52 单次获批真实复测](../reports/tests/TR-MVP-005-20261015-R52.md)确认 `v1.2.12` 的售后和多语言两条政策修复稿都在 `reason_code / literal_error` 严格 Schema 校验处失败关闭；报告未保存非法值，不能断言模型是否复制了输入诊断码。`real-model-eval-v1.2.13` 的离线修复请求将内部政策诊断码在本地映射为固定白名单自然语言要求后再外发，安全边界仍校验精确载荷哈希、字段集合和要求白名单。政策修复 Prompt 收窄为有证据草稿 `human_review+policy_grounded` 或真正证据不足时 `transfer_human+insufficient_evidence`；首稿已合法且证据充分时保留其 `reason_code`。输出仍由原严格 Schema、DLP、政策证据和冻结评分器逐层验证；任何失败继续隐藏正文并转人工。此为待部署候选，不宣称已解决 R52 现场失败；冻结数据、85% 门槛、两次调用上限、Token 预算及 TikTok 发送开关不变。
+
 下一版 G4 离线评测仅增加低敏 Provider 失败诊断：每条失败样本保存稳定的 `provider_error_code`，DeepSeek 输出检查可再保存 `provider_output_failure_kind`，取值限定为 `unfinished`、`empty`、`invalid_structure`。未失败样本两个字段均为空；故障注入不计真实 Provider 失败。工作流白名单同时限制字段与枚举，不记录响应正文、Prompt、供应商请求 ID 或原始异常。此信息用于定位下一次受控复测，不回填 R33 历史报告，不改变冻结集、Prompt、评分、85% 门槛、失败关闭、两次调用上限或 TikTok 发送设置；只有新镜像部署后的新报告才含可用诊断。
 
 R34 低敏诊断已随 R35 镜像部署 staging。[R37 单次获批 live](../reports/tests/TR-MVP-005-20261014-R37.md) 的新报告确认 35/36、危险逃逸 0、合法误拦 0、Provider 故障 1，机器 `passed=false`。唯一失败的多语言政策样本首稿缺审核步骤；第二稿的 `provider_error_code=LLM_OUTPUT_INVALID`、`provider_output_failure_kind=invalid_structure`，随后安全转人工。该类别仅表示 JSON 解析或结构 Schema 校验失败，不含具体字段或原文，不能据此确定模型输出的精确错误。冻结数据、严格评分、85% 门槛、失败关闭和发送开关不变；G4 继续 `PARTIAL`。
