@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-provision-evidence-20261016
-Governance base SHA: a202c755d5d244351642dbb5705ef841603fd9b8
-CANDIDATE_SUBJECT_SHA: a202c755d5d244351642dbb5705ef841603fd9b8
+Working branch at this snapshot: docs/mvp006-g5-provision-closeout-20261016
+Governance base SHA: 132011fb16d5d686aa3a526b6ec0896f181652d9
+CANDIDATE_SUBJECT_SHA: 327fd808a264382ebeded98c8709048131aaec4e
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R05 恢复点：用户在一次精确 `provision` 授权请求后要求继续；从 main `a202c755` 仅运行一次 [staging 工作流 #38852775454](https://github.com/CP11-gh/CRM/actions/runs/38852775454)，源码、运行后端、数据库目标与只读预检成功，实际创建 50 个隔离 CRM 账号和 50 个会话，Provider 0，私有凭证 manifest 保留在服务器仓库外。见 [R05 IR](../records/implementation/IR-MVP-006-20261016-R05.md)、[TR](../reports/tests/TR-MVP-006-20261016-R05.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R05.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-provision-38852775454.json)。本机 SSH 仍被拒绝；R01 逐一认证/会话只读预检、知识和真实负载均未运行。源码默认 Access Token 120 分钟有效，staging 实际值未核对，延迟预检可能遇到过期；不得再次 provision。三个索引本分支为 `CANDIDATE_VIEW`；G5 `DOING`，production No-Go。
+2026-10-16 G5 R05 收尾：证据 [PR #237](https://github.com/CP11-gh/CRM/pull/237) 双 CI 通过并 squash 合入 main `132011fb16d5d686aa3a526b6ec0896f181652d9`；从该权威 main 的 IR/TR/RR 各 89 份源记录逐项核对，ID、任务、修订、状态、SHA、更新时间和路径均一致，无缺漏或重复，本分支三个派生索引恢复为 `CURRENT`。交付 README 的历史“尚未执行”已按现场 R05 事实修正，并明确现有 `check_only` 在私有目录非空后无法执行身份预检；本分支没有新增现场调用。G5 保持 `DOING`，production No-Go。
+
+2026-10-16 G5 R05 恢复点：用户在一次精确 `provision` 授权请求后要求继续；从 main `a202c755` 仅运行一次 [staging 工作流 #38852775454](https://github.com/CP11-gh/CRM/actions/runs/38852775454)，源码、运行后端、数据库目标与只读预检成功，实际创建 50 个隔离 CRM 账号和 50 个会话，Provider 0，私有凭证 manifest 保留在服务器仓库外。见 [R05 IR](../records/implementation/IR-MVP-006-20261016-R05.md)、[TR](../reports/tests/TR-MVP-006-20261016-R05.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R05.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-provision-38852775454.json)。本机 SSH 仍被拒绝；R01 逐一认证/会话只读预检、知识和真实负载均未运行。源码默认 Access Token 120 分钟有效，staging 实际值未核对，延迟预检可能遇到过期；不得再次 provision。三个索引经 main 源记录核对后为 `CURRENT`；G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R04 恢复点：[PR #234](https://github.com/CP11-gh/CRM/pull/234) 双 CI 通过并 squash 合入 main `814590f`；获批的唯一 [staging check_only #38847788672](https://github.com/CP11-gh/CRM/actions/runs/38847788672)核对运行后端、数据库指纹、私有路径和源码后返回 ready、Provider 0、业务写入 0，`provision` skipped。证据见 [R04 IR](../records/implementation/IR-MVP-006-20261016-R04.md)、[TR](../reports/tests/TR-MVP-006-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R04.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-check-only-38847788672.json)。[证据 PR #235](https://github.com/CP11-gh/CRM/pull/235) 双 CI 通过并合入 main `cc56e88`；从该 main 核对 IR/TR/RR 各 88 份源记录，ID、状态和 SHA 与三个派生索引一致，本收尾分支恢复为 `CURRENT`。未创建 50 账号；现场写入须单独精确批准。G5 `DOING`，production No-Go。
 

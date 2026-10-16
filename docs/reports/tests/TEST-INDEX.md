@@ -1,6 +1,6 @@
 # 测试记录索引
 
-View: `CANDIDATE_VIEW`
+View: `CURRENT`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
