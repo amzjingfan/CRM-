@@ -63,6 +63,8 @@ src/compose/docker-compose.tiktok-egress.yml
 src/compose/docker-compose.rootless-staging.yml
 ```
 
+G5 SSE 压测使用同一 `staging-gates.yml` 的显式 `enable_g5_sse_load_test=true`，只可选 `validate` 或 `deploy`，不能与 G2 Webhook 只读模式同时使用。门禁在上述四层之后追加固定的 `docker-compose.rootless-staging-g5-sse.yml`；它仅对 backend 设置 `LLM_ENABLED=true`、`SSE_LOAD_TEST_ENABLED=true` 和 `CHAT_QUERY_LIMIT=60`。仓库外环境文件仍须保持所有能力开关为 `false`，但须具备已配置的 DeepSeek 主模型与密钥。合并配置会逐服务核对开关与镜像摘要；部署后还从四个运行中应用容器核对实际镜像与开关，再核对三个公网健康接口。`validate` 的证据标明 `runtime_mode_verified=false`，不能代替实际切换。恢复时使用相同三条受审镜像摘要、不带 G5/G2 开关重新执行默认 `validate`、`deploy`；默认 Rootless overlay 明确设置 backend `LLM_ENABLED=false`、`SSE_LOAD_TEST_ENABLED=false`、`CHAT_QUERY_LIMIT=10`，运行态与健康复核通过才算恢复。本入口目前仅交付代码，未获本次 staging 切换或付费模型调用授权；压测前仍须完成隔离 FAQ、单会话安全 `delta`、有效期内凭证和费用范围核对。
+
 仓库外环境文件声明 `TIKTOK_EGRESS_IP=38.55.145.52` 与 `TIKTOK_EGRESS_SECRET_DIR=/home/crmdeploy/secrets/tiktok-egress`；overlay 固定向应用注入 `TIKTOK_EGRESS_PROXY_URL=socks5h://tiktok-egress:1080`。密钥目录所有者为 UID/GID 1004、模式 `0700`，其中 `id_ed25519` 和 `known_hosts` 为 `0600`，只读挂载到 helper 的 `/run/secrets/tiktok-egress`。helper 显式 `user: "0:0"`，在 Rootless 映射下只是宿主机 `crmdeploy`，不会取得宿主机 root；应用容器仍为非 root。私钥不得进入应用容器、镜像、Git、环境文件或证据。
 
 门禁先以候选 backend RepoDigest 启动并等待 helper，再从同一候选 backend 镜像执行：

@@ -1,0 +1,9 @@
+# G5 显式 staging 压测窗口；必须作为 Rootless staging 的最后一层覆盖。
+# 只开放 backend 的内部草稿与受控限流；其他服务及平台写入仍由基础层关闭。
+services:
+  backend:
+    environment:
+      APP_ENV: "staging"
+      LLM_ENABLED: "true"
+      SSE_LOAD_TEST_ENABLED: "true"
+      CHAT_QUERY_LIMIT: "60"

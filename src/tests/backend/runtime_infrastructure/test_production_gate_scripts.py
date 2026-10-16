@@ -81,6 +81,389 @@ def test_staging_workflow_passes_runner_socket_and_keeps_minimum_permissions() -
     assert "docker logout ghcr.io" in logout["run"]
 
 
+def test_g5_staging_window_is_backend_only_and_default_mode_restores_closed_flags() -> None:
+    """压测叠加只能开放后端，默认部署须明确恢复三项运行开关。"""
+    compose_root = SOURCE_ROOT / "compose"
+
+    class ComposeLoader(yaml.SafeLoader):
+        pass
+
+    ComposeLoader.add_constructor("!override", lambda loader, node: loader.construct_sequence(node))
+    base = yaml.load((compose_root / "docker-compose.rootless-staging.yml").read_text("utf-8"), Loader=ComposeLoader)
+    g5 = yaml.safe_load((compose_root / "docker-compose.rootless-staging-g5-sse.yml").read_text("utf-8"))
+    base_backend = base["services"]["backend"]["environment"]
+    assert base_backend["LLM_ENABLED"] == "false"
+    assert base_backend["SSE_LOAD_TEST_ENABLED"] == "false"
+    assert base_backend["CHAT_QUERY_LIMIT"] == "10"
+    assert set(g5["services"]) == {"backend"}
+    assert g5["services"]["backend"]["environment"] == {
+        "APP_ENV": "staging",
+        "LLM_ENABLED": "true",
+        "SSE_LOAD_TEST_ENABLED": "true",
+        "CHAT_QUERY_LIMIT": "60",
+    }
+
+
+@pytest.mark.parametrize("g5_enabled", [False, True])
+def test_docker_compose_resolves_g5_and_default_staging_modes(g5_enabled: bool, staging_env_file: Path) -> None:
+    """用实际 Compose 解析覆盖顺序，防止单文件契约通过而合并配置漂移。"""
+    if shutil.which("docker") is None:
+        pytest.skip("Docker Compose CLI unavailable")
+    compose_root = SOURCE_ROOT / "compose"
+    files = [
+        "docker-compose.yml",
+        "docker-compose.prod.yml",
+        "docker-compose.tiktok-egress.yml",
+        "docker-compose.rootless-staging.yml",
+    ]
+    if g5_enabled:
+        files.append("docker-compose.rootless-staging-g5-sse.yml")
+    command = ["docker", "compose", "--project-name", "crm-g5-contract", "--profile", "ai"]
+    command.extend(["--env-file", str(staging_env_file)])
+    for name in files:
+        command.extend(["-f", str(compose_root / name)])
+    command.extend(["config", "--format", "json"])
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "BACKEND_IMAGE": BACKEND_IMAGE,
+            "FRONTEND_IMAGE": FRONTEND_IMAGE,
+            "TIKTOK_EGRESS_IMAGE": BACKEND_IMAGE,
+            "TLS_CERT_DIR": "/__crm_staging_tls_not_used__",
+        }
+    )
+    result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=environment, check=False)
+    assert result.returncode == 0, "Docker Compose could not parse the reviewed staging overlays"
+    config = json.loads(result.stdout)
+    for service_name in ("backend", "worker", "jobs", "agent-worker"):
+        service_env = config["services"][service_name]["environment"]
+        expected = "true" if g5_enabled and service_name == "backend" else "false"
+        assert service_env["LLM_ENABLED"] == expected
+        assert service_env["SSE_LOAD_TEST_ENABLED"] == expected
+    assert config["services"]["backend"]["environment"]["CHAT_QUERY_LIMIT"] == ("60" if g5_enabled else "10")
+
+
+def test_g5_workflow_opt_in_is_limited_to_validate_and_deploy() -> None:
+    """调度必须使用显式布尔开关，且不能与 G2 或回滚混用。"""
+    workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    inputs = workflow.get("on", workflow.get(True))["workflow_dispatch"]["inputs"]
+    assert inputs["enable_g5_sse_load_test"] == {
+        "description": "G5 staging only; enable backend DeepSeek SSE load test window",
+        "required": False,
+        "default": False,
+        "type": "boolean",
+    }
+    gate = next(
+        step for step in workflow["jobs"]["staging"]["steps"] if step["name"] == "Run the selected staging gate"
+    )
+    assert gate["env"]["ENABLE_G5_SSE_LOAD_TEST"] == "${{ inputs.enable_g5_sse_load_test }}"
+    assert "The G5 SSE mode is only available for staging validate or deploy." in gate["run"]
+    assert "G2 Webhook read and G5 SSE modes cannot be combined." in gate["run"]
+
+
+def test_staging_env_file_cannot_enable_sse_outside_reviewed_overlay(staging_env_file: Path, tmp_path: Path) -> None:
+    staging_env_file.write_text(
+        staging_env_file.read_text("utf-8") + "\nSSE_LOAD_TEST_ENABLED=true",
+        encoding="utf-8",
+    )
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(tmp_path / "unreviewed-sse.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+    )
+    assert result.returncode != 0
+    assert not (tmp_path / "unreviewed-sse.json").exists()
+
+
+def test_g5_staging_validate_accepts_only_backend_model_and_fixed_limit(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """受审配置在模型与压测只作用于 backend 时才可通过只读 validate。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    staging_env_file.write_text(
+        staging_env_file.read_text("utf-8")
+        + "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key",
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text("utf-8"))
+    config["services"]["backend"]["environment"].update(
+        {
+            "LLM_ENABLED": "true",
+            "SSE_LOAD_TEST_ENABLED": "true",
+            "CHAT_QUERY_LIMIT": "60",
+            "LLM_PRIMARY_PROVIDER": "deepseek",
+            "LLM_PRIMARY_MODEL": "deepseek-chat",
+            "DEEPSEEK_API_KEY": "private-test-key",
+        }
+    )
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    evidence_file = tmp_path / "g5-validate.json"
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableG5SSELoadTest",
+        "-ValidateOnly",
+        environment=environment,
+    )
+
+    assert result.returncode == 0, normalized_process_output(result)
+    evidence = json.loads(evidence_file.read_text("utf-8-sig"))
+    assert evidence["g5_sse_load_test_enabled"] is True
+    assert evidence["g5_sse_load_test_overlay_sha256"]
+    assert evidence["runtime_mode_verified"] is False
+    assert "private-test-key" not in normalized_process_output(result)
+    commands = [json.loads(line) for line in command_log.read_text("utf-8").splitlines()]
+    config_command = next(command for command in commands if "config" in command)
+    assert config_command[-5:-3] == ["-f", str(SOURCE_ROOT / "compose" / "docker-compose.rootless-staging-g5-sse.yml")]
+
+
+@pytest.mark.parametrize(
+    "service_name,name,value",
+    [
+        ("backend", "LLM_ENABLED", "false"),
+        ("backend", "SSE_LOAD_TEST_ENABLED", "false"),
+        ("backend", "CHAT_QUERY_LIMIT", "10"),
+        ("backend", "CHAT_QUERY_LIMIT", "61"),
+        ("worker", "LLM_ENABLED", "true"),
+        ("jobs", "SSE_LOAD_TEST_ENABLED", "true"),
+        ("agent-worker", "LLM_ENABLED", "true"),
+    ],
+)
+def test_g5_staging_validate_rejects_capability_or_limit_drift(
+    service_name: str,
+    name: str,
+    value: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    staging_env_file.write_text(
+        staging_env_file.read_text("utf-8")
+        + "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key",
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text("utf-8"))
+    config["services"]["backend"]["environment"].update(
+        {
+            "LLM_ENABLED": "true",
+            "SSE_LOAD_TEST_ENABLED": "true",
+            "CHAT_QUERY_LIMIT": "60",
+            "LLM_PRIMARY_PROVIDER": "deepseek",
+            "LLM_PRIMARY_MODEL": "deepseek-chat",
+            "DEEPSEEK_API_KEY": "private-test-key",
+        }
+    )
+    config["services"][service_name]["environment"][name] = value
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(tmp_path / "g5-rejected.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableG5SSELoadTest",
+        "-ValidateOnly",
+        environment=environment,
+    )
+    assert result.returncode != 0
+    assert not (tmp_path / "g5-rejected.json").exists()
+
+
+def test_g5_deploy_rejects_running_backend_with_default_limit_before_health(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """即使 Compose 计划正确，运行容器限流未生效也不能记录部署通过。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    environment["FAKE_DOCKER_RUNTIME_QUERY_LIMIT"] = "10"
+    staging_env_file.write_text(
+        staging_env_file.read_text("utf-8")
+        + "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key",
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text("utf-8"))
+    config["services"]["backend"]["environment"].update(
+        {
+            "LLM_ENABLED": "true",
+            "SSE_LOAD_TEST_ENABLED": "true",
+            "CHAT_QUERY_LIMIT": "60",
+            "LLM_PRIMARY_PROVIDER": "deepseek",
+            "LLM_PRIMARY_MODEL": "deepseek-chat",
+            "DEEPSEEK_API_KEY": "private-test-key",
+        }
+    )
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    evidence_file = tmp_path / "g5-runtime-mismatch.json"
+
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableG5SSELoadTest",
+        "-Deploy",
+        "-Confirm:$false",
+        environment=environment,
+    )
+    commands = [json.loads(line) for line in command_log.read_text("utf-8").splitlines()]
+    assert result.returncode != 0
+    assert "runtime" in normalized_process_output(result)
+    assert any("ps" in command and "-q" in command and "backend" in command for command in commands)
+    assert not evidence_file.exists()
+
+
+def test_default_deploy_rejects_backend_that_kept_g5_model_enabled(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """恢复默认配置时，旧 G5 backend 仍开模型应阻止通过。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    environment["FAKE_DOCKER_RUNTIME_LLM_ENABLED"] = "true"
+    evidence_file = tmp_path / "restore-mismatch.json"
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Deploy",
+        "-Confirm:$false",
+        environment=environment,
+    )
+    commands = [json.loads(line) for line in command_log.read_text("utf-8").splitlines()]
+    assert result.returncode != 0
+    assert "runtime capability" in normalized_process_output(result)
+    assert any("ps" in command and "-q" in command and "backend" in command for command in commands)
+    assert not evidence_file.exists()
+
+
+def test_default_deploy_rejects_running_backend_with_auto_reply_enabled(
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """Compose 计划安全但运行容器意外启用自动回复时不能记录通过。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    environment["FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED"] = "true"
+    evidence_file = tmp_path / "auto-reply-mismatch.json"
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-Deploy",
+        "-Confirm:$false",
+        environment=environment,
+    )
+    assert result.returncode != 0
+    assert "runtime capability" in normalized_process_output(result)
+    assert not evidence_file.exists()
+
+
 def test_staging_webhook_read_opt_in_only_enables_receiver_and_worker(
     staging_env_file: Path,
     tmp_path: Path,
@@ -217,6 +600,40 @@ def test_workflow_rejects_nonexact_base_url_before_mutation(tmp_path: Path, base
     script.write_text(guard["run"], encoding="utf-8")
     environment = os.environ.copy()
     environment["CRM_STAGING_BASE_URL"] = base_url
+    result = run_powershell(script, environment=environment)
+    assert (result.returncode == 0) is accepted
+
+
+@pytest.mark.parametrize(
+    "operation,g2,g5,accepted",
+    [
+        ("validate", "false", "true", True),
+        ("deploy", "false", "true", True),
+        ("prefetch", "false", "true", False),
+        ("rollback", "false", "true", False),
+        ("validate", "true", "true", False),
+    ],
+)
+def test_workflow_rejects_g5_mode_misuse_before_ghcr_login(
+    tmp_path: Path, operation: str, g2: str, g5: str, accepted: bool
+) -> None:
+    workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
+    steps = workflow["jobs"]["staging"]["steps"]
+    guard = next(step for step in steps if step["name"] == "Validate staging target")
+    assert steps.index(guard) < next(index for index, step in enumerate(steps) if "GHCR" in step["name"])
+    assert guard["env"]["OPERATION"] == "${{ inputs.operation }}"
+    assert guard["env"]["ENABLE_G5_SSE_LOAD_TEST"] == "${{ inputs.enable_g5_sse_load_test }}"
+    script = tmp_path / "g5-workflow-mode-guard.ps1"
+    script.write_text(guard["run"], encoding="utf-8")
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "CRM_STAGING_BASE_URL": "https://staging.overselfx.com",
+            "OPERATION": operation,
+            "ENABLE_TIKTOK_WEBHOOK_READ": g2,
+            "ENABLE_G5_SSE_LOAD_TEST": g5,
+        }
+    )
     result = run_powershell(script, environment=environment)
     assert (result.returncode == 0) is accepted
 
@@ -407,6 +824,8 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
         "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": "false",
         "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": "false",
         "LLM_ENABLED": "false",
+        "SSE_LOAD_TEST_ENABLED": "false",
+        "CHAT_QUERY_LIMIT": "10",
         "LLM_LIVE_EVAL": "false",
         "AI_TRANSLATION_ENABLED": "false",
         "AI_MARKETING_ENABLED": "false",
@@ -524,6 +943,20 @@ if "ps" in arguments and "-q" in arguments:
     sys.exit(0)
 if arguments[:2] == ["inspect", "--format"]:
     service = arguments[-1].removeprefix("candidate-")
+    if arguments[2] == "{{json .Config}}":
+        config = json.loads(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
+        service_env = config["services"][service]["environment"].copy()
+        if service == "backend" and "FAKE_DOCKER_RUNTIME_QUERY_LIMIT" in os.environ:
+            service_env["CHAT_QUERY_LIMIT"] = os.environ["FAKE_DOCKER_RUNTIME_QUERY_LIMIT"]
+        if service == "backend" and "FAKE_DOCKER_RUNTIME_LLM_ENABLED" in os.environ:
+            service_env["LLM_ENABLED"] = os.environ["FAKE_DOCKER_RUNTIME_LLM_ENABLED"]
+        if service == "backend" and "FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED" in os.environ:
+            service_env["AUTO_REPLY_ENABLED"] = os.environ["FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED"]
+        print(json.dumps({
+            "Image": config["services"][service]["image"],
+            "Env": [f"{name}={value}" for name, value in service_env.items()],
+        }))
+        sys.exit(0)
     references = {
         "backend": "ghcr.io/cp11-gh/crm-backend@sha256:" + "a" * 64,
         "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:" + "b" * 64,

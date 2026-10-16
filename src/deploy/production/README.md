@@ -310,6 +310,8 @@ uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\ss
 
 专用叠加通过 `SSE_LOAD_TEST_APP_ENV=integration|staging` 覆盖生产拓扑中的 backend 环境，把单 IP 窗口限额设为 60，并设置 `SSE_LOAD_TEST_ENABLED=true`；development 或 production 会失败关闭。脚本通过 `--server-ip-rate-limit 60` 声明并预检同一值。全部 50 个请求必须收到 `done.reason=completed` 且产生首个安全 `delta`；首个安全 `delta` P99 必须严格 `<3000ms`，总耗时 P99 必须严格 `<5000ms`，等于阈值也失败。两个 CLI 阈值只能收紧、不能超过架构上限，JSON 证据同步记录阈值、毫秒单位、严格比较语义和最终门禁结果。任一完整性或 SLA 条件不满足时脚本以非零状态退出；SSE 内部限流、超时、认证拒绝、失败和不完整流均独立计数。压测后移除 `src/compose/docker-compose.sse-load-test.yml` 并重建 backend，恢复默认限流。五日稳定性由测试工程师连续五日执行同一受控场景并汇总可用性、首个安全 `delta` P50/P99、总耗时 P50/P99 和失败原因；工程脚本本身不构成真实模型质量或生产放行。
 
+上述手工叠加命令适用于隔离 integration 环境。现有 Rootless staging 须使用 `staging-gates.yml` 的 G5 显式模式及固定 `docker-compose.rootless-staging-g5-sse.yml`：先从 main 和三条不可变摘要运行 `validate`，取得部署单独授权后才可运行 `deploy`。工作流禁止与 G2 模式并用，并核对 backend 运行态的模型 true、压测 true、限流 60，以及其他应用容器关闭模型与压测。结束时用相同摘要、不带 G5 开关运行默认 `validate` 和 `deploy`，确认模型 false、压测 false、限流 10 及健康；失败时保持 G5 No-Go 并按现场状态修复，不能把只读 validate 写成恢复成功。单会话安全 `delta`、凭证更新、真实 50 并发与 DeepSeek 费用分别受独立验收和授权约束。
+
 本项目不绑定具体云告警供应商；在选定部署平台后，将上述 JSON 事件接入该平台原生告警即可。
 
 ## 5. 备份、恢复和回滚

@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      enable_g5_sse_load_test:
+        description: G5 staging only; enable backend DeepSeek SSE load test window
+        required: false
+        default: false
+        type: boolean
       backend_image:
         description: Candidate backend repository@sha256 digest
         required: true
@@ -207,9 +212,17 @@ jobs:
         shell: pwsh
         env:
           CRM_STAGING_BASE_URL: ${{ vars.CRM_STAGING_BASE_URL }}
+          OPERATION: ${{ inputs.operation }}
+          ENABLE_TIKTOK_WEBHOOK_READ: ${{ inputs.enable_tiktok_webhook_read }}
+          ENABLE_G5_SSE_LOAD_TEST: ${{ inputs.enable_g5_sse_load_test }}
         run: |
           if ($env:CRM_STAGING_BASE_URL -cne "https://staging.overselfx.com") {
             throw "CRM_STAGING_BASE_URL must exactly equal https://staging.overselfx.com"
+          }
+          if ($env:ENABLE_G5_SSE_LOAD_TEST -ceq 'true') {
+            if ($env:OPERATION -cnotin @('validate', 'deploy') -or $env:ENABLE_TIKTOK_WEBHOOK_READ -ceq 'true') {
+              throw 'G5 SSE mode requires validate or deploy without G2 Webhook read.'
+            }
           }
 
       - name: Log in to GHCR for immutable image pulls
@@ -314,6 +327,7 @@ jobs:
         env:
           OPERATION: ${{ inputs.operation }}
           ENABLE_TIKTOK_WEBHOOK_READ: ${{ inputs.enable_tiktok_webhook_read }}
+          ENABLE_G5_SSE_LOAD_TEST: ${{ inputs.enable_g5_sse_load_test }}
           CONFIRM_TARGET: ${{ inputs.confirm_target }}
           BACKEND_IMAGE_INPUT: ${{ inputs.backend_image }}
           FRONTEND_IMAGE_INPUT: ${{ inputs.frontend_image }}
@@ -335,8 +349,15 @@ jobs:
             throw "The staging Environment variable CRM_STAGING_BASE_URL is not configured"
           }
           $enableWebhookRead = $env:ENABLE_TIKTOK_WEBHOOK_READ -ceq "true"
+          $enableG5SSELoadTest = $env:ENABLE_G5_SSE_LOAD_TEST -ceq "true"
           if ($enableWebhookRead -and $env:OPERATION -notin @("validate", "deploy")) {
             throw "The G2 Webhook read mode is only available for staging validate or deploy."
+          }
+          if ($enableG5SSELoadTest -and $env:OPERATION -notin @("validate", "deploy")) {
+            throw "The G5 SSE mode is only available for staging validate or deploy."
+          }
+          if ($enableWebhookRead -and $enableG5SSELoadTest) {
+            throw "G2 Webhook read and G5 SSE modes cannot be combined."
           }
 
           $evidence = Join-Path $env:RUNNER_TEMP "crm-staging-$env:OPERATION-evidence.json"
@@ -354,6 +375,9 @@ jobs:
           $common["DockerHost"] = $dockerHost
           if ($enableWebhookRead) {
             $common["EnableTikTokWebhookRead"] = $true
+          }
+          if ($enableG5SSELoadTest) {
+            $common["EnableG5SSELoadTest"] = $true
           }
 
           switch ($env:OPERATION) {

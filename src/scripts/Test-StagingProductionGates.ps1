@@ -32,7 +32,8 @@ param(
 
     [switch]$ValidateOnly,
     [switch]$Deploy,
-    [switch]$EnableTikTokWebhookRead
+    [switch]$EnableTikTokWebhookRead,
+    [switch]$EnableG5SSELoadTest
 )
 
 Set-StrictMode -Version Latest
@@ -150,6 +151,17 @@ function Assert-EnvironmentContract {
         if (-not $Values.ContainsKey($name) -or $Values[$name].Trim().ToLowerInvariant() -ne "false") {
             throw "Staging preflight requires $name=false."
         }
+    }
+    if ($Values.ContainsKey("SSE_LOAD_TEST_ENABLED") -and
+        $Values["SSE_LOAD_TEST_ENABLED"].Trim().ToLowerInvariant() -ne "false") {
+        throw "Staging preflight requires SSE_LOAD_TEST_ENABLED=false outside the reviewed overlay."
+    }
+    if ($EnableG5SSELoadTest -and (
+        -not $Values.ContainsKey("LLM_PRIMARY_PROVIDER") -or $Values["LLM_PRIMARY_PROVIDER"].Trim() -cne "deepseek" -or
+        -not $Values.ContainsKey("LLM_PRIMARY_MODEL") -or [string]::IsNullOrWhiteSpace($Values["LLM_PRIMARY_MODEL"]) -or
+        -not $Values.ContainsKey("DEEPSEEK_API_KEY") -or [string]::IsNullOrWhiteSpace($Values["DEEPSEEK_API_KEY"])
+    )) {
+        throw "G5 staging requires an approved DeepSeek model and a configured API key."
     }
 }
 
@@ -299,7 +311,8 @@ function Assert-ProductionComposeContract {
         [Parameter(Mandatory = $true)][hashtable]$ExpectedImages,
         [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir,
         [Parameter(Mandatory = $true)][string]$ExpectedEgressSecretDir,
-        [switch]$EnableTikTokWebhookRead
+        [switch]$EnableTikTokWebhookRead,
+        [switch]$EnableG5SSELoadTest
     )
 
     foreach ($serviceName in $ExpectedImages.Keys) {
@@ -370,8 +383,28 @@ function Assert-ProductionComposeContract {
                  ($serviceName -eq "worker" -and $capabilityName -eq "TIKTOK_CONVERSATION_SYNC_ENABLED"))) {
                 "true"
             } else { "false" }
+            if ($EnableG5SSELoadTest -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
+                $expectedValue = "true"
+            }
             if ([string]$applicationEnvironment.$capabilityName -cne $expectedValue) {
                 throw "Staging Compose capability does not match reviewed mode: $serviceName/$capabilityName"
+            }
+        }
+        $expectedSSE = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
+        if ([string]$applicationEnvironment.SSE_LOAD_TEST_ENABLED -cne $expectedSSE) {
+            throw "Staging Compose SSE capability does not match reviewed mode: $serviceName"
+        }
+        if ($serviceName -ceq "backend") {
+            $expectedLimit = if ($EnableG5SSELoadTest) { "60" } else { "10" }
+            if ([string]$applicationEnvironment.CHAT_QUERY_LIMIT -cne $expectedLimit) {
+                throw "Staging Compose query limit does not match reviewed mode."
+            }
+            if ($EnableG5SSELoadTest -and (
+                [string]$applicationEnvironment.LLM_PRIMARY_PROVIDER -cne "deepseek" -or
+                [string]::IsNullOrWhiteSpace([string]$applicationEnvironment.LLM_PRIMARY_MODEL) -or
+                [string]::IsNullOrWhiteSpace([string]$applicationEnvironment.DEEPSEEK_API_KEY)
+            )) {
+                throw "Staging Compose DeepSeek configuration does not match reviewed mode."
             }
         }
         if ($serviceName -in @("backend", "worker", "jobs")) {
@@ -422,6 +455,73 @@ function Assert-ProductionComposeContract {
         [string]$proxyConfigMount.target -ne "/etc/nginx/nginx.conf" -or
         $proxyConfigMount.read_only -ne $true) {
         throw "Staging Compose proxy must mount exactly one read-only tunnel Nginx configuration."
+    }
+}
+
+function Assert-RunningStagingMode {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$ExpectedBackendImage,
+        [switch]$EnableTikTokWebhookRead,
+        [switch]$EnableG5SSELoadTest
+    )
+
+    # 仅从运行容器提取白名单开关；完整 Env 包含密钥，不可写入日志或证据。
+    foreach ($serviceName in @("backend", "worker", "jobs", "agent-worker")) {
+        $containerLines = & $Command.Executable @($Command.Prefix + $Arguments + @("ps", "-q", $serviceName)) 2>$null
+        $containerId = ($containerLines -join "").Trim()
+        if ($LASTEXITCODE -ne 0 -or $containerId -cnotmatch '^[A-Za-z0-9][A-Za-z0-9_.-]{3,127}$') {
+            throw "Staging runtime container lookup failed: $serviceName"
+        }
+        $configLines = & $Command.Executable inspect --format '{{json .Config}}' $containerId 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Staging runtime config lookup failed: $serviceName"
+        }
+        try {
+            $runtime = ($configLines -join "") | ConvertFrom-Json -ErrorAction Stop
+            $runtimeEnvironment = @{}
+            foreach ($assignment in @($runtime.Env)) {
+                $entry = [string]$assignment
+                $separator = $entry.IndexOf("=")
+                if ($separator -le 0) { throw "invalid assignment" }
+                $name = $entry.Substring(0, $separator)
+                if ($runtimeEnvironment.ContainsKey($name)) { throw "duplicate assignment" }
+                $runtimeEnvironment[$name] = $entry.Substring($separator + 1)
+            }
+        }
+        catch {
+            throw "Staging runtime config is invalid: $serviceName"
+        }
+        if ([string]$runtime.Image -cne $ExpectedBackendImage) {
+            throw "Staging runtime image does not match the reviewed digest: $serviceName"
+        }
+        if ($runtimeEnvironment["APP_ENV"] -cne "staging") {
+            throw "Staging runtime capability does not match reviewed mode: $serviceName"
+        }
+        foreach ($capabilityName in $DisabledCapabilityVariables) {
+            $expectedValue = if ($EnableTikTokWebhookRead -and
+                (($serviceName -in @("backend", "worker") -and $capabilityName -in $WebhookReadCapabilities) -or
+                 ($serviceName -eq "worker" -and $capabilityName -eq "TIKTOK_CONVERSATION_SYNC_ENABLED"))) {
+                "true"
+            } else { "false" }
+            if ($EnableG5SSELoadTest -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
+                $expectedValue = "true"
+            }
+            if ($runtimeEnvironment[$capabilityName] -cne $expectedValue) {
+                throw "Staging runtime capability does not match reviewed mode: $serviceName/$capabilityName"
+            }
+        }
+        $expectedSSE = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
+        if ($runtimeEnvironment["SSE_LOAD_TEST_ENABLED"] -cne $expectedSSE) {
+            throw "Staging runtime capability does not match reviewed mode: $serviceName/SSE_LOAD_TEST_ENABLED"
+        }
+        if ($serviceName -ceq "backend") {
+            $expectedLimit = if ($EnableG5SSELoadTest) { "60" } else { "10" }
+            if ($runtimeEnvironment["CHAT_QUERY_LIMIT"] -cne $expectedLimit) {
+                throw "Staging runtime query limit does not match reviewed mode."
+            }
+        }
     }
 }
 
@@ -538,12 +638,19 @@ function Write-Evidence {
         rootless_overlay_sha256 = (Get-FileHash -LiteralPath $rootlessOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_egress_overlay_sha256 = (Get-FileHash -LiteralPath $egressOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_webhook_read_enabled = [bool]$EnableTikTokWebhookRead
+        g5_sse_load_test_enabled = [bool]$EnableG5SSELoadTest
+        backend_query_limit = if ($EnableG5SSELoadTest) { 60 } else { 10 }
+        runtime_mode_verified = ($Status -ceq "passed")
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
         health_checks = $HealthChecks
     }
     if ($EnableTikTokWebhookRead) {
         $evidence["tiktok_webhook_read_overlay_sha256"] =
             (Get-FileHash -LiteralPath $webhookReadOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    if ($EnableG5SSELoadTest) {
+        $evidence["g5_sse_load_test_overlay_sha256"] =
+            (Get-FileHash -LiteralPath $g5SSEOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
     }
     if ($null -ne $EgressVerification) {
         $evidence["tiktok_egress"] = $EgressVerification
@@ -553,6 +660,9 @@ function Write-Evidence {
 
 Assert-StagingTarget
 Assert-RootlessDockerHost -Value $DockerHost
+if ($EnableTikTokWebhookRead -and $EnableG5SSELoadTest) {
+    throw "G2 Webhook read and G5 SSE modes cannot be combined."
+}
 $BackendImage = Assert-ImmutableImage -Name "BackendImage" -Reference $BackendImage -Repository "ghcr.io/cp11-gh/crm-backend"
 $FrontendImage = Assert-ImmutableImage -Name "FrontendImage" -Reference $FrontendImage -Repository "ghcr.io/cp11-gh/crm-frontend"
 $RetrievalModelImage = Assert-ImmutableImage -Name "RetrievalModelImage" -Reference $RetrievalModelImage `
@@ -592,6 +702,7 @@ if ($configuredRetrievalModelImage -ne $RetrievalModelImage) {
 $egressOverlay = Join-Path $sourceRoot "compose/docker-compose.tiktok-egress.yml"
 $rootlessOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging.yml"
 $webhookReadOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-webhook.yml"
+$g5SSEOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-g5-sse.yml"
 if (-not (Test-Path -LiteralPath $egressOverlay -PathType Leaf)) {
     throw "The repository-fixed TikTok egress overlay does not exist."
 }
@@ -600,6 +711,9 @@ if (-not (Test-Path -LiteralPath $rootlessOverlay -PathType Leaf)) {
 }
 if ($EnableTikTokWebhookRead -and -not (Test-Path -LiteralPath $webhookReadOverlay -PathType Leaf)) {
     throw "The repository-fixed staging Webhook read overlay does not exist."
+}
+if ($EnableG5SSELoadTest -and -not (Test-Path -LiteralPath $g5SSEOverlay -PathType Leaf)) {
+    throw "The repository-fixed staging G5 SSE overlay does not exist."
 }
 
 $savedEnvironment = @{}
@@ -633,6 +747,9 @@ try {
     if ($EnableTikTokWebhookRead) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $webhookReadOverlay).Path)
     }
+    if ($EnableG5SSELoadTest) {
+        $composeArguments += @("-f", (Resolve-Path -LiteralPath $g5SSEOverlay).Path)
+    }
     Set-DisabledCapabilities
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
@@ -659,7 +776,7 @@ try {
     }
     Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages `
         -ExpectedModelAssetDir $modelAssetDir -ExpectedEgressSecretDir $egressSecretDir `
-        -EnableTikTokWebhookRead:$EnableTikTokWebhookRead
+        -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest
 
     if ($ValidateOnly) {
         Write-Evidence -Status "validated" -HealthChecks @()
@@ -703,6 +820,9 @@ try {
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "proxy"
     ))
+
+    Assert-RunningStagingMode -Command $compose -Arguments $composeArguments -ExpectedBackendImage $BackendImage `
+        -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest
 
     $healthChecks = @(
         [ordered]@{ path = "/healthz"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/healthz") },

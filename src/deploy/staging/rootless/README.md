@@ -69,6 +69,8 @@ AUTO_REPLY_ENABLED
 
 G2 Webhook 实测只通过 `Staging production gates` 工作流的 `enable_tiktok_webhook_read=true` 显式模式开启。该模式仅适用于 `validate`、`deploy`，在固定四层 Compose 之后叠加 `docker-compose.rootless-staging-webhook.yml`，并逐服务确认 backend/worker 的真实只读与 Webhook 为 true，其他能力和进程保持 false。仓库外 env 文件仍全部为 false；默认模式与 rollback 继续失败关闭。恢复时以相同受审镜像摘要执行默认 `validate`、`deploy`，核对模式证据、容器环境、健康和公网入口；不得把本模式延伸到 production。
 
+G5 压测窗口由同一工作流显式选择 `enable_g5_sse_load_test=true`，仅限 staging `validate`/`deploy`，与 G2 模式互斥。门禁在固定四层后追加 `docker-compose.rootless-staging-g5-sse.yml`，只让 backend 启用模型建议及 SSE 压测，单 IP 限流固定 60；运行容器与健康必须复核。恢复仍从同一镜像摘要运行不带额外模式的默认 `validate`/`deploy`，检查 backend 模型、压测均关闭且限流 10。本变更只准备并验证入口；现场切换和 DeepSeek 调用须另定精确窗口与费用范围。
+
 若 G2 仅改变后端，先在当前 main 精确 SHA 上使用 `Publish backend image for staging` 工作流发布单个 backend 私有镜像并核对摘要和层大小，再沿用已验证的 frontend、retrieval-model-service 摘要进行预取及门禁。镜像发布需独立授权；不得为方便而重建大体积检索镜像。
 
 `Inspect staging TikTok Webhook subscriptions` 只读取运行中 backend 的官方订阅摘要，要求输入实际运行的 backend 不可变摘要。结果仅含主题、订阅数和地址匹配数；它不替代官方事件投递验收，也不修改常驻开关或平台订阅。
