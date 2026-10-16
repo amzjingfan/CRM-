@@ -71,6 +71,25 @@ G2 Webhook 实测只通过 `Staging production gates` 工作流的 `enable_tikto
 
 G5 压测窗口由同一工作流显式选择 `enable_g5_sse_load_test=true`，仅限 staging `validate`/`deploy`，与 G2 模式互斥。门禁在固定四层后追加 `docker-compose.rootless-staging-g5-sse.yml`，只让 backend 启用模型建议及 SSE 压测，单 IP 限流固定 60；运行容器与健康必须复核。恢复仍从同一镜像摘要运行不带额外模式的默认 `validate`/`deploy`，检查 backend 模型、压测均关闭且限流 10。本变更只准备并验证入口；现场切换和 DeepSeek 调用须另定精确窗口与费用范围。
 
+### G5 手动 staging 路径（不运行 GitHub Actions）
+
+`src/scripts/Invoke-StagingManualG5.ps1` 复用上述 Rootless 门禁，在 `crmdeploy` 的持久源码目录手动执行。它要求源码 HEAD 与 GitHub 当前 `main` 完整 SHA 相同、候选和上一版均为指定 GHCR 仓库的不可变摘要、候选 backend 的 OCI revision 等于源码 SHA。运行人须先用 GitHub 凭据建立私有仓库只读和 `read:packages` 访问；凭据可来自进程环境中的 `GH_TOKEN` 或已登录的 `gh`。脚本把短期 GHCR 登录限制在 `/run/user/1004` 下的私有目录，并在退出时注销。不要把 Token 放进命令参数、证据或仓库。发布新候选镜像另需 `write:packages` 和精确资源授权，部署只读凭据不具备该权限。
+
+只在确认 SSH 可作为 `crmdeploy` 登录、宿主机 UID 为 1004、Rootless socket 为 `unix:///run/user/1004/docker.sock` 后继续。源码优先沿用已有成功的手动传输方式：在本机核对**当时远端 main** 的完整 SHA，用 `git archive --format=tar` 从该提交生成包并记 SHA-256；把归档和 SHA-256 作为同一恢复点转入 staging，独立解包到此前不存在的 `/home/crmdeploy/src/crm-reviewed-source-<唯一小写标识>/`。运行时另传 `-ArchivePath /home/crmdeploy/src/<包名>.tar -ArchiveSha256 <本机核对值>`；入口会再次核对归档哈希、全部解包文件内容、路径安全与 GitHub 当前 main SHA，归档内 UID/GID 不参与比较。也可用 GitHub 凭据直接 clone 当前 main 到同一格式的持久目录，此时不传归档参数，入口要求干净 checkout 和准确的 Git HEAD。两种方式都不得复用 Runner 临时目录或覆盖现有源码。核对镜像发布证据的 backend 摘要和 `org.opencontainers.image.revision`；前端、检索和上一版三摘要由当前运行证据与 Rootless inspect 读取，不猜测或使用浮动 tag。先执行 `CheckOnly`；它不创建凭据、证据或改动服务。每个写入模式使用唯一 `/home/crmdeploy/.cache/crm-g5-manual/<唯一小写标识>/` 证据目录，传入全部六个摘要及相同 SHA：
+
+```text
+pwsh src/scripts/Invoke-StagingManualG5.ps1 -Mode CheckOnly|DeployG5|RestoreDefault|RollbackPrevious \
+  -SourceSha <完整 main SHA> -CandidateBackendImage <backend@sha256:...> \
+  -FrontendImage <frontend@sha256:...> -RetrievalModelImage <retrieval@sha256:...> \
+  -PreviousBackendImage <上一 backend@sha256:...> \
+  -PreviousFrontendImage <上一 frontend@sha256:...> \
+  -PreviousRetrievalModelImage <上一 retrieval@sha256:...> \
+  -ConfirmTarget staging -EvidenceDirectory <唯一私有证据目录> \
+  [-ArchivePath <已核对 tar 路径> -ArchiveSha256 <本机核对的 64 位 SHA-256>]
+```
+
+PowerShell 多行续接应使用反引号；上面是参数示意，不是可直接粘贴的命令。`DeployG5` 在 `try/finally` 中设置并恢复受审的 Rootless 拉取模式，依次预取候选与回滚六摘要、检查 backend revision、运行 G5 `ValidateOnly`、执行 `Deploy`，保留预取/验证/部署 JSON。任一步失败都停止，不自动重试外部写入。G5 完成后用新证据目录执行 `RestoreDefault`：同一候选摘要下恢复 backend 模型和 SSE 关闭、限流 10。若候选已完整运行且需要切回上一版，再用新目录执行 `RollbackPrevious`，它复用原回滚演练脚本，保持候选 egress helper 并切回上一版应用镜像。若部署中途失败、候选尚未完整运行，先人工核对实际容器状态和证据；回滚脚本要求候选运行态，不可盲目调用。恢复必须经过各自原门禁的 validate、健康与固定出口验证，随后只读核对运行摘要和公网健康。原始 G5 凭证池与合成数据仍保留在仓库外；单会话安全 `delta`、50 并发、队列/资源采样及 DeepSeek 调用各自需要现场证据，不能以脚本或部署成功代替 G5 通过。
+
 若 G2 仅改变后端，先在当前 main 精确 SHA 上使用 `Publish backend image for staging` 工作流发布单个 backend 私有镜像并核对摘要和层大小，再沿用已验证的 frontend、retrieval-model-service 摘要进行预取及门禁。镜像发布需独立授权；不得为方便而重建大体积检索镜像。
 
 `Inspect staging TikTok Webhook subscriptions` 只读取运行中 backend 的官方订阅摘要，要求输入实际运行的 backend 不可变摘要。结果仅含主题、订阅数和地址匹配数；它不替代官方事件投递验收，也不修改常驻开关或平台订阅。
