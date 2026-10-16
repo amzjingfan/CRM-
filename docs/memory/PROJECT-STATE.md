@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-auth-diagnostic-20261016
-Governance base SHA: 7e12314d7620870b8fb96b076011a4634471c18a
-CANDIDATE_SUBJECT_SHA: fe65b937c2dab6701e7a24885772ef9d5db0bda6
+Working branch at this snapshot: feature/mvp006-g5-auth-status-20261016
+Governance base SHA: fbe1b81f7dea5a4150c4ec7ad1952f33cc436f4e
+CANDIDATE_SUBJECT_SHA: f15bb3a796cfa42df3f251840c188fe496a47018
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R08：R07 只读诊断 #38861412442 从 main fbe1b81 得到令牌 valid、运行签名密钥/算法一致、一次 /auth/me 状态 other、Provider 0；证据见 [R08 TR](../reports/tests/TR-MVP-006-20261016-R08.md)。用户批准再做一次单令牌只读分类；subject f15bb3a 将常见 4xx/5xx 与白名单 API 错误码分开记录，响应正文不输出。最终本地后端 1849 passed/20 skipped，定向 15 passed、Ruff/格式/mypy 通过；PR CI、合并和第二次现场只读诊断待复核。50 身份认证及限流 50 均未通过，G5 DOING、production No-Go。
 
 2026-10-16 G5 R07 源码候选：PR #239 的双 CI 通过并 squash 合入 main `7e12314`；一次获批的 [staging 只读预检 #38858709981](https://github.com/CP11-gh/CRM/actions/runs/38858709981) 返回 `auth_rejected=50`、限流 10、Token 有效期 120 分钟、Provider 0，门禁失败，`provision` skipped。令牌签发约 68 分钟，拒绝原因尚不能判定。用户批准有界诊断；subject `fe65b93` 增加第一枚令牌签名/算法/过期及必需声明、签发与运行密钥匹配和一次禁用代理的 `/v1/auth/me` GET 固定类别只读入口。独立审查的问题已修复，最终 11 项定向测试、Ruff/格式/mypy 通过；完整后端 1842 passed/20 skipped 属前一源码提交，见 [R07 TR](../reports/tests/TR-MVP-006-20261016-R07.md)和[审查](../reports/reviews/RR-MVP-006-20261016-R07.md)。最终 CI、合并及现场诊断尚待复核；三个索引为 `CANDIDATE_VIEW`。限流 10 仍不足真实 50 并发，G5 `DOING`，production No-Go。
 

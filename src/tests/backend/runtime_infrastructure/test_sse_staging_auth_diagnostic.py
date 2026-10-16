@@ -69,12 +69,42 @@ async def test_diagnostic_uses_one_get_and_only_fixed_categories(tmp_path: Path)
         "runtime_key_match": True,
         "runtime_algorithm_match": True,
         "auth_http_status": "401",
+        "api_error_code": "unknown",
         "requests_sent": 1,
         "provider_calls": 0,
     }
     assert [(request.method, request.url.path) for request in requests] == [("GET", "/v1/auth/me")]
     assert signed not in json.dumps(report)
     assert "secret-response-marker" not in json.dumps(report)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("http_status", "response_payload", "expected_http", "expected_code"),
+    [
+        (500, {"code": 50001, "message": "private-response-marker"}, "500", "50001"),
+        (504, {"code": 50003}, "504", "50003"),
+        (422, {"code": 99999, "detail": "private-response-marker"}, "422", "unknown"),
+        (418, {"code": 50001}, "other", "50001"),
+    ],
+)
+async def test_diagnostic_classifies_status_and_only_whitelisted_api_code(
+    tmp_path: Path, http_status: int, response_payload: dict[str, object], expected_http: str, expected_code: str
+) -> None:
+    secret = "staging-test-secret-with-more-than-32-bytes"
+    signed = token(secret, expires_at=datetime.now(UTC) + timedelta(minutes=30))
+    path = credentials_file(tmp_path, signed)
+    async with httpx.AsyncClient(
+        base_url="http://127.0.0.1:8000",
+        transport=httpx.MockTransport(lambda _request: httpx.Response(http_status, json=response_payload)),
+    ) as client:
+        report = await diagnose_sse_staging_auth.diagnose(
+            path, client, secret, "HS256", hashlib.sha256(secret.encode()).hexdigest(), "HS256"
+        )
+    assert report["auth_http_status"] == expected_http
+    assert report["api_error_code"] == expected_code
+    assert "private-response-marker" not in json.dumps(report)
+    assert signed not in json.dumps(report)
 
 
 @pytest.mark.asyncio

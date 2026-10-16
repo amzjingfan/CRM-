@@ -16,9 +16,17 @@ import jwt
 from app.shared.config.settings import get_settings
 from scripts.load_test_sse import load_credentials
 
+HTTP_STATUS_CATEGORIES = {200, 400, 401, 403, 404, 408, 409, 422, 429, 500, 502, 503, 504}
+API_ERROR_CODES = {40001, 40101, 40102, 40301, 40401, 40901, 42901, 50001, 50003}
+
 
 def fixed_report(
-    token_state: str, key_match: bool, algorithm_match: bool, http_status: str, requests_sent: int
+    token_state: str,
+    key_match: bool,
+    algorithm_match: bool,
+    http_status: str,
+    requests_sent: int,
+    api_error_code: str = "not_applicable",
 ) -> dict[str, Any]:
     """禁止把令牌、密钥、用户和响应正文写入工作流输出。"""
     return {
@@ -27,6 +35,7 @@ def fixed_report(
         "runtime_key_match": key_match,
         "runtime_algorithm_match": algorithm_match,
         "auth_http_status": http_status,
+        "api_error_code": api_error_code,
         "requests_sent": requests_sent,
         "provider_calls": 0,
     }
@@ -75,8 +84,18 @@ async def diagnose(
         response = await client.get("/v1/auth/me")
     except httpx.HTTPError:
         return fixed_report(token_state, key_match, algorithm_match, "transport_error", 1)
-    status = str(response.status_code) if response.status_code in {200, 401, 403, 429} else "other"
-    return fixed_report(token_state, key_match, algorithm_match, status, 1)
+    status = str(response.status_code) if response.status_code in HTTP_STATUS_CATEGORIES else "other"
+    api_error_code = "none" if response.status_code == 200 else "unknown"
+    if response.status_code != 200 and len(response.content) <= 4096:
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = None
+        if isinstance(payload, dict):
+            raw_code = payload.get("code")
+            if type(raw_code) is int and raw_code in API_ERROR_CODES:
+                api_error_code = str(raw_code)
+    return fixed_report(token_state, key_match, algorithm_match, status, 1, api_error_code)
 
 
 async def run(

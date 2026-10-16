@@ -55,6 +55,8 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     assert "load_test_sse" not in diagnostic
     assert "Write-Output $output" not in diagnostic
     assert "provider_calls=0" in diagnostic
+    assert "api_error_code" in diagnostic
+    assert "'500', '502', '503', '504'" in diagnostic
     assert '"env_file=$envFile"' not in runtime
     assert steps["Read-only fixture check"]["env"]["ENV_FILE"] == "${{ secrets.CRM_STAGING_ENV_FILE }}"
     assert steps["Provision exact fixture"]["env"]["ENV_FILE"] == "${{ secrets.CRM_STAGING_ENV_FILE }}"

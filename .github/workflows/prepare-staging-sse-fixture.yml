@@ -345,11 +345,12 @@ jobs:
               $report.token_state -cnotin @('valid', 'expired', 'signature_mismatch', 'algorithm_mismatch', 'claims_invalid', 'config_invalid', 'credentials_invalid') -or
               $report.runtime_key_match -isnot [bool] -or
               $report.runtime_algorithm_match -isnot [bool] -or
-              $report.auth_http_status -cnotin @('200', '401', '403', '429', 'other', 'transport_error', 'not_sent') -or
+              $report.auth_http_status -cnotin @('200', '400', '401', '403', '404', '408', '409', '422', '429', '500', '502', '503', '504', 'other', 'transport_error', 'not_sent') -or
+              $report.api_error_code -cnotin @('none', 'unknown', 'not_applicable', '40001', '40101', '40102', '40301', '40401', '40901', '42901', '50001', '50003') -or
               $report.requests_sent -cnotin @(0, 1) -or $report.provider_calls -ne 0) {
             throw 'G5 auth diagnostic summary is invalid.'
           }
-          Write-Output "G5 auth diagnostic token_state=$($report.token_state); runtime_key_match=$($report.runtime_key_match); runtime_algorithm_match=$($report.runtime_algorithm_match); auth_http_status=$($report.auth_http_status); requests_sent=$($report.requests_sent); provider_calls=0."
+          Write-Output "G5 auth diagnostic token_state=$($report.token_state); runtime_key_match=$($report.runtime_key_match); runtime_algorithm_match=$($report.runtime_algorithm_match); auth_http_status=$($report.auth_http_status); api_error_code=$($report.api_error_code); requests_sent=$($report.requests_sent); provider_calls=0."
           if ($exitCode -ne 0 -or $report.requests_sent -ne 1) {
             throw 'G5 auth diagnostic could not classify one existing token.'
           }
