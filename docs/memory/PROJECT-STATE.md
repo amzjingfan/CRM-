@@ -11,8 +11,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/tiktok-conversation-sync-evidence-20261016
-Governance base SHA: 23ac2ad0d8428a3ac03e982faf13335f4c4682d5
+Working branch at this snapshot: docs/tiktok-conversation-sync-complete-20261016
+Governance base SHA: 52d2d6f9028f4d4a05c58e361a3f311289c206b9
 CANDIDATE_SUBJECT_SHA: 7fe97ea113b49925abc24a8438fda09e902ef519
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
@@ -20,7 +20,9 @@ Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权�
 
 2026-10-16 G5 R16 当前恢复点：R15 受控窗口源码已由 PR #249 合入 main。用户批准的 R16 代码阶段在 subject `c3439013` 增加原隔离店铺 50 会话合成 FAQ/提问与短期凭证续期的精确门禁；[PR #251](https://github.com/CP11-gh/CRM/pull/251) 双 CI 通过并 squash 合入 main `5d6c0298`。本地完整后端 `1892 passed, 27 skipped`、隔离 PostgreSQL 4 passed，见[R16 TR](../reports/tests/TR-MVP-006-20261016-R16.md)、[IR](../records/implementation/IR-MVP-006-20261016-R16.md)与[RR](../reports/reviews/RR-MVP-006-20261016-R16.md)。三份主分支索引逐项核对源记录 99/101/99，均为 `CURRENT`。Codex PR 附件登记返回 `UI_UNAVAILABLE`（本聊天附件身份数超过 100）；GitHub PR 链接可访问。R14 的 50/50 身份与会话通过、限流 10 仍是最近明确现场事实；新的内容、向量 ready 和凭证有效性尚未在 staging 验证。下一步三项：经精确授权发布并部署含本次知识事务接口的后端；分别执行受控内容准备和单会话安全核对；完成 50 并发与默认配置恢复验收。G5 DOING、production No-Go。
 
-2026-10-16 `MVP-CONV-SYNC-001` 恢复点：PR #248/#250 已合入 main；staging 只读同步已有 179 个真实 TikTok 会话、2018 条可见历史，6 页共 179 个不重复会话，截图目标 25 条平台可见消息均在 CRM。GitHub Actions 账单阻断后，用户授权 GitHub 凭据的等效 staging 手动路径；受审 `main=23ac2ad0` 源码包 SHA-256 核对、不可变镜像 validate/deploy 均通过，新前端运行态与三个健康接口已核对。已登录工作台刷新后显示总数 179、“加载更多”从 30 扩至 60 条、目标真实历史及客服/机器人/系统标签。真实消息写仍关闭，输入及发送按钮禁用；G2/G3 现场门禁不因只读历史通过。见 [R03 TR](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R03.md)、[IR](../records/implementation/IR-MVP-CONV-SYNC-001-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-CONV-SYNC-001-20261016-R02.md)。下一步：复核并合入证据 PR；合并成功后标记本任务 DONE；G2/G3 仍分别验收。production No-Go。
+2026-10-16 `MVP-CONV-SYNC-001` 恢复点：PR #248/#250/#253 已合入 main，证据合并提交 `52d2d6f9028f4d4a05c58e361a3f311289c206b9`；staging 只读同步已有 179 个真实 TikTok 会话、2018 条可见历史，6 页共 179 个不重复会话，截图目标 25 条平台可见消息均在 CRM。GitHub Actions 账单阻断后，用户授权 GitHub 凭据的等效 staging 手动路径；受审 `main=23ac2ad0` 源码包 SHA-256 核对、不可变镜像 validate/deploy 均通过，新前端运行态与三个健康接口已核对。已登录工作台刷新后显示总数 179、“加载更多”从 30 扩至 60 条、目标真实历史及客服/机器人/系统标签。真实消息写仍关闭，输入及发送按钮禁用；G2/G3 现场门禁不因只读历史通过。见 [R03 TR](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R03.md)、[IR](../records/implementation/IR-MVP-CONV-SYNC-001-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-CONV-SYNC-001-20261016-R02.md)。本任务 DONE；下一步仅按独立任务分别验收 G2/G3，production No-Go。
+
+三份源记录与索引在本次主分支快照分别为 IR 100、TR 103、RR 100，ID 无缺失、额外项或重复项，索引视图均为 `CURRENT`。
 
 2026-10-16 G5 R14 当前恢复点：用户精确授权的 staging 修复 #38878859064 在 main `1950a0b` 上更新原 50 个隔离用户邮箱、轮换 50 个短期凭证且保留原 manifest，`provision` skipped、Provider 0。立即进行的只读预检 #38878976347 报告 50/50 身份及会话可用、失败类别为空；生效 `CHAT_QUERY_LIMIT=10` 不足 50，工作流失败关闭且没有 SSE 负载。见[R14 TR](../reports/tests/TR-MVP-006-20261016-R14.md)与[低敏证据](../../release/evidence/staging/crm-staging-g5-fixture-repair-20261016.json)。下一步设计并验证 staging 专用限流窗口，准备已审批知识及单会话安全 `delta`，然后才可考虑有界 50 并发。G5 DOING、production No-Go。
 
