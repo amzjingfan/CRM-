@@ -39,6 +39,7 @@ export default function WorkspacePage() {
   const [detail, setDetail] = useState<SessionMessagesData | null>(null);
   const [detailError, setDetailError] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [draft, setDraft] = useState("");
@@ -63,7 +64,7 @@ export default function WorkspacePage() {
 
   const loadList = useCallback(async () => {
     const requestId = ++listRequestId.current;
-    setLoading(true); setError("");
+    setLoading(true); setLoadingMore(false); setError("");
     const query = new URLSearchParams({ filter, page: "1", page_size: "30" });
     if (platform) query.set("platform", platform); if (storeId) query.set("store_id", storeId);
     try {
@@ -74,6 +75,27 @@ export default function WorkspacePage() {
     } catch (caught) { if (requestId === listRequestId.current) setError(caught instanceof Error ? caught.message : en ? "Failed to load conversations" : "会话加载失败"); }
     finally { if (requestId === listRequestId.current) setLoading(false); }
   }, [en, filter, platform, storeId]);
+
+  async function loadMoreConversations() {
+    if (!list || loading || loadingMore || list.items.length >= list.pagination.total) return;
+    const requestId = listRequestId.current;
+    const page = list.pagination.page + 1;
+    const query = new URLSearchParams({ filter, page: String(list.pagination.page + 1), page_size: "30" });
+    if (platform) query.set("platform", platform); if (storeId) query.set("store_id", storeId);
+    setLoadingMore(true);
+    try {
+      const next = await listSessions(query);
+      if (requestId !== listRequestId.current) return;
+      setList((current) => current?.pagination.page === page - 1 ? {
+        ...next,
+        items: [...current.items, ...next.items.filter((item) => !current.items.some((loaded) => loaded.id === item.id))],
+      } : current);
+    } catch (caught) {
+      if (requestId === listRequestId.current) setAnnouncement(caught instanceof Error ? caught.message : en ? "Failed to load more conversations" : "加载更多会话失败");
+    } finally {
+      if (requestId === listRequestId.current) setLoadingMore(false);
+    }
+  }
 
   useEffect(() => { void loadList(); return () => { listRequestId.current += 1; }; }, [loadList]);
   useEffect(() => {
@@ -194,7 +216,7 @@ export default function WorkspacePage() {
       <div className="panel-heading"><div><p className="eyebrow">INBOX</p><h2 className="text-xl font-semibold">{en ? "Customer messages" : "客户消息"}</h2></div><span className="count-pill">{list?.pagination.total ?? 0}</span></div>
       <div className="filter-row" aria-label={en ? "Conversation filters" : "会话筛选"}>{(["all", "unread", "mine"] as Filter[]).map((item) => <button aria-pressed={filter === item} className={filter === item ? "filter active" : "filter"} key={item} onClick={() => setFilter(item)} type="button">{filterLabels[language][item]}</button>)}</div>
       <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3"><select aria-label={en ? "Platform" : "平台"} className="compact-field" onChange={(event) => setPlatform(event.target.value)} value={platform}><option value="">{en ? "All platforms" : "全部平台"}</option><option value="tiktok">TikTok</option><option value="shopee">Shopee</option><option value="amazon">Amazon</option></select><select aria-label={en ? "Store" : "店铺"} className="compact-field" onChange={(event) => setStoreId(event.target.value)} value={storeId}><option value="">{en ? "All stores" : "全部店铺"}</option>{stores.map((id) => <option key={id} value={id}>{id.slice(0, 8)}</option>)}</select></div>
-      <div className="conversation-scroll">{loading ? <LoadingState label={en ? "Loading conversations…" : "正在加载会话…"} /> : error ? <ErrorState message={error} retry={() => void loadList()} /> : !list?.items.length ? <EmptyState label={en ? "Conversations will appear when platform messages arrive" : "暂无会话，平台消息到达后会显示在这里"} /> : list.items.map((item) => <button aria-pressed={selectedId === item.id} className={selectedId === item.id ? "conversation-card active" : "conversation-card"} key={item.id} onClick={() => setSelectedId(item.id)} type="button"><span className="avatar">{item.customer.name?.slice(0, 1) ?? "?"}</span><span className="min-w-0 flex-1 text-left"><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{item.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</strong><small className={`platform-badge platform-${item.platform}`}>{item.platform}</small></span><span className="mt-1 block truncate text-sm text-[var(--muted)]">{item.last_message ?? (en ? "No messages" : "暂无消息")}</span></span>{item.unread_count ? <span className="unread">{item.unread_count}</span> : null}</button>)}</div>
+      <div className="conversation-scroll">{loading ? <LoadingState label={en ? "Loading conversations…" : "正在加载会话…"} /> : error ? <ErrorState message={error} retry={() => void loadList()} /> : !list?.items.length ? <EmptyState label={en ? "Conversations will appear when platform messages arrive" : "暂无会话，平台消息到达后会显示在这里"} /> : <>{list.items.map((item) => <button aria-pressed={selectedId === item.id} className={selectedId === item.id ? "conversation-card active" : "conversation-card"} key={item.id} onClick={() => setSelectedId(item.id)} type="button"><span className="avatar">{item.customer.name?.slice(0, 1) ?? "?"}</span><span className="min-w-0 flex-1 text-left"><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{item.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</strong><small className={`platform-badge platform-${item.platform}`}>{item.platform}</small></span><span className="mt-1 block truncate text-sm text-[var(--muted)]">{item.last_message ?? (en ? "No messages" : "暂无消息")}</span></span>{item.unread_count ? <span className="unread">{item.unread_count}</span> : null}</button>)}{list.items.length < list.pagination.total ? <button className="secondary-button mx-auto my-3 flex" disabled={loadingMore} onClick={() => void loadMoreConversations()} type="button">{loadingMore ? (en ? "Loading…" : "加载中…") : (en ? "Load more conversations" : "加载更多会话")}</button> : null}</>}</div>
     </section>
 
     <section className="chat-panel" aria-label={en ? "Chat window" : "聊天窗口"}>{!selectedId ? <EmptyState label={en ? "Select a conversation" : "请选择一个会话"} /> : detailError ? <ErrorState message={detailError} /> : !detail ? <LoadingState label={en ? "Loading messages…" : "正在加载消息…"} /> : <>
