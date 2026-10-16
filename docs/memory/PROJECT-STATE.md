@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/tiktok-conv-ui-live-20261016
+Working branch at this snapshot: docs/tiktok-conv-ui-close-20261016
 Governance base SHA: 14ec836a391e21374c973479897f216956ead594
 CANDIDATE_SUBJECT_SHA: f56b99888e9448bdcb4fd2072cfe42d30e6ba604
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 无未知文件；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-16 `MVP-CONV-UI-001` R04 恢复点：R03 修复由 [PR #263](https://github.com/CP11-gh/CRM/pull/263) 合入 main `f56b998`，精确后端镜像及已验收前端摘要已手动部署 staging；迁移、运行配置和三个公开健康通过。已登录工作台显示 179 个真实 TikTok 会话，买家左、客服右；各一条英文买家及客服消息点击后显示保留原文的中文译文，发送仍关闭。见 [R04 IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R04.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R04.md)和[门禁证据](../../release/evidence/staging/crm-staging-conv-ui-translation-20261016.json)。下一步：合并本证据 PR、复核主分支索引并将任务标记 DONE；production 不发布。
+2026-10-16 `MVP-CONV-UI-001` R04 恢复点：R03 修复由 [PR #263](https://github.com/CP11-gh/CRM/pull/263) 合入 main `f56b998`，精确后端镜像及已验收前端摘要已手动部署 staging；迁移、运行配置和三个公开健康通过。已登录工作台显示 179 个真实 TikTok 会话，买家左、客服右；各一条英文买家及客服消息点击后显示保留原文的中文译文，发送仍关闭。[R04 证据 PR #264](https://github.com/CP11-gh/CRM/pull/264) 已合入 main `c768bfe`；本收尾分支从该 main 复核 IR/TR/RR 107/110/107 条源记录与索引一致并恢复 `CURRENT`，任务标记 `DONE`。见 [R04 IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R04.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R04.md)和[门禁证据](../../release/evidence/staging/crm-staging-conv-ui-translation-20261016.json)。后续 DeepSeek 口语译质归 `MVP-011`，真实发信归 G2/G3 独立验收；production 不发布。
 
 2026-10-16 `MVP-CONV-UI-001` R02 恢复点：R01 UI 已由 [PR #259](https://github.com/CP11-gh/CRM/pull/259) 无 Actions squash 合入 main `3496738`。手动构建精确源码时发现既有 Next.js 运行时审计 critical/high；独立修复候选 `7ec8062` 将 Next.js/匹配配置升至 `16.3.8`，锁文件 sharp/source-map-js 修复后官方 npm 生产审计 0 漏洞，前端契约 45、浏览器 26 与构建通过，详见 [R02 IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R02.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R02.md)。用户批准当前 GitHub 登录增加 `write:packages`，OAuth 设备授权正在进行；尚未发布镜像或部署 staging。下一步：合并 R02；从最终 main 重建并推送两镜像；手动 staging validate/deploy 与真实双语页面核对。
 
