@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r56-index-20261016
-Governance base SHA: 7ed1bfed5c5d6ded3d95ca3335660dff6c9a885b
-CANDIDATE_SUBJECT_SHA: 54594dc40b1c596a890f27cc80380766cabde840
+Working branch at this snapshot: feature/mvp006-g5-sse-prepare-20261016
+Governance base SHA: beb24b71f953d48ef5a4dfba7e63f76127ab145b
+CANDIDATE_SUBJECT_SHA: 9ca964b067bb8b72e3e6af1474a9d41fcfb7a830
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R01 恢复点：获批的零模型调用只读预检已在 subject `9ca964b` 完成。它只核对仓库外 50 个不同授权 CRM 用户、对应会话可读及声明的单 IP 限流容量，失败关闭并输出低敏计数；本地确定性验证见 [R01 TR](../reports/tests/TR-MVP-006-20261016-R01.md)，独立只读复审见 [R01 RR](../reports/reviews/RR-MVP-006-20261016-R01.md)。目前没有已确认的 50 账号凭证池，未运行现场预检或真实并发；G5、G6、G8 与 production 未放行。三个派生索引在本候选分支为 `CANDIDATE_VIEW`，合并后须从 main 源记录重建 `CURRENT`。
 
 2026-10-16 G4 R56 最新恢复点：用户在一次 G4 付费 live 的精确范围说明后要求继续；main `54594dc4` 的[工作流 #38832517813](https://github.com/CP11-gh/CRM/actions/runs/38832517813)成功，staging 后端仍为 `sha256:1045d683…eec363`。冻结 34 条 DeepSeek 合成样本及 2 条本地故障注入逐项 36/36，危险逃逸、合法误拦、Provider 故障均为 0；R52 的两条政策失败均经一次受控修复通过，机器 `passed=true`。原样低敏报告及哈希见 [R56 TR](../reports/tests/TR-MVP-005-20261016-R56.md)。本轮一次性付费授权已用完；G4 冻结合成质量门禁通过，实际买家闭环、G1-L、G2/G3、G5/G6 与 G8 仍未放行，production No-Go。[PR #228](https://github.com/CP11-gh/CRM/pull/228) 前后端 CI 通过并合入 main `7ed1bfe`；从该 main 核对 IR/TR/RR 各 84 份源记录，三个派生索引在本收尾分支恢复为 `CURRENT`。
 
@@ -271,6 +273,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 按 G5 任务准备 50 客户端 SSE 的独立容量方案、低敏观测和费用边界；本次 G4 付费授权已用完。
+1. 取得仓库外 50 个受控授权账号与会话，先运行 G5 零模型调用预检并核对实际 staging 限流；真实负载与费用另行精确处理。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。

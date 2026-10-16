@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -88,3 +88,4 @@ View: `CURRENT`
 | RR-MVP-005-20261015-R54 | MVP-005 | R54 | APPROVE | `6e4163219dd91f9560f54199d1a4204e8b505b7f` | G4 / AC-01～AC-04 | 2026-10-15T16:49:43+08:00 | [`RR-MVP-005-20261015-R54.md`](RR-MVP-005-20261015-R54.md) |
 | RR-MVP-005-20261015-R55 | MVP-005 | R55 | APPROVE | `86ac3dd8b182ac3e97f1a0460d5df652b86cfc9a` | G4 / AC-01～AC-04 | 2026-10-15T17:30:00+08:00 | [`RR-MVP-005-20261015-R55.md`](RR-MVP-005-20261015-R55.md) |
 | RR-MVP-005-20261016-R56 | MVP-005 | R56 | APPROVE | `54594dc40b1c596a890f27cc80380766cabde840` | G4 / AC-01～AC-04 | 2026-10-16T09:02:22+08:00 | [`RR-MVP-005-20261016-R56.md`](RR-MVP-005-20261016-R56.md) |
+| RR-MVP-006-20261016-R01 | MVP-006 | R01 | APPROVE | `9ca964b067bb8b72e3e6af1474a9d41fcfb7a830` | credential-isolation / read-only / authorization / fail-closed / path-safety | 2026-10-16T09:56:09+08:00 | [`RR-MVP-006-20261016-R01.md`](RR-MVP-006-20261016-R01.md) |

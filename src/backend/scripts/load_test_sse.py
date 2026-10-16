@@ -5,7 +5,10 @@ import asyncio
 import json
 import os
 import statistics
+import subprocess
 import time
+import uuid
+from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from math import isfinite
@@ -114,6 +117,118 @@ def validate_single_source_ip_capacity(concurrency: int, server_ip_rate_limit: i
             f"concurrency {concurrency} exceeds declared server IP rate limit {server_ip_rate_limit}; "
             "apply the isolated SSE load-test overlay or use an approved distributed load source"
         )
+
+
+def prepare_paths_are_safe(credentials_file: Path, output: Path | None) -> bool:
+    """准备模式只在可识别的仓库 checkout 中使用仓库外文件，且不覆盖已有证据。"""
+
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(Path(__file__).resolve().parent),
+                "rev-parse",
+                "--path-format=absolute",
+                "--show-toplevel",
+                "--git-common-dir",
+            ],
+            capture_output=True,
+            encoding="utf-8",
+            check=True,
+            timeout=5,
+        )
+        roots = result.stdout.splitlines()
+        if len(roots) != 2:
+            return False
+        checkout_root, common_dir = (Path(value).resolve() for value in roots)
+        if common_dir.name != ".git":
+            return False
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return False
+    if output is not None and output.exists():
+        return False
+    return all(
+        not path.resolve().is_relative_to(root)
+        for path in (credentials_file, output)
+        if path is not None
+        for root in (checkout_root, common_dir.parent)
+    )
+
+
+async def prepare_clients(
+    client: httpx.AsyncClient, credentials: list[Credential], *, required_clients: int
+) -> dict[str, Any]:
+    """只读核对独立身份和会话访问；不发起 AI 请求，也不保留响应正文。"""
+
+    failures: Counter[str] = Counter()
+    user_ids: set[uuid.UUID] = set()
+    if len(credentials) < required_clients:
+        failures["insufficient_clients"] = required_clients - len(credentials)
+    else:
+        for credential in credentials[:required_clients]:
+            client.cookies.clear()
+            client.cookies.set("crm_access_token", credential.access_token)
+            try:
+                response = await client.get("/v1/auth/me")
+            except httpx.HTTPError:
+                failures["transport_error"] += 1
+                continue
+            if response.status_code != 200:
+                failures["auth_rejected"] += 1
+                continue
+            try:
+                payload = response.json()
+                data = payload["data"] if isinstance(payload, dict) and payload.get("code") == 0 else None
+                if not isinstance(data, dict) or not isinstance(data.get("id"), str):
+                    raise ValueError("invalid identity")
+                user_id = uuid.UUID(data["id"])
+                permissions = data.get("permissions")
+                if not isinstance(permissions, list) or not all(isinstance(item, str) for item in permissions):
+                    raise ValueError("invalid permissions")
+            except (TypeError, ValueError):
+                failures["identity_invalid"] += 1
+                continue
+            if "workspace.view" not in permissions:
+                failures["permission_missing"] += 1
+                continue
+            if user_id in user_ids:
+                failures["duplicate_identity"] += 1
+                continue
+            try:
+                session_id = uuid.UUID(credential.session_id)
+                response = await client.get(f"/v1/workspace/sessions/{session_id}/messages", params={"page_size": 1})
+            except (ValueError, httpx.HTTPError):
+                failures["session_inaccessible"] += 1
+                continue
+            if response.status_code != 200:
+                failures["session_inaccessible"] += 1
+                continue
+            try:
+                payload = response.json()
+                data = payload["data"] if isinstance(payload, dict) and payload.get("code") == 0 else None
+                if not isinstance(data, dict):
+                    raise ValueError("invalid session response")
+                session = data.get("session")
+                if (
+                    not isinstance(session, dict)
+                    or not isinstance(session.get("id"), str)
+                    or uuid.UUID(session["id"]) != session_id
+                    or not isinstance(data.get("messages"), list)
+                ):
+                    raise ValueError("invalid session response")
+            except (TypeError, ValueError):
+                failures["session_inaccessible"] += 1
+                continue
+            user_ids.add(user_id)
+    return {
+        "mode": "prepare",
+        "required_clients": required_clients,
+        "distinct_authorized_users": len(user_ids),
+        "ready": len(user_ids) == required_clients and not failures,
+        "failures": dict(sorted(failures.items())),
+        "provider_calls": 0,
+    }
 
 
 def classify_status(status_code: int) -> str:
@@ -279,6 +394,9 @@ def performance_gate_passed(
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Authorized multi-client SSE engineering load test")
+    parser.add_argument(
+        "--prepare", action="store_true", help="Read-only identity and session preflight; never starts SSE"
+    )
     parser.add_argument("--session-id", help="Fallback session UUID for clients without session_id")
     parser.add_argument("--credentials-file", type=Path, help="Path to a JSON credential pool outside the repository")
     parser.add_argument("--concurrency", type=int, default=50, choices=range(1, 101))
@@ -313,6 +431,48 @@ async def main() -> None:
     parser.add_argument("--base-url", default=os.getenv("CRM_API_BASE_URL", "http://localhost:8000"))
     parser.add_argument("--output", type=Path, help="Optional low-sensitivity JSON evidence output path")
     args = parser.parse_args()
+    if args.prepare:
+        failures: dict[str, int] = {}
+        credentials: list[Credential] = []
+        if args.credentials_file is None:
+            failures["credentials_invalid"] = 1
+        elif not prepare_paths_are_safe(args.credentials_file, args.output):
+            failures["unsafe_path"] = 1
+        else:
+            try:
+                credentials = load_credentials(args.credentials_file, args.session_id)
+            except ValueError:
+                failures["credentials_invalid"] = 1
+        if args.requests_per_credential != 1:
+            failures["credential_reuse_forbidden"] = 1
+        if args.server_ip_rate_limit < args.concurrency:
+            failures["declared_rate_limit_low"] = 1
+        if failures:
+            report: dict[str, Any] = {
+                "mode": "prepare",
+                "required_clients": args.concurrency,
+                "distinct_authorized_users": 0,
+                "ready": False,
+                "failures": failures,
+                "provider_calls": 0,
+            }
+        else:
+            async with httpx.AsyncClient(base_url=args.base_url, timeout=10.0, follow_redirects=False) as client:
+                report = await prepare_clients(client, credentials, required_clients=args.concurrency)
+        report["declared_server_ip_rate_limit"] = args.server_ip_rate_limit
+        rendered = json.dumps(report, ensure_ascii=True)
+        if args.output is not None and "unsafe_path" not in report["failures"]:
+            try:
+                with args.output.open("x", encoding="utf-8") as stream:
+                    stream.write(f"{rendered}\n")
+            except OSError:
+                report["ready"] = False
+                report["failures"]["output_unavailable"] = 1
+                rendered = json.dumps(report, ensure_ascii=True)
+        print(rendered)
+        if not report["ready"]:
+            raise SystemExit(1)
+        return
     try:
         credentials = load_credentials(args.credentials_file, args.session_id)
         assignments = build_assignments(credentials, args.concurrency, args.requests_per_credential)

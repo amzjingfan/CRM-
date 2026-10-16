@@ -284,10 +284,20 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 
 50 个授权客户端压测必须使用仓库外凭证池，并把低敏结果写到仓库外证据目录。50 个不同用户仍共享压测机来源 IP，因此只能在隔离的 integration/staging 测试窗口叠加专用限流文件；日常生产不得长期使用该叠加：
 
+在任何叠加或真实模型负载前，先从带 Git 元数据的受控 checkout 运行零模型调用预检。凭证池的前 50 项须为 50 个不同的授权 CRM 用户，每项会话都须可读。凭证池和输出路径必须位于主仓库及当前 worktree 之外，输出文件不得已存在。预检仅向 `/v1/auth/me` 与对应会话消息详情发送 GET；只输出人数、固定失败类别和声明的限流值，不保存 Token、用户/店铺/会话标识或消息正文。它不验证服务器实际运行的限流值，也不证明队列、资源、断连恢复或性能门槛；失败时不得启动真实负载。
+
+```powershell
+Push-Location src/backend
+uv run python -m scripts.load_test_sse --prepare --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --base-url https://staging.overselfx.com --output D:\secure-test-data\sse-prepare.json
+Pop-Location
+```
+
+准备结果通过且独立核对 staging 实际限流叠加、50 条冻结低敏会话、运行摘要、费用上限和回滚安排后，才在另行批准的窗口执行以下真实压测步骤：
+
 ```powershell
 docker compose --profile ai --env-file C:\secure\crm-integration.env -f src/compose/docker-compose.yml -f src/compose/docker-compose.prod.yml -f src/compose/docker-compose.ai.yml -f src/compose/docker-compose.deepseek-sse.yml -f src/compose/docker-compose.sse-load-test.yml up -d --wait --wait-timeout 600 backend
 Set-Location src/backend
-uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --first-delta-p99-limit-ms 3000 --total-p99-limit-ms 5000 --output D:\secure-test-data\sse-evidence.json
+uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --base-url https://staging.overselfx.com --first-delta-p99-limit-ms 3000 --total-p99-limit-ms 5000 --output D:\secure-test-data\sse-evidence.json
 ```
 
 专用叠加通过 `SSE_LOAD_TEST_APP_ENV=integration|staging` 覆盖生产拓扑中的 backend 环境，把单 IP 窗口限额设为 60，并设置 `SSE_LOAD_TEST_ENABLED=true`；development 或 production 会失败关闭。脚本通过 `--server-ip-rate-limit 60` 声明并预检同一值。全部 50 个请求必须收到 `done.reason=completed` 且产生首个安全 `delta`；首个安全 `delta` P99 必须严格 `<3000ms`，总耗时 P99 必须严格 `<5000ms`，等于阈值也失败。两个 CLI 阈值只能收紧、不能超过架构上限，JSON 证据同步记录阈值、毫秒单位、严格比较语义和最终门禁结果。任一完整性或 SLA 条件不满足时脚本以非零状态退出；SSE 内部限流、超时、认证拒绝、失败和不完整流均独立计数。压测后移除 `src/compose/docker-compose.sse-load-test.yml` 并重建 backend，恢复默认限流。五日稳定性由测试工程师连续五日执行同一受控场景并汇总可用性、首个安全 `delta` P50/P99、总耗时 P50/P99 和失败原因；工程脚本本身不构成真实模型质量或生产放行。
