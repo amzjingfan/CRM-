@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-runner-fixture-20261016
-Governance base SHA: f19ff6515fa84371c7fdca6a63e18172f8b93b66
-CANDIDATE_SUBJECT_SHA: feaaf5e0ac44e5465719e8d61ef6481e5d107409
+Working branch at this snapshot: docs/mvp006-g5-runner-check-20261016
+Governance base SHA: 814590f2fd12536ccfd66dd4ceed9dbfa673d975
+CANDIDATE_SUBJECT_SHA: 814590f2fd12536ccfd66dd4ceed9dbfa673d975
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R03 恢复点：用户批准通过在线 staging Runner 增加只读 `check_only` 和另行精确确认的 `provision`，并在 main 合并后运行一次零业务写入检查。源码 subject `feaaf5e` 的聚焦验证与独立安全复审通过，前一源码提交的本地后端及隔离 PostgreSQL 全量验证通过，最终完整 CI 待复核；详见 [R03 IR](../records/implementation/IR-MVP-006-20261016-R03.md)、[TR](../reports/tests/TR-MVP-006-20261016-R03.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R03.md)。目前仍未在 staging 创建账号或运行只读检查；`provision` 不在本次现场授权内。三个派生索引在任务分支为 `CANDIDATE_VIEW`，G5 `DOING`，production No-Go。
+2026-10-16 G5 R04 恢复点：[PR #234](https://github.com/CP11-gh/CRM/pull/234) 双 CI 通过并 squash 合入 main `814590f`；获批的唯一 [staging check_only #38847788672](https://github.com/CP11-gh/CRM/actions/runs/38847788672)核对运行后端、数据库指纹、私有路径和源码后返回 ready、Provider 0、业务写入 0，`provision` skipped。证据见 [R04 IR](../records/implementation/IR-MVP-006-20261016-R04.md)、[TR](../reports/tests/TR-MVP-006-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R04.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-check-only-38847788672.json)。未创建 50 账号；现场写入须单独精确批准。G5 `DOING`，production No-Go。
+
+2026-10-16 G5 R03 恢复点：用户批准通过在线 staging Runner 增加只读 `check_only` 和另行精确确认的 `provision`，并在 main 合并后运行一次零业务写入检查。源码 subject `feaaf5e` 的聚焦验证与独立安全复审通过，前一源码提交的本地后端及隔离 PostgreSQL 全量验证通过，最终完整 CI 待复核；详见 [R03 IR](../records/implementation/IR-MVP-006-20261016-R03.md)、[TR](../reports/tests/TR-MVP-006-20261016-R03.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R03.md)。当时尚未在 staging 创建账号或运行只读检查；`provision` 不在本次现场授权内。三个派生索引在任务分支为 `CANDIDATE_VIEW`，G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R02 恢复点：[PR #232](https://github.com/CP11-gh/CRM/pull/232) 前后端 CI 通过并合入 main `4440440`；从该 main 核对 IR/TR/RR 各 86 份源记录，三个派生索引在本收尾分支恢复为 `CURRENT`。用户仅批准代码、确定性测试和清理方案；subject `dae1083` 增加 staging Linux 隔离 50 账号/会话准备工具，绑定独立核对的 DB 指纹、仓库外私有凭证和提交未知时 manifest 对账。完整后端 1827 passed/20 skipped，隔离 PostgreSQL 新增测试通过，独立审查无剩余阻断项，见 [R02 IR](../records/implementation/IR-MVP-006-20261016-R02.md)、[TR](../reports/tests/TR-MVP-006-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R02.md)。尚未创建 staging 数据；50 条合成会话没有已审批向量化 FAQ，不能保证安全 `delta`。staging SSH 当前认证失败，现场写入和预检尚无入口；G5 `DOING`，production No-Go。
 
@@ -277,6 +279,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 恢复 staging Runner 访问；在单独批准的数据写入窗口创建隔离 50 账号与凭证池，运行 G5 零调用预检并核对限流。依知识审批补合成 FAQ、单会话验证安全 `delta`，真实 50 并发与费用另行精确处理。
+1. staging Runner 只读 check_only 已通过；在单独批准的数据写入窗口创建隔离 50 账号与凭证池，运行 R01 零调用认证预检并核对限流。依知识审批补合成 FAQ、单会话验证安全 `delta`，真实 50 并发与费用另行精确处理。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。
