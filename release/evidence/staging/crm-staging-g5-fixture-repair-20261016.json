@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "gate": "G5-PREP",
+  "source_sha": "1950a0b26ddd28fda14679eaef82fd785ca20113",
+  "running_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:1045d683a65539727c444b8990ca25768814485e9eb0e62c8cb0d91d87eec363",
+  "reconcile_email": {
+    "run_id": 38878859064,
+    "conclusion": "success",
+    "updated_users": 50,
+    "rotated_tokens": 50,
+    "provider_calls": 0,
+    "original_manifest_retained": true,
+    "provision_skipped": true
+  },
+  "preflight": {
+    "run_id": 38878976347,
+    "conclusion": "failure_closed",
+    "distinct_authorized_users": 50,
+    "identity_and_session_ready": true,
+    "failure_categories": {},
+    "running_query_limit": 10,
+    "rate_limit_sufficient_for_50": false,
+    "access_token_ttl_minutes": 120,
+    "provider_calls": 0,
+    "sse_load_sent": false
+  },
+  "g5_status": "no_go"
+}

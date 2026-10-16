@@ -56,7 +56,7 @@ DOING/VERIFYING → BLOCKED
 
 `MVP-004` 本轮后续实施：以 main `9a6d1db4816d352cf14d79ed49fcb43c8e7ecd1f` 为基线，隔离 PostgreSQL 红测确认遗留 `processing` 未阻断新发送；修复采用同店铺行锁，并在 `processing/unknown` 未结清时失败关闭。全新隔离库完整后端回归为 `1726 passed, 3 skipped, 2 warnings`，静态检查通过，PR #109 已合入 main `1eda268cd1f529d36ee53c0e44243ffeba33ba7f`。2026-10-10 从 main `6e975148650bfd8e6cb0b7980b86554345caf5d0` 单独发布此补丁的 backend 镜像，六角色预取、G2 模式 validate/deploy、独立公网健康和只读运行摘要核对均通过，见[现场证据](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)及 [IR R02](../records/implementation/IR-MVP-004-20261010-R02.md)/[TR R02](../reports/tests/TR-MVP-004-20261010-R02.md)/[RR R02](../reports/reviews/RR-MVP-004-20261010-R02.md)。任务继续 `DOING`：安全恢复遗留 `processing` 的人工路径、受控测试会话、单次真实发送和平台对账均未完成；staging 真实发送继续关闭。
 
-`MVP-006` R13 当前实施：R05 原夹具邮箱的本地 `/auth/me` 500 复现已纳入边界测试；修复入口经 PR #245 双 CI 合入 main `26a4e8e`。staging 只读对账 #38877932619 已确认原 50 账号完整匹配、Provider 0、数据库写入 0。任务仍为 `DOING`：一次精确确认后才能执行原 50 邮箱修复与仓库外令牌轮换；随后核对 50 身份/会话、限流 50、知识与单会话安全输出及真实 50 并发。不得重跑 `provision` 或把只读对账视为 G5 通过。
+`MVP-006` R14 当前实施：R05 原夹具邮箱的本地 `/auth/me` 500 复现已纳入边界测试；修复入口经 PR #245 双 CI 合入 main `26a4e8e`。R13 staging 只读对账 #38877932619 确认原 50 账号完整匹配。R14 精确修复 #38878859064 已更新原 50 邮箱和仓库外令牌，原 manifest 保留；只读预检 #38878976347 证实 50/50 身份/会话可用、Provider 0，但生效限流 10 使 50 并发门禁失败关闭。任务仍为 `DOING`：需单独处理 staging 限流、已审批知识与单会话安全输出，再执行真实 50 并发并留存延迟、错误、断连/队列/资源证据。不得重跑 `provision` 或把身份通过视为 G5 通过。
 
 ## P1：v0.1 之后
 

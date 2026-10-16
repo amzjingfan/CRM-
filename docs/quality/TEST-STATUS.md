@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 G5 R14：用户授权的精确邮箱修复 [#38878859064](https://github.com/CP11-gh/CRM/actions/runs/38878859064) 更新原 50 用户、轮换 50 令牌并保留旧 manifest，`provision` skipped、Provider 0。紧接的只读[预检 #38878976347](https://github.com/CP11-gh/CRM/actions/runs/38878976347) 为 50/50 身份及会话可用、失败类别为空；生效单 IP 限流 10 小于 50，工作流按门禁失败关闭，未发送 SSE 负载。[R14 TR](../reports/tests/TR-MVP-006-20261016-R14.md)及[低敏证据](../../release/evidence/staging/crm-staging-g5-fixture-repair-20261016.json)已记录。G5、production No-Go。
+
 2026-10-16 G5 R13：PR #245 双 CI 通过并合入 main `26a4e8e`；[staging 只读对账 #38877932619](https://github.com/CP11-gh/CRM/actions/runs/38877932619) 核对源码、运行摘要、数据库目标和原私有 manifest，报告 50 个匹配账号、Provider 0、数据库写入 0。`reconcile_email`、`provision`、50 身份预检均未执行。原认证失败和生效限流 10 尚未解除；[R13 TR](../reports/tests/TR-MVP-006-20261016-R13.md)及[低敏证据](../../release/evidence/staging/crm-staging-g5-reconcile-check-38877932619.json)。G5、production No-Go。
 
 2026-10-16 G5 R12 源码候选：完整后端 1858 passed/3 skipped；隔离 PostgreSQL 夹具 3 passed，定向 16 passed；Ruff、格式、mypy 与工作流八段 PowerShell AST 通过。`@example.invalid` 在真实 `/auth/me` 路径触发 `ValidationError`/500 的本地复现已转为测试；新夹具改用有效邮箱格式。只读 `reconcile_check` 与需要精确确认的 `reconcile_email` 已分离，后者只针对 R05 原 50 账号、独占新私有凭证文件，保留原 manifest。尚未合入 main、未运行 staging 只读对账或写入；50 身份、限流与真实负载仍未通过，G5、production No-Go。

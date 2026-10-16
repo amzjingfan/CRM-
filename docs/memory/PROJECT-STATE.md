@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-reconcile-check-20261016
-Governance base SHA: 26a4e8e43d024a0b4530718b0fd2263a601650b6
-CANDIDATE_SUBJECT_SHA: 26a4e8e43d024a0b4530718b0fd2263a601650b6
+Working branch at this snapshot: docs/mvp006-g5-fixture-repair-20261016
+Governance base SHA: 1950a0b26ddd28fda14679eaef82fd785ca20113
+CANDIDATE_SUBJECT_SHA: 1950a0b26ddd28fda14679eaef82fd785ca20113
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R14 当前恢复点：用户精确授权的 staging 修复 #38878859064 在 main `1950a0b` 上更新原 50 个隔离用户邮箱、轮换 50 个短期凭证且保留原 manifest，`provision` skipped、Provider 0。立即进行的只读预检 #38878976347 报告 50/50 身份及会话可用、失败类别为空；生效 `CHAT_QUERY_LIMIT=10` 不足 50，工作流失败关闭且没有 SSE 负载。见[R14 TR](../reports/tests/TR-MVP-006-20261016-R14.md)与[低敏证据](../../release/evidence/staging/crm-staging-g5-fixture-repair-20261016.json)。下一步设计并验证 staging 专用限流窗口，准备已审批知识及单会话安全 `delta`，然后才可考虑有界 50 并发。G5 DOING、production No-Go。
 
 2026-10-16 G5 R13 当前恢复点：PR #245 双 CI 通过并合入 main `26a4e8e`；获批的 staging `reconcile_check` [#38877932619](https://github.com/CP11-gh/CRM/actions/runs/38877932619) 对原批次 50 用户/会话报告全匹配、Provider 0、数据库写入 0，`reconcile_email` 与 `provision` skipped。见[R13 TR](../reports/tests/TR-MVP-006-20261016-R13.md)和[低敏证据](../../release/evidence/staging/crm-staging-g5-reconcile-check-38877932619.json)。下一步须精确确认一次 50 邮箱修复和仓库外新凭证轮换；之后立即运行 50 身份/会话预检。运行限流仍为 10，知识/单会话安全输出与真实并发未验证；G5 DOING、production No-Go。
 
