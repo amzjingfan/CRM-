@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp006-g5-manual-content-20261017
-Governance base SHA: 8a0d48ab9b1b712c78c9922dc8baf2c44b8071c4
+Working branch at this snapshot: docs/mvp006-g5-r22-index-close-20261017
+Governance base SHA: 3eedb222f8616d28b97141103a740cdba20acbd6
 CANDIDATE_SUBJECT_SHA: ae120e692da996b3150b87fdca1c7337076c8c9a
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 G5 R22 源码恢复点：subject `ae120e6` 增加不运行 Actions 的手动内容检查、一次性合成 FAQ/50 消息准备和独立凭证续期入口；固定审核源码工作目录、当前运行镜像/数据库/签名/私有文件边界。续期后只读对账可验签第三份文件，异常逗号文件名不能绕过精确目录核对。完整后端 1929 passed/27 skipped、定向 36 passed，Ruff/格式、mypy、PowerShell AST 通过；独立复审无严重或重要问题。见 [IR](../records/implementation/IR-MVP-006-20261017-R22.md)、[TR](../reports/tests/TR-MVP-006-20261017-R22.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R22.md)。未发布新镜像、未在 staging 写入内容或续期、未调用 DeepSeek；G5 `DOING`、production No-Go。下一步：对受审源码准备匹配的运行镜像并做只读检查；受控合成内容与有效凭证；单会话安全输出和真实 50 并发后恢复原只读加翻译模式。
+2026-10-17 G5 R22 源码恢复点：subject `ae120e6` 增加不运行 Actions 的手动内容检查、一次性合成 FAQ/50 消息准备和独立凭证续期入口；固定审核源码工作目录、当前运行镜像/数据库/签名/私有文件边界。续期后只读对账可验签第三份文件，异常逗号文件名不能绕过精确目录核对。完整后端 1929 passed/27 skipped、定向 36 passed，Ruff/格式、mypy、PowerShell AST 通过；独立复审无严重或重要问题。见 [IR](../records/implementation/IR-MVP-006-20261017-R22.md)、[TR](../reports/tests/TR-MVP-006-20261017-R22.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R22.md)。[PR #270](https://github.com/CP11-gh/CRM/pull/270) 已无 Actions 合入 main `3eedb22`；三个索引按 110/113/110 条源记录核对为 `CURRENT`。未发布新镜像、未在 staging 写入内容或续期、未调用 DeepSeek；G5 `DOING`、production No-Go。下一步：对受审源码准备匹配的运行镜像并做只读检查；受控合成内容与有效凭证；单会话安全输出和真实 50 并发后恢复原只读加翻译模式。
 
 2026-10-16 G5 R21 源码恢复点：subject `9049150` 为手动 G5 入口新增 `RestoreReadAndTranslation`，复用原门禁恢复压测前 TikTok Webhook 只读和工作台翻译组合；历史受审提交、镜像 revision、运行模式、限流和健康的失败关闭要求不变。本地 151 项相关门禁回归、定向 22 项复核、Ruff/格式与 PowerShell AST 通过；独立只读审查无严重或重要发现。见 [IR](../records/implementation/IR-MVP-006-20261016-R21.md)、[TR](../reports/tests/TR-MVP-006-20261016-R21.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R21.md)。[PR #268](https://github.com/CP11-gh/CRM/pull/268) 已合入 main `c9edd0f`；主分支三个索引按 109/112/109 源记录核对为 `CURRENT`；没有 staging G5 窗口或恢复演练。下一步：修复手动夹具工作目录并准备合成知识；核对短期凭证及单会话安全输出；真实 50 并发后演练原模式恢复。G5 `DOING`、production No-Go。
 
