@@ -10,6 +10,7 @@ import secrets
 import stat
 import sys
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,14 @@ class FixtureCommitUnknownError(RuntimeError):
     """凭证文件已写入，数据库提交结果须按 manifest 人工核对。"""
 
 
+G5_ORIGINAL_QUESTION = "What is the status of my test order?"
+G5_SYNTHETIC_QUESTION = "What can this test assistant help with?"
+G5_SYNTHETIC_ANSWER = (
+    "This is an isolated synthetic chat test. I cannot verify real order, shipping, return, "
+    "or refund status. A human agent must check authorized records for real customer requests."
+)
+
+
 @dataclass(frozen=True)
 class ReconciliationManifest:
     run_id: uuid.UUID
@@ -41,6 +50,82 @@ class ReconciliationManifest:
     role_id: uuid.UUID
     user_ids: tuple[uuid.UUID, ...]
     conversation_ids: tuple[uuid.UUID, ...]
+
+
+def verify_g5_content_snapshot(
+    manifest: ReconciliationManifest,
+    store: Store | None,
+    users: Sequence[User],
+    conversations: Sequence[Conversation],
+    messages: Sequence[Message],
+) -> str:
+    """精确核对隔离店铺、已修复身份和全部 50 条原始或合成消息。"""
+    code = f"g5-{manifest.run_id.hex}"
+    if (
+        store is None
+        or store.id != manifest.store_id
+        or store.code != code
+        or store.status != "active"
+        or store.deleted_at is not None
+        or store.metadata_json != {"purpose": "g5-staging", "run_id": str(manifest.run_id)}
+        or len(users) != 50
+        or len(conversations) != 50
+        or len(messages) != 50
+    ):
+        raise ValueError("fixture content source mismatch")
+    users_by_id = {item.id: item for item in users}
+    sessions_by_id = {item.id: item for item in conversations}
+    messages_by_session = {item.conversation_id: item for item in messages}
+    if (
+        set(users_by_id) != set(manifest.user_ids)
+        or set(sessions_by_id) != set(manifest.conversation_ids)
+        or set(messages_by_session) != set(manifest.conversation_ids)
+    ):
+        raise ValueError("fixture content mapping mismatch")
+    content: set[str] = set()
+    for index, (user_id, session_id) in enumerate(zip(manifest.user_ids, manifest.conversation_ids, strict=True)):
+        user, conversation, message = (
+            users_by_id[user_id],
+            sessions_by_id[session_id],
+            messages_by_session[session_id],
+        )
+        if (
+            user.email != f"{code}-{index:02d}@example.com"
+            or user.status != "active"
+            or conversation.store_id != manifest.store_id
+            or conversation.platform != "synthetic"
+            or conversation.status != "active"
+            or message.store_id != manifest.store_id
+            or message.platform != "synthetic"
+            or message.external_message_id != f"{code}-{index:02d}"
+            or message.role != "user"
+            or message.direction != "inbound"
+            or message.status != "received"
+        ):
+            raise ValueError("fixture content row mismatch")
+        content.add(message.content)
+    if content == {G5_ORIGINAL_QUESTION}:
+        return "original"
+    if content == {G5_SYNTHETIC_QUESTION}:
+        return "prepared"
+    raise ValueError("fixture content state mismatch")
+
+
+def build_renewed_credentials(source: dict[str, Any], manifest: ReconciliationManifest) -> dict[str, Any]:
+    """保留原批次映射，只为已核对身份重新签发短期访问凭证。"""
+    if validate_reconciliation_payload(source) != manifest:
+        raise ValueError("fixture renewal source mismatch")
+    return {
+        "manifest": source["manifest"],
+        "clients": [
+            {
+                "access_token": create_access_token(user_id),
+                "csrf_token": secrets.token_urlsafe(32),
+                "session_id": str(conversation_id),
+            }
+            for user_id, conversation_id in zip(manifest.user_ids, manifest.conversation_ids, strict=True)
+        ],
+    }
 
 
 def validate_reconciliation_payload(payload: object) -> ReconciliationManifest:
@@ -415,7 +500,7 @@ async def provision_fixture(session: AsyncSession, run_id: uuid.UUID) -> dict[st
             role="user",
             direction="inbound",
             message_type="text",
-            content="What is the status of my test order?",
+            content=G5_ORIGINAL_QUESTION,
             status="received",
         )
         users.append(user)

@@ -314,6 +314,8 @@ uv run python -m scripts.load_test_sse --credentials-file D:\secure-test-data\ss
 
 本项目不绑定具体云告警供应商；在选定部署平台后，将上述 JSON 事件接入该平台原生告警即可。
 
+G5 合成内容与续期入口在 `prepare-staging-sse-fixture.yml` 增加 `content_check`、`content_prepare`、`renew_credentials` 三种模式。仅接受 R05 原批次修复后的仓库外第二份凭证及同一隔离店铺、50 个用户/会话/入站消息；源码、运行后端摘要、部署配置数据库指纹和 JWT 签名配置必须一致。`content_check` 不写数据，只报告原始/已准备、向量是否 ready 与固定计数。另行获批的 `content_prepare` 在单事务中将原本无订单依据的 50 条问题改为通用合成提问，通过知识创建/发布服务写入一条标注 `g5-synthetic-only` 的 FAQ，审批级别仅为内部审阅；临时知识管理角色在同一事务提交前撤销，并写低敏审计。该 FAQ 不代表真实店铺政策，`published` 仍须等待现有向量 Worker 处理为 `ready`，且存在当前版本切片，才可另行执行 `renew_credentials`。续期只为原 50 个账号签发短期 Token/CSRF，独占写入仓库外第三份私有文件，保留旧文件，不改数据库；任何来源、权限、内容、审批、向量或文件状态不匹配即停止，不重跑 `provision`。这三种模式都不调用模型、不向 TikTok 发消息。代码与 CI 通过后仍须分别取得现场内容写入及凭证续期的精确授权；单会话付费验证、50 并发和 G5 staging 模式切换另行处理。
+
 ## 5. 备份、恢复和回滚
 
 - PostgreSQL 和 MinIO 使用 `src/scripts/backup-*`、`src/scripts/restore-*`，详细步骤见 `src/deploy/postgres/README.md`。

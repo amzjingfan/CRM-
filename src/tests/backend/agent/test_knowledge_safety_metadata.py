@@ -37,6 +37,9 @@ class MemorySession:
     async def commit(self) -> None:
         self.commits += 1
 
+    async def flush(self) -> None:
+        return None
+
     async def refresh(self, _value: object) -> None:
         return None
 
@@ -70,6 +73,58 @@ async def test_create_entry_audit_uses_the_created_document_id(monkeypatch: pyte
     assert isinstance(audit, AuditLog)
     assert audit.resource_id == document.id
     assert session.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_synthetic_fixture_can_create_and_publish_in_one_outer_transaction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store_id = uuid.uuid4()
+    user = SimpleNamespace(id=uuid.uuid4())
+    session = MemorySession()
+
+    async def allow(*_: object) -> None:
+        return None
+
+    async def allowed(*_: object) -> set[uuid.UUID]:
+        return {store_id}
+
+    async def found(*_: object) -> object:
+        return next(row for row in session.added if isinstance(row, knowledge_service.KnowledgeDocument))
+
+    monkeypatch.setattr(knowledge_service, "ensure_store_access", allow)
+    monkeypatch.setattr(knowledge_service, "allowed_store_ids", allowed)
+    monkeypatch.setattr(knowledge_service, "find_document", found)
+    document = await knowledge_service.create_entry(
+        session,  # type: ignore[arg-type]
+        user,  # type: ignore[arg-type]
+        KnowledgeEntryCreate(
+            store_id=store_id,
+            question="What can this test assistant help with?",
+            answer="This is an isolated synthetic chat test. A human verifies all real customer facts.",
+            statement_type=KnowledgeStatementType.NON_ASSERTIVE_PROPOSITION,
+            customer_scope=KnowledgeCustomerScope.GENERIC,
+        ),
+        commit=False,
+    )
+    # MemorySession 不执行数据库列默认值；真实 flush 会填充这两个版本字段。
+    document.semantic_schema_version = 1
+    document.document_version = 1
+    published = await knowledge_service.set_entry_status(
+        session,
+        user,
+        document.id,
+        "published",
+        commit=False,  # type: ignore[arg-type]
+    )
+
+    assert published.status == "published"
+    assert published.approved_by == user.id
+    assert session.commits == 0
+    assert [row.action for row in session.added if isinstance(row, AuditLog)] == [
+        "knowledge.create",
+        "knowledge.published",
+    ]
 
 
 def document_namespace(

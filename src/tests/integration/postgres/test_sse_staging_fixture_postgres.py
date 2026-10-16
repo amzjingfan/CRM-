@@ -11,9 +11,11 @@ from app.audit.models import AuditLog
 from app.auth.service import build_user_view
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
+from app.knowledge_base.models import KnowledgeDocument
 from app.shared.database import models as _models  # noqa: F401
 from app.shared.database.base import Role, User, role_permissions, user_roles
 from app.stores.models import Store
+from scripts import prepare_sse_staging_content as content
 from scripts import prepare_sse_staging_fixture as fixture
 from scripts.check_sse_staging_fixture import ReadinessError, check_readiness
 
@@ -148,6 +150,57 @@ async def test_reconcile_rejects_changed_batch_without_touching_emails(monkeypat
                 )
                 == 0
             )
+            await session.rollback()
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_synthetic_content_uses_knowledge_approval_without_persistent_permission(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert TEST_DATABASE_URL is not None
+    monkeypatch.setattr(fixture, "hash_password", lambda _password: "test-hash")
+    engine = create_async_engine(TEST_DATABASE_URL)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with sessions() as session:
+            await session.begin()
+            payload = await fixture.provision_fixture(session, uuid.uuid4())
+            manifest = fixture.validate_reconciliation_payload(payload)
+            for user_id in manifest.user_ids:
+                user = await session.get(User, user_id)
+                assert user is not None
+                user.email = user.email.replace("@example.com", "@example.invalid")
+            await session.flush()
+            users = await fixture.inspect_existing_reconciliation(session, manifest)
+            await fixture.reconcile_fixture_emails(session, manifest, users)
+            await session.flush()
+
+            original = await content.inspect_content_fixture(session, manifest)
+            assert original.state == "original"
+            await content.prepare_synthetic_content(session, manifest, original)
+            await session.flush()
+
+            prepared = await content.inspect_content_fixture(session, manifest)
+            assert prepared.state == "prepared"
+            assert prepared.document is not None
+            assert prepared.document.approved_by == manifest.user_ids[0]
+            assert prepared.document.vectorization_status == "pending"
+            assert (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(KnowledgeDocument)
+                    .where(KnowledgeDocument.store_id == manifest.store_id)
+                )
+                == 1
+            )
+            assignments = (
+                await session.execute(select(user_roles).where(user_roles.c.user_id.in_(manifest.user_ids)))
+            ).all()
+            assert len(assignments) == 50
+            assert {row.role_id for row in assignments} == {manifest.role_id}
+            assert await session.scalar(select(func.count()).select_from(Role).where(Role.code.like("%-approver"))) == 0
             await session.rollback()
     finally:
         await engine.dispose()

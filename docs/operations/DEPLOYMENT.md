@@ -50,6 +50,8 @@ G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-
 
 `inspect-staging-tiktok-webhook-events.yml` 仅用于 G2 staging 现场前后计数对账。从 main 精确提交读取并验证脚本 Git blob，核对正在运行的 backend 不可变摘要；脚本要求 staging Webhook 模式开启、恰好一个已连接 TikTok 渠道，第一条数据库语句设置只读事务。它只读取 2026-10-09 03:54:01Z 订阅确认后的 `NEW_MESSAGE` 事件状态/签名/重试聚合、同店铺 TikTok 入站消息累计数和该时间后的未绑定事件数。输出固定计数字段，不包含消息正文、事件 ID、店铺 ID、签名或平台响应；执行前后使用两个 artifact 比较差值。此工具不调用外部平台、不修改数据库，也不等于真实投递通过。
 
+G5 内容准备另由 `prepare-staging-sse-fixture.yml` 的 `content_check`、`content_prepare`、`renew_credentials` 模式处理原 R05 隔离店铺。源码、运行后端、数据库与私有凭证目录均精确核对；一次性内容写入需要独立授权，并在同一事务内创建内部审阅级合成 FAQ、改写 50 条合成提问和撤销临时权限。只有 FAQ 向量化为 `ready` 且当前版本切片存在，才可另行续期原 50 人的仓库外短期凭证。源码准备不代表现场执行，单会话 DeepSeek 和 50 并发另行验收；完整路径与恢复约束见 [`src/deploy/production/README.md`](../../src/deploy/production/README.md)。
+
 ### TikTok 固定出口契约
 
 staging 的 TikTok 出站与 split-ingress 入口分离：应用只经 `socks5h://tiktok-egress:1080` 访问独立 helper，helper 再以 `crm-egress@38.55.145.52` 建立 SSH 动态转发。公网账号只允许 local/dynamic forwarding 到 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 和门禁专用 `checkip.amazonaws.com:443`；不得复用 `crm-tunnel`、开放代理端口或放宽为任意目标。

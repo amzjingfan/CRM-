@@ -220,7 +220,9 @@ async def retry_entry_vectorization(
     return document
 
 
-async def create_entry(session: AsyncSession, user: User, payload: KnowledgeEntryCreate) -> KnowledgeDocument:
+async def create_entry(
+    session: AsyncSession, user: User, payload: KnowledgeEntryCreate, *, commit: bool = True
+) -> KnowledgeDocument:
     """创建草稿 FAQ；草稿不参与正式检索。"""
     await ensure_store_access(session, user, payload.store_id)
     if payload.category_id and await find_category(session, payload.category_id, {payload.store_id}) is None:
@@ -250,8 +252,11 @@ async def create_entry(session: AsyncSession, user: User, payload: KnowledgeEntr
             result="succeeded",
         )
     )
-    await session.commit()
-    await session.refresh(document)
+    if commit:
+        await session.commit()
+        await session.refresh(document)
+    else:
+        await session.flush()
     return document
 
 
@@ -325,7 +330,9 @@ async def update_entry(
     return document
 
 
-async def set_entry_status(session: AsyncSession, user: User, entry_id: uuid.UUID, status: str) -> KnowledgeDocument:
+async def set_entry_status(
+    session: AsyncSession, user: User, entry_id: uuid.UUID, status: str, *, commit: bool = True
+) -> KnowledgeDocument:
     """发布进入待向量化，归档则立即退出正式检索。"""
     document = await find_document(session, entry_id, await allowed_store_ids(session, user))
     if document is None:
@@ -380,8 +387,11 @@ async def set_entry_status(session: AsyncSession, user: User, entry_id: uuid.UUI
             result="succeeded",
         )
     )
-    await session.commit()
-    await session.refresh(document)
+    if commit:
+        await session.commit()
+        await session.refresh(document)
+    else:
+        await session.flush()
     return document
 
 

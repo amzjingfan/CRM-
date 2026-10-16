@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-staging-window-20261016
-Governance base SHA: 0fa1c5d7ab25256bc879708d0d1b310e6918713b
-CANDIDATE_SUBJECT_SHA: d00927d33c55ee4264d6a13549de2faa936d31a5
+Working branch at this snapshot: feature/mvp006-g5-synthetic-content-20261016
+Governance base SHA: 8fcfb64ef210c912bf19afcc4b546e0ff021aaf6
+CANDIDATE_SUBJECT_SHA: c3439013e74271c8e132b53b1866b8b9eb1c64b2
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R15 当前恢复点：受批准的代码阶段在 subject `d00927d` 增加 staging G5 显式窗口。固定 Compose 覆盖层仅启用 backend DeepSeek 建议/SSE 压测和单 IP 限流 60，默认模式恢复关闭并设限流 10；G5/G2 互斥，合并配置、运行态安全开关和三健康均纳入门禁。对齐已合入的 PR #248 后完整后端 `1880 passed, 26 skipped`，Ruff/格式/mypy/PowerShell AST 通过，详见[R15 TR](../reports/tests/TR-MVP-006-20261016-R15.md)、[IR](../records/implementation/IR-MVP-006-20261016-R15.md)和[RR](../reports/reviews/RR-MVP-006-20261016-R15.md)。[PR #249](https://github.com/CP11-gh/CRM/pull/249) 已创建；Codex 附件登记返回 `UI_UNAVAILABLE`（本任务附件身份数超过 100），GitHub PR 链接仍可访问。尚未实际切换 staging 或调用 DeepSeek；R14 的限流 10 仍是最新现场事实，50 人凭证有效期需复核。下一步最多三项：PR/CI 合并本源码；准备已审批 FAQ 并验证单会话安全 `delta`；取得精确现场授权后切换、50 并发及默认恢复验收。G5 DOING、production No-Go。
+2026-10-16 G5 R16 当前恢复点：R15 受控窗口源码已由 PR #249 合入 main。用户批准的 R16 代码阶段在 subject `c3439013` 增加原隔离店铺 50 会话合成 FAQ/提问与短期凭证续期的精确门禁，默认不执行现场写入或模型调用。隔离 PostgreSQL 集成测试 4 项通过；本地完整后端、Ruff、格式和 mypy 结果见[R16 TR](../reports/tests/TR-MVP-006-20261016-R16.md)、[IR](../records/implementation/IR-MVP-006-20261016-R16.md)与[RR](../reports/reviews/RR-MVP-006-20261016-R16.md)。R14 的 50/50 身份与会话通过、限流 10 仍是最近明确现场事实；新的内容、向量 ready 和凭证有效性尚未在 staging 验证。下一步三项：完成 R16 PR/CI 合并；经精确授权发布并部署含本次知识事务接口的后端；分别执行受控内容准备、单会话安全核对与 50 并发及默认恢复验收。G5 DOING、production No-Go。
 
 2026-10-16 `MVP-CONV-SYNC-001` 源码已由 PR #248 合入 main `0fa1c5d`，可从官方只读接口取真实客服会话并在 CRM 工作台显示历史；staging 镜像和工作台现场尚未部署/核对，真实消息写继续关闭。其源码与测试、审查证据见 [IR](../records/implementation/IR-MVP-CONV-SYNC-001-20261016-R01.md)、[TR](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R01.md)、[RR](../reports/reviews/RR-MVP-CONV-SYNC-001-20261016-R01.md)。
 

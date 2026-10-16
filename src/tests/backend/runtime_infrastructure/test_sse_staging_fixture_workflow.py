@@ -19,6 +19,9 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
         "diagnose_auth_logs",
         "reconcile_check",
         "reconcile_email",
+        "content_check",
+        "content_prepare",
+        "renew_credentials",
     ]
     assert dispatch["expected_source_sha"]["required"] is True
     assert dispatch["expected_backend_image"]["required"] is True
@@ -35,6 +38,23 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     diagnostic = steps["Diagnose one existing G5 token"]["run"]
     log_diagnostic = steps["Classify fixed G5 auth error logs"]["run"]
     reconcile = steps["Reconcile exact existing G5 fixture"]["run"]
+    content = steps["Prepare exact G5 synthetic content or renew credentials"]["run"]
+    assert dispatch["confirm_content"]["required"] is False
+    assert "prepare-50-isolated-g5-messages" in content
+    assert "renew-50-existing-g5-tokens" in content
+    assert "scripts.prepare_sse_staging_content" in content
+    assert "g5-38852775454-2.json" in content
+    assert "g5-38852775454-3.json" in content
+    assert "$privateItems.Count -notin @(1, 2, 3)" in runtime
+    assert "if ($privateItems.Count -eq 3) { 'g5-38852775454-3.json' }" in runtime
+    assert "EXPECTED_RUNTIME_JWT_SHA256" in content
+    assert "LLM_ENABLED=false" in content
+    assert "REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false" in content
+    assert "Write-Output $output" not in content
+    assert "'src/backend/scripts/prepare_sse_staging_content.py'" in source
+    assert steps["Prepare exact G5 synthetic content or renew credentials"]["if"] == (
+        "inputs.mode == 'content_check' || inputs.mode == 'content_prepare' || inputs.mode == 'renew_credentials'"
+    )
     assert dispatch["confirm_reconcile"]["required"] is False
     assert "repair-50-existing-g5-emails" in reconcile
     assert "--reconcile-check" in reconcile
