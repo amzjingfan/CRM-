@@ -290,7 +290,7 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 
 现场执行前先确认 staging 数据库、运行摘要、外部私有目录、精确批准范围和可回滚窗口；本次已创建凭证池，但尚未执行只读身份与会话预检。源码和示例配置的 Access Token 默认有效期为 120 分钟，staging 实际值未核对；若令牌已过期，须对现有身份形成受控凭证更新方案，不能重新创建夹具。首次创建所用入口仅供审计复盘，不得重跑：`uv run python -m scripts.prepare_sse_staging_fixture --execute --credentials-file <仓库外全新绝对路径> --expected-database-sha256 <独立核对的 staging DSN 摘要>`（从 staging Runner 的 `src/backend` 执行，不能仅从同一未核实的环境变量计算指纹）。随后在相同受控主机使用只读 `--prepare` 验证 50 个真实授权身份和可读会话；本地 ORM 测试不代替这一步。**这些合成会话目前没有已审批且向量化的 FAQ，也没有订单工具，不能据此声称有安全 `delta`。**在 G5 真实负载前，需另行提供符合现有知识审批流程的隔离 FAQ/会话并做单会话模型验证；其创建与模型调用均不在本工具范围。
 
-SSH 无法登录但 `crm-staging` Runner 在线时，首次创建前曾从已合并的 main 运行 `prepare-staging-sse-fixture.yml` 的 `check_only`，核对源码、运行镜像、数据库目标、私有路径及夹具准备条件。2026-10-16 `provision` 成功后，私有目录已非空；现有工作流会在读凭证前失败关闭，不能用其 `check_only` 完成本次 50 个身份和会话预检，也不得再运行 `provision`。后续预检需受控 Runner 的只读入口或恢复主机访问；凭证只能留在仓库外，不打印、上传或复制到项目目录。
+SSH 无法登录但 `crm-staging` Runner 在线时，首次创建前曾从已合并的 main 运行 `prepare-staging-sse-fixture.yml` 的 `check_only`，核对源码、运行镜像、数据库目标、私有路径及夹具准备条件。2026-10-16 `provision` 成功后，私有目录已非空；现有工作流会在读凭证前失败关闭，不能用其 `check_only` 完成本次 50 个身份和会话预检，也不得再运行 `provision`。本次新增的 `preflight` 模式须先合入 main，再锁定源码与运行后端摘要运行；它只读挂载这次的精确私有凭证文件，在运行后端同一网络空间内逐一请求最多 50 次 `/v1/auth/me` 与 50 次会话 GET，并单独核对运行态 `CHAT_QUERY_LIMIT` 与 Access Token 有效期。预检脚本不传模型或部署密钥、不启动 SSE、不写业务数据；只输出人数、固定失败类别和两个运行配置数值。若身份失败或限流不足，G5 仍未就绪；凭证只能留在仓库外，不打印、上传或复制到项目目录。
 
 清理方案：测试窗口结束先使用 manifest 中的精确 50 个用户 ID 将这些用户禁用，并复核旧 Token 已无法通过 `/auth/me`；保留审计和低敏测试报告。对本次 store、role、50 会话及其后续 Agent 运行先只读盘点引用和数量，形成独立 `MAINT-CLEANUP-*` 任务及精确清理批次，取得授权后才删除数据库行和仓库外凭证文件；不得按 `g5-` 前缀批量删除或改动其他店铺。若预检或负载失败，也先禁用账号并记录可恢复状态，不自行重试付费调用。
 

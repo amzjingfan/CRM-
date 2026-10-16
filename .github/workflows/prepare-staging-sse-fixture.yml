@@ -7,7 +7,7 @@ on:
         description: Read-only check or one exact staging fixture
         required: true
         type: choice
-        options: [check_only, provision]
+        options: [check_only, provision, preflight]
       expected_source_sha:
         description: Exact reviewed main commit SHA
         required: true
@@ -62,7 +62,8 @@ jobs:
               'src/backend/scripts/__init__.py',
               'src/backend/scripts/load_test_sse.py',
               'src/backend/scripts/prepare_sse_staging_fixture.py',
-              'src/backend/scripts/check_sse_staging_fixture.py'
+              'src/backend/scripts/check_sse_staging_fixture.py',
+              'src/backend/scripts/preflight_sse_staging_fixture.py'
           )) {
             $uri = "https://api.github.com/repos/CP11-gh/CRM/contents/$($relative)?ref=$env:GITHUB_SHA"
             $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 30
@@ -96,9 +97,9 @@ jobs:
           CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:MODE -cnotin @('check_only', 'provision') -or
+          if ($env:MODE -cnotin @('check_only', 'provision', 'preflight') -or
               $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
-              ($env:MODE -ceq 'check_only' -and $env:CONFIRM_PROVISION) -or
+              ($env:MODE -cne 'provision' -and $env:CONFIRM_PROVISION) -or
               ($env:MODE -ceq 'provision' -and $env:CONFIRM_PROVISION -cne 'create-50-isolated-staging-users')) {
             throw 'G5 mode, image, or exact provision confirmation is invalid.'
           }
@@ -164,9 +165,24 @@ jobs:
                 ([Convert]::ToInt32($mode, 8) -band 63) -ne 0) {
               throw 'Private G5 credential directory is unsafe.'
             }
-            if (@(Get-ChildItem -LiteralPath $privateDir -Force).Count -ne 0) {
+            $privateItems = @(Get-ChildItem -LiteralPath $privateDir -Force)
+            if ($env:MODE -ceq 'preflight') {
+              $expectedName = 'g5-38852775454-1.json'
+              if ($privateItems.Count -ne 1 -or $privateItems[0].Name -cne $expectedName -or
+                  $privateItems[0].LinkType -or $privateItems[0].PSIsContainer) {
+                throw 'Expected one exact G5 private fixture for read-only preflight.'
+              }
+              $privateFile = Join-Path $privateDir $expectedName
+              $fileMode = (& stat -c '%a' $privateFile).Trim()
+              if ($LASTEXITCODE -ne 0 -or (& stat -c '%u' $privateFile).Trim() -cne '1004' -or
+                  ([Convert]::ToInt32($fileMode, 8) -band 63) -ne 0) {
+                throw 'G5 private fixture permissions are invalid.'
+              }
+            } elseif ($privateItems.Count -ne 0) {
               throw 'Existing G5 private material requires reconciliation before a new run.'
             }
+          } elseif ($env:MODE -ceq 'preflight') {
+            throw 'Expected G5 private fixture is missing.'
           }
           "docker_host=$dockerHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "container=$container" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -175,6 +191,7 @@ jobs:
           Write-Output 'Staging Runner, immutable backend, database target, and private path verified.'
 
       - name: Read-only fixture check
+        if: inputs.mode != 'preflight'
         shell: pwsh
         env:
           SOURCE_PATH: ${{ steps.source.outputs.source_path }}
@@ -216,6 +233,67 @@ jobs:
             throw 'G5 read-only fixture check returned an invalid result.'
           }
           Write-Output 'G5 check_only ready; provider_calls=0; database_writes=0.'
+
+      - name: Preflight 50 identities and sessions
+        if: inputs.mode == 'preflight'
+        shell: pwsh
+        env:
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
+          DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
+          CONTAINER: ${{ steps.runtime.outputs.container }}
+          PRIVATE_DIR: ${{ steps.runtime.outputs.private_dir }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $running = & docker --host $env:DOCKER_HOST exec $env:CONTAINER python -B -c 'import json; from app.shared.config.settings import get_settings; s=get_settings(); print(json.dumps({"chat_query_limit":s.chat_query_limit,"access_token_expire_minutes":s.access_token_expire_minutes}))' 2>$null
+          if ($LASTEXITCODE -ne 0 -or @($running).Count -ne 1) {
+            throw 'G5 running rate limit and token lifetime are unavailable.'
+          }
+          try { $settings = $running | ConvertFrom-Json -ErrorAction Stop }
+          catch { throw 'G5 running settings format is invalid.' }
+          $limit = 0
+          $ttl = 0
+          if (-not [int]::TryParse([string]$settings.chat_query_limit, [ref]$limit) -or
+              -not [int]::TryParse([string]$settings.access_token_expire_minutes, [ref]$ttl) -or
+              $limit -lt 1 -or $limit -gt 1000 -or $ttl -lt 1) {
+            throw 'G5 running settings values are invalid.'
+          }
+          $hostFile = Join-Path $env:PRIVATE_DIR 'g5-38852775454-1.json'
+          $source = Join-Path $env:SOURCE_PATH 'src/backend'
+          $args = @(
+            '--host', $env:DOCKER_HOST, 'run', '--rm', '--pull=never', '--read-only',
+            '--network', "container:$env:CONTAINER", '--user', '0:0',
+            '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
+            '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
+            '--mount', "type=bind,source=$hostFile,target=/opt/crm-g5-credentials.json,readonly",
+            '--entrypoint', 'python', $env:EXPECTED_BACKEND_IMAGE,
+            '-B', '-m', 'scripts.preflight_sse_staging_fixture',
+            '--credentials-file', '/opt/crm-g5-credentials.json'
+          )
+          $output = & docker @args 2>$null
+          $exitCode = $LASTEXITCODE
+          try { $report = $output | ConvertFrom-Json -ErrorAction Stop }
+          catch { throw 'G5 preflight returned no valid summary.' }
+          $allowed = @('transport_error', 'auth_rejected', 'identity_invalid',
+            'permission_missing', 'duplicate_identity', 'session_inaccessible',
+            'insufficient_clients', 'credentials_invalid', 'internal_error')
+          $failures = @($report.failures.PSObject.Properties | ForEach-Object {
+            if ($_.Name -cnotin $allowed -or [string]$_.Value -cnotmatch '^[0-9]{1,3}$') {
+              throw 'G5 preflight failure category is invalid.'
+            }
+            "$($_.Name)=$($_.Value)"
+          })
+          $identities = 0
+          if ($report.mode -cne 'preflight' -or $report.required_clients -ne 50 -or
+              $report.provider_calls -ne 0 -or
+              -not [int]::TryParse([string]$report.distinct_authorized_users, [ref]$identities) -or
+              $identities -lt 0 -or $identities -gt 50 -or $report.ready -isnot [bool]) {
+            throw 'G5 preflight summary is invalid.'
+          }
+          Write-Output "G5 preflight identities=$identities/50; auth_ready=$($report.ready); running_query_limit=$limit; rate_limit_sufficient=$($limit -ge 50); access_token_ttl_minutes=$ttl; provider_calls=0; failures=$($failures -join ',')."
+          if ($exitCode -ne 0 -or $report.ready -cne $true -or $limit -lt 50) {
+            throw 'G5 identity, session, or rate-limit preflight failed; no SSE load was sent.'
+          }
 
       - name: Provision exact fixture
         if: inputs.mode == 'provision'

@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-provision-closeout-20261016
-Governance base SHA: 132011fb16d5d686aa3a526b6ec0896f181652d9
-CANDIDATE_SUBJECT_SHA: 327fd808a264382ebeded98c8709048131aaec4e
+Working branch at this snapshot: feature/mvp006-g5-runner-preflight-20261016
+Governance base SHA: 281b172c9fad6a58b0bac65107e96bd58adce87c
+CANDIDATE_SUBJECT_SHA: 8493fc8f61ad08c0a46ecf2e6723359567ebc34e
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R06 源码候选：从 main `281b172c` 增加 staging Runner 只读 `preflight`，复用已有私有凭证夹具核对 50 个身份/会话及生效限流、Token 有效期；不启动 SSE 或调用模型。独立复审发现低限流误报成功，已先红后绿修正。最终 subject `8493fc8` 聚焦 39 passed、五段 PowerShell AST 通过；完整后端 1837 passed/20 skipped 等结果见 [R06 TR](../reports/tests/TR-MVP-006-20261016-R06.md)，[审查](../reports/reviews/RR-MVP-006-20261016-R06.md)。[PR #239](https://github.com/CP11-gh/CRM/pull/239) 的最终 CI、合并及现场预检尚须复核；三个派生索引为 `CANDIDATE_VIEW`。G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R05 收尾：证据 [PR #237](https://github.com/CP11-gh/CRM/pull/237) 双 CI 通过并 squash 合入 main `132011fb16d5d686aa3a526b6ec0896f181652d9`；从该权威 main 的 IR/TR/RR 各 89 份源记录逐项核对，ID、任务、修订、状态、SHA、更新时间和路径均一致，无缺漏或重复，本分支三个派生索引恢复为 `CURRENT`。交付 README 的历史“尚未执行”已按现场 R05 事实修正，并明确现有 `check_only` 在私有目录非空后无法执行身份预检；本分支没有新增现场调用。G5 保持 `DOING`，production No-Go。
 
