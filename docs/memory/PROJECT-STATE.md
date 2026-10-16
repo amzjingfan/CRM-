@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-runner-check-20261016
-Governance base SHA: 814590f2fd12536ccfd66dd4ceed9dbfa673d975
-CANDIDATE_SUBJECT_SHA: 814590f2fd12536ccfd66dd4ceed9dbfa673d975
+Working branch at this snapshot: docs/mvp006-g5-check-index-20261016
+Governance base SHA: cc56e88edbb38dc08d780f583491d15592599d00
+CANDIDATE_SUBJECT_SHA: cc56e88edbb38dc08d780f583491d15592599d00
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R04 恢复点：[PR #234](https://github.com/CP11-gh/CRM/pull/234) 双 CI 通过并 squash 合入 main `814590f`；获批的唯一 [staging check_only #38847788672](https://github.com/CP11-gh/CRM/actions/runs/38847788672)核对运行后端、数据库指纹、私有路径和源码后返回 ready、Provider 0、业务写入 0，`provision` skipped。证据见 [R04 IR](../records/implementation/IR-MVP-006-20261016-R04.md)、[TR](../reports/tests/TR-MVP-006-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R04.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-check-only-38847788672.json)。未创建 50 账号；现场写入须单独精确批准。G5 `DOING`，production No-Go。
+2026-10-16 G5 R04 恢复点：[PR #234](https://github.com/CP11-gh/CRM/pull/234) 双 CI 通过并 squash 合入 main `814590f`；获批的唯一 [staging check_only #38847788672](https://github.com/CP11-gh/CRM/actions/runs/38847788672)核对运行后端、数据库指纹、私有路径和源码后返回 ready、Provider 0、业务写入 0，`provision` skipped。证据见 [R04 IR](../records/implementation/IR-MVP-006-20261016-R04.md)、[TR](../reports/tests/TR-MVP-006-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R04.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-check-only-38847788672.json)。[证据 PR #235](https://github.com/CP11-gh/CRM/pull/235) 双 CI 通过并合入 main `cc56e88`；从该 main 核对 IR/TR/RR 各 88 份源记录，ID、状态和 SHA 与三个派生索引一致，本收尾分支恢复为 `CURRENT`。未创建 50 账号；现场写入须单独精确批准。G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R03 恢复点：用户批准通过在线 staging Runner 增加只读 `check_only` 和另行精确确认的 `provision`，并在 main 合并后运行一次零业务写入检查。源码 subject `feaaf5e` 的聚焦验证与独立安全复审通过，前一源码提交的本地后端及隔离 PostgreSQL 全量验证通过，最终完整 CI 待复核；详见 [R03 IR](../records/implementation/IR-MVP-006-20261016-R03.md)、[TR](../reports/tests/TR-MVP-006-20261016-R03.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R03.md)。当时尚未在 staging 创建账号或运行只读检查；`provision` 不在本次现场授权内。三个派生索引在任务分支为 `CANDIDATE_VIEW`，G5 `DOING`，production No-Go。
 
