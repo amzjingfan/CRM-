@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 G5 R05 现场夹具：一次获批的 [staging 工作流 #38852775454](https://github.com/CP11-gh/CRM/actions/runs/38852775454)在 main `a202c755` 核对源码、运行镜像和数据库目标后成功创建 50 个隔离 CRM 账号及 50 个会话，Provider 0，私有凭证 manifest 保留在仓库外，见 [R05 TR](../reports/tests/TR-MVP-006-20261016-R05.md)。R01 逐一认证/会话预检尚未运行，真实限流、知识命中、安全输出及 50 并发尚无现场证据；G5、G6 与 production 未通过。
+
 2026-10-16 G5 R04 现场只读前置检查：PR #234 前后端 CI 通过并合入 main `814590f`；一次获批的 [工作流 #38847788672](https://github.com/CP11-gh/CRM/actions/runs/38847788672)在 staging 成功核对源码、运行后端、数据库指纹和私有路径，返回 ready、Provider 0、业务写入 0，`provision` skipped，见 [R04 TR](../reports/tests/TR-MVP-006-20261016-R04.md)。尚未创建 50 个账号或运行 R01 账号认证预检；G5、G6 与 production 未通过。
 
 2026-10-16 G5 R03 Runner 入口源码：subject `feaaf5e` 增加 main/运行镜像/数据库指纹核对、只读 `check_only` 与单独确认的 `provision`。独立审查发现并修复无 Git 镜像的私有路径校验问题；最终源码聚焦 15 passed，前一源码提交的本地完整后端 1835 passed/20 skipped、隔离 PostgreSQL 1852 passed/3 skipped，Ruff/格式/Linux mypy 通过，最终完整回归待 PR CI，见 [R03 TR](../reports/tests/TR-MVP-006-20261016-R03.md)。此处尚未把代码合入 main 或运行现场检查；G5 仍未通过，production No-Go。

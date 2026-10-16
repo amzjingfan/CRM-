@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-check-index-20261016
-Governance base SHA: cc56e88edbb38dc08d780f583491d15592599d00
-CANDIDATE_SUBJECT_SHA: cc56e88edbb38dc08d780f583491d15592599d00
+Working branch at this snapshot: docs/mvp006-g5-provision-evidence-20261016
+Governance base SHA: a202c755d5d244351642dbb5705ef841603fd9b8
+CANDIDATE_SUBJECT_SHA: a202c755d5d244351642dbb5705ef841603fd9b8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R05 恢复点：用户在一次精确 `provision` 授权请求后要求继续；从 main `a202c755` 仅运行一次 [staging 工作流 #38852775454](https://github.com/CP11-gh/CRM/actions/runs/38852775454)，源码、运行后端、数据库目标与只读预检成功，实际创建 50 个隔离 CRM 账号和 50 个会话，Provider 0，私有凭证 manifest 保留在服务器仓库外。见 [R05 IR](../records/implementation/IR-MVP-006-20261016-R05.md)、[TR](../reports/tests/TR-MVP-006-20261016-R05.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R05.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-provision-38852775454.json)。本机 SSH 仍被拒绝；R01 逐一认证/会话只读预检、知识和真实负载均未运行。源码默认 Access Token 120 分钟有效，staging 实际值未核对，延迟预检可能遇到过期；不得再次 provision。三个索引本分支为 `CANDIDATE_VIEW`；G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R04 恢复点：[PR #234](https://github.com/CP11-gh/CRM/pull/234) 双 CI 通过并 squash 合入 main `814590f`；获批的唯一 [staging check_only #38847788672](https://github.com/CP11-gh/CRM/actions/runs/38847788672)核对运行后端、数据库指纹、私有路径和源码后返回 ready、Provider 0、业务写入 0，`provision` skipped。证据见 [R04 IR](../records/implementation/IR-MVP-006-20261016-R04.md)、[TR](../reports/tests/TR-MVP-006-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R04.md)及[机器摘要](../../release/evidence/staging/crm-staging-g5-check-only-38847788672.json)。[证据 PR #235](https://github.com/CP11-gh/CRM/pull/235) 双 CI 通过并合入 main `cc56e88`；从该 main 核对 IR/TR/RR 各 88 份源记录，ID、状态和 SHA 与三个派生索引一致，本收尾分支恢复为 `CURRENT`。未创建 50 账号；现场写入须单独精确批准。G5 `DOING`，production No-Go。
 
@@ -279,6 +281,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. staging Runner 只读 check_only 已通过；在单独批准的数据写入窗口创建隔离 50 账号与凭证池，运行 R01 零调用认证预检并核对限流。依知识审批补合成 FAQ、单会话验证安全 `delta`，真实 50 并发与费用另行精确处理。
+1. 隔离 50 账号与私有凭证池已创建；先只读核对 staging 的 Access Token 有效期并通过受控 Runner 运行 R01 认证/会话预检。若 Token 已过期，先针对现有身份形成受控凭证更新设计与授权，禁止重跑 provision。随后核对限流、知识与单会话安全 `delta`；真实 50 并发与费用另行精确处理。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。
