@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -90,3 +90,4 @@ View: `CURRENT`
 | RR-MVP-005-20261016-R56 | MVP-005 | R56 | APPROVE | `54594dc40b1c596a890f27cc80380766cabde840` | G4 / AC-01～AC-04 | 2026-10-16T09:02:22+08:00 | [`RR-MVP-005-20261016-R56.md`](RR-MVP-005-20261016-R56.md) |
 | RR-MVP-006-20261016-R01 | MVP-006 | R01 | APPROVE | `9ca964b067bb8b72e3e6af1474a9d41fcfb7a830` | credential-isolation / read-only / authorization / fail-closed / path-safety | 2026-10-16T09:56:09+08:00 | [`RR-MVP-006-20261016-R01.md`](RR-MVP-006-20261016-R01.md) |
 | RR-MVP-006-20261016-R02 | MVP-006 | R02 | APPROVE | `dae10833ba1c2692b0ca175889372641c8408e30` | scope / database-target / credential-isolation / transaction-uncertainty / audit / sse-readiness | 2026-10-16T10:50:00+08:00 | [`RR-MVP-006-20261016-R02.md`](RR-MVP-006-20261016-R02.md) |
+| RR-MVP-006-20261016-R03 | MVP-006 | R03 | APPROVE | `feaaf5e0ac44e5465719e8d61ef6481e5d107409` | authorization / runner-boundary / image-provenance / database-target / credential-isolation / fail-closed | 2026-10-16T11:35:00+08:00 | [`RR-MVP-006-20261016-R03.md`](RR-MVP-006-20261016-R03.md) |

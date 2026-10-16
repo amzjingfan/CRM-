@@ -1,0 +1,284 @@
+name: Prepare staging SSE fixture
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Read-only check or one exact staging fixture
+        required: true
+        type: choice
+        options: [check_only, provision]
+      expected_source_sha:
+        description: Exact reviewed main commit SHA
+        required: true
+        type: string
+      expected_backend_image:
+        description: Exact running backend repository@sha256 digest
+        required: true
+        type: string
+      confirm_provision:
+        description: For provision only, type create-50-isolated-staging-users
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-staging-production-gates
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, crm-staging]
+    environment: staging
+    timeout-minutes: 15
+    steps:
+      - name: Verify reviewed source
+        id: source
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_SHA -cnotmatch '^[0-9a-f]{40}$' -or
+              $env:EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA) {
+            throw 'G5 source must be the exact reviewed main commit.'
+          }
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = 'application/vnd.github+json'
+            'X-GitHub-Api-Version' = '2022-11-28'
+          }
+          $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/git/commits/$env:GITHUB_SHA" -Headers $headers -TimeoutSec 30
+          if ([string]$commit.sha -cne $env:GITHUB_SHA) {
+            throw 'The dispatched G5 commit could not be verified.'
+          }
+          $sourcePath = Join-Path $env:RUNNER_TEMP "crm-g5-source-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          foreach ($relative in @(
+              'src/backend/scripts/__init__.py',
+              'src/backend/scripts/load_test_sse.py',
+              'src/backend/scripts/prepare_sse_staging_fixture.py',
+              'src/backend/scripts/check_sse_staging_fixture.py'
+          )) {
+            $uri = "https://api.github.com/repos/CP11-gh/CRM/contents/$($relative)?ref=$env:GITHUB_SHA"
+            $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 30
+            if ($source.type -cne 'file' -or $source.encoding -cne 'base64' -or
+                [string]$source.sha -cnotmatch '^[0-9a-f]{40}$') {
+              throw 'A reviewed G5 source file is unavailable.'
+            }
+            [byte[]]$bytes = [Convert]::FromBase64String([string]$source.content)
+            if ($bytes.Length -lt 1 -or $bytes.Length -gt 100000) {
+              throw 'A reviewed G5 source file has an unexpected size.'
+            }
+            [byte[]]$blobInput = [Text.Encoding]::ASCII.GetBytes("blob $($bytes.Length)" + [char]0) + $bytes
+            $blobSha = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData($blobInput)).ToLowerInvariant()
+            if ($blobSha -cne [string]$source.sha) {
+              throw 'A reviewed G5 source file failed Git blob verification.'
+            }
+            $target = Join-Path $sourcePath $relative
+            $null = New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force
+            [IO.File]::WriteAllBytes($target, $bytes)
+          }
+          "source_path=$sourcePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Output 'Exact G5 source and four Git blobs verified.'
+
+      - name: Check staging runtime
+        id: runtime
+        shell: pwsh
+        env:
+          MODE: ${{ inputs.mode }}
+          CONFIRM_PROVISION: ${{ inputs.confirm_provision }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+          CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:MODE -cnotin @('check_only', 'provision') -or
+              $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
+              ($env:MODE -ceq 'check_only' -and $env:CONFIRM_PROVISION) -or
+              ($env:MODE -ceq 'provision' -and $env:CONFIRM_PROVISION -cne 'create-50-isolated-staging-users')) {
+            throw 'G5 mode, image, or exact provision confirmation is invalid.'
+          }
+          $runnerUid = (& id -u).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runnerUid -cne '1004') {
+            throw 'G5 requires the dedicated crmdeploy staging Runner.'
+          }
+          $dockerHost = "unix:///run/user/$runnerUid/docker.sock"
+          $containers = @(& docker --host $dockerHost ps --filter 'label=com.docker.compose.project=crm-staging' --filter 'label=com.docker.compose.service=backend' --format '{{.ID}}')
+          if ($LASTEXITCODE -ne 0 -or $containers.Count -ne 1) {
+            throw 'Expected exactly one running staging backend.'
+          }
+          $container = $containers[0]
+          $actualImage = (& docker --host $dockerHost inspect --format '{{.Config.Image}}' $container).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actualImage -cne $env:EXPECTED_BACKEND_IMAGE) {
+            throw 'Running G5 backend image differs from the reviewed digest.'
+          }
+          $envFile = $env:CRM_STAGING_ENV_FILE
+          if (-not [IO.Path]::IsPathRooted($envFile) -or
+              -not (Test-Path -LiteralPath $envFile -PathType Leaf) -or
+              $envFile.StartsWith($env:GITHUB_WORKSPACE + '/', [StringComparison]::Ordinal)) {
+            throw 'Protected staging configuration path is unavailable.'
+          }
+          $envItem = Get-Item -LiteralPath $envFile -Force
+          $envOwner = (& stat -c '%u' $envFile).Trim()
+          $envMode = (& stat -c '%a' $envFile).Trim()
+          if ($LASTEXITCODE -ne 0 -or $envItem.LinkType -or $envOwner -cne '1004' -or
+              $envMode -cnotmatch '^[0-7]{3,4}$' -or
+              ([Convert]::ToInt32($envMode, 8) -band 63) -ne 0) {
+            throw 'Protected staging configuration ownership or permissions are invalid.'
+          }
+          $databaseLines = @()
+          foreach ($line in Get-Content -LiteralPath $envFile -Encoding utf8) {
+            $trimmed = $line.Trim()
+            if (-not $trimmed -or $trimmed.StartsWith('#')) { continue }
+            $separator = $trimmed.IndexOf('=')
+            if ($separator -gt 0 -and $trimmed.Substring(0, $separator).Trim() -ceq 'DATABASE_URL') {
+              $databaseLines += $trimmed.Substring($separator + 1)
+            }
+          }
+          if ($databaseLines.Count -ne 1 -or [string]::IsNullOrWhiteSpace($databaseLines[0])) {
+            throw 'Protected staging DATABASE_URL is missing or ambiguous.'
+          }
+          $databaseSha256 = [Convert]::ToHexString(
+            [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($databaseLines[0]))
+          ).ToLowerInvariant()
+          $runningSha256 = (& docker --host $dockerHost exec $container python -B -c 'import hashlib, os; print(hashlib.sha256(os.environ["DATABASE_URL"].encode()).hexdigest())' 2>$null).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runningSha256 -cne $databaseSha256) {
+            throw 'Running backend database target differs from protected deployment configuration.'
+          }
+          $privateDir = '/home/crmdeploy/.cache/crm-g5-fixtures'
+          $privateParent = '/home/crmdeploy/.cache'
+          if (-not (Test-Path -LiteralPath $privateParent -PathType Container) -or
+              (Get-Item -LiteralPath $privateParent -Force).LinkType -or
+              (& stat -c '%u' $privateParent).Trim() -cne '1004') {
+            throw 'Private G5 credential parent is unavailable.'
+          }
+          if (Test-Path -LiteralPath $privateDir) {
+            $item = Get-Item -LiteralPath $privateDir -Force
+            $mode = (& stat -c '%a' $privateDir).Trim()
+            if (-not $item.PSIsContainer -or $item.LinkType -or
+                (& stat -c '%u' $privateDir).Trim() -cne '1004' -or
+                ([Convert]::ToInt32($mode, 8) -band 63) -ne 0) {
+              throw 'Private G5 credential directory is unsafe.'
+            }
+            if (@(Get-ChildItem -LiteralPath $privateDir -Force).Count -ne 0) {
+              throw 'Existing G5 private material requires reconciliation before a new run.'
+            }
+          }
+          "docker_host=$dockerHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "container=$container" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "database_sha256=$databaseSha256" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "private_dir=$privateDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Output 'Staging Runner, immutable backend, database target, and private path verified.'
+
+      - name: Read-only fixture check
+        shell: pwsh
+        env:
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
+          DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
+          CONTAINER: ${{ steps.runtime.outputs.container }}
+          ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
+          DATABASE_SHA256: ${{ steps.runtime.outputs.database_sha256 }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = Join-Path $env:SOURCE_PATH 'src/backend'
+          $args = @(
+            '--host', $env:DOCKER_HOST, 'run', '--rm', '--pull=never', '--read-only',
+            '--network', "container:$env:CONTAINER", '--user', '0:0',
+            '--env-file', $env:ENV_FILE,
+            '-e', 'APP_ENV=staging', '-e', 'AUTH_COOKIE_SECURE=true',
+            '-e', 'LLM_ENABLED=false', '-e', 'LLM_LIVE_EVAL=false',
+            '-e', 'REAL_TIKTOK_READ_ENABLED=false', '-e', 'REAL_TIKTOK_WEBHOOK_ENABLED=false',
+            '-e', 'REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false', '-e', 'REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false',
+            '-e', 'AI_TRANSLATION_ENABLED=false', '-e', 'AI_MARKETING_ENABLED=false',
+            '-e', 'AUTO_REPLY_ENABLED=false', '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
+            '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
+            '--entrypoint', 'python', $env:EXPECTED_BACKEND_IMAGE,
+            '-B', '-m', 'scripts.check_sse_staging_fixture',
+            '--expected-database-sha256', $env:DATABASE_SHA256
+          )
+          $output = & docker @args 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            foreach ($line in @($output)) {
+              if ($line -cmatch '^\{"failure_stage": "(config|database_read|permission_missing|existing_fixture)"') {
+                Write-Output "G5 check_only failure_stage=$($Matches[1])"
+                break
+              }
+            }
+            throw 'G5 read-only fixture check failed.'
+          }
+          $report = $output | ConvertFrom-Json
+          if ($report.mode -cne 'check_only' -or $report.ready -cne $true -or $report.provider_calls -ne 0) {
+            throw 'G5 read-only fixture check returned an invalid result.'
+          }
+          Write-Output 'G5 check_only ready; provider_calls=0; database_writes=0.'
+
+      - name: Provision exact fixture
+        if: inputs.mode == 'provision'
+        shell: pwsh
+        env:
+          CONFIRM_PROVISION: ${{ inputs.confirm_provision }}
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
+          DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
+          CONTAINER: ${{ steps.runtime.outputs.container }}
+          ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
+          DATABASE_SHA256: ${{ steps.runtime.outputs.database_sha256 }}
+          PRIVATE_DIR: ${{ steps.runtime.outputs.private_dir }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:CONFIRM_PROVISION -cne 'create-50-isolated-staging-users') {
+            throw 'Exact G5 provision confirmation is required.'
+          }
+          & install -d -m 700 $env:PRIVATE_DIR
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot prepare private G5 credential directory.' }
+          $dirItem = Get-Item -LiteralPath $env:PRIVATE_DIR -Force
+          $dirMode = (& stat -c '%a' $env:PRIVATE_DIR).Trim()
+          if (-not $dirItem.PSIsContainer -or $dirItem.LinkType -or
+              (& stat -c '%u' $env:PRIVATE_DIR).Trim() -cne '1004' -or
+              ([Convert]::ToInt32($dirMode, 8) -band 63) -ne 0) {
+            throw 'Private G5 credential directory failed post-create checks.'
+          }
+          $fileName = "g5-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.json"
+          $hostFile = Join-Path $env:PRIVATE_DIR $fileName
+          if (Test-Path -LiteralPath $hostFile) {
+            throw 'G5 credential file already exists; manual reconciliation is required.'
+          }
+          $source = Join-Path $env:SOURCE_PATH 'src/backend'
+          $args = @(
+            '--host', $env:DOCKER_HOST, 'run', '--rm', '--pull=never', '--read-only',
+            '--network', "container:$env:CONTAINER", '--user', '0:0',
+            '--env-file', $env:ENV_FILE,
+            '-e', 'APP_ENV=staging', '-e', 'AUTH_COOKIE_SECURE=true',
+            '-e', 'LLM_ENABLED=false', '-e', 'LLM_LIVE_EVAL=false',
+            '-e', 'REAL_TIKTOK_READ_ENABLED=false', '-e', 'REAL_TIKTOK_WEBHOOK_ENABLED=false',
+            '-e', 'REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false', '-e', 'REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false',
+            '-e', 'AI_TRANSLATION_ENABLED=false', '-e', 'AI_MARKETING_ENABLED=false',
+            '-e', 'AUTO_REPLY_ENABLED=false', '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
+            '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
+            '--mount', "type=bind,source=$env:PRIVATE_DIR,target=/opt/crm-g5-credentials",
+            '--entrypoint', 'python', $env:EXPECTED_BACKEND_IMAGE,
+            '-B', '-m', 'scripts.prepare_sse_staging_fixture', '--execute',
+            '--credentials-file', "/opt/crm-g5-credentials/$fileName",
+            '--expected-database-sha256', $env:DATABASE_SHA256
+          )
+          $output = & docker @args 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            throw 'G5 provision failed or commit is unknown; retain any private manifest and reconcile before retry.'
+          }
+          $report = $output | ConvertFrom-Json
+          if ($report.mode -cne 'provision' -or $report.created_users -ne 50 -or
+              $report.created_sessions -ne 50 -or $report.provider_calls -ne 0 -or
+              -not (Test-Path -LiteralPath $hostFile -PathType Leaf)) {
+            throw 'G5 provision result is uncertain; retain the private manifest.'
+          }
+          $fileMode = (& stat -c '%a' $hostFile).Trim()
+          if ((& stat -c '%u' $hostFile).Trim() -cne '1004' -or
+              ([Convert]::ToInt32($fileMode, 8) -band 63) -ne 0) {
+            throw 'G5 credential file permissions are uncertain; retain the private manifest.'
+          }
+          Write-Output 'G5 isolated fixture created: users=50; sessions=50; provider_calls=0; private_manifest=retained.'

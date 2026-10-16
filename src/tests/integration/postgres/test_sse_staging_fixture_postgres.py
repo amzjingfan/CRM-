@@ -14,6 +14,7 @@ from app.shared.database import models as _models  # noqa: F401
 from app.shared.database.base import Role, User, role_permissions, user_roles
 from app.stores.models import Store
 from scripts import prepare_sse_staging_fixture as fixture
+from scripts.check_sse_staging_fixture import ReadinessError, check_readiness
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="未提供隔离的 PostgreSQL 测试数据库")
@@ -30,6 +31,7 @@ async def test_fixture_is_scoped_and_rolls_back_on_isolated_postgres(monkeypatch
     try:
         async with sessions() as session:
             await session.begin()
+            assert (await check_readiness(session, "staging"))["ready"] is True
             payload = await fixture.provision_fixture(session, run_id)
             store_id = uuid.UUID(payload["manifest"]["store_id"])
             role_id = uuid.UUID(payload["manifest"]["role_id"])
@@ -59,6 +61,9 @@ async def test_fixture_is_scoped_and_rolls_back_on_isolated_postgres(monkeypatch
             audit = await session.scalar(select(AuditLog).where(AuditLog.resource_id == store_id))
             assert audit is not None and audit.action == "g5.fixture.provision"
             assert len(payload["clients"]) == 50
+            with pytest.raises(ReadinessError) as readiness_error:
+                await check_readiness(session, "staging")
+            assert readiness_error.value.stage == "existing_fixture"
             for user_id in payload["manifest"]["user_ids"]:
                 assert await session.get(User, uuid.UUID(user_id)) is not None
             await session.rollback()

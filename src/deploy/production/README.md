@@ -290,6 +290,8 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 
 现场执行前先确认 staging 数据库、运行摘要、外部私有目录、精确批准范围和可回滚窗口；令牌生成与预检应在 Access Token 有效期内连续完成。工具入口为 `uv run python -m scripts.prepare_sse_staging_fixture --execute --credentials-file <仓库外全新绝对路径> --expected-database-sha256 <独立核对的 staging DSN 摘要>`（从 staging Runner 的 `src/backend` 执行，不能仅从同一未核实的环境变量计算指纹）。随后在相同受控主机使用只读 `--prepare` 验证 50 个真实授权身份和可读会话；本地 ORM 测试不代替这一步。**这些合成会话目前没有已审批且向量化的 FAQ，也没有订单工具，不能据此声称有安全 `delta`。**在 G5 真实负载前，需另行提供符合现有知识审批流程的隔离 FAQ/会话并做单会话模型验证；其创建与模型调用均不在本工具范围。
 
+SSH 无法登录但 `crm-staging` Runner 在线时，可从已合并的 main 精确提交运行 `prepare-staging-sse-fixture.yml` 的 `check_only`。它核对提交与四个 Git Blob、运行 backend 不可变摘要、受限部署配置与运行容器的数据库指纹，以及私有路径；使用同一后端镜像的一次性只读容器检查 `workspace.view` 与已有 G5 夹具，输出固定结果类别，不创建业务数据或调用模型。`provision` 在每次现场写入前仍须单独精确批准并填写 `create-50-isolated-staging-users`；它先重跑只读检查，再把私有凭证直接写到 Runner 仓库外 `/home/crmdeploy/.cache/crm-g5-fixtures/g5-<run>-<attempt>.json`，不上传为工作流 artifact。若提交或结果不确定，保留该文件并按 manifest 对账，禁止自动重试。工作流代码合并或 `check_only` 通过都不等于获准运行 `provision`。
+
 清理方案：测试窗口结束先使用 manifest 中的精确 50 个用户 ID 将这些用户禁用，并复核旧 Token 已无法通过 `/auth/me`；保留审计和低敏测试报告。对本次 store、role、50 会话及其后续 Agent 运行先只读盘点引用和数量，形成独立 `MAINT-CLEANUP-*` 任务及精确清理批次，取得授权后才删除数据库行和仓库外凭证文件；不得按 `g5-` 前缀批量删除或改动其他店铺。若预检或负载失败，也先禁用账号并记录可恢复状态，不自行重试付费调用。
 
 ```powershell

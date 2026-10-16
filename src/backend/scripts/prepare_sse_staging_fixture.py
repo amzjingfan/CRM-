@@ -35,13 +35,40 @@ def validate_target(app_env: str, output: Path) -> None:
     """拒绝非 staging、仓库内、已有文件及共享目录。"""
     if app_env != "staging":
         raise ValueError("fixture provisioning requires staging")
-    if not output.is_absolute() or not output.parent.is_dir() or not prepare_paths_are_safe(output, output):
+    if (
+        not output.is_absolute()
+        or not output.parent.is_dir()
+        or output.exists()
+        or not (prepare_paths_are_safe(output, output) or current_container_paths_are_safe(output))
+    ):
         raise ValueError("fixture output must be a new file outside the repository")
     if sys.platform == "win32" or os.name != "posix":
         raise ValueError("fixture provisioning requires a POSIX staging runner")
     parent = output.parent.stat()
     if parent.st_uid != os.geteuid() or parent.st_mode & 0o077:
         raise ValueError("fixture output parent must be owned by the runner and private")
+
+
+def container_paths_are_safe(output: Path, source_file: Path, mountinfo: str) -> bool:
+    """镜像不含 Git；仅接受独立只读源码挂载与私有可写凭证挂载。"""
+    source_root = Path("/opt/crm-g5-source")
+    credential_root = Path("/opt/crm-g5-credentials")
+    if output.parent != credential_root or not source_file.is_relative_to(source_root):
+        return False
+    mounts: dict[str, set[str]] = {}
+    for line in mountinfo.splitlines():
+        fields = line.split(" - ", 1)[0].split()
+        if len(fields) >= 6 and fields[4] in (source_root.as_posix(), credential_root.as_posix()):
+            mounts[fields[4]] = set(fields[5].split(","))
+    return "ro" in mounts.get(source_root.as_posix(), set()) and "rw" in mounts.get(credential_root.as_posix(), set())
+
+
+def current_container_paths_are_safe(output: Path) -> bool:
+    try:
+        mountinfo = Path("/proc/self/mountinfo").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return container_paths_are_safe(output, Path(__file__).resolve(), mountinfo)
 
 
 def validate_database_target(database_url: str, expected_sha256: str) -> None:

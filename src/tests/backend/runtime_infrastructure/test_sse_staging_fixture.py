@@ -57,6 +57,21 @@ def test_fixture_requires_private_posix_runner_and_independent_database_digest(t
         tool.validate_database_target(database_url, "")
 
 
+def test_container_fixture_path_requires_separate_readonly_source_and_private_mount() -> None:
+    tool = fixture_tool()
+    output = Path("/opt/crm-g5-credentials/g5-test.json")
+    source = Path("/opt/crm-g5-source/scripts/prepare_sse_staging_fixture.py")
+    mountinfo = (
+        "1 0 0:1 / /opt/crm-g5-source ro - ext4 /dev/test ro\n"
+        "2 0 0:1 / /opt/crm-g5-credentials rw - ext4 /dev/test rw\n"
+    )
+    assert tool.container_paths_are_safe(output, source, mountinfo)
+    assert not tool.container_paths_are_safe(output, source, mountinfo.replace("source ro", "source rw"))
+    assert not tool.container_paths_are_safe(output, source, mountinfo.replace("credentials rw", "credentials ro"))
+    assert not tool.container_paths_are_safe(output, source, mountinfo.splitlines()[0])
+    assert not tool.container_paths_are_safe(Path("/opt/crm-g5-source/g5.json"), source, mountinfo)
+
+
 @pytest.mark.asyncio
 async def test_fixture_creates_fifty_scoped_viewers_and_distinct_synthetic_sessions(
     monkeypatch: pytest.MonkeyPatch,
