@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp006-g5-auth-log-count-20261016
-Governance base SHA: 6e6ae6975ae09c7df56032d7d232bd4450b54e58
-CANDIDATE_SUBJECT_SHA: 9b478fbf0e5088d00da4851936cb427885ef171a
+Working branch at this snapshot: docs/mvp006-g5-log-recheck-20261016
+Governance base SHA: fafbac740f6ef3a51620bb2ca2cd32956fff5817
+CANDIDATE_SUBJECT_SHA: fafbac740f6ef3a51620bb2ca2cd32956fff5817
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R10：获批固定窗探针 #38864445483 在 main 6e6ae69 上源、运行镜像和数据库核对通过，但报告计数校验失败，未输出异常类型；无凭证读取、Provider 0、provision skipped。subject 9b478fb 改为可移植整数解析，聚焦 3 passed、七段 AST 与本机模拟报告校验通过，见 [R10 TR](../reports/tests/TR-MVP-006-20261016-R10.md)。PR CI 待核对，现场重跑须另行精确授权；G5 DOING、production No-Go。
+2026-10-16 G5 R11：main `fafbac740` 的固定窗只读日志回查 #38866573949 成功执行，但 `matched_events=0`，没有异常类型证据；认证 GET、预检、provision 均跳过，Provider 0。[R11 TR](../reports/tests/TR-MVP-006-20261016-R11.md)和[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-log-recheck-38866573949.json)已保留。本地重现 `@example.invalid` 被 `UserView.email` 拒绝，仅作为待现场验证的根因线索；50 身份、限流 50、安全输出与真实负载仍未通过，G5 DOING、production No-Go。
+
+2026-10-16 G5 R10：获批固定窗探针 #38864445483 在 main 6e6ae69 上源、运行镜像和数据库核对通过，但报告计数校验失败，未输出异常类型；无凭证读取、Provider 0、provision skipped。subject 9b478fb 改为可移植整数解析，聚焦 3 passed、七段 AST 与本机模拟报告校验通过，见 [R10 TR](../reports/tests/TR-MVP-006-20261016-R10.md)。PR #243 双 CI 通过并合入 main `fafbac740`，现场重跑见 R11；G5 DOING、production No-Go。
 
 2026-10-16 G5 R09：获批的单令牌只读诊断 #38862950177 从 main 1626622 返回令牌 valid、签名密钥/算法一致，但 /auth/me 为 HTTP 500、应用码 50001；Provider 0，预检和 provision skipped。[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-status-38862950177.json)与[R09 TR](../reports/tests/TR-MVP-006-20261016-R09.md)已记录。用户批准固定 15 秒日志窗的只读探针，subject 47aae95 仅输出白名单异常类型与计数、不再请求认证；本地完整后端 1851 passed/20 skipped，Ruff/格式/mypy 及七段工作流 AST 通过。PR CI、合并与现场日志探针待复核；50 身份和限流仍失败，G5 DOING、production No-Go。
 
@@ -293,6 +295,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 已建 50 个隔离账号；R06 预检的 50 次认证均失败且运行限流为 10。先合入并运行一次获批的 R07 单令牌只读诊断，依据签名、过期、运行密钥匹配及 HTTP 状态定位原因；需要更新私有凭证或 staging 限流时另做有界方案，禁止重跑 provision。随后验证 50 身份、已审批知识、单会话安全 `delta`，真实 50 并发与费用另行精确处理。
+1. 已建 50 个隔离账号；R06 的 50 次认证均失败、运行限流为 10，R08 单令牌 `/auth/me` 为 HTTP 500 / 50001，R11 固定窗日志回查零匹配。先按已呈交的有界设计处理测试邮箱并精确核对现有夹具，禁止重跑 provision；随后重验 50 身份/会话、限流、已审批知识与单会话安全 `delta`，真实 50 并发和费用另按边界执行。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。

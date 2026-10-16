@@ -1,0 +1,22 @@
+{
+  "task_id": "MVP-006",
+  "gate": "G5-PREP",
+  "mode": "diagnose_auth_logs",
+  "run_id": 38866573949,
+  "run_url": "https://github.com/CP11-gh/CRM/actions/runs/38866573949",
+  "job_id": 116860686430,
+  "source_main_sha": "fafbac740f6ef3a51620bb2ca2cd32956fff5817",
+  "expected_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:1045d683a65539727c444b8990ca25768814485e9eb0e62c8cb0d91d87eec363",
+  "source_runtime_and_database_checks": "success",
+  "log_classification_step": "success",
+  "matched_events": 0,
+  "exception_types": {},
+  "credential_access": "none",
+  "auth_requests": 0,
+  "provider_calls": 0,
+  "preflight_step": "skipped",
+  "provision_step": "skipped",
+  "run_conclusion": "success",
+  "created_at_utc": "2026-10-16T07:20:22Z",
+  "completed_at_utc": "2026-10-16T07:20:53Z"
+}

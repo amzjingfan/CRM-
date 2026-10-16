@@ -4,7 +4,9 @@
 
 ## 模块状态
 
-2026-10-16 G5 R10：[固定窗只读探针 #38864445483](https://github.com/CP11-gh/CRM/actions/runs/38864445483)在报告计数类型检查处失败，未产生异常类型结论；[低敏失败证据](../../release/evidence/staging/crm-staging-g5-auth-log-probe-38864445483.json)。修复 subject 9b478fb 聚焦 3 passed、七段 AST 与本机模拟 JSON 校验通过，最终 PR CI 与另行授权的现场重跑待核对。G5、production No-Go。
+2026-10-16 G5 R11：[固定窗日志回查 #38866573949](https://github.com/CP11-gh/CRM/actions/runs/38866573949) 从 main `fafbac740` 成功执行，但只输出 `matched_events=0`、Provider 0；不能据此确认 HTTP 500 的异常类型。原夹具邮箱 `@example.invalid` 被当前 `EmailStr` 本地复现拒绝，属于待现场核实的原因；[R11 TR](../reports/tests/TR-MVP-006-20261016-R11.md)与[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-log-recheck-38866573949.json)已记录。50 身份与会话、限流 50、安全输出及真实 50 并发仍未通过，G5、production No-Go。
+
+2026-10-16 G5 R10：[固定窗只读探针 #38864445483](https://github.com/CP11-gh/CRM/actions/runs/38864445483)在报告计数类型检查处失败，未产生异常类型结论；[低敏失败证据](../../release/evidence/staging/crm-staging-g5-auth-log-probe-38864445483.json)。修复 subject 9b478fb 聚焦 3 passed、七段 AST 与本机模拟 JSON 校验通过，PR #243 双 CI 通过并合入 main `fafbac740`；现场回查结果见 R11。G5、production No-Go。
 
 2026-10-16 G5 R09：[获批单令牌只读诊断 #38862950177](https://github.com/CP11-gh/CRM/actions/runs/38862950177) 在 main 1626622 返回本地有效的令牌与一致的运行签名配置，但 /auth/me 为 HTTP 500 / API 50001；没有运行 50 身份预检、provision 或模型。[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-status-38862950177.json)。固定日志窗只读探针 subject 47aae95 本地 1851 passed/20 skipped、Ruff/格式/mypy 和工作流语法通过；现场异常类型待核对。G5、production No-Go。
 
