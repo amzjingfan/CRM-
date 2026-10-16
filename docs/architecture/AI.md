@@ -43,6 +43,8 @@ Agent 不直接访问业务数据库或平台 SDK。每个工具都必须有：
 
 工作台单条中文辅助译文由坐席点击后触发，复用现有 `TranslationService` 和 DeepSeek 结构化输出；模型输入在现有 Prompt 安全/DLP 边界脱敏，结果只在当前会话页面展示，不写回 TikTok、不自动发送，也不批量回填历史。`WORKSPACE_MESSAGE_TRANSLATION_ENABLED` 独立于通用 `LLM_ENABLED`，默认关闭，当前仅供受审 staging 覆盖层启用。翻译失败保留原文并允许重试；生产翻译质量与数据边界仍由 `MVP-011` 独立验收。
 
+`customer-translation-v1.0.1` 明确要求 DeepSeek JSON Output 恰好返回 `source_language`、`target_language`、`message_translation`、`draft_translation`；源/目标语言复制可信输入，没有草稿时最后一项为 `null`。模型输出继续按 Pydantic 必需字段及目标语言校验，缺字段不做猜测性兼容，失败关闭并允许人工重试。
+
 ## 终态与观测
 
 关键终态包括：成功建议、无可靠知识、DLP 阻断、工具失败、模型失败、需要复核和转人工。观测至少覆盖首响应、总延迟、检索命中、拒判、结构失败、DLP、工具成功率、转人工率和 Provider 错误；日志只保存低敏聚合与标识，不保存完整输入输出。

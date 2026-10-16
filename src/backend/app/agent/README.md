@@ -74,7 +74,7 @@
 | FAQ 依据复核 | `faq-grounding-review-v1.5.0` |
 | 工具结果解释 | `tool-answer-v1.5.0` |
 | 工具依据复核 | `tool-grounding-review-v1.5.0` |
-| 客户翻译 | `customer-translation-v1.0.0` |
+| 客户翻译 | `customer-translation-v1.0.1` |
 | 营销文案 | `marketing-copy-v1.3.0` |
 | 营销独立复核 | `marketing-copy-review-v1.0.0` |
 

@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 `MVP-CONV-UI-001` R03 翻译 Prompt 候选 `81f9963`：staging 的 `14ec836` 已显示 179 个真实 TikTok 会话、双侧气泡、原文与按需翻译入口，三项公开健康为 200；真实消息首次两次 DeepSeek 翻译因 `LLM_OUTPUT_INVALID` 失败。合成探针定位旧提示词未说明输出字段；R03 明确四字段后同模型合成句返回可校验中文，受影响后端 602 passed、Ruff 与格式通过。R03 镜像尚未部署，真实译文待现场复测，见 [R03 TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R03.md)。真实发信与 production 关闭。
+
 2026-10-16 `MVP-CONV-UI-001` R02 前端依赖候选 `7ec8062`：官方 npm 生产依赖审计 0 vulnerabilities，Next.js `16.3.8`、`sharp` `0.35.5`、`source-map-js` `1.2.2`；前端契约 45 passed、本地生产构建浏览器 26 passed，lint 0 错误/2 条原有警告、typecheck/build 通过。R01 的双语 UI/后端测试证据仍有效；新镜像及真实 staging 页面尚未验收，见 [R02 TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R02.md)。
 
 2026-10-16 `MVP-CONV-UI-001` 候选 `93b8476`：后端翻译/门禁相关 150 passed，前端契约 45 passed，本地生产构建合成浏览器 26 passed；Ruff、格式、mypy、lint、typecheck、build 通过。合成浏览器确认买家左侧、卖家右侧、按需中文译文与平台发信 0 次。尚未发布后端/前端镜像、部署 staging 或对真实消息调用 DeepSeek；现场 UI/译文待验，见 [R01 TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R01.md)。真实消息写与 production 仍关闭。

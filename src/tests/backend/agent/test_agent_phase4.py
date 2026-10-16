@@ -39,6 +39,7 @@ from app.agent.reply_policy import (
 from app.agent.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
 from app.agent.schemas import AgentAction, WorkflowTerminalState
 from app.agent.translation import (
+    TRANSLATION_SYSTEM_PROMPT,
     TranslationBundleModelOutput,
     TranslationBundleResult,
     TranslationService,
@@ -1845,6 +1846,13 @@ async def test_translation_preserves_message_association_and_redacts_prompt_iden
     assert "AB123456789" not in generator.requests[0].user_prompt
     assert generator.requests[0].business_prompt_id == BusinessPromptId.TRANSLATION
     assert generator.requests[0].prompt_safety_state.value == "allowed"
+
+
+def test_translation_prompt_requires_the_validated_output_contract() -> None:
+    """JSON Output 仅保证 JSON，必须向模型明确四个校验字段。"""
+    for field in ("source_language", "target_language", "message_translation", "draft_translation"):
+        assert field in TRANSLATION_SYSTEM_PROMPT
+    assert "null" in TRANSLATION_SYSTEM_PROMPT
 
 
 @pytest.mark.asyncio

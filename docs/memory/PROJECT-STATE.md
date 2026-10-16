@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/frontend-runtime-deps-20261016
-Governance base SHA: 3aaf69f37b39dfcb8dbd5ae56970f63aba04e890
-CANDIDATE_SUBJECT_SHA: 7ec80625c4c9617a4f6f881cff4db48ac54d0a3e
+Working branch at this snapshot: fix/tiktok-translation-schema-20261016
+Governance base SHA: 14ec836a391e21374c973479897f216956ead594
+CANDIDATE_SUBJECT_SHA: 81f9963fd445d72457eda5eb378db949c94db496
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: ATTENTION — 本 worktree 有前端开发服务器生成的未跟踪 `src/frontend/AGENTS.md`、`src/frontend/CLAUDE.md`，已保护且未纳入提交；其他既有隔离物、备份不在本任务范围
+Workspace hygiene: CLEAN — 当前隔离 worktree 无未知文件；其他 worktree、备份不在本任务范围
 ```
+
+2026-10-16 `MVP-CONV-UI-001` R03 恢复点：main `14ec836` 的不可变前后端镜像已手动部署 staging，门禁、迁移与三项公开健康通过；已登录工作台显示 179 个真实会话，买家左、客服右，发送关闭。真实 DeepSeek 翻译两次因输出字段不匹配失败；同模型合成探针证明旧提示词缺少字段契约。候选 `81f9963` 明确四字段，相关 602 测试及新提示词合成探针通过，见 [R03 IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R03.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R03.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R03.md)。下一步：合并 R03、从新 main 构建后端镜像、手动 staging 部署并实测真实译文。production 不发布。
 
 2026-10-16 `MVP-CONV-UI-001` R02 恢复点：R01 UI 已由 [PR #259](https://github.com/CP11-gh/CRM/pull/259) 无 Actions squash 合入 main `3496738`。手动构建精确源码时发现既有 Next.js 运行时审计 critical/high；独立修复候选 `7ec8062` 将 Next.js/匹配配置升至 `16.3.8`，锁文件 sharp/source-map-js 修复后官方 npm 生产审计 0 漏洞，前端契约 45、浏览器 26 与构建通过，详见 [R02 IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R02.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R02.md)。用户批准当前 GitHub 登录增加 `write:packages`，OAuth 设备授权正在进行；尚未发布镜像或部署 staging。下一步：合并 R02；从最终 main 重建并推送两镜像；手动 staging validate/deploy 与真实双语页面核对。
 
