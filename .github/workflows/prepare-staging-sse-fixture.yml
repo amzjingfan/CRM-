@@ -7,7 +7,7 @@ on:
         description: Read-only check or one exact staging fixture
         required: true
         type: choice
-        options: [check_only, provision, preflight]
+        options: [check_only, provision, preflight, diagnose_auth]
       expected_source_sha:
         description: Exact reviewed main commit SHA
         required: true
@@ -63,7 +63,8 @@ jobs:
               'src/backend/scripts/load_test_sse.py',
               'src/backend/scripts/prepare_sse_staging_fixture.py',
               'src/backend/scripts/check_sse_staging_fixture.py',
-              'src/backend/scripts/preflight_sse_staging_fixture.py'
+              'src/backend/scripts/preflight_sse_staging_fixture.py',
+              'src/backend/scripts/diagnose_sse_staging_auth.py'
           )) {
             $uri = "https://api.github.com/repos/CP11-gh/CRM/contents/$($relative)?ref=$env:GITHUB_SHA"
             $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 30
@@ -85,7 +86,7 @@ jobs:
             [IO.File]::WriteAllBytes($target, $bytes)
           }
           "source_path=$sourcePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Output 'Exact G5 source and four Git blobs verified.'
+          Write-Output 'Exact G5 source and six Git blobs verified.'
 
       - name: Check staging runtime
         id: runtime
@@ -97,7 +98,7 @@ jobs:
           CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:MODE -cnotin @('check_only', 'provision', 'preflight') -or
+          if ($env:MODE -cnotin @('check_only', 'provision', 'preflight', 'diagnose_auth') -or
               $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
               ($env:MODE -cne 'provision' -and $env:CONFIRM_PROVISION) -or
               ($env:MODE -ceq 'provision' -and $env:CONFIRM_PROVISION -cne 'create-50-isolated-staging-users')) {
@@ -166,7 +167,7 @@ jobs:
               throw 'Private G5 credential directory is unsafe.'
             }
             $privateItems = @(Get-ChildItem -LiteralPath $privateDir -Force)
-            if ($env:MODE -ceq 'preflight') {
+            if ($env:MODE -cin @('preflight', 'diagnose_auth')) {
               $expectedName = 'g5-38852775454-1.json'
               if ($privateItems.Count -ne 1 -or $privateItems[0].Name -cne $expectedName -or
                   $privateItems[0].LinkType -or $privateItems[0].PSIsContainer) {
@@ -181,7 +182,7 @@ jobs:
             } elseif ($privateItems.Count -ne 0) {
               throw 'Existing G5 private material requires reconciliation before a new run.'
             }
-          } elseif ($env:MODE -ceq 'preflight') {
+          } elseif ($env:MODE -cin @('preflight', 'diagnose_auth')) {
             throw 'Expected G5 private fixture is missing.'
           }
           "docker_host=$dockerHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -191,7 +192,7 @@ jobs:
           Write-Output 'Staging Runner, immutable backend, database target, and private path verified.'
 
       - name: Read-only fixture check
-        if: inputs.mode != 'preflight'
+        if: inputs.mode == 'check_only' || inputs.mode == 'provision'
         shell: pwsh
         env:
           SOURCE_PATH: ${{ steps.source.outputs.source_path }}
@@ -293,6 +294,64 @@ jobs:
           Write-Output "G5 preflight identities=$identities/50; auth_ready=$($report.ready); running_query_limit=$limit; rate_limit_sufficient=$($limit -ge 50); access_token_ttl_minutes=$ttl; provider_calls=0; failures=$($failures -join ',')."
           if ($exitCode -ne 0 -or $report.ready -cne $true -or $limit -lt 50) {
             throw 'G5 identity, session, or rate-limit preflight failed; no SSE load was sent.'
+          }
+
+      - name: Diagnose one existing G5 token
+        if: inputs.mode == 'diagnose_auth'
+        shell: pwsh
+        env:
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
+          DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
+          CONTAINER: ${{ steps.runtime.outputs.container }}
+          PRIVATE_DIR: ${{ steps.runtime.outputs.private_dir }}
+          ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $runtimeKeySha = (& docker --host $env:DOCKER_HOST exec $env:CONTAINER python -B -c 'import hashlib; from app.shared.config.settings import get_settings; print(hashlib.sha256(get_settings().jwt_secret_key.encode()).hexdigest())' 2>$null).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runtimeKeySha -cnotmatch '^[0-9a-f]{64}$') {
+            throw 'Running JWT configuration could not be classified.'
+          }
+          $runtimeAlgorithm = (& docker --host $env:DOCKER_HOST exec $env:CONTAINER python -B -c 'from app.shared.config.settings import get_settings; print(get_settings().jwt_algorithm)' 2>$null).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runtimeAlgorithm -cnotin @('HS256', 'HS384', 'HS512')) {
+            throw 'Running JWT algorithm could not be classified.'
+          }
+          $hostFile = Join-Path $env:PRIVATE_DIR 'g5-38852775454-1.json'
+          $source = Join-Path $env:SOURCE_PATH 'src/backend'
+          $args = @(
+            '--host', $env:DOCKER_HOST, 'run', '--rm', '--pull=never', '--read-only',
+            '--network', "container:$env:CONTAINER", '--user', '0:0',
+            '--env-file', $env:ENV_FILE,
+            '-e', 'APP_ENV=staging', '-e', 'AUTH_COOKIE_SECURE=true',
+            '-e', 'LLM_ENABLED=false', '-e', 'LLM_LIVE_EVAL=false',
+            '-e', 'REAL_TIKTOK_READ_ENABLED=false', '-e', 'REAL_TIKTOK_WEBHOOK_ENABLED=false',
+            '-e', 'REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false', '-e', 'REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false',
+            '-e', 'AI_TRANSLATION_ENABLED=false', '-e', 'AI_MARKETING_ENABLED=false',
+            '-e', 'AUTO_REPLY_ENABLED=false',
+            '-e', "EXPECTED_RUNTIME_JWT_SHA256=$runtimeKeySha",
+            '-e', "EXPECTED_RUNTIME_JWT_ALGORITHM=$runtimeAlgorithm",
+            '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
+            '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
+            '--mount', "type=bind,source=$hostFile,target=/opt/crm-g5-credentials.json,readonly",
+            '--entrypoint', 'python', $env:EXPECTED_BACKEND_IMAGE,
+            '-B', '-m', 'scripts.diagnose_sse_staging_auth',
+            '--credentials-file', '/opt/crm-g5-credentials.json'
+          )
+          $output = & docker @args 2>$null
+          $exitCode = $LASTEXITCODE
+          try { $report = $output | ConvertFrom-Json -ErrorAction Stop }
+          catch { throw 'G5 auth diagnostic returned no valid summary.' }
+          if ($report.mode -cne 'diagnose_auth' -or
+              $report.token_state -cnotin @('valid', 'expired', 'signature_mismatch', 'algorithm_mismatch', 'claims_invalid', 'config_invalid', 'credentials_invalid') -or
+              $report.runtime_key_match -isnot [bool] -or
+              $report.runtime_algorithm_match -isnot [bool] -or
+              $report.auth_http_status -cnotin @('200', '401', '403', '429', 'other', 'transport_error', 'not_sent') -or
+              $report.requests_sent -cnotin @(0, 1) -or $report.provider_calls -ne 0) {
+            throw 'G5 auth diagnostic summary is invalid.'
+          }
+          Write-Output "G5 auth diagnostic token_state=$($report.token_state); runtime_key_match=$($report.runtime_key_match); runtime_algorithm_match=$($report.runtime_algorithm_match); auth_http_status=$($report.auth_http_status); requests_sent=$($report.requests_sent); provider_calls=0."
+          if ($exitCode -ne 0 -or $report.requests_sent -ne 1) {
+            throw 'G5 auth diagnostic could not classify one existing token.'
           }
 
       - name: Provision exact fixture

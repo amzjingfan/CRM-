@@ -11,7 +11,7 @@ WORKFLOW = ROOT / ".github/workflows/prepare-staging-sse-fixture.yml"
 def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> None:
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     dispatch = workflow[True]["workflow_dispatch"]["inputs"]
-    assert dispatch["mode"]["options"] == ["check_only", "provision", "preflight"]
+    assert dispatch["mode"]["options"] == ["check_only", "provision", "preflight", "diagnose_auth"]
     assert dispatch["expected_source_sha"]["required"] is True
     assert dispatch["expected_backend_image"]["required"] is True
     assert workflow["permissions"] == {"contents": "read"}
@@ -24,6 +24,7 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     readonly = steps["Read-only fixture check"]["run"]
     provision = steps["Provision exact fixture"]["run"]
     preflight = steps["Preflight 50 identities and sessions"]["run"]
+    diagnostic = steps["Diagnose one existing G5 token"]["run"]
     assert "EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA" in source
     assert "git/commits/$env:GITHUB_SHA" in source
     assert "blobSha" in source
@@ -33,6 +34,7 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     assert "Get-ChildItem -LiteralPath $privateDir -Force" in runtime
     assert "Existing G5 private material requires reconciliation" in runtime
     assert "g5-38852775454-1.json" in runtime
+    assert "'diagnose_auth'" in runtime
     assert "type=bind,source=$hostFile,target=/opt/crm-g5-credentials.json,readonly" in preflight
     assert "scripts.preflight_sse_staging_fixture" in preflight
     assert "chat_query_limit" in preflight
@@ -41,8 +43,18 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     assert "--execute" not in preflight
     assert "load_test_sse" not in preflight
     assert "if ($exitCode -ne 0 -or $report.ready -cne $true -or $limit -lt 50)" in preflight
-    assert steps["Read-only fixture check"]["if"] == "inputs.mode != 'preflight'"
+    assert steps["Read-only fixture check"]["if"] == "inputs.mode == 'check_only' || inputs.mode == 'provision'"
     assert steps["Preflight 50 identities and sessions"]["if"] == "inputs.mode == 'preflight'"
+    assert steps["Diagnose one existing G5 token"]["if"] == "inputs.mode == 'diagnose_auth'"
+    assert "scripts.diagnose_sse_staging_auth" in diagnostic
+    assert "EXPECTED_RUNTIME_JWT_SHA256" in diagnostic
+    assert "EXPECTED_RUNTIME_JWT_ALGORITHM" in diagnostic
+    assert "--env-file" in diagnostic
+    assert "--read-only" in diagnostic
+    assert "--execute" not in diagnostic
+    assert "load_test_sse" not in diagnostic
+    assert "Write-Output $output" not in diagnostic
+    assert "provider_calls=0" in diagnostic
     assert '"env_file=$envFile"' not in runtime
     assert steps["Read-only fixture check"]["env"]["ENV_FILE"] == "${{ secrets.CRM_STAGING_ENV_FILE }}"
     assert steps["Provision exact fixture"]["env"]["ENV_FILE"] == "${{ secrets.CRM_STAGING_ENV_FILE }}"

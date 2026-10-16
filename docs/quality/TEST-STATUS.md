@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 G5 R07：PR #239 双 CI 通过并合入 main `7e12314`；[staging 只读预检 #38858709981](https://github.com/CP11-gh/CRM/actions/runs/38858709981) 返回 50 次 `auth_rejected`、运行限流 10、Token 有效期 120 分钟、Provider 0，按门禁失败关闭。第一枚令牌的签名、算法、必需声明、过期及签发配置与运行配置匹配诊断已在 subject `fe65b93` 实现，最终定向 11 passed、Ruff/格式/mypy 通过；本地完整后端 1842 passed/20 skipped 属前一源码提交，最终 CI 待核对，见 [R07 TR](../reports/tests/TR-MVP-006-20261016-R07.md)；现场诊断尚未运行。G5、G6 与 production 未通过。
+
 2026-10-16 G5 R06 只读预检源码候选：subject `8493fc8` 增加 staging Runner 50 身份/会话 GET、运行限流和 Token 有效期核对；审查发现低于 50 限流仍可能误报成功，已增加失败门禁。最终聚焦 39 passed、五段 PowerShell AST 通过，完整后端 1837 passed/20 skipped 的执行范围见 [R06 TR](../reports/tests/TR-MVP-006-20261016-R06.md)。PR #239 最终 CI 与现场运行尚待复核；真实 50 并发与 production 仍未通过。
 
 2026-10-16 G5 R05 现场夹具：一次获批的 [staging 工作流 #38852775454](https://github.com/CP11-gh/CRM/actions/runs/38852775454)在 main `a202c755` 核对源码、运行镜像和数据库目标后成功创建 50 个隔离 CRM 账号及 50 个会话，Provider 0，私有凭证 manifest 保留在仓库外，见 [R05 TR](../reports/tests/TR-MVP-006-20261016-R05.md)。R01 逐一认证/会话预检尚未运行，真实限流、知识命中、安全输出及 50 并发尚无现场证据；G5、G6 与 production 未通过。

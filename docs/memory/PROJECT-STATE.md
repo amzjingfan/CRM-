@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-runner-preflight-20261016
-Governance base SHA: 281b172c9fad6a58b0bac65107e96bd58adce87c
-CANDIDATE_SUBJECT_SHA: 8493fc8f61ad08c0a46ecf2e6723359567ebc34e
+Working branch at this snapshot: feature/mvp006-g5-auth-diagnostic-20261016
+Governance base SHA: 7e12314d7620870b8fb96b076011a4634471c18a
+CANDIDATE_SUBJECT_SHA: fe65b937c2dab6701e7a24885772ef9d5db0bda6
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R07 源码候选：PR #239 的双 CI 通过并 squash 合入 main `7e12314`；一次获批的 [staging 只读预检 #38858709981](https://github.com/CP11-gh/CRM/actions/runs/38858709981) 返回 `auth_rejected=50`、限流 10、Token 有效期 120 分钟、Provider 0，门禁失败，`provision` skipped。令牌签发约 68 分钟，拒绝原因尚不能判定。用户批准有界诊断；subject `fe65b93` 增加第一枚令牌签名/算法/过期及必需声明、签发与运行密钥匹配和一次禁用代理的 `/v1/auth/me` GET 固定类别只读入口。独立审查的问题已修复，最终 11 项定向测试、Ruff/格式/mypy 通过；完整后端 1842 passed/20 skipped 属前一源码提交，见 [R07 TR](../reports/tests/TR-MVP-006-20261016-R07.md)和[审查](../reports/reviews/RR-MVP-006-20261016-R07.md)。最终 CI、合并及现场诊断尚待复核；三个索引为 `CANDIDATE_VIEW`。限流 10 仍不足真实 50 并发，G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R06 源码候选：从 main `281b172c` 增加 staging Runner 只读 `preflight`，复用已有私有凭证夹具核对 50 个身份/会话及生效限流、Token 有效期；不启动 SSE 或调用模型。独立复审发现低限流误报成功，已先红后绿修正。最终 subject `8493fc8` 聚焦 39 passed、五段 PowerShell AST 通过；完整后端 1837 passed/20 skipped 等结果见 [R06 TR](../reports/tests/TR-MVP-006-20261016-R06.md)，[审查](../reports/reviews/RR-MVP-006-20261016-R06.md)。[PR #239](https://github.com/CP11-gh/CRM/pull/239) 的最终 CI、合并及现场预检尚须复核；三个派生索引为 `CANDIDATE_VIEW`。G5 `DOING`，production No-Go。
 
@@ -285,6 +287,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 隔离 50 账号与私有凭证池已创建；先只读核对 staging 的 Access Token 有效期并通过受控 Runner 运行 R01 认证/会话预检。若 Token 已过期，先针对现有身份形成受控凭证更新设计与授权，禁止重跑 provision。随后核对限流、知识与单会话安全 `delta`；真实 50 并发与费用另行精确处理。
+1. 已建 50 个隔离账号；R06 预检的 50 次认证均失败且运行限流为 10。先合入并运行一次获批的 R07 单令牌只读诊断，依据签名、过期、运行密钥匹配及 HTTP 状态定位原因；需要更新私有凭证或 staging 限流时另做有界方案，禁止重跑 provision。随后验证 50 身份、已审批知识、单会话安全 `delta`，真实 50 并发与费用另行精确处理。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。
