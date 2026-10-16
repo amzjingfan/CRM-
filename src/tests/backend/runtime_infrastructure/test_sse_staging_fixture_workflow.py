@@ -70,6 +70,8 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     assert "g5-38852775454-1.json" not in log_diagnostic
     assert "Write-Output $lines" not in log_diagnostic
     assert "exception_types=$summary" in log_diagnostic
+    assert "[long]::TryParse([string]$property.Value" in log_diagnostic
+    assert "[long]::TryParse([string]$report.matched_events" in log_diagnostic
     assert "'src/backend/scripts/classify_staging_auth_logs.py'" in source
     assert "api_error_code" in diagnostic
     assert "'500', '502', '503', '504'" in diagnostic

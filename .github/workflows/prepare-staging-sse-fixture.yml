@@ -385,18 +385,26 @@ jobs:
           try { $report = $output | ConvertFrom-Json -ErrorAction Stop }
           catch { throw 'Fixed G5 auth log report is invalid.' }
           $allowed = @('OperationalError', 'ProgrammingError', 'IntegrityError', 'DatabaseError', 'InterfaceError', 'MissingGreenlet', 'InvalidRequestError', 'StatementError', 'UndefinedTableError', 'UndefinedColumnError', 'ConnectionDoesNotExistError', 'TimeoutError', 'ValidationError', 'ValueError', 'TypeError', 'KeyError', 'AttributeError', 'RuntimeError', 'other')
-          $categories = @($report.exception_types.PSObject.Properties.Name)
-          $total = 0
-          foreach ($category in $categories) {
-            $count = $report.exception_types.$category
-            if ($category -cnotin $allowed -or $count -isnot [long] -or $count -lt 1 -or $count -gt 1000) {
+          if ($report.exception_types -isnot [pscustomobject]) {
+            throw 'Fixed G5 auth log category is invalid.'
+          }
+          $categories = @()
+          [long]$total = 0
+          foreach ($property in $report.exception_types.PSObject.Properties) {
+            $category = [string]$property.Name
+            [long]$count = 0
+            if ($category -cnotin $allowed -or
+                -not [long]::TryParse([string]$property.Value, [ref]$count) -or
+                $count -lt 1 -or $count -gt 1000) {
               throw 'Fixed G5 auth log category is invalid.'
             }
+            $categories += $category
             $total += $count
           }
+          [long]$matched = 0
           if ($report.mode -cne 'diagnose_auth_logs' -or $report.provider_calls -ne 0 -or
-              $report.matched_events -isnot [long] -or $report.matched_events -lt 0 -or
-              $report.matched_events -gt 1000 -or $total -ne $report.matched_events) {
+              -not [long]::TryParse([string]$report.matched_events, [ref]$matched) -or
+              $matched -lt 0 -or $matched -gt 1000 -or $total -ne $matched) {
             throw 'Fixed G5 auth log summary is invalid.'
           }
           $summary = if ($categories.Count -eq 0) { 'none' } else {
