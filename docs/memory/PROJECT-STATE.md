@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-recovery-index-20261016
-Governance base SHA: fefadbde7b2fdc484a3b0da5fa23ed836ab113b9
-CANDIDATE_SUBJECT_SHA: 4bd15a14dd2fe28d96d5f9c8e92e460789ef3b2d
+Working branch at this snapshot: fix/frontend-runtime-deps-20261016
+Governance base SHA: 3aaf69f37b39dfcb8dbd5ae56970f63aba04e890
+CANDIDATE_SUBJECT_SHA: 7ec80625c4c9617a4f6f881cff4db48ac54d0a3e
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — 本 worktree 有前端开发服务器生成的未跟踪 `src/frontend/AGENTS.md`、`src/frontend/CLAUDE.md`，已保护且未纳入提交；其他既有隔离物、备份不在本任务范围
 ```
+
+2026-10-16 `MVP-CONV-UI-001` R02 恢复点：R01 UI 已由 [PR #259](https://github.com/CP11-gh/CRM/pull/259) 无 Actions squash 合入 main `3496738`。手动构建精确源码时发现既有 Next.js 运行时审计 critical/high；独立修复候选 `7ec8062` 将 Next.js/匹配配置升至 `16.3.8`，锁文件 sharp/source-map-js 修复后官方 npm 生产审计 0 漏洞，前端契约 45、浏览器 26 与构建通过，详见 [R02 IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R02.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R02.md)。用户批准当前 GitHub 登录增加 `write:packages`，OAuth 设备授权正在进行；尚未发布镜像或部署 staging。下一步：合并 R02；从最终 main 重建并推送两镜像；手动 staging validate/deploy 与真实双语页面核对。
 
 2026-10-16 G5 R19 恢复点：R17 手动包装脚本把恢复/回滚也绑到实时 main；合入证据文档会使原部署源码失去恢复资格。subject `c231165` 改为新部署仍锁当前 main，恢复/回滚核对仓库已审核历史提交、原归档或干净源码和候选 backend OCI revision；与并行合入的双语界面分支解决索引及状态冲突后，173 项相关门禁测试和 PowerShell AST 通过。见 [R19 IR](../records/implementation/IR-MVP-006-20261016-R19.md)、[TR](../reports/tests/TR-MVP-006-20261016-R19.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R19.md)。[PR #260](https://github.com/CP11-gh/CRM/pull/260) 已合入 main `fefadbde`；三份主分支索引按全部 104/107/104 条源记录核对后为 `CURRENT`。此前针对 main `6352a0dc` 的单镜像授权问题因源码和并行功能变化已失效，不能据此发布当前 main。下一步：对新的精确 main 单独取得镜像和 GHCR 权限授权；执行手动部署及默认恢复；完成知识/凭证、单会话安全输出和 50 并发门禁。当前无新私有镜像、无 G5 部署或 DeepSeek 调用；G5 `DOING`、production No-Go。
 2026-10-16 `MVP-CONV-UI-001` 恢复点：用户授权真实 TikTok 消息经现有 DeepSeek 按需翻译。subject `93b8476` 已实现买家左、客服右与原文/中文分层；单条翻译要求同店铺权限、CSRF、限流及 DLP，staging 显式开启，真实平台发信仍关闭。本地相关后端 150、前端 45、合成浏览器 26 项通过；见 [IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R01.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R01.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R01.md)。[PR #259](https://github.com/CP11-gh/CRM/pull/259) 已合入 main `3496738`，尚无新镜像或 staging 现场验证；真实页面样式和译文待后续手动发布及核对，production No-Go。
