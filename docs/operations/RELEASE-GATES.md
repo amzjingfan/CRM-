@@ -15,7 +15,7 @@
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G1 核心范围已按 2026-10-09 用户决定通过，但 G1-L、G2～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
 
-G5 R12 源码候选已为 R05 原 50 个隔离账号实现只读对账与单独确认的精确邮箱修复，保持原 manifest、失败关闭和 Provider 0；本地完整后端及隔离 PostgreSQL 验证已通过。尚无 staging 只读对账或修复成功证据，R06 的 50/50 认证失败与运行限流 10 仍为最新现场事实；G5 和 production 继续 No-Go。
+G5 R12 源码经 [PR #245](https://github.com/CP11-gh/CRM/pull/245) 双 CI 合入 main；[R13 staging 只读对账](../reports/tests/TR-MVP-006-20261016-R13.md) #38877932619 报告原 50 账号匹配、Provider 0、数据库写入 0。现场邮箱修复及重新认证均未执行；R06 的 50/50 认证失败与运行限流 10 仍为最新现场事实，G5 和 production 继续 No-Go。
 
 G4 政策证据指代修复 subject `dbb65f5` 的确定性测试见 [R22 TR](../reports/tests/TR-MVP-005-20261013-R22.md)，新镜像、部署和真实模型复测见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。单项 `condition-open-002` 通过不代表其他五项通过；G5/G6 独立验收。
 

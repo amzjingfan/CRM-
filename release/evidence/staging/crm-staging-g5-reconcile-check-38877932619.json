@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "gate": "G5-PREP",
+  "run_id": 38877932619,
+  "source_sha": "26a4e8e43d024a0b4530718b0fd2263a601650b6",
+  "running_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:1045d683a65539727c444b8990ca25768814485e9eb0e62c8cb0d91d87eec363",
+  "conclusion": "success",
+  "source_verified": true,
+  "runtime_and_database_target_verified": true,
+  "reconcile_check": {
+    "ready": true,
+    "matched_users": 50,
+    "provider_calls": 0,
+    "database_writes": 0
+  },
+  "skipped_steps": [
+    "provision",
+    "reconcile_email",
+    "preflight",
+    "diagnose_auth",
+    "diagnose_auth_logs"
+  ],
+  "g5_status": "no_go"
+}
