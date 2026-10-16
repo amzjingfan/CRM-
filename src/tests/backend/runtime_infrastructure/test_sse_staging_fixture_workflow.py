@@ -17,6 +17,8 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
         "preflight",
         "diagnose_auth",
         "diagnose_auth_logs",
+        "reconcile_check",
+        "reconcile_email",
     ]
     assert dispatch["expected_source_sha"]["required"] is True
     assert dispatch["expected_backend_image"]["required"] is True
@@ -32,6 +34,18 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     preflight = steps["Preflight 50 identities and sessions"]["run"]
     diagnostic = steps["Diagnose one existing G5 token"]["run"]
     log_diagnostic = steps["Classify fixed G5 auth error logs"]["run"]
+    reconcile = steps["Reconcile exact existing G5 fixture"]["run"]
+    assert dispatch["confirm_reconcile"]["required"] is False
+    assert "repair-50-existing-g5-emails" in reconcile
+    assert "--reconcile-check" in reconcile
+    assert "--reconcile-email" in reconcile
+    assert "--source-credentials-file" in reconcile
+    assert "g5-38852775454-1.json" in reconcile
+    assert "g5-38852775454-2.json" in reconcile
+    assert "EXPECTED_RUNTIME_JWT_SHA256" in reconcile
+    assert "LLM_ENABLED=false" in reconcile
+    assert "REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false" in reconcile
+    assert "Write-Output $output" not in reconcile
     assert "EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA" in source
     assert "git/commits/$env:GITHUB_SHA" in source
     assert "blobSha" in source

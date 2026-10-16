@@ -12,6 +12,7 @@ import pytest
 
 from app.agent_management.models import AgentConfig
 from app.audit.models import AuditLog
+from app.auth.service import build_user_view
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.shared.database.base import Permission, Role, User
@@ -68,6 +69,10 @@ def test_container_fixture_path_requires_separate_readonly_source_and_private_mo
     assert tool.container_paths_are_safe(output, source, mountinfo)
     assert not tool.container_paths_are_safe(output, source, mountinfo.replace("source ro", "source rw"))
     assert not tool.container_paths_are_safe(output, source, mountinfo.replace("credentials rw", "credentials ro"))
+    assert tool.container_paths_are_safe(
+        output, source, mountinfo.replace("credentials rw", "credentials ro"), writable=False
+    )
+    assert not tool.container_paths_are_safe(output, source, mountinfo, writable=False)
     assert not tool.container_paths_are_safe(output, source, mountinfo.splitlines()[0])
     assert not tool.container_paths_are_safe(Path("/opt/crm-g5-source/g5.json"), source, mountinfo)
 
@@ -112,6 +117,7 @@ async def test_fixture_creates_fifty_scoped_viewers_and_distinct_synthetic_sessi
     assert roles[0].permissions == [permission]
     assert configs[0].store_id == stores[0].id and configs[0].status == "enabled"
     assert len({user.id for user in users}) == 50
+    assert all(build_user_view(user).email == user.email for user in users)
     assert all(conversation.store_id == stores[0].id for conversation in conversations)
     assert len({conversation.id for conversation in conversations}) == 50
     assert len({message.conversation_id for message in messages}) == 50

@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.audit.models import AuditLog
+from app.auth.service import build_user_view
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.shared.database import models as _models  # noqa: F401
@@ -69,5 +70,84 @@ async def test_fixture_is_scoped_and_rolls_back_on_isolated_postgres(monkeypatch
             await session.rollback()
         async with sessions() as session:
             assert await session.get(Store, store_id) is None
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_reconcile_only_original_fifty_users_and_sessions_on_isolated_postgres(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert TEST_DATABASE_URL is not None
+    monkeypatch.setattr(fixture, "hash_password", lambda _password: "test-hash")
+    engine = create_async_engine(TEST_DATABASE_URL)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with sessions() as session:
+            await session.begin()
+            payload = await fixture.provision_fixture(session, uuid.uuid4())
+            manifest = fixture.validate_reconciliation_payload(payload)
+            for user_id in manifest.user_ids:
+                user = await session.get(User, user_id)
+                assert user is not None
+                user.email = user.email.replace("@example.com", "@example.invalid")
+            await session.flush()
+
+            users = await fixture.inspect_existing_reconciliation(session, manifest)
+            assert len(users) == 50
+            repaired = await fixture.reconcile_fixture_emails(session, manifest, users)
+            await session.flush()
+
+            assert len(repaired["clients"]) == 50
+            assert repaired["manifest"] == payload["manifest"]
+            assert all(build_user_view(user).email == user.email for user in users)
+            assert (
+                await session.scalar(select(func.count()).select_from(User).where(User.id.in_(manifest.user_ids))) == 50
+            )
+            assert (
+                await session.scalar(
+                    select(func.count()).select_from(Conversation).where(Conversation.store_id == manifest.store_id)
+                )
+                == 50
+            )
+            audits = (await session.scalars(select(AuditLog).where(AuditLog.store_id == manifest.store_id))).all()
+            assert {audit.action for audit in audits} == {"g5.fixture.provision", "g5.fixture.reconcile_email"}
+            await session.rollback()
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_reconcile_rejects_changed_batch_without_touching_emails(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert TEST_DATABASE_URL is not None
+    monkeypatch.setattr(fixture, "hash_password", lambda _password: "test-hash")
+    engine = create_async_engine(TEST_DATABASE_URL)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with sessions() as session:
+            await session.begin()
+            payload = await fixture.provision_fixture(session, uuid.uuid4())
+            manifest = fixture.validate_reconciliation_payload(payload)
+            for user_id in manifest.user_ids:
+                user = await session.get(User, user_id)
+                assert user is not None
+                user.email = user.email.replace("@example.com", "@example.invalid")
+            first = await session.get(User, manifest.user_ids[0])
+            assert first is not None
+            first.status = "disabled"
+            await session.flush()
+
+            with pytest.raises(ValueError, match="fixture user mismatch"):
+                await fixture.inspect_existing_reconciliation(session, manifest, lock_users=True)
+            for user_id in manifest.user_ids:
+                user = await session.get(User, user_id)
+                assert user is not None and user.email.endswith("@example.invalid")
+            assert (
+                await session.scalar(
+                    select(func.count()).select_from(AuditLog).where(AuditLog.action == "g5.fixture.reconcile_email")
+                )
+                == 0
+            )
+            await session.rollback()
     finally:
         await engine.dispose()

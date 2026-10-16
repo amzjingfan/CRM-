@@ -7,7 +7,7 @@ on:
         description: Read-only check or one exact staging fixture
         required: true
         type: choice
-        options: [check_only, provision, preflight, diagnose_auth, diagnose_auth_logs]
+        options: [check_only, provision, preflight, diagnose_auth, diagnose_auth_logs, reconcile_check, reconcile_email]
       expected_source_sha:
         description: Exact reviewed main commit SHA
         required: true
@@ -18,6 +18,10 @@ on:
         type: string
       confirm_provision:
         description: For provision only, type create-50-isolated-staging-users
+        required: false
+        type: string
+      confirm_reconcile:
+        description: For reconcile_email only, type repair-50-existing-g5-emails
         required: false
         type: string
 
@@ -95,14 +99,17 @@ jobs:
         env:
           MODE: ${{ inputs.mode }}
           CONFIRM_PROVISION: ${{ inputs.confirm_provision }}
+          CONFIRM_RECONCILE: ${{ inputs.confirm_reconcile }}
           EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
           CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:MODE -cnotin @('check_only', 'provision', 'preflight', 'diagnose_auth', 'diagnose_auth_logs') -or
+          if ($env:MODE -cnotin @('check_only', 'provision', 'preflight', 'diagnose_auth', 'diagnose_auth_logs', 'reconcile_check', 'reconcile_email') -or
               $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
               ($env:MODE -cne 'provision' -and $env:CONFIRM_PROVISION) -or
-              ($env:MODE -ceq 'provision' -and $env:CONFIRM_PROVISION -cne 'create-50-isolated-staging-users')) {
+              ($env:MODE -ceq 'provision' -and $env:CONFIRM_PROVISION -cne 'create-50-isolated-staging-users') -or
+              ($env:MODE -cne 'reconcile_email' -and $env:CONFIRM_RECONCILE) -or
+              ($env:MODE -ceq 'reconcile_email' -and $env:CONFIRM_RECONCILE -cne 'repair-50-existing-g5-emails')) {
             throw 'G5 mode, image, or exact provision confirmation is invalid.'
           }
           $runnerUid = (& id -u).Trim()
@@ -168,28 +175,39 @@ jobs:
               throw 'Private G5 credential directory is unsafe.'
             }
             $privateItems = @(Get-ChildItem -LiteralPath $privateDir -Force)
-            if ($env:MODE -cin @('preflight', 'diagnose_auth')) {
+            if ($env:MODE -cin @('preflight', 'diagnose_auth', 'reconcile_check', 'reconcile_email')) {
               $expectedName = 'g5-38852775454-1.json'
-              if ($privateItems.Count -ne 1 -or $privateItems[0].Name -cne $expectedName -or
-                  $privateItems[0].LinkType -or $privateItems[0].PSIsContainer) {
-                throw 'Expected one exact G5 private fixture for read-only preflight.'
+              $newName = 'g5-38852775454-2.json'
+              $itemNames = @($privateItems | ForEach-Object { $_.Name })
+              if ($itemNames -cnotcontains $expectedName -or
+                  @($itemNames | Where-Object { $_ -cnotin @($expectedName, $newName) }).Count -ne 0 -or
+                  ($env:MODE -cin @('reconcile_check', 'reconcile_email') -and $privateItems.Count -ne 1) -or
+                  ($env:MODE -cin @('preflight', 'diagnose_auth') -and $privateItems.Count -notin @(1, 2))) {
+                throw 'Expected exact G5 private fixture files only.'
               }
-              $privateFile = Join-Path $privateDir $expectedName
-              $fileMode = (& stat -c '%a' $privateFile).Trim()
-              if ($LASTEXITCODE -ne 0 -or (& stat -c '%u' $privateFile).Trim() -cne '1004' -or
-                  ([Convert]::ToInt32($fileMode, 8) -band 63) -ne 0) {
-                throw 'G5 private fixture permissions are invalid.'
+              foreach ($privateItem in $privateItems) {
+                $privateFile = Join-Path $privateDir $privateItem.Name
+                $fileMode = (& stat -c '%a' $privateFile).Trim()
+                if ($privateItem.LinkType -or $privateItem.PSIsContainer -or $LASTEXITCODE -ne 0 -or
+                    (& stat -c '%u' $privateFile).Trim() -cne '1004' -or
+                    ([Convert]::ToInt32($fileMode, 8) -band 63) -ne 0) {
+                  throw 'G5 private fixture permissions are invalid.'
+                }
               }
             } elseif ($env:MODE -cne 'diagnose_auth_logs' -and $privateItems.Count -ne 0) {
               throw 'Existing G5 private material requires reconciliation before a new run.'
             }
-          } elseif ($env:MODE -cin @('preflight', 'diagnose_auth')) {
+          } elseif ($env:MODE -cin @('preflight', 'diagnose_auth', 'reconcile_check', 'reconcile_email')) {
             throw 'Expected G5 private fixture is missing.'
           }
           "docker_host=$dockerHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "container=$container" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "database_sha256=$databaseSha256" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "private_dir=$privateDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          if ($env:MODE -cin @('preflight', 'diagnose_auth')) {
+            $selectedName = if ($privateItems.Count -eq 2) { 'g5-38852775454-2.json' } else { 'g5-38852775454-1.json' }
+            "private_file_name=$selectedName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
           Write-Output 'Staging Runner, immutable backend, database target, and private path verified.'
 
       - name: Read-only fixture check
@@ -244,6 +262,7 @@ jobs:
           DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
           CONTAINER: ${{ steps.runtime.outputs.container }}
           PRIVATE_DIR: ${{ steps.runtime.outputs.private_dir }}
+          PRIVATE_FILE_NAME: ${{ steps.runtime.outputs.private_file_name }}
           EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
         run: |
           $ErrorActionPreference = 'Stop'
@@ -260,7 +279,7 @@ jobs:
               $limit -lt 1 -or $limit -gt 1000 -or $ttl -lt 1) {
             throw 'G5 running settings values are invalid.'
           }
-          $hostFile = Join-Path $env:PRIVATE_DIR 'g5-38852775454-1.json'
+          $hostFile = Join-Path $env:PRIVATE_DIR $env:PRIVATE_FILE_NAME
           $source = Join-Path $env:SOURCE_PATH 'src/backend'
           $args = @(
             '--host', $env:DOCKER_HOST, 'run', '--rm', '--pull=never', '--read-only',
@@ -305,6 +324,7 @@ jobs:
           DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
           CONTAINER: ${{ steps.runtime.outputs.container }}
           PRIVATE_DIR: ${{ steps.runtime.outputs.private_dir }}
+          PRIVATE_FILE_NAME: ${{ steps.runtime.outputs.private_file_name }}
           ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
           EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
         run: |
@@ -317,7 +337,7 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or $runtimeAlgorithm -cnotin @('HS256', 'HS384', 'HS512')) {
             throw 'Running JWT algorithm could not be classified.'
           }
-          $hostFile = Join-Path $env:PRIVATE_DIR 'g5-38852775454-1.json'
+          $hostFile = Join-Path $env:PRIVATE_DIR $env:PRIVATE_FILE_NAME
           $source = Join-Path $env:SOURCE_PATH 'src/backend'
           $args = @(
             '--host', $env:DOCKER_HOST, 'run', '--rm', '--pull=never', '--read-only',
@@ -411,6 +431,91 @@ jobs:
             ($categories | Sort-Object | ForEach-Object { "$_=$($report.exception_types.$_)" }) -join ','
           }
           Write-Output "G5 auth log diagnostic matched_events=$total; exception_types=$summary; provider_calls=0."
+
+      - name: Reconcile exact existing G5 fixture
+        if: inputs.mode == 'reconcile_check' || inputs.mode == 'reconcile_email'
+        shell: pwsh
+        env:
+          MODE: ${{ inputs.mode }}
+          CONFIRM_RECONCILE: ${{ inputs.confirm_reconcile }}
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
+          DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
+          CONTAINER: ${{ steps.runtime.outputs.container }}
+          ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
+          DATABASE_SHA256: ${{ steps.runtime.outputs.database_sha256 }}
+          PRIVATE_DIR: ${{ steps.runtime.outputs.private_dir }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:MODE -ceq 'reconcile_email' -and $env:CONFIRM_RECONCILE -cne 'repair-50-existing-g5-emails') {
+            throw 'Exact G5 reconciliation confirmation is required.'
+          }
+          $runtimeKeySha = (& docker --host $env:DOCKER_HOST exec $env:CONTAINER python -B -c 'import hashlib; from app.shared.config.settings import get_settings; print(hashlib.sha256(get_settings().jwt_secret_key.encode()).hexdigest())' 2>$null).Trim()
+          $runtimeAlgorithm = (& docker --host $env:DOCKER_HOST exec $env:CONTAINER python -B -c 'from app.shared.config.settings import get_settings; print(get_settings().jwt_algorithm)' 2>$null).Trim()
+          if ($LASTEXITCODE -ne 0 -or $runtimeKeySha -cnotmatch '^[0-9a-f]{64}$' -or
+              $runtimeAlgorithm -cnotin @('HS256', 'HS384', 'HS512')) {
+            throw 'Running JWT configuration could not be verified.'
+          }
+          $source = Join-Path $env:SOURCE_PATH 'src/backend'
+          $oldName = 'g5-38852775454-1.json'
+          $newName = 'g5-38852775454-2.json'
+          $oldFile = Join-Path $env:PRIVATE_DIR $oldName
+          $newFile = Join-Path $env:PRIVATE_DIR $newName
+          if (Test-Path -LiteralPath $newFile) {
+            throw 'G5 reconciliation output already exists; retain both private manifests for manual review.'
+          }
+          $mount = "type=bind,source=$env:PRIVATE_DIR,target=/opt/crm-g5-credentials"
+          if ($env:MODE -ceq 'reconcile_check') { $mount += ',readonly' }
+          $action = if ($env:MODE -ceq 'reconcile_email') { '--reconcile-email' } else { '--reconcile-check' }
+          $args = @(
+            '--host', $env:DOCKER_HOST, 'run', '--rm', '--pull=never', '--read-only',
+            '--network', "container:$env:CONTAINER", '--user', '0:0',
+            '--env-file', $env:ENV_FILE,
+            '-e', 'APP_ENV=staging', '-e', 'AUTH_COOKIE_SECURE=true',
+            '-e', 'LLM_ENABLED=false', '-e', 'LLM_LIVE_EVAL=false',
+            '-e', 'REAL_TIKTOK_READ_ENABLED=false', '-e', 'REAL_TIKTOK_WEBHOOK_ENABLED=false',
+            '-e', 'REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false', '-e', 'REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false',
+            '-e', 'AI_TRANSLATION_ENABLED=false', '-e', 'AI_MARKETING_ENABLED=false',
+            '-e', 'AUTO_REPLY_ENABLED=false',
+            '-e', "EXPECTED_RUNTIME_JWT_SHA256=$runtimeKeySha",
+            '-e', "EXPECTED_RUNTIME_JWT_ALGORITHM=$runtimeAlgorithm",
+            '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
+            '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
+            '--mount', $mount,
+            '--entrypoint', 'python', $env:EXPECTED_BACKEND_IMAGE,
+            '-B', '-m', 'scripts.prepare_sse_staging_fixture', $action,
+            '--source-credentials-file', "/opt/crm-g5-credentials/$oldName",
+            '--credentials-file', "/opt/crm-g5-credentials/$newName",
+            '--expected-database-sha256', $env:DATABASE_SHA256
+          )
+          $output = & docker @args 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            throw 'G5 reconciliation failed or commit is unknown; retain all private manifests and stop.'
+          }
+          try { $report = $output | ConvertFrom-Json -ErrorAction Stop }
+          catch { throw 'G5 reconciliation summary is invalid; stop.' }
+          if ($env:MODE -ceq 'reconcile_check') {
+            if ($report.mode -cne 'reconcile_check' -or $report.ready -cne $true -or
+                $report.matched_users -ne 50 -or $report.provider_calls -ne 0 -or
+                (Test-Path -LiteralPath $newFile)) {
+              throw 'G5 read-only reconciliation did not prove a safe exact batch.'
+            }
+            Write-Output 'G5 reconcile_check ready; matched_users=50; provider_calls=0; database_writes=0.'
+          } else {
+            if ($report.mode -cne 'reconcile_email' -or $report.updated_users -ne 50 -or
+                $report.rotated_tokens -ne 50 -or $report.provider_calls -ne 0 -or
+                -not (Test-Path -LiteralPath $oldFile -PathType Leaf) -or
+                -not (Test-Path -LiteralPath $newFile -PathType Leaf)) {
+              throw 'G5 reconciliation result is uncertain; retain both private manifests.'
+            }
+            $newItem = Get-Item -LiteralPath $newFile -Force
+            $fileMode = (& stat -c '%a' $newFile).Trim()
+            if ($newItem.LinkType -or (& stat -c '%u' $newFile).Trim() -cne '1004' -or
+                ([Convert]::ToInt32($fileMode, 8) -band 63) -ne 0) {
+              throw 'G5 new private manifest permissions are uncertain; retain both files.'
+            }
+            Write-Output 'G5 exact fixture reconciled; updated_users=50; rotated_tokens=50; provider_calls=0; original_manifest=retained.'
+          }
 
       - name: Provision exact fixture
         if: inputs.mode == 'provision'

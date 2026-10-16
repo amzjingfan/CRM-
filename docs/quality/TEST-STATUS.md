@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 G5 R12 源码候选：完整后端 1858 passed/3 skipped；隔离 PostgreSQL 夹具 3 passed，定向 16 passed；Ruff、格式、mypy 与工作流八段 PowerShell AST 通过。`@example.invalid` 在真实 `/auth/me` 路径触发 `ValidationError`/500 的本地复现已转为测试；新夹具改用有效邮箱格式。只读 `reconcile_check` 与需要精确确认的 `reconcile_email` 已分离，后者只针对 R05 原 50 账号、独占新私有凭证文件，保留原 manifest。尚未合入 main、未运行 staging 只读对账或写入；50 身份、限流与真实负载仍未通过，G5、production No-Go。
+
 2026-10-16 G5 R11：[固定窗日志回查 #38866573949](https://github.com/CP11-gh/CRM/actions/runs/38866573949) 从 main `fafbac740` 成功执行，但只输出 `matched_events=0`、Provider 0；不能据此确认 HTTP 500 的异常类型。原夹具邮箱 `@example.invalid` 被当前 `EmailStr` 本地复现拒绝，属于待现场核实的原因；[R11 TR](../reports/tests/TR-MVP-006-20261016-R11.md)与[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-log-recheck-38866573949.json)已记录。50 身份与会话、限流 50、安全输出及真实 50 并发仍未通过，G5、production No-Go。
 
 2026-10-16 G5 R10：[固定窗只读探针 #38864445483](https://github.com/CP11-gh/CRM/actions/runs/38864445483)在报告计数类型检查处失败，未产生异常类型结论；[低敏失败证据](../../release/evidence/staging/crm-staging-g5-auth-log-probe-38864445483.json)。修复 subject 9b478fb 聚焦 3 passed、七段 AST 与本机模拟 JSON 校验通过，PR #243 双 CI 通过并合入 main `fafbac740`；现场回查结果见 R11。G5、production No-Go。

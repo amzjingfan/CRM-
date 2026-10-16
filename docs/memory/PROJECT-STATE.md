@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-log-recheck-20261016
-Governance base SHA: fafbac740f6ef3a51620bb2ca2cd32956fff5817
-CANDIDATE_SUBJECT_SHA: fafbac740f6ef3a51620bb2ca2cd32956fff5817
+Working branch at this snapshot: fix/mvp006-g5-fixture-email-20261016
+Governance base SHA: fd86da6d06bf749d6324032f7199447c4d9a38d8
+CANDIDATE_SUBJECT_SHA: READ_AT_GATE
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R12 源码候选：本地 `/auth/me` 复现 R05 夹具 `@example.invalid` 会触发 `ValidationError`/500；未来夹具改为 `@example.com`。原 50 账号的只读精确对账和单独确认的修复入口已完成，保留原仓库外 manifest，修复时独占新文件并轮换 50 个令牌；定向、隔离 PostgreSQL、完整后端、Ruff/格式/mypy 与 PowerShell AST 通过。尚未合入 main、未运行 staging 对账或修复。下一步先完成 PR/CI 并运行一次只读对账；现场写入另按精确范围处理。50 身份、限流 50、单会话安全输出和真实并发均未通过，G5 DOING、production No-Go。
 
 2026-10-16 G5 R11：main `fafbac740` 的固定窗只读日志回查 #38866573949 成功执行，但 `matched_events=0`，没有异常类型证据；认证 GET、预检、provision 均跳过，Provider 0。[R11 TR](../reports/tests/TR-MVP-006-20261016-R11.md)和[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-log-recheck-38866573949.json)已保留。本地重现 `@example.invalid` 被 `UserView.email` 拒绝，仅作为待现场验证的根因线索；50 身份、限流 50、安全输出与真实负载仍未通过，G5 DOING、production No-Go。
 
