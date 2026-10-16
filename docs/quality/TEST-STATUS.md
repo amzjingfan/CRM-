@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 `MVP-CONV-SYNC-001` staging 只读现场：授权 TikTok 会话 179 个、可见消息 2018 条，工作台接口 6 页返回 179 个不重复会话；截图目标平台 29 条原始历史中的 25 条可见消息全部在工作台详情。R02 前端 45 契约测试、24 浏览器回归通过，1 项缓存配置测试跳过，类型检查与构建通过；PR #250 双 CI 合入。用户授权的手动 staging validate/deploy 使用固定源码包和不可变摘要均通过；新版前端运行且三个健康接口 200。浏览器现场显示真实会话总数 179、列表由 30 条加载至 60 条、目标历史及角色标签；回复输入与发送按钮禁用。真实消息写关闭，G2/G3 未通过；完整范围见 [R03 TR](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R03.md)，production No-Go。
+
 2026-10-16 G5 R16 源码：subject `c3439013` 新增原隔离店铺的合成 FAQ/问题和短期凭证续期精确门禁；最终完整后端 `1892 passed, 27 skipped`，隔离 PostgreSQL 4 passed，Ruff、格式、mypy、工作流 PowerShell AST 通过；[PR #251](https://github.com/CP11-gh/CRM/pull/251) 前后端 CI #38890253045 均通过并 squash 合入 main `5d6c0298`，见[R16 TR](../reports/tests/TR-MVP-006-20261016-R16.md)。未在 staging 写入内容、轮换凭证、发布镜像或调用模型；R14 的限流 10 仍是最近明确现场值。G5、production No-Go。
 
 2026-10-16 G5 R14：用户授权的精确邮箱修复 [#38878859064](https://github.com/CP11-gh/CRM/actions/runs/38878859064) 更新原 50 用户、轮换 50 令牌并保留旧 manifest，`provision` skipped、Provider 0。紧接的只读[预检 #38878976347](https://github.com/CP11-gh/CRM/actions/runs/38878976347) 为 50/50 身份及会话可用、失败类别为空；生效单 IP 限流 10 小于 50，工作流按门禁失败关闭，未发送 SSE 负载。[R14 TR](../reports/tests/TR-MVP-006-20261016-R14.md)及[低敏证据](../../release/evidence/staging/crm-staging-g5-fixture-repair-20261016.json)已记录。G5、production No-Go。

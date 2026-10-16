@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -101,5 +101,6 @@ View: `CURRENT`
 | RR-MVP-006-20261016-R12 | MVP-006 | R12 | APPROVE | `54824186fcc85eb19b12b029975be039da3d8ced` | exact-batch / tenant-scope / original-manifest / auth-signing / read-only-check / commit-unknown / no-provider | 2026-10-16T16:57:00+08:00 | [`RR-MVP-006-20261016-R12.md`](RR-MVP-006-20261016-R12.md) |
 | RR-MVP-006-20261016-R14 | MVP-006 | R14 | APPROVE | `1950a0b26ddd28fda14679eaef82fd785ca20113` | authorization / exact-batch / original-manifest / private-credentials / preflight-read-only / rate-limit-fail-closed | 2026-10-16T17:14:00+08:00 | [`RR-MVP-006-20261016-R14.md`](RR-MVP-006-20261016-R14.md) |
 | RR-MVP-CONV-SYNC-001-20261016-R01 | MVP-CONV-SYNC-001 | R01 | APPROVE | `9c9e805f25fee45d51dbd0e96a60a07baab8b326` | tenant-isolation / idempotency / read-only-api / sensitive-logging / deployment-switches / recovery | 2026-10-16T17:54:00+08:00 | [`RR-MVP-CONV-SYNC-001-20261016-R01.md`](RR-MVP-CONV-SYNC-001-20261016-R01.md) |
+| RR-MVP-CONV-SYNC-001-20261016-R02 | MVP-CONV-SYNC-001 | R02 | APPROVE | `7fe97ea113b49925abc24a8438fda09e902ef519` | list-pagination / stale-response / tenant-filter / read-only-boundary / rollback | 2026-10-16T19:03:00+08:00 | [`RR-MVP-CONV-SYNC-001-20261016-R02.md`](RR-MVP-CONV-SYNC-001-20261016-R02.md) |
 | RR-MVP-006-20261016-R15 | MVP-006 | R15 | APPROVE | `d00927d33c55ee4264d6a13549de2faa936d31a5` | staging-scope / immutable-images / capability-isolation / runtime-verification / secrets / recovery / authorization | 2026-10-16T18:12:00+08:00 | [`RR-MVP-006-20261016-R15.md`](RR-MVP-006-20261016-R15.md) |
 | RR-MVP-006-20261016-R16 | MVP-006 | R16 | APPROVE | `c3439013e74271c8e132b53b1866b8b9eb1c64b2` | exact-batch / tenant-isolation / transactional-approval / temporary-permission / private-credentials / no-provider-call / recovery | 2026-10-16T18:49:00+08:00 | [`RR-MVP-006-20261016-R16.md`](RR-MVP-006-20261016-R16.md) |

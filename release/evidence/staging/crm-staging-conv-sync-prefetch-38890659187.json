@@ -1,0 +1,17 @@
+{
+  "evidence_type": "staging_rollback_image_prefetch",
+  "status": "passed",
+  "environment": "staging",
+  "image_count": 6,
+  "image_references": [
+    "ghcr.io/cp11-gh/crm-backend@sha256:26ad09bdce3e11a79a1e8baa3453e5b1446f4ef7596abc52e96a08ce10789cb1",
+    "ghcr.io/cp11-gh/crm-frontend@sha256:d0fc23c22cde2619ddcca095f6d48ae8a6121d851fdeb23878d2e596067e0fbb",
+    "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "ghcr.io/cp11-gh/crm-backend@sha256:26ad09bdce3e11a79a1e8baa3453e5b1446f4ef7596abc52e96a08ce10789cb1",
+    "ghcr.io/cp11-gh/crm-frontend@sha256:134678aaa0b6de0058a4747a145fb68bad7324b92921887a09c005b91cd62140",
+    "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  ],
+  "service_mutation": false,
+  "production_release": false,
+  "observed_at_utc": "2026-10-16T11:03:15.2139084Z"
+}
