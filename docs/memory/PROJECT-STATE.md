@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp006-g5-manual-recovery-20261016
-Governance base SHA: 6352a0dc12bc1df0a84982876e22b7f6b3fe4f51
+Working branch at this snapshot: docs/mvp006-g5-recovery-index-20261016
+Governance base SHA: fefadbde7b2fdc484a3b0da5fa23ed836ab113b9
 CANDIDATE_SUBJECT_SHA: 4bd15a14dd2fe28d96d5f9c8e92e460789ef3b2d
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — 本 worktree 有前端开发服务器生成的未跟踪 `src/frontend/AGENTS.md`、`src/frontend/CLAUDE.md`，已保护且未纳入提交；其他既有隔离物、备份不在本任务范围
 ```
 
-2026-10-16 G5 R19 候选恢复点：R17 手动包装脚本把恢复/回滚也绑到实时 main；合入证据文档会使原部署源码失去恢复资格。subject `c231165` 改为新部署仍锁当前 main，恢复/回滚核对仓库已审核历史提交、原归档或干净源码和候选 backend OCI revision；36 项相关测试、PowerShell AST、Ruff 与格式通过。见 [R19 IR](../records/implementation/IR-MVP-006-20261016-R19.md)、[TR](../reports/tests/TR-MVP-006-20261016-R19.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R19.md)。三个任务分支索引为 `CANDIDATE_VIEW`。上一轮要求发布 main `6352a0dc` 单镜像的授权问题随源码变更将失效；不能用它发布新 main。当前无新私有镜像、无 G5 部署或 DeepSeek 调用。下一步：合并恢复修复；对新的精确 main 单独取得镜像和 GHCR 权限授权；执行手动部署、知识/凭证、单会话和 50 并发及默认恢复门禁。G5 `DOING`、production No-Go。
+2026-10-16 G5 R19 恢复点：R17 手动包装脚本把恢复/回滚也绑到实时 main；合入证据文档会使原部署源码失去恢复资格。subject `c231165` 改为新部署仍锁当前 main，恢复/回滚核对仓库已审核历史提交、原归档或干净源码和候选 backend OCI revision；与并行合入的双语界面分支解决索引及状态冲突后，173 项相关门禁测试和 PowerShell AST 通过。见 [R19 IR](../records/implementation/IR-MVP-006-20261016-R19.md)、[TR](../reports/tests/TR-MVP-006-20261016-R19.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R19.md)。[PR #260](https://github.com/CP11-gh/CRM/pull/260) 已合入 main `fefadbde`；三份主分支索引按全部 104/107/104 条源记录核对后为 `CURRENT`。此前针对 main `6352a0dc` 的单镜像授权问题因源码和并行功能变化已失效，不能据此发布当前 main。下一步：对新的精确 main 单独取得镜像和 GHCR 权限授权；执行手动部署及默认恢复；完成知识/凭证、单会话安全输出和 50 并发门禁。当前无新私有镜像、无 G5 部署或 DeepSeek 调用；G5 `DOING`、production No-Go。
 2026-10-16 `MVP-CONV-UI-001` 恢复点：用户授权真实 TikTok 消息经现有 DeepSeek 按需翻译。subject `93b8476` 已实现买家左、客服右与原文/中文分层；单条翻译要求同店铺权限、CSRF、限流及 DLP，staging 显式开启，真实平台发信仍关闭。本地相关后端 150、前端 45、合成浏览器 26 项通过；见 [IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R01.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R01.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R01.md)。[PR #259](https://github.com/CP11-gh/CRM/pull/259) 已合入 main `3496738`，尚无新镜像或 staging 现场验证；真实页面样式和译文待后续手动发布及核对，production No-Go。
 
 2026-10-16 G5 R18 现场只读恢复点：匹配 staging 的 SSH 密钥可用 `root@192.168.110.210` 登录，再切换到 UID 1004 的 `crmdeploy`；直接 `crmdeploy` SSH 仍拒绝。main `aa5f5f35` 的 7,833,600 字节源码包本机/服务器 SHA-256 均为 `24401423…ae5bdb6f56b6`，全部解包内容校验通过。从受审源码目录运行一次手动 `CheckOnly` 返回 ready、`service_mutation=false`；第一次从 `/root` 切换用户因工作目录权限在 Docker 操作前失败。见 [R18 IR](../records/implementation/IR-MVP-006-20261016-R18.md)、[TR](../reports/tests/TR-MVP-006-20261016-R18.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R18.md)及[低敏摘要](../../release/evidence/staging/crm-staging-g5-manual-check-20261016.json)。[PR #257](https://github.com/CP11-gh/CRM/pull/257) 已合入 main `04e711ef`，三个主分支源记录/索引经逐项核对为 `CURRENT`；Codex 附件登记仍因本聊天身份数超过 100 返回 `UI_UNAVAILABLE`，PR 链接可访问。下一步：准备并获准发布 R16 后端镜像；用该摘要手动预取/validate/deploy 并验证恢复；完成合成内容、有效凭证、单会话安全输出和 50 并发。未改服务、未调用 DeepSeek，G5 `DOING`、production No-Go。
