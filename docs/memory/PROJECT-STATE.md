@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-staging-fixture-20261016
-Governance base SHA: a99fb4db815ada2da30302d7dd730b8324bd3ef4
+Working branch at this snapshot: docs/mvp006-g5-fixture-index-20261016
+Governance base SHA: 44404401812ec72735eba5b28728a3f8f5cbe158
 CANDIDATE_SUBJECT_SHA: dae10833ba1c2692b0ca175889372641c8408e30
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R02 恢复点：用户仅批准代码、确定性测试和清理方案；subject `dae1083` 增加 staging Linux 隔离 50 账号/会话准备工具，绑定独立核对的 DB 指纹、仓库外私有凭证和提交未知时 manifest 对账。完整后端 1827 passed/20 skipped，隔离 PostgreSQL 新增测试通过，独立审查无剩余阻断项，见 [R02 IR](../records/implementation/IR-MVP-006-20261016-R02.md)、[TR](../reports/tests/TR-MVP-006-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R02.md)。尚未创建 staging 数据；50 条合成会话没有已审批向量化 FAQ，不能保证安全 `delta`。staging SSH 当前认证失败，现场写入和预检尚无入口；G5 `DOING`，production No-Go。
+2026-10-16 G5 R02 恢复点：[PR #232](https://github.com/CP11-gh/CRM/pull/232) 前后端 CI 通过并合入 main `4440440`；从该 main 核对 IR/TR/RR 各 86 份源记录，三个派生索引在本收尾分支恢复为 `CURRENT`。用户仅批准代码、确定性测试和清理方案；subject `dae1083` 增加 staging Linux 隔离 50 账号/会话准备工具，绑定独立核对的 DB 指纹、仓库外私有凭证和提交未知时 manifest 对账。完整后端 1827 passed/20 skipped，隔离 PostgreSQL 新增测试通过，独立审查无剩余阻断项，见 [R02 IR](../records/implementation/IR-MVP-006-20261016-R02.md)、[TR](../reports/tests/TR-MVP-006-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R02.md)。尚未创建 staging 数据；50 条合成会话没有已审批向量化 FAQ，不能保证安全 `delta`。staging SSH 当前认证失败，现场写入和预检尚无入口；G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R01 恢复点：获批的零模型调用只读预检已在 subject `9ca964b` 完成。它只核对仓库外 50 个不同授权 CRM 用户、对应会话可读及声明的单 IP 限流容量，失败关闭并输出低敏计数；本地确定性验证见 [R01 TR](../reports/tests/TR-MVP-006-20261016-R01.md)，独立只读复审见 [R01 RR](../reports/reviews/RR-MVP-006-20261016-R01.md)。[PR #230](https://github.com/CP11-gh/CRM/pull/230) 前后端 CI 通过并 squash 合入 main `b66ecd0`；从该 main 核对 IR/TR/RR 各 85 份源记录，本收尾分支将三个派生索引恢复为 `CURRENT`。目前没有已确认的 50 账号凭证池，未运行现场预检或真实并发；G5、G6、G8 与 production 未放行。
 
