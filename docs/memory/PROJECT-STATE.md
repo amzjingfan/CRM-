@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-manual-staging-20261016
-Governance base SHA: b27293365ac3700731aa39494b45080a3fa932df
+Working branch at this snapshot: docs/mvp006-g5-manual-index-20261016
+Governance base SHA: 9756557909a23435a06e0d00c9eb18576acae08d
 CANDIDATE_SUBJECT_SHA: de1e3a10be9346b9d9f348563f98d5a6c45656af
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R17 候选恢复点：用户决定不再运行 GitHub Actions，并批准 GitHub 凭据加 staging 手动路径。subject `de1e3a1` 增加 Rootless 手动入口，核对远端 main 完整 SHA、归档或干净 clone、六个不可变镜像摘要、backend OCI revision，复用预取、validate/deploy、默认恢复及上一版回滚门禁。本地 9 项定向测试、PowerShell AST、Ruff、格式和 mypy 通过；见 [R17 IR](../records/implementation/IR-MVP-006-20261016-R17.md)、[TR](../reports/tests/TR-MVP-006-20261016-R17.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R17.md)。本分支三个索引为 `CANDIDATE_VIEW`。本轮未发布镜像、未访问 staging、未调用 DeepSeek；本机 SSH 公钥被拒，本机 GitHub 凭据仅有 `read:packages`。下一步：合并经本地门禁的手动入口；取得可用 staging 主机身份并发布经单独授权的 R16 新后端镜像；完成现场 G5 内容/凭证、单会话安全输出和 50 并发及默认恢复。G5 `DOING`、production No-Go。
+2026-10-16 G5 R17 恢复点：用户决定不再运行 GitHub Actions，并批准 GitHub 凭据加 staging 手动路径。subject `de1e3a1` 增加 Rootless 手动入口，核对远端 main 完整 SHA、归档或干净 clone、六个不可变镜像摘要、backend OCI revision，复用预取、validate/deploy、默认恢复及上一版回滚门禁。本地 9 项定向测试、PowerShell AST、Ruff、格式和 mypy 通过；见 [R17 IR](../records/implementation/IR-MVP-006-20261016-R17.md)、[TR](../reports/tests/TR-MVP-006-20261016-R17.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R17.md)。[PR #255](https://github.com/CP11-gh/CRM/pull/255) 已 squash 合入 main `97565579`，未运行 GitHub Actions；三个主分支源记录/索引逐项核对后为 `CURRENT`。Codex PR 附件登记再次返回 `UI_UNAVAILABLE`（本聊天附件身份数超过 100），GitHub PR 链接可访问。本轮未发布镜像、未访问 staging、未调用 DeepSeek；本机 SSH 公钥被拒，本机 GitHub 凭据仅有 `read:packages`。下一步：取得可用 staging 主机身份并发布经单独授权的 R16 新后端镜像；手动预取、validate、部署并核对恢复；完成现场 G5 内容/凭证、单会话安全输出和 50 并发及默认恢复。G5 `DOING`、production No-Go。
 
 2026-10-16 G5 R16 当前恢复点：R15 受控窗口源码已由 PR #249 合入 main。用户批准的 R16 代码阶段在 subject `c3439013` 增加原隔离店铺 50 会话合成 FAQ/提问与短期凭证续期的精确门禁；[PR #251](https://github.com/CP11-gh/CRM/pull/251) 双 CI 通过并 squash 合入 main `5d6c0298`。本地完整后端 `1892 passed, 27 skipped`、隔离 PostgreSQL 4 passed，见[R16 TR](../reports/tests/TR-MVP-006-20261016-R16.md)、[IR](../records/implementation/IR-MVP-006-20261016-R16.md)与[RR](../reports/reviews/RR-MVP-006-20261016-R16.md)。三份主分支索引逐项核对源记录 99/101/99，均为 `CURRENT`。Codex PR 附件登记返回 `UI_UNAVAILABLE`（本聊天附件身份数超过 100）；GitHub PR 链接可访问。R14 的 50/50 身份与会话通过、限流 10 仍是最近明确现场事实；新的内容、向量 ready 和凭证有效性尚未在 staging 验证。下一步三项：经精确授权发布并部署含本次知识事务接口的后端；分别执行受控内容准备和单会话安全核对；完成 50 并发与默认配置恢复验收。G5 DOING、production No-Go。
 
