@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-manual-check-20261016
-Governance base SHA: aa5f5f352155ec132667038e5d34f02e9112abc8
+Working branch at this snapshot: docs/mvp006-g5-manual-check-index-20261016
+Governance base SHA: 04e711eff771aa1859f21d0c38a19d6457b9c869
 CANDIDATE_SUBJECT_SHA: aa5f5f352155ec132667038e5d34f02e9112abc8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R18 现场只读恢复点：匹配 staging 的 SSH 密钥可用 `root@192.168.110.210` 登录，再切换到 UID 1004 的 `crmdeploy`；直接 `crmdeploy` SSH 仍拒绝。当前 main `aa5f5f35` 的 7,833,600 字节源码包本机/服务器 SHA-256 均为 `24401423…ae5bdb6f56b6`，全部解包内容校验通过。从受审源码目录运行一次手动 `CheckOnly` 返回 ready、`service_mutation=false`；第一次从 `/root` 切换用户因工作目录权限在 Docker 操作前失败。见 [R18 IR](../records/implementation/IR-MVP-006-20261016-R18.md)、[TR](../reports/tests/TR-MVP-006-20261016-R18.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R18.md)及[低敏摘要](../../release/evidence/staging/crm-staging-g5-manual-check-20261016.json)。本分支索引为 `CANDIDATE_VIEW`。下一步：准备并获准发布 R16 后端镜像；用该摘要手动预取/validate/deploy 并验证恢复；完成合成内容、有效凭证、单会话安全输出和 50 并发。未改服务、未调用 DeepSeek，G5 `DOING`、production No-Go。
+2026-10-16 G5 R18 现场只读恢复点：匹配 staging 的 SSH 密钥可用 `root@192.168.110.210` 登录，再切换到 UID 1004 的 `crmdeploy`；直接 `crmdeploy` SSH 仍拒绝。main `aa5f5f35` 的 7,833,600 字节源码包本机/服务器 SHA-256 均为 `24401423…ae5bdb6f56b6`，全部解包内容校验通过。从受审源码目录运行一次手动 `CheckOnly` 返回 ready、`service_mutation=false`；第一次从 `/root` 切换用户因工作目录权限在 Docker 操作前失败。见 [R18 IR](../records/implementation/IR-MVP-006-20261016-R18.md)、[TR](../reports/tests/TR-MVP-006-20261016-R18.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R18.md)及[低敏摘要](../../release/evidence/staging/crm-staging-g5-manual-check-20261016.json)。[PR #257](https://github.com/CP11-gh/CRM/pull/257) 已合入 main `04e711ef`，三个主分支源记录/索引经逐项核对为 `CURRENT`；Codex 附件登记仍因本聊天身份数超过 100 返回 `UI_UNAVAILABLE`，PR 链接可访问。下一步：准备并获准发布 R16 后端镜像；用该摘要手动预取/validate/deploy 并验证恢复；完成合成内容、有效凭证、单会话安全输出和 50 并发。未改服务、未调用 DeepSeek，G5 `DOING`、production No-Go。
 
 2026-10-16 G5 R17 恢复点：用户决定不再运行 GitHub Actions，并批准 GitHub 凭据加 staging 手动路径。subject `de1e3a1` 增加 Rootless 手动入口，核对远端 main 完整 SHA、归档或干净 clone、六个不可变镜像摘要、backend OCI revision，复用预取、validate/deploy、默认恢复及上一版回滚门禁。本地 9 项定向测试、PowerShell AST、Ruff、格式和 mypy 通过；见 [R17 IR](../records/implementation/IR-MVP-006-20261016-R17.md)、[TR](../reports/tests/TR-MVP-006-20261016-R17.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R17.md)。[PR #255](https://github.com/CP11-gh/CRM/pull/255) 已 squash 合入 main `97565579`，未运行 GitHub Actions；三个主分支源记录/索引逐项核对后为 `CURRENT`。Codex PR 附件登记再次返回 `UI_UNAVAILABLE`（本聊天附件身份数超过 100），GitHub PR 链接可访问。本轮未发布镜像、未访问 staging、未调用 DeepSeek；本机 SSH 公钥被拒，本机 GitHub 凭据仅有 `read:packages`。下一步：取得可用 staging 主机身份并发布经单独授权的 R16 新后端镜像；手动预取、validate、部署并核对恢复；完成现场 G5 内容/凭证、单会话安全输出和 50 并发及默认恢复。G5 `DOING`、production No-Go。
 
