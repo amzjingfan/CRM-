@@ -59,6 +59,7 @@ $DisabledCapabilityVariables = @(
     "ALLOW_MOCK_PLATFORM_ADAPTERS",
     "REAL_TIKTOK_READ_ENABLED",
     "REAL_TIKTOK_WEBHOOK_ENABLED",
+    "TIKTOK_CONVERSATION_SYNC_ENABLED",
     "REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
     "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
     "LLM_ENABLED",
@@ -141,6 +142,9 @@ function Assert-EnvironmentContract {
         }
     }
     foreach ($name in $DisabledCapabilityVariables) {
+        if ($name -eq "TIKTOK_CONVERSATION_SYNC_ENABLED" -and -not $Values.ContainsKey($name)) {
+            continue
+        }
         if (-not $Values.ContainsKey($name) -or $Values[$name].Trim().ToLowerInvariant() -ne "false") {
             throw "Staging rollback requires $name=false."
         }

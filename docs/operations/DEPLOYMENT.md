@@ -36,6 +36,8 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 G2 的 staging 真实读取与 Webhook 使用部署门禁显式参数 `enable_tiktok_webhook_read=true`。门禁在原四个 Compose 文件之后叠加 `src/compose/docker-compose.rootless-staging-webhook.yml`，只允许 backend 和 worker 的 `REAL_TIKTOK_READ_ENABLED`、`REAL_TIKTOK_WEBHOOK_ENABLED` 为 `true`；其他进程与消息写入、高风险写入、自动回复仍必须为 `false`。仓库外 env 文件继续保留所有能力开关为 `false`，不靠修改凭据文件启用能力。默认 validate/deploy 和 rollback 不叠加该文件；以相同受审镜像摘要再次执行默认 deploy 可恢复关闭状态。每次切换须先记录当前镜像、Compose 合并配置、健康和代理保护基线，再核对门禁低敏证据的模式与叠加文件摘要。此配置契约不代表 G2 已真实投递通过。
 
+`MVP-CONV-SYNC-001` 在同一只读叠加文件内仅为 worker 启用 `TIKTOK_CONVERSATION_SYNC_ENABLED=true`，默认/production Compose 固定为 `false`，其他进程仍为 `false`。现有 Webhook Worker 每 `TIKTOK_CONVERSATION_SYNC_POLL_SECONDS`（默认 900 秒，允许 60～86400 秒）以独立数据库会话启动一次同步，不阻塞 Webhook 认领，也不重叠启动下一轮。它轮询已连接且有 `seller.customer_service` Scope 的 TikTok 渠道；首次逐页回填会话与历史，之后跳过最新消息 ID 未变的会话。失败按店铺隔离并在下轮重试，不自动发送消息。staging 可在精确核对内部渠道及店铺 UUID 后运行 `python -m scripts.sync_tiktok_conversations --channel-id <UUID> --store-id <UUID>` 发起一次只读平台回填，命令仅输出低敏计数。回退到默认叠加文件即关闭周期同步；已入库真实会话不自动删除。
+
 G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-backend-image.yml` 的 `staging-backend` 确认词，仅发布 `crm-backend` 并核对不可变摘要和压缩层大小；沿用已验证的前端和检索摘要，避免重建大体积检索镜像。私有镜像发布仍按独立授权边界执行，发布后还需 staging 预取、受控部署和真实 Webhook 验收。
 
 2026-10-10 G3 中断后安全补丁沿用这一单后端发布路径：源 main `6e975148650bfd8e6cb0b7980b86554345caf5d0`，候选 backend `0a07365e...`，旧版 `b889525f...`。六角色预取和 G2 只读/Webhook 模式预检、部署通过；前端/检索摘要不变，普通消息真实写保持关闭。低敏 artifact ID、文件摘要、固定出口和健康结果见[现场记录](../../release/evidence/staging/crm-staging-g3-backend-rollout-20261010.json)。本轮未执行真实消息发送或实际切回；G3 仍须独立验收。

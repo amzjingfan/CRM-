@@ -3,6 +3,7 @@ x-rootless-staging-runtime: &rootless-staging-runtime
   APP_ENV: "staging"
   REAL_TIKTOK_READ_ENABLED: "false"
   REAL_TIKTOK_WEBHOOK_ENABLED: "false"
+  TIKTOK_CONVERSATION_SYNC_ENABLED: "false"
   REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "false"
   REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"
   LLM_ENABLED: "false"

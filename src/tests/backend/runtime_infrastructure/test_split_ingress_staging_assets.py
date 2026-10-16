@@ -45,13 +45,16 @@ def test_g2_webhook_overlay_only_grants_read_and_receive_to_backend_and_worker()
     assert set(services) == {"backend", "worker"}
     for service in services.values():
         assert set(service) == {"environment"}
-        assert service["environment"] == {
+        expected = {
             "REAL_TIKTOK_READ_ENABLED": "true",
             "REAL_TIKTOK_WEBHOOK_ENABLED": "true",
             "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": "false",
             "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": "false",
             "AUTO_REPLY_ENABLED": "false",
         }
+        if service is services["worker"]:
+            expected["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
+        assert service["environment"] == expected
 
 
 def test_staging_backend_image_can_be_published_without_rebuilding_large_retrieval_image() -> None:

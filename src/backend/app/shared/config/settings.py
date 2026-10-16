@@ -167,6 +167,10 @@ class Settings(BaseSettings):
     tiktok_egress_ip: str | None = Field(default=None, validation_alias="TIKTOK_EGRESS_IP")
     tiktok_egress_proxy_url: str | None = Field(default=None, validation_alias="TIKTOK_EGRESS_PROXY_URL")
     real_tiktok_read_enabled: bool = Field(default=False, validation_alias="REAL_TIKTOK_READ_ENABLED")
+    tiktok_conversation_sync_enabled: bool = Field(default=False, validation_alias="TIKTOK_CONVERSATION_SYNC_ENABLED")
+    tiktok_conversation_sync_poll_seconds: float = Field(
+        default=900.0, ge=60, le=86_400, validation_alias="TIKTOK_CONVERSATION_SYNC_POLL_SECONDS"
+    )
     real_tiktok_webhook_enabled: bool = Field(default=False, validation_alias="REAL_TIKTOK_WEBHOOK_ENABLED")
     real_tiktok_message_write_enabled: bool = Field(
         default=False,

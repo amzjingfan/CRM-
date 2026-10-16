@@ -141,6 +141,12 @@ class TikTokConversationParticipant(TikTokModel):
     role: str = Field(min_length=1, max_length=30)
 
 
+class TikTokLatestMessage(TikTokModel):
+    """会话列表的最新消息标识，用于跳过未变化会话。"""
+
+    id: str = Field(min_length=1, max_length=200, pattern=r"^\d+$")
+
+
 class TikTokConversation(TikTokModel):
     """Get Conversations 202309 的会话摘要。"""
 
@@ -149,6 +155,7 @@ class TikTokConversation(TikTokModel):
     unread_count: int = Field(default=0, ge=0)
     can_send_message: bool = False
     participants: list[TikTokConversationParticipant] = Field(default_factory=list)
+    latest_message: TikTokLatestMessage | None = None
 
 
 class TikTokWebhookSubscription(TikTokModel):

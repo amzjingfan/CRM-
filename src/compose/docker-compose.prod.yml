@@ -18,6 +18,7 @@ x-production-runtime: &production-runtime
   # 避免开发 .env 中的 true 被生产 Compose 意外继承。
   REAL_TIKTOK_READ_ENABLED: "false"
   REAL_TIKTOK_WEBHOOK_ENABLED: "false"
+  TIKTOK_CONVERSATION_SYNC_ENABLED: "false"
   REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "false"
   REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"
   LLM_ENABLED: "false"

@@ -100,6 +100,7 @@ def test_staging_webhook_read_opt_in_only_enables_receiver_and_worker(
         service_env = config["services"][service_name]["environment"]
         service_env["REAL_TIKTOK_READ_ENABLED"] = "true"
         service_env["REAL_TIKTOK_WEBHOOK_ENABLED"] = "true"
+    config["services"]["worker"]["environment"]["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
     config_path.write_text(json.dumps(config), encoding="utf-8")
     evidence_file = tmp_path / "g2-validate.json"
 
@@ -163,6 +164,7 @@ def test_staging_webhook_read_opt_in_rejects_other_capability_changes(
         service_env = config["services"][enabled_service]["environment"]
         service_env["REAL_TIKTOK_READ_ENABLED"] = "true"
         service_env["REAL_TIKTOK_WEBHOOK_ENABLED"] = "true"
+    config["services"]["worker"]["environment"]["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
     config["services"][service_name]["environment"][capability] = value
     config_path.write_text(json.dumps(config), encoding="utf-8")
 
@@ -399,6 +401,7 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
     application_environment = {
         "APP_ENV": "staging",
         "ALLOW_MOCK_PLATFORM_ADAPTERS": "false",
+        "TIKTOK_CONVERSATION_SYNC_ENABLED": "false",
         "REAL_TIKTOK_READ_ENABLED": "false",
         "REAL_TIKTOK_WEBHOOK_ENABLED": "false",
         "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": "false",

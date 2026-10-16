@@ -13,6 +13,7 @@ services:
     environment:
       REAL_TIKTOK_READ_ENABLED: "true"
       REAL_TIKTOK_WEBHOOK_ENABLED: "true"
+      TIKTOK_CONVERSATION_SYNC_ENABLED: "true"
       REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "false"
       REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"
       AUTO_REPLY_ENABLED: "false"

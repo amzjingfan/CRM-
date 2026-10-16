@@ -106,7 +106,12 @@ export const browserLogin = (email: string, password: string) => requestApi<{ ex
 export const currentUser = () => requestApi<UserView>("/auth/me");
 export const logout = () => requestApi<{ logged_out: boolean }>("/auth/browser/logout", { method: "POST" }, false);
 export const listSessions = (query: URLSearchParams) => requestApi<SessionListData>(`/workspace/sessions?${query.toString()}`);
-export const getSessionMessages = (sessionId: string) => requestApi<SessionMessagesData>(`/workspace/sessions/${sessionId}/messages?page=1&page_size=100`);
+export const getSessionMessagesPage = (sessionId: string, page: number) => requestApi<SessionMessagesData>(`/workspace/sessions/${sessionId}/messages?page=${page}&page_size=100`);
+export const getSessionMessages = async (sessionId: string): Promise<SessionMessagesData> => {
+  const first = await getSessionMessagesPage(sessionId, 1);
+  const newestPage = Math.ceil(first.pagination.total / first.pagination.page_size);
+  return newestPage > 1 ? getSessionMessagesPage(sessionId, newestPage) : first;
+};
 export const sendMessage = (sessionId: string, content: string, idempotencyKey: string) => requestApi<MessageView>(`/workspace/sessions/${sessionId}/messages`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ content, confirmed: true }) });
 export const markSessionRead = (sessionId: string) => requestApi<{ unread_count: number }>(`/workspace/sessions/${sessionId}/read`, { method: "POST" });
 export const transferSession = (sessionId: string, reason: string, idempotencyKey: string) => requestApi<{ transfer_id: string; status: "transferred" }>(`/workspace/sessions/${sessionId}/transfer`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ reason }) });

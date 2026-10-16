@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-fixture-repair-20261016
+Working branch at this snapshot: feature/tiktok-conversation-sync-20261016
 Governance base SHA: 1950a0b26ddd28fda14679eaef82fd785ca20113
-CANDIDATE_SUBJECT_SHA: 1950a0b26ddd28fda14679eaef82fd785ca20113
+CANDIDATE_SUBJECT_SHA: 9c9e805f25fee45d51dbd0e96a60a07baab8b326
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 `MVP-CONV-SYNC-001` 源码候选：用户授权将真实 TikTok 客服会话和历史显示在 CRM。PR #248 从 base `1950a0b` 经最新 main 合并得到 subject `9c9e805`，前后端 CI 均通过；本地隔离 PostgreSQL 后端 1882 passed/3 skipped、前端 44 passed 与构建、Ruff/格式/mypy 通过。已有只读平台抽样证明接口可取真实会话，但 staging 镜像和工作台现场尚未部署/核对，任务 `VERIFYING`、TR R01 `PARTIAL`；真实消息写仍关闭，不向买家发送测试消息。证据入口见 [IR](../records/implementation/IR-MVP-CONV-SYNC-001-20261016-R01.md)、[TR](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R01.md)、[RR](../reports/reviews/RR-MVP-CONV-SYNC-001-20261016-R01.md)，三个索引为 `CANDIDATE_VIEW`。下一步：合并 PR、发布并预取 staging 不可变后端/前端镜像、验证真实会话与历史在工作台可见并记录双向发送状态。
 
 2026-10-16 G5 R14 当前恢复点：用户精确授权的 staging 修复 #38878859064 在 main `1950a0b` 上更新原 50 个隔离用户邮箱、轮换 50 个短期凭证且保留原 manifest，`provision` skipped、Provider 0。立即进行的只读预检 #38878976347 报告 50/50 身份及会话可用、失败类别为空；生效 `CHAT_QUERY_LIMIT=10` 不足 50，工作流失败关闭且没有 SSE 负载。见[R14 TR](../reports/tests/TR-MVP-006-20261016-R14.md)与[低敏证据](../../release/evidence/staging/crm-staging-g5-fixture-repair-20261016.json)。下一步设计并验证 staging 专用限流窗口，准备已审批知识及单会话安全 `delta`，然后才可考虑有界 50 并发。G5 DOING、production No-Go。
 

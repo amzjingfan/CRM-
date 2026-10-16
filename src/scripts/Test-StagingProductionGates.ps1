@@ -64,6 +64,7 @@ $RequiredVariables = @(
 $DisabledCapabilityVariables = @(
     "ALLOW_MOCK_PLATFORM_ADAPTERS",
     "REAL_TIKTOK_READ_ENABLED",
+    "TIKTOK_CONVERSATION_SYNC_ENABLED",
     "REAL_TIKTOK_WEBHOOK_ENABLED",
     "REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
     "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
@@ -143,6 +144,9 @@ function Assert-EnvironmentContract {
         }
     }
     foreach ($name in $DisabledCapabilityVariables) {
+        if ($name -eq "TIKTOK_CONVERSATION_SYNC_ENABLED" -and -not $Values.ContainsKey($name)) {
+            continue
+        }
         if (-not $Values.ContainsKey($name) -or $Values[$name].Trim().ToLowerInvariant() -ne "false") {
             throw "Staging preflight requires $name=false."
         }
@@ -361,8 +365,11 @@ function Assert-ProductionComposeContract {
             throw "Production Compose must set APP_ENV=staging for service: $serviceName"
         }
         foreach ($capabilityName in $DisabledCapabilityVariables) {
-            $expectedValue = if ($EnableTikTokWebhookRead -and $serviceName -in @("backend", "worker") -and
-                $capabilityName -in $WebhookReadCapabilities) { "true" } else { "false" }
+            $expectedValue = if ($EnableTikTokWebhookRead -and
+                (($serviceName -in @("backend", "worker") -and $capabilityName -in $WebhookReadCapabilities) -or
+                 ($serviceName -eq "worker" -and $capabilityName -eq "TIKTOK_CONVERSATION_SYNC_ENABLED"))) {
+                "true"
+            } else { "false" }
             if ([string]$applicationEnvironment.$capabilityName -cne $expectedValue) {
                 throw "Staging Compose capability does not match reviewed mode: $serviceName/$capabilityName"
             }
