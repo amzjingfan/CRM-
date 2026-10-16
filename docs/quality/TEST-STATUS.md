@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-16 G5 R01 源码准备：从 main `beb24b7` 的 subject `9ca964b` 增加零模型调用只读凭证预检。定向 36 passed，完整后端 1820 passed/19 skipped，Ruff、格式及 mypy 通过；低敏报告只含计数和固定失败类别，见 [R01 TR](../reports/tests/TR-MVP-006-20261016-R01.md)。尚无仓库外 50 个受控账号的现场凭证池，因此未运行真实预检、50 并发或 DeepSeek 负载；G5 未通过，production No-Go。
+2026-10-16 G5 R01 源码准备：从 main `beb24b7` 的 subject `9ca964b` 增加零模型调用只读凭证预检。定向 36 passed，完整后端 1820 passed/19 skipped，Ruff、格式及 mypy 通过；[PR #230](https://github.com/CP11-gh/CRM/pull/230) 双 CI 通过并合入 main `b66ecd0`，低敏报告只含计数和固定失败类别，见 [R01 TR](../reports/tests/TR-MVP-006-20261016-R01.md)。尚无仓库外 50 个受控账号的现场凭证池，因此未运行真实预检、50 并发或 DeepSeek 负载；G5 未通过，production No-Go。
 
 2026-10-16 G4 R56：用户在精确付费范围说明后要求继续，[完整 live #38832517813](https://github.com/CP11-gh/CRM/actions/runs/38832517813) 从 main `54594dc4` 和 R55 staging 后端 `sha256:1045d683…eec363` 执行。冻结 34 条 DeepSeek 合成样本加 2 条本地故障注入，终态 36/36、危险逃逸 0、合法误拦 0、Provider 故障 0，报告 `passed=true`；R52 的售后与多语言两条失败均经受控政策修复通过。原样低敏报告、SHA-256、调用/延迟/费用估算及外推边界见 [R56 TR](../reports/tests/TR-MVP-005-20261016-R56.md)。[PR #228](https://github.com/CP11-gh/CRM/pull/228) 前后端 CI 通过并合入 main `7ed1bfe`。G4 冻结合成质量门禁通过；真实买家闭环、50 客户端 SSE、五日稳定性和 production 仍按独立门禁验收。
 
