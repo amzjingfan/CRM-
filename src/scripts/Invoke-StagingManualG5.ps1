@@ -108,14 +108,16 @@ if ([string]::IsNullOrWhiteSpace($token) -and $null -ne (Get-Command gh -ErrorAc
 }
 if ([string]::IsNullOrWhiteSpace($token)) { throw 'GitHub read credentials are unavailable.' }
 try {
+    $verifiedCommit = Invoke-RestMethod -Uri "https://api.github.com/repos/CP11-gh/CRM/commits/$SourceSha" `
+        -Headers @{ Authorization = "Bearer $token"; Accept = 'application/vnd.github+json' }
     $commit = Invoke-RestMethod -Uri 'https://api.github.com/repos/CP11-gh/CRM/commits/main' `
         -Headers @{ Authorization = "Bearer $token"; Accept = 'application/vnd.github+json' }
-    if ([string]$commit.sha -cne $SourceSha) {
-        throw 'The reviewed source is not the current remote main commit.'
-    }
+    & (Join-Path $PSScriptRoot 'Assert-StagingManualSourcePolicy.ps1') -Mode $Mode `
+        -SourceSha $SourceSha -ResolvedCommitSha ([string]$verifiedCommit.sha) `
+        -CurrentMainSha ([string]$commit.sha)
 }
 catch {
-    throw 'GitHub main verification failed or the reviewed SHA has changed.'
+    throw 'GitHub source verification failed or a new deployment no longer targets current main.'
 }
 if ($EvidenceDirectory -cnotmatch '^/home/crmdeploy/\.cache/crm-g5-manual/[a-z0-9-]+$') {
     throw 'EvidenceDirectory must be a unique private staging path.'
@@ -206,6 +208,10 @@ try {
             }
             foreach ($reference in $targetImages) {
                 $null = Assert-LocalImage $reference
+            }
+            $candidate = Assert-LocalImage $CandidateBackendImage
+            if ($candidate.Config.Labels.'org.opencontainers.image.revision' -cne $SourceSha) {
+                throw 'The running candidate backend revision differs from the reviewed recovery source.'
             }
         }
 

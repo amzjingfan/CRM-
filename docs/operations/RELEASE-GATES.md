@@ -25,6 +25,8 @@ G5 [R17 手动路径](../reports/tests/TR-MVP-006-20261016-R17.md)在本地通�
 
 G5 [R18 现场只读检查](../reports/tests/TR-MVP-006-20261016-R18.md)已从 GitHub 凭据手动路径在 staging 验证当前 main 源码包、Rootless 身份和环境文件，`service_mutation=false`。此处的 CheckOnly 未核对尚未发布的候选后端、G5 覆盖层、知识/凭证或真实 SSE，因此 G5 继续未通过。
 
+G5 [R19 恢复策略](../reports/tests/TR-MVP-006-20261016-R19.md)补上已部署源码在 main 后续文档提交后仍可执行受审默认恢复/回滚的代码门禁；只有本地契约证据，没有现场恢复演练。G5 状态不变。
+
 G4 政策证据指代修复 subject `dbb65f5` 的确定性测试见 [R22 TR](../reports/tests/TR-MVP-005-20261013-R22.md)，新镜像、部署和真实模型复测见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。单项 `condition-open-002` 通过不代表其他五项通过；G5/G6 独立验收。
 
 G4 `v1.2.9` 的源码验证见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24.md)，当时的 staging 部署和真实模型复测见 [R25 TR](../reports/tests/TR-MVP-005-20261013-R25.md)；R30 曾缩减到两条逐项失败，当前结论以表中的 R56 为准。
