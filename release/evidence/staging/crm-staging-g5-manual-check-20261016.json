@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-006",
+  "revision": "R18",
+  "capture_method": "manual_summary_of_command_results",
+  "source_sha": "aa5f5f352155ec132667038e5d34f02e9112abc8",
+  "archive_sha256_local": "24401423f39112aae652db5cdb4aed84b633bd50719a491f4b84ae5bdb6f56b6",
+  "archive_sha256_staging": "24401423f39112aae652db5cdb4aed84b633bd50719a491f4b84ae5bdb6f56b6",
+  "archive_content_verification": "PASS",
+  "manual_gate_check_only": "PASS",
+  "runtime_uid": 1004,
+  "rootless_socket": "PRESENT",
+  "service_mutation": false,
+  "image_published": false,
+  "g5_deployed": false,
+  "provider_calls": 0,
+  "production_release": false
+}
