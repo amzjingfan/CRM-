@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 G5 R09：[获批单令牌只读诊断 #38862950177](https://github.com/CP11-gh/CRM/actions/runs/38862950177) 在 main 1626622 返回本地有效的令牌与一致的运行签名配置，但 /auth/me 为 HTTP 500 / API 50001；没有运行 50 身份预检、provision 或模型。[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-status-38862950177.json)。固定日志窗只读探针 subject 47aae95 本地 1851 passed/20 skipped、Ruff/格式/mypy 和工作流语法通过；现场异常类型待核对。G5、production No-Go。
+
 2026-10-16 G5 R08：一次获批的 [只读诊断 #38861412442](https://github.com/CP11-gh/CRM/actions/runs/38861412442) 在 main fbe1b81 上报告首枚令牌 valid、运行密钥和算法匹配、一次 /auth/me 状态 other、Provider 0；旧类别无法细分响应。[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-diagnostic-38861412442.json)已保留。获批的状态/白名单 API 错误码细分在 subject f15bb3a 的定向 15 passed、完整后端 1849 passed/20 skipped、Ruff/格式/mypy 通过；最终 PR CI 和第二次现场只读诊断待核对。50 身份认证和限流 50 尚未通过，G5、production No-Go。
 
 2026-10-16 G5 R07：PR #239 双 CI 通过并合入 main `7e12314`；[staging 只读预检 #38858709981](https://github.com/CP11-gh/CRM/actions/runs/38858709981) 返回 50 次 `auth_rejected`、运行限流 10、Token 有效期 120 分钟、Provider 0，按门禁失败关闭。第一枚令牌的签名、算法、必需声明、过期及签发配置与运行配置匹配诊断已在 subject `fe65b93` 实现，最终定向 11 passed、Ruff/格式/mypy 通过；本地完整后端 1842 passed/20 skipped 属前一源码提交，最终 CI 待核对，见 [R07 TR](../reports/tests/TR-MVP-006-20261016-R07.md)；现场诊断尚未运行。G5、G6 与 production 未通过。

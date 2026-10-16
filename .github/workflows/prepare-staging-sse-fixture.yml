@@ -7,7 +7,7 @@ on:
         description: Read-only check or one exact staging fixture
         required: true
         type: choice
-        options: [check_only, provision, preflight, diagnose_auth]
+        options: [check_only, provision, preflight, diagnose_auth, diagnose_auth_logs]
       expected_source_sha:
         description: Exact reviewed main commit SHA
         required: true
@@ -65,6 +65,7 @@ jobs:
               'src/backend/scripts/check_sse_staging_fixture.py',
               'src/backend/scripts/preflight_sse_staging_fixture.py',
               'src/backend/scripts/diagnose_sse_staging_auth.py'
+              'src/backend/scripts/classify_staging_auth_logs.py'
           )) {
             $uri = "https://api.github.com/repos/CP11-gh/CRM/contents/$($relative)?ref=$env:GITHUB_SHA"
             $source = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 30
@@ -86,7 +87,7 @@ jobs:
             [IO.File]::WriteAllBytes($target, $bytes)
           }
           "source_path=$sourcePath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Output 'Exact G5 source and six Git blobs verified.'
+          Write-Output 'Exact G5 source and seven Git blobs verified.'
 
       - name: Check staging runtime
         id: runtime
@@ -98,7 +99,7 @@ jobs:
           CRM_STAGING_ENV_FILE: ${{ secrets.CRM_STAGING_ENV_FILE }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ($env:MODE -cnotin @('check_only', 'provision', 'preflight', 'diagnose_auth') -or
+          if ($env:MODE -cnotin @('check_only', 'provision', 'preflight', 'diagnose_auth', 'diagnose_auth_logs') -or
               $env:EXPECTED_BACKEND_IMAGE -cnotmatch '^ghcr\.io/cp11-gh/crm-backend@sha256:[0-9a-f]{64}$' -or
               ($env:MODE -cne 'provision' -and $env:CONFIRM_PROVISION) -or
               ($env:MODE -ceq 'provision' -and $env:CONFIRM_PROVISION -cne 'create-50-isolated-staging-users')) {
@@ -179,7 +180,7 @@ jobs:
                   ([Convert]::ToInt32($fileMode, 8) -band 63) -ne 0) {
                 throw 'G5 private fixture permissions are invalid.'
               }
-            } elseif ($privateItems.Count -ne 0) {
+            } elseif ($env:MODE -cne 'diagnose_auth_logs' -and $privateItems.Count -ne 0) {
               throw 'Existing G5 private material requires reconciliation before a new run.'
             }
           } elseif ($env:MODE -cin @('preflight', 'diagnose_auth')) {
@@ -354,6 +355,54 @@ jobs:
           if ($exitCode -ne 0 -or $report.requests_sent -ne 1) {
             throw 'G5 auth diagnostic could not classify one existing token.'
           }
+
+      - name: Classify fixed G5 auth error logs
+        if: inputs.mode == 'diagnose_auth_logs'
+        shell: pwsh
+        env:
+          SOURCE_PATH: ${{ steps.source.outputs.source_path }}
+          DOCKER_HOST: ${{ steps.runtime.outputs.docker_host }}
+          CONTAINER: ${{ steps.runtime.outputs.container }}
+          EXPECTED_BACKEND_IMAGE: ${{ inputs.expected_backend_image }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lines = @(& docker --host $env:DOCKER_HOST logs --since 2026-10-16T06:45:05Z --until 2026-10-16T06:45:20Z $env:CONTAINER 2>&1)
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Fixed G5 auth log window could not be read.'
+          }
+          $source = Join-Path $env:SOURCE_PATH 'src/backend'
+          $args = @(
+            '--host', $env:DOCKER_HOST, 'run', '--rm', '-i', '--pull=never', '--read-only',
+            '--network', 'none', '--user', '0:0', '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
+            '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
+            '--entrypoint', 'python', $env:EXPECTED_BACKEND_IMAGE,
+            '-B', '-m', 'scripts.classify_staging_auth_logs'
+          )
+          $output = $lines | & docker @args 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Fixed G5 auth log classification failed.'
+          }
+          try { $report = $output | ConvertFrom-Json -ErrorAction Stop }
+          catch { throw 'Fixed G5 auth log report is invalid.' }
+          $allowed = @('OperationalError', 'ProgrammingError', 'IntegrityError', 'DatabaseError', 'InterfaceError', 'MissingGreenlet', 'InvalidRequestError', 'StatementError', 'UndefinedTableError', 'UndefinedColumnError', 'ConnectionDoesNotExistError', 'TimeoutError', 'ValidationError', 'ValueError', 'TypeError', 'KeyError', 'AttributeError', 'RuntimeError', 'other')
+          $categories = @($report.exception_types.PSObject.Properties.Name)
+          $total = 0
+          foreach ($category in $categories) {
+            $count = $report.exception_types.$category
+            if ($category -cnotin $allowed -or $count -isnot [long] -or $count -lt 1 -or $count -gt 1000) {
+              throw 'Fixed G5 auth log category is invalid.'
+            }
+            $total += $count
+          }
+          if ($report.mode -cne 'diagnose_auth_logs' -or $report.provider_calls -ne 0 -or
+              $report.matched_events -isnot [long] -or $report.matched_events -lt 0 -or
+              $report.matched_events -gt 1000 -or $total -ne $report.matched_events) {
+            throw 'Fixed G5 auth log summary is invalid.'
+          }
+          $summary = if ($categories.Count -eq 0) { 'none' } else {
+            ($categories | Sort-Object | ForEach-Object { "$_=$($report.exception_types.$_)" }) -join ','
+          }
+          Write-Output "G5 auth log diagnostic matched_events=$total; exception_types=$summary; provider_calls=0."
 
       - name: Provision exact fixture
         if: inputs.mode == 'provision'

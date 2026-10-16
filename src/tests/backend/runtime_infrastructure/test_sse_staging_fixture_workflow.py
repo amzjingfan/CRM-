@@ -11,7 +11,13 @@ WORKFLOW = ROOT / ".github/workflows/prepare-staging-sse-fixture.yml"
 def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> None:
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     dispatch = workflow[True]["workflow_dispatch"]["inputs"]
-    assert dispatch["mode"]["options"] == ["check_only", "provision", "preflight", "diagnose_auth"]
+    assert dispatch["mode"]["options"] == [
+        "check_only",
+        "provision",
+        "preflight",
+        "diagnose_auth",
+        "diagnose_auth_logs",
+    ]
     assert dispatch["expected_source_sha"]["required"] is True
     assert dispatch["expected_backend_image"]["required"] is True
     assert workflow["permissions"] == {"contents": "read"}
@@ -25,6 +31,7 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     provision = steps["Provision exact fixture"]["run"]
     preflight = steps["Preflight 50 identities and sessions"]["run"]
     diagnostic = steps["Diagnose one existing G5 token"]["run"]
+    log_diagnostic = steps["Classify fixed G5 auth error logs"]["run"]
     assert "EXPECTED_SOURCE_SHA -cne $env:GITHUB_SHA" in source
     assert "git/commits/$env:GITHUB_SHA" in source
     assert "blobSha" in source
@@ -55,6 +62,15 @@ def test_dispatch_is_staging_only_and_write_requires_separate_confirmation() -> 
     assert "load_test_sse" not in diagnostic
     assert "Write-Output $output" not in diagnostic
     assert "provider_calls=0" in diagnostic
+    assert "--since 2026-10-16T06:45:05Z --until 2026-10-16T06:45:20Z" in log_diagnostic
+    assert "$env:CONTAINER 2>&1" in log_diagnostic
+    assert "scripts.classify_staging_auth_logs" in log_diagnostic
+    assert "'--network', 'none'" in log_diagnostic
+    assert "'--env-file'" not in log_diagnostic
+    assert "g5-38852775454-1.json" not in log_diagnostic
+    assert "Write-Output $lines" not in log_diagnostic
+    assert "exception_types=$summary" in log_diagnostic
+    assert "'src/backend/scripts/classify_staging_auth_logs.py'" in source
     assert "api_error_code" in diagnostic
     assert "'500', '502', '503', '504'" in diagnostic
     assert '"env_file=$envFile"' not in runtime

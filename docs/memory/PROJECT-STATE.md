@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-auth-status-20261016
-Governance base SHA: fbe1b81f7dea5a4150c4ec7ad1952f33cc436f4e
-CANDIDATE_SUBJECT_SHA: f15bb3a796cfa42df3f251840c188fe496a47018
+Working branch at this snapshot: feature/mvp006-g5-auth-log-probe-20261016
+Governance base SHA: 1626622fa4e7741ba44f55f29e44d1fb1280c9f8
+CANDIDATE_SUBJECT_SHA: 47aae95758e69915e67a523d57eb7c8475130319
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R09：获批的单令牌只读诊断 #38862950177 从 main 1626622 返回令牌 valid、签名密钥/算法一致，但 /auth/me 为 HTTP 500、应用码 50001；Provider 0，预检和 provision skipped。[低敏证据](../../release/evidence/staging/crm-staging-g5-auth-status-38862950177.json)与[R09 TR](../reports/tests/TR-MVP-006-20261016-R09.md)已记录。用户批准固定 15 秒日志窗的只读探针，subject 47aae95 仅输出白名单异常类型与计数、不再请求认证；本地完整后端 1851 passed/20 skipped，Ruff/格式/mypy 及七段工作流 AST 通过。PR CI、合并与现场日志探针待复核；50 身份和限流仍失败，G5 DOING、production No-Go。
 
 2026-10-16 G5 R08：R07 只读诊断 #38861412442 从 main fbe1b81 得到令牌 valid、运行签名密钥/算法一致、一次 /auth/me 状态 other、Provider 0；证据见 [R08 TR](../reports/tests/TR-MVP-006-20261016-R08.md)。用户批准再做一次单令牌只读分类；subject f15bb3a 将常见 4xx/5xx 与白名单 API 错误码分开记录，响应正文不输出。最终本地后端 1849 passed/20 skipped，定向 15 passed、Ruff/格式/mypy 通过；PR CI、合并和第二次现场只读诊断待复核。50 身份认证及限流 50 均未通过，G5 DOING、production No-Go。
 
