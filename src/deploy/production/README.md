@@ -286,6 +286,12 @@ OAuth callback 的 Nginx 错误日志也被关闭，避免上游失败时原生 
 
 在任何叠加或真实模型负载前，先从带 Git 元数据的受控 checkout 运行零模型调用预检。凭证池的前 50 项须为 50 个不同的授权 CRM 用户，每项会话都须可读。凭证池和输出路径必须位于主仓库及当前 worktree 之外，输出文件不得已存在。预检仅向 `/v1/auth/me` 与对应会话消息详情发送 GET；只输出人数、固定失败类别和声明的限流值，不保存 Token、用户/店铺/会话标识或消息正文。它不验证服务器实际运行的限流值，也不证明队列、资源、断连恢复或性能门槛；失败时不得启动真实负载。
 
+若现场没有 50 个受控 CRM 用户，可在**另行获批的 staging 数据写入窗口**使用 `src/backend/scripts/prepare_sse_staging_fixture.py`。它仅可在 staging 的 Linux Runner 上运行，要求 `APP_ENV=staging`、显式 `--execute`、从独立部署事实核对的 staging `DATABASE_URL` SHA-256 指纹，以及仓库外未存在的凭证路径；运行账号必须拥有仅自己可访问的目录。单次事务创建一个带 `g5-` 标记的隔离店铺、仅有 `workspace.view` 权限的角色、50 个随机密码且不提供明文密码的 CRM 用户、50 组 `synthetic` 客户/会话/入站消息，以及禁用工具的 Agent 配置，并写入一次低敏审计。文件以独占方式创建为仅所有者可读，包含短时 Access Token、CSRF、会话 ID 和精确清理所需的 manifest；不得上传、打印、提交或复制到项目目录。文件写入失败时回滚数据库事务；文件已写而数据库提交结果不确定时保留私有 manifest，先按 run ID 与 store ID 只读对账，不自动删除或重试。已有文件绝不覆盖。此工具不会连接 TikTok、发送消息或调用模型。当前只交付代码和测试，**尚未在 staging 执行**。
+
+现场执行前先确认 staging 数据库、运行摘要、外部私有目录、精确批准范围和可回滚窗口；令牌生成与预检应在 Access Token 有效期内连续完成。工具入口为 `uv run python -m scripts.prepare_sse_staging_fixture --execute --credentials-file <仓库外全新绝对路径> --expected-database-sha256 <独立核对的 staging DSN 摘要>`（从 staging Runner 的 `src/backend` 执行，不能仅从同一未核实的环境变量计算指纹）。随后在相同受控主机使用只读 `--prepare` 验证 50 个真实授权身份和可读会话；本地 ORM 测试不代替这一步。**这些合成会话目前没有已审批且向量化的 FAQ，也没有订单工具，不能据此声称有安全 `delta`。**在 G5 真实负载前，需另行提供符合现有知识审批流程的隔离 FAQ/会话并做单会话模型验证；其创建与模型调用均不在本工具范围。
+
+清理方案：测试窗口结束先使用 manifest 中的精确 50 个用户 ID 将这些用户禁用，并复核旧 Token 已无法通过 `/auth/me`；保留审计和低敏测试报告。对本次 store、role、50 会话及其后续 Agent 运行先只读盘点引用和数量，形成独立 `MAINT-CLEANUP-*` 任务及精确清理批次，取得授权后才删除数据库行和仓库外凭证文件；不得按 `g5-` 前缀批量删除或改动其他店铺。若预检或负载失败，也先禁用账号并记录可恢复状态，不自行重试付费调用。
+
 ```powershell
 Push-Location src/backend
 uv run python -m scripts.load_test_sse --prepare --credentials-file D:\secure-test-data\sse-clients.json --concurrency 50 --server-ip-rate-limit 60 --base-url https://staging.overselfx.com --output D:\secure-test-data\sse-prepare.json

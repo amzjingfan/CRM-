@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-r01-index-20261016
-Governance base SHA: b66ecd0beb76ba8b0a0db3760284f0d5b660afa3
-CANDIDATE_SUBJECT_SHA: 9ca964b067bb8b72e3e6af1474a9d41fcfb7a830
+Working branch at this snapshot: feature/mvp006-g5-staging-fixture-20261016
+Governance base SHA: a99fb4db815ada2da30302d7dd730b8324bd3ef4
+CANDIDATE_SUBJECT_SHA: dae10833ba1c2692b0ca175889372641c8408e30
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
+
+2026-10-16 G5 R02 恢复点：用户仅批准代码、确定性测试和清理方案；subject `dae1083` 增加 staging Linux 隔离 50 账号/会话准备工具，绑定独立核对的 DB 指纹、仓库外私有凭证和提交未知时 manifest 对账。完整后端 1827 passed/20 skipped，隔离 PostgreSQL 新增测试通过，独立审查无剩余阻断项，见 [R02 IR](../records/implementation/IR-MVP-006-20261016-R02.md)、[TR](../reports/tests/TR-MVP-006-20261016-R02.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R02.md)。尚未创建 staging 数据；50 条合成会话没有已审批向量化 FAQ，不能保证安全 `delta`。staging SSH 当前认证失败，现场写入和预检尚无入口；G5 `DOING`，production No-Go。
 
 2026-10-16 G5 R01 恢复点：获批的零模型调用只读预检已在 subject `9ca964b` 完成。它只核对仓库外 50 个不同授权 CRM 用户、对应会话可读及声明的单 IP 限流容量，失败关闭并输出低敏计数；本地确定性验证见 [R01 TR](../reports/tests/TR-MVP-006-20261016-R01.md)，独立只读复审见 [R01 RR](../reports/reviews/RR-MVP-006-20261016-R01.md)。[PR #230](https://github.com/CP11-gh/CRM/pull/230) 前后端 CI 通过并 squash 合入 main `b66ecd0`；从该 main 核对 IR/TR/RR 各 85 份源记录，本收尾分支将三个派生索引恢复为 `CURRENT`。目前没有已确认的 50 账号凭证池，未运行现场预检或真实并发；G5、G6、G8 与 production 未放行。
 
@@ -273,6 +275,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 取得仓库外 50 个受控授权账号与会话，先运行 G5 零模型调用预检并核对实际 staging 限流；真实负载与费用另行精确处理。
+1. 恢复 staging Runner 访问；在单独批准的数据写入窗口创建隔离 50 账号与凭证池，运行 G5 零调用预检并核对限流。依知识审批补合成 FAQ、单会话验证安全 `delta`，真实 50 并发与费用另行精确处理。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。
