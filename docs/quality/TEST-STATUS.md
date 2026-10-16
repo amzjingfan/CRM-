@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 G4 R56：用户在精确付费范围说明后要求继续，[完整 live #38832517813](https://github.com/CP11-gh/CRM/actions/runs/38832517813) 从 main `54594dc4` 和 R55 staging 后端 `sha256:1045d683…eec363` 执行。冻结 34 条 DeepSeek 合成样本加 2 条本地故障注入，终态 36/36、危险逃逸 0、合法误拦 0、Provider 故障 0，报告 `passed=true`；R52 的售后与多语言两条失败均经受控政策修复通过。原样低敏报告、SHA-256、调用/延迟/费用估算及外推边界见 [R56 TR](../reports/tests/TR-MVP-005-20261016-R56.md)。G4 冻结合成质量门禁通过；真实买家闭环、50 客户端 SSE、五日稳定性和 production 仍按独立门禁验收。
+
 2026-10-15 G4 R55 staging：用户单独授权的[六摘要预取 #38710281674](https://github.com/CP11-gh/CRM/actions/runs/38710281674)、[validate #38712087142](https://github.com/CP11-gh/CRM/actions/runs/38712087142)、[deploy #38712441191](https://github.com/CP11-gh/CRM/actions/runs/38712441191) 与零调用 [prepare #38713090896](https://github.com/CP11-gh/CRM/actions/runs/38713090896) 均从 main `86ac3dd` 成功。staging 后端已切到 `sha256:1045d683…eec363`，前端/检索不变；迁移头、三健康、固定出口与 Webhook 只读通过。prepare 核对冻结 36 条及 Provider 调用 0，原样证据与哈希见 [R55 TR](../reports/tests/TR-MVP-005-20261015-R55.md)；[PR #226](https://github.com/CP11-gh/CRM/pull/226) 前后端 CI 通过并合入 main `cf362c4`。尚未运行新版付费 `live`；R52 仍是最新真实质量失败，G4 `PARTIAL`、production No-Go。
 
 2026-10-15 G4 R54 单镜像发布：用户在精确范围后批准继续；从 main `6e41632` 仅运行一次[后端发布 #38708209437](https://github.com/CP11-gh/CRM/actions/runs/38708209437)，生成 `ghcr.io/cp11-gh/crm-backend@sha256:1045d683…eec363`。原样[镜像证据](../../release/evidence/staging/crm-staging-g4-r54-image-38708209437.json)确认 `linux/amd64` manifest `PASS`、压缩层 110,072,185 字节、最大层 33,257,532 字节；原始/入库哈希一致；[PR #224](https://github.com/CP11-gh/CRM/pull/224) 前后端 CI 通过并合入 main `eda95db`，见 [R54 TR](../reports/tests/TR-MVP-005-20261015-R54.md)。本轮未部署 staging 或调用 DeepSeek；R52 仍是最新真实质量，G4 `PARTIAL`、production No-Go。
@@ -78,7 +80,7 @@ Prompt `real-model-eval-v1.2.8` 的源码测试先红后绿，完整后端 `1765
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
 | M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 增强物流 `202604` 待合格 CBT 首程订单并须在 G8 前通过；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
-| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界和本地 BGE 已覆盖。`v1.2.10` 后端已部署 staging；[live #38509348666](https://github.com/CP11-gh/CRM/actions/runs/38509348666) 终态 34/36（94.44%）、危险逃逸 0、合法误拦 0、Provider 故障 0，机器 `passed=true`，见[低敏报告](../../release/evidence/ai/crm-staging-g4-r30-live-38509348666.json) | 否定说明缺项、多语言政策第二稿转人工，两条逐项失败未闭环；G4 仍部分通过。50 客户端 SSE、5 日稳定性未完成；公开自动回复/营销未放行 |
+| M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界及 BGE 已覆盖；[R56 live](../reports/tests/TR-MVP-005-20261016-R56.md) 为 36/36、危险逃逸 0、合法误拦 0、Provider 故障 0，机器 `passed=true` | G4 冻结合成质量通过；真实买家闭环、50 客户端 SSE、实际独立解决率与五日稳定性另验；公开自动回复/营销未放行 |
 
 2026-10-12 真实 `v1.2.4` 复测中上一轮西语英译与一条否定说明恢复，英文条件政策的必需内容也恢复；`negation-open-002` 缺冻结组 0，`condition-open-002` 仍命中未引用禁用词。原始报告只保留组/词序号及布尔提示，不能还原模型草稿。本机 `v1.2.4` 源码完整测试 `1718 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和工作流静态解析通过；这是已被下一段 `v1.2.5` 现场结果取代的历史快照。
 
@@ -127,7 +129,7 @@ Prompt `real-model-eval-v1.2.8` 的源码测试先红后绿，完整后端 `1765
 
 - `MVP-READONLY-LOG-001` 的源码门禁见 `TR-MVP-READONLY-LOG-001-20260928-R01`；staging 现有后端上的六项非物流真实只读重测见 `TR-MVP-G1-NONLOG-001-20260928-R01`。后者只证明这六项路径成功，不覆盖增强物流、重复回调或 G1 签署；真实 Token 自然刷新另见 `release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json`。日志部署与增强物流的单独记录仍在 PR #56 草稿中。
 
-- G4 最新真实复测有 2 个未通过用例：否定说明缺必需组 0，多语言政策修复转人工且缺组 0、1。危险逃逸和合法输入误拦截为 0，但综合正确率不能代替逐项关闭；低敏报告不保存模型原文，后续候选须保留严格判分和冻结集。
+- G4 R56 的一次真实模型冻结综合集为 36/36，历史逐项失败已闭环；仍缺实际买家闭环、端到端 SSE 首 Token、50 客户端容量、五日稳定性及实际 AI 独立解决率证据。低敏报告不保存模型原文；后续任何候选仍须保留严格判分和冻结集。
 - 用户已确认真实 TikTok US 店铺授权后自动返回 CRM；仍未完成整个店铺端到端验收，不能确认 production Scope、投递和消息行为。
 - `MVP-OAUTH-REAUTH-001` 的一次真实 staging 重新授权任务终态、临时材料清除、审计匹配及 job 查询原用户边界已核对，详见 `TR-MVP-OAUTH-REAUTH-001-20260928-R01`；重复状态轮询与确定性测试不等于同一真实 callback 重放，G1 仍未签署。
 - TikTok Partner Center 与 DeepSeek 外部四项凭据已安全注入 staging；DeepSeek 已通过本次 34 条合成请求确认接受，TikTok 各真实能力按对应 G1/G2/G3 证据判断；未获放行的能力继续失败关闭。
