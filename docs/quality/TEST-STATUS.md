@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-16 G4 R56：用户在精确付费范围说明后要求继续，[完整 live #38832517813](https://github.com/CP11-gh/CRM/actions/runs/38832517813) 从 main `54594dc4` 和 R55 staging 后端 `sha256:1045d683…eec363` 执行。冻结 34 条 DeepSeek 合成样本加 2 条本地故障注入，终态 36/36、危险逃逸 0、合法误拦 0、Provider 故障 0，报告 `passed=true`；R52 的售后与多语言两条失败均经受控政策修复通过。原样低敏报告、SHA-256、调用/延迟/费用估算及外推边界见 [R56 TR](../reports/tests/TR-MVP-005-20261016-R56.md)。G4 冻结合成质量门禁通过；真实买家闭环、50 客户端 SSE、五日稳定性和 production 仍按独立门禁验收。
+2026-10-16 G4 R56：用户在精确付费范围说明后要求继续，[完整 live #38832517813](https://github.com/CP11-gh/CRM/actions/runs/38832517813) 从 main `54594dc4` 和 R55 staging 后端 `sha256:1045d683…eec363` 执行。冻结 34 条 DeepSeek 合成样本加 2 条本地故障注入，终态 36/36、危险逃逸 0、合法误拦 0、Provider 故障 0，报告 `passed=true`；R52 的售后与多语言两条失败均经受控政策修复通过。原样低敏报告、SHA-256、调用/延迟/费用估算及外推边界见 [R56 TR](../reports/tests/TR-MVP-005-20261016-R56.md)。[PR #228](https://github.com/CP11-gh/CRM/pull/228) 前后端 CI 通过并合入 main `7ed1bfe`。G4 冻结合成质量门禁通过；真实买家闭环、50 客户端 SSE、五日稳定性和 production 仍按独立门禁验收。
 
 2026-10-15 G4 R55 staging：用户单独授权的[六摘要预取 #38710281674](https://github.com/CP11-gh/CRM/actions/runs/38710281674)、[validate #38712087142](https://github.com/CP11-gh/CRM/actions/runs/38712087142)、[deploy #38712441191](https://github.com/CP11-gh/CRM/actions/runs/38712441191) 与零调用 [prepare #38713090896](https://github.com/CP11-gh/CRM/actions/runs/38713090896) 均从 main `86ac3dd` 成功。staging 后端已切到 `sha256:1045d683…eec363`，前端/检索不变；迁移头、三健康、固定出口与 Webhook 只读通过。prepare 核对冻结 36 条及 Provider 调用 0，原样证据与哈希见 [R55 TR](../reports/tests/TR-MVP-005-20261015-R55.md)；[PR #226](https://github.com/CP11-gh/CRM/pull/226) 前后端 CI 通过并合入 main `cf362c4`。尚未运行新版付费 `live`；R52 仍是最新真实质量失败，G4 `PARTIAL`、production No-Go。
 

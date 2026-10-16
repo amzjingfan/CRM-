@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp005-g4-r56-live-20261016
-Governance base SHA: 54594dc40b1c596a890f27cc80380766cabde840
+Working branch at this snapshot: docs/mvp005-g4-r56-index-20261016
+Governance base SHA: 7ed1bfed5c5d6ded3d95ca3335660dff6c9a885b
 CANDIDATE_SUBJECT_SHA: 54594dc40b1c596a890f27cc80380766cabde840
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G4 R56 最新恢复点：用户在一次 G4 付费 live 的精确范围说明后要求继续；main `54594dc4` 的[工作流 #38832517813](https://github.com/CP11-gh/CRM/actions/runs/38832517813)成功，staging 后端仍为 `sha256:1045d683…eec363`。冻结 34 条 DeepSeek 合成样本及 2 条本地故障注入逐项 36/36，危险逃逸、合法误拦、Provider 故障均为 0；R52 的两条政策失败均经一次受控修复通过，机器 `passed=true`。原样低敏报告及哈希见 [R56 TR](../reports/tests/TR-MVP-005-20261016-R56.md)。本轮一次性付费授权已用完；G4 冻结合成质量门禁通过，实际买家闭环、G1-L、G2/G3、G5/G6 与 G8 仍未放行，production No-Go。分支三索引为 `CANDIDATE_VIEW`，合入 main 后从 84 份源记录重建 `CURRENT`。
+2026-10-16 G4 R56 最新恢复点：用户在一次 G4 付费 live 的精确范围说明后要求继续；main `54594dc4` 的[工作流 #38832517813](https://github.com/CP11-gh/CRM/actions/runs/38832517813)成功，staging 后端仍为 `sha256:1045d683…eec363`。冻结 34 条 DeepSeek 合成样本及 2 条本地故障注入逐项 36/36，危险逃逸、合法误拦、Provider 故障均为 0；R52 的两条政策失败均经一次受控修复通过，机器 `passed=true`。原样低敏报告及哈希见 [R56 TR](../reports/tests/TR-MVP-005-20261016-R56.md)。本轮一次性付费授权已用完；G4 冻结合成质量门禁通过，实际买家闭环、G1-L、G2/G3、G5/G6 与 G8 仍未放行，production No-Go。[PR #228](https://github.com/CP11-gh/CRM/pull/228) 前后端 CI 通过并合入 main `7ed1bfe`；从该 main 核对 IR/TR/RR 各 84 份源记录，三个派生索引在本收尾分支恢复为 `CURRENT`。
 
 2026-10-15 G4 R55 staging 恢复点：用户单独授权后，从 main `86ac3dd` 依次完成[六摘要预取 #38710281674](https://github.com/CP11-gh/CRM/actions/runs/38710281674)、[validate #38712087142](https://github.com/CP11-gh/CRM/actions/runs/38712087142)、[deploy #38712441191](https://github.com/CP11-gh/CRM/actions/runs/38712441191) 和零调用 [prepare #38713090896](https://github.com/CP11-gh/CRM/actions/runs/38713090896)。运行后端 `sha256:1045d683…eec363`，前端/检索不变，旧后端 `sha256:8e8dcd81…7d5a` 已预取为回滚目标；迁移头、三健康、固定出口 `38.55.145.52` 和 Webhook 只读通过，公网三健康另复核为 `200 0`。prepare 锁定冻结 36 条且 Provider 0 调用，四份原样证据与哈希见 [R55 TR](../reports/tests/TR-MVP-005-20261015-R55.md)。[PR #226](https://github.com/CP11-gh/CRM/pull/226) 前后端 CI 通过并合入 main `cf362c4`；从该 main 核对 IR/TR/RR 各 83 份权威源记录，三个派生索引恢复为 `CURRENT`。R52 的 34/36、Provider 故障 2、机器 `passed=false` 仍是最新真实质量；G4 `PARTIAL`、production No-Go。下一步：单独精确授权一次 G4 付费 live 复核新版真实质量；逐项核对两个政策失败与安全指标；按结果修复或签署。
 
@@ -271,6 +271,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 将 R56 原样证据、IR/TR/RR 与三索引经 PR/CI 合入 main；从合并后 84 份源记录重建索引 CURRENT。随后按 G5 任务准备 50 客户端 SSE 的独立容量方案与低敏观测，不复用本次付费授权。
+1. 按 G5 任务准备 50 客户端 SSE 的独立容量方案、低敏观测和费用边界；本次 G4 付费授权已用完。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。
