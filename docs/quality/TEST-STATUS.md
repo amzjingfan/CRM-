@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 G5 R20 手动只读现场：新版界面配套后端 `sha256:deef65ee…babbe8` 运行时，受审源码 `f56b998` 的归档校验和手动 `CheckOnly` 通过；原批次 50/50 会话匹配，`fixture_state=original`、`knowledge_ready=false`，Provider 调用与数据库写入均为 0。容器默认工作目录导致第一次安全路径校验拒绝；显式设置受审目录后只读检查通过，持久入口待修。见 [R20 TR](../reports/tests/TR-MVP-006-20261016-R20.md) 与 [低敏证据](../../release/evidence/staging/crm-staging-g5-manual-content-check-20261016.json)。未准备内容、续期凭证、执行 SSE 或恢复演练；G5 与 production 仍未通过。
+
 2026-10-16 `MVP-CONV-UI-001` R04 现场 `f56b998`：staging 后端新摘要、前端已验证摘要运行健康，门禁迁移及三项公开健康 200；已登录工作台显示 179 个真实 TikTok 会话，买家左侧白色、客服右侧蓝色。分别对一条英文买家和客服消息按需调用 DeepSeek 后，原文下方显示中文；回复输入与发送按钮禁用。真实译质需坐席核对，真实发信和 production 仍关闭。见 [R04 TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R04.md) 与 [低敏门禁证据](../../release/evidence/staging/crm-staging-conv-ui-translation-20261016.json)。
 
 2026-10-16 `MVP-CONV-UI-001` R03 翻译 Prompt 候选 `81f9963`：staging 的 `14ec836` 已显示 179 个真实 TikTok 会话、双侧气泡、原文与按需翻译入口，三项公开健康为 200；真实消息首次两次 DeepSeek 翻译因 `LLM_OUTPUT_INVALID` 失败。合成探针定位旧提示词未说明输出字段；R03 明确四字段后同模型合成句返回可校验中文，受影响后端 602 passed、Ruff 与格式通过。R03 镜像尚未部署，真实译文待现场复测，见 [R03 TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R03.md)。真实发信与 production 关闭。

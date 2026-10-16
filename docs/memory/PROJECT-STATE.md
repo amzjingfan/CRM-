@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/tiktok-conv-ui-close-20261016
-Governance base SHA: 14ec836a391e21374c973479897f216956ead594
+Working branch at this snapshot: docs/mvp006-g5-r20-content-check-20261016
+Governance base SHA: 44a0d388b0ab1b5cafec7b43d5a3e222b5f83e83
 CANDIDATE_SUBJECT_SHA: f56b99888e9448bdcb4fd2072cfe42d30e6ba604
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: CLEAN — 当前隔离 worktree 无未知文件；其他 worktree、备份不在本任务范围
+Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
+
+2026-10-16 G5 R20 恢复点：用户选择先完成新版界面，再继续 G5。新版界面配套后端 `sha256:deef65ee…babbe8`、前端 `sha256:b8a5b346…768ac` 已运行；此前单独发布的旧 G5 候选后端未部署。手动归档校验与 `CheckOnly` 通过；原 50/50 会话只读匹配，但合成知识未准备，Provider/数据库写入均为 0。容器默认工作目录使夹具安全路径检查失败，显式指定受审源码目录后通过；持久手动入口待修。见 [IR](../records/implementation/IR-MVP-006-20261016-R20.md)、[TR](../reports/tests/TR-MVP-006-20261016-R20.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R20.md)和[机器证据](../../release/evidence/staging/crm-staging-g5-manual-content-check-20261016.json)。分支三个派生索引按 108/111/108 源记录校对，为 `CANDIDATE_VIEW`。下一步：完成手动夹具入口与受控内容准备；核对短期凭证及单会话安全输出；执行 50 并发并恢复现有只读加翻译模式。G5 `DOING`、production No-Go。
 
 2026-10-16 `MVP-CONV-UI-001` R04 恢复点：R03 修复由 [PR #263](https://github.com/CP11-gh/CRM/pull/263) 合入 main `f56b998`，精确后端镜像及已验收前端摘要已手动部署 staging；迁移、运行配置和三个公开健康通过。已登录工作台显示 179 个真实 TikTok 会话，买家左、客服右；各一条英文买家及客服消息点击后显示保留原文的中文译文，发送仍关闭。[R04 证据 PR #264](https://github.com/CP11-gh/CRM/pull/264) 已合入 main `c768bfe`；本收尾分支从该 main 复核 IR/TR/RR 107/110/107 条源记录与索引一致并恢复 `CURRENT`，任务标记 `DONE`。见 [R04 IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R04.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R04.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R04.md)和[门禁证据](../../release/evidence/staging/crm-staging-conv-ui-translation-20261016.json)。后续 DeepSeek 口语译质归 `MVP-011`，真实发信归 G2/G3 独立验收；production 不发布。
 
