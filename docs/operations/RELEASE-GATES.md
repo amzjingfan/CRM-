@@ -17,7 +17,7 @@
 
 G5 R12 源码经 [PR #245](https://github.com/CP11-gh/CRM/pull/245) 双 CI 合入 main；[R13 staging 只读对账](../reports/tests/TR-MVP-006-20261016-R13.md) #38877932619 报告原 50 账号匹配、Provider 0、数据库写入 0。[R14 精确修复与预检](../reports/tests/TR-MVP-006-20261016-R14.md) #38878859064/#38878976347 已更新原 50 邮箱并轮换凭证，50/50 身份/会话通过；生效限流仍为 10，预检按 50 并发门禁失败关闭，没有 SSE 负载。G5 和 production 继续 No-Go。
 
-G5 R15 受控窗口源码已由 PR #249 合入 main，但未切换 staging。[R16 候选](../reports/tests/TR-MVP-006-20261016-R16.md)补原 50 个会话的合成 FAQ/问题与短期凭证续期门禁；仅有源码和隔离数据库证据，尚无现场写入、向量 ready、单会话安全 `delta` 或 50 并发结果。上表 G5 状态继续为未通过；R14 的限流 10 仍是最近明确核对的现场值。
+G5 R15 受控窗口源码已由 PR #249 合入 main，但未切换 staging。[R16 源码](../reports/tests/TR-MVP-006-20261016-R16.md)经 [PR #251](https://github.com/CP11-gh/CRM/pull/251) 双 CI 合入 main `5d6c0298`，补原 50 个会话的合成 FAQ/问题与短期凭证续期门禁；仅有源码和隔离数据库证据，尚无现场写入、向量 ready、单会话安全 `delta` 或 50 并发结果。上表 G5 状态继续为未通过；R14 的限流 10 仍是最近明确核对的现场值。
 
 G4 政策证据指代修复 subject `dbb65f5` 的确定性测试见 [R22 TR](../reports/tests/TR-MVP-005-20261013-R22.md)，新镜像、部署和真实模型复测见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。单项 `condition-open-002` 通过不代表其他五项通过；G5/G6 独立验收。
 

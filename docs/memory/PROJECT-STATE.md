@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-synthetic-content-20261016
-Governance base SHA: 8fcfb64ef210c912bf19afcc4b546e0ff021aaf6
+Working branch at this snapshot: docs/mvp006-g5-r16-merge-evidence-20261016
+Governance base SHA: 5d6c0298be5dc85779c3a4858ae04b6e180369ab
 CANDIDATE_SUBJECT_SHA: c3439013e74271c8e132b53b1866b8b9eb1c64b2
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
 ```
 
-2026-10-16 G5 R16 当前恢复点：R15 受控窗口源码已由 PR #249 合入 main。用户批准的 R16 代码阶段在 subject `c3439013` 增加原隔离店铺 50 会话合成 FAQ/提问与短期凭证续期的精确门禁，默认不执行现场写入或模型调用。隔离 PostgreSQL 集成测试 4 项通过；本地完整后端、Ruff、格式和 mypy 结果见[R16 TR](../reports/tests/TR-MVP-006-20261016-R16.md)、[IR](../records/implementation/IR-MVP-006-20261016-R16.md)与[RR](../reports/reviews/RR-MVP-006-20261016-R16.md)。R14 的 50/50 身份与会话通过、限流 10 仍是最近明确现场事实；新的内容、向量 ready 和凭证有效性尚未在 staging 验证。下一步三项：完成 R16 PR/CI 合并；经精确授权发布并部署含本次知识事务接口的后端；分别执行受控内容准备、单会话安全核对与 50 并发及默认恢复验收。G5 DOING、production No-Go。
+2026-10-16 G5 R16 当前恢复点：R15 受控窗口源码已由 PR #249 合入 main。用户批准的 R16 代码阶段在 subject `c3439013` 增加原隔离店铺 50 会话合成 FAQ/提问与短期凭证续期的精确门禁；[PR #251](https://github.com/CP11-gh/CRM/pull/251) 双 CI 通过并 squash 合入 main `5d6c0298`。本地完整后端 `1892 passed, 27 skipped`、隔离 PostgreSQL 4 passed，见[R16 TR](../reports/tests/TR-MVP-006-20261016-R16.md)、[IR](../records/implementation/IR-MVP-006-20261016-R16.md)与[RR](../reports/reviews/RR-MVP-006-20261016-R16.md)。三份主分支索引逐项核对源记录 99/101/99，均为 `CURRENT`。Codex PR 附件登记返回 `UI_UNAVAILABLE`（本聊天附件身份数超过 100）；GitHub PR 链接可访问。R14 的 50/50 身份与会话通过、限流 10 仍是最近明确现场事实；新的内容、向量 ready 和凭证有效性尚未在 staging 验证。下一步三项：经精确授权发布并部署含本次知识事务接口的后端；分别执行受控内容准备和单会话安全核对；完成 50 并发与默认配置恢复验收。G5 DOING、production No-Go。
 
 2026-10-16 `MVP-CONV-SYNC-001` 源码已由 PR #248 合入 main `0fa1c5d`，可从官方只读接口取真实客服会话并在 CRM 工作台显示历史；staging 镜像和工作台现场尚未部署/核对，真实消息写继续关闭。其源码与测试、审查证据见 [IR](../records/implementation/IR-MVP-CONV-SYNC-001-20261016-R01.md)、[TR](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R01.md)、[RR](../reports/reviews/RR-MVP-CONV-SYNC-001-20261016-R01.md)。
 
