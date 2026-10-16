@@ -87,7 +87,10 @@ def test_rejects_invalid_reviewed_archive_hash_before_host_access() -> None:
 
 def test_manual_entry_keeps_rollback_and_default_restore_explicit() -> None:
     source = SCRIPT.read_text("utf-8")
-    assert "ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RollbackPrevious')" in source
+    assert (
+        "ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious')"
+        in source
+    )
     assert "Test-StagingProductionGates.ps1" in source
     assert "Prepare-StagingRollbackImages.ps1" in source
     assert "Set-StagingDockerPullMode.ps1" in source
@@ -95,3 +98,17 @@ def test_manual_entry_keeps_rollback_and_default_restore_explicit() -> None:
     assert "status --porcelain --untracked-files=all" in source
     assert "--password-stdin" in source
     assert "common.EnableG5SSELoadTest = $true" in source
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_accepts_restore_of_existing_read_and_translation_mode() -> None:
+    result = invoke(mode="RestoreReadAndTranslation")
+    assert result.returncode != 0
+    assert "staging linux host" in (result.stdout + result.stderr).lower()
+
+
+def test_read_and_translation_restore_uses_both_existing_gate_switches() -> None:
+    source = SCRIPT.read_text("utf-8")
+    assert "if ($Mode -ceq 'RestoreReadAndTranslation')" in source
+    assert "$common.EnableTikTokWebhookRead = $true" in source
+    assert "$common.EnableWorkspaceTranslation = $true" in source

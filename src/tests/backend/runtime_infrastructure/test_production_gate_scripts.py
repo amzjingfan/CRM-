@@ -575,7 +575,10 @@ def test_staging_webhook_read_opt_in_rejects_other_capability_changes(
     assert "does not match reviewed mode" in normalized_process_output(result)
 
 
-def test_staging_translation_mode_only_enables_backend_with_deepseek(staging_env_file: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize("with_webhook_read", [False, True])
+def test_staging_translation_mode_only_enables_backend_with_deepseek(
+    staging_env_file: Path, tmp_path: Path, with_webhook_read: bool
+) -> None:
     """工作台译文模式不打开通用 LLM、平台写入或其他服务模型能力。"""
     model_asset_dir = Path(
         next(
@@ -595,6 +598,12 @@ def test_staging_translation_mode_only_enables_backend_with_deepseek(staging_env
             "DEEPSEEK_API_KEY": "private-test-key",
         }
     )
+    if with_webhook_read:
+        for service_name in ("backend", "worker"):
+            config["services"][service_name]["environment"].update(
+                {"REAL_TIKTOK_READ_ENABLED": "true", "REAL_TIKTOK_WEBHOOK_ENABLED": "true"}
+            )
+        config["services"]["worker"]["environment"]["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
     config_path.write_text(json.dumps(config), encoding="utf-8")
     with staging_env_file.open("a", encoding="utf-8") as handle:
         handle.write(
@@ -622,10 +631,16 @@ def test_staging_translation_mode_only_enables_backend_with_deepseek(staging_env
     assert denied.returncode != 0
     assert not evidence_file.exists()
 
-    allowed = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableWorkspaceTranslation", environment=environment)
+    mode = (
+        ("-EnableTikTokWebhookRead", "-EnableWorkspaceTranslation")
+        if with_webhook_read
+        else ("-EnableWorkspaceTranslation",)
+    )
+    allowed = run_powershell(PREFLIGHT_SCRIPT, *args, *mode, environment=environment)
     assert allowed.returncode == 0, normalized_process_output(allowed)
     evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
     assert evidence["workspace_message_translation_enabled"] is True
+    assert evidence["tiktok_webhook_read_enabled"] is with_webhook_read
     assert evidence["production_release"] is False
     assert config["services"]["backend"]["environment"]["LLM_ENABLED"] == "false"
     assert config["services"]["worker"]["environment"]["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"] == "false"

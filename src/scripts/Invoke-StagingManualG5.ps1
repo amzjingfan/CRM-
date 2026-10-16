@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RollbackPrevious')]
+    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious')]
     [string]$Mode,
     [Parameter(Mandatory = $true)][string]$SourceSha,
     [Parameter(Mandatory = $true)][string]$CandidateBackendImage,
@@ -248,6 +248,10 @@ try {
             DockerHost = $dockerHost
         }
         if ($Mode -ceq 'DeployG5') { $common.EnableG5SSELoadTest = $true }
+        if ($Mode -ceq 'RestoreReadAndTranslation') {
+            $common.EnableTikTokWebhookRead = $true
+            $common.EnableWorkspaceTranslation = $true
+        }
         & $gate @common -EvidenceFile (Join-Path $EvidenceDirectory 'validate.json') -ValidateOnly
         & $gate @common -EvidenceFile (Join-Path $EvidenceDirectory 'deploy.json') -Deploy -Confirm:$false
         Write-Output "Manual staging operation passed; mode=$Mode; source_sha=$SourceSha; evidence=$EvidenceDirectory; production_release=false."

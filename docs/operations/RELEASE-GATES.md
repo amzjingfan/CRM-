@@ -29,6 +29,8 @@ G5 [R19 恢复策略](../reports/tests/TR-MVP-006-20261016-R19.md)补上已部�
 
 G5 [R20 手动只读核对](../reports/tests/TR-MVP-006-20261016-R20.md)使用新版界面配套的运行后端与受审源码，确认原 50 会话全部匹配，但合成 FAQ 尚未准备；Provider 0、业务写入 0。持久夹具入口的容器工作目录需修复。现有工作台翻译与 TikTok 只读模式仍运行；G5 压测窗口和恢复该模式均未验收，G5/production 不放行。
 
+G5 [R21 恢复模式源码](../reports/tests/TR-MVP-006-20261016-R21.md)已允许手动从 SSE 窗口显式恢复当前 TikTok 只读加工作台翻译组合；本地 151 项相关门禁回归与独立审查通过。尚未在 staging 演练，不能把源码通过视为恢复证据；G5/production 结论不变。
+
 G4 政策证据指代修复 subject `dbb65f5` 的确定性测试见 [R22 TR](../reports/tests/TR-MVP-005-20261013-R22.md)，新镜像、部署和真实模型复测见 [R23 TR](../reports/tests/TR-MVP-005-20261013-R23.md)。单项 `condition-open-002` 通过不代表其他五项通过；G5/G6 独立验收。
 
 G4 `v1.2.9` 的源码验证见 [R24 TR](../reports/tests/TR-MVP-005-20261013-R24.md)，当时的 staging 部署和真实模型复测见 [R25 TR](../reports/tests/TR-MVP-005-20261013-R25.md)；R30 曾缩减到两条逐项失败，当前结论以表中的 R56 为准。

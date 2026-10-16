@@ -46,7 +46,7 @@ def test_new_deployment_requires_current_main(mode: str) -> None:
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
-@pytest.mark.parametrize("mode", ["RestoreDefault", "RollbackPrevious"])
+@pytest.mark.parametrize("mode", ["RestoreDefault", "RestoreReadAndTranslation", "RollbackPrevious"])
 def test_recovery_accepts_reviewed_commit_after_main_moves(mode: str) -> None:
     assert check(mode, current_main=NEXT_MAIN).returncode == 0
     assert check(mode, current_main=NEXT_MAIN, resolved_commit=NEXT_MAIN).returncode != 0
