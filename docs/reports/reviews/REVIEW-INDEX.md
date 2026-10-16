@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -106,3 +106,4 @@ View: `CURRENT`
 | RR-MVP-006-20261016-R16 | MVP-006 | R16 | APPROVE | `c3439013e74271c8e132b53b1866b8b9eb1c64b2` | exact-batch / tenant-isolation / transactional-approval / temporary-permission / private-credentials / no-provider-call / recovery | 2026-10-16T18:49:00+08:00 | [`RR-MVP-006-20261016-R16.md`](RR-MVP-006-20261016-R16.md) |
 | RR-MVP-006-20261016-R17 | MVP-006 | R17 | APPROVE | `de1e3a10be9346b9d9f348563f98d5a6c45656af` | exact-source / immutable-images / private-credentials / staging-scope / recovery / fail-closed | 2026-10-16T21:16:00+08:00 | [`RR-MVP-006-20261016-R17.md`](RR-MVP-006-20261016-R17.md) |
 | RR-MVP-006-20261016-R18 | MVP-006 | R18 | APPROVE | `aa5f5f352155ec132667038e5d34f02e9112abc8` | source-provenance / credential-isolation / read-only-scope / runtime-identity / fail-closed | 2026-10-16T21:27:00+08:00 | [`RR-MVP-006-20261016-R18.md`](RR-MVP-006-20261016-R18.md) |
+| RR-MVP-CONV-UI-001-20261016-R01 | MVP-CONV-UI-001 | R01 | APPROVE | `93b847679a6f0bda31cafbaeeaf1952d195abe12` | tenant-isolation / csrf / dlp / audit / model-cost / staging-flags / no-platform-write | 2026-10-16T21:38:00+08:00 | [`RR-MVP-CONV-UI-001-20261016-R01.md`](RR-MVP-CONV-UI-001-20261016-R01.md) |

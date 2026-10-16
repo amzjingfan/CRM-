@@ -44,6 +44,14 @@ class MessageView(BaseModel):
     delivery_mode: Literal["inbound", "mock", "real", "unknown"]
 
 
+class MessageTranslationView(BaseModel):
+    """只返回给当前坐席的单条消息中文辅助译文。"""
+
+    message_id: uuid.UUID
+    target_language: Literal["zh-CN"] = "zh-CN"
+    translated_text: str
+
+
 class OrderSummary(BaseModel):
     """订单摘要。"""
 
@@ -83,6 +91,7 @@ class SessionMessagesData(BaseModel):
     pagination: PageMeta
     send_mode: Literal["disabled", "mock", "real"]
     requires_confirmation: Literal[True] = True
+    translation_enabled: bool = False
 
 
 class SendMessageRequest(BaseModel):

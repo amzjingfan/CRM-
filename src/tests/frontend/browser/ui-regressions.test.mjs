@@ -637,3 +637,51 @@ test("older conversation filter response cannot replace the latest list", async 
     await context.close();
   }
 });
+
+test("buyer and seller bubbles stay on opposite sides and show Chinese beneath the original", async () => {
+  const customer = { id: "customer-demo", name: "Buyer", email: null, avatar: null, tags: [] };
+  const conversation = {
+    id: "session-demo", store_id: store.id, platform: "tiktok", status: "active", unread_count: 0,
+    assigned_user_id: null, last_message_at: "2026-10-16T00:00:00Z", last_message: "Available", customer,
+  };
+  const messages = [
+    { id: "buyer-message", role: "user", content: "Is the black one available?", status: "received", created_at: "2026-10-16T00:00:00Z", error_code: null, delivery_mode: "inbound" },
+    { id: "seller-message", role: "agent", content: "Yes, the black one is available.", status: "sent", created_at: "2026-10-16T00:01:00Z", error_code: null, delivery_mode: "real" },
+  ];
+  let translationCalls = 0;
+  let sendCalls = 0;
+  const cors = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" };
+  const { context, page } = await openPage("/workspace", {}, async (context) => {
+    await context.route("**/v1/workspace/sessions**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/v1/workspace/sessions" && route.request().method() === "GET") {
+        return route.fulfill({ status: 200, contentType: "application/json", headers: cors, body: JSON.stringify({ code: 0, message: "ok", data: { items: [conversation], pagination: { page: 1, page_size: 30, total: 1 } } }) });
+      }
+      if (path === "/v1/workspace/sessions/session-demo/messages" && route.request().method() === "GET") {
+        return route.fulfill({ status: 200, contentType: "application/json", headers: cors, body: JSON.stringify({ code: 0, message: "ok", data: { session: conversation, messages, customer, recent_orders: [], ai_suggestion: null, pagination: { page: 1, page_size: 100, total: 2 }, send_mode: "disabled", requires_confirmation: true, translation_enabled: true } }) });
+      }
+      if (path.endsWith("/translation") && route.request().method() === "POST") {
+        translationCalls += 1;
+        const messageId = path.split("/").at(-2);
+        return route.fulfill({ status: 200, contentType: "application/json", headers: cors, body: JSON.stringify({ code: 0, message: "ok", data: { message_id: messageId, target_language: "zh-CN", translated_text: messageId === "buyer-message" ? "请问黑色还有货吗？" : "有的，黑色还有货。" } }) });
+      }
+      if (path === "/v1/workspace/sessions/session-demo/messages" && route.request().method() === "POST") sendCalls += 1;
+      return route.fallback();
+    });
+  });
+  try {
+    const buyer = page.locator(".message.incoming");
+    const seller = page.locator(".message.outgoing");
+    await buyer.waitFor();
+    assert.ok((await buyer.boundingBox()).x < (await seller.boundingBox()).x);
+    await buyer.getByRole("button", { name: "译成中文" }).click();
+    await seller.getByRole("button", { name: "译成中文" }).click();
+    await buyer.locator(".message-translation").getByText("请问黑色还有货吗？").waitFor();
+    await seller.locator(".message-translation").getByText("有的，黑色还有货。").waitFor();
+    assert.equal(await buyer.locator(".message-original").textContent(), "Is the black one available?");
+    assert.equal(translationCalls, 2);
+    assert.equal(sendCalls, 0);
+  } finally {
+    await context.close();
+  }
+});

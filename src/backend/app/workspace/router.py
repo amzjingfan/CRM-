@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 
 from app.auth.dependencies import (
     get_current_user,
@@ -12,7 +12,9 @@ from app.auth.dependencies import (
     require_permission,
     require_role,
 )
+from app.shared.config.settings import get_settings
 from app.shared.database.base import User
+from app.shared.database.redis import consume_chat_query
 from app.shared.database.session import DbSession
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.shared.schemas.responses import ApiResponse
@@ -26,6 +28,7 @@ from app.tools.schemas import (
 from app.tools.service import issue_coupon, query_logistics, request_address_update
 from app.workspace.schemas import (
     AssignRequest,
+    MessageTranslationView,
     MessageView,
     OrderSummary,
     ReadResult,
@@ -46,9 +49,33 @@ from app.workspace.service import (
     reconcile_unknown_message,
     send_agent_message,
     transfer_session,
+    translate_message,
 )
 
 router = APIRouter(prefix="/workspace", tags=["客服工作台"])
+
+
+@router.post(
+    "/sessions/{session_id}/messages/{message_id}/translation",
+    response_model=ApiResponse[MessageTranslationView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
+)
+async def message_translation(
+    session_id: uuid.UUID,
+    message_id: uuid.UUID,
+    request: Request,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[MessageTranslationView]:
+    """坐席主动翻译一条已授权消息，不发送任何平台消息。"""
+    settings = get_settings()
+    if not settings.workspace_message_translation_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "消息翻译未启用", 503)
+    client_ip = request.client.host if request.client else "unknown"
+    if not await consume_chat_query(user.id, client_ip, settings.chat_query_limit, settings.chat_query_window_seconds):
+        raise AppError(ErrorCode.RATE_LIMITED, "翻译请求过于频繁", 429)
+    trace_id = str(getattr(request.state, "trace_id", uuid.uuid4()))
+    return ApiResponse(data=await translate_message(session, user, session_id, message_id, trace_id))
 
 
 @router.get(

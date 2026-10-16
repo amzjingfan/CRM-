@@ -194,6 +194,9 @@ class Settings(BaseSettings):
     llm_live_eval: bool = Field(default=False, validation_alias="LLM_LIVE_EVAL")
     ai_synthetic_demo_enabled: bool = Field(default=False, validation_alias="AI_SYNTHETIC_DEMO_ENABLED")
     ai_translation_enabled: bool = Field(default=False, validation_alias="AI_TRANSLATION_ENABLED")
+    workspace_message_translation_enabled: bool = Field(
+        default=False, validation_alias="WORKSPACE_MESSAGE_TRANSLATION_ENABLED"
+    )
     llm_primary_provider: str = Field(default="openai", validation_alias="LLM_PRIMARY_PROVIDER")
     llm_primary_model: str | None = Field(default=None, validation_alias="LLM_PRIMARY_MODEL")
     llm_fallback_provider: str | None = Field(default="anthropic", validation_alias="LLM_FALLBACK_PROVIDER")
@@ -513,6 +516,13 @@ class Settings(BaseSettings):
         """
         if (self.ai_marketing_enabled or self.ai_translation_enabled) and not self.llm_enabled:
             raise ValueError("启用 AI 翻译或营销时必须同时启用 LLM")
+        if self.workspace_message_translation_enabled and (
+            self.app_env == "production"
+            or self.llm_primary_provider != "deepseek"
+            or not self.llm_primary_model
+            or self.deepseek_api_key is None
+        ):
+            raise ValueError("工作台消息翻译仅限非生产环境且必须配置 DeepSeek 模型")
         if not self.embedding_enabled:
             return self
         if self.embedding_provider != "local_bge":

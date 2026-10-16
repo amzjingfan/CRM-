@@ -3,10 +3,10 @@
 import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, MapPin, Package, Ticket, UserFocus, UserSwitch, X } from "@phosphor-icons/react";
 import { AppShell } from "../../components/AppShell";
+import { MessageBubble } from "../../components/MessageBubble";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { getLogistics, getSessionMessages, getSessionMessagesPage, issueCoupon, listSessions, markSessionRead, sendMessage, streamChatQuery, transferSession, updateShippingAddress, type SessionListData, type SessionMessagesData, type Suggestion } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
-import { messageSide, senderLabel } from "../../lib/message-display";
 
 type Filter = "all" | "unread" | "mine";
 const filterLabels: Record<"zh" | "en", Record<Filter, string>> = {
@@ -14,14 +14,6 @@ const filterLabels: Record<"zh" | "en", Record<Filter, string>> = {
   en: { all: "All", unread: "Unread", mine: "Mine" },
 };
 const newKey = () => typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-const statusLabel = (status: string, en: boolean) => ({
-  received: en ? "Received" : "已接收",
-  processing: en ? "Sending" : "发送中",
-  sent: en ? "Sent" : "已发送",
-  delivered: en ? "Delivered" : "已送达",
-  failed: en ? "Failed" : "发送失败",
-  unknown: en ? "Unknown · reconcile manually" : "结果未知 · 请人工对账",
-}[status] ?? status);
 const modeLabel = (mode: SessionMessagesData["send_mode"], en: boolean) => ({
   real: en ? "Real TikTok delivery" : "真实 TikTok 发送",
   mock: en ? "Simulated delivery" : "模拟发送",
@@ -221,7 +213,7 @@ export default function WorkspacePage() {
 
     <section className="chat-panel" aria-label={en ? "Chat window" : "聊天窗口"}>{!selectedId ? <EmptyState label={en ? "Select a conversation" : "请选择一个会话"} /> : detailError ? <ErrorState message={detailError} /> : !detail ? <LoadingState label={en ? "Loading messages…" : "正在加载消息…"} /> : <>
       <header className="chat-heading"><button className="mobile-back" onClick={() => setSelectedId(null)} type="button" aria-label={en ? "Back to conversation list" : "返回会话列表"}><ArrowLeft size={20} /></button><div><h2 className="font-semibold">{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><p className="text-xs text-[var(--muted)]">{detail.session.platform} · {detail.session.status} · {modeLabel(detail.send_mode, en)}</p></div><button className="secondary-button ml-auto" onClick={() => setCustomerOpen(true)} type="button"><UserFocus size={17} />{en ? "Customer details" : "客户信息"}</button></header>
-      <div className="message-scroll">{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <article className={`message ${messageSide(message.role)}`} key={message.id}><p>{message.content}</p><small>{senderLabel(message.role, en)} · {new Date(message.created_at).toLocaleTimeString(en ? "en-US" : "zh-CN", { hour: "2-digit", minute: "2-digit" })} · {statusLabel(message.status, en)}{message.delivery_mode === "real" ? (en ? " · real" : " · 真实平台") : message.delivery_mode === "mock" ? (en ? " · simulated" : " · 模拟") : ""}</small></article>) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>
+      <div className="message-scroll">{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>
       <section className="ai-suggestion" aria-label={en ? "AI suggestion" : "AI 建议"}><div className="min-w-0 flex-1"><strong>{en ? "AI reply suggestion" : "AI 回复建议"}</strong><p aria-live="polite" className={suggestionDraft ? "mt-2 whitespace-pre-wrap text-sm text-[var(--text)]" : ""}>{suggestionDraft || suggestionStatus || (en ? "Generate a suggestion on demand; it will not send automatically or execute write tools." : "按需生成建议；不会自动发送或执行写工具。")}</p>{suggestion ? <small>{suggestion.demo_mode ? (en ? "Synthetic demo · " : "合成数据演示 · ") : ""}{en ? "Intent" : "意图"} {suggestion.intent ?? (en ? "Unknown" : "未知")} · {en ? "Confidence" : "置信度"} {(suggestion.confidence * 100).toFixed(1)}% · {suggestion.requires_human ? (en ? "Human review required" : "需人工复核") : (en ? "Available for manual use" : "可人工采用")}</small> : null}</div><div className="flex gap-2">{suggestionLoading ? <button className="text-button" type="button" onClick={cancelSuggestion}><X size={16} />{en ? "Cancel" : "取消"}</button> : <button className="text-button" type="button" onClick={() => void requestSuggestion()}>{suggestionDraft ? (en ? "Refresh" : "刷新") : (en ? "Generate" : "生成")}</button>}<button className="secondary-button" disabled={!suggestionDraft || suggestionLoading} type="button" onClick={() => { setDraft(suggestionDraft); setAnnouncement(en ? "Suggestion inserted; review it before sending" : "建议已填入输入框，确认后再发送"); }}>{en ? "Use" : "使用"}</button></div></section>
       <div className="composer"><textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} maxLength={messageLimit} onChange={(event) => setDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a reply. Enter to review and confirm; Shift+Enter for a new line" : "输入回复，Enter 进入确认，Shift+Enter 换行")} value={draft} />{failedDraft ? <button className="text-button text-red-600" onClick={() => void submitMessage(failedDraft.content, failedDraft.key)} type="button">{en ? "Request interrupted; confirm retry" : "请求中断，确认后重试"}</button> : null}<div className="flex items-center justify-between"><small className="text-[var(--muted)]">{modeLabel(detail.send_mode, en)} · {draft.length}/{messageLimit}</small><button className="primary-button" disabled={!draft.trim() || sending || detail.send_mode === "disabled"} onClick={() => void submitMessage()} type="button">{sending ? (en ? "Sending…" : "发送中…") : (en ? "Review & send" : "确认并发送")}</button></div></div>
     </>}</section>

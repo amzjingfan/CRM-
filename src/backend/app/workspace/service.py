@@ -8,6 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.errors import LLMProviderError
+from app.agent.generation import StructuredGenerationService
+from app.agent.providers.factory import build_provider
+from app.agent.translation import TranslationService
 from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
 from app.conversations.models import Conversation, Message
@@ -30,6 +34,7 @@ from app.workspace.repository import (
 )
 from app.workspace.schemas import (
     CustomerSummary,
+    MessageTranslationView,
     MessageView,
     OrderSummary,
     PageMeta,
@@ -139,6 +144,84 @@ async def get_session_messages(
         recent_orders=[_order_view(item) for item in orders],
         pagination=PageMeta(page=page, page_size=page_size, total=total),
         send_mode=_message_send_mode(conversation.platform),
+        translation_enabled=(
+            conversation.platform == "tiktok" and get_settings().workspace_message_translation_enabled
+        ),
+    )
+
+
+async def translate_message(
+    session: AsyncSession, user: User, session_id: uuid.UUID, message_id: uuid.UUID, trace_id: str
+) -> MessageTranslationView:
+    """按店铺和会话定位原文，只把脱敏后的单条文本送入现有翻译节点。"""
+    settings = get_settings()
+    if not settings.workspace_message_translation_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "消息翻译未启用", 503)
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if conversation.platform != "tiktok":
+        raise AppError(ErrorCode.VALIDATION_ERROR, "仅支持 TikTok 消息翻译", 422)
+    message = await session.scalar(
+        select(Message).where(
+            Message.id == message_id,
+            Message.conversation_id == conversation.id,
+            Message.store_id == conversation.store_id,
+        )
+    )
+    if message is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "消息不存在", 404)
+    if message.message_type != "text" or not message.content.strip() or len(message.content) > 4000:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "仅支持翻译不超过 4000 字的文本消息", 422)
+    try:
+        provider = build_provider("deepseek", settings.llm_primary_model, settings)
+        translator = TranslationService(StructuredGenerationService(provider, None, max_attempts=1))
+        result = await translator.translate_bundle(
+            trigger_message_id=message.id,
+            message=message.content,
+            draft_reply=None,
+            target_language="zh-CN",
+            trace_id=trace_id,
+        )
+    except (LLMProviderError, ValueError) as error:
+        session.add(
+            AuditLog(
+                store_id=conversation.store_id,
+                actor_type="user",
+                actor_id=user.id,
+                action="message.translate",
+                resource_type="message",
+                resource_id=message.id,
+                request_id=trace_id,
+                after_data={"target_language": "zh-CN"},
+                result="failed",
+            )
+        )
+        await session.commit()
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "翻译暂不可用，请稍后重试", 503) from error
+    session.add(
+        AuditLog(
+            store_id=conversation.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action="message.translate",
+            resource_type="message",
+            resource_id=message.id,
+            request_id=trace_id,
+            after_data={
+                "target_language": "zh-CN",
+                "provider": result.provider if result else "none",
+                "model": result.model if result else "none",
+                "input_tokens": result.input_tokens if result else 0,
+                "output_tokens": result.output_tokens if result else 0,
+            },
+            result="succeeded" if result else "skipped",
+        )
+    )
+    await session.commit()
+    return MessageTranslationView(
+        message_id=message.id,
+        translated_text=result.message_translation if result else message.content,
     )
 
 

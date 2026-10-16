@@ -1,0 +1,5 @@
+# 工作台翻译只对 staging backend 开启；与 G2 只读模式兼容，不开启通用 LLM 或平台写入。
+services:
+  backend:
+    environment:
+      WORKSPACE_MESSAGE_TRANSLATION_ENABLED: "true"

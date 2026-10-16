@@ -575,6 +575,62 @@ def test_staging_webhook_read_opt_in_rejects_other_capability_changes(
     assert "does not match reviewed mode" in normalized_process_output(result)
 
 
+def test_staging_translation_mode_only_enables_backend_with_deepseek(staging_env_file: Path, tmp_path: Path) -> None:
+    """工作台译文模式不打开通用 LLM、平台写入或其他服务模型能力。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["services"]["backend"]["environment"].update(
+        {
+            "WORKSPACE_MESSAGE_TRANSLATION_ENABLED": "true",
+            "LLM_PRIMARY_PROVIDER": "deepseek",
+            "LLM_PRIMARY_MODEL": "deepseek-chat",
+            "DEEPSEEK_API_KEY": "private-test-key",
+        }
+    )
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    with staging_env_file.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key"
+        )
+    evidence_file = tmp_path / "translation-validate.json"
+    args = (
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+    )
+
+    denied = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert denied.returncode != 0
+    assert not evidence_file.exists()
+
+    allowed = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableWorkspaceTranslation", environment=environment)
+    assert allowed.returncode == 0, normalized_process_output(allowed)
+    evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
+    assert evidence["workspace_message_translation_enabled"] is True
+    assert evidence["production_release"] is False
+    assert config["services"]["backend"]["environment"]["LLM_ENABLED"] == "false"
+    assert config["services"]["worker"]["environment"]["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"] == "false"
+
+
 @pytest.mark.parametrize(
     "base_url,accepted",
     [
@@ -828,6 +884,7 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
         "CHAT_QUERY_LIMIT": "10",
         "LLM_LIVE_EVAL": "false",
         "AI_TRANSLATION_ENABLED": "false",
+        "WORKSPACE_MESSAGE_TRANSLATION_ENABLED": "false",
         "AI_MARKETING_ENABLED": "false",
         "AUTO_REPLY_ENABLED": "false",
     }

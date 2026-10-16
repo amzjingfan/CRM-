@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-manual-check-index-20261016
-Governance base SHA: 04e711eff771aa1859f21d0c38a19d6457b9c869
-CANDIDATE_SUBJECT_SHA: aa5f5f352155ec132667038e5d34f02e9112abc8
+Working branch at this snapshot: feature/tiktok-bilingual-chat-20261016
+Governance base SHA: b27293365ac3700731aa39494b45080a3fa932df
+CANDIDATE_SUBJECT_SHA: 93b847679a6f0bda31cafbaeeaf1952d195abe12
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: ATTENTION — `CLEANUP-20261014-001/002` 已按精确授权删除业务服务器旧缓存；其他隔离物、备份和忽略测试材料不在这两批范围
+Workspace hygiene: ATTENTION — 本 worktree 有前端开发服务器生成的未跟踪 `src/frontend/AGENTS.md`、`src/frontend/CLAUDE.md`，已保护且未纳入提交；其他既有隔离物、备份不在本任务范围
 ```
+
+2026-10-16 `MVP-CONV-UI-001` 恢复点：用户授权真实 TikTok 消息经现有 DeepSeek 按需翻译。候选 `93b8476` 已实现买家左、客服右与原文/中文分层；单条翻译要求同店铺权限、CSRF、限流及 DLP，staging 显式开启，真实平台发信仍关闭。本地相关后端 150、前端 45、合成浏览器 26 项通过；见 [IR](../records/implementation/IR-MVP-CONV-UI-001-20261016-R01.md)、[TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R01.md)、[RR](../reports/reviews/RR-MVP-CONV-UI-001-20261016-R01.md)。下一步：完成无 Actions 的 PR/合并；取得镜像发布所需 GitHub 权限并手动部署 staging；对一条真实消息核对双语显示及译文。当前仅源码候选，production No-Go。
 
 2026-10-16 G5 R18 现场只读恢复点：匹配 staging 的 SSH 密钥可用 `root@192.168.110.210` 登录，再切换到 UID 1004 的 `crmdeploy`；直接 `crmdeploy` SSH 仍拒绝。main `aa5f5f35` 的 7,833,600 字节源码包本机/服务器 SHA-256 均为 `24401423…ae5bdb6f56b6`，全部解包内容校验通过。从受审源码目录运行一次手动 `CheckOnly` 返回 ready、`service_mutation=false`；第一次从 `/root` 切换用户因工作目录权限在 Docker 操作前失败。见 [R18 IR](../records/implementation/IR-MVP-006-20261016-R18.md)、[TR](../reports/tests/TR-MVP-006-20261016-R18.md)、[RR](../reports/reviews/RR-MVP-006-20261016-R18.md)及[低敏摘要](../../release/evidence/staging/crm-staging-g5-manual-check-20261016.json)。[PR #257](https://github.com/CP11-gh/CRM/pull/257) 已合入 main `04e711ef`，三个主分支源记录/索引经逐项核对为 `CURRENT`；Codex 附件登记仍因本聊天身份数超过 100 返回 `UI_UNAVAILABLE`，PR 链接可访问。下一步：准备并获准发布 R16 后端镜像；用该摘要手动预取/validate/deploy 并验证恢复；完成合成内容、有效凭证、单会话安全输出和 50 并发。未改服务、未调用 DeepSeek，G5 `DOING`、production No-Go。
 

@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-16 `MVP-CONV-UI-001` 候选 `93b8476`：后端翻译/门禁相关 150 passed，前端契约 45 passed，本地生产构建合成浏览器 26 passed；Ruff、格式、mypy、lint、typecheck、build 通过。合成浏览器确认买家左侧、卖家右侧、按需中文译文与平台发信 0 次。尚未发布后端/前端镜像、部署 staging 或对真实消息调用 DeepSeek；现场 UI/译文待验，见 [R01 TR](../reports/tests/TR-MVP-CONV-UI-001-20261016-R01.md)。真实消息写与 production 仍关闭。
+
 2026-10-16 `MVP-CONV-SYNC-001` staging 只读现场：授权 TikTok 会话 179 个、可见消息 2018 条，工作台接口 6 页返回 179 个不重复会话；截图目标平台 29 条原始历史中的 25 条可见消息全部在工作台详情。R02 前端 45 契约测试、24 浏览器回归通过，1 项缓存配置测试跳过，类型检查与构建通过；PR #250 双 CI 合入。用户授权的手动 staging validate/deploy 使用固定源码包和不可变摘要均通过；新版前端运行且三个健康接口 200。浏览器现场显示真实会话总数 179、列表由 30 条加载至 60 条、目标历史及角色标签；回复输入与发送按钮禁用。真实消息写关闭，G2/G3 未通过；完整范围见 [R03 TR](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R03.md)，production No-Go。
 
 2026-10-16 G5 R16 源码：subject `c3439013` 新增原隔离店铺的合成 FAQ/问题和短期凭证续期精确门禁；最终完整后端 `1892 passed, 27 skipped`，隔离 PostgreSQL 4 passed，Ruff、格式、mypy、工作流 PowerShell AST 通过；[PR #251](https://github.com/CP11-gh/CRM/pull/251) 前后端 CI #38890253045 均通过并 squash 合入 main `5d6c0298`，见[R16 TR](../reports/tests/TR-MVP-006-20261016-R16.md)。未在 staging 写入内容、轮换凭证、发布镜像或调用模型；R14 的限流 10 仍是最近明确现场值。G5、production No-Go。

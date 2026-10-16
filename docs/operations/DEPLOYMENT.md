@@ -71,6 +71,8 @@ G5 SSE 压测使用同一 `staging-gates.yml` 的显式 `enable_g5_sse_load_test
 
 仓库外环境文件声明 `TIKTOK_EGRESS_IP=38.55.145.52` 与 `TIKTOK_EGRESS_SECRET_DIR=/home/crmdeploy/secrets/tiktok-egress`；overlay 固定向应用注入 `TIKTOK_EGRESS_PROXY_URL=socks5h://tiktok-egress:1080`。密钥目录所有者为 UID/GID 1004、模式 `0700`，其中 `id_ed25519` 和 `known_hosts` 为 `0600`，只读挂载到 helper 的 `/run/secrets/tiktok-egress`。helper 显式 `user: "0:0"`，在 Rootless 映射下只是宿主机 `crmdeploy`，不会取得宿主机 root；应用容器仍为非 root。私钥不得进入应用容器、镜像、Git、环境文件或证据。
 
+工作台单条按需译文使用手动 staging 门禁的 `-EnableWorkspaceTranslation`；在默认 Rootless 层之后追加固定的 `docker-compose.rootless-staging-translation.yml`，仅 backend 的 `WORKSPACE_MESSAGE_TRANSLATION_ENABLED=true`。可与 G2 Webhook 只读模式组合，不与 G5 SSE 模式组合；通用 `LLM_ENABLED`、`AI_TRANSLATION_ENABLED`、真实消息写入及其他服务翻译开关保持 `false`。仓库外环境仍需开关为 `false`，并提供已配置的 DeepSeek 主模型与密钥。门禁核对合并配置和运行容器；无此开关的部署恢复默认关闭状态。用户授权真实消息送 DeepSeek 仅用于当前 staging 的坐席主动单条翻译，不表示生产翻译放行。
+
 门禁先以候选 backend RepoDigest 启动并等待 helper，再从同一候选 backend 镜像执行：
 
 ```text

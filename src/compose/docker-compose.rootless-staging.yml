@@ -10,6 +10,7 @@ x-rootless-staging-runtime: &rootless-staging-runtime
   SSE_LOAD_TEST_ENABLED: "false"
   LLM_LIVE_EVAL: "false"
   AI_TRANSLATION_ENABLED: "false"
+  WORKSPACE_MESSAGE_TRANSLATION_ENABLED: "false"
   AI_MARKETING_ENABLED: "false"
   AUTO_REPLY_ENABLED: "false"
   ALLOW_MOCK_PLATFORM_ADAPTERS: "false"
