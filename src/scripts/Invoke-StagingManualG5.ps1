@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious')]
+    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious', 'ContentCheck', 'ContentPrepare', 'RenewCredentials')]
     [string]$Mode,
     [Parameter(Mandatory = $true)][string]$SourceSha,
     [Parameter(Mandatory = $true)][string]$CandidateBackendImage,
@@ -14,6 +14,7 @@ param(
     [Parameter(Mandatory = $true)][string]$PreviousRetrievalModelImage,
     [Parameter(Mandatory = $true)][string]$ConfirmTarget,
     [Parameter(Mandatory = $true)][string]$EvidenceDirectory,
+    [string]$ConfirmContent,
     [string]$ArchivePath,
     [string]$ArchiveSha256
 )
@@ -42,6 +43,11 @@ function Assert-LocalImage([string]$Reference) {
 }
 
 if ($ConfirmTarget -cne 'staging') { throw 'ConfirmTarget must equal staging.' }
+if (($Mode -ceq 'ContentPrepare' -and $ConfirmContent -cne 'prepare-50-isolated-g5-messages') -or
+    ($Mode -ceq 'RenewCredentials' -and $ConfirmContent -cne 'renew-50-existing-g5-tokens') -or
+    ($Mode -cnotin @('ContentPrepare', 'RenewCredentials') -and $ConfirmContent)) {
+    throw 'Exact G5 content confirmation is required only for the selected write mode.'
+}
 if ($SourceSha -cnotmatch '^[0-9a-f]{40}$') { throw 'Source SHA must be a full lowercase Git commit.' }
 Assert-Image 'CandidateBackendImage' $CandidateBackendImage 'ghcr.io/cp11-gh/crm-backend'
 Assert-Image 'FrontendImage' $FrontendImage 'ghcr.io/cp11-gh/crm-frontend'
@@ -163,6 +169,15 @@ try {
     New-Item -ItemType Directory -Path $EvidenceDirectory | Out-Null
     & chmod 0700 $EvidenceDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Unable to protect the evidence directory.' }
+
+    if ($Mode -cin @('ContentCheck', 'ContentPrepare', 'RenewCredentials')) {
+        & (Join-Path $PSScriptRoot 'Invoke-StagingManualG5Content.ps1') -Mode $Mode `
+            -SourceSha $SourceSha -BackendImage $CandidateBackendImage -ReviewRoot $reviewRoot `
+            -EnvironmentFile $environmentFile -DockerHost $dockerHost `
+            -EvidenceFile (Join-Path $EvidenceDirectory 'content.json') -ConfirmContent $ConfirmContent
+        if (-not $?) { throw 'Manual G5 content operation failed; reconcile before any retry.' }
+        return
+    }
 
     $authDirectory = Join-Path '/run/user/1004' "crm-g5-ghcr-$([guid]::NewGuid().ToString('N'))"
     New-Item -ItemType Directory -Path $authDirectory | Out-Null

@@ -50,7 +50,7 @@ G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-
 
 `inspect-staging-tiktok-webhook-events.yml` 仅用于 G2 staging 现场前后计数对账。从 main 精确提交读取并验证脚本 Git blob，核对正在运行的 backend 不可变摘要；脚本要求 staging Webhook 模式开启、恰好一个已连接 TikTok 渠道，第一条数据库语句设置只读事务。它只读取 2026-10-09 03:54:01Z 订阅确认后的 `NEW_MESSAGE` 事件状态/签名/重试聚合、同店铺 TikTok 入站消息累计数和该时间后的未绑定事件数。输出固定计数字段，不包含消息正文、事件 ID、店铺 ID、签名或平台响应；执行前后使用两个 artifact 比较差值。此工具不调用外部平台、不修改数据库，也不等于真实投递通过。
 
-G5 内容准备另由 `prepare-staging-sse-fixture.yml` 的 `content_check`、`content_prepare`、`renew_credentials` 模式处理原 R05 隔离店铺。源码、运行后端、数据库与私有凭证目录均精确核对；一次性内容写入需要独立授权，并在同一事务内创建内部审阅级合成 FAQ、改写 50 条合成提问和撤销临时权限。只有 FAQ 向量化为 `ready` 且当前版本切片存在，才可另行续期原 50 人的仓库外短期凭证。源码准备不代表现场执行，单会话 DeepSeek 和 50 并发另行验收；完整路径与恢复约束见 [`src/deploy/production/README.md`](../../src/deploy/production/README.md)。
+G5 内容准备改用 `Invoke-StagingManualG5.ps1` 的 `ContentCheck`、`ContentPrepare`、`RenewCredentials` 模式处理原 R05 隔离店铺，不调度 GitHub Actions。GitHub 可验证的受审源码、运行后端 OCI revision/摘要、数据库、签名配置与私有凭证目录均精确核对；内容模式允许证据合并后的历史受审提交；容器固定审核源码工作目录。一次性内容写入需要独立授权，并在同一事务内创建内部审阅级合成 FAQ、改写 50 条合成提问和撤销临时权限。只有 FAQ 向量化为 `ready` 且当前版本切片存在，才可另行续期原 50 人的仓库外短期凭证。源码准备不代表现场执行，单会话 DeepSeek 和 50 并发另行验收；参数与恢复约束见 [Rootless 手动路径](../../src/deploy/staging/rootless/README.md#g5-手动-staging-路径不运行-github-actions)。
 
 ### TikTok 固定出口契约
 
@@ -71,7 +71,7 @@ G5 SSE 压测使用同一 `staging-gates.yml` 的显式 `enable_g5_sse_load_test
 
 仓库外环境文件声明 `TIKTOK_EGRESS_IP=38.55.145.52` 与 `TIKTOK_EGRESS_SECRET_DIR=/home/crmdeploy/secrets/tiktok-egress`；overlay 固定向应用注入 `TIKTOK_EGRESS_PROXY_URL=socks5h://tiktok-egress:1080`。密钥目录所有者为 UID/GID 1004、模式 `0700`，其中 `id_ed25519` 和 `known_hosts` 为 `0600`，只读挂载到 helper 的 `/run/secrets/tiktok-egress`。helper 显式 `user: "0:0"`，在 Rootless 映射下只是宿主机 `crmdeploy`，不会取得宿主机 root；应用容器仍为非 root。私钥不得进入应用容器、镜像、Git、环境文件或证据。
 
-2026-10-16 手动 G5 只读现场：新版界面配套后端已部署，原隔离 50/50 会话匹配；合成 FAQ 尚未准备，模型调用和数据库写入均为 0。现有 `prepare-staging-sse-fixture.yml` 的容器调用未指定工作目录，源码安全校验会拒绝默认 `/app` 路径；本次只读调用显式设置 `--workdir /opt/crm-g5-source` 才通过，持久手动入口须纳入此约束。G5 窗口结束后必须恢复当前 TikTok 只读与工作台翻译组合，并以运行配置及健康核对，不可把恢复到全关闭默认态视为原运行模式恢复。
+2026-10-16 手动 G5 只读现场：新版界面配套后端已部署，原隔离 50/50 会话匹配；合成 FAQ 尚未准备，模型调用和数据库写入均为 0。现场发现容器默认 `/app` 工作目录不符合源码安全校验；手动内容入口现固定 `--workdir /opt/crm-g5-source`，但尚未现场执行写入或续期。G5 窗口结束后必须恢复当前 TikTok 只读与工作台翻译组合，并以运行配置及健康核对，不可把恢复到全关闭默认态视为原运行模式恢复。
 
 工作台单条按需译文使用手动 staging 门禁的 `-EnableWorkspaceTranslation`；在默认 Rootless 层之后追加固定的 `docker-compose.rootless-staging-translation.yml`，仅 backend 的 `WORKSPACE_MESSAGE_TRANSLATION_ENABLED=true`。可与 G2 Webhook 只读模式组合，不与 G5 SSE 模式组合；通用 `LLM_ENABLED`、`AI_TRANSLATION_ENABLED`、真实消息写入及其他服务翻译开关保持 `false`。仓库外环境仍需开关为 `false`，并提供已配置的 DeepSeek 主模型与密钥。门禁核对合并配置和运行容器；无此开关的部署恢复默认关闭状态。用户授权真实消息送 DeepSeek 仅用于当前 staging 的坐席主动单条翻译，不表示生产翻译放行。
 

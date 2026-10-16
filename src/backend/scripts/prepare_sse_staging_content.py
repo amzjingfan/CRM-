@@ -55,13 +55,15 @@ class ContentSnapshot:
     document: KnowledgeDocument | None
 
 
-def validate_content_paths(app_env: str, source: Path, output: Path, *, writable: bool) -> None:
+def validate_content_paths(
+    app_env: str, source: Path, output: Path, *, writable: bool, allow_renewed: bool = False
+) -> None:
     """源码只读、私有目录按模式挂载，且绝不覆盖原始或更新后的凭证。"""
     if app_env != "staging":
         raise ValueError("G5 content preparation requires staging")
     if source.name != SOURCE_NAME or output.name != RENEWED_NAME or source.parent != output.parent:
         raise ValueError("G5 content batch mismatch")
-    if output.exists():
+    if output.is_symlink() or (output.exists() and not allow_renewed):
         raise ValueError("G5 renewed credentials file already exists")
     if os.name != "posix" or not source.is_absolute() or not source.is_file() or source.is_symlink():
         raise ValueError("G5 content source requires private POSIX staging")
@@ -69,6 +71,16 @@ def validate_content_paths(app_env: str, source: Path, output: Path, *, writable
         output, writable=writable
     ):
         raise ValueError("G5 content private source is unsafe")
+    if output.exists() and (
+        not output.is_file() or not private_source_metadata_is_safe(output.parent.stat(), output.stat())
+    ):
+        raise ValueError("G5 renewed credentials file is unsafe")
+
+
+def validate_renewed_payload(payload: object, manifest: ReconciliationManifest) -> None:
+    """只读验签续期文件的全部 50 个用户和会话映射，不输出令牌。"""
+    if validate_reconciliation_payload(payload) != manifest:
+        raise ValueError("fixture renewed batch mismatch")
 
 
 def private_source_metadata_is_safe(parent: os.stat_result, source: os.stat_result) -> bool:
@@ -252,9 +264,15 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
     """读检查、一次性内容写入与零数据库写入续期分开执行。"""
     writable = mode == "renew_credentials"
     settings = get_settings()
-    validate_content_paths(settings.app_env, source, output, writable=writable)
+    validate_content_paths(settings.app_env, source, output, writable=writable, allow_renewed=mode == "check_only")
     validate_database_target(settings.database_url, expected_database_sha256)
     payload, manifest = read_private_source(source)
+    if output.exists():
+        try:
+            renewed_payload: Any = json.loads(output.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError("G5 renewed credentials unreadable") from exc
+        validate_renewed_payload(renewed_payload, manifest)
     async with session_factory() as session:
         if mode == "prepare_content":
             async with session.begin():
@@ -276,6 +294,7 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
             "mode": mode,
             "fixture_state": snapshot.state,
             "knowledge_ready": knowledge_ready,
+            "credentials_state": "renewed" if output.exists() else "original",
             "matched_sessions": 50,
             "provider_calls": 0,
             "database_writes": 0,

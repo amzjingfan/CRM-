@@ -11,6 +11,7 @@ import pytest
 
 from app.auth.security import create_access_token
 from app.shared.config.settings import get_settings
+from scripts import prepare_sse_staging_content as content
 from scripts import prepare_sse_staging_fixture as fixture
 
 
@@ -51,6 +52,17 @@ def test_reconcile_accepts_only_complete_original_fixture_mapping() -> None:
 
     assert len(manifest.user_ids) == len(manifest.conversation_ids) == 50
     assert manifest.run_id == uuid.UUID(payload["manifest"]["run_id"])  # type: ignore[index]
+
+
+def test_read_only_content_reconciliation_validates_renewed_pool_mapping() -> None:
+    original = original_fixture_payload()
+    manifest = fixture.validate_reconciliation_payload(original)
+    renewed = fixture.build_renewed_credentials(original, manifest)
+
+    content.validate_renewed_payload(renewed, manifest)
+    renewed["clients"][0]["access_token"] = create_access_token(uuid.uuid4())
+    with pytest.raises(ValueError, match="fixture"):
+        content.validate_renewed_payload(renewed, manifest)
 
 
 @pytest.mark.parametrize("damage", ["wrong_owner", "duplicate_session", "missing_user"])

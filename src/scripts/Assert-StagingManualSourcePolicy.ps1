@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious')]
+    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious', 'ContentCheck', 'ContentPrepare', 'RenewCredentials')]
     [string]$Mode,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceSha,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$ResolvedCommitSha,
@@ -16,4 +16,4 @@ if ($SourceSha -cne $ResolvedCommitSha) {
 if ($Mode -cin @('CheckOnly', 'DeployG5') -and $SourceSha -cne $CurrentMainSha) {
     throw 'A new staging deployment requires the current remote main commit.'
 }
-# 恢复沿用已审核源码及候选镜像；只读证据合入 main 不应阻断关闭压测窗口。
+# 恢复与内容模式沿用已审核源码和运行镜像 revision；证据合入 main 不应阻断后续检查。

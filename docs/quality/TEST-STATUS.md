@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R22 手动夹具源码：从受审源码与运行镜像精确核对后，手动内容入口可分别只读检查、准备 50 条合成问题和内部审阅 FAQ、续期私有凭证；续期后只读对账与异常文件名拒绝经回归覆盖。完整后端 `1929 passed, 27 skipped`，定向 `36 passed`，Ruff、格式、mypy、PowerShell AST 与独立审查通过。见 [R22 TR](../reports/tests/TR-MVP-006-20261017-R22.md)。未发布新镜像或在 staging 执行本入口，G5/production 未通过。
+
 2026-10-16 G5 R21 手动恢复源码：新增 `RestoreReadAndTranslation`，在结束 SSE 窗口后通过原 Rootless 门禁同时恢复 TikTok 只读与工作台翻译，并核对通用模型/SSE 关闭及限流 10。本地相关门禁完整回归 `151 passed`、格式后定向 `22 passed`、Ruff/格式及 PowerShell AST 通过，独立代码审查无严重或重要问题。见 [R21 TR](../reports/tests/TR-MVP-006-20261016-R21.md)。未执行 staging G5 窗口或恢复演练，G5/production 仍未通过。
 
 2026-10-16 G5 R20 手动只读现场：新版界面配套后端 `sha256:deef65ee…babbe8` 运行时，受审源码 `f56b998` 的归档校验和手动 `CheckOnly` 通过；原批次 50/50 会话匹配，`fixture_state=original`、`knowledge_ready=false`，Provider 调用与数据库写入均为 0。容器默认工作目录导致第一次安全路径校验拒绝；显式设置受审目录后只读检查通过，持久入口待修。见 [R20 TR](../reports/tests/TR-MVP-006-20261016-R20.md) 与 [低敏证据](../../release/evidence/staging/crm-staging-g5-manual-content-check-20261016.json)。未准备内容、续期凭证、执行 SSE 或恢复演练；G5 与 production 仍未通过。
