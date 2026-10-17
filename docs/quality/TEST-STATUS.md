@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R56 最新现场：[R56 TR](../reports/tests/TR-MVP-006-20261018-R56.md)记录六摘要预取、临时 G5 部署、FAQ v3 可检索、50 枚隔离令牌续期及 50/50 身份会话预检通过。唯一合成 SSE 为 HTTP 200，却在独立 `safety_review` 节点出现 `invalid_schema / unknown:missing`，公开 `50003`、无安全 `delta`、总耗时 6806.5 ms；50 并发没有启动。原后端与 G3 限定会话模式已恢复，三健康和固定出口通过。G5 与 production No-Go。
+
 2026-10-18 G5 R54 源码候选：针对 [R53 单会话诊断](../reports/tests/TR-MVP-006-20261017-R53.md) 的 `business_claims:model_type`，FAQ Prompt `faq-answer-v1.6.1` 明列必需字段及声明对象结构；FAQ 顶层字段进入低敏 Schema 路径白名单。新增测试先红后绿，相关 169 passed，全量后端 2049 passed/3 skipped、2 项依赖弃用警告，Ruff lint/format 与 mypy 通过。本轮尚未发布新镜像、部署 staging 或调用 DeepSeek，G5 单会话和 50 并发仍未通过，production No-Go。
 
 2026-10-17 G5 R53 获批手动诊断窗口：[R53 TR](../reports/tests/TR-MVP-006-20261017-R53.md)记录六摘要预取、G5 临时部署、现有凭证 50/50 只读预检通过；唯一合成 SSE HTTP 200，accepted 1047.6 ms，却在 FAQ 草稿 `invalid_schema` 后以公开 `50003` 结束，安全 `delta` 为空。只读白名单诊断为 `business_claims:model_type` 和 `unknown:missing`，后者仍不能定位具体字段。单会话失败，50 并发未启动；旧后端与 G3 限定会话模式已恢复，三健康与固定出口通过。G5 和 production No-Go。

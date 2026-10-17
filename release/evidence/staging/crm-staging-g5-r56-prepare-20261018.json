@@ -1,0 +1,1 @@
+{"declared_server_ip_rate_limit": 60, "distinct_authorized_users": 50, "failures": {}, "mode": "prepare", "provider_calls": 0, "ready": true, "required_clients": 50}
