@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-r29-credentials-20261017
-Governance base SHA: 50758f70ac0a51ed80ad812470a2c88916976c14
+Working branch at this snapshot: docs/mvp006-g5-r29-index-20261017
+Governance base SHA: 0296056ee031f4398a74dc12fe48dc10439fe182
 CANDIDATE_SUBJECT_SHA: 5ad110d4286a6cbfa53289360d109a930f1afaa9
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 G5 R29 最新现场恢复点：用户精确授权一次 `RenewCredentials`，与运行后端相同 OCI revision 的受审源码为原 50 个隔离 CRM 测试账号独占创建第三份仓库外短期凭证；原两份保留。独立只读 `ContentCheck` 为 50/50 会话、凭证 renewed、FAQ ready、Provider/数据库写入 0。低敏证据的本机和现场 SHA-256 一致，新文件权限 `600`。见 [R29 IR](../records/implementation/IR-MVP-006-20261017-R29.md)、[TR](../reports/tests/TR-MVP-006-20261017-R29.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R29.md)。下一步：单会话安全 delta；在有效凭证及独立付费窗口下测真实 50 并发；恢复原只读加翻译模式。G5 `DOING`、production No-Go；本分支三个派生索引为 `CANDIDATE_VIEW`。
+2026-10-17 G5 R29 最新现场恢复点：用户精确授权一次 `RenewCredentials`，与运行后端相同 OCI revision 的受审源码为原 50 个隔离 CRM 测试账号独占创建第三份仓库外短期凭证；原两份保留。独立只读 `ContentCheck` 为 50/50 会话、凭证 renewed、FAQ ready、Provider/数据库写入 0。低敏证据的本机和现场 SHA-256 一致，新文件权限 `600`。见 [R29 IR](../records/implementation/IR-MVP-006-20261017-R29.md)、[TR](../reports/tests/TR-MVP-006-20261017-R29.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R29.md)。下一步：单会话安全 delta；在有效凭证及独立付费窗口下测真实 50 并发；恢复原只读加翻译模式。G5 `DOING`、production No-Go；[PR #278](https://github.com/CP11-gh/CRM/pull/278) 已合入 main `0296056e`；三个派生索引按 117/120/117 条源记录核对并恢复为 `CURRENT`。
 
 2026-10-17 G5 R28 历史现场恢复点：用户重新精确授权后，从 main `ca5ebea3` 的受审源码仅运行一次本地 BGE 向量化，唯一合成 FAQ 现为 ready，1 个向量片段且通过现有检索门禁。独立 `ContentCheck` 为 50/50 会话、知识 ready、凭证原状态、Provider/本次只读数据库写入 0；三健康 200，运行中 backend Embedding/LLM/TikTok 写入仍关闭。见 [R28 IR](../records/implementation/IR-MVP-006-20261017-R28.md)、[TR](../reports/tests/TR-MVP-006-20261017-R28.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R28.md)。下一步：独立续期短期凭证并只读核对；单会话安全 delta；获付费窗口后执行真实 50 并发与原模式恢复。[PR #275](https://github.com/CP11-gh/CRM/pull/275) 已合入 main `e1831fa9`；三个派生索引按 116/119/116 条源记录核对并恢复为 `CURRENT`。G5 `DOING`、production No-Go。
 
