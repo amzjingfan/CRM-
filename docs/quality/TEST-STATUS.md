@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R50 两次获批手动窗口：[R50 TR](../reports/tests/TR-MVP-006-20261017-R50.md)核对 OCI index 六摘要预取、临时 G5 部署与恢复。第一次 50/50 预检通过后，单会话因客户端默认 localhost Origin 被 staging CORS 拒绝；第二次显式设置 staging Origin，50/50 通过、SSE HTTP 200，但 FAQ 草稿 `invalid_schema` 导致公开 `50003`、无安全 `delta`，性能门禁失败。两次均未执行 50 并发或资源采样；旧后端与 G3 限定会话模式已恢复，三健康 200、固定出口通过。G5 与 production 未通过。
+
 2026-10-17 G5 R49 镜像发布：已从 main `ba020c1ff` 手动发布 R48 诊断后端候选，并按不可变摘要拉回核对 `linux/amd64`、OCI revision、12 层压缩合计 110,933,216 字节；见[低敏镜像证据](../../release/evidence/staging/crm-staging-g5-r49-manual-backend-image-20261017.json)。尚未部署 staging、复测合成单会话或运行 50 并发；G5 与 production 仍未通过。
 
 2026-10-17 G5 R48 已合入源码：[PR #315](https://github.com/CP11-gh/CRM/pull/315) 将 subject `a927156a` 合入 main `e0d3fc3`。运行记录只在 `LLM_OUTPUT_INVALID` 时追加白名单模型节点和固定输出失败子类，未知诊断不入库；公开错误、DLP、评分和发送开关未变。本地后端回归 2045 passed、27 skipped，Ruff 与 mypy 通过；见 [R48 TR](../reports/tests/TR-MVP-006-20261017-R48.md)。尚未发布镜像、部署或在 staging 复现故障，G5 与 production 仍未通过。

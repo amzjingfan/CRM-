@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G5 R50 当前恢复点：两次获批手动 staging 窗口均已完成并恢复原 G3 限定会话人工发送模式。后端当前运行旧摘要 `sha256:04c4f64d…bd1dcc`，Webhook 只读、翻译、限流 10、三公网健康和固定出口通过。第一次窗口续期原 50 人的第七份仓库外令牌并通过 50/50，只因压测 Origin 默认 localhost 返回 403；第二次显式 staging Origin 后 SSE HTTP 200，但 FAQ 草稿 `invalid_schema` 返回 `50003`、无安全 `delta`。两次均未启动 50 并发；[IR](../records/implementation/IR-MVP-006-20261017-R50.md)、[TR](../reports/tests/TR-MVP-006-20261017-R50.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R50.md)与 18 份低敏证据记录真实结果。G5 `DOING`、production No-Go。下一步：①限定诊断 FAQ Schema 字段路径与错误类型；②对明确问题做确定性修复并复核；③另行锁定有界单会话、50 并发与恢复窗口。
+
 2026-10-17 G5 R49 手动候选镜像：从 main `ba020c1ff496f91d430ca2054314ff3901572a9d` 用现有 GitHub 凭据发布一个私有后端镜像；GHCR 不可变摘要 `sha256:42fce018…8e8` 经远端 manifest 与按摘要拉回核对，平台 `linux/amd64`、OCI revision 精确匹配，12 层压缩合计 110,933,216 字节，见[低敏证据](../../release/evidence/staging/crm-staging-g5-r49-manual-backend-image-20261017.json)。临时登录已退出；未部署 staging、续期凭证或调用 DeepSeek。运行后端仍为 R47 恢复的旧摘要，G5 单会话和 50 并发未通过。下一步：核对手动窗口前提；在精确范围内临时部署并复测一条合成 SSE；仅得到安全 `delta` 后执行 50 并发与恢复验收。G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R48 当前恢复点：[PR #315](https://github.com/CP11-gh/CRM/pull/315) 将 subject `a927156a` 合入 main `e0d3fc3`；它只在 `LLM_OUTPUT_INVALID` 的现有运行摘要中写白名单模型节点和固定输出失败子类。确定性测试先红后绿；最终后端 2045 passed、27 skipped，Ruff/mypy 通过；见 [R48 IR](../records/implementation/IR-MVP-006-20261017-R48.md)、[TR](../reports/tests/TR-MVP-006-20261017-R48.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R48.md)。从合并后的 main 源记录逐项对账 IR/TR/RR 为 135/139/133 条，ID、状态、SHA 与更新日期一致，三个索引恢复 `CURRENT`。尚未发布镜像或部署 staging；R47 的真实失败节点仍未知。G5 `DOING`、production No-Go。下一步在获准的手动 staging 窗口复测单会话；仅安全 `delta` 通过才继续 50 并发与恢复验收。

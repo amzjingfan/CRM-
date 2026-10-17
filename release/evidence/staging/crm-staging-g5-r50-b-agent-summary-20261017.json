@@ -1,0 +1,21 @@
+{
+  "scope": "isolated_synthetic_g5_single_sse",
+  "window_start_utc": "2026-10-17T14:19:00Z",
+  "window_end_utc": "2026-10-17T14:21:00Z",
+  "matching_agent_runs": 1,
+  "status_counts": {
+    "failed": 1
+  },
+  "error_code_counts": {
+    "LLM_OUTPUT_INVALID": 1
+  },
+  "failure_stage_counts": {
+    "faq_draft": 1
+  },
+  "output_failure_kind_counts": {
+    "invalid_schema": 1
+  },
+  "agent_latency_ms": 5037,
+  "exact_provider_call_count": "unavailable",
+  "source": "read_only_agent_runs_whitelist_query"
+}
