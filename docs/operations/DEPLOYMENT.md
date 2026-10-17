@@ -177,4 +177,4 @@ G4 诊断后端镜像 `sha256:bb38fa09…e7d80` 已发布并核对清单；预�
 
 当前发布状态见 `docs/operations/RELEASE-GATES.md`，最新测试摘要见 `docs/quality/TEST-STATUS.md`，固定资产与评测集见 `release/baselines/` 和 `release/evidence/`。部署说明不替代真实签署。
 
-G5 R24 内容准备已精确执行一次，原 50 条合成提问和 1 条内部 FAQ 已写入并只读对账。常驻 `EMBEDDING_ENABLED=false`，所以另行授权的 `VectorizeG5` 使用当前 main 的受审脚本与运行中旧后端镜像的应用模块，在一次性容器里仅临时开启本地 BGE。源码 SHA 与镜像 OCI revision 分开核对；必须限定原店铺唯一 FAQ、版本 1、pending 和内部审批。写后用 `ContentCheck` 只读确认 `knowledge_ready=true`，不重跑不确定的写入。现场命令、确认值和恢复边界见 [Rootless 手动路径](../../src/deploy/staging/rootless/README.md)。此步骤不改变 staging 常驻配置，凭证续期与付费压测仍是独立操作。
+G5 R24 内容准备已精确执行一次，原 50 条合成提问和 1 条内部 FAQ 已写入并只读对账。常驻 `EMBEDDING_ENABLED=false`，所以另行授权的 `VectorizeG5` 使用当前 main 的完整受审 backend 源码与运行中旧后端镜像，在一次性容器里仅临时开启本地 BGE。源码 SHA 与镜像 OCI revision 分开核对；必须限定原店铺唯一 FAQ、版本 1、pending 和内部审批。写后用 `ContentCheck` 只读确认 `knowledge_ready=true`，不重跑不确定的写入。现场命令、确认值和恢复边界见 [Rootless 手动路径](../../src/deploy/staging/rootless/README.md)。此步骤不改变 staging 常驻配置，凭证续期与付费压测仍是独立操作。

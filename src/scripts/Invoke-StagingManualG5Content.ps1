@@ -118,16 +118,6 @@ try {
         'VectorizeG5' { '--vectorize-one' }
         default { '--check-only' }
     }
-    $scriptMount = if ($Mode -ceq 'VectorizeG5') {
-        "type=bind,source=$source/scripts/prepare_sse_staging_content.py,target=/opt/crm-g5-vectorize.py,readonly"
-    } else {
-        "type=bind,source=$source,target=/opt/crm-g5-source,readonly"
-    }
-    $entrypointArgs = if ($Mode -ceq 'VectorizeG5') {
-        @('-B', '/opt/crm-g5-vectorize.py')
-    } else {
-        @('-B', '-m', 'scripts.prepare_sse_staging_content')
-    }
     $arguments = @(
         '--host', $DockerHost, 'run', '--rm', '--pull=never', '--read-only',
         '--network', "container:$container", '--user', '0:0', '--env-file', $EnvironmentFile,
@@ -141,12 +131,11 @@ try {
         '-e', 'DEEPSEEK_API_KEY=',
         '-e', "EXPECTED_RUNTIME_JWT_SHA256=$runtimeKeySha",
         '-e', "EXPECTED_RUNTIME_JWT_ALGORITHM=$runtimeAlgorithm",
-        '-e', "PYTHONPATH=$(if ($Mode -ceq 'VectorizeG5') { '/app' } else { '/opt/crm-g5-source:/app' })",
-        '--workdir', "$(if ($Mode -ceq 'VectorizeG5') { '/app' } else { '/opt/crm-g5-source' })",
-        '--mount', $scriptMount,
-        '--mount', $mount, '--entrypoint', 'python', $BackendImage
-    ) + $entrypointArgs + @(
-        $action,
+        '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
+        '--workdir', '/opt/crm-g5-source',
+        '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
+        '--mount', $mount, '--entrypoint', 'python', $BackendImage,
+        '-B', '-m', 'scripts.prepare_sse_staging_content', $action,
         '--source-credentials-file', '/opt/crm-g5-credentials/g5-38852775454-2.json',
         '--credentials-file', '/opt/crm-g5-credentials/g5-38852775454-3.json',
         '--expected-database-sha256', $databaseSha

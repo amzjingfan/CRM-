@@ -203,11 +203,10 @@ def test_manual_content_runner_uses_reviewed_workdir_and_private_mounts() -> Non
     source = (SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5Content.ps1").read_text(
         "utf-8"
     )
-    assert (
-        "--workdir', \"$(if ($Mode -ceq 'VectorizeG5') { '/app' } else { '/opt/crm-g5-source' })\""
-        in source
-    )
-    assert "target=/opt/crm-g5-vectorize.py,readonly" in source
+    assert "'--workdir', '/opt/crm-g5-source'" in source
+    assert "type=bind,source=$source,target=/opt/crm-g5-source,readonly" in source
+    assert "PYTHONPATH=/opt/crm-g5-source:/app" in source
+    assert "target=/opt/crm-g5-vectorize.py,readonly" not in source
     assert "'--read-only'" in source
     assert "'--pull=never'" in source
     assert "g5-38852775454-2.json" in source
