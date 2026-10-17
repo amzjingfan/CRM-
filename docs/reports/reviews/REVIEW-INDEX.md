@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -126,3 +126,4 @@ View: `CURRENT`
 | RR-MVP-006-20261017-R34 | MVP-006 | R34 | APPROVE | `abc945df1d55f9459ef372f3e883ab8955d06fcf` | private-paths / contiguous-inventory / exclusive-create / jwt-mapping / fail-closed / no-secret-output | 2026-10-17T11:55:27+08:00 | [`RR-MVP-006-20261017-R34.md`](RR-MVP-006-20261017-R34.md) |
 | RR-MVP-006-20261017-R36 | MVP-006 | R36 | APPROVE | `c3f09ef4cbcab17512158c42a355308be964321b` | current-main / ancestor-commit / exact-build-inputs / recovery-revision / fail-closed / no-token-output | 2026-10-17T12:36:31+08:00 | [`RR-MVP-006-20261017-R36.md`](RR-MVP-006-20261017-R36.md) |
 | RR-MVP-006-20261017-R37 | MVP-006 | R37 | APPROVE | `da2eb6575da06d34923b72323bff0a4631222898` | staging-secret-scope / fail-closed / token-redaction / recovery / no-platform-write | 2026-10-17T13:57:36+08:00 | [`RR-MVP-006-20261017-R37.md`](RR-MVP-006-20261017-R37.md) |
+| RR-MVP-006-20261017-R38 | MVP-006 | R38 | APPROVE | `51479c2e7b0bcf5929ec7cf05f9349abe3d9f1a0` | scope / fixture-isolation / provider-budget / secret-redaction / fail-closed / recovery | 2026-10-17T14:32:00+08:00 | [`RR-MVP-006-20261017-R38.md`](RR-MVP-006-20261017-R38.md) |

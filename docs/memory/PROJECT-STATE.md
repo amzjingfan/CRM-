@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r37-index-closure-20261017
-Governance base SHA: fc8ffe5525cba0fd664f497dde9eecc0653c9734
-CANDIDATE_SUBJECT_SHA: da2eb6575da06d34923b72323bff0a4631222898
+Working branch at this snapshot: docs/g5-r38-single-session-20261017
+Governance base SHA: d9b3b18ead8d9ec1c8a270b11a99a4ef794d2d89
+CANDIDATE_SUBJECT_SHA: 51479c2e7b0bcf5929ec7cf05f9349abe3d9f1a0
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
+
+2026-10-17 G5 R38：从当前 main `d9b3b18e` 获批执行一次手动 staging 单会话窗口；六摘要预取、修复后的令牌 validate/deploy、第四份短期凭证签发和公网 50/50 只读预检均通过。唯一合成 SSE 返回 HTTP 200 和协议成功 `done`，却无安全 `delta`，性能门禁 false；只读 Agent 摘要为 `insufficient_context`→`transfer_human`、检索候选 0。原 fixture 问题具有指代歧义，是待验证的原因判断；没有运行 50 并发。旧 backend `sha256:758c4d51…41522`、TikTok Webhook 只读与工作台翻译已恢复，LLM/SSE 关闭、限流 10、三健康 200。见 [IR](../records/implementation/IR-MVP-006-20261017-R38.md)、[TR](../reports/tests/TR-MVP-006-20261017-R38.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R38.md) 和 [低敏证据](../../release/evidence/staging/crm-staging-g5-r38-single-20261017.json)。本分支三个派生索引为 `CANDIDATE_VIEW`；G5 `DOING`、production No-Go。下一步：合并 R38 事实记录；确认合成 fixture 有界修复；经精确授权再验单会话，安全输出通过后另行安排 50 并发。
 
 2026-10-17 G5 R37：一次获批的手动单会话窗口在 main `33053583` 完成六摘要预取和 G5 validate，却因 backend 未收到现有内部检索令牌而在迁移设置校验失败；没有签发第四份凭证或调用 DeepSeek。已按[恢复证据](../../release/evidence/staging/crm-staging-g5-r37-restore-20261017.json)重新运行旧后端 `sha256:758c4d51…41522`、TikTok Webhook 只读和工作台翻译，三健康 200、LLM/SSE 关闭、限流 10。获批的有界修复 subject `da2eb657` 仅在 G5 backend 注入现有令牌并在部署前核对与检索服务一致、长度至少 32；[IR](../records/implementation/IR-MVP-006-20261017-R37.md)、[TR](../reports/tests/TR-MVP-006-20261017-R37.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R37.md) 记录全量后端 `1973 passed, 27 skipped` 及 subject 后 staging 门禁 `145 passed`。[PR #296](https://github.com/CP11-gh/CRM/pull/296) 已合入 main `fc8ffe5525cba0fd664f497dde9eecc0653c9734`；GitHub Actions 因账户计费在执行步骤前失败，采用已获用户确认的手动路径及本地等价检查。三个派生索引按源记录复核为 `CURRENT`，G5 `DOING`、production No-Go。下一步：重新锁定精确 staging 单会话窗口；通过后再单独执行真实 50 并发与恢复验收。
 

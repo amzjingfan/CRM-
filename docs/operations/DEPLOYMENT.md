@@ -10,6 +10,8 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 ## Split-ingress Rootless staging
 
+2026-10-17 G5 R38：修复后的 main `d9b3b18e` 手动部署通过六摘要预取、内部检索令牌一致性 validate、迁移头、运行态与公网健康；原隔离 50 人第四份凭证独占签发，公网只读身份/会话预检 50/50。唯一合成 SSE 的 `done` 成功但没有安全 `delta`；Agent 只读摘要显示 `insufficient_context` 安全转人工、检索候选 0，G5 未通过。已立即部署回旧后端 `sha256:758c4d51…41522`、TikTok Webhook 只读和工作台翻译，LLM/SSE 关闭、限流 10，三健康 200 且固定出口通过；[R38 TR](../reports/tests/TR-MVP-006-20261017-R38.md)及[低敏证据](../../release/evidence/staging/crm-staging-g5-r38-restore-deploy-20261017.json)可复核。第四份凭证仅留仓库外，不得以本次协议完成替代安全输出或 50 并发验收。
+
 2026-10-17 G5 R37 手动窗口从 main `33053583fe7a5e3e52fbfdb7f662fc424d191f84` 通过六摘要预取及 G5 `validate`，但在迁移容器启动时因 backend 未收到既有内部检索服务令牌而失败；没有签发第四份测试凭证，也没有发出合成 SSE 或 DeepSeek 请求。原旧后端摘要 `sha256:758c4d51…41522`、TikTok Webhook 只读与工作台翻译已重新部署，三项公网健康均为 200，G5/LLM 关闭、限流 10。G5 专用覆盖层现只对 backend 注入仓库外既有令牌，并在 `validate` 中要求其与检索服务令牌相同且长度至少 32；下一次切换须使用合入此修复的当前 main，另行核对新的精确窗口范围。本次低敏[预取](../../release/evidence/staging/crm-staging-g5-r37-prefetch-20261017.json)、[验证](../../release/evidence/staging/crm-staging-g5-r37-validate-20261017.json)及[恢复](../../release/evidence/staging/crm-staging-g5-r37-restore-20261017.json)证据不构成 G5 通过。
 
 管理端所有 HTML 由 Next.js 按请求动态生成并返回 `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`，避免切换镜像后浏览器继续使用旧构建页面；`/_next/static/` 下带指纹的 JS/CSS 仍可长期 `immutable` 缓存。staging 切换前后须同时核对 HTML 响应头、页面引用的构建资源和无店铺页面的指引状态，不能只用健康端点判定 UI 已更新。
