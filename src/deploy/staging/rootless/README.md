@@ -73,9 +73,9 @@ G5 压测窗口由同一工作流显式选择 `enable_g5_sse_load_test=true`，�
 
 ### G5 手动 staging 路径（不运行 GitHub Actions）
 
-`src/scripts/Invoke-StagingManualG5.ps1` 复用上述 Rootless 门禁，在 `crmdeploy` 的持久源码目录手动执行。新部署要求归档或干净 clone 对应经 GitHub 验证的当前 `main` 完整 SHA；默认恢复和上一版回滚允许使用原先审核过的历史提交，但必须核对候选 backend 的 OCI revision 与该源码 SHA 一致。全部镜像均须使用指定 GHCR 仓库的不可变摘要。运行人须先用 GitHub 凭据建立私有仓库只读和 `read:packages` 访问；凭据可来自进程环境中的 `GH_TOKEN` 或已登录的 `gh`。脚本把短期 GHCR 登录限制在 `/run/user/1004` 下的私有目录，并在退出时注销。不要把 Token 放进命令参数、证据或仓库。发布新候选镜像另需 `write:packages` 和精确资源授权，部署只读凭据不具备该权限。
+`src/scripts/Invoke-StagingManualG5.ps1` 复用上述 Rootless 门禁，在 `crmdeploy` 的持久源码目录手动执行。新部署要求干净 Git clone 对应经 GitHub 验证的当前 `main` 完整 SHA；默认恢复和上一版回滚允许使用原先审核过的历史提交，但必须核对候选 backend 的 OCI revision 与该源码 SHA 一致。全部镜像均须使用指定 GHCR 仓库的不可变摘要。运行人须先用 GitHub 凭据建立私有仓库只读和 `read:packages` 访问；凭据可来自进程环境中的 `GH_TOKEN` 或已登录的 `gh`。脚本把短期 GHCR 登录限制在 `/run/user/1004` 下的私有目录，并在退出时注销。不要把 Token 放进命令参数、证据或仓库。发布新候选镜像另需 `write:packages` 和精确资源授权，部署只读凭据不具备该权限。
 
-只在确认可经受控 SSH 进入主机、从可访问的源码目录切换到 `crmdeploy` UID 1004、Rootless socket 为 `unix:///run/user/1004/docker.sock` 后继续。源码优先沿用已有成功的手动传输方式：新部署在本机核对**当时远端 main** 的完整 SHA；恢复使用原已审核提交，用 `git archive --format=tar` 从该提交生成包并记 SHA-256；把归档和 SHA-256 作为同一恢复点转入 staging，独立解包到此前不存在的 `/home/crmdeploy/src/crm-reviewed-source-<唯一小写标识>/`。运行时另传 `-ArchivePath /home/crmdeploy/src/<包名>.tar -ArchiveSha256 <本机核对值>`；入口会再次核对归档哈希、全部解包文件内容、路径安全与 GitHub 仓库提交；仅新部署要求该 SHA 仍为当前 main，归档内 UID/GID 不参与比较。也可用 GitHub 凭据直接 clone 对应的已审核提交到同一格式的持久目录，此时不传归档参数，入口要求干净 checkout 和准确的 Git HEAD。两种方式都不得复用 Runner 临时目录或覆盖现有源码。核对镜像发布证据的 backend 摘要和 `org.opencontainers.image.revision`；前端、检索和上一版三摘要由当前运行证据与 Rootless inspect 读取，不猜测或使用浮动 tag。先执行 `CheckOnly`；它不创建凭据、证据或改动服务。每个写入模式使用唯一 `/home/crmdeploy/.cache/crm-g5-manual/<唯一小写标识>/` 证据目录，传入全部六个摘要及相同 SHA：
+只在确认可经受控 SSH 进入主机、从可访问的源码目录切换到 `crmdeploy` UID 1004、Rootless socket 为 `unix:///run/user/1004/docker.sock` 后继续。只读与内容操作可沿用受审归档传输方式：按操作核对源码提交（新部署为当时远端 main，恢复可为原已审核提交），用 `git archive --format=tar` 生成包并记 SHA-256；把归档和 SHA-256 作为同一恢复点转入 staging，独立解包到此前不存在的 `/home/crmdeploy/src/crm-reviewed-source-<唯一小写标识>/`。运行时另传 `-ArchivePath /home/crmdeploy/src/<包名>.tar -ArchiveSha256 <本机核对值>`；入口会再次核对归档哈希、全部解包文件内容、路径安全与 GitHub 仓库提交；仅新部署要求该 SHA 仍为当前 main，归档内 UID/GID 不参与比较。也可用 GitHub 凭据直接 clone 对应的已审核提交到同一格式的持久目录，此时不传归档参数，入口要求干净 checkout 和准确的 Git HEAD。R23 现场确认下层生产门禁仍要求 Git checkout：`DeployG5`、`RestoreDefault`、`RestoreReadAndTranslation` 和 `RollbackPrevious` 必须从干净的持久 Git clone 执行且不传归档参数；归档解包目录仅用于 `CheckOnly` 和三种内容模式。两种方式都不得复用 Runner 临时目录或覆盖现有源码。核对镜像发布证据的 backend 摘要和 `org.opencontainers.image.revision`；前端、检索和上一版三摘要由当前运行证据与 Rootless inspect 读取，不猜测或使用浮动 tag。先执行 `CheckOnly`；它不创建凭据、证据或改动服务。每个写入模式使用唯一 `/home/crmdeploy/.cache/crm-g5-manual/<唯一小写标识>/` 证据目录，传入全部六个摘要及相同 SHA：
 
 ```text
 pwsh src/scripts/Invoke-StagingManualG5.ps1 -Mode CheckOnly|DeployG5|RestoreDefault|RestoreReadAndTranslation|RollbackPrevious \
@@ -220,3 +220,7 @@ Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 原始主机快照保存在本轮受限服务器目录，仓库只记录低敏摘要、SHA、workflow run、健康状态、恢复时间和前后基线比较。禁止记录 `.env` 值、私钥、Token、Cookie、证书私钥、模型、备份或客户数据。
 
 完成 split-ingress 部分只证明 `MVP-STAGING-001` 的失败关闭 staging 基础设施。固定出口还必须使用合并 main 的不可变镜像完成真实 IP、断隧道无直连回退、入口和公司负载复核；当前实现分支上的 live-staging 状态为 `NOT_EXECUTED — requires merged main image`。TikTok OAuth/读取、Webhook、人工消息、DeepSeek/RAG、50 客户端 SSE、五日稳定性、数据库/对象恢复、兼容回滚和 production 放行仍按 G0～G8 独立取得证据；所有真实能力保持关闭。
+
+#### G5 单条合成 FAQ 的一次性本地向量化
+
+`VectorizeG5` 只用于 R24 已准备的隔离店铺唯一内部审阅 FAQ。它要求受审脚本取自**运行时远端当前 main** 的干净持久 Git clone，`-SourceSha` 为该 main 完整 SHA；`-RuntimeBackendSourceSha` 为现场运行后端镜像的 OCI revision（允许该镜像较旧）。其余六摘要按运行现场提供，`-ConfirmContent vectorize-one-isolated-g5-faq`，证据使用全新私有目录。脚本把当前 main 的单个受审 Python 文件只读挂入当前后端镜像，一次性容器临时开启 `EMBEDDING_ENABLED=true`，强制关闭通用 LLM 与 TikTok 写入，且仅允许 `http://retrieval-model-service:8010` 的本地 BGE-M3；常驻服务配置不变。认领 SQL 限定原店铺、原文档、版本 1、内部审批与 pending，且只认领 1 条。若结果不确定，停止并使用旧运行镜像及其受审源码运行 `ContentCheck` 只读对账；绝不盲目重试向量写入。此操作不续期凭证、不运行 SSE 或 DeepSeek，也不表示 G5 通过。

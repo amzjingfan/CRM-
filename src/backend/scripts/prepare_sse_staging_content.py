@@ -15,6 +15,9 @@ from typing import Any
 from sqlalchemy import delete, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.chunking import FaqTokenChunker
+from app.agent.factory import build_embedding_service
+from app.agent.vectorization import KnowledgeVectorizationService
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.knowledge_base.models import KnowledgeChunk, KnowledgeDocument
@@ -25,7 +28,8 @@ from app.knowledge_base.schemas import (
     KnowledgeStatementType,
 )
 from app.knowledge_base.service import create_entry, set_entry_status
-from app.shared.config.settings import get_settings
+from app.knowledge_base.vector_port import SqlAlchemyKnowledgeVectorPort
+from app.shared.config.settings import Settings, get_settings
 from app.shared.database.base import Permission, Role, User, role_permissions, user_roles
 from app.shared.database.session import session_factory
 from app.stores.models import Store
@@ -53,6 +57,76 @@ class ContentSnapshot:
     approver: User
     messages: list[Message]
     document: KnowledgeDocument | None
+
+
+def assert_single_vector_target(
+    manifest: ReconciliationManifest, snapshot: ContentSnapshot
+) -> tuple[uuid.UUID, uuid.UUID, int]:
+    """只允许原隔离店铺中刚发布、尚未向量化的唯一合成 FAQ。"""
+    document = snapshot.document
+    if (
+        snapshot.state != "prepared"
+        or document is None
+        or document.store_id != manifest.store_id
+        or document.source != FAQ_SOURCE
+        or document.status != "published"
+        or document.vectorization_status != "pending"
+        or document.document_version != 1
+        or document.deleted_at is not None
+    ):
+        raise ValueError("G5 vector target mismatch")
+    return document.id, manifest.store_id, document.document_version
+
+
+class ScopedG5VectorPort(SqlAlchemyKnowledgeVectorPort):
+    """复用现有向量替换逻辑，但认领只允许指定隔离店铺的一条 FAQ。"""
+
+    def __init__(self, store_id: uuid.UUID, document_id: uuid.UUID, version: int) -> None:
+        self.store_id = store_id
+        self.document_id = document_id
+        self.version = version
+
+    async def claim_pending_documents(self, session: AsyncSession, limit: int) -> list[KnowledgeDocument]:
+        if limit != 1:
+            raise ValueError("G5 vector claim must be one")
+        documents = list(
+            (
+                await session.scalars(
+                    select(KnowledgeDocument)
+                    .where(
+                        KnowledgeDocument.store_id == self.store_id,
+                        KnowledgeDocument.id == self.document_id,
+                        KnowledgeDocument.document_version == self.version,
+                        KnowledgeDocument.status == "published",
+                        KnowledgeDocument.vectorization_status == "pending",
+                        KnowledgeDocument.statement_type != KnowledgeStatementType.UNKNOWN,
+                        KnowledgeDocument.publication_approval
+                        == KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW,
+                        KnowledgeDocument.deleted_at.is_(None),
+                    )
+                    .with_for_update(skip_locked=True)
+                )
+            ).all()
+        )
+        if documents:
+            documents[0].vectorization_status = "processing"
+            await session.commit()
+        return documents
+
+
+def assert_vector_runtime(settings: Settings) -> None:
+    """一次性嵌入只使用 staging 本地 BGE，不借用通用模型或平台写入能力。"""
+    if (
+        settings.app_env != "staging"
+        or not settings.embedding_enabled
+        or settings.embedding_provider != "local_bge"
+        or settings.embedding_model != "BAAI/bge-m3"
+        or settings.embedding_dimensions != 1024
+        or settings.retrieval_model_service_url != "http://retrieval-model-service:8010"
+        or settings.llm_enabled
+        or settings.real_tiktok_message_write_enabled
+    ):
+        raise ValueError("G5 vector runtime mismatch")
 
 
 def validate_content_paths(
@@ -267,6 +341,8 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
     validate_content_paths(settings.app_env, source, output, writable=writable, allow_renewed=mode == "check_only")
     validate_database_target(settings.database_url, expected_database_sha256)
     payload, manifest = read_private_source(source)
+    if mode == "vectorize_one":
+        assert_vector_runtime(settings)
     if output.exists():
         try:
             renewed_payload: Any = json.loads(output.read_text(encoding="utf-8"))
@@ -274,6 +350,34 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
             raise ValueError("G5 renewed credentials unreadable") from exc
         validate_renewed_payload(renewed_payload, manifest)
     async with session_factory() as session:
+        if mode == "vectorize_one":
+            snapshot = await inspect_content_fixture(session, manifest)
+            document_id, store_id, version = assert_single_vector_target(manifest, snapshot)
+            existing_chunks = (
+                await session.scalars(select(KnowledgeChunk.id).where(KnowledgeChunk.document_id == document_id))
+            ).all()
+            if existing_chunks:
+                raise ValueError("G5 vector target already has chunks")
+            service = KnowledgeVectorizationService(
+                vector_port=ScopedG5VectorPort(store_id, document_id, version),
+                embedding_service=build_embedding_service(settings),
+                chunker=FaqTokenChunker(model_name=settings.embedding_model, max_tokens=800, overlap_tokens=80),
+                claim_limit=1,
+            )
+            result = await service.process_cycle(session)
+            if (result.claimed, result.succeeded, result.failed, result.stale) != (1, 1, 0, 0):
+                raise ValueError("G5 vector outcome requires read-only reconciliation")
+            verified = await inspect_content_fixture(session, manifest)
+            if verified.document is None or verified.document.vectorization_status != "ready":
+                raise ValueError("G5 vector outcome is not ready")
+            return {
+                "mode": mode,
+                "matched_sessions": 50,
+                "synthetic_faq": 1,
+                "local_embedding_documents": 1,
+                "deepseek_calls": 0,
+                "knowledge_ready": True,
+            }
         if mode == "prepare_content":
             async with session.begin():
                 snapshot = await inspect_content_fixture(session, manifest)
@@ -307,11 +411,14 @@ def main() -> None:
     mode.add_argument("--check-only", action="store_true")
     mode.add_argument("--prepare-content", action="store_true")
     mode.add_argument("--renew-credentials", action="store_true")
+    mode.add_argument("--vectorize-one", action="store_true")
     parser.add_argument("--source-credentials-file", type=Path, required=True)
     parser.add_argument("--credentials-file", type=Path, required=True)
     parser.add_argument("--expected-database-sha256", required=True)
     args = parser.parse_args()
-    if args.prepare_content:
+    if args.vectorize_one:
+        selected = "vectorize_one"
+    elif args.prepare_content:
         selected = "prepare_content"
     elif args.renew_credentials:
         selected = "renew_credentials"

@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -114,3 +114,6 @@ View: `CURRENT`
 | RR-MVP-CONV-UI-001-20261016-R03 | MVP-CONV-UI-001 | R03 | APPROVE | `81f9963fd445d72457eda5eb378db949c94db496` | prompt-schema / DLP-boundary / fail-closed / no-platform-write / staging-scope | 2026-10-16T23:06:33+08:00 | [`RR-MVP-CONV-UI-001-20261016-R03.md`](RR-MVP-CONV-UI-001-20261016-R03.md) |
 | RR-MVP-CONV-UI-001-20261016-R04 | MVP-CONV-UI-001 | R04 | APPROVE | `f56b99888e9448bdcb4fd2072cfe42d30e6ba604` | immutable-image / source-integrity / tenant-authorization / dlp / audit / runtime-flags / no-platform-write / evidence-privacy | 2026-10-16T23:21:12+08:00 | [`RR-MVP-CONV-UI-001-20261016-R04.md`](RR-MVP-CONV-UI-001-20261016-R04.md) |
 | RR-MVP-006-20261017-R22 | MVP-006 | R22 | APPROVE | `ae120e692da996b3150b87fdca1c7337076c8c9a` | source-integrity / immutable-image / private-credentials / database-target / uncertain-outcome / fail-closed | 2026-10-17T00:20:00+08:00 | [`RR-MVP-006-20261017-R22.md`](RR-MVP-006-20261017-R22.md) |
+| RR-MVP-006-20261017-R23 | MVP-006 | R23 | APPROVE | `7b7acc35ac47bf02f4732b27c7da157c201881e9` | source-integrity / immutable-image / rollback / runtime-mode / credential-safety / evidence-boundary | 2026-10-17T08:02:00+08:00 | [`RR-MVP-006-20261017-R23.md`](RR-MVP-006-20261017-R23.md) |
+| RR-MVP-006-20261017-R24 | MVP-006 | R24 | APPROVE | `7b7acc35ac47bf02f4732b27c7da157c201881e9` | staging-only / tenant-isolation / single-write / credential-safety / vectorization-boundary | 2026-10-17T09:10:00+08:00 | [`RR-MVP-006-20261017-R24.md`](RR-MVP-006-20261017-R24.md) |
+| RR-MVP-006-20261017-R25 | MVP-006 | R25 | APPROVE | `54254fdd849ceb2985d2f92b631bce441afdc91c` | tenant-isolation / exact-document / immutable-runtime / local-provider / fail-closed / credential-safety | 2026-10-17T10:00:00+08:00 | [`RR-MVP-006-20261017-R25.md`](RR-MVP-006-20261017-R25.md) |

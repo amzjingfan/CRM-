@@ -2,7 +2,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'RenewCredentials')][string]$Mode,
+    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'RenewCredentials', 'VectorizeG5')][string]$Mode,
     [Parameter(Mandatory = $true)][string]$NamesJson
 )
 

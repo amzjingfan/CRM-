@@ -2,14 +2,15 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'RenewCredentials')][string]$Mode,
+    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'RenewCredentials', 'VectorizeG5')][string]$Mode,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceSha,
     [Parameter(Mandatory = $true)][string]$BackendImage,
     [Parameter(Mandatory = $true)][string]$ReviewRoot,
     [Parameter(Mandatory = $true)][string]$EnvironmentFile,
     [Parameter(Mandatory = $true)][string]$DockerHost,
     [Parameter(Mandatory = $true)][string]$EvidenceFile,
-    [string]$ConfirmContent
+    [string]$ConfirmContent,
+    [string]$RuntimeBackendSourceSha
 )
 
 Set-StrictMode -Version Latest
@@ -17,8 +18,13 @@ $ErrorActionPreference = 'Stop'
 
 if (($Mode -ceq 'ContentPrepare' -and $ConfirmContent -cne 'prepare-50-isolated-g5-messages') -or
     ($Mode -ceq 'RenewCredentials' -and $ConfirmContent -cne 'renew-50-existing-g5-tokens') -or
+    ($Mode -ceq 'VectorizeG5' -and $ConfirmContent -cne 'vectorize-one-isolated-g5-faq') -or
     ($Mode -ceq 'ContentCheck' -and $ConfirmContent)) {
     throw 'Exact G5 content confirmation is required only for the selected write mode.'
+}
+if (($Mode -ceq 'VectorizeG5' -and $RuntimeBackendSourceSha -cnotmatch '^[0-9a-f]{40}$') -or
+    ($Mode -cne 'VectorizeG5' -and $RuntimeBackendSourceSha)) {
+    throw 'Runtime backend source SHA is required only for exact G5 vectorization.'
 }
 
 function Assert-PrivatePath([string]$Path, [bool]$Directory) {
@@ -42,9 +48,10 @@ if ($IsWindows -or (& id -u).Trim() -cne '1004') { throw 'G5 content requires cr
 
 try {
     $image = @((& docker --host $DockerHost image inspect $BackendImage 2>$null) -join "`n" | ConvertFrom-Json)
+    $expectedImageRevision = if ($Mode -ceq 'VectorizeG5') { $RuntimeBackendSourceSha } else { $SourceSha }
     if ($LASTEXITCODE -ne 0 -or $image.Count -ne 1 -or
         @($image[0].RepoDigests) -cnotcontains $BackendImage -or
-        $image[0].Config.Labels.'org.opencontainers.image.revision' -cne $SourceSha) {
+        $image[0].Config.Labels.'org.opencontainers.image.revision' -cne $expectedImageRevision) {
         throw 'The local backend does not match the reviewed source and digest.'
     }
     $containers = @(& docker --host $DockerHost ps --filter 'label=com.docker.compose.project=crm-staging' `
@@ -108,7 +115,18 @@ try {
     $action = switch ($Mode) {
         'ContentPrepare' { '--prepare-content' }
         'RenewCredentials' { '--renew-credentials' }
+        'VectorizeG5' { '--vectorize-one' }
         default { '--check-only' }
+    }
+    $scriptMount = if ($Mode -ceq 'VectorizeG5') {
+        "type=bind,source=$source/scripts/prepare_sse_staging_content.py,target=/opt/crm-g5-vectorize.py,readonly"
+    } else {
+        "type=bind,source=$source,target=/opt/crm-g5-source,readonly"
+    }
+    $entrypointArgs = if ($Mode -ceq 'VectorizeG5') {
+        @('-B', '/opt/crm-g5-vectorize.py')
+    } else {
+        @('-B', '-m', 'scripts.prepare_sse_staging_content')
     }
     $arguments = @(
         '--host', $DockerHost, 'run', '--rm', '--pull=never', '--read-only',
@@ -119,13 +137,16 @@ try {
         '-e', 'REAL_TIKTOK_MESSAGE_WRITE_ENABLED=false', '-e', 'REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false',
         '-e', 'AI_TRANSLATION_ENABLED=false', '-e', 'AI_MARKETING_ENABLED=false',
         '-e', 'AUTO_REPLY_ENABLED=false',
+        '-e', "EMBEDDING_ENABLED=$(if ($Mode -ceq 'VectorizeG5') { 'true' } else { 'false' })",
+        '-e', 'DEEPSEEK_API_KEY=',
         '-e', "EXPECTED_RUNTIME_JWT_SHA256=$runtimeKeySha",
         '-e', "EXPECTED_RUNTIME_JWT_ALGORITHM=$runtimeAlgorithm",
-        '-e', 'PYTHONPATH=/opt/crm-g5-source:/app',
-        '--workdir', '/opt/crm-g5-source',
-        '--mount', "type=bind,source=$source,target=/opt/crm-g5-source,readonly",
-        '--mount', $mount, '--entrypoint', 'python', $BackendImage,
-        '-B', '-m', 'scripts.prepare_sse_staging_content', $action,
+        '-e', "PYTHONPATH=$(if ($Mode -ceq 'VectorizeG5') { '/app' } else { '/opt/crm-g5-source:/app' })",
+        '--workdir', "$(if ($Mode -ceq 'VectorizeG5') { '/app' } else { '/opt/crm-g5-source' })",
+        '--mount', $scriptMount,
+        '--mount', $mount, '--entrypoint', 'python', $BackendImage
+    ) + $entrypointArgs + @(
+        $action,
         '--source-credentials-file', '/opt/crm-g5-credentials/g5-38852775454-2.json',
         '--credentials-file', '/opt/crm-g5-credentials/g5-38852775454-3.json',
         '--expected-database-sha256', $databaseSha
@@ -158,6 +179,15 @@ try {
             }
             Assert-PrivatePath (Join-Path $privateDir 'g5-38852775454-3.json') $false
             @{ mode = 'renew_credentials'; rotated_tokens = 50; provider_calls = 0; database_writes = 0 }
+        }
+        'VectorizeG5' {
+            if ($report.mode -cne 'vectorize_one' -or $report.matched_sessions -ne 50 -or
+                $report.synthetic_faq -ne 1 -or $report.local_embedding_documents -ne 1 -or
+                $report.deepseek_calls -ne 0 -or $report.knowledge_ready -ne $true) {
+                throw 'G5 vector outcome is inconclusive.'
+            }
+            @{ mode = 'vectorize_one'; matched_sessions = 50; synthetic_faq = 1;
+                local_embedding_documents = 1; deepseek_calls = 0; knowledge_ready = $true }
         }
     }
     $evidence | ConvertTo-Json -Compress | Set-Content -LiteralPath $EvidenceFile -Encoding utf8NoBOM

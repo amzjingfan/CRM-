@@ -22,6 +22,7 @@ def invoke(
     mode: str = "DeployG5",
     archive_sha: str | None = None,
     confirm_content: str | None = None,
+    runtime_source_sha: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     assert POWERSHELL is not None
     arguments = [
@@ -52,9 +53,18 @@ def invoke(
         "/home/crmdeploy/evidence/g5-test",
     ]
     if archive_sha is not None:
-        arguments.extend(["-ArchivePath", "/home/crmdeploy/src/g5-source.tar", "-ArchiveSha256", archive_sha])
+        arguments.extend(
+            [
+                "-ArchivePath",
+                "/home/crmdeploy/src/g5-source.tar",
+                "-ArchiveSha256",
+                archive_sha,
+            ]
+        )
     if confirm_content is not None:
         arguments.extend(["-ConfirmContent", confirm_content])
+    if runtime_source_sha is not None:
+        arguments.extend(["-RuntimeBackendSourceSha", runtime_source_sha])
     return subprocess.run(
         arguments,
         capture_output=True,
@@ -95,7 +105,13 @@ def test_rejects_invalid_reviewed_archive_hash_before_host_access() -> None:
 
 def test_manual_entry_keeps_rollback_and_default_restore_explicit() -> None:
     source = SCRIPT.read_text("utf-8")
-    for mode in ("CheckOnly", "DeployG5", "RestoreDefault", "RestoreReadAndTranslation", "RollbackPrevious"):
+    for mode in (
+        "CheckOnly",
+        "DeployG5",
+        "RestoreDefault",
+        "RestoreReadAndTranslation",
+        "RollbackPrevious",
+    ):
         assert f"'{mode}'" in source
     assert "Test-StagingProductionGates.ps1" in source
     assert "Prepare-StagingRollbackImages.ps1" in source
@@ -129,7 +145,9 @@ def test_read_and_translation_restore_uses_both_existing_gate_switches() -> None
         ("RenewCredentials", "renew-50-existing-g5-tokens"),
     ],
 )
-def test_content_modes_reach_host_gate_only_with_exact_confirmation(mode: str, confirmation: str | None) -> None:
+def test_content_modes_reach_host_gate_only_with_exact_confirmation(
+    mode: str, confirmation: str | None
+) -> None:
     result = invoke(mode=mode, confirm_content=confirmation)
     assert result.returncode != 0
     assert "staging linux host" in (result.stdout + result.stderr).lower()
@@ -137,7 +155,9 @@ def test_content_modes_reach_host_gate_only_with_exact_confirmation(mode: str, c
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
 @pytest.mark.parametrize("mode", ["ContentPrepare", "RenewCredentials"])
-def test_content_writes_reject_missing_confirmation_before_host_access(mode: str) -> None:
+def test_content_writes_reject_missing_confirmation_before_host_access(
+    mode: str,
+) -> None:
     result = invoke(mode=mode)
     assert result.returncode != 0
     assert "content confirmation" in (result.stdout + result.stderr).lower()
@@ -145,14 +165,49 @@ def test_content_writes_reject_missing_confirmation_before_host_access(mode: str
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
 def test_content_prepare_rejects_confirmation_for_credential_renewal() -> None:
-    result = invoke(mode="ContentPrepare", confirm_content="renew-50-existing-g5-tokens")
+    result = invoke(
+        mode="ContentPrepare", confirm_content="renew-50-existing-g5-tokens"
+    )
     assert result.returncode != 0
     assert "content confirmation" in (result.stdout + result.stderr).lower()
 
 
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_one_faq_vectorization_requires_exact_confirmation_and_image_revision() -> None:
+    missing_confirmation = invoke(mode="VectorizeG5", runtime_source_sha="f" * 40)
+    assert missing_confirmation.returncode != 0
+    assert (
+        "content confirmation"
+        in (missing_confirmation.stdout + missing_confirmation.stderr).lower()
+    )
+
+    missing_revision = invoke(
+        mode="VectorizeG5", confirm_content="vectorize-one-isolated-g5-faq"
+    )
+    assert missing_revision.returncode != 0
+    assert (
+        "runtime backend source sha"
+        in (missing_revision.stdout + missing_revision.stderr).lower()
+    )
+
+    valid = invoke(
+        mode="VectorizeG5",
+        confirm_content="vectorize-one-isolated-g5-faq",
+        runtime_source_sha="f" * 40,
+    )
+    assert valid.returncode != 0
+    assert "staging linux host" in (valid.stdout + valid.stderr).lower()
+
+
 def test_manual_content_runner_uses_reviewed_workdir_and_private_mounts() -> None:
-    source = (SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5Content.ps1").read_text("utf-8")
-    assert "'--workdir', '/opt/crm-g5-source'" in source
+    source = (SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5Content.ps1").read_text(
+        "utf-8"
+    )
+    assert (
+        "--workdir', \"$(if ($Mode -ceq 'VectorizeG5') { '/app' } else { '/opt/crm-g5-source' })\""
+        in source
+    )
+    assert "target=/opt/crm-g5-vectorize.py,readonly" in source
     assert "'--read-only'" in source
     assert "'--pull=never'" in source
     assert "g5-38852775454-2.json" in source
@@ -175,6 +230,43 @@ def test_direct_content_runner_rejects_write_without_confirmation() -> None:
             "ContentPrepare",
             "-SourceSha",
             "e" * 40,
+            "-BackendImage",
+            BACKEND,
+            "-ReviewRoot",
+            "/home/crmdeploy/src/crm-reviewed-source-g5-test",
+            "-EnvironmentFile",
+            "/home/crmdeploy/config/crm-staging.env",
+            "-DockerHost",
+            "unix:///run/user/1004/docker.sock",
+            "-EvidenceFile",
+            "/home/crmdeploy/.cache/crm-g5-manual/g5-test/content.json",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+        timeout=15,
+    )
+    assert result.returncode != 0
+    assert "content confirmation" in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_direct_vector_runner_rejects_write_without_confirmation() -> None:
+    script = SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5Content.ps1"
+    result = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-NonInteractive",
+            "-File",
+            str(script),
+            "-Mode",
+            "VectorizeG5",
+            "-SourceSha",
+            "e" * 40,
+            "-RuntimeBackendSourceSha",
+            "f" * 40,
             "-BackendImage",
             BACKEND,
             "-ReviewRoot",
@@ -224,6 +316,8 @@ def test_private_file_policy_allows_read_only_reconciliation_after_renewal() -> 
     renewed = [*original, "g5-38852775454-3.json"]
     assert check("ContentCheck", original) == 0
     assert check("ContentCheck", renewed) == 0
+    assert check("VectorizeG5", original) == 0
+    assert check("VectorizeG5", renewed) != 0
     assert check("RenewCredentials", renewed) != 0
     assert check("ContentPrepare", renewed) != 0
     assert check("ContentCheck", [*renewed, "unexpected.json"]) != 0

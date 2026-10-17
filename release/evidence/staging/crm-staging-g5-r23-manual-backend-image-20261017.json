@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "evidence_type": "manual_backend_image_publish",
+  "source_sha": "7b7acc35ac47bf02f4732b27c7da157c201881e9",
+  "tag": "ghcr.io/cp11-gh/crm-backend:candidate-7b7acc35ac47-backend-manual-20261017-1",
+  "reference": "ghcr.io/cp11-gh/crm-backend@sha256:477d571d17c27937a0861feeec6aa47f29a1081cf20df8303d64cef1979cb293",
+  "platform": "linux/amd64",
+  "child_digest": "sha256:f2c2d9664fa3d9b7d927dfe0b40edf2a84fb9eb85332030df9d6dac2b2eca252",
+  "config_digest": "sha256:25be32c4e8d1824774d4ac860ed881050a3f202c3f95a22208bc1ed836f07c4c",
+  "layer_count": 12,
+  "compressed_bytes": 110907425,
+  "largest_layer_bytes": 33262910,
+  "manifest_status": "PASS",
+  "staging_deployed": false,
+  "production_release": false,
+  "observed_at_utc": "2026-10-16T23:47:51.4257505Z"
+}

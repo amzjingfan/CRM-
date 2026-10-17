@@ -11,12 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-r22-index-close-20261017
-Governance base SHA: 3eedb222f8616d28b97141103a740cdba20acbd6
-CANDIDATE_SUBJECT_SHA: ae120e692da996b3150b87fdca1c7337076c8c9a
+Working branch at this snapshot: feature/mvp006-g5-scoped-vectorization-20261017
+Governance base SHA: 7b7acc35ac47bf02f4732b27c7da157c201881e9
+CANDIDATE_SUBJECT_SHA: 54254fdd849ceb2985d2f92b631bce441afdc91c
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
+
+2026-10-17 G5 R24 最新现场恢复点：用户授权后，先只读核对原 50/50 会话，仅运行一次 `ContentPrepare` 写入 50 条合成提问及 1 条内部审阅 FAQ，再只读核对 `fixture_state=prepared`、凭证原状态、Provider 0、三个公网健康 200。`EMBEDDING_ENABLED=false` 使 FAQ 尚未 ready；用户另行授权仅对这条 FAQ 用本地 BGE 向量化一次，代码和现场运行仍在推进。见 [R24 IR](../records/implementation/IR-MVP-006-20261017-R24.md)、[TR](../reports/tests/TR-MVP-006-20261017-R24.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R24.md)。下一步：完成有界向量化并只读核对；独立处理短期凭证与单会话安全验证；另定真实 50 并发付费窗口。G5 `DOING`、production No-Go，三个索引为 `CANDIDATE_VIEW`。
+
+2026-10-17 G5 R23 现场恢复点：从 main `7b7acc35` 手动发布一个后端镜像 `sha256:477d571d…cb293`，压缩层 110,907,425 字节；六角色预取、validate/deploy 与零调用内容检查通过，前端/检索不变，旧后端 `sha256:deef65ee…babbe8` 留作回滚。受审 tar 解包路径在旧生产门禁的 Git checkout 检查处提前失败，使用同一 SHA 的干净浅克隆后才部署成功。运行后端 revision、迁移头、三项公网健康 200、固定出口 `38.55.145.52`、TikTok 只读与工作台翻译已核对；SSE 关闭、限流 10。原 50/50 会话匹配，但合成知识尚未准备、凭证仍为原状态，Provider/数据库写入 0。见 [R23 IR](../records/implementation/IR-MVP-006-20261017-R23.md)、[TR](../reports/tests/TR-MVP-006-20261017-R23.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R23.md) 与机器证据。下一步最多三项：获精确范围后准备合成内容并核对向量；独立续期并做单会话安全验证；获付费压测范围后执行真实 50 并发与原模式恢复。G5 `DOING`、production No-Go。本轮证据仍在本地任务分支，三个派生索引为 `CANDIDATE_VIEW`，未合入 main。
 
 2026-10-17 G5 R22 源码恢复点：subject `ae120e6` 增加不运行 Actions 的手动内容检查、一次性合成 FAQ/50 消息准备和独立凭证续期入口；固定审核源码工作目录、当前运行镜像/数据库/签名/私有文件边界。续期后只读对账可验签第三份文件，异常逗号文件名不能绕过精确目录核对。完整后端 1929 passed/27 skipped、定向 36 passed，Ruff/格式、mypy、PowerShell AST 通过；独立复审无严重或重要问题。见 [IR](../records/implementation/IR-MVP-006-20261017-R22.md)、[TR](../reports/tests/TR-MVP-006-20261017-R22.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R22.md)。[PR #270](https://github.com/CP11-gh/CRM/pull/270) 已无 Actions 合入 main `3eedb22`；三个索引按 110/113/110 条源记录核对为 `CURRENT`。未发布新镜像、未在 staging 写入内容或续期、未调用 DeepSeek；G5 `DOING`、production No-Go。下一步：对受审源码准备匹配的运行镜像并做只读检查；受控合成内容与有效凭证；单会话安全输出和真实 50 并发后恢复原只读加翻译模式。
 

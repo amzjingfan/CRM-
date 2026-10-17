@@ -4,6 +4,10 @@
 
 ## 模块状态
 
+2026-10-17 G5 R24 现场内容准备：一次获批 `ContentPrepare` 写入原隔离店铺 50 条合成提问和 1 条内部审阅级 FAQ；写前/写后只读对账均为 50/50 会话，写后 `fixture_state=prepared`、凭证仍为原状态，Provider 调用 0。三项公网健康仍为 200。`EMBEDDING_ENABLED=false` 使 FAQ 尚未向量化，`knowledge_ready=false`；见 [R24 TR](../reports/tests/TR-MVP-006-20261017-R24.md)。凭证续期、SSE、DeepSeek 和 50 并发未执行，G5/production 仍未通过。
+
+2026-10-17 G5 R23 手动 staging：从 main `7b7acc35` 发布的后端 `sha256:477d571d…cb293` 经六角色预取、validate/deploy 和独立核对运行；前端/检索不变，迁移头、三个公网健康 200、固定出口、TikTok 只读与工作台翻译通过，G5 SSE 关闭且限流 10。零调用内容检查仍为原 50/50 会话、知识未准备、凭证原状态，Provider/数据库写入 0。首次 tar 解包路径因下层门禁要求 Git checkout 而在切换前失败，改用同一 SHA 的干净浅克隆后通过。见 [R23 TR](../reports/tests/TR-MVP-006-20261017-R23.md)。未写入合成数据、续期、调用 DeepSeek 或运行 50 并发；G5/production 未通过。
+
 2026-10-17 G5 R22 手动夹具源码：从受审源码与运行镜像精确核对后，手动内容入口可分别只读检查、准备 50 条合成问题和内部审阅 FAQ、续期私有凭证；续期后只读对账与异常文件名拒绝经回归覆盖。完整后端 `1929 passed, 27 skipped`，定向 `36 passed`，Ruff、格式、mypy、PowerShell AST 与独立审查通过。见 [R22 TR](../reports/tests/TR-MVP-006-20261017-R22.md)。未发布新镜像或在 staging 执行本入口，G5/production 未通过。
 
 2026-10-16 G5 R21 手动恢复源码：新增 `RestoreReadAndTranslation`，在结束 SSE 窗口后通过原 Rootless 门禁同时恢复 TikTok 只读与工作台翻译，并核对通用模型/SSE 关闭及限流 10。本地相关门禁完整回归 `151 passed`、格式后定向 `22 passed`、Ruff/格式及 PowerShell AST 通过，独立代码审查无严重或重要问题。见 [R21 TR](../reports/tests/TR-MVP-006-20261016-R21.md)。未执行 staging G5 窗口或恢复演练，G5/production 仍未通过。
