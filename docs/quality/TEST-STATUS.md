@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R28：获批的第二次、也是修复后唯一一次本地 BGE 向量化成功；独立 `ContentCheck` 为 `knowledge_ready=true`、50/50 会话、原凭证，SQL 检索门禁为 1 个合格片段，DeepSeek 0，三健康 200，常驻 Embedding/LLM/TikTok 写入仍关闭。见 [R28 TR](../reports/tests/TR-MVP-006-20261017-R28.md)。短期凭证、单会话及 50 并发仍未验收，G5/production 未通过。
+
 2026-10-17 G5 R26–R27：获批单次向量化因单文件挂载不满足旧源码挂载安全门禁而失败；只读对账 50/50、FAQ pending、chunk 0、原凭证。修复恢复完整受审源码只读挂载，相关测试 51 passed，未二次运行。见 [R26 TR](../reports/tests/TR-MVP-006-20261017-R26.md)与[R27 TR](../reports/tests/TR-MVP-006-20261017-R27.md)。G5/production 未通过。
 
 2026-10-17 G5 R24 现场内容准备：一次获批 `ContentPrepare` 写入原隔离店铺 50 条合成提问和 1 条内部审阅级 FAQ；写前/写后只读对账均为 50/50 会话，写后 `fixture_state=prepared`、凭证仍为原状态，Provider 调用 0。三项公网健康仍为 200。`EMBEDDING_ENABLED=false` 使 FAQ 尚未向量化，`knowledge_ready=false`；见 [R24 TR](../reports/tests/TR-MVP-006-20261017-R24.md)。凭证续期、SSE、DeepSeek 和 50 并发未执行，G5/production 仍未通过。
