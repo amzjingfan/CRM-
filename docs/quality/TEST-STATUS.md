@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R34：续期工具改为原 R05 批次连续编号文件、逐份验签与 50 用户/会话映射校验；红灯后修复，定向 `26 passed`，后端全量 `1962 passed, 27 skipped`，全量 Ruff、183 文件 mypy 及两份 PowerShell AST 通过。仅是本地源码门禁，[R34 TR](../reports/tests/TR-MVP-006-20261017-R34.md) 未签发新令牌、发布镜像或在 staging 复测；G5/production 继续未通过。
+
 2026-10-17 G5 R33：[staging 空闲采样](../reports/tests/TR-MVP-006-20261017-R33.md)在 Linux/Rootless 下读取 3 组 backend/worker/agent-worker 资源与 backend TCP 白名单指标，服务器与入库副本哈希一致。未施加 SSE 负载，不能作为 50 并发容量证据；第三份凭证的 50/50 枚令牌已过期。G5/production 继续未通过。
 
 2026-10-17 G5 R32：获批的手动单会话 SSE 在 `accepted` 后返回 `50003`，没有安全 `delta`，随后原 TikTok 只读加工作台翻译模式已通过 validate/deploy 与三个公网健康检查恢复。G5 backend 缺少 Agent 必需的本地检索开关；修复 subject `4eee102` 的定向 14 项、完整 staging 门禁文件 142 项及全量后端 `1959 passed, 27 skipped`，Ruff/PowerShell AST 均通过。修复尚未在 staging 复测；G5/production 未通过。见 [R32 TR](../reports/tests/TR-MVP-006-20261017-R32.md)。

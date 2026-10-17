@@ -36,6 +36,29 @@ def test_content_tool_never_overwrites_an_existing_renewed_pool(tmp_path: Path) 
     assert output.read_text(encoding="utf-8") == "keep"
 
 
+def test_content_tool_accepts_only_next_numbered_private_pool() -> None:
+    source = Path("/opt/crm-g5-credentials/g5-38852775454-2.json")
+    fourth = source.with_name("g5-38852775454-4.json")
+    original = {"g5-38852775454-1.json", source.name}
+    prior = original | {"g5-38852775454-3.json"}
+
+    assert tool().validate_credential_inventory(source, fourth, prior, writable=True, allow_renewed=False) == 4
+    assert (
+        tool().validate_credential_inventory(source, fourth, prior | {fourth.name}, writable=False, allow_renewed=True)
+        == 4
+    )
+    with pytest.raises(ValueError, match="batch"):
+        tool().validate_credential_inventory(source, fourth, original, writable=True, allow_renewed=False)
+    with pytest.raises(ValueError, match="batch"):
+        tool().validate_credential_inventory(
+            source, fourth, prior | {"unexpected.json"}, writable=True, allow_renewed=False
+        )
+    with pytest.raises(ValueError, match="batch"):
+        tool().validate_credential_inventory(
+            source, source.with_name("g5-38852775454-04.json"), prior, writable=True, allow_renewed=False
+        )
+
+
 def test_private_mount_uses_runner_file_ownership_even_when_container_runs_as_root() -> None:
     parent = SimpleNamespace(st_uid=1004, st_mode=stat.S_IFDIR | 0o700)
     source = SimpleNamespace(st_uid=1004, st_mode=stat.S_IFREG | 0o600, st_size=8000)

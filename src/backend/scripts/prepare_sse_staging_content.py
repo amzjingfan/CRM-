@@ -47,7 +47,7 @@ from scripts.prepare_sse_staging_fixture import (
 )
 
 SOURCE_NAME = "g5-38852775454-2.json"
-RENEWED_NAME = "g5-38852775454-3.json"
+CREDENTIAL_PREFIX = "g5-38852775454-"
 FAQ_SOURCE = "g5-synthetic-only"
 
 
@@ -129,16 +129,52 @@ def assert_vector_runtime(settings: Settings) -> None:
         raise ValueError("G5 vector runtime mismatch")
 
 
+def credential_name(generation: int) -> str:
+    return f"{CREDENTIAL_PREFIX}{generation}.json"
+
+
+def validate_credential_inventory(
+    source: Path, output: Path, names: set[str], *, writable: bool, allow_renewed: bool
+) -> int:
+    """只接受原批次的连续编号；写入目标必须是下一个未占用的编号。"""
+    suffix = output.name.removeprefix(CREDENTIAL_PREFIX).removesuffix(".json")
+    if (
+        source.name != SOURCE_NAME
+        or source.parent != output.parent
+        or not output.name.startswith(CREDENTIAL_PREFIX)
+        or not output.name.endswith(".json")
+        or not suffix.isascii()
+        or not suffix.isdecimal()
+    ):
+        raise ValueError("G5 content batch mismatch")
+    try:
+        generation = int(suffix)
+    except ValueError as exc:
+        raise ValueError("G5 content batch mismatch") from exc
+    if (
+        generation < 3
+        or suffix != str(generation)
+        or len(names) < 2
+        or names != {credential_name(index) for index in range(1, len(names) + 1)}
+    ):
+        raise ValueError("G5 content batch mismatch")
+    expected = len(names) + 1 if writable else max(3, len(names)) if allow_renewed else 3
+    if generation != expected or (not writable and not allow_renewed and len(names) != 2):
+        raise ValueError("G5 content batch mismatch")
+    return generation
+
+
 def validate_content_paths(
     app_env: str, source: Path, output: Path, *, writable: bool, allow_renewed: bool = False
-) -> None:
+) -> int:
     """源码只读、私有目录按模式挂载，且绝不覆盖原始或更新后的凭证。"""
     if app_env != "staging":
         raise ValueError("G5 content preparation requires staging")
-    if source.name != SOURCE_NAME or output.name != RENEWED_NAME or source.parent != output.parent:
-        raise ValueError("G5 content batch mismatch")
     if output.is_symlink() or (output.exists() and not allow_renewed):
         raise ValueError("G5 renewed credentials file already exists")
+    generation = validate_credential_inventory(
+        source, output, {path.name for path in source.parent.iterdir()}, writable=writable, allow_renewed=allow_renewed
+    )
     if os.name != "posix" or not source.is_absolute() or not source.is_file() or source.is_symlink():
         raise ValueError("G5 content source requires private POSIX staging")
     if not private_source_metadata_is_safe(source.parent.stat(), source.stat()) or not current_container_paths_are_safe(
@@ -149,12 +185,37 @@ def validate_content_paths(
         not output.is_file() or not private_source_metadata_is_safe(output.parent.stat(), output.stat())
     ):
         raise ValueError("G5 renewed credentials file is unsafe")
+    last_existing = generation if output.exists() else generation - 1
+    for index in range(1, last_existing + 1):
+        prior = source.parent / credential_name(index)
+        if (
+            prior.is_symlink()
+            or not prior.is_file()
+            or not private_source_metadata_is_safe(prior.parent.stat(), prior.stat())
+        ):
+            raise ValueError("G5 private credential history is unsafe")
+    return generation
 
 
 def validate_renewed_payload(payload: object, manifest: ReconciliationManifest) -> None:
     """只读验签续期文件的全部 50 个用户和会话映射，不输出令牌。"""
     if validate_reconciliation_payload(payload) != manifest:
         raise ValueError("fixture renewed batch mismatch")
+
+
+def validate_credentials_history(source: Path, output: Path, manifest: ReconciliationManifest) -> None:
+    """逐份验签原批次与所有续期批次；旧令牌过期不影响只读对账。"""
+    generation = int(output.name.removeprefix(CREDENTIAL_PREFIX).removesuffix(".json"))
+    last_existing = generation if output.exists() else generation - 1
+    for index in range(1, last_existing + 1):
+        prior = source.parent / credential_name(index)
+        if prior == source:
+            continue
+        try:
+            renewed_payload: Any = json.loads(prior.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError("G5 renewed credentials unreadable") from exc
+        validate_renewed_payload(renewed_payload, manifest)
 
 
 def private_source_metadata_is_safe(parent: os.stat_result, source: os.stat_result) -> bool:
@@ -343,12 +404,7 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
     payload, manifest = read_private_source(source)
     if mode == "vectorize_one":
         assert_vector_runtime(settings)
-    if output.exists():
-        try:
-            renewed_payload: Any = json.loads(output.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-            raise ValueError("G5 renewed credentials unreadable") from exc
-        validate_renewed_payload(renewed_payload, manifest)
+    validate_credentials_history(source, output, manifest)
     async with session_factory() as session:
         if mode == "vectorize_one":
             snapshot = await inspect_content_fixture(session, manifest)

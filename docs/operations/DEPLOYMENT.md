@@ -52,6 +52,8 @@ G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-
 
 G5 内容准备改用 `Invoke-StagingManualG5.ps1` 的 `ContentCheck`、`ContentPrepare`、`RenewCredentials` 模式处理原 R05 隔离店铺，不调度 GitHub Actions。GitHub 可验证的受审源码、运行后端 OCI revision/摘要、数据库、签名配置与私有凭证目录均精确核对；内容模式允许证据合并后的历史受审提交；容器固定审核源码工作目录。一次性内容写入需要独立授权，并在同一事务内创建内部审阅级合成 FAQ、改写 50 条合成提问和撤销临时权限。只有 FAQ 向量化为 `ready` 且当前版本切片存在，才可另行续期原 50 人的仓库外短期凭证。源码准备不代表现场执行，单会话 DeepSeek 和 50 并发另行验收；参数与恢复约束见 [Rootless 手动路径](../../src/deploy/staging/rootless/README.md#g5-手动-staging-路径不运行-github-actions)。
 
+2026-10-17 G5 续期工具源码修复：原固定第三份私有凭证到期后，手动入口可从完整连续编号的原批次选择下一个文件，独占创建、不覆盖历史；`ContentCheck` 核对全部保留代际的文件权限、JWT 签名及 50 个用户/会话映射。缺号、额外文件、符号链接、旧结果不确定时失败关闭。真实压测必须选择最新编号且先用只读身份/会话预检确认未过期。本条只描述源码行为，未签发新凭证、部署镜像或运行 G5 负载。
+
 ### TikTok 固定出口契约
 
 staging 的 TikTok 出站与 split-ingress 入口分离：应用只经 `socks5h://tiktok-egress:1080` 访问独立 helper，helper 再以 `crm-egress@38.55.145.52` 建立 SSH 动态转发。公网账号只允许 local/dynamic forwarding 到 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 和门禁专用 `checkip.amazonaws.com:443`；不得复用 `crm-tunnel`、开放代理端口或放宽为任意目标。

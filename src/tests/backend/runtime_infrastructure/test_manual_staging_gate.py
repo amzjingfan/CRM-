@@ -196,7 +196,8 @@ def test_manual_content_runner_uses_reviewed_workdir_and_private_mounts() -> Non
     assert "'--read-only'" in source
     assert "'--pull=never'" in source
     assert "g5-38852775454-2.json" in source
-    assert "g5-38852775454-3.json" in source
+    assert "Assert-StagingG5PrivateFileSet.ps1" in source
+    assert '"/opt/crm-g5-credentials/$credentialName"' in source
     assert "EXPECTED_RUNTIME_JWT_SHA256" in source
     assert "DATABASE_URL" in source
 
@@ -299,11 +300,53 @@ def test_private_file_policy_allows_read_only_reconciliation_after_renewal() -> 
 
     original = ["g5-38852775454-1.json", "g5-38852775454-2.json"]
     renewed = [*original, "g5-38852775454-3.json"]
+    fourth = [*renewed, "g5-38852775454-4.json"]
+    fifth = [*fourth, "g5-38852775454-5.json"]
     assert check("ContentCheck", original) == 0
     assert check("ContentCheck", renewed) == 0
+    assert check("ContentCheck", fourth) == 0
+    assert check("ContentCheck", fifth) == 0
+    assert check("RenewCredentials", fourth) == 0
     assert check("VectorizeG5", original) == 0
     assert check("VectorizeG5", renewed) != 0
-    assert check("RenewCredentials", renewed) != 0
     assert check("ContentPrepare", renewed) != 0
     assert check("ContentCheck", [*renewed, "unexpected.json"]) != 0
+    assert check("ContentCheck", [*renewed, "g5-38852775454-5.json"]) != 0
+    assert check("RenewCredentials", [*renewed, "g5-38852775454-5.json"]) != 0
+    assert check("ContentCheck", [*renewed, "g5-38852775454-04.json"]) != 0
     assert check("ContentCheck", ["g5-38852775454-1.json,g5-38852775454-2.json"]) != 0
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_private_file_policy_selects_latest_for_read_and_next_for_renewal() -> None:
+    policy = SOURCE_ROOT / "scripts" / "Assert-StagingG5PrivateFileSet.ps1"
+    original = ["g5-38852775454-1.json", "g5-38852775454-2.json"]
+    generations = [*original, "g5-38852775454-3.json", "g5-38852775454-4.json"]
+    ten_generations = [f"g5-38852775454-{index}.json" for index in range(1, 11)]
+    for mode, names, expected in (
+        ("ContentCheck", original, "g5-38852775454-3.json"),
+        ("ContentCheck", generations, "g5-38852775454-4.json"),
+        ("RenewCredentials", generations, "g5-38852775454-5.json"),
+        ("ContentCheck", ten_generations, "g5-38852775454-10.json"),
+        ("RenewCredentials", ten_generations, "g5-38852775454-11.json"),
+    ):
+        result = subprocess.run(
+            [
+                POWERSHELL,
+                "-NoProfile",
+                "-NonInteractive",
+                "-File",
+                str(policy),
+                "-Mode",
+                mode,
+                "-NamesJson",
+                json.dumps(names),
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+            timeout=15,
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == expected

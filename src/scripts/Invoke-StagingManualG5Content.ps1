@@ -89,9 +89,11 @@ try {
     Assert-PrivatePath '/home/crmdeploy/.cache' $true
     Assert-PrivatePath $privateDir $true
     $items = @(Get-ChildItem -LiteralPath $privateDir -Force)
-    & (Join-Path $PSScriptRoot 'Assert-StagingG5PrivateFileSet.ps1') -Mode $Mode `
+    $credentialName = & (Join-Path $PSScriptRoot 'Assert-StagingG5PrivateFileSet.ps1') -Mode $Mode `
         -NamesJson (ConvertTo-Json -InputObject @($items | ForEach-Object { $_.Name }) -Compress)
-    if (-not $?) { throw 'G5 private fixture files differ from the exact allowed batch.' }
+    if (-not $? -or $credentialName -cnotmatch '^g5-38852775454-(?:[3-9]|[1-9][0-9]+)\.json$') {
+        throw 'G5 private fixture files differ from the exact allowed batch.'
+    }
     foreach ($item in $items) { Assert-PrivatePath (Join-Path $privateDir $item.Name) $false }
 
     $serviceContract = (& docker --host $DockerHost exec $container python -B -c `
@@ -137,7 +139,7 @@ try {
         '--mount', $mount, '--entrypoint', 'python', $BackendImage,
         '-B', '-m', 'scripts.prepare_sse_staging_content', $action,
         '--source-credentials-file', '/opt/crm-g5-credentials/g5-38852775454-2.json',
-        '--credentials-file', '/opt/crm-g5-credentials/g5-38852775454-3.json',
+        '--credentials-file', "/opt/crm-g5-credentials/$credentialName",
         '--expected-database-sha256', $databaseSha
     )
     $output = & docker @arguments 2>$null
@@ -148,7 +150,7 @@ try {
             if ($report.mode -cne 'check_only' -or $report.fixture_state -cnotin @('original', 'prepared') -or
                 $report.credentials_state -cnotin @('original', 'renewed') -or
                 $report.matched_sessions -ne 50 -or $report.provider_calls -ne 0 -or $report.database_writes -ne 0 -or
-                ($report.credentials_state -ceq 'renewed') -ne (Test-Path -LiteralPath (Join-Path $privateDir 'g5-38852775454-3.json'))) {
+                ($report.credentials_state -ceq 'renewed') -ne (Test-Path -LiteralPath (Join-Path $privateDir $credentialName))) {
                 throw 'Read-only G5 result is inconclusive.'
             }
             @{ mode = 'check_only'; fixture_state = $report.fixture_state; knowledge_ready = [bool]$report.knowledge_ready;
@@ -166,7 +168,7 @@ try {
                 $report.provider_calls -ne 0 -or $report.database_writes -ne 0) {
                 throw 'G5 credential renewal outcome is inconclusive.'
             }
-            Assert-PrivatePath (Join-Path $privateDir 'g5-38852775454-3.json') $false
+            Assert-PrivatePath (Join-Path $privateDir $credentialName) $false
             @{ mode = 'renew_credentials'; rotated_tokens = 50; provider_calls = 0; database_writes = 0 }
         }
         'VectorizeG5' {

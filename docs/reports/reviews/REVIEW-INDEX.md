@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -123,3 +123,4 @@ View: `CURRENT`
 | RR-MVP-006-20261017-R29 | MVP-006 | R29 | APPROVE | `5ad110d4286a6cbfa53289360d109a930f1afaa9` | single-renewal / private-credentials / no-provider / no-service-switch | 2026-10-17T09:37:00+08:00 | [`RR-MVP-006-20261017-R29.md`](RR-MVP-006-20261017-R29.md) |
 | RR-MVP-006-20261017-R31 | MVP-006 | R31 | APPROVE | `9712c5a8cc9cb539cda79c4ec172f3773512ee73` | read-only-scope / exact-runtime-image / numeric-output-allowlist / tcp-queue-semantics / private-evidence / fail-closed | 2026-10-17T10:44:34+08:00 | [`RR-MVP-006-20261017-R31.md`](RR-MVP-006-20261017-R31.md) |
 | RR-MVP-006-20261017-R32 | MVP-006 | R32 | APPROVE | `4eee10257815d9ed920f6678e28cc63908a0a15e` | g5-only-scope / compose-merge / runtime-flags / default-recovery / no-secrets / fail-closed | 2026-10-17T11:16:00+08:00 | [`RR-MVP-006-20261017-R32.md`](RR-MVP-006-20261017-R32.md) |
+| RR-MVP-006-20261017-R34 | MVP-006 | R34 | APPROVE | `abc945df1d55f9459ef372f3e883ab8955d06fcf` | private-paths / contiguous-inventory / exclusive-create / jwt-mapping / fail-closed / no-secret-output | 2026-10-17T11:55:27+08:00 | [`RR-MVP-006-20261017-R34.md`](RR-MVP-006-20261017-R34.md) |
