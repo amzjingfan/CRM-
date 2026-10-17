@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-18 G5 R59 源码候选：[R59 TR](../reports/tests/TR-MVP-006-20261018-R59.md)记录 FAQ 草稿使用 Responses JSON Schema 后的完整后端 2057 passed/27 skipped、Ruff lint/format、mypy 通过，独立审查无阻断。两次单请求合成探针确认现用 DeepSeek 模型返回符合最小及完整 FAQ Schema 的结构；它们不等于实际 SSE 验收。当前仍以 [R58 现场失败](../reports/tests/TR-MVP-006-20261018-R58.md)为准：无安全 `delta`、总耗时 8.135 秒、50 并发未运行；原 G3 模式已恢复。G5 与 production No-Go。
+2026-10-18 G5 R59 源码已合并：[R59 TR](../reports/tests/TR-MVP-006-20261018-R59.md)记录 FAQ 草稿使用 Responses JSON Schema 后的完整后端 2057 passed/27 skipped、Ruff lint/format、mypy 通过，独立审查无阻断；[PR #333](https://github.com/CP11-gh/CRM/pull/333) 已合入 main。两次单请求合成探针确认现用 DeepSeek 模型返回符合最小及完整 FAQ Schema 的结构；它们不等于实际 SSE 验收。GitHub CI 因账户计费在零步骤失败，没有作为测试证据。当前仍以 [R58 现场失败](../reports/tests/TR-MVP-006-20261018-R58.md)为准：无安全 `delta`、总耗时 8.135 秒、50 并发未运行；原 G3 模式已恢复。G5 与 production No-Go。
 
 2026-10-18 G5 R57 源码已合并：[R57 TR](../reports/tests/TR-MVP-006-20261018-R57.md)记录 FAQ 安全复核五个结构化字段及低敏诊断路径的确定性修复。新增测试先红后绿，相关 98 passed、全量后端 2051 passed/27 skipped，Ruff lint/format 与 mypy 通过。本轮尚未发布镜像、部署 staging、调用 DeepSeek 或执行 50 并发；R56 仍是最新现场失败，G5 与 production No-Go。
 
