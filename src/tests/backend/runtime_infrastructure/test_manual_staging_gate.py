@@ -145,9 +145,7 @@ def test_read_and_translation_restore_uses_both_existing_gate_switches() -> None
         ("RenewCredentials", "renew-50-existing-g5-tokens"),
     ],
 )
-def test_content_modes_reach_host_gate_only_with_exact_confirmation(
-    mode: str, confirmation: str | None
-) -> None:
+def test_content_modes_reach_host_gate_only_with_exact_confirmation(mode: str, confirmation: str | None) -> None:
     result = invoke(mode=mode, confirm_content=confirmation)
     assert result.returncode != 0
     assert "staging linux host" in (result.stdout + result.stderr).lower()
@@ -165,9 +163,7 @@ def test_content_writes_reject_missing_confirmation_before_host_access(
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
 def test_content_prepare_rejects_confirmation_for_credential_renewal() -> None:
-    result = invoke(
-        mode="ContentPrepare", confirm_content="renew-50-existing-g5-tokens"
-    )
+    result = invoke(mode="ContentPrepare", confirm_content="renew-50-existing-g5-tokens")
     assert result.returncode != 0
     assert "content confirmation" in (result.stdout + result.stderr).lower()
 
@@ -176,19 +172,11 @@ def test_content_prepare_rejects_confirmation_for_credential_renewal() -> None:
 def test_one_faq_vectorization_requires_exact_confirmation_and_image_revision() -> None:
     missing_confirmation = invoke(mode="VectorizeG5", runtime_source_sha="f" * 40)
     assert missing_confirmation.returncode != 0
-    assert (
-        "content confirmation"
-        in (missing_confirmation.stdout + missing_confirmation.stderr).lower()
-    )
+    assert "content confirmation" in (missing_confirmation.stdout + missing_confirmation.stderr).lower()
 
-    missing_revision = invoke(
-        mode="VectorizeG5", confirm_content="vectorize-one-isolated-g5-faq"
-    )
+    missing_revision = invoke(mode="VectorizeG5", confirm_content="vectorize-one-isolated-g5-faq")
     assert missing_revision.returncode != 0
-    assert (
-        "runtime backend source sha"
-        in (missing_revision.stdout + missing_revision.stderr).lower()
-    )
+    assert "runtime backend source sha" in (missing_revision.stdout + missing_revision.stderr).lower()
 
     valid = invoke(
         mode="VectorizeG5",
@@ -200,9 +188,7 @@ def test_one_faq_vectorization_requires_exact_confirmation_and_image_revision() 
 
 
 def test_manual_content_runner_uses_reviewed_workdir_and_private_mounts() -> None:
-    source = (SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5Content.ps1").read_text(
-        "utf-8"
-    )
+    source = (SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5Content.ps1").read_text("utf-8")
     assert "'--workdir', '/opt/crm-g5-source'" in source
     assert "type=bind,source=$source,target=/opt/crm-g5-source,readonly" in source
     assert "PYTHONPATH=/opt/crm-g5-source:/app" in source

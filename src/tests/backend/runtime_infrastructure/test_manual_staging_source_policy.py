@@ -12,9 +12,7 @@ SOURCE = "a" * 40
 NEXT_MAIN = "b" * 40
 
 
-def check(
-    mode: str, *, current_main: str = SOURCE, resolved_commit: str = SOURCE
-) -> subprocess.CompletedProcess[str]:
+def check(mode: str, *, current_main: str = SOURCE, resolved_commit: str = SOURCE) -> subprocess.CompletedProcess[str]:
     assert POWERSHELL is not None
     return subprocess.run(
         [
@@ -61,15 +59,10 @@ def test_new_deployment_requires_current_main(mode: str) -> None:
 )
 def test_recovery_accepts_reviewed_commit_after_main_moves(mode: str) -> None:
     assert check(mode, current_main=NEXT_MAIN).returncode == 0
-    assert (
-        check(mode, current_main=NEXT_MAIN, resolved_commit=NEXT_MAIN).returncode != 0
-    )
+    assert check(mode, current_main=NEXT_MAIN, resolved_commit=NEXT_MAIN).returncode != 0
 
 
 def test_gate_calls_shared_policy_and_checks_recovery_image_revision() -> None:
     gate = (SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5.ps1").read_text("utf-8")
     assert "Assert-StagingManualSourcePolicy.ps1" in gate
-    assert (
-        "candidate.Config.Labels.'org.opencontainers.image.revision' -cne $SourceSha"
-        in gate
-    )
+    assert "candidate.Config.Labels.'org.opencontainers.image.revision' -cne $SourceSha" in gate

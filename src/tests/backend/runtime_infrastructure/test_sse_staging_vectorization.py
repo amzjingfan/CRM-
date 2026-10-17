@@ -38,9 +38,7 @@ def test_exact_prepared_faq_is_eligible_for_one_local_vectorization() -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "change", ["other_store", "ready", "failed", "wrong_source", "missing"]
-)
+@pytest.mark.parametrize("change", ["other_store", "ready", "failed", "wrong_source", "missing"])
 def test_vectorization_rejects_any_other_faq_or_prior_outcome(change: str) -> None:
     manifest, snapshot = target()
     if change == "other_store":
@@ -78,11 +76,7 @@ async def test_claim_locks_only_the_exact_store_document_and_version() -> None:
     assert await port.claim_pending_documents(session, 1) == [document]
     assert document.vectorization_status == "processing"
     assert session.commits == 1
-    sql = str(
-        session.statement.compile(
-            dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
-        )
-    )
+    sql = str(session.statement.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
     assert str(manifest.store_id) in sql
     assert str(document.id) in sql
     assert "document_version = 1" in sql

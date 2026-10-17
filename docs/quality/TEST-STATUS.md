@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 `TEST-CI-FORMAT-001`：锁定 Ruff 0.16.3 对三个既有 G5 测试文件作纯排版修复；全量 Ruff lint/format 通过，三文件 AST 一致、定向 43 passed，见 [TR](../reports/tests/TR-TEST-CI-FORMAT-001-20261017-R01.md)。GitHub CI 作业因账户付款或支出上限问题在首步前被拒绝，PR 合并待账户恢复和实际 CI 核对。
+
 2026-10-17 G5 R29：用户精确授权的单次凭证续期返回 50 枚短期令牌、数据库写入和 Provider 调用均为 0；独立只读 `ContentCheck` 为 50/50 会话、凭证 renewed、知识 ready，第三份私有文件权限 `600`。见 [R29 TR](../reports/tests/TR-MVP-006-20261017-R29.md)。未运行 `/auth/me` 端到端预检、单会话 SSE 或真实 50 并发，G5/production 未通过。
 
 2026-10-17 G5 R28：获批的第二次、也是修复后唯一一次本地 BGE 向量化成功；独立 `ContentCheck` 为 `knowledge_ready=true`、50/50 会话、原凭证，SQL 检索门禁为 1 个合格片段，DeepSeek 0，三健康 200，常驻 Embedding/LLM/TikTok 写入仍关闭。见 [R28 TR](../reports/tests/TR-MVP-006-20261017-R28.md)。短期凭证、单会话及 50 并发仍未验收，G5/production 未通过。

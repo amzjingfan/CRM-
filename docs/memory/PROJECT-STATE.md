@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/mvp006-g5-r29-index-20261017
-Governance base SHA: 0296056ee031f4398a74dc12fe48dc10439fe182
-CANDIDATE_SUBJECT_SHA: 5ad110d4286a6cbfa53289360d109a930f1afaa9
+Working branch at this snapshot: fix/ci-format-baseline-20261017
+Governance base SHA: 1abc9d30bdcdb5284c54085c75802f8cb2ecc6b2
+CANDIDATE_SUBJECT_SHA: 1cda61d171566aed91976ef02788b6653dc6d7b9
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
+
+2026-10-17 `TEST-CI-FORMAT-001` 当前恢复点：三个既有 G5 测试文件仅用锁定 Ruff 0.16.3 格式化，AST 相同，定向 43 passed、全量 Ruff lint/format 通过；[IR](../records/implementation/IR-TEST-CI-FORMAT-001-20261017-R01.md) 与 [TR](../reports/tests/TR-TEST-CI-FORMAT-001-20261017-R01.md) 绑定 subject `1cda61d`，派生索引为 `CANDIDATE_VIEW`。GitHub PR #281、格式修复 PR #283 及此前多个 CI 作业的检查注解明确指出账户付款失败或 Actions 支出上限不足，作业零步骤；账户设置未修改。PR 附件登记因当前任务超过 100 项限制返回 `UI_UNAVAILABLE`，真实 PR 链接保留在本记录。G5 只读采样器在独立 PR #281 未合并，staging 未切换。下一步最多三项：由账户所有者恢复 GitHub Billing & plans；确认格式 PR 与 G5 PR 的真实 CI 再依序合并并恢复索引；另获精确授权后才安排 G5 现场窗口。
 
 2026-10-17 G5 R29 最新现场恢复点：用户精确授权一次 `RenewCredentials`，与运行后端相同 OCI revision 的受审源码为原 50 个隔离 CRM 测试账号独占创建第三份仓库外短期凭证；原两份保留。独立只读 `ContentCheck` 为 50/50 会话、凭证 renewed、FAQ ready、Provider/数据库写入 0。低敏证据的本机和现场 SHA-256 一致，新文件权限 `600`。见 [R29 IR](../records/implementation/IR-MVP-006-20261017-R29.md)、[TR](../reports/tests/TR-MVP-006-20261017-R29.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R29.md)。下一步：单会话安全 delta；在有效凭证及独立付费窗口下测真实 50 并发；恢复原只读加翻译模式。G5 `DOING`、production No-Go；[PR #278](https://github.com/CP11-gh/CRM/pull/278) 已合入 main `0296056e`；三个派生索引按 117/120/117 条源记录核对并恢复为 `CURRENT`。
 
