@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/g5-repeatable-credential-renewal-20261017
-Governance base SHA: ada2773f37573a89e9acc743815086b25011debd
+Working branch at this snapshot: docs/g5-r34-index-closure-20261017
+Governance base SHA: 69a769d29ad8a967d39482ea303eb10b49b25f40
 CANDIDATE_SUBJECT_SHA: abc945df1d55f9459ef372f3e883ab8955d06fcf
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 G5 R34：从 main `ada2773` 的 subject `abc945d` 已将原 R05 测试凭证扩为连续编号、全代际验签与逐一映射核对，独占创建保留旧文件；[IR](../records/implementation/IR-MVP-006-20261017-R34.md)、[TR](../reports/tests/TR-MVP-006-20261017-R34.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R34.md) 记录本地 `1962 passed, 27 skipped`、Ruff/mypy/PowerShell AST 通过。三个索引在本分支为 `CANDIDATE_VIEW`。第三份 50/50 令牌仍已过期，尚未现场签发第四份、发布新镜像或进行 G5 复测；staging 保持 TikTok 只读加工作台翻译、LLM/SSE 关闭、限流 10。下一步：合并源码；单独精确授权第四份凭证签发与只读核对；再按独立范围发布镜像、单会话及 50 并发与恢复。G5 `DOING`、production No-Go。
+2026-10-17 G5 R34：从 main `ada2773` 的 subject `abc945d` 已将原 R05 测试凭证扩为连续编号、全代际验签与逐一映射核对，独占创建保留旧文件；[IR](../records/implementation/IR-MVP-006-20261017-R34.md)、[TR](../reports/tests/TR-MVP-006-20261017-R34.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R34.md) 记录本地 `1962 passed, 27 skipped`、Ruff/mypy/PowerShell AST 通过。[PR #291](https://github.com/CP11-gh/CRM/pull/291) 已合入 main `69a769d29ad8a967d39482ea303eb10b49b25f40`，三个索引按权威源记录核对后恢复 `CURRENT`。第三份 50/50 令牌仍已过期，尚未现场签发第四份、发布新镜像或进行 G5 复测；staging 保持 TikTok 只读加工作台翻译、LLM/SSE 关闭、限流 10。下一步：按精确范围发布包含 R32/R34 的新后端镜像；再独立核准 staging 切换、第四份签发和只读核对；最后在付费窗口完成单会话、50 并发与恢复。G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R33：现运行 backend `sha256:758c4d51…41522` 的空闲 staging 上，受审 R31 采样器从 `crmdeploy`/Rootless 取得 3 组资源与 TCP 指标，低敏报告服务器/本机 SHA-256 一致；见 [TR](../reports/tests/TR-MVP-006-20261017-R33.md)。[PR #289](https://github.com/CP11-gh/CRM/pull/289) 已合入 main `a97612b9d7692aa5ca66b4014f54440062b69bb8`，三个派生索引按源记录核对后恢复为 `CURRENT`。此结果只证明 Linux 现场兼容，真实 50 并发仍未测。只读有效期核对确认第三份 50/50 令牌全部过期；原续期工具只允许固定第三份文件，现由 R34 源码修复但未现场运行。G5 `DOING`、production No-Go。
 
