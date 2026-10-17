@@ -200,6 +200,23 @@ test("store settings filter real rows without inventing authorization fields", a
   }
 });
 
+test("store settings keep readable columns in a narrow desktop window", async () => {
+  const { context, page } = await openPage("/settings/stores", { "GET /v1/settings/stores": [store] });
+  try {
+    await page.setViewportSize({ width: 820, height: 900 });
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
+    const dimensions = await page.locator(".settings-table-wrap").evaluate((wrapper) => ({
+      viewportWidth: wrapper.clientWidth,
+      contentWidth: wrapper.scrollWidth,
+      statusWidth: wrapper.querySelector("tbody tr td:nth-child(3)")?.getBoundingClientRect().width ?? 0,
+    }));
+    assert.ok(dimensions.contentWidth > dimensions.viewportWidth);
+    assert.ok(dimensions.statusWidth >= 60);
+  } finally {
+    await context.close();
+  }
+});
+
 test("channel authorization without an internal store explains the prerequisite", async () => {
   const { context, page } = await openPage("/settings/channels");
   try {

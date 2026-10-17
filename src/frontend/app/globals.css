@@ -458,7 +458,7 @@ button, a, label.file-button { cursor: pointer; }
 .settings-search { display: flex; align-items: center; gap: 7px; height: 34px; min-width: 220px; border: 1px solid var(--border); padding: 0 9px; color: var(--muted); }
 .settings-search input { min-width: 0; width: 100%; border: 0; background: transparent; color: var(--text); font-size: 12px; outline: none; }
 .settings-table-wrap { max-width: 100%; overflow-x: auto; }
-.settings-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+.settings-table { width: 100%; min-width: 900px; border-collapse: collapse; text-align: left; font-size: 12px; }
 .settings-table th { background: var(--surface-soft); color: var(--muted); font-weight: 650; white-space: nowrap; }
 .settings-table th, .settings-table td { border-bottom: 1px solid var(--border); padding: 14px 12px; vertical-align: middle; }
 .settings-table td { max-width: 250px; overflow-wrap: anywhere; }
