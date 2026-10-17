@@ -396,6 +396,13 @@ function Assert-ProductionComposeContract {
                 throw "Staging Compose capability does not match reviewed mode: $serviceName/$capabilityName"
             }
         }
+        $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $embeddingProperty = $applicationEnvironment.PSObject.Properties["EMBEDDING_ENABLED"]
+        $actualEmbedding = if ($null -eq $embeddingProperty) { "false" } else { [string]$embeddingProperty.Value }
+        if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
+        if ($actualEmbedding -cne $expectedEmbedding) {
+            throw "Staging Compose embedding capability does not match reviewed mode: $serviceName"
+        }
         $expectedTranslation = if ($EnableWorkspaceTranslation -and $serviceName -ceq "backend") { "true" } else { "false" }
         if ([string]$applicationEnvironment.WORKSPACE_MESSAGE_TRANSLATION_ENABLED -cne $expectedTranslation) {
             throw "Staging Compose translation capability does not match reviewed mode: $serviceName"
@@ -522,6 +529,12 @@ function Assert-RunningStagingMode {
             if ($runtimeEnvironment[$capabilityName] -cne $expectedValue) {
                 throw "Staging runtime capability does not match reviewed mode: $serviceName/$capabilityName"
             }
+        }
+        $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $actualEmbedding = [string]$runtimeEnvironment["EMBEDDING_ENABLED"]
+        if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
+        if ($actualEmbedding -cne $expectedEmbedding) {
+            throw "Staging runtime embedding capability does not match reviewed mode: $serviceName"
         }
         $expectedTranslation = if ($EnableWorkspaceTranslation -and $serviceName -ceq "backend") { "true" } else { "false" }
         if ($runtimeEnvironment["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"] -cne $expectedTranslation) {

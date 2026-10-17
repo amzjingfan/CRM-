@@ -99,6 +99,7 @@ def test_g5_staging_window_is_backend_only_and_default_mode_restores_closed_flag
     assert g5["services"]["backend"]["environment"] == {
         "APP_ENV": "staging",
         "LLM_ENABLED": "true",
+        "EMBEDDING_ENABLED": "true",
         "SSE_LOAD_TEST_ENABLED": "true",
         "CHAT_QUERY_LIMIT": "60",
     }
@@ -140,6 +141,7 @@ def test_docker_compose_resolves_g5_and_default_staging_modes(g5_enabled: bool, 
         expected = "true" if g5_enabled and service_name == "backend" else "false"
         assert service_env["LLM_ENABLED"] == expected
         assert service_env["SSE_LOAD_TEST_ENABLED"] == expected
+        assert service_env.get("EMBEDDING_ENABLED", "false") == expected
     assert config["services"]["backend"]["environment"]["CHAT_QUERY_LIMIT"] == ("60" if g5_enabled else "10")
 
 
@@ -210,6 +212,7 @@ def test_g5_staging_validate_accepts_only_backend_model_and_fixed_limit(
     config["services"]["backend"]["environment"].update(
         {
             "LLM_ENABLED": "true",
+            "EMBEDDING_ENABLED": "true",
             "SSE_LOAD_TEST_ENABLED": "true",
             "CHAT_QUERY_LIMIT": "60",
             "LLM_PRIMARY_PROVIDER": "deepseek",
@@ -255,10 +258,12 @@ def test_g5_staging_validate_accepts_only_backend_model_and_fixed_limit(
     "service_name,name,value",
     [
         ("backend", "LLM_ENABLED", "false"),
+        ("backend", "EMBEDDING_ENABLED", "false"),
         ("backend", "SSE_LOAD_TEST_ENABLED", "false"),
         ("backend", "CHAT_QUERY_LIMIT", "10"),
         ("backend", "CHAT_QUERY_LIMIT", "61"),
         ("worker", "LLM_ENABLED", "true"),
+        ("worker", "EMBEDDING_ENABLED", "true"),
         ("jobs", "SSE_LOAD_TEST_ENABLED", "true"),
         ("agent-worker", "LLM_ENABLED", "true"),
     ],
@@ -288,6 +293,7 @@ def test_g5_staging_validate_rejects_capability_or_limit_drift(
     config["services"]["backend"]["environment"].update(
         {
             "LLM_ENABLED": "true",
+            "EMBEDDING_ENABLED": "true",
             "SSE_LOAD_TEST_ENABLED": "true",
             "CHAT_QUERY_LIMIT": "60",
             "LLM_PRIMARY_PROVIDER": "deepseek",
@@ -345,6 +351,7 @@ def test_g5_deploy_rejects_running_backend_with_default_limit_before_health(
     config["services"]["backend"]["environment"].update(
         {
             "LLM_ENABLED": "true",
+            "EMBEDDING_ENABLED": "true",
             "SSE_LOAD_TEST_ENABLED": "true",
             "CHAT_QUERY_LIMIT": "60",
             "LLM_PRIMARY_PROVIDER": "deepseek",
@@ -382,11 +389,11 @@ def test_g5_deploy_rejects_running_backend_with_default_limit_before_health(
     assert not evidence_file.exists()
 
 
-def test_default_deploy_rejects_backend_that_kept_g5_model_enabled(
+def test_g5_deploy_rejects_running_backend_without_embedding_before_health(
     staging_env_file: Path,
     tmp_path: Path,
 ) -> None:
-    """恢复默认配置时，旧 G5 backend 仍开模型应阻止通过。"""
+    """G5 容器须实际开启本地检索，不能只验证 Compose 计划。"""
     model_asset_dir = Path(
         next(
             line.split("=", 1)[1]
@@ -396,7 +403,74 @@ def test_default_deploy_rejects_backend_that_kept_g5_model_enabled(
     )
     environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
     environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
-    environment["FAKE_DOCKER_RUNTIME_LLM_ENABLED"] = "true"
+    environment["FAKE_DOCKER_RUNTIME_EMBEDDING_ENABLED"] = "false"
+    staging_env_file.write_text(
+        staging_env_file.read_text("utf-8")
+        + "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key",
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text("utf-8"))
+    config["services"]["backend"]["environment"].update(
+        {
+            "LLM_ENABLED": "true",
+            "EMBEDDING_ENABLED": "true",
+            "SSE_LOAD_TEST_ENABLED": "true",
+            "CHAT_QUERY_LIMIT": "60",
+            "LLM_PRIMARY_PROVIDER": "deepseek",
+            "LLM_PRIMARY_MODEL": "deepseek-chat",
+            "DEEPSEEK_API_KEY": "private-test-key",
+        }
+    )
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    evidence_file = tmp_path / "g5-embedding-runtime-mismatch.json"
+    result = run_powershell(
+        PREFLIGHT_SCRIPT,
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableG5SSELoadTest",
+        "-Deploy",
+        "-Confirm:$false",
+        environment=environment,
+    )
+    commands = [json.loads(line) for line in command_log.read_text("utf-8").splitlines()]
+    assert result.returncode != 0
+    assert "runtime" in normalized_process_output(result)
+    assert any("ps" in command and "-q" in command and "backend" in command for command in commands)
+    assert not evidence_file.exists()
+
+
+@pytest.mark.parametrize(
+    "runtime_override",
+    ["FAKE_DOCKER_RUNTIME_LLM_ENABLED", "FAKE_DOCKER_RUNTIME_EMBEDDING_ENABLED"],
+)
+def test_default_deploy_rejects_backend_that_kept_g5_model_enabled(
+    runtime_override: str,
+    staging_env_file: Path,
+    tmp_path: Path,
+) -> None:
+    """恢复默认配置时，旧 G5 backend 仍开模型或检索应阻止通过。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    environment[runtime_override] = "true"
     evidence_file = tmp_path / "restore-mismatch.json"
     result = run_powershell(
         PREFLIGHT_SCRIPT,
@@ -419,7 +493,7 @@ def test_default_deploy_rejects_backend_that_kept_g5_model_enabled(
     )
     commands = [json.loads(line) for line in command_log.read_text("utf-8").splitlines()]
     assert result.returncode != 0
-    assert "runtime capability" in normalized_process_output(result)
+    assert "runtime" in normalized_process_output(result)
     assert any("ps" in command and "-q" in command and "backend" in command for command in commands)
     assert not evidence_file.exists()
 
@@ -1022,6 +1096,8 @@ if arguments[:2] == ["inspect", "--format"]:
             service_env["CHAT_QUERY_LIMIT"] = os.environ["FAKE_DOCKER_RUNTIME_QUERY_LIMIT"]
         if service == "backend" and "FAKE_DOCKER_RUNTIME_LLM_ENABLED" in os.environ:
             service_env["LLM_ENABLED"] = os.environ["FAKE_DOCKER_RUNTIME_LLM_ENABLED"]
+        if service == "backend" and "FAKE_DOCKER_RUNTIME_EMBEDDING_ENABLED" in os.environ:
+            service_env["EMBEDDING_ENABLED"] = os.environ["FAKE_DOCKER_RUNTIME_EMBEDDING_ENABLED"]
         if service == "backend" and "FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED" in os.environ:
             service_env["AUTO_REPLY_ENABLED"] = os.environ["FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED"]
         print(json.dumps({
