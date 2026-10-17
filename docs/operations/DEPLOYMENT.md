@@ -10,6 +10,8 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 ## Split-ingress Rootless staging
 
+2026-10-18 G5 R55：按用户持续镜像授权，从 main `bf993b5e3557c6a8aa4df73b499e800955a3b757` 手动构建并发布 R54 Prompt 修复后端 `ghcr.io/cp11-gh/crm-backend@sha256:9dbeb73dbff85cf51c71785a6150900c619323ee913ea920193446d86aa7e604`。私有 GHCR 远端唯一 linux/amd64 子清单、OCI revision、12 层压缩 110,934,664 字节及按摘要拉回均通过；见[低敏镜像证据](../../release/evidence/staging/crm-staging-g5-r55-manual-backend-image-20261018.json)。临时 Docker 登录已注销且认证项为 0；未部署 staging、调用 DeepSeek、运行 GitHub Actions 或发送 TikTok 消息。现场仍保持 R53 恢复的旧后端与 G3 限定会话模式；新的 G5 单会话与恢复窗口须单独锁定范围。
+
 2026-10-17 G5 R53：一次获批的手动诊断窗口从干净 main `043a8809` 部署 R52 后端不可变 index `sha256:d85e1767…819f7`，六摘要预取、validate/deploy 与 50/50 现有隔离身份预检通过。唯一合成 SSE 因 `faq_draft/invalid_schema` 无安全 `delta`，未启动 50 并发。首次恢复由旧镜像与当前源码不匹配的门禁在切换前拒绝；随后从与旧镜像构建输入一致的受审历史源码 `522f5f99` 按私有快照恢复旧后端 `sha256:04c4f64d…bd1dcc` 及 G3 限定会话人工发送。原前端/检索摘要、限流 10、LLM/SSE 关闭、Webhook/工作台翻译、迁移头、三健康 200 和固定出口均通过。[R53 TR](../reports/tests/TR-MVP-006-20261017-R53.md)及八份低敏原件记录真实结果；未发送 TikTok 消息、未用本机虚拟机或 GitHub Actions，production 未部署。
 
 2026-10-17 G5 R52：按用户持续镜像授权，从 main `19437e643ad8102eeebc5ba2b79af3f18b49baef` 手动发布诊断后端 `ghcr.io/cp11-gh/crm-backend@sha256:d85e17678479f0b4bbda6b54d71d1f36b1855f6c6bd908bb7646469d2b6819f7`。远端唯一 linux/amd64 子清单、OCI revision、12 层压缩 110,934,179 字节及按摘要拉回均通过；见 [低敏证据](../../release/evidence/staging/crm-staging-g5-r52-manual-backend-image-20261017.json)。私有 GHCR 登录已注销，凭据项为 0。本次没有部署 staging、调用 DeepSeek、运行 GitHub Actions 或发送消息；当前运行后端仍是 R50 恢复的旧摘要。下一次诊断窗口须另行锁定临时部署、合成模型调用与恢复范围。
