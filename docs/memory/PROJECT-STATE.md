@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/mvp006-g5-vector-source-mount-20261017
-Governance base SHA: 9faf5dba169caf91cbbba96e1d7269a350d2caa8
+Working branch at this snapshot: docs/mvp006-g5-r27-index-20261017
+Governance base SHA: 4de632f938e781723a3e7f5d1cefcc1891561395
 CANDIDATE_SUBJECT_SHA: faf4d49c4ac4172d33902406d2b7c6dcfad6f287
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 G5 R27 最新恢复点：PR #272 已合入 main `9faf5dba`；获批的单次 `VectorizeG5` 在容器路径安全门禁失败，未产出成功证据。旧受审 `ContentCheck` 和只读 SQL 证实 50/50 会话、FAQ pending、chunk 0、凭证原状态。根因是新入口单文件挂载与旧完整源码挂载门禁冲突；R27 subject `faf4d49c` 改回完整受审源码只读挂载，51 项相关测试与现场只读对照通过。见 [R26 TR](../reports/tests/TR-MVP-006-20261017-R26.md)、[R27 TR](../reports/tests/TR-MVP-006-20261017-R27.md)。本次精确写入授权已用，尚未二次调用。下一步：完成修复 PR/主线核对；获新的精确授权后才运行一次向量写入并只读对账；另行处理短期凭证/单会话与付费 50 并发。G5 `DOING`、production No-Go。
+2026-10-17 G5 R27 最新恢复点：PR #272 已合入 main `9faf5dba`；获批的单次 `VectorizeG5` 在容器路径安全门禁失败，未产出成功证据。旧受审 `ContentCheck` 和只读 SQL 证实 50/50 会话、FAQ pending、chunk 0、凭证原状态。根因是新入口单文件挂载与旧完整源码挂载门禁冲突；R27 subject `faf4d49c` 改回完整受审源码只读挂载，51 项相关测试与现场只读对照通过。见 [R26 TR](../reports/tests/TR-MVP-006-20261017-R26.md)、[R27 TR](../reports/tests/TR-MVP-006-20261017-R27.md)。本次精确写入授权已用，尚未二次调用。PR #273 已合入 main `4de632f9`；IR/TR/RR 三个索引按源记录 115/118/115 条核对并修复一处既有时间戳错误，现为 `CURRENT`。下一步：获新的精确授权后才运行一次向量写入并只读对账；另行处理短期凭证/单会话与付费 50 并发。G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R24 现场恢复点：用户授权后，先只读核对原 50/50 会话，仅运行一次 `ContentPrepare` 写入 50 条合成提问及 1 条内部审阅 FAQ，再只读核对 `fixture_state=prepared`、凭证原状态、Provider 0、三个公网健康 200。`EMBEDDING_ENABLED=false` 使 FAQ 尚未 ready；用户另行授权仅对这条 FAQ 用本地 BGE 向量化一次，代码和现场运行仍在推进。见 [R24 IR](../records/implementation/IR-MVP-006-20261017-R24.md)、[TR](../reports/tests/TR-MVP-006-20261017-R24.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R24.md)。下一步：完成有界向量化并只读核对；独立处理短期凭证与单会话安全验证；另定真实 50 并发付费窗口。G5 `DOING`、production No-Go，三个索引为 `CANDIDATE_VIEW`。
 

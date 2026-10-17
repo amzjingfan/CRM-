@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CANDIDATE_VIEW`
+View: `CURRENT`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -109,7 +109,7 @@ View: `CANDIDATE_VIEW`
 | RR-MVP-006-20261016-R19 | MVP-006 | R19 | APPROVE | `4bd15a14dd2fe28d96d5f9c8e92e460789ef3b2d` | recovery-availability / immutable-image-provenance / source-integrity / fail-closed | 2026-10-16T21:40:00+08:00 | [`RR-MVP-006-20261016-R19.md`](RR-MVP-006-20261016-R19.md) |
 | RR-MVP-006-20261016-R20 | MVP-006 | R20 | APPROVE | `f56b99888e9448bdcb4fd2072cfe42d30e6ba604` | read-only-scope / source-integrity / private-fixture / fail-closed | 2026-10-16T23:35:00+08:00 | [`RR-MVP-006-20261016-R20.md`](RR-MVP-006-20261016-R20.md) |
 | RR-MVP-006-20261016-R21 | MVP-006 | R21 | APPROVE | `9049150ca1110e9c77684f80599686146bf1bd32` | restoration-scope / source-integrity / immutable-image / capability-isolation / fail-closed | 2026-10-16T23:52:00+08:00 | [`RR-MVP-006-20261016-R21.md`](RR-MVP-006-20261016-R21.md) |
-| RR-MVP-CONV-UI-001-20261016-R01 | MVP-CONV-UI-001 | R01 | APPROVE | `93b847679a6f0bda31cafbaeeaf1952d195abe12` | tenant-isolation / csrf / dlp / audit / model-cost / staging-flags / no-platform-write | 2026-10-16T21:38:00+08:00 | [`RR-MVP-CONV-UI-001-20261016-R01.md`](RR-MVP-CONV-UI-001-20261016-R01.md) |
+| RR-MVP-CONV-UI-001-20261016-R01 | MVP-CONV-UI-001 | R01 | APPROVE | `93b847679a6f0bda31cafbaeeaf1952d195abe12` | tenant-isolation / csrf / dlp / audit / model-cost / staging-flags / no-platform-write | 2026-10-16T21:35:43+08:00 | [`RR-MVP-CONV-UI-001-20261016-R01.md`](RR-MVP-CONV-UI-001-20261016-R01.md) |
 | RR-MVP-CONV-UI-001-20261016-R02 | MVP-CONV-UI-001 | R02 | APPROVE | `7ec80625c4c9617a4f6f881cff4db48ac54d0a3e` | runtime-dependency-security / lockfile-integrity / scope / production-build / no-platform-write | 2026-10-16T22:10:31+08:00 | [`RR-MVP-CONV-UI-001-20261016-R02.md`](RR-MVP-CONV-UI-001-20261016-R02.md) |
 | RR-MVP-CONV-UI-001-20261016-R03 | MVP-CONV-UI-001 | R03 | APPROVE | `81f9963fd445d72457eda5eb378db949c94db496` | prompt-schema / DLP-boundary / fail-closed / no-platform-write / staging-scope | 2026-10-16T23:06:33+08:00 | [`RR-MVP-CONV-UI-001-20261016-R03.md`](RR-MVP-CONV-UI-001-20261016-R03.md) |
 | RR-MVP-CONV-UI-001-20261016-R04 | MVP-CONV-UI-001 | R04 | APPROVE | `f56b99888e9448bdcb4fd2072cfe42d30e6ba604` | immutable-image / source-integrity / tenant-authorization / dlp / audit / runtime-flags / no-platform-write / evidence-privacy | 2026-10-16T23:21:12+08:00 | [`RR-MVP-CONV-UI-001-20261016-R04.md`](RR-MVP-CONV-UI-001-20261016-R04.md) |
