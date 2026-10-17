@@ -176,6 +176,11 @@ class Settings(BaseSettings):
         default=False,
         validation_alias="REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
     )
+    tiktok_message_write_allowed_conversation_id: str | None = Field(
+        default=None,
+        pattern=r"^[0-9]{1,30}$",
+        validation_alias="TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID",
+    )
     real_tiktok_high_risk_write_enabled: bool = Field(
         default=False,
         validation_alias="REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
@@ -358,6 +363,12 @@ class Settings(BaseSettings):
         )
         if self.real_tiktok_message_write_enabled and not self.real_tiktok_read_enabled:
             raise ValueError("启用 TikTok 普通消息写入前必须先启用真实只读能力")
+        if (
+            self.app_env == "staging"
+            and self.real_tiktok_message_write_enabled
+            and not self.tiktok_message_write_allowed_conversation_id
+        ):
+            raise ValueError("staging 真实消息发送必须指定一个受控会话")
         if self.real_tiktok_webhook_enabled and not self.real_tiktok_read_enabled:
             raise ValueError("启用 TikTok Webhook 前必须先启用真实只读能力")
         if self.real_tiktok_high_risk_write_enabled and not self.real_tiktok_message_write_enabled:

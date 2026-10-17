@@ -162,6 +162,21 @@ def test_real_tiktok_manual_message_write_can_start_after_real_fs04() -> None:
     assert settings.auto_reply_enabled is False
 
 
+def test_staging_real_message_write_requires_one_explicit_conversation() -> None:
+    """staging 不能只打开全局开关就向任意买家发送。"""
+    with pytest.raises(ValidationError, match="受控会话"):
+        production_settings(
+            APP_ENV="staging",
+            REAL_TIKTOK_READ_ENABLED=True,
+            REAL_TIKTOK_MESSAGE_WRITE_ENABLED=True,
+            TIKTOK_APP_KEY="real-app-key",
+            TIKTOK_SERVICE_ID="real-service-id",
+            TIKTOK_APP_SECRET="unit-test-app-secret",
+            TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+            TIKTOK_OAUTH_REDIRECT_URI=TIKTOK_OAUTH_STAGING_REDIRECT_URI,
+        )
+
+
 def test_real_tiktok_manual_write_rejects_auto_reply() -> None:
     """REAL-FS-04 不得被自动回复 Worker 复用为公开自动发送。"""
     with pytest.raises(ValidationError, match="仅允许人工确认发送"):

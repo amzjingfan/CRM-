@@ -23,8 +23,11 @@
 
 - 会话列表/详情、消息记录、状态更新和受控工具均位于 `/workspace`。
 - 已授权 TikTok 店铺的会话和历史经内部只读同步写入现有会话/消息表；列表和详情仍通过原 `/workspace` 接口按店铺权限读取。工作台会话列表每页取 30 条，按列表返回的 `pagination` 加载更多，店铺与平台筛选在每一页保持一致。详情消息按时间升序分页，前端先取最新页，可继续加载较早历史。
+- 工作台标签页可见时每 5 秒重新读取列表与当前会话最新消息；按消息 ID 合并并保留已加载的历史、选中会话及草稿，避免每次刷新重置界面。
 - `POST /workspace/sessions/{session_id}/suggest` 返回 AI 建议。
 - `POST /workspace/sessions/{session_id}/messages` 仅发送人工确认的普通文本；TikTok 真实发送要求 `seller.customer_service` Scope、CSRF 和 `Idempotency-Key`。
+- TikTok 写客户端按官方 `POST /customer_service/202606/conversations/{conversation_id}/messages` 契约发送一次 `TEXT`，`content` 为 JSON 序列化字符串，`sender_role=CUSTOMER_SERVICE`；传输或平台内部结果不确定时记录 `unknown`，不自动重试。
+- staging 真实发送开启时必须配置单个 `TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID`。详情只对匹配的平台会话返回 `send_mode=real`；不匹配会话的 POST 在服务端返回 403，写客户端在 HTTP 调用前再次拒绝。此 ID 只经门禁运行参数注入，不放在仓库或证据中。
 - 同店铺已有未结清的 TikTok `processing` 或 `unknown` 出站消息时，新真实发送返回冲突并保持零次新平台调用；旧 `processing` 不能作为确定失败自动重发。现有管理员对账接口只接受 `unknown`，中断遗留的 `processing` 须先经受审恢复路径收敛。
 - `POST /workspace/messages/{message_id}/reconcile` 对账 `unknown` 消息，不能通过重复平台发送猜测结果。
 - `POST /workspace/sessions/{session_id}/messages/{message_id}/translation` 供已授权坐席按需把 TikTok 单条文本译成中文；要求登录、`workspace.view`、CSRF、店铺/会话匹配与模型限流。服务端从已授权消息读取原文，不接受客户端正文；仅在 staging 专用开关开启时可调用 DeepSeek，响应只返回消息 ID、目标语言和译文，不改变消息或平台状态。会话详情的 `translation_enabled` 控制前端是否显示翻译按钮。

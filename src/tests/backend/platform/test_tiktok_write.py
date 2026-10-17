@@ -72,7 +72,7 @@ def command(**overrides: object) -> SendMessageCommand:
 
 
 @pytest.mark.asyncio
-async def test_send_message_uses_official_202309_body_signature_and_token_header() -> None:
+async def test_send_message_uses_official_202606_body_signature_and_token_header() -> None:
     """真实发送必须使用官方路径、双层 JSON 正文和实时签名。"""
     attempts = 0
 
@@ -83,7 +83,11 @@ async def test_send_message_uses_official_202309_body_signature_and_token_header
         assert request.headers["x-tts-access-token"] == "unit-test-access-token"
         body_bytes = request.content
         body = json.loads(body_bytes)
-        assert body == {"type": "TEXT", "content": '{"content":"Where is my order?"}'}
+        assert body == {
+            "type": "TEXT",
+            "content": '{"content":"Where is my order?"}',
+            "sender_role": "CUSTOMER_SERVICE",
+        }
         params = dict(request.url.params)
         supplied_signature = params.pop("sign")
         expected_signature = generate_api_signature(
@@ -104,6 +108,29 @@ async def test_send_message_uses_official_202309_body_signature_and_token_header
     assert result.status == "sent"
     assert result.external_message_id == "722323407926368819"
     assert result.mock is False
+
+
+@pytest.mark.asyncio
+async def test_staging_allowlisted_conversation_is_the_only_real_send_target() -> None:
+    """受控窗口的其他会话在 HTTP 请求产生前被拒绝。"""
+    attempts = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = TikTokMessageClient(
+            real_write_settings(TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID="710688832392260838"),
+            connected_channel(),
+            http_client,
+        )
+        result = await client.send_text_message(command(external_conversation_id="710688832392260839"))
+
+    assert attempts == 0
+    assert result.status == "failed"
+    assert result.error_code == "TIKTOK_CONVERSATION_NOT_ALLOWED"
 
 
 @pytest.mark.asyncio

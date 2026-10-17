@@ -92,6 +92,51 @@ export default function WorkspacePage() {
 
   useEffect(() => { void loadList(); return () => { listRequestId.current += 1; }; }, [loadList]);
   useEffect(() => {
+    let active = true;
+    let refreshing = false;
+    const requestId = listRequestId.current;
+    const refresh = async () => {
+      if (!active || refreshing || document.visibilityState !== "visible") return;
+      refreshing = true;
+      const query = new URLSearchParams({ filter, page: "1", page_size: "30" });
+      if (platform) query.set("platform", platform);
+      if (storeId) query.set("store_id", storeId);
+      try {
+        const freshList = await listSessions(query);
+        if (!active || requestId !== listRequestId.current) return;
+        // 保留已加载的较早会话与当前选中项；后台新消息只更新列表顶部。
+        setList((current) => current ? {
+          ...freshList,
+          items: current.pagination.page > 1
+            ? [...freshList.items, ...current.items.filter((item) => !freshList.items.some((fresh) => fresh.id === item.id))]
+            : freshList.items,
+          pagination: { ...freshList.pagination, page: current.pagination.page },
+        } : freshList);
+        if (selectedId) {
+          const freshDetail = await getSessionMessages(selectedId);
+          if (!active || requestId !== listRequestId.current) return;
+          setDetail((current) => {
+            if (current?.session.id !== selectedId) return current;
+            const byId = new Map(current.messages.map((message) => [message.id, message]));
+            for (const message of freshDetail.messages) byId.set(message.id, message);
+            return {
+              ...freshDetail,
+              messages: [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)),
+              pagination: { ...freshDetail.pagination, page: current.pagination.page },
+            };
+          });
+        }
+      } catch {
+        // 后台刷新失败时保留可操作的当前会话，下一轮继续尝试。
+      } finally {
+        refreshing = false;
+      }
+    };
+    const timer = window.setInterval(() => { void refresh(); }, 5000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
+  }, [filter, platform, selectedId, storeId]);
+  useEffect(() => {
     const params = new URLSearchParams();
     if (selectedId) params.set("session", selectedId); if (platform) params.set("platform", platform); if (storeId) params.set("store_id", storeId); if (filter !== "all") params.set("filter", filter);
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);

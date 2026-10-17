@@ -23,7 +23,7 @@ from app.shared.config.settings import Settings
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount
 
-SEND_MESSAGE_PATH_TEMPLATE = "/customer_service/202309/conversations/{conversation_id}/messages"
+SEND_MESSAGE_PATH_TEMPLATE = "/customer_service/202606/conversations/{conversation_id}/messages"
 CUSTOMER_SERVICE_SCOPE = "seller.customer_service"
 TIKTOK_TEXT_MAX_LENGTH = 2_000
 # 写请求的内部错误不能证明平台没有产生副作用。该集合独立于只读重试
@@ -68,11 +68,14 @@ class TikTokMessageClient:
         self.access_token = decrypt_tiktok_access_token(channel, settings)
 
     async def send_text_message(self, command: SendMessageCommand) -> SendMessageResult:
-        """按官方 202309 契约发送一次文本消息，不执行任何自动重试。"""
+        """按官方 202606 契约发送一次人工文本消息，不执行任何自动重试。"""
         if not command.human_confirmed:
             return self._failed("REAL_WRITE_REQUIRES_HUMAN_CONFIRMATION")
         if not command.external_conversation_id.isdigit():
             return self._failed("TIKTOK_CONVERSATION_ID_INVALID")
+        allowed_id = self.settings.tiktok_message_write_allowed_conversation_id
+        if allowed_id is not None and command.external_conversation_id != allowed_id:
+            return self._failed("TIKTOK_CONVERSATION_NOT_ALLOWED")
         if len(command.content) > TIKTOK_TEXT_MAX_LENGTH:
             return self._failed("TIKTOK_MESSAGE_TOO_LONG")
 
@@ -82,6 +85,7 @@ class TikTokMessageClient:
         body = {
             "type": "TEXT",
             "content": json.dumps({"content": command.content}, ensure_ascii=False, separators=(",", ":")),
+            "sender_role": "CUSTOMER_SERVICE",
         }
         body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         params: dict[str, str | int] = {

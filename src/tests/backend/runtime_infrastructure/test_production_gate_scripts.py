@@ -621,6 +621,63 @@ def test_staging_webhook_read_opt_in_only_enables_receiver_and_worker(
     assert any(argument.endswith("docker-compose.rootless-staging-webhook.yml") for argument in config_command)
 
 
+def test_staging_manual_send_requires_one_exact_backend_conversation(staging_env_file: Path, tmp_path: Path) -> None:
+    """手动发送模式只在受控会话和 backend 开启；门禁拒绝目标漂移。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    for service_name in ("backend", "worker"):
+        config["services"][service_name]["environment"].update(
+            {"REAL_TIKTOK_READ_ENABLED": "true", "REAL_TIKTOK_WEBHOOK_ENABLED": "true"}
+        )
+    config["services"]["worker"]["environment"]["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
+    backend = config["services"]["backend"]["environment"]
+    backend["REAL_TIKTOK_MESSAGE_WRITE_ENABLED"] = "true"
+    backend["TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID"] = "710688832392260838"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    args = (
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(tmp_path / "manual-send-validate.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableTikTokWebhookRead",
+        "-EnableTikTokManualSend",
+        "-AllowedTikTokConversationId",
+        "710688832392260838",
+        "-ValidateOnly",
+    )
+    result = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert result.returncode == 0, normalized_process_output(result)
+    evidence = json.loads((tmp_path / "manual-send-validate.json").read_text(encoding="utf-8-sig"))
+    assert evidence["tiktok_manual_send_enabled"] is True
+    assert evidence["tiktok_manual_send_overlay_sha256"]
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    config_command = next(command for command in commands if "config" in command)
+    assert any(argument.endswith("docker-compose.rootless-staging-manual-send.yml") for argument in config_command)
+
+    backend["TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID"] = "710688832392260839"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    rejected = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert rejected.returncode != 0
+    assert "manual send target does not match reviewed mode" in normalized_process_output(rejected)
+
+
 @pytest.mark.parametrize(
     "service_name, capability, value",
     [

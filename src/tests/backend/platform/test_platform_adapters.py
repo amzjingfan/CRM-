@@ -70,6 +70,7 @@ def test_tiktok_real_capabilities_resolve_independently_when_mock_disabled(
         REAL_TIKTOK_READ_ENABLED=True,
         REAL_TIKTOK_WEBHOOK_ENABLED=webhook_enabled,
         REAL_TIKTOK_MESSAGE_WRITE_ENABLED=not webhook_enabled,
+        TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID="710688832392260838",
         TIKTOK_APP_KEY="unit-test-real-app",
         TIKTOK_SERVICE_ID="unit-test-service",
         TIKTOK_APP_SECRET="unit-test-app-secret",

@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r40-image-evidence-20261017
-Governance base SHA: 7d4a72d7de5c760af80e6618630505a556063ef7
-CANDIDATE_SUBJECT_SHA: 457de2656ccb55daf90caf93c937ce7d0ecf94f8
+Working branch at this snapshot: feature/tiktok-bidirectional-staging-20261017
+Governance base SHA: 76b6e36073ebe4ac82aca734011f17659fbfd6ff
+CANDIDATE_SUBJECT_SHA: 2a62debe16a58b1263c62eb794982ab01a4856cb
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: KNOWN_TEMP — 本次镜像发布的隔离 Docker CLI 配置目录仍在已忽略测试临时区；已退出 GHCR 且认证项为 0，自动审批拒绝了删除命令
 ```
+
+2026-10-17 G2/G3 当前恢复点：受控手机买家消息在 Seller Center 与 CRM 可见，staging 只读聚合证实 1 个验签、店铺绑定和处理均成功的 `NEW_MESSAGE` 事件，原只读加翻译运行模式已恢复；真实写仍关闭。R03 代码已准备工作台可见标签页 5 秒刷新、官方 202606 人工文本契约和 staging 单会话发送门禁，合并 main 后完整后端 `1999 passed, 27 skipped`、前端浏览器 27 项通过，尚未发布或真实发送；见 [IR](../records/implementation/IR-MVP-004-20261017-R03.md)、[TR](../reports/tests/TR-MVP-004-20261017-R03.md)、[RR](../reports/reviews/RR-MVP-004-20261017-R03.md) 与[低敏预检](../../release/evidence/staging/crm-staging-tiktok-inbound-preflight-20261017.json)。三个派生索引在本候选分支为 `CANDIDATE_VIEW`，G2/G3 继续 `DOING`、production No-Go。下一步：①合并受审源码并手动构建不可变镜像；②单会话 staging 门禁部署并核对其他会话写入关闭；③取得具体外发正文确认后仅发一次并在买家端、Seller Center、CRM 与审计对账。
 
 2026-10-17 G5 R40 手动候选镜像：用户精确授权从 main `7d4a72d7de5c760af80e6618630505a556063ef7` 使用现有 GitHub 凭据发布一份私有 `crm-backend`。GHCR 返回并远端复核不可变摘要 `sha256:8a418e6c…796221`、linux/amd64、OCI revision 精确匹配、12 层压缩 110,929,110 字节；见 [R40 低敏证据](../../release/evidence/staging/crm-staging-g5-r40-manual-backend-image-20261017.json)。未运行 GitHub Actions、未部署 staging、未写测试店数据、未调用 BGE/DeepSeek 或执行 50 并发。隔离 Docker CLI 凭据已退出且认证项为 0；清理该临时目录的命令遭自动审批拒绝，目录保留。G5 `DOING`、production No-Go；下一步仅在独立精确授权后执行隔离内容对账写入与本地向量化。
 

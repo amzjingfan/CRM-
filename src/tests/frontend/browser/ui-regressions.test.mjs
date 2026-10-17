@@ -732,3 +732,37 @@ test("buyer and seller bubbles stay on opposite sides and show Chinese beneath t
     await context.close();
   }
 });
+
+test("open workspace picks up a new buyer message without reloading or changing the selected conversation", async () => {
+  const customer = { id: "customer-live", name: "Buyer", email: null, avatar: null, tags: [] };
+  const session = { id: "session-live", store_id: store.id, platform: "tiktok", status: "active", unread_count: 0,
+    assigned_user_id: null, last_message_at: "2026-10-17T06:00:00Z", last_message: "First", customer };
+  const first = { id: "first", role: "user", content: "First", status: "received", created_at: "2026-10-17T06:00:00Z", error_code: null, delivery_mode: "inbound" };
+  const second = { ...first, id: "second", content: "New buyer message", created_at: "2026-10-17T06:01:00Z" };
+  let newest = [first];
+  const cors = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" };
+  const { context, page } = await openPage("/workspace", {}, async (context) => {
+    await context.route("**/v1/workspace/sessions**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/v1/workspace/sessions" && route.request().method() === "GET") {
+        return route.fulfill({ status: 200, contentType: "application/json", headers: cors,
+          body: JSON.stringify({ code: 0, message: "ok", data: { items: [{ ...session, last_message: newest.at(-1).content }], pagination: { page: 1, page_size: 30, total: 1 } } }) });
+      }
+      if (path === "/v1/workspace/sessions/session-live/messages" && route.request().method() === "GET") {
+        return route.fulfill({ status: 200, contentType: "application/json", headers: cors,
+          body: JSON.stringify({ code: 0, message: "ok", data: { session, messages: newest, customer, recent_orders: [], ai_suggestion: null,
+            pagination: { page: 1, page_size: 100, total: newest.length }, send_mode: "disabled", requires_confirmation: true } }) });
+      }
+      return route.fallback();
+    });
+  });
+  try {
+    await page.getByText("First", { exact: true }).last().waitFor();
+    newest = [first, second];
+    await page.getByText("New buyer message", { exact: true }).last().waitFor({ timeout: 9000 });
+    assert.equal(await page.locator(".conversation-card.active").count(), 1);
+    assert.equal(await page.locator(".message.incoming").count(), 2);
+  } finally {
+    await context.close();
+  }
+});

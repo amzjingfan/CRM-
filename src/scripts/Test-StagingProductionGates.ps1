@@ -33,6 +33,8 @@ param(
     [switch]$ValidateOnly,
     [switch]$Deploy,
     [switch]$EnableTikTokWebhookRead,
+    [switch]$EnableTikTokManualSend,
+    [string]$AllowedTikTokConversationId,
     [switch]$EnableWorkspaceTranslation,
     [switch]$EnableG5SSELoadTest
 )
@@ -317,6 +319,8 @@ function Assert-ProductionComposeContract {
         [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir,
         [Parameter(Mandatory = $true)][string]$ExpectedEgressSecretDir,
         [switch]$EnableTikTokWebhookRead,
+        [switch]$EnableTikTokManualSend,
+        [string]$AllowedTikTokConversationId,
         [switch]$EnableWorkspaceTranslation,
         [switch]$EnableG5SSELoadTest
     )
@@ -401,9 +405,21 @@ function Assert-ProductionComposeContract {
             if ($EnableG5SSELoadTest -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
                 $expectedValue = "true"
             }
+            if ($EnableTikTokManualSend -and $serviceName -ceq "backend" -and
+                $capabilityName -ceq "REAL_TIKTOK_MESSAGE_WRITE_ENABLED") {
+                $expectedValue = "true"
+            }
             if ([string]$applicationEnvironment.$capabilityName -cne $expectedValue) {
                 throw "Staging Compose capability does not match reviewed mode: $serviceName/$capabilityName"
             }
+        }
+        $allowedProperty = $applicationEnvironment.PSObject.Properties["TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID"]
+        $allowedActual = if ($null -eq $allowedProperty) { "" } else { [string]$allowedProperty.Value }
+        $allowedExpected = if ($EnableTikTokManualSend -and $serviceName -ceq "backend") {
+            $AllowedTikTokConversationId
+        } else { "" }
+        if ($allowedActual -cne $allowedExpected) {
+            throw "Staging Compose manual send target does not match reviewed mode: $serviceName"
         }
         $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
         $embeddingProperty = $applicationEnvironment.PSObject.Properties["EMBEDDING_ENABLED"]
@@ -490,6 +506,8 @@ function Assert-RunningStagingMode {
         [Parameter(Mandatory = $true)][string[]]$Arguments,
         [Parameter(Mandatory = $true)][string]$ExpectedBackendImage,
         [switch]$EnableTikTokWebhookRead,
+        [switch]$EnableTikTokManualSend,
+        [string]$AllowedTikTokConversationId,
         [switch]$EnableWorkspaceTranslation,
         [switch]$EnableG5SSELoadTest
     )
@@ -535,9 +553,20 @@ function Assert-RunningStagingMode {
             if ($EnableG5SSELoadTest -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
                 $expectedValue = "true"
             }
+            if ($EnableTikTokManualSend -and $serviceName -ceq "backend" -and
+                $capabilityName -ceq "REAL_TIKTOK_MESSAGE_WRITE_ENABLED") {
+                $expectedValue = "true"
+            }
             if ($runtimeEnvironment[$capabilityName] -cne $expectedValue) {
                 throw "Staging runtime capability does not match reviewed mode: $serviceName/$capabilityName"
             }
+        }
+        $allowedActual = [string]$runtimeEnvironment["TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID"]
+        $allowedExpected = if ($EnableTikTokManualSend -and $serviceName -ceq "backend") {
+            $AllowedTikTokConversationId
+        } else { "" }
+        if ($allowedActual -cne $allowedExpected) {
+            throw "Staging runtime manual send target does not match reviewed mode: $serviceName"
         }
         $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
         $actualEmbedding = [string]$runtimeEnvironment["EMBEDDING_ENABLED"]
@@ -675,6 +704,7 @@ function Write-Evidence {
         rootless_overlay_sha256 = (Get-FileHash -LiteralPath $rootlessOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_egress_overlay_sha256 = (Get-FileHash -LiteralPath $egressOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_webhook_read_enabled = [bool]$EnableTikTokWebhookRead
+        tiktok_manual_send_enabled = [bool]$EnableTikTokManualSend
         g5_sse_load_test_enabled = [bool]$EnableG5SSELoadTest
         workspace_message_translation_enabled = [bool]$EnableWorkspaceTranslation
         backend_query_limit = if ($EnableG5SSELoadTest) { 60 } else { 10 }
@@ -685,6 +715,10 @@ function Write-Evidence {
     if ($EnableTikTokWebhookRead) {
         $evidence["tiktok_webhook_read_overlay_sha256"] =
             (Get-FileHash -LiteralPath $webhookReadOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    if ($EnableTikTokManualSend) {
+        $evidence["tiktok_manual_send_overlay_sha256"] =
+            (Get-FileHash -LiteralPath $manualSendOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
     }
     if ($EnableG5SSELoadTest) {
         $evidence["g5_sse_load_test_overlay_sha256"] =
@@ -704,6 +738,13 @@ Assert-StagingTarget
 Assert-RootlessDockerHost -Value $DockerHost
 if ($EnableTikTokWebhookRead -and $EnableG5SSELoadTest) {
     throw "G2 Webhook read and G5 SSE modes cannot be combined."
+}
+if ($EnableTikTokManualSend -and (-not $EnableTikTokWebhookRead -or $EnableG5SSELoadTest -or
+    $AllowedTikTokConversationId -cnotmatch '^[0-9]{1,30}$')) {
+    throw "Staging manual send requires Webhook read mode and one numeric reviewed conversation ID."
+}
+if (-not $EnableTikTokManualSend -and $AllowedTikTokConversationId) {
+    throw "A manual send conversation ID requires explicit manual send mode."
 }
 if ($EnableWorkspaceTranslation -and $EnableG5SSELoadTest) {
     throw "Workspace translation and G5 SSE modes cannot be combined."
@@ -747,6 +788,7 @@ if ($configuredRetrievalModelImage -ne $RetrievalModelImage) {
 $egressOverlay = Join-Path $sourceRoot "compose/docker-compose.tiktok-egress.yml"
 $rootlessOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging.yml"
 $webhookReadOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-webhook.yml"
+$manualSendOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-manual-send.yml"
 $g5SSEOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-g5-sse.yml"
 $translationOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-translation.yml"
 if (-not (Test-Path -LiteralPath $egressOverlay -PathType Leaf)) {
@@ -757,6 +799,9 @@ if (-not (Test-Path -LiteralPath $rootlessOverlay -PathType Leaf)) {
 }
 if ($EnableTikTokWebhookRead -and -not (Test-Path -LiteralPath $webhookReadOverlay -PathType Leaf)) {
     throw "The repository-fixed staging Webhook read overlay does not exist."
+}
+if ($EnableTikTokManualSend -and -not (Test-Path -LiteralPath $manualSendOverlay -PathType Leaf)) {
+    throw "The repository-fixed staging manual send overlay does not exist."
 }
 if ($EnableG5SSELoadTest -and -not (Test-Path -LiteralPath $g5SSEOverlay -PathType Leaf)) {
     throw "The repository-fixed staging G5 SSE overlay does not exist."
@@ -775,7 +820,8 @@ foreach ($name in @($DisabledCapabilityVariables + @(
     "TIKTOK_EGRESS_SECRET_DIR",
     "TLS_CERT_DIR",
     "DOCKER_HOST",
-    "DOCKER_CONTEXT"
+    "DOCKER_CONTEXT",
+    "TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID"
 ))) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
@@ -796,6 +842,9 @@ try {
     if ($EnableTikTokWebhookRead) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $webhookReadOverlay).Path)
     }
+    if ($EnableTikTokManualSend) {
+        $composeArguments += @("-f", (Resolve-Path -LiteralPath $manualSendOverlay).Path)
+    }
     if ($EnableG5SSELoadTest) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $g5SSEOverlay).Path)
     }
@@ -803,6 +852,7 @@ try {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $translationOverlay).Path)
     }
     Set-DisabledCapabilities
+    [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID", $AllowedTikTokConversationId, "Process")
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
@@ -829,6 +879,7 @@ try {
     Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages `
         -ExpectedModelAssetDir $modelAssetDir -ExpectedEgressSecretDir $egressSecretDir `
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
+        -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation
 
     if ($ValidateOnly) {
@@ -876,6 +927,7 @@ try {
 
     Assert-RunningStagingMode -Command $compose -Arguments $composeArguments -ExpectedBackendImage $BackendImage `
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
+        -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation
 
     $healthChecks = @(

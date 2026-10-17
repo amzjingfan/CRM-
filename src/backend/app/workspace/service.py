@@ -91,11 +91,12 @@ def _message_view(message: Message) -> MessageView:
     )
 
 
-def _message_send_mode(platform: str) -> Literal["disabled", "mock", "real"]:
+def _message_send_mode(conversation: Conversation) -> Literal["disabled", "mock", "real"]:
     """返回当前进程对指定平台的人工消息运行模式。"""
     settings = get_settings()
-    if platform == "tiktok" and settings.real_tiktok_message_write_enabled:
-        return "real"
+    if conversation.platform == "tiktok" and settings.real_tiktok_message_write_enabled:
+        allowed_id = settings.tiktok_message_write_allowed_conversation_id
+        return "real" if allowed_id is None or conversation.external_conversation_id == allowed_id else "disabled"
     if settings.allow_mock_platform_adapters:
         return "mock"
     return "disabled"
@@ -143,7 +144,7 @@ async def get_session_messages(
         customer=_customer_view(customer),
         recent_orders=[_order_view(item) for item in orders],
         pagination=PageMeta(page=page, page_size=page_size, total=total),
-        send_mode=_message_send_mode(conversation.platform),
+        send_mode=_message_send_mode(conversation),
         translation_enabled=(
             conversation.platform == "tiktok" and get_settings().workspace_message_translation_enabled
         ),
@@ -240,7 +241,10 @@ async def send_agent_message(
     conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
-    if _message_send_mode(conversation.platform) == "real" and len(content) > TIKTOK_TEXT_MAX_LENGTH:
+    send_mode = _message_send_mode(conversation)
+    if conversation.platform == "tiktok" and get_settings().real_tiktok_message_write_enabled and send_mode != "real":
+        raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不在真实消息发送范围内", 403)
+    if send_mode == "real" and len(content) > TIKTOK_TEXT_MAX_LENGTH:
         raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 普通文本不能超过 2000 字符", 422)
     result = await SqlAlchemyToolExecutor(session).execute(
         ToolInvocation(

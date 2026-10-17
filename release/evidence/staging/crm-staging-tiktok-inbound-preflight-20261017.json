@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_inbound_read_only_observation",
+  "recorded_at_utc": "2026-10-17T07:05:26Z",
+  "environment": "staging",
+  "method": "read_only_postgresql_aggregates_and_rootless_runtime_flags",
+  "controlled_conversation_matches": 1,
+  "controlled_buyer_test_messages": 1,
+  "matched_new_message_events": 1,
+  "webhook_signature_valid": true,
+  "webhook_channel_store_bound": true,
+  "webhook_processing_succeeded": true,
+  "platform_message_to_receipt_seconds": 3.3,
+  "receipt_to_processing_seconds": 0.9,
+  "unresolved_store_outbound_messages": 0,
+  "running_backend_image_id": "sha256:758c4d5169d7a37186fc01b24ab7d07b33461509a309848ed24cb34121241522",
+  "runtime": {
+    "real_tiktok_read_enabled": true,
+    "real_tiktok_webhook_enabled": true,
+    "real_tiktok_message_write_enabled": false,
+    "workspace_message_translation_enabled": true
+  },
+  "customer_content_or_identifiers_included": false,
+  "production_release": false
+}
