@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R52 手动镜像证据：从 main `19437e64` 发布的诊断后端 OCI index `sha256:d85e1767…819f7` 已核对 linux/amd64、revision、12 层压缩大小及按摘要拉回，见[低敏证据](../../release/evidence/staging/crm-staging-g5-r52-manual-backend-image-20261017.json)。镜像尚未部署，R50 的单会话失败与 G5 No-Go 结论不变。
+
 2026-10-17 G5 R51 本地诊断源码：[R51 TR](../reports/tests/TR-MVP-006-20261017-R51.md)记录先红后绿的白名单 Schema 明细传递验证；完整后端 2047 passed/3 skipped，Ruff、格式、mypy 通过。仅在 `invalid_schema` 最多记录八组固定字段路径与错误类型，未发布镜像、切换 staging 或调用 DeepSeek；R50 的实际失败字段仍未知，安全 `delta` 和 50 并发仍未通过。G5 与 production No-Go。
 
 2026-10-17 G5 R50 两次获批手动窗口：[R50 TR](../reports/tests/TR-MVP-006-20261017-R50.md)核对 OCI index 六摘要预取、临时 G5 部署与恢复。第一次 50/50 预检通过后，单会话因客户端默认 localhost Origin 被 staging CORS 拒绝；第二次显式设置 staging Origin，50/50 通过、SSE HTTP 200，但 FAQ 草稿 `invalid_schema` 导致公开 `50003`、无安全 `delta`，性能门禁失败。两次均未执行 50 并发或资源采样；旧后端与 G3 限定会话模式已恢复，三健康 200、固定出口通过。G5 与 production 未通过。
