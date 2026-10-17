@@ -147,7 +147,8 @@ def test_read_and_translation_restore_uses_both_existing_gate_switches() -> None
     ],
 )
 def test_content_modes_reach_host_gate_only_with_exact_confirmation(mode: str, confirmation: str | None) -> None:
-    result = invoke(mode=mode, confirm_content=confirmation)
+    runtime_source_sha = "f" * 40 if mode == "ReconcileFixture" else None
+    result = invoke(mode=mode, confirm_content=confirmation, runtime_source_sha=runtime_source_sha)
     assert result.returncode != 0
     assert "staging linux host" in (result.stdout + result.stderr).lower()
 
@@ -174,6 +175,21 @@ def test_replacement_rejects_other_write_confirmation() -> None:
     result = invoke(mode="ReconcileFixture", confirm_content="prepare-50-isolated-g5-messages")
     assert result.returncode != 0
     assert "content confirmation" in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_replacement_requires_runtime_image_revision_before_host_access() -> None:
+    missing = invoke(mode="ReconcileFixture", confirm_content="replace-50-isolated-g5-return-questions")
+    assert missing.returncode != 0
+    assert "runtime backend source sha" in (missing.stdout + missing.stderr).lower()
+
+    provided = invoke(
+        mode="ReconcileFixture",
+        confirm_content="replace-50-isolated-g5-return-questions",
+        runtime_source_sha="f" * 40,
+    )
+    assert provided.returncode != 0
+    assert "staging linux host" in (provided.stdout + provided.stderr).lower()
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")

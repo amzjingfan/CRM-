@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R41 源码候选：手动 `ReconcileFixture` 从当前 main 的受审源码运行，运行镜像来自较早提交时必须在写入前证明祖先关系及后端树、Dockerfile 完全一致，并继续核对不可变运行摘要与 OCI revision。先红后绿相关 49 项；最新 main 基线完整后端 `2006 passed, 27 skipped, 2 warnings`，Ruff、mypy 和 PowerShell AST 通过。当前 main 的后端树已变化，R40 旧镜像只读预检应失败关闭；尚未更新 staging 数据或运行 G5 容量测试，见 [R41 TR](../reports/tests/TR-MVP-006-20261017-R41.md)。
+
 2026-10-17 G5 R40：从 main `7d4a72d7` 本地构建 linux/amd64 后端，并从 GHCR 远端核对不可变索引摘要 `sha256:8a418e6c…796221`、OCI revision、12 个压缩层 110,929,110 字节；[发布证据](../../release/evidence/staging/crm-staging-g5-r40-manual-backend-image-20261017.json)。镜像发布通过不代表 staging 部署或 G5 容量通过；现场内容更新、BGE、DeepSeek 与 50 并发均未执行。
 
 2026-10-17 G5 R39 源码候选：旧版隔离提问的精确识别、店铺/50 会话/唯一 FAQ 拒绝条件、版本 2 旧切片失效及手动确认值已做红绿测试；内容工具与向量化 35 passed。完整后端及隔离 PostgreSQL 回归 `2019 passed, 3 skipped, 2 warnings`，Ruff lint/format、183 个源文件 mypy、4 个 PowerShell AST 与 `git diff --check` 通过。此为代码与测试证据；没有执行 staging 数据更新、向量化、DeepSeek 单会话或 50 并发，G5/production 仍未通过。

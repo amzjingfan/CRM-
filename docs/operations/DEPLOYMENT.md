@@ -60,7 +60,7 @@ G2 只需新后端镜像时，可在当前 `main` 精确 SHA 上使用 `publish-
 
 G5 内容准备改用 `Invoke-StagingManualG5.ps1` 的 `ContentCheck`、`ContentPrepare`、`RenewCredentials` 模式处理原 R05 隔离店铺，不调度 GitHub Actions。GitHub 可验证的受审源码、运行后端 OCI revision/摘要、数据库、签名配置与私有凭证目录均精确核对；内容模式允许证据合并后的历史受审提交；容器固定审核源码工作目录。一次性内容写入需要独立授权，并在同一事务内创建内部审阅级合成 FAQ、改写 50 条合成提问和撤销临时权限。只有 FAQ 向量化为 `ready` 且当前版本切片存在，才可另行续期原 50 人的仓库外短期凭证。源码准备不代表现场执行，单会话 DeepSeek 和 50 并发另行验收；参数与恢复约束见 [Rootless 手动路径](../../src/deploy/staging/rootless/README.md#g5-手动-staging-路径不运行-github-actions)。
 
-R38 的隔离提问因指代不清触发 `insufficient_context` 安全转人工，未产生 SSE `delta`。新增 `ReconcileFixture` 只针对 R05 原隔离店铺的旧 50 条提问和唯一已向量化内部 FAQ：核对四份连续私有凭证、运行镜像/当前 main、店铺/会话/审批/旧切片，事务内改为明确退货流程问答、FAQ 升为版本 2 并置 `pending`；旧版本切片因版本门禁不可检索。获独立现场写入授权后才可执行，随后另行授权 `VectorizeG5` 仅用本地 BGE 替换该 FAQ 切片。写入、向量化结果不确定时先 `ContentCheck` 只读对账，不自动重试；付费单会话及 50 并发仍分别验收。当前仅为源码候选，未改变 staging 数据、镜像或服务。
+R38 的隔离提问因指代不清触发 `insufficient_context` 安全转人工，未产生 SSE `delta`。`ReconcileFixture` 只针对 R05 原隔离店铺的旧 50 条提问和唯一已向量化内部 FAQ：核对四份连续私有凭证、运行镜像、店铺/会话/审批/旧切片，事务内改为明确退货流程问答、FAQ 升为版本 2 并置 `pending`；旧版本切片因版本门禁不可检索。手动入口仍须从当前 main 的干净受审源码运行；若运行后端镜像来自较早的发布提交，须先由 GitHub 核对它是当前 main 的祖先，且后端 Git 树及 Dockerfile blob 完全相同，再由内容门禁核对运行摘要与 OCI revision 精确匹配。获独立现场写入授权后才可执行，随后另行授权 `VectorizeG5` 仅用本地 BGE 替换该 FAQ 切片。写入、向量化结果不确定时先以运行镜像的原受审提交执行 `ContentCheck` 只读对账，不自动重试；付费单会话及 50 并发仍分别验收。当前仅为源码候选，未改变 staging 数据、镜像或服务。
 
 2026-10-17 G5 续期工具源码修复：原固定第三份私有凭证到期后，手动入口可从完整连续编号的原批次选择下一个文件，独占创建、不覆盖历史；`ContentCheck` 核对全部保留代际的文件权限、JWT 签名及 50 个用户/会话映射。缺号、额外文件、符号链接、旧结果不确定时失败关闭。真实压测必须选择最新编号且先用只读身份/会话预检确认未过期。本条只描述源码行为，未签发新凭证、部署镜像或运行 G5 负载。
 

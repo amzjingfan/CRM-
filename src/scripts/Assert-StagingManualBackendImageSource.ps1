@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious')]
+    [ValidateSet('CheckOnly', 'DeployG5', 'ReconcileFixture', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious')]
     [string]$Mode,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceSha,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$ImageRevisionSha,
@@ -11,7 +11,7 @@ param(
 )
 
 if ($ImageRevisionSha -ceq $SourceSha) { return }
-if ($Mode -cnotin @('CheckOnly', 'DeployG5')) {
+if ($Mode -cnotin @('CheckOnly', 'DeployG5', 'ReconcileFixture')) {
     throw 'A recovery image must match its reviewed source commit.'
 }
 

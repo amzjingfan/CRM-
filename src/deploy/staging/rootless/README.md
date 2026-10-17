@@ -231,6 +231,6 @@ Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 
 #### R38 后隔离退货流程 fixture 的精确替换
 
-现场新写入尚未授权。源码提供 `ReconcileFixture`，仅对 R05 原隔离店铺的四份连续私有凭证、50 条原提问及唯一版本 1、`ready`、内部审批 FAQ 做精确对账。将 `-SourceSha` 指向执行时当前 main 的干净受审源码，运行镜像 OCI revision 必须与该 SHA 相同；使用现有六摘要、全新私有 `-EvidenceDirectory` 和 `-ConfirmContent replace-50-isolated-g5-return-questions`。写入前 `ContentCheck` 应显示 `fixture_state=legacy_prepared`。入口在单一事务内将 50 条问题和 FAQ 改为退货流程问答，FAQ 升为版本 2、`pending`，并记录不含正文的审计。此时旧版本切片不参与检索，`knowledge_ready=false` 是预期；立即运行只读 `ContentCheck` 核对 `fixture_state=prepared` 和 50/50。任何状态不符或结果不确定时停止，不重发写入。
+现场新写入尚未授权。源码提供 `ReconcileFixture`，仅对 R05 原隔离店铺的四份连续私有凭证、50 条原提问及唯一版本 1、`ready`、内部审批 FAQ 做精确对账。将 `-SourceSha` 指向执行时当前 main 的干净受审源码；另以 `-RuntimeBackendSourceSha` 指定运行镜像的 OCI revision。两者不同时，写入前必须经 GitHub 核对镜像提交是当前 main 的祖先，且 `src/backend` Git 树及 `src/docker/Dockerfile.backend` blob 完全相同；接口失败或构建输入变化即停止。现有内容门禁还会核对实际运行镜像摘要和 OCI revision 与 `-RuntimeBackendSourceSha` 精确匹配。使用现有六摘要、全新私有 `-EvidenceDirectory` 和 `-ConfirmContent replace-50-isolated-g5-return-questions`。写入前用运行镜像原受审提交执行只读 `ContentCheck`，应显示 `fixture_state=legacy_prepared`。入口在单一事务内将 50 条问题和 FAQ 改为退货流程问答，FAQ 升为版本 2、`pending`，并记录不含正文的审计。此时旧版本切片不参与检索，`knowledge_ready=false` 是预期；立即用原受审提交运行只读 `ContentCheck` 核对 `fixture_state=prepared` 和 50/50。任何状态不符或结果不确定时停止，不重发写入。
 
 另获精确向量化授权后才以 `VectorizeG5` 处理该版本 2 FAQ：只允许原店铺唯一旧版本 1 切片，使用本地 BGE 原子替换；结果以 `ContentCheck` 的 `knowledge_ready=true` 和当前版本切片只读核对。版本 1 首次向量化仍只接受原两份私有凭证，版本 2 替换只接受原四份；不得扫描其他店铺。随后单会话 DeepSeek 与 50 并发各自另行授权和验收，不执行 GitHub Actions。

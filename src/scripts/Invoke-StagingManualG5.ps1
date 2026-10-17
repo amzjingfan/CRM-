@@ -51,9 +51,9 @@ if (($Mode -ceq 'ContentPrepare' -and $ConfirmContent -cne 'prepare-50-isolated-
     ($Mode -cnotin @('ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5') -and $ConfirmContent)) {
     throw 'Exact G5 content confirmation is required only for the selected write mode.'
 }
-if (($Mode -ceq 'VectorizeG5' -and $RuntimeBackendSourceSha -cnotmatch '^[0-9a-f]{40}$') -or
-    ($Mode -cne 'VectorizeG5' -and $RuntimeBackendSourceSha)) {
-    throw 'Runtime backend source SHA is required only for exact G5 vectorization.'
+if (($Mode -cin @('ReconcileFixture', 'VectorizeG5') -and $RuntimeBackendSourceSha -cnotmatch '^[0-9a-f]{40}$') -or
+    ($Mode -cnotin @('ReconcileFixture', 'VectorizeG5') -and $RuntimeBackendSourceSha)) {
+    throw 'Runtime backend source SHA is required only for exact G5 fixture reconciliation or vectorization.'
 }
 if ($SourceSha -cnotmatch '^[0-9a-f]{40}$') { throw 'Source SHA must be a full lowercase Git commit.' }
 Assert-Image 'CandidateBackendImage' $CandidateBackendImage 'ghcr.io/cp11-gh/crm-backend'
@@ -128,6 +128,10 @@ try {
     & (Join-Path $PSScriptRoot 'Assert-StagingManualSourcePolicy.ps1') -Mode $Mode `
         -SourceSha $SourceSha -ResolvedCommitSha ([string]$verifiedCommit.sha) `
         -CurrentMainSha ([string]$commit.sha)
+    if ($Mode -ceq 'ReconcileFixture') {
+        & (Join-Path $PSScriptRoot 'Assert-StagingManualBackendImageSource.ps1') -Mode $Mode `
+            -SourceSha $SourceSha -ImageRevisionSha $RuntimeBackendSourceSha -Token $token
+    }
 }
 catch {
     throw 'GitHub source verification failed or a new deployment no longer targets current main.'

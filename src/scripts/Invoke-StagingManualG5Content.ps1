@@ -23,9 +23,9 @@ if (($Mode -ceq 'ContentPrepare' -and $ConfirmContent -cne 'prepare-50-isolated-
     ($Mode -ceq 'ContentCheck' -and $ConfirmContent)) {
     throw 'Exact G5 content confirmation is required only for the selected write mode.'
 }
-if (($Mode -ceq 'VectorizeG5' -and $RuntimeBackendSourceSha -cnotmatch '^[0-9a-f]{40}$') -or
-    ($Mode -cne 'VectorizeG5' -and $RuntimeBackendSourceSha)) {
-    throw 'Runtime backend source SHA is required only for exact G5 vectorization.'
+if (($Mode -cin @('ReconcileFixture', 'VectorizeG5') -and $RuntimeBackendSourceSha -cnotmatch '^[0-9a-f]{40}$') -or
+    ($Mode -cnotin @('ReconcileFixture', 'VectorizeG5') -and $RuntimeBackendSourceSha)) {
+    throw 'Runtime backend source SHA is required only for exact G5 fixture reconciliation or vectorization.'
 }
 
 function Assert-PrivatePath([string]$Path, [bool]$Directory) {
@@ -49,7 +49,7 @@ if ($IsWindows -or (& id -u).Trim() -cne '1004') { throw 'G5 content requires cr
 
 try {
     $image = @((& docker --host $DockerHost image inspect $BackendImage 2>$null) -join "`n" | ConvertFrom-Json)
-    $expectedImageRevision = if ($Mode -ceq 'VectorizeG5') { $RuntimeBackendSourceSha } else { $SourceSha }
+    $expectedImageRevision = if ($Mode -cin @('ReconcileFixture', 'VectorizeG5')) { $RuntimeBackendSourceSha } else { $SourceSha }
     if ($LASTEXITCODE -ne 0 -or $image.Count -ne 1 -or
         @($image[0].RepoDigests) -cnotcontains $BackendImage -or
         $image[0].Config.Labels.'org.opencontainers.image.revision' -cne $expectedImageRevision) {
