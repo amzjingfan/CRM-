@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R61 源码候选：[R61 TR](../reports/tests/TR-MVP-006-20261018-R61.md)记录五条业务声明不变量固定分类及 FAQ 政策 Prompt `v1.6.2` 的先红后绿测试。定向 119 passed、完整后端 2064 passed/27 skipped，Ruff lint/format 与 mypy 通过；尚未发布镜像、部署或调用 DeepSeek。[R60 现场](../reports/tests/TR-MVP-006-20261018-R60.md)仍是最新真实结果：无安全 `delta`、9.613 秒、50 并发未运行，旧 G3 模式已恢复。G5 与 production No-Go。
+
 2026-10-18 G5 R60 手动现场：[R60 TR](../reports/tests/TR-MVP-006-20261018-R60.md)证实新 FAQ JSON Schema 镜像发布、六摘要预取与临时部署、`knowledge_ready` 和 50/50 身份预检通过。唯一合成 SSE HTTP 200，但 `faq_draft / invalid_schema / business_claims:value_error`，无安全 `delta`，总耗时 9.613 秒；50 并发未运行。原后端与 G3 限定会话模式已恢复，三健康和固定出口通过。现有低敏类别无法定位具体声明不变量；G5 与 production No-Go。
 
 2026-10-18 G5 R59 源码已合并：[R59 TR](../reports/tests/TR-MVP-006-20261018-R59.md)记录 FAQ 草稿使用 Responses JSON Schema 后的完整后端 2057 passed/27 skipped、Ruff lint/format、mypy 通过，独立审查无阻断；[PR #333](https://github.com/CP11-gh/CRM/pull/333) 已合入 main。两次单请求合成探针确认现用 DeepSeek 模型返回符合最小及完整 FAQ Schema 的结构；它们不等于实际 SSE 验收。GitHub CI 因账户计费在零步骤失败，没有作为测试证据。当前仍以 [R58 现场失败](../reports/tests/TR-MVP-006-20261018-R58.md)为准：无安全 `delta`、总耗时 8.135 秒、50 并发未运行；原 G3 模式已恢复。G5 与 production No-Go。

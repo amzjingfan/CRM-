@@ -938,6 +938,75 @@ async def test_deepseek_faq_schema_diagnostics_name_required_fields_without_valu
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("claim_changes", "duplicate", "expected_kind"),
+    [
+        ({"action": "submit_request"}, False, "claim_action_mismatch"),
+        ({"evidence_id": None}, False, "claim_evidence_id_missing"),
+        ({"evidence_type": "none"}, False, "claim_evidence_id_unexpected"),
+        (
+            {"subject_type": "refund_request", "action": "submit_request", "subject_id": None},
+            False,
+            "claim_subject_id_missing",
+        ),
+        ({}, True, "claim_scope_duplicate"),
+    ],
+)
+async def test_deepseek_faq_claim_invariant_diagnostics_are_fixed_and_redacted(
+    claim_changes: dict[str, object], duplicate: bool, expected_kind: str
+) -> None:
+    """本地语义拒绝只输出固定类别，不能保存声明值或模型正文。"""
+    claim = {
+        "subject_type": "refund_policy",
+        "subject_id": None,
+        "action": "explain_policy",
+        "tense": "timeless",
+        "polarity": "affirmed",
+        "condition": "actual",
+        "evidence_type": "faq_chunk",
+        "evidence_id": "00000000-0000-4000-8000-000000000001",
+        "confidence": 0.9,
+        **claim_changes,
+    }
+    content = json.dumps(
+        {
+            "answer": "Synthetic return process. private-sentinel-never-log",
+            "citation_chunk_ids": ["00000000-0000-4000-8000-000000000001"],
+            "grounding_confidence": 0.9,
+            "answer_language": "en",
+            "needs_human": True,
+            "business_claims": {"complete": True, "claims": [claim, claim] if duplicate else [claim]},
+        }
+    )
+    response = SimpleNamespace(
+        status="completed",
+        output=[
+            SimpleNamespace(
+                type="message",
+                status="completed",
+                content=[SimpleNamespace(type="output_text", text=content)],
+            )
+        ],
+        usage=None,
+    )
+    provider = DeepSeekProvider(
+        api_key="test-only",
+        model_name="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+        timeout_seconds=3,
+        client=cast(AsyncOpenAI, SimpleNamespace(responses=FakeResource(response))),
+    )
+
+    with pytest.raises(LLMProviderError) as captured:
+        await provider.generate_structured(faq_request(), FaqAnswerModelOutput)
+
+    assert captured.value.output_failure_kind == "invalid_schema"
+    assert captured.value.output_schema_issues == (("business_claims", expected_kind),)
+    assert "private-sentinel-never-log" not in str(captured.value.output_schema_issues)
+    assert str(claim["evidence_id"]) not in str(captured.value.output_schema_issues)
+
+
+@pytest.mark.asyncio
 async def test_deepseek_faq_review_missing_fields_have_only_allowlisted_paths() -> None:
     """复核缺字段只输出固定路径和错误类型，不泄露模型正文。"""
     resource = FakeResource(

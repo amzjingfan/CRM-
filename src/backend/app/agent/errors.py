@@ -47,6 +47,11 @@ LLMOutputSchemaErrorType = Literal[
     "float_parsing",
     "uuid_parsing",
     "value_error",
+    "claim_action_mismatch",
+    "claim_evidence_id_missing",
+    "claim_evidence_id_unexpected",
+    "claim_subject_id_missing",
+    "claim_scope_duplicate",
     "model_type",
     "other",
 ]

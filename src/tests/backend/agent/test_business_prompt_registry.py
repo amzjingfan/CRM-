@@ -117,6 +117,21 @@ def test_faq_prompt_describes_every_required_output_field_and_claim_inventory() 
     assert '"business_claims":{"complete":true,"claims":[]}' in FAQ_ANSWER_SYSTEM_PROMPT
 
 
+def test_faq_prompt_binds_general_return_policy_to_one_cited_claim() -> None:
+    """通用退货流程须按现有业务声明规则表示，不能伪造客户实例事实。"""
+    for fragment in (
+        "refund_policy",
+        "explain_policy",
+        "timeless",
+        "faq_chunk",
+        "evidence_id",
+        "chunk_id",
+        "同一主体和动作只列一条",
+        "客户实例",
+    ):
+        assert fragment in FAQ_ANSWER_SYSTEM_PROMPT
+
+
 def test_faq_review_prompt_requires_complete_typed_output() -> None:
     """复核节点必须显式给出结构化字段，不能让 JSON 模式猜测。"""
     for field in GroundingReviewOutput.model_fields:

@@ -162,6 +162,45 @@ async def test_schema_failure_summary_limits_and_validates_issue_pairs() -> None
 
 
 @pytest.mark.asyncio
+async def test_schema_failure_summary_persists_only_fixed_claim_invariant_code() -> None:
+    """声明语义诊断可定位不变量，但不能将模型提供的错误文字写入摘要。"""
+    run = AgentRun(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        conversation_id=uuid.uuid4(),
+        model_provider="deepseek",
+        model_name="test-model",
+        action=AgentAction.HUMAN_REVIEW.value,
+        status=AgentRunStatus.RUNNING.value,
+    )
+    session = Mock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=run)
+    session.commit = AsyncMock()
+
+    await SqlAlchemyAgentRunRecorder(session).fail(
+        run.id,
+        AgentRunStatus.FAILED,
+        AgentAction.FAILED,
+        "LLM_OUTPUT_INVALID",
+        "deepseek",
+        "test-model",
+        42,
+        failure_stage=LLMFailureStage.FAQ_DRAFT,
+        output_failure_kind="invalid_schema",
+        output_schema_issues=(
+            ("business_claims", "claim_scope_duplicate"),
+            cast(LLMOutputSchemaIssue, ("business_claims", "private-sentinel-never-log")),
+        ),
+    )
+
+    assert run.output_summary == (
+        "error_code=LLM_OUTPUT_INVALID;failure_stage=faq_draft;output_failure_kind=invalid_schema;"
+        "output_schema_issues=business_claims:claim_scope_duplicate"
+    )
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_schema_failure_summary_caps_eight_issues_and_ignores_malformed_input() -> None:
     """记录端口重复校验上游诊断，异常形状也不能污染或中断失败记录。"""
     run = AgentRun(

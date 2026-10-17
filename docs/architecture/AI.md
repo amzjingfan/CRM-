@@ -18,6 +18,8 @@ G5 R58 的 FAQ 草稿再次返回 `business_claims:missing,other,extra_forbidden
 
 R60 真实单会话说明 JSON Schema 约束了字段形状，但 `business_claims` 仍被本地业务语义校验以泛化 `value_error` 拒绝。当前低敏记录不能确认具体不变量；服务已恢复 G3 模式，G5 保持 No-Go。后续诊断只能输出固定不变量类别，不保存声明值或模型正文，严格校验不能放宽。
 
+R61 将业务声明的五条原有语义拒绝分别标成固定 Pydantic 类型：`claim_action_mismatch`、`claim_evidence_id_missing`、`claim_evidence_id_unexpected`、`claim_subject_id_missing`、`claim_scope_duplicate`。Provider 与持久化端口仍只接收最多八组白名单字段路径和类型，其他值不入库。FAQ Prompt `faq-answer-v1.6.2` 指定一般退货流程作为单条有 FAQ 引用的 `refund_policy/explain_policy`，避免把通用政策误写成某客户的退款结果或重复主体动作；注册摘要为 `efb00cc0dc7e82af925a61fe3bad6d26e64c30453c63b5b060e1253df09a970a`。严格业务校验、DLP、评分、模型调用上限及 TikTok 发送边界不变。本地测试不证明现场安全草稿与性能达标。
+
 ## Prompt 与策略版本
 
 系统 Prompt、DLP 规则、结构化声明和回复策略使用可审计版本。Agent 配置只能选择受控语气、语言和品牌名，不能写任意 Prompt、模型或阈值。版本变化必须更新评测和发布基线。

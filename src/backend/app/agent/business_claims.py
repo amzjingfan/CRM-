@@ -12,6 +12,7 @@ from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic_core import PydanticCustomError
 
 from app.tools.contracts import ToolName
 
@@ -109,17 +110,17 @@ class BusinessClaim(BaseModel):
         """校验主体动作组合和证据引用，拒绝模型临时重定义语义。"""
         allowed_actions = _ALLOWED_ACTIONS_BY_SUBJECT[self.subject_type]
         if self.action not in allowed_actions:
-            raise ValueError("业务声明的 subject_type 与 action 不匹配")
+            raise PydanticCustomError("claim_action_mismatch", "业务声明的主体与动作不匹配")
         requires_id = self.evidence_type in {
             BusinessClaimEvidenceType.FAQ_CHUNK,
             BusinessClaimEvidenceType.TOOL_CALL,
         }
         if requires_id and self.evidence_id is None:
-            raise ValueError("FAQ 或工具业务声明必须提供 evidence_id")
+            raise PydanticCustomError("claim_evidence_id_missing", "FAQ 或工具业务声明缺少证据 ID")
         if not requires_id and self.evidence_id is not None:
-            raise ValueError("无具体证据的业务声明不得提供 evidence_id")
+            raise PydanticCustomError("claim_evidence_id_unexpected", "无具体证据的业务声明带有证据 ID")
         if self.subject_type in _SUBJECTS_REQUIRING_ID and self.subject_id is None:
-            raise ValueError("客户实例业务声明必须提供脱敏或可信 subject_id")
+            raise PydanticCustomError("claim_subject_id_missing", "客户实例业务声明缺少可信主体 ID")
         return self
 
 
@@ -147,7 +148,7 @@ class BusinessClaimInventory(BaseModel):
                 claim.action,
             )
             if claim_key in seen_claims:
-                raise ValueError("同一主体和动作不能包含重复或互相冲突的业务命题")
+                raise PydanticCustomError("claim_scope_duplicate", "同一主体和动作的业务声明重复")
             seen_claims.add(claim_key)
         return self
 
