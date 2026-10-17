@@ -1,8 +1,9 @@
-"""DeepSeek OpenAI 兼容 Chat Completions 适配器。"""
+"""DeepSeek Chat Completions 与 FAQ 专用 Responses 适配器。"""
 
 import json
 import logging
 import time
+from types import SimpleNamespace
 from typing import cast, get_args
 
 from openai import (
@@ -27,9 +28,42 @@ from app.agent.errors import (
     LLMOutputSchemaPath,
     LLMProviderError,
 )
+from app.agent.prompt_registry import BusinessPromptId
 from app.agent.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
 
 logger = logging.getLogger(__name__)
+
+
+def _responses_as_chat_result(response: object) -> SimpleNamespace:
+    """将 FAQ 专用 Responses 结果转换为现有失败关闭校验所需的最小信封。"""
+    status = getattr(response, "status", None)
+    details = getattr(response, "incomplete_details", None)
+    reason = getattr(details, "reason", None)
+    finish_reason = "missing_choice"
+    content: str | None = None
+    if status == "incomplete":
+        finish_reason = "content_filter" if reason == "content_filter" else "length"
+    elif status == "failed":
+        finish_reason = "provider_failed"
+    elif status == "completed" and getattr(response, "error", None) is None:
+        output = getattr(response, "output", None)
+        if isinstance(output, list):
+            messages = [item for item in output if getattr(item, "type", None) == "message"]
+            valid_items = all(getattr(item, "type", None) in {"message", "reasoning"} for item in output)
+            if valid_items and len(messages) == 1 and getattr(messages[0], "status", None) == "completed":
+                parts = getattr(messages[0], "content", None)
+                if isinstance(parts, list) and len(parts) == 1 and getattr(parts[0], "type", None) == "output_text":
+                    content = getattr(parts[0], "text", None)
+                    finish_reason = "stop" if isinstance(content, str) else "missing_content"
+    usage = getattr(response, "usage", None)
+    return SimpleNamespace(
+        id=getattr(response, "id", None),
+        choices=[SimpleNamespace(finish_reason=finish_reason, message=SimpleNamespace(content=content))],
+        usage=SimpleNamespace(
+            prompt_tokens=getattr(usage, "input_tokens", 0),
+            completion_tokens=getattr(usage, "output_tokens", 0),
+        ),
+    )
 
 
 def _safe_schema_issues(error: ValidationError) -> tuple[LLMOutputSchemaIssue, ...]:
@@ -58,11 +92,9 @@ def _safe_schema_issues(error: ValidationError) -> tuple[LLMOutputSchemaIssue, .
 
 
 class DeepSeekProvider(LLMProvider):
-    """使用 DeepSeek JSON Output，并在应用侧完成 Pydantic 二次校验。
+    """FAQ 草稿用 JSON Schema，其余请求用 JSON Output；均在本地复核。
 
-    DeepSeek 当前文档提供的是 OpenAI 兼容 Chat Completions 和 JSON Output，
-    与 OpenAI Responses API 的响应结构不同，因此单独实现适配器，避免把
-    供应商差异泄露到分类服务中。
+    两种端点的响应都转换成同一失败关闭边界，不把未校验正文传给工作流。
     """
 
     provider_name = "deepseek"
@@ -101,7 +133,7 @@ class DeepSeekProvider(LLMProvider):
         request: StructuredRequest,
         response_schema: type[OutputT],
     ) -> ProviderResult[OutputT]:
-        """调用 JSON Output，拒绝截断、空响应和非法结构。"""
+        """调用已注册场景所需端点，拒绝截断、空响应和非法结构。"""
         request.ensure_safe_for_external_provider(response_schema_name=response_schema.__name__)
         started_at = time.perf_counter()
 
@@ -134,23 +166,45 @@ class DeepSeekProvider(LLMProvider):
             )
             return LLMProviderError(code, message, retriable=retriable)
 
+        response: object
         try:
-            response = await self._client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": request.system_prompt},
-                    {"role": "user", "content": request.user_prompt},
-                ],
-                response_format={"type": "json_object"},
-                max_tokens=request.max_output_tokens,
-                temperature=request.temperature,
-                # 当前产品 SSE 传输的是完整安全校验后的草稿，不允许
-                # Provider 原生 Token 绕过 Schema 和业务安全门禁。
-                stream=False,
-                # V4 默认开启思考模式，短分类任务会先消耗推理 Token，256 Token
-                # 预算可能尚未产生最终 JSON 就结束。意图分类固定关闭思考模式。
-                extra_body={"thinking": {"type": "enabled" if self.thinking_enabled else "disabled"}},
-            )
+            # ensure_safe_for_external_provider 已按注册表锁定 FAQ 的响应 Schema 名称。
+            if request.business_prompt_id == BusinessPromptId.FAQ_ANSWER:
+                structured_response = await self._client.responses.create(
+                    model=self.model_name,
+                    instructions=request.system_prompt,
+                    input=request.user_prompt,
+                    text={
+                        "format": {
+                            "type": "json_schema",
+                            "name": response_schema.__name__,
+                            "schema": response_schema.model_json_schema(),
+                        }
+                    },
+                    reasoning={"effort": "high" if self.thinking_enabled else "none"},
+                    max_output_tokens=request.max_output_tokens,
+                    temperature=request.temperature,
+                    # 仍仅在完整本地 Schema 和安全校验后向 SSE 发送草稿。
+                    stream=False,
+                )
+                response = _responses_as_chat_result(structured_response)
+            else:
+                response = await self._client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": request.system_prompt},
+                        {"role": "user", "content": request.user_prompt},
+                    ],
+                    response_format={"type": "json_object"},
+                    max_tokens=request.max_output_tokens,
+                    temperature=request.temperature,
+                    # 当前产品 SSE 传输的是完整安全校验后的草稿，不允许
+                    # Provider 原生 Token 绕过 Schema 和业务安全门禁。
+                    stream=False,
+                    # V4 默认开启思考模式，短分类任务会先消耗推理 Token，256 Token
+                    # 预算可能尚未产生最终 JSON 就结束。意图分类固定关闭思考模式。
+                    extra_body={"thinking": {"type": "enabled" if self.thinking_enabled else "disabled"}},
+                )
         except APITimeoutError as error:
             raise mapped_error(error, LLMErrorCode.LLM_TIMEOUT, "DeepSeek 调用超时", retriable=True) from error
         except RateLimitError as error:
@@ -220,6 +274,10 @@ class DeepSeekProvider(LLMProvider):
             elif finish_reason == "insufficient_system_resource":
                 error_code = LLMErrorCode.LLM_PROVIDER_ERROR
                 error_message = "DeepSeek 推理资源不足"
+                retriable = True
+            elif finish_reason == "provider_failed":
+                error_code = LLMErrorCode.LLM_PROVIDER_ERROR
+                error_message = "DeepSeek 响应失败"
                 retriable = True
             else:
                 error_code = LLMErrorCode.LLM_OUTPUT_INVALID

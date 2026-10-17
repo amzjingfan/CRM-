@@ -6,13 +6,15 @@
 
 FAQ 回答 Prompt 中的知识来源标签也使用现有 DLP 脱敏函数。来源标签只帮助模型区分证据，不能携带未脱敏的业务标识；答案正文仍按现有位置文本、敏感信息与注册业务载荷规则检查。G5 的隔离 FAQ 版本 3 仅调整合成测试答案的句子分隔，不改变 DLP 策略、知识审批或公开发送边界。
 
-模型返回结构化信封；JSON Output、枚举、长度、引用和安全状态必须通过校验才可进入应用。错误、超时、协议漂移或 DLP 不确定时失败关闭并转人工，不透传第三方响应正文。
+模型返回结构化信封；DeepSeek FAQ 草稿使用 Responses JSON Schema，其余现有场景使用 Chat Completions JSON Output。两条路径的枚举、长度、引用和安全状态都必须经本地 Pydantic 与业务安全校验才可进入应用。错误、超时、协议漂移或 DLP 不确定时失败关闭并转人工，不透传第三方响应正文。
 
 完整 Agent 工作流遇到 `LLM_OUTPUT_INVALID` 时，运行记录沿用现有 `output_summary`，仅追加固定模型节点（分类、FAQ/工具草稿、安全复核或翻译）及 Provider 已分类的 `unfinished`、`empty`、`invalid_structure`、`invalid_json`、`invalid_schema`。仅在 `invalid_schema` 时，Provider 已映射的 Schema 字段路径与 Pydantic 错误类型可写入最多八组；记录端口再次按固定白名单校验、去重和截断。其他失败类别不写 Schema 明细。缺失或不在白名单的诊断字段不写入；Prompt、模型正文、字段值、原始异常和请求 ID 不持久化。诊断只用于定位失败，公开错误码、失败关闭、DLP、评分、调用次数及发送开关不因此改变。
 
 G5 R53 的受控单会话在 FAQ 草稿处记录 `business_claims:model_type` 与 `unknown:missing`，没有保存模型正文，后者不能倒推出具体字段。FAQ 生成 Prompt `faq-answer-v1.6.1` 明列 `FaqAnswerModelOutput` 的全部必需顶层字段，以及 `business_claims={complete:true, claims:[...]}` 的对象结构；无业务命题时 `claims=[]`，有业务命题时仍须完整列出。低敏 Schema 路径白名单仅新增 `answer`、`citation_chunk_ids`、`grounding_confidence`、`answer_language`、`needs_human`，不记录模型字段值。注册摘要同步更新；严格 Schema、DLP、评分、调用次数及 TikTok 发送边界未改变。确定性测试不能证明新 Prompt 的真实模型输出或 G5 单会话通过。
 
 G5 R56 的受控单会话通过 FAQ 草稿，但安全复核返回 `invalid_schema / unknown:missing`，低敏证据不能还原具体缺失字段。`faq-grounding-review-v1.5.1` 明列 `GroundingReviewOutput` 的五个顶层字段及布尔、数字、字符串数组类型；运行失败摘要只允许记录新增白名单路径 `is_safe`、`is_grounded`、`business_claims_consistent`、`confidence`、`reason_codes` 和既有固定错误类型。注册正文哈希已同步，工作流版本为 `faq-agent-workflow-v1.7.1`。这只改输出指令与诊断名称，严格 Schema、DLP、安全判分、最多调用次数和 TikTok 开关不变；本地确定性测试不能证明现场会产生安全 `delta`。
+
+G5 R58 的 FAQ 草稿再次返回 `business_claims:missing,other,extra_forbidden`，说明提示文字与 JSON Output 未稳定满足业务结构。R59 候选仅将已注册 FAQ 草稿请求改为 DeepSeek Responses 的完整 `FaqAnswerModelOutput` JSON Schema；模型仍不能决定业务放行，应用仍逐项执行 Pydantic、证据、DLP 与独立安全复核。其他模型场景和调用次数不变。一次合成接口探针验证当前 staging 模型接受完整 Schema 并返回必需字段（HTTP 200，约 1.65 秒），不能替代真实 FAQ 安全 `delta`、延迟或 50 并发验收。
 
 ## Prompt 与策略版本
 

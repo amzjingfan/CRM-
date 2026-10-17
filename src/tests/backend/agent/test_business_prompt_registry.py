@@ -112,7 +112,7 @@ REGISTERED_PROMPTS = {
 
 
 def test_faq_prompt_describes_every_required_output_field_and_claim_inventory() -> None:
-    """JSON 模式不提供 Schema，FAQ 系统指令必须明确对象结构。"""
+    """FAQ 系统指令仍须明确对象结构，供应商约束不能代替可审计规则。"""
     assert all(f'"{field}"' in FAQ_ANSWER_SYSTEM_PROMPT for field in FaqAnswerModelOutput.model_fields)
     assert '"business_claims":{"complete":true,"claims":[]}' in FAQ_ANSWER_SYSTEM_PROMPT
 
