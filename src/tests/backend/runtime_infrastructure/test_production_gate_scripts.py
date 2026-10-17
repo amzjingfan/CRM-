@@ -25,6 +25,7 @@ RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + 
 UNREVIEWED_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "9" * 64
 PREVIOUS_RETRIEVAL_MODEL_IMAGE = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "f" * 64
 SECRET_SENTINEL = "must-not-appear-in-command-output-or-evidence"
+RETRIEVAL_TOKEN_SENTINEL = "g5-test-retrieval-token-with-32-characters"
 ROOTLESS_DOCKER_HOST = "unix:///run/user/1004/docker.sock"
 TIKTOK_EGRESS_IP = "38.55.145.52"
 REQUIRED_MODEL_FILES = (
@@ -102,6 +103,7 @@ def test_g5_staging_window_is_backend_only_and_default_mode_restores_closed_flag
         "EMBEDDING_ENABLED": "true",
         "SSE_LOAD_TEST_ENABLED": "true",
         "CHAT_QUERY_LIMIT": "60",
+        "RETRIEVAL_MODEL_SERVICE_TOKEN": "${RETRIEVAL_MODEL_SERVICE_TOKEN:?RETRIEVAL_MODEL_SERVICE_TOKEN is required}",
     }
 
 
@@ -143,6 +145,10 @@ def test_docker_compose_resolves_g5_and_default_staging_modes(g5_enabled: bool, 
         assert service_env["SSE_LOAD_TEST_ENABLED"] == expected
         assert service_env.get("EMBEDDING_ENABLED", "false") == expected
     assert config["services"]["backend"]["environment"]["CHAT_QUERY_LIMIT"] == ("60" if g5_enabled else "10")
+    backend_token = config["services"]["backend"]["environment"].get("RETRIEVAL_MODEL_SERVICE_TOKEN")
+    retrieval_token = config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"]
+    assert retrieval_token == RETRIEVAL_TOKEN_SENTINEL
+    assert backend_token == (RETRIEVAL_TOKEN_SENTINEL if g5_enabled else None)
 
 
 def test_g5_workflow_opt_in_is_limited_to_validate_and_deploy() -> None:
@@ -189,11 +195,13 @@ def test_staging_env_file_cannot_enable_sse_outside_reviewed_overlay(staging_env
     assert not (tmp_path / "unreviewed-sse.json").exists()
 
 
-def test_g5_staging_validate_accepts_only_backend_model_and_fixed_limit(
+@pytest.mark.parametrize("backend_token", [RETRIEVAL_TOKEN_SENTINEL, None, "short", "x" * 40])
+def test_g5_staging_validate_requires_matching_model_token(
+    backend_token: str | None,
     staging_env_file: Path,
     tmp_path: Path,
 ) -> None:
-    """受审配置在模型与压测只作用于 backend 时才可通过只读 validate。"""
+    """G5 只接受 backend 与检索服务共享的足够长的内部令牌。"""
     model_asset_dir = Path(
         next(
             line.split("=", 1)[1]
@@ -220,6 +228,11 @@ def test_g5_staging_validate_accepts_only_backend_model_and_fixed_limit(
             "DEEPSEEK_API_KEY": "private-test-key",
         }
     )
+    if backend_token is not None:
+        config["services"]["backend"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = backend_token
+    config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = (
+        RETRIEVAL_TOKEN_SENTINEL
+    )
     config_path.write_text(json.dumps(config), encoding="utf-8")
     evidence_file = tmp_path / "g5-validate.json"
 
@@ -243,11 +256,17 @@ def test_g5_staging_validate_accepts_only_backend_model_and_fixed_limit(
         environment=environment,
     )
 
-    assert result.returncode == 0, normalized_process_output(result)
-    evidence = json.loads(evidence_file.read_text("utf-8-sig"))
-    assert evidence["g5_sse_load_test_enabled"] is True
-    assert evidence["g5_sse_load_test_overlay_sha256"]
-    assert evidence["runtime_mode_verified"] is False
+    if backend_token == RETRIEVAL_TOKEN_SENTINEL:
+        assert result.returncode == 0, normalized_process_output(result)
+        evidence = json.loads(evidence_file.read_text("utf-8-sig"))
+        assert evidence["g5_sse_load_test_enabled"] is True
+        assert evidence["g5_sse_load_test_overlay_sha256"]
+        assert evidence["runtime_mode_verified"] is False
+    else:
+        assert result.returncode != 0
+        assert not evidence_file.exists()
+        assert "g5 backend and retrieval model service" in normalized_process_output(result)
+    assert RETRIEVAL_TOKEN_SENTINEL not in normalized_process_output(result)
     assert "private-test-key" not in normalized_process_output(result)
     commands = [json.loads(line) for line in command_log.read_text("utf-8").splitlines()]
     config_command = next(command for command in commands if "config" in command)
@@ -299,7 +318,11 @@ def test_g5_staging_validate_rejects_capability_or_limit_drift(
             "LLM_PRIMARY_PROVIDER": "deepseek",
             "LLM_PRIMARY_MODEL": "deepseek-chat",
             "DEEPSEEK_API_KEY": "private-test-key",
+            "RETRIEVAL_MODEL_SERVICE_TOKEN": RETRIEVAL_TOKEN_SENTINEL,
         }
+    )
+    config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = (
+        RETRIEVAL_TOKEN_SENTINEL
     )
     config["services"][service_name]["environment"][name] = value
     config_path.write_text(json.dumps(config), encoding="utf-8")
@@ -357,7 +380,11 @@ def test_g5_deploy_rejects_running_backend_with_default_limit_before_health(
             "LLM_PRIMARY_PROVIDER": "deepseek",
             "LLM_PRIMARY_MODEL": "deepseek-chat",
             "DEEPSEEK_API_KEY": "private-test-key",
+            "RETRIEVAL_MODEL_SERVICE_TOKEN": RETRIEVAL_TOKEN_SENTINEL,
         }
+    )
+    config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = (
+        RETRIEVAL_TOKEN_SENTINEL
     )
     config_path.write_text(json.dumps(config), encoding="utf-8")
     evidence_file = tmp_path / "g5-runtime-mismatch.json"
@@ -420,7 +447,11 @@ def test_g5_deploy_rejects_running_backend_without_embedding_before_health(
             "LLM_PRIMARY_PROVIDER": "deepseek",
             "LLM_PRIMARY_MODEL": "deepseek-chat",
             "DEEPSEEK_API_KEY": "private-test-key",
+            "RETRIEVAL_MODEL_SERVICE_TOKEN": RETRIEVAL_TOKEN_SENTINEL,
         }
+    )
+    config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = (
+        RETRIEVAL_TOKEN_SENTINEL
     )
     config_path.write_text(json.dumps(config), encoding="utf-8")
     evidence_file = tmp_path / "g5-embedding-runtime-mismatch.json"
@@ -896,6 +927,7 @@ def staging_env_file(tmp_path: Path) -> Path:
                 "POSTGRES_PASSWORD=test-postgres-password",
                 f"RETRIEVAL_MODEL_ASSET_DIR={model_asset_dir}",
                 f"RETRIEVAL_MODEL_SERVICE_IMAGE={RETRIEVAL_MODEL_IMAGE}",
+                f"RETRIEVAL_MODEL_SERVICE_TOKEN={RETRIEVAL_TOKEN_SENTINEL}",
                 "POSTGRES_IMAGE=pgvector/pgvector:0.8.0-pg16@sha256:" + "1" * 64,
                 "REDIS_IMAGE=redis:7.4.2-alpine@sha256:" + "2" * 64,
                 "MINIO_IMAGE=minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:" + "3" * 64,

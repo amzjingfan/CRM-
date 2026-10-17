@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r36-index-closure-20261017
-Governance base SHA: 9cd94b8b2c6531f1256868e08c7ca3556516fd42
-CANDIDATE_SUBJECT_SHA: c3f09ef4cbcab17512158c42a355308be964321b
+Working branch at this snapshot: fix/g5-model-token-gate-20261017
+Governance base SHA: 33053583fe7a5e3e52fbfdb7f662fc424d191f84
+CANDIDATE_SUBJECT_SHA: da2eb6575da06d34923b72323bff0a4631222898
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
+
+2026-10-17 G5 R37：一次获批的手动单会话窗口在 main `33053583` 完成六摘要预取和 G5 validate，却因 backend 未收到现有内部检索令牌而在迁移设置校验失败；没有签发第四份凭证或调用 DeepSeek。已按[恢复证据](../../release/evidence/staging/crm-staging-g5-r37-restore-20261017.json)重新运行旧后端 `sha256:758c4d51…41522`、TikTok Webhook 只读和工作台翻译，三健康 200、LLM/SSE 关闭、限流 10。获批的有界修复 subject `da2eb657` 仅在 G5 backend 注入现有令牌并在部署前核对与检索服务一致、长度至少 32；[IR](../records/implementation/IR-MVP-006-20261017-R37.md)、[TR](../reports/tests/TR-MVP-006-20261017-R37.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R37.md) 记录全量后端 `1973 passed, 27 skipped` 及 subject 后 staging 门禁 `145 passed`。派生索引在此任务分支为 `CANDIDATE_VIEW`，G5 `DOING`、production No-Go。下一步：合并修复并从 main 复核索引；重新锁定精确 staging 单会话窗口；通过后再单独执行真实 50 并发与恢复验收。
 
 2026-10-17 G5 R36：从 main `2cc3ad0f` 的 subject `c3f09ef4` 已为 G5 手动新部署增加“旧镜像是当前 main 祖先且后端构建输入完全一致”的严格校验，恢复/回滚继续要求 revision 精确一致；[IR](../records/implementation/IR-MVP-006-20261017-R36.md)、[TR](../reports/tests/TR-MVP-006-20261017-R36.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R36.md) 记录 `1970 passed, 27 skipped`、提交后相关 37 项通过及真实 GitHub 只读构建身份核对。[PR #294](https://github.com/CP11-gh/CRM/pull/294) 已合入 main `9cd94b8b2c6531f1256868e08c7ca3556516fd42`，从该 main 再次核对 R35 镜像与后端构建输入一致；三个派生索引由权威源记录核对后恢复 `CURRENT`。R35 后端候选仍为 `sha256:0bc1e287…1e77c`，staging 运行旧后端 `sha256:758c4d51…41522`；第三份 50/50 令牌仍过期。下一步：精确核准 staging 手动预取/只读部署；再单独核准第四份凭证续期与只读预检；最后分别执行单会话、50 并发和原模式恢复。G5 `DOING`、production No-Go。
 

@@ -345,6 +345,15 @@ function Assert-ProductionComposeContract {
     if ([string]$retrievalService.environment.RETRIEVAL_MODEL_VERIFY_HASHES -ne "true") {
         throw "Production retrieval model service must enable startup weight hash verification."
     }
+    if ($EnableG5SSELoadTest) {
+        $backendTokenProperty = $Config.services.backend.environment.PSObject.Properties["RETRIEVAL_MODEL_SERVICE_TOKEN"]
+        $retrievalTokenProperty = $retrievalService.environment.PSObject.Properties["RETRIEVAL_MODEL_SERVICE_TOKEN"]
+        $backendToken = if ($null -eq $backendTokenProperty) { "" } else { [string]$backendTokenProperty.Value }
+        $retrievalToken = if ($null -eq $retrievalTokenProperty) { "" } else { [string]$retrievalTokenProperty.Value }
+        if ($backendToken.Length -lt 32 -or $backendToken -cne $retrievalToken) {
+            throw "G5 backend and retrieval model service must share a valid internal model token."
+        }
+    }
 
     $egressService = $Config.services.PSObject.Properties["tiktok-egress"].Value
     $egressPorts = $egressService.PSObject.Properties["ports"]

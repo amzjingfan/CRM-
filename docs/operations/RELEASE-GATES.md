@@ -16,6 +16,7 @@
 | G8 | 最终生产签署 | 阻塞 | G1 核心范围已按 2026-10-09 用户决定通过，但 G1-L、G2～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
 
 G5 [R34 续期源码](../reports/tests/TR-MVP-006-20261017-R34.md) 的连续编号、历史验签、精确路径与独占创建本地门禁通过；原第三份 50 枚令牌仍已过期，第四份未现场签发。上表 G5 未通过结论不变；新凭证、运行镜像、单会话安全 `delta`、真实 50 并发与恢复均需独立现场证据。
+G5 R37 手动窗口的[预取](../../release/evidence/staging/crm-staging-g5-r37-prefetch-20261017.json)与[验证](../../release/evidence/staging/crm-staging-g5-r37-validate-20261017.json)通过；迁移容器因 G5 backend 缺少既有内部检索令牌而失败。已按[恢复证据](../../release/evidence/staging/crm-staging-g5-r37-restore-20261017.json)重新运行旧后端、TikTok Webhook 只读与工作台翻译，三健康 200、LLM/SSE 关闭、限流 10。第四份令牌未签发，合成 SSE 与 DeepSeek 均未调用；G5 仍未通过。G5 专用令牌注入与部署前一致性校验已在源码修复，现场需从修复合入后的当前 main 另行核对。
 
 `MVP-CONV-SYNC-001` 的 [R03 现场核对](../reports/tests/TR-MVP-CONV-SYNC-001-20261016-R03.md) 已从授权 TikTok Shop 只读接口回填 179 个会话、2018 条可见历史，截图会话的 25 条平台可见消息全部可从工作台接口查询。用户授权的 staging 手动门禁已部署新版会话列表前端；浏览器显示总数 179、加载更多后 60 条，并可阅读目标真实历史。此为历史读取和周期轮询证据，不覆盖 G2 对真实 `NEW_MESSAGE` Webhook 投递、重试及审计的现场条件；G3 真实消息写入开关仍为 `false`，工作台输入与发送按钮禁用，不能向买家发送真实消息。G2/G3/G8 与 production 结论不变。
 

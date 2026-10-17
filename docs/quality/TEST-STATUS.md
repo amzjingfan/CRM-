@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R37：已授权的手动窗口完成六摘要预取和 G5 validate，迁移容器因 backend 未收到仓库外已有的内部检索令牌而失败；没有签发第四份凭证或发起合成 SSE/DeepSeek。旧后端、TikTok Webhook 只读和工作台翻译按门禁恢复，三健康 200。修复仅在 G5 backend 注入令牌并于部署前要求与检索服务一致且长度至少 32；本地完整后端 `1973 passed, 27 skipped`，subject 后 staging 门禁 `145 passed`，Ruff 和 PowerShell AST 通过。修复后的现场部署及单会话尚未执行，G5/production 继续未通过。见 [R37 TR](../reports/tests/TR-MVP-006-20261017-R37.md)。
+
 2026-10-17 G5 R34：续期工具改为原 R05 批次连续编号文件、逐份验签与 50 用户/会话映射校验；红灯后修复，定向 `26 passed`，后端全量 `1962 passed, 27 skipped`，全量 Ruff、183 文件 mypy 及两份 PowerShell AST 通过。仅是本地源码门禁，[R34 TR](../reports/tests/TR-MVP-006-20261017-R34.md) 未签发新令牌、发布镜像或在 staging 复测；G5/production 继续未通过。
 
 2026-10-17 G5 R33：[staging 空闲采样](../reports/tests/TR-MVP-006-20261017-R33.md)在 Linux/Rootless 下读取 3 组 backend/worker/agent-worker 资源与 backend TCP 白名单指标，服务器与入库副本哈希一致。未施加 SSE 负载，不能作为 50 并发容量证据；第三份凭证的 50/50 枚令牌已过期。G5/production 继续未通过。

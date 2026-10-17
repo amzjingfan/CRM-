@@ -73,6 +73,8 @@ G5 压测窗口由同一工作流显式选择 `enable_g5_sse_load_test=true`，�
 
 ### G5 手动 staging 路径（不运行 GitHub Actions）
 
+G5 后端启用本地向量检索时，专用覆盖层只向 backend 注入仓库外现有的 `RETRIEVAL_MODEL_SERVICE_TOKEN`。`validate` 必须在切换服务前确认 backend 与 retrieval-model-service 的令牌相同且至少 32 字符；缺失或不一致立即停止，错误与证据均不得输出令牌值。普通 staging 模式不向 backend 注入该令牌。R37 曾因缺少此注入而在迁移检查阶段失败；恢复旧后端、TikTok 只读/Webhook 和工作台翻译的证据见 [R37 恢复](../../../../release/evidence/staging/crm-staging-g5-r37-restore-20261017.json)。
+
 `src/scripts/Invoke-StagingManualG5.ps1` 复用上述 Rootless 门禁，在 `crmdeploy` 的持久源码目录手动执行。新部署要求干净 Git clone 对应经 GitHub 验证的当前 `main` 完整 SHA；若候选 backend 的 OCI revision 较早，仅在 GitHub 核实它是当前 main 的祖先、`src/backend` 树和 `src/docker/Dockerfile.backend` blob 均完全相同时允许复用，否则失败关闭。默认恢复和上一版回滚仍要求候选 backend revision 与审核源码 SHA 完全相同。全部镜像均须使用指定 GHCR 仓库的不可变摘要。运行人须先用 GitHub 凭据建立私有仓库只读和 `read:packages` 访问；凭据可来自进程环境中的 `GH_TOKEN` 或已登录的 `gh`。脚本把短期 GHCR 登录限制在 `/run/user/1004` 下的私有目录，并在退出时注销。不要把 Token 放进命令参数、证据或仓库。发布新候选镜像另需 `write:packages` 和精确资源授权，部署只读凭据不具备该权限。
 
 真实 50 客户端窗口另用 `src/backend/scripts/sample_sse_staging_resources.py` 从 `crmdeploy` 主机账户只读采样：`DOCKER_HOST` 固定为 Rootless socket，传入实际运行的 backend 不可变摘要、1～300 秒采样时长和 1～10 秒间隔，结果独占写入已创建且属 `crmdeploy`、权限 `0700` 的 `/home/crmdeploy/.cache/crm-g5-manual/<本次批次>/resources.json`。在负载开始前启动，负载结束后向采样进程发送 `SIGTERM` 并等待其写完报告，然后立即执行恢复门禁。报告只保留三个固定容器的 CPU、内存、进程峰值，以及 backend:8000 的已建立连接、TCP 待接收连接队列和收发队列字节峰值；当前 `/chat/query` 是同步工作流，没有独立业务队列，报告明确标记 `application_queue=not_applicable_sync_workflow`。任何容器缺失、镜像不符、监听缺失、解析失败或零样本都失败关闭。采样器不发模型请求，也不记录凭证、连接地址、原始日志或响应正文；它的 `passed` 只证明采样完成，不代表 50 客户端容量门禁通过。
