@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "evidence_type": "manual_g5_isolated_fixture_reconciliation",
+  "environment": "staging",
+  "source_main_sha": "b90f31712cb0f9452fdb0bc0f572802e39f9f536",
+  "runtime_backend_revision": "70d8968a0d5245f5578f703ca734990d547ab564",
+  "runtime_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:04c4f64da19ccd0ce3f71aea3c6e2f60b1ca1d1d96db9e522e15f58d40bd1dcc",
+  "reconcile": {
+    "mode": "replace_content",
+    "updated_sessions": 50,
+    "synthetic_faq": 1,
+    "document_version": 2,
+    "knowledge_ready": false,
+    "provider_calls": 0,
+    "private_report_sha256": "962bc95ac4992db0cada3f89c583dd15234a4947a9e11c5e3a6ccaf218ee7913"
+  },
+  "after_reconcile_check": {
+    "matched_sessions": 50,
+    "fixture_state": "prepared",
+    "knowledge_ready": false,
+    "database_writes": 0,
+    "provider_calls": 0,
+    "private_report_sha256": "a3f29c2e5c9513a4d993e22beb5e5efc3782db0d8dc8f46a1bd837406b8aa73e"
+  },
+  "vectorize": {
+    "mode": "vectorize_one",
+    "matched_sessions": 50,
+    "synthetic_faq": 1,
+    "local_embedding_documents": 1,
+    "knowledge_ready": true,
+    "deepseek_calls": 0,
+    "private_report_sha256": "45df6b614e02bc12cb622707f38a08ec0f3c5a39d641fb9caab71edb6cd1222e"
+  },
+  "after_vectorize_check": {
+    "matched_sessions": 50,
+    "fixture_state": "prepared",
+    "knowledge_ready": true,
+    "database_writes": 0,
+    "provider_calls": 0,
+    "private_report_sha256": "20e5b292e2cd86e930abe6802d028cb89033828e1089bb0f5f1c49cc99191a31"
+  },
+  "github_actions_used": false,
+  "staging_service_switched": false,
+  "tiktok_messages_sent": 0,
+  "production_release": false
+}

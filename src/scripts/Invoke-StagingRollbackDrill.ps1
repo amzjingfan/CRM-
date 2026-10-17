@@ -570,6 +570,7 @@ foreach ($name in @($DisabledCapabilityVariables + @(
 }
 
 $completedSteps = @()
+$deploymentLock = $null
 try {
     # DOCKER_CONTEXT 的优先级高于 DOCKER_HOST，必须在所有 Docker 调用前清空。
     $env:DOCKER_HOST = $DockerHost
@@ -619,12 +620,22 @@ try {
     if (-not $Execute) {
         throw "A live rollback requires -Execute; use -ValidateOnly for a non-mutating plan check."
     }
-    Assert-LiveCandidateImages -Command $compose -ComposeArguments $composeArguments -ExpectedImages $expectedImages
     if (-not $PSCmdlet.ShouldProcess("staging", "disable real capabilities and deploy previous immutable images")) {
         Write-Evidence -Status "not_executed" -CompletedSteps @() -HealthChecks @()
         Write-Output "Staging rollback was not executed; production_release=false."
         return
     }
+
+    $lockRoot = if ($IsWindows) { [System.IO.Path]::GetTempPath() } else { '/run/user/1004' }
+    $lockPath = Join-Path $lockRoot 'crm-staging-deploy.lock'
+    try {
+        $deploymentLock = [System.IO.File]::Open(
+            $lockPath, [System.IO.FileMode]::OpenOrCreate,
+            [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None
+        )
+    }
+    catch [System.IO.IOException] { throw 'Another staging deployment holds the deployment lock.' }
+    Assert-LiveCandidateImages -Command $compose -ComposeArguments $composeArguments -ExpectedImages $expectedImages
 
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @("pull", "tiktok-egress"))
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
@@ -671,6 +682,7 @@ try {
     Write-Output "Staging rollback drill passed; production_release=false."
 }
 finally {
+    if ($null -ne $deploymentLock) { $deploymentLock.Dispose() }
     foreach ($name in $savedEnvironment.Keys) {
         [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], "Process")
     }

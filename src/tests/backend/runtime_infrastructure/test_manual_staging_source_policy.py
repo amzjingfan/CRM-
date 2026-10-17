@@ -51,6 +51,7 @@ def test_new_deployment_requires_current_main(mode: str) -> None:
     [
         "RestoreDefault",
         "RestoreReadAndTranslation",
+        "RestoreManualSend",
         "RollbackPrevious",
         "ContentCheck",
         "ContentPrepare",

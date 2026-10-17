@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious', 'ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5')]
+    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend', 'RollbackPrevious', 'ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5')]
     [string]$Mode,
     [Parameter(Mandatory = $true)][string]$SourceSha,
     [Parameter(Mandatory = $true)][string]$CandidateBackendImage,
@@ -16,6 +16,7 @@ param(
     [Parameter(Mandatory = $true)][string]$EvidenceDirectory,
     [string]$ConfirmContent,
     [string]$RuntimeBackendSourceSha,
+    [string]$PreWindowEvidenceDirectory,
     [string]$ArchivePath,
     [string]$ArchiveSha256
 )
@@ -44,6 +45,11 @@ function Assert-LocalImage([string]$Reference) {
 }
 
 if ($ConfirmTarget -cne 'staging') { throw 'ConfirmTarget must equal staging.' }
+if (($Mode -cin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend') -and
+    $PreWindowEvidenceDirectory -cnotmatch '^/home/crmdeploy/\.cache/crm-g5-manual/[a-z0-9-]+$') -or
+    ($Mode -cnotin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend') -and $PreWindowEvidenceDirectory)) {
+    throw 'A restore mode requires its exact private pre-window evidence directory.'
+}
 if (($Mode -ceq 'ContentPrepare' -and $ConfirmContent -cne 'prepare-50-isolated-g5-messages') -or
     ($Mode -ceq 'ReconcileFixture' -and $ConfirmContent -cne 'replace-50-isolated-g5-return-questions') -or
     ($Mode -ceq 'RenewCredentials' -and $ConfirmContent -cne 'renew-50-existing-g5-tokens') -or
@@ -177,9 +183,47 @@ try {
     if ($LASTEXITCODE -ne 0 -or $rootMode -cne '700:1004') {
         throw 'The existing evidence root must be private and owned by crmdeploy.'
     }
+    $restoreTranslation = $false
+    $restoredConversation = ''
+    $snapshotTool = Join-Path $PSScriptRoot 'Assert-StagingG5RestoreSnapshot.ps1'
+    $snapshotArguments = @{
+        CandidateBackendImage = $CandidateBackendImage
+        FrontendImage = $FrontendImage
+        RetrievalModelImage = $RetrievalModelImage
+        PreviousBackendImage = $PreviousBackendImage
+        PreviousFrontendImage = $PreviousFrontendImage
+        PreviousRetrievalModelImage = $PreviousRetrievalModelImage
+    }
+    if ($Mode -cin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')) {
+        if ($PreWindowEvidenceDirectory -ceq $EvidenceDirectory -or
+            -not (Test-Path -LiteralPath $PreWindowEvidenceDirectory -PathType Container) -or
+            ((Get-Item -LiteralPath $PreWindowEvidenceDirectory -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            (& stat -c '%a:%u' $PreWindowEvidenceDirectory).Trim() -cne '700:1004') {
+            throw 'The protected pre-window evidence directory is unavailable.'
+        }
+        $snapshotFile = Join-Path $PreWindowEvidenceDirectory 'restore-snapshot.json'
+        if (-not (Test-Path -LiteralPath $snapshotFile -PathType Leaf) -or
+            ((Get-Item -LiteralPath $snapshotFile -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            (& stat -c '%a:%u' $snapshotFile).Trim() -cne '600:1004') {
+            throw 'The protected pre-window snapshot is unavailable.'
+        }
+        $restoreValue = & $snapshotTool -Mode VerifyRestore -RestoreMode $Mode `
+            -SnapshotFile $snapshotFile @snapshotArguments
+        if (-not $?) { throw 'The requested restore differs from the pre-window snapshot.' }
+        if ($restoreValue -cnotin @('true', 'false')) { throw 'The pre-window translation state is invalid.' }
+        $restoreTranslation = $restoreValue -ceq 'true'
+        if ($Mode -ceq 'RestoreManualSend') {
+            $restoredConversation = [string](Get-Content -LiteralPath $snapshotFile -Raw | ConvertFrom-Json).allowed_conversation_id
+        }
+    }
     New-Item -ItemType Directory -Path $EvidenceDirectory | Out-Null
     & chmod 0700 $EvidenceDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Unable to protect the evidence directory.' }
+    if ($Mode -ceq 'DeployG5') {
+        $snapshotFile = Join-Path $EvidenceDirectory 'restore-snapshot.json'
+        & $snapshotTool -Mode Capture -SnapshotFile $snapshotFile @snapshotArguments | Out-Null
+        if (-not $?) { throw 'Unable to capture the pre-window runtime state.' }
+    }
 
     if ($Mode -cin @('ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5')) {
         & (Join-Path $PSScriptRoot 'Invoke-StagingManualG5Content.ps1') -Mode $Mode `
@@ -227,7 +271,7 @@ try {
                 -ImageRevisionSha ([string]$candidate.Config.Labels.'org.opencontainers.image.revision') -Token $token
         }
         else {
-            $targetImages = if ($Mode -ceq 'RollbackPrevious') {
+            $targetImages = if ($Mode -cin @('RollbackPrevious', 'RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')) {
                 @($CandidateBackendImage, $FrontendImage, $RetrievalModelImage,
                     $PreviousBackendImage, $PreviousFrontendImage, $PreviousRetrievalModelImage)
             } else {
@@ -236,10 +280,14 @@ try {
             foreach ($reference in $targetImages) {
                 $null = Assert-LocalImage $reference
             }
-            $candidate = Assert-LocalImage $CandidateBackendImage
+            $reviewedBackend = if ($Mode -cin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')) {
+                Assert-LocalImage $PreviousBackendImage
+            } else {
+                Assert-LocalImage $CandidateBackendImage
+            }
             & (Join-Path $PSScriptRoot 'Assert-StagingManualBackendImageSource.ps1') -Mode $Mode `
                 -SourceSha $SourceSha `
-                -ImageRevisionSha ([string]$candidate.Config.Labels.'org.opencontainers.image.revision') -Token $token
+                -ImageRevisionSha ([string]$reviewedBackend.Config.Labels.'org.opencontainers.image.revision') -Token $token
         }
 
         if ($Mode -ceq 'RollbackPrevious') {
@@ -267,9 +315,9 @@ try {
         $common = @{
             Environment = 'staging'
             EnvFile = $environmentFile
-            BackendImage = $CandidateBackendImage
-            FrontendImage = $FrontendImage
-            RetrievalModelImage = $RetrievalModelImage
+            BackendImage = if ($Mode -cin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')) { $PreviousBackendImage } else { $CandidateBackendImage }
+            FrontendImage = if ($Mode -cin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')) { $PreviousFrontendImage } else { $FrontendImage }
+            RetrievalModelImage = if ($Mode -cin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')) { $PreviousRetrievalModelImage } else { $RetrievalModelImage }
             BaseUrl = $baseUrl
             ConfirmTarget = 'staging'
             DockerHost = $dockerHost
@@ -279,8 +327,27 @@ try {
             $common.EnableTikTokWebhookRead = $true
             $common.EnableWorkspaceTranslation = $true
         }
+        if ($Mode -ceq 'RestoreManualSend') {
+            $common.EnableTikTokWebhookRead = $true
+            $common.EnableTikTokManualSend = $true
+            $common.AllowedTikTokConversationId = $restoredConversation
+            if ($restoreTranslation) { $common.EnableWorkspaceTranslation = $true }
+        }
+        if ($Mode -ceq 'DeployG5') {
+            & $snapshotTool -Mode VerifyUnchanged -SnapshotFile $snapshotFile @snapshotArguments | Out-Null
+            if (-not $?) { throw 'The staging runtime changed during G5 prefetch.' }
+        }
         & $gate @common -EvidenceFile (Join-Path $EvidenceDirectory 'validate.json') -ValidateOnly
-        & $gate @common -EvidenceFile (Join-Path $EvidenceDirectory 'deploy.json') -Deploy -Confirm:$false
+        $deployCommon = $common.Clone()
+        if ($Mode -cin @('RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')) {
+            $deployCommon.PreWindowSnapshotFile = $snapshotFile
+        }
+        if ($Mode -ceq 'DeployG5') {
+            & $snapshotTool -Mode VerifyUnchanged -SnapshotFile $snapshotFile @snapshotArguments | Out-Null
+            if (-not $?) { throw 'The staging runtime changed before G5 deploy.' }
+            $deployCommon.PreWindowSnapshotFile = $snapshotFile
+        }
+        & $gate @deployCommon -EvidenceFile (Join-Path $EvidenceDirectory 'deploy.json') -Deploy -Confirm:$false
         Write-Output "Manual staging operation passed; mode=$Mode; source_sha=$SourceSha; evidence=$EvidenceDirectory; production_release=false."
     }
     finally {

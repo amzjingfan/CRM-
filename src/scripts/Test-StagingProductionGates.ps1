@@ -36,7 +36,8 @@ param(
     [switch]$EnableTikTokManualSend,
     [string]$AllowedTikTokConversationId,
     [switch]$EnableWorkspaceTranslation,
-    [switch]$EnableG5SSELoadTest
+    [switch]$EnableG5SSELoadTest,
+    [string]$PreWindowSnapshotFile
 )
 
 Set-StrictMode -Version Latest
@@ -811,6 +812,7 @@ if ($EnableWorkspaceTranslation -and -not (Test-Path -LiteralPath $translationOv
 }
 
 $savedEnvironment = @{}
+$deploymentLock = $null
 foreach ($name in @($DisabledCapabilityVariables + @(
     "BACKEND_IMAGE",
     "FRONTEND_IMAGE",
@@ -897,6 +899,56 @@ try {
         Write-Output "Staging deployment was not executed; production_release=false."
         return
     }
+    $lockRoot = if ($IsWindows) { [System.IO.Path]::GetTempPath() } else { '/run/user/1004' }
+    $lockPath = Join-Path $lockRoot 'crm-staging-deploy.lock'
+    try {
+        $deploymentLock = [System.IO.File]::Open(
+            $lockPath, [System.IO.FileMode]::OpenOrCreate,
+            [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None
+        )
+    }
+    catch [System.IO.IOException] { throw 'Another staging deployment holds the deployment lock.' }
+    if ($PreWindowSnapshotFile) {
+        try { $snapshot = Get-Content -LiteralPath $PreWindowSnapshotFile -Raw | ConvertFrom-Json -ErrorAction Stop }
+        catch { throw 'The G5 pre-window snapshot cannot be read under the deployment lock.' }
+        $snapshotArgs = @{
+            SnapshotFile = $PreWindowSnapshotFile
+            CandidateBackendImage = [string]$snapshot.images.candidate_backend
+            FrontendImage = [string]$snapshot.images.candidate_frontend
+            RetrievalModelImage = [string]$snapshot.images.candidate_retrieval
+            PreviousBackendImage = [string]$snapshot.images.previous_backend
+            PreviousFrontendImage = [string]$snapshot.images.previous_frontend
+            PreviousRetrievalModelImage = [string]$snapshot.images.previous_retrieval
+        }
+        if ($EnableG5SSELoadTest) {
+            if ($BackendImage -cne $snapshotArgs.CandidateBackendImage -or
+                $FrontendImage -cne $snapshotArgs.FrontendImage -or
+                $RetrievalModelImage -cne $snapshotArgs.RetrievalModelImage) {
+                throw 'G5 deploy images differ from the pre-window snapshot.'
+            }
+            & (Join-Path $PSScriptRoot 'Assert-StagingG5RestoreSnapshot.ps1') `
+                -Mode VerifyUnchanged @snapshotArgs | Out-Null
+        }
+        else {
+            if ($BackendImage -cne $snapshotArgs.PreviousBackendImage -or
+                $FrontendImage -cne $snapshotArgs.PreviousFrontendImage -or
+                $RetrievalModelImage -cne $snapshotArgs.PreviousRetrievalModelImage) {
+                throw 'Restore images differ from the pre-window snapshot.'
+            }
+            $restoreMode = if ($EnableTikTokManualSend) { 'RestoreManualSend' }
+                elseif ($EnableTikTokWebhookRead -and $EnableWorkspaceTranslation) { 'RestoreReadAndTranslation' }
+                else { 'RestoreDefault' }
+            $translation = & (Join-Path $PSScriptRoot 'Assert-StagingG5RestoreSnapshot.ps1') `
+                -Mode VerifyRestore -RestoreMode $restoreMode @snapshotArgs
+            if ($translation -cne ([string][bool]$EnableWorkspaceTranslation).ToLowerInvariant() -or
+                $AllowedTikTokConversationId -cne [string]$snapshot.allowed_conversation_id) {
+                throw 'Restore capabilities differ from the pre-window snapshot.'
+            }
+            & (Join-Path $PSScriptRoot 'Assert-StagingG5RestoreSnapshot.ps1') `
+                -Mode VerifyRecoverableCurrent @snapshotArgs | Out-Null
+        }
+        if (-not $?) { throw 'The staging runtime changed before the locked G5 operation.' }
+    }
     # 同一 backend 摘要被多个服务共享，只拉取一次；逐镜像限次重试避免慢链路并发传输放大临时断连。
     Invoke-ComposePullsWithRetry -Command $compose -Arguments $composeArguments -Services @(
         "tiktok-egress", "frontend", "retrieval-model-service"
@@ -940,6 +992,7 @@ try {
     Write-Output "Staging production gate deployment and health verification passed; production_release=false."
 }
 finally {
+    if ($null -ne $deploymentLock) { $deploymentLock.Dispose() }
     foreach ($name in $savedEnvironment.Keys) {
         [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], "Process")
     }

@@ -23,6 +23,7 @@ def invoke(
     archive_sha: str | None = None,
     confirm_content: str | None = None,
     runtime_source_sha: str | None = None,
+    pre_window_evidence_directory: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     assert POWERSHELL is not None
     arguments = [
@@ -65,6 +66,8 @@ def invoke(
         arguments.extend(["-ConfirmContent", confirm_content])
     if runtime_source_sha is not None:
         arguments.extend(["-RuntimeBackendSourceSha", runtime_source_sha])
+    if pre_window_evidence_directory is not None:
+        arguments.extend(["-PreWindowEvidenceDirectory", pre_window_evidence_directory])
     return subprocess.run(
         arguments,
         capture_output=True,
@@ -124,7 +127,10 @@ def test_manual_entry_keeps_rollback_and_default_restore_explicit() -> None:
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
 def test_accepts_restore_of_existing_read_and_translation_mode() -> None:
-    result = invoke(mode="RestoreReadAndTranslation")
+    result = invoke(
+        mode="RestoreReadAndTranslation",
+        pre_window_evidence_directory="/home/crmdeploy/.cache/crm-g5-manual/prior-g5-window",
+    )
     assert result.returncode != 0
     assert "staging linux host" in (result.stdout + result.stderr).lower()
 
@@ -134,6 +140,85 @@ def test_read_and_translation_restore_uses_both_existing_gate_switches() -> None
     assert "if ($Mode -ceq 'RestoreReadAndTranslation')" in source
     assert "$common.EnableTikTokWebhookRead = $true" in source
     assert "$common.EnableWorkspaceTranslation = $true" in source
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_manual_send_restore_takes_conversation_only_from_private_snapshot() -> None:
+    valid = invoke(
+        mode="RestoreManualSend", pre_window_evidence_directory="/home/crmdeploy/.cache/crm-g5-manual/prior-g5-window"
+    )
+    assert valid.returncode != 0
+    assert "staging linux host" in (valid.stdout + valid.stderr).lower()
+
+    source = SCRIPT.read_text("utf-8")
+    assert "[string]$AllowedTikTokConversationId," not in source
+    assert "Get-Content -LiteralPath $snapshotFile -Raw | ConvertFrom-Json" in source
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+@pytest.mark.parametrize("restore_mode", ["RestoreDefault", "RestoreReadAndTranslation", "RestoreManualSend"])
+def test_each_restore_requires_a_private_pre_window_snapshot_path(restore_mode: str) -> None:
+    missing = invoke(mode=restore_mode)
+    assert "pre-window evidence" in (missing.stdout + missing.stderr).lower()
+
+    invalid = invoke(
+        mode=restore_mode,
+        pre_window_evidence_directory="/tmp/restore.json",
+    )
+    assert "pre-window evidence" in (invalid.stdout + invalid.stderr).lower()
+
+    unrelated = invoke(
+        mode="DeployG5",
+        pre_window_evidence_directory="/home/crmdeploy/.cache/crm-g5-manual/prior-g5-window",
+    )
+    assert "pre-window evidence" in (unrelated.stdout + unrelated.stderr).lower()
+
+
+def test_manual_send_restore_targets_previous_digests_and_scoped_gate() -> None:
+    source = SCRIPT.read_text("utf-8")
+    assert "'RestoreManualSend'" in source
+    assert "Mode -ceq 'RestoreManualSend'" in source
+    assert (
+        "Mode -cin @('RollbackPrevious', 'RestoreDefault', 'RestoreReadAndTranslation', 'RestoreManualSend')" in source
+    )
+    assert "{ $PreviousBackendImage } else { $CandidateBackendImage }" in source
+    assert "{ $PreviousFrontendImage } else { $FrontendImage }" in source
+    assert "{ $PreviousRetrievalModelImage } else { $RetrievalModelImage }" in source
+    assert "$common.EnableTikTokWebhookRead = $true" in source
+    assert "$common.EnableTikTokManualSend = $true" in source
+    assert "$common.AllowedTikTokConversationId = $restoredConversation" in source
+    assert "$common.EnableWorkspaceTranslation = $true" in source
+    assert "Assert-StagingG5RestoreSnapshot.ps1" in source
+    assert source.count("-Mode VerifyUnchanged") == 2
+    assert "$deployCommon.PreWindowSnapshotFile = $snapshotFile" in source
+
+
+def test_g5_deploy_rechecks_pre_window_state_inside_shared_deployment_lock() -> None:
+    source = (SOURCE_ROOT / "scripts" / "Test-StagingProductionGates.ps1").read_text("utf-8")
+    lock = source.index("'crm-staging-deploy.lock'")
+    recheck = source.index("-Mode VerifyUnchanged @snapshotArgs")
+    pull = source.index("Invoke-ComposePullsWithRetry -Command $compose")
+    assert lock < recheck < pull
+
+
+def test_g5_restore_rechecks_window_state_inside_shared_deployment_lock() -> None:
+    source = (SOURCE_ROOT / "scripts" / "Test-StagingProductionGates.ps1").read_text("utf-8")
+    lock = source.index("'crm-staging-deploy.lock'")
+    recheck = source.index("-Mode VerifyRecoverableCurrent @snapshotArgs")
+    pull = source.index("Invoke-ComposePullsWithRetry -Command $compose", lock)
+    assert lock < recheck < pull
+
+
+def test_emergency_rollback_uses_shared_deployment_lock() -> None:
+    source = (SOURCE_ROOT / "scripts" / "Invoke-StagingRollbackDrill.ps1").read_text("utf-8")
+    lock = source.index("'crm-staging-deploy.lock'")
+    recheck = source.index("Assert-LiveCandidateImages -Command $compose -ComposeArguments $composeArguments")
+    mutate = source.index(
+        'Invoke-Compose -Command $compose -Arguments ($composeArguments + @("pull", "tiktok-egress"))'
+    )
+    assert lock < recheck < mutate
+    assert "[System.IO.FileShare]::None" in source
+    assert "$deploymentLock.Dispose()" in source
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")

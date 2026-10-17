@@ -8,6 +8,8 @@
 
 2026-10-17 G3 R04 受控双向闭环：PR #301 的 subject `2a62debe16a58b1263c62eb794982ab01a4856cb` 经 main `70d8968a` 手动发布 staging，门禁、三健康与单会话运行隔离通过。用户精确授权后，项目工作台只向受控买家发送一次普通文本；TikTok 官方只读历史返回同一平台消息 ID，工具与审计成功且非 Mock，手机买家回复经已验签的 Webhook 自动出现在 CRM。其他 179 个同店铺会话仍不可真实发送，无待对账出站。[R04 IR](../records/implementation/IR-MVP-004-20261017-R04.md)、[TR](../reports/tests/TR-MVP-004-20261017-R04.md)、[RR](../reports/reviews/RR-MVP-004-20261017-R04.md)与[低敏证据](../../release/evidence/staging/crm-staging-g3-bidirectional-20261017.json)由 PR #307 合入 main `32aee09d28d03a4fe8c8bfa3b1e627ab6a7c6ffd`；三个索引从主分支 129/133/127 条源记录复核，无缺漏或重复，恢复 `CURRENT`。G3 staging 受控会话验收通过；G2 重试/乱序/持续恢复、G8 与 production 仍未通过。Seller Center 本次出站画面未独立观察。下一步：①继续 G2 异常投递和恢复验收；②若共享 staging 被其他任务部署，重新核对单会话运行模式。
 
+2026-10-17 G5 R43/R44 当前恢复点：用户分别批准的一次 `ReconcileFixture` 和一次本地 BGE `VectorizeG5` 已完成，原隔离 50 条合成问题与唯一 FAQ 为退货流程版本 2，最终只读 50/50、`knowledge_ready=true`、DeepSeek 0 调用；见 [R43 TR](../reports/tests/TR-MVP-006-20261017-R43.md)和[低敏证据](../../release/evidence/staging/crm-staging-g5-r43-fixture-20261017.json)。经确认的 R44 恢复源码 subject `43c89e08bcaa5ae48658b0e0ad547fc9b955570c` 已用 215 项本地门禁、Ruff 和 PowerShell AST 验证，并经独立只读复审；快照绑定原六摘要、G3 单会话及翻译状态，共享锁内拒绝窗口外运行态。见 [IR](../records/implementation/IR-MVP-006-20261017-R44.md)、[TR](../reports/tests/TR-MVP-006-20261017-R44.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R44.md)。本轮没有 staging 服务切换或 DeepSeek 请求；G5 `DOING`、production No-Go。下一步：①合并 R43/R44 证据与源码；②精确授权一次 staging 安全单会话复测；③通过后再安排 50 并发及原 G3 模式恢复实测。
+
 2026-10-17 G5 R42 手动候选镜像：用户单独授权后，从 main `335e959b03d4c87ffec789dc0144121610a9b60c` 用现有 GitHub 凭据发布一份私有 `crm-backend`；GHCR 不可变摘要 `sha256:14f79918…66c63` 经远端 manifest 与按摘要拉回核对，平台 `linux/amd64`、OCI revision 精确匹配，12 层压缩合计 110,929,839 字节，见 [低敏证据](../../release/evidence/staging/crm-staging-g5-r42-manual-backend-image-20261017.json)。未部署 staging，未写隔离店铺数据、运行 BGE/DeepSeek 或 50 并发。两把已知 SSH 密钥均被 `crmdeploy` 拒绝；客户端确认公钥已提交给主机，须在主机端恢复授权或取得可用账号。G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R41 合并及只读预检：受审门禁修复 [PR #304](https://github.com/CP11-gh/CRM/pull/304) 已 squash 合入 main `a0788e770f46edb7a678edf5eb0633f29479c9e5`。对 R40 镜像的 GitHub 祖先及构建输入检查证实祖先关系成立、Dockerfile 一致，但当前 main 的 `src/backend` 树已变化，门禁非零失败关闭；[低敏证据](../../release/evidence/staging/crm-staging-g5-r41-ancestor-preflight-20261017.json)。staging SSH 认证失败，运行摘要未核对；未写数据或调用模型。下一步须单独精确批准从新的 main 发布后端镜像，并先恢复 staging 主机读取入口；数据替换与本地向量化仍各自待授权。G5 `DOING`、production No-Go。
@@ -19,9 +21,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: spike/g5-backend-image-20261017
-Governance base SHA: 335e959b03d4c87ffec789dc0144121610a9b60c
-CANDIDATE_SUBJECT_SHA: 335e959b03d4c87ffec789dc0144121610a9b60c
+Working branch at this snapshot: fix/g5-restore-manual-send-20261017
+Governance base SHA: b90f31712cb0f9452fdb0bc0f572802e39f9f536
+CANDIDATE_SUBJECT_SHA: 43c89e08bcaa5ae48658b0e0ad547fc9b955570c
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: KNOWN_TEMP — R40 与 R42 镜像发布的隔离 Docker CLI 配置目录保留在已忽略测试临时区；均已退出 GHCR 且认证项为 0，R40 目录删除曾被自动审批拒绝
 ```

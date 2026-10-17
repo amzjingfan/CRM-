@@ -68,6 +68,20 @@ def test_reconcile_accepts_ancestor_image_with_identical_backend_build_inputs() 
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+@pytest.mark.parametrize("mode", ["RestoreDefault", "RestoreReadAndTranslation", "RestoreManualSend"])
+def test_restore_accepts_only_identical_ancestor_backend(mode: str) -> None:
+    assert check_revision(mode=mode).returncode == 0
+    for changes in (
+        {"compare_status": "diverged"},
+        {"backend_changed": True},
+        {"dockerfile_changed": True},
+        {"dockerfile_missing": True},
+        {"truncated": True},
+    ):
+        assert check_revision(mode=mode, **changes).returncode != 0  # type: ignore[arg-type]
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
 @pytest.mark.parametrize(
     "changes",
     [
@@ -85,6 +99,7 @@ def test_reconcile_rejects_unverified_or_changed_backend_image(changes: dict[str
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
 def test_matching_recovery_image_needs_no_github_comparison() -> None:
     assert check_revision(mode="RestoreReadAndTranslation", image_revision=CURRENT_MAIN).returncode == 0
+    assert check_revision(mode="RestoreManualSend", image_revision=CURRENT_MAIN).returncode == 0
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
@@ -96,7 +111,6 @@ def test_matching_recovery_image_needs_no_github_comparison() -> None:
         {"dockerfile_changed": True},
         {"dockerfile_missing": True},
         {"truncated": True},
-        {"mode": "RestoreReadAndTranslation"},
     ],
 )
 def test_revision_drift_fails_closed_when_not_an_identical_build(changes: dict[str, object]) -> None:
