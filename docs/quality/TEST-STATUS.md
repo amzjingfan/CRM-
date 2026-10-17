@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R62 最新现场：[R62 TR](../reports/tests/TR-MVP-006-20261018-R62.md)记录 R61 后端手动临时部署、唯一 FAQ 就绪、第九代 50 枚隔离短期令牌续期及 50/50 身份会话预检通过。唯一合成 SSE HTTP 200 并正常结束，但没有安全 `delta`；Agent `transfer_human`、最终置信度 0，故 `performance_gate_passed=false`，50 并发未启动。旧后端和 G3 限定会话已恢复，三健康及固定出口通过。下一步先用固定低敏原因定位转人工，G5 与 production No-Go。
+
 2026-10-18 G5 R61 源码候选：[R61 TR](../reports/tests/TR-MVP-006-20261018-R61.md)记录五条业务声明不变量固定分类及 FAQ 政策 Prompt `v1.6.2` 的先红后绿测试。定向 119 passed、完整后端 2064 passed/27 skipped，Ruff lint/format 与 mypy 通过；尚未发布镜像、部署或调用 DeepSeek。[R60 现场](../reports/tests/TR-MVP-006-20261018-R60.md)仍是最新真实结果：无安全 `delta`、9.613 秒、50 并发未运行，旧 G3 模式已恢复。G5 与 production No-Go。
 
 2026-10-18 G5 R60 手动现场：[R60 TR](../reports/tests/TR-MVP-006-20261018-R60.md)证实新 FAQ JSON Schema 镜像发布、六摘要预取与临时部署、`knowledge_ready` 和 50/50 身份预检通过。唯一合成 SSE HTTP 200，但 `faq_draft / invalid_schema / business_claims:value_error`，无安全 `delta`，总耗时 9.613 秒；50 并发未运行。原后端与 G3 限定会话模式已恢复，三健康和固定出口通过。现有低敏类别无法定位具体声明不变量；G5 与 production No-Go。

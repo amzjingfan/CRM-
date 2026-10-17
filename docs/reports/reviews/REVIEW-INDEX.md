@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R62 | MVP-006 | R62 | APPROVE | `c6915ba456c200ca2e3a84f431982220e680714f` | image-provenance / isolated-credentials / conditional-load / low-sensitivity-diagnosis / manual-restore | 2026-10-18T03:15:00+08:00 | [`RR-MVP-006-20261018-R62.md`](RR-MVP-006-20261018-R62.md) |
 | RR-MVP-006-20261018-R61 | MVP-006 | R61 | APPROVE | `b9196051522d4b12f1e1c66bdadfbd0d10747d13` | fixed-diagnostics / provider-redaction / repository-allowlist / faq-policy-claims / fail-closed | 2026-10-18T02:57:00+08:00 | [`RR-MVP-006-20261018-R61.md`](RR-MVP-006-20261018-R61.md) |
 | RR-MVP-006-20261018-R60 | MVP-006 | R60 | APPROVE | `146e48b69183fe44bb5fe8a87991045195e98504` | image-provenance / isolated-credentials / semantic-schema-failure / conditional-load / manual-restore | 2026-10-18T02:44:00+08:00 | [`RR-MVP-006-20261018-R60.md`](RR-MVP-006-20261018-R60.md) |
 | RR-REPO-001-20260916-R01 | REPO-001 | R01 | APPROVE | `a8c15b516052dc8733ec3764d4d0e6d606ddc11e` | correctness / build-context / compose / secrets / worktree-paths / recovery | 2026-09-16T13:00:17+08:00 | [`RR-REPO-001-20260916-R01.md`](RR-REPO-001-20260916-R01.md) |
