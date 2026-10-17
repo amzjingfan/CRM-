@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-18 G5 R57 源码候选：[R57 TR](../reports/tests/TR-MVP-006-20261018-R57.md)记录 FAQ 安全复核五个结构化字段及低敏诊断路径的确定性修复。新增测试先红后绿，相关 98 passed、全量后端 2051 passed/27 skipped，Ruff lint/format 与 mypy 通过。本轮尚未发布镜像、部署 staging、调用 DeepSeek 或执行 50 并发；R56 仍是最新现场失败，G5 与 production No-Go。
+2026-10-18 G5 R57 源码已合并：[R57 TR](../reports/tests/TR-MVP-006-20261018-R57.md)记录 FAQ 安全复核五个结构化字段及低敏诊断路径的确定性修复。新增测试先红后绿，相关 98 passed、全量后端 2051 passed/27 skipped，Ruff lint/format 与 mypy 通过。本轮尚未发布镜像、部署 staging、调用 DeepSeek 或执行 50 并发；R56 仍是最新现场失败，G5 与 production No-Go。
 
 2026-10-18 G5 R56 最新现场：[R56 TR](../reports/tests/TR-MVP-006-20261018-R56.md)记录六摘要预取、临时 G5 部署、FAQ v3 可检索、50 枚隔离令牌续期及 50/50 身份会话预检通过。唯一合成 SSE 为 HTTP 200，却在独立 `safety_review` 节点出现 `invalid_schema / unknown:missing`，公开 `50003`、无安全 `delta`、总耗时 6806.5 ms；50 并发没有启动。原后端与 G3 限定会话模式已恢复，三健康和固定出口通过。G5 与 production No-Go。
 
