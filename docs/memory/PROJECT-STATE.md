@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G5 R41 合并及只读预检：受审门禁修复 [PR #304](https://github.com/CP11-gh/CRM/pull/304) 已 squash 合入 main `a0788e770f46edb7a678edf5eb0633f29479c9e5`。对 R40 镜像的 GitHub 祖先及构建输入检查证实祖先关系成立、Dockerfile 一致，但当前 main 的 `src/backend` 树已变化，门禁非零失败关闭；[低敏证据](../../release/evidence/staging/crm-staging-g5-r41-ancestor-preflight-20261017.json)。staging SSH 认证失败，运行摘要未核对；未写数据或调用模型。下一步须单独精确批准从新的 main 发布后端镜像，并先恢复 staging 主机读取入口；数据替换与本地向量化仍各自待授权。G5 `DOING`、production No-Go。
+
 2026-10-17 G5 R41 候选：获批的手动门禁修复保留当前 main 源码要求，只有运行镜像提交是祖先且后端树和 Dockerfile 完全相同才允许 `ReconcileFixture` 复用旧镜像；不可变运行摘要与 OCI revision 仍精确核对。subject `14148597739dd53bb5a5c81a3773c7f73aad47fb` 先红后绿相关 49 项，最新 main 上完整后端 `2006 passed, 27 skipped`，Ruff/mypy/PowerShell AST 通过，独立只读审查无本次差异阻断。当前 main `70d8968a` 的后端树已变化，R40 镜像预检预期失败关闭；合并与获准只读预检尚待执行。没有写隔离店铺数据、运行 BGE/DeepSeek 或 50 并发；G5 `DOING`、production No-Go。
 
 ```text
@@ -13,8 +15,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/g5-reconcile-evidence-ancestor-20261017
-Governance base SHA: 70d8968a0d5245f5578f703ca734990d547ab564
+Working branch at this snapshot: docs/g5-r42-preflight-20261017
+Governance base SHA: a0788e770f46edb7a678edf5eb0633f29479c9e5
 CANDIDATE_SUBJECT_SHA: 14148597739dd53bb5a5c81a3773c7f73aad47fb
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: KNOWN_TEMP — 本次镜像发布的隔离 Docker CLI 配置目录仍在已忽略测试临时区；已退出 GHCR 且认证项为 0，自动审批拒绝了删除命令

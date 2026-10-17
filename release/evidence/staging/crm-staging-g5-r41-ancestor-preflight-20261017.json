@@ -1,0 +1,27 @@
+{
+  "task_id": "MVP-006",
+  "gate": "G5",
+  "mode": "ReconcileFixture",
+  "scope": "read_only_github_source_preflight",
+  "checked_at": "2026-10-17T15:42:16+08:00",
+  "current_main_sha": "a0788e770f46edb7a678edf5eb0633f29479c9e5",
+  "candidate_image": "ghcr.io/cp11-gh/crm-backend@sha256:8a418e6c1e192a29bd7a44d307cd48d5a3924493fc66e21e89282b1784796221",
+  "image_revision_sha": "7d4a72d7de5c760af80e6618630505a556063ef7",
+  "github_compare": {
+    "status": "ahead",
+    "behind_by": 0,
+    "ahead_by": 3
+  },
+  "github_git_trees_complete": true,
+  "backend_tree_old": "8b1c280eb39d0da58034ec2e45cc000d1522fe4f",
+  "backend_tree_main": "51f3e4bc1cf1bd4e66f2a95ef45475b5d0c7607d",
+  "backend_tree_equal": false,
+  "dockerfile_blob_equal": true,
+  "gate_result": "blocked_backend_inputs_changed",
+  "staging_ssh_result": "authentication_denied",
+  "runtime_image_checked": false,
+  "staging_writes": 0,
+  "bge_calls": 0,
+  "deepseek_calls": 0,
+  "github_actions_used": false
+}

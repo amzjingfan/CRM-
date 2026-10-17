@@ -65,6 +65,8 @@ DOING/VERIFYING → BLOCKED
 
 `MVP-006` R41 受审门禁候选：用户仅授权修复 G5 手动夹具门禁及合并后只读预检。subject `14148597739dd53bb5a5c81a3773c7f73aad47fb` 在当前 main 源码、镜像祖先及完整后端构建输入一致时允许 `ReconcileFixture` 复用已发布镜像；实际运行摘要与 OCI revision 继续精确核对。最新 main 已更改后端树，R40 旧镜像必须被门禁拒绝。合并及现场只读结果尚待核对；原 50 条问题/FAQ 写入、本地 BGE、付费单会话和 50 并发均未授权执行，`MVP-006` 继续 `DOING`。
 
+`MVP-006` R41 合并与只读预检：[PR #304](https://github.com/CP11-gh/CRM/pull/304) 已合入 main `a0788e77`；对 R40 镜像的 GitHub 比较确认提交为祖先，但后端 Git 树变化，门禁在任何写入前拒绝。现有 SSH 密钥被 staging 拒绝，运行镜像摘要尚未只读核对；[低敏证据](../../release/evidence/staging/crm-staging-g5-r41-ancestor-preflight-20261017.json)。下一步需单独精确批准从新 main 发布后端镜像，并恢复主机读取入口；50 条问题/FAQ 写入、BGE、DeepSeek 与 50 并发均未执行，`MVP-006` 仍为 `DOING`。
+
 ## P1：v0.1 之后
 
 这些主题明确不属于当前 v0.1 放行范围。开始前必须建立独立需求、验收、安全边界和门禁，不能复用 v0.1 的限定结论。
