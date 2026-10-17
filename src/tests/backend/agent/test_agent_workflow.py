@@ -155,6 +155,7 @@ class MemoryWorkflowRecorder:
         self.failed: tuple[AgentRunStatus, AgentAction, str] | None = None
         self.failure_stage: LLMFailureStage | None = None
         self.output_failure_kind: str | None = None
+        self.output_schema_issues: tuple[tuple[str, str], ...] = ()
 
     async def start(self, values: AgentRunStart) -> uuid.UUID:
         self.started = values
@@ -176,11 +177,13 @@ class MemoryWorkflowRecorder:
         *,
         failure_stage: LLMFailureStage | None = None,
         output_failure_kind: str | None = None,
+        output_schema_issues: tuple[tuple[str, str], ...] = (),
     ) -> None:
         assert run_id == self.run_id
         self.failed = (status, action, error_code)
         self.failure_stage = failure_stage
         self.output_failure_kind = output_failure_kind
+        self.output_schema_issues = output_schema_issues
 
 
 class ScriptedToolService:
@@ -1258,6 +1261,7 @@ async def test_invalid_llm_output_records_stage_and_fixed_kind(
         "sensitive model output must not be saved",
         retriable=False,
         output_failure_kind="invalid_schema",
+        output_schema_issues=(("content", "missing"),),
     )
     draft = FaqAnswerModelOutput(
         answer="签收后七天内可申请退货。",
@@ -1284,6 +1288,7 @@ async def test_invalid_llm_output_records_stage_and_fixed_kind(
     assert recorder.failed == (AgentRunStatus.FAILED, AgentAction.FAILED, "LLM_OUTPUT_INVALID")
     assert recorder.failure_stage == stage
     assert recorder.output_failure_kind == "invalid_schema"
+    assert recorder.output_schema_issues == (("content", "missing"),)
     assert recorder.completed is None
 
 

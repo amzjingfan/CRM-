@@ -3,11 +3,17 @@
 import uuid
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Protocol
+from typing import Protocol, get_args
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.errors import LLMFailureStage, LLMOutputFailureKind
+from app.agent.errors import (
+    LLMFailureStage,
+    LLMOutputFailureKind,
+    LLMOutputSchemaErrorType,
+    LLMOutputSchemaIssue,
+    LLMOutputSchemaPath,
+)
 from app.agent.models import AgentRun
 from app.agent.reply_policy import CustomerLanguage, SupportedLanguage
 from app.agent.schemas import (
@@ -57,6 +63,7 @@ class AgentRunRecorder(Protocol):
         *,
         failure_stage: LLMFailureStage | None = None,
         output_failure_kind: LLMOutputFailureKind | None = None,
+        output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = (),
     ) -> None:
         """在独立事务中保存失败或超时终态。"""
         ...
@@ -136,6 +143,7 @@ class AgentWorkflowRunRecorder(Protocol):
         *,
         failure_stage: LLMFailureStage | None = None,
         output_failure_kind: LLMOutputFailureKind | None = None,
+        output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = (),
     ) -> None:
         """保存失败或超时终态。"""
         ...
@@ -163,6 +171,7 @@ class NullAgentRunRecorder:
         *,
         failure_stage: LLMFailureStage | None = None,
         output_failure_kind: LLMOutputFailureKind | None = None,
+        output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = (),
     ) -> None:
         """评测不持久化失败运行。"""
 
@@ -253,6 +262,7 @@ class SqlAlchemyAgentRunRecorder:
         *,
         failure_stage: LLMFailureStage | None = None,
         output_failure_kind: LLMOutputFailureKind | None = None,
+        output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = (),
     ) -> None:
         """保存模型失败终态，供重试任务和运维按稳定错误码定位。"""
         run = await self._require_run(run_id)
@@ -274,6 +284,27 @@ class SqlAlchemyAgentRunRecorder:
                 "invalid_schema",
             }:
                 summary += f";output_failure_kind={output_failure_kind}"
+                if output_failure_kind == "invalid_schema":
+                    allowed_paths = set(get_args(LLMOutputSchemaPath))
+                    allowed_types = set(get_args(LLMOutputSchemaErrorType))
+                    safe_issues: list[str] = []
+                    for issue in output_schema_issues:
+                        if not isinstance(issue, tuple) or len(issue) != 2:
+                            continue
+                        path, error_type = issue
+                        if (
+                            isinstance(path, str)
+                            and isinstance(error_type, str)
+                            and path in allowed_paths
+                            and error_type in allowed_types
+                        ):
+                            item = f"{path}:{error_type}"
+                            if item not in safe_issues:
+                                safe_issues.append(item)
+                        if len(safe_issues) == 8:
+                            break
+                    if safe_issues:
+                        summary += f";output_schema_issues={','.join(safe_issues)}"
         run.output_summary = summary
         run.latency_ms = latency_ms
         await self.session.commit()

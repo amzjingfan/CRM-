@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.business_claims import BusinessClaimInventory
 from app.agent.embeddings import EmbeddingErrorCode, EmbeddingProviderError
-from app.agent.errors import LLMErrorCode, LLMFailureStage, LLMOutputFailureKind, LLMProviderError
+from app.agent.errors import LLMErrorCode, LLMFailureStage, LLMOutputFailureKind, LLMOutputSchemaIssue, LLMProviderError
 from app.agent.prompt_registry import BusinessPromptId
 from app.agent.providers.base import OutputT, ProviderResult, StructuredRequest
 from app.agent.rag import RagRetrievalResult
@@ -333,6 +333,7 @@ class AgentWorkflowService:
                 started_at,
                 failure_stage=error.failure_stage if isinstance(error, LLMProviderError) else None,
                 output_failure_kind=error.output_failure_kind if isinstance(error, LLMProviderError) else None,
+                output_schema_issues=error.output_schema_issues if isinstance(error, LLMProviderError) else (),
             )
             raise AgentWorkflowExecutionError(run_id, error_code) from error
         except AgentWorkflowExecutionError:
@@ -1023,6 +1024,7 @@ class AgentWorkflowService:
         *,
         failure_stage: LLMFailureStage | None = None,
         output_failure_kind: LLMOutputFailureKind | None = None,
+        output_schema_issues: tuple[LLMOutputSchemaIssue, ...] = (),
     ) -> None:
         """在独立提交中保存失败终态，外部异常不会抹去运行证据。"""
         timeout_codes = {
@@ -1041,4 +1043,5 @@ class AgentWorkflowService:
             max(0, int((time.perf_counter() - started_at) * 1000)),
             failure_stage=failure_stage,
             output_failure_kind=output_failure_kind,
+            output_schema_issues=output_schema_issues,
         )

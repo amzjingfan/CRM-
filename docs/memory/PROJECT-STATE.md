@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G5 R51 候选恢复点：从 main `f3096dc8` 的 subject `3f7994ef` 仅补全 `faq_draft/invalid_schema` 低敏诊断链；记录端口再校验固定 Schema 字段路径和错误类型、去重并最多留八组。定向 145 passed，完整后端 2047 passed/3 skipped，Ruff、格式、mypy 通过；见 [IR](../records/implementation/IR-MVP-006-20261017-R51.md)、[TR](../reports/tests/TR-MVP-006-20261017-R51.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R51.md)。本次未发布镜像、未部署 staging 或调用 DeepSeek；现场仍运行 R50 恢复的旧 G3 后端，FAQ 具体失败字段未知，50 并发未做。三个索引为 `CANDIDATE_VIEW`；G5 `DOING`、production No-Go。下一步：①合并诊断源码并核对主分支索引；②有界现场单会话取得白名单字段；③据字段修复并重测安全 `delta` 后再执行 50 并发与恢复验收。
+
 2026-10-17 G5 R50 当前恢复点：两次获批手动 staging 窗口均已完成并恢复原 G3 限定会话人工发送模式。后端当前运行旧摘要 `sha256:04c4f64d…bd1dcc`，Webhook 只读、翻译、限流 10、三公网健康和固定出口通过。第一次窗口续期原 50 人的第七份仓库外令牌并通过 50/50，只因压测 Origin 默认 localhost 返回 403；第二次显式 staging Origin 后 SSE HTTP 200，但 FAQ 草稿 `invalid_schema` 返回 `50003`、无安全 `delta`。两次均未启动 50 并发；[IR](../records/implementation/IR-MVP-006-20261017-R50.md)、[TR](../reports/tests/TR-MVP-006-20261017-R50.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R50.md)与 18 份低敏证据记录真实结果。G5 `DOING`、production No-Go。下一步：①限定诊断 FAQ Schema 字段路径与错误类型；②对明确问题做确定性修复并复核；③另行锁定有界单会话、50 并发与恢复窗口。
 
 2026-10-17 G5 R49 手动候选镜像：从 main `ba020c1ff496f91d430ca2054314ff3901572a9d` 用现有 GitHub 凭据发布一个私有后端镜像；GHCR 不可变摘要 `sha256:42fce018…8e8` 经远端 manifest 与按摘要拉回核对，平台 `linux/amd64`、OCI revision 精确匹配，12 层压缩合计 110,933,216 字节，见[低敏证据](../../release/evidence/staging/crm-staging-g5-r49-manual-backend-image-20261017.json)。临时登录已退出；未部署 staging、续期凭证或调用 DeepSeek。运行后端仍为 R47 恢复的旧摘要，G5 单会话和 50 并发未通过。下一步：核对手动窗口前提；在精确范围内临时部署并复测一条合成 SSE；仅得到安全 `delta` 后执行 50 并发与恢复验收。G5 `DOING`、production No-Go。

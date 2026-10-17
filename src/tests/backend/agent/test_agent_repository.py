@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.errors import LLMFailureStage, LLMOutputFailureKind
+from app.agent.errors import LLMFailureStage, LLMOutputFailureKind, LLMOutputSchemaIssue
 from app.agent.models import AgentRun
 from app.agent.repository import AgentRunStart, AgentWorkflowRunCompletion, SqlAlchemyAgentRunRecorder
 from app.agent.schemas import AgentAction, AgentRunStatus, ClassificationState, IntentName
@@ -110,6 +110,108 @@ async def test_invalid_model_output_records_only_fixed_failure_stage_and_kind() 
 
 
 @pytest.mark.asyncio
+async def test_schema_failure_summary_limits_and_validates_issue_pairs() -> None:
+    """仅 Schema 失败可保存最多八组已列举的字段路径和错误类型。"""
+    run = AgentRun(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        conversation_id=uuid.uuid4(),
+        model_provider="deepseek",
+        model_name="test-model",
+        action=AgentAction.HUMAN_REVIEW.value,
+        status=AgentRunStatus.RUNNING.value,
+    )
+    session = Mock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=run)
+    session.commit = AsyncMock()
+    recorder = SqlAlchemyAgentRunRecorder(session)
+    valid: LLMOutputSchemaIssue = ("content", "missing")
+    unsafe = cast(LLMOutputSchemaIssue, ("private model text", "raw exception"))
+    issues = (valid, unsafe, *(("reason_code", "literal_error"),) * 10)
+
+    await recorder.fail(
+        run.id,
+        AgentRunStatus.FAILED,
+        AgentAction.FAILED,
+        "LLM_OUTPUT_INVALID",
+        "deepseek",
+        "test-model",
+        42,
+        output_failure_kind="invalid_schema",
+        output_schema_issues=issues,
+    )
+
+    assert run.output_summary == (
+        "error_code=LLM_OUTPUT_INVALID;output_failure_kind=invalid_schema;"
+        "output_schema_issues=content:missing,reason_code:literal_error"
+    )
+    assert "private model text" not in run.output_summary
+
+    await recorder.fail(
+        run.id,
+        AgentRunStatus.FAILED,
+        AgentAction.FAILED,
+        "LLM_OUTPUT_INVALID",
+        "deepseek",
+        "test-model",
+        42,
+        output_failure_kind="invalid_json",
+        output_schema_issues=(valid,),
+    )
+    assert run.output_summary == "error_code=LLM_OUTPUT_INVALID;output_failure_kind=invalid_json"
+
+
+@pytest.mark.asyncio
+async def test_schema_failure_summary_caps_eight_issues_and_ignores_malformed_input() -> None:
+    """记录端口重复校验上游诊断，异常形状也不能污染或中断失败记录。"""
+    run = AgentRun(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        conversation_id=uuid.uuid4(),
+        model_provider="deepseek",
+        model_name="test-model",
+        action=AgentAction.HUMAN_REVIEW.value,
+        status=AgentRunStatus.RUNNING.value,
+    )
+    session = Mock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=run)
+    session.commit = AsyncMock()
+    paths = (
+        "root",
+        "decision",
+        "content",
+        "language",
+        "reason_code",
+        "business_claims",
+        "send_performed",
+        "business_claims[].action",
+        "business_claims[].tense",
+    )
+    issues = (cast(LLMOutputSchemaIssue, (["private text"], "missing")),) + tuple(
+        cast(LLMOutputSchemaIssue, (path, "missing")) for path in paths
+    )
+
+    await SqlAlchemyAgentRunRecorder(session).fail(
+        run.id,
+        AgentRunStatus.FAILED,
+        AgentAction.FAILED,
+        "LLM_OUTPUT_INVALID",
+        "deepseek",
+        "test-model",
+        42,
+        output_failure_kind="invalid_schema",
+        output_schema_issues=issues,
+    )
+
+    assert run.output_summary == (
+        "error_code=LLM_OUTPUT_INVALID;output_failure_kind=invalid_schema;"
+        "output_schema_issues=" + ",".join(f"{path}:missing" for path in paths[:8])
+    )
+    assert "private text" not in run.output_summary
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_failure_summary_rejects_unlisted_values_and_non_output_errors() -> None:
     """即使调用者误传动态字段，也只能留下已有稳定错误码。"""
     run = AgentRun(
@@ -148,6 +250,7 @@ async def test_failure_summary_rejects_unlisted_values_and_non_output_errors() -
         42,
         failure_stage=LLMFailureStage.FAQ_DRAFT,
         output_failure_kind="invalid_json",
+        output_schema_issues=(("content", "missing"),),
     )
     assert run.output_summary == "error_code=LLM_TIMEOUT"
 
