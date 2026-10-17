@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/g5-manual-image-revision-gate-20261017
-Governance base SHA: 2cc3ad0f2e957399d3ad3f8b4365166aff088d9a
+Working branch at this snapshot: docs/g5-r36-index-closure-20261017
+Governance base SHA: 9cd94b8b2c6531f1256868e08c7ca3556516fd42
 CANDIDATE_SUBJECT_SHA: c3f09ef4cbcab17512158c42a355308be964321b
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 G5 R36：从 main `2cc3ad0f` 的 subject `c3f09ef4` 已为 G5 手动新部署增加“旧镜像是当前 main 祖先且后端构建输入完全一致”的严格校验，恢复/回滚继续要求 revision 精确一致；[IR](../records/implementation/IR-MVP-006-20261017-R36.md)、[TR](../reports/tests/TR-MVP-006-20261017-R36.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R36.md) 记录 `1970 passed, 27 skipped`、提交后相关 37 项通过及真实 GitHub 只读构建身份核对。R35 后端候选仍为 `sha256:0bc1e287…1e77c`，staging 运行旧后端 `sha256:758c4d51…41522`；第三份 50/50 令牌仍过期。下一步：合并本门禁后精确核准 staging 手动预取/只读部署；再单独核准第四份凭证续期与只读预检；最后分别执行单会话、50 并发和原模式恢复。G5 `DOING`、production No-Go。
+2026-10-17 G5 R36：从 main `2cc3ad0f` 的 subject `c3f09ef4` 已为 G5 手动新部署增加“旧镜像是当前 main 祖先且后端构建输入完全一致”的严格校验，恢复/回滚继续要求 revision 精确一致；[IR](../records/implementation/IR-MVP-006-20261017-R36.md)、[TR](../reports/tests/TR-MVP-006-20261017-R36.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R36.md) 记录 `1970 passed, 27 skipped`、提交后相关 37 项通过及真实 GitHub 只读构建身份核对。[PR #294](https://github.com/CP11-gh/CRM/pull/294) 已合入 main `9cd94b8b2c6531f1256868e08c7ca3556516fd42`，从该 main 再次核对 R35 镜像与后端构建输入一致；三个派生索引由权威源记录核对后恢复 `CURRENT`。R35 后端候选仍为 `sha256:0bc1e287…1e77c`，staging 运行旧后端 `sha256:758c4d51…41522`；第三份 50/50 令牌仍过期。下一步：精确核准 staging 手动预取/只读部署；再单独核准第四份凭证续期与只读预检；最后分别执行单会话、50 并发和原模式恢复。G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R35：获单镜像精确授权后，从 main `529c3a2e417286053f16eeb34abd20746248980b` 手动发布 [后端候选](../../release/evidence/staging/crm-staging-g5-r35-manual-backend-image-20261017.json) `sha256:0bc1e287…1e77c`；远端 `linux/amd64`、OCI revision、12 层压缩总量 110,924,361 字节及拉回摘要均核对通过，未运行 GitHub Actions。当时尚未部署、续期凭证或调用 DeepSeek。
 
