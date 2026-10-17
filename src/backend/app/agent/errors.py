@@ -58,6 +58,17 @@ class LLMErrorCode(StrEnum):
     LLM_CONFIGURATION_ERROR = "LLM_CONFIGURATION_ERROR"
 
 
+class LLMFailureStage(StrEnum):
+    """运行失败摘要允许持久化的固定模型节点。"""
+
+    CLASSIFICATION = "classification"
+    FAQ_DRAFT = "faq_draft"
+    SAFETY_REVIEW = "safety_review"
+    TOOL_DRAFT = "tool_draft"
+    TOOL_SAFETY_REVIEW = "tool_safety_review"
+    TRANSLATION = "translation"
+
+
 class LLMProviderError(Exception):
     """表示已经完成安全转换、可以被 Agent 服务处理的模型异常。"""
 
@@ -82,4 +93,5 @@ class LLMProviderError(Exception):
         self.retriable = retriable
         self.output_failure_kind = output_failure_kind
         self.output_schema_issues = output_schema_issues
+        self.failure_stage: LLMFailureStage | None = None
         super().__init__(message)

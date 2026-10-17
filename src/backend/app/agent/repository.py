@@ -7,6 +7,7 @@ from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.errors import LLMFailureStage, LLMOutputFailureKind
 from app.agent.models import AgentRun
 from app.agent.reply_policy import CustomerLanguage, SupportedLanguage
 from app.agent.schemas import (
@@ -53,6 +54,9 @@ class AgentRunRecorder(Protocol):
         provider_name: str,
         model_name: str,
         latency_ms: int,
+        *,
+        failure_stage: LLMFailureStage | None = None,
+        output_failure_kind: LLMOutputFailureKind | None = None,
     ) -> None:
         """在独立事务中保存失败或超时终态。"""
         ...
@@ -129,6 +133,9 @@ class AgentWorkflowRunRecorder(Protocol):
         provider_name: str,
         model_name: str,
         latency_ms: int,
+        *,
+        failure_stage: LLMFailureStage | None = None,
+        output_failure_kind: LLMOutputFailureKind | None = None,
     ) -> None:
         """保存失败或超时终态。"""
         ...
@@ -153,6 +160,9 @@ class NullAgentRunRecorder:
         provider_name: str,
         model_name: str,
         latency_ms: int,
+        *,
+        failure_stage: LLMFailureStage | None = None,
+        output_failure_kind: LLMOutputFailureKind | None = None,
     ) -> None:
         """评测不持久化失败运行。"""
 
@@ -240,6 +250,9 @@ class SqlAlchemyAgentRunRecorder:
         provider_name: str,
         model_name: str,
         latency_ms: int,
+        *,
+        failure_stage: LLMFailureStage | None = None,
+        output_failure_kind: LLMOutputFailureKind | None = None,
     ) -> None:
         """保存模型失败终态，供重试任务和运维按稳定错误码定位。"""
         run = await self._require_run(run_id)
@@ -248,7 +261,20 @@ class SqlAlchemyAgentRunRecorder:
         run.status = status.value
         run.action = action.value
         run.error_code = error_code
-        run.output_summary = f"error_code={error_code}"
+        # 仅保存固定枚举；供应商原文、异常和未经校验的动态字段都不得入库。
+        summary = f"error_code={error_code}"
+        if error_code == "LLM_OUTPUT_INVALID":
+            if isinstance(failure_stage, LLMFailureStage):
+                summary += f";failure_stage={failure_stage.value}"
+            if isinstance(output_failure_kind, str) and output_failure_kind in {
+                "unfinished",
+                "empty",
+                "invalid_structure",
+                "invalid_json",
+                "invalid_schema",
+            }:
+                summary += f";output_failure_kind={output_failure_kind}"
+        run.output_summary = summary
         run.latency_ms = latency_ms
         await self.session.commit()
 

@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G5 R48 源码候选：`fix/g5-r48-provider-failure-diagnostics-20261017` 从 main `9db09f9` 实施，subject `a927156a` 只在 `LLM_OUTPUT_INVALID` 的现有运行摘要中写白名单模型节点和固定输出失败子类。确定性测试先红后绿；最终后端 2045 passed、27 skipped，Ruff/mypy 通过；见 [R48 IR](../records/implementation/IR-MVP-006-20261017-R48.md)、[TR](../reports/tests/TR-MVP-006-20261017-R48.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R48.md)。此分支尚未合并、未发布镜像或部署 staging；R47 的真实失败节点仍未知。派生索引在本分支为 `CANDIDATE_VIEW`，G5 `DOING`、production No-Go。下一步先合并源码与证据，再在获准的手动 staging 窗口复测单会话；仅安全 `delta` 通过才继续 50 并发与恢复验收。
+
 2026-10-17 G5 R47 当前恢复点：用户获批的手动窗口已部署 main `d29d5e0a` 后端候选，原隔离店铺唯一 FAQ 精确更新至版本 3 并由本地 BGE 向量化；第六份仓库外短期凭证签发后，50/50 授权用户只读预检通过。唯一合成 SSE 返回 HTTP 200、公开 `50003`，内部稳定码 `LLM_OUTPUT_INVALID`，无安全 `delta`；按条件未启动 50 并发与资源采样。首次恢复尝试被旧源码参数门禁拒绝，随后用与旧镜像构建输入一致的受审源码按快照恢复原后端 `sha256:04c4f64d…bd1dcc`、G3 限定会话人工发送、Webhook 只读与翻译；LLM/SSE 关闭、限流 10，三公网健康 200 和固定出口通过。见 [R47 TR](../reports/tests/TR-MVP-006-20261017-R47.md)及[低敏单会话证据](../../release/evidence/staging/crm-staging-g5-r47-single-20261017.json)。[PR #313](https://github.com/CP11-gh/CRM/pull/313) 已合入 main `a21da7b6`；三个派生索引从主分支源记录核对为 `CURRENT`。现有 Agent 持久记录无法区分模型输出失败节点与子类；G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R45/R46 当前恢复点：获批的手动 G5 窗口完成候选部署、第五份仓库外短期凭证和 50/50 只读预检；唯一合成 SSE 返回 HTTP 200、总耗时约 7.83 秒，但没有安全 `delta`，因此未运行 50 并发。已恢复原后端、G3 限定会话人工发送、工作台翻译及限流 10，三健康 200 和固定出口通过。九份低敏机器报告与现场 SHA-256 一致，完整入口见 [R45 TR](../reports/tests/TR-MVP-006-20261017-R45.md)。本地 DLP 复现发现两个 Prompt 入参风险：FAQ 答案的逗号以及未脱敏来源标签；R46 有界源码修复 subject `c8d68a1f7815c299093b64722b76fd7ba33ace81` 经隔离 PostgreSQL 全量回归 2064 passed、3 skipped，并由 [PR #311](https://github.com/CP11-gh/CRM/pull/311) squash 合入 main `1a836c2c3d4897cb01cde85c4f69fb94fdad3782`。两个 GitHub Actions 作业因账户计费在步骤前失败；用户选定手动路径，本次使用本地等价检查。三个索引按 main 源记录核对为 133/137/131 条，无缺漏或重复，恢复 `CURRENT`。不能据源码推定真实 `delta`。下一步最多三项：①分别获准新镜像与 staging 切换、现场 FAQ 版本 3 写入及本地 BGE；②续期隔离凭证并安排有界付费单会话；③安全 `delta` 通过后执行 50 并发和恢复验收。G5 `DOING`、production No-Go。
@@ -376,6 +378,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. G5 对 `LLM_OUTPUT_INVALID` 补低敏节点与固定失败子类诊断，保持安全校验；之后再安排一次有界单会话复测。
+1. 合并 G5 R48 低敏诊断源码后，核对匹配 main 的镜像和手动 staging 部署范围，安排一次有界单会话复测并读取固定失败节点/子类或安全 `delta`。
 2. 仅在安全 `delta` 与单会话门禁通过后执行 50 并发、资源和断连验收，并再次恢复原 G3 限定会话人工发送模式。
 3. 并行推进 G2 异常投递和持续恢复验收；G1-L 等适用 CBT 首程包裹或平台说明，G5/G6 与外部门禁完成前 G8/production 保持 No-Go。

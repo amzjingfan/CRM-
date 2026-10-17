@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -136,3 +136,4 @@ View: `CURRENT`
 | RR-MVP-006-20261017-R45 | MVP-006 | R45 | APPROVE | `ba0f5e0b7d4494b00386c18c5754bd777af1bb37` | manual-window / credentials / conditional-load / exact-restore / evidence-redaction | 2026-10-17T18:20:31+08:00 | [`RR-MVP-006-20261017-R45.md`](RR-MVP-006-20261017-R45.md) |
 | RR-MVP-006-20261017-R46 | MVP-006 | R46 | APPROVE | `c8d68a1f7815c299093b64722b76fd7ba33ace81` | prompt-sanitization / exact-fixture-scope / vector-version / fail-closed / credentials / production-boundary | 2026-10-17T18:30:22+08:00 | [`RR-MVP-006-20261017-R46.md`](RR-MVP-006-20261017-R46.md) |
 | RR-MVP-006-20261017-R47 | MVP-006 | R47 | APPROVE | `d29d5e0af82f14a8f3a5756f67c748d0fec35bd8` | exact-window / fixture-isolation / credential-boundary / conditional-load / restore-snapshot / evidence-redaction | 2026-10-17T21:05:00+08:00 | [`RR-MVP-006-20261017-R47.md`](RR-MVP-006-20261017-R47.md) |
+| RR-MVP-006-20261017-R48 | MVP-006 | R48 | APPROVE | `a927156a3703b22b4c32b2fce25e9a2809257f50` | diagnostic-whitelist / secret-boundary / failure-closed / scope-control | 2026-10-17T21:25:00+08:00 | [`RR-MVP-006-20261017-R48.md`](RR-MVP-006-20261017-R48.md) |

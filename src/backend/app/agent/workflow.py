@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.business_claims import BusinessClaimInventory
 from app.agent.embeddings import EmbeddingErrorCode, EmbeddingProviderError
-from app.agent.errors import LLMErrorCode, LLMProviderError
+from app.agent.errors import LLMErrorCode, LLMFailureStage, LLMOutputFailureKind, LLMProviderError
 from app.agent.prompt_registry import BusinessPromptId
 from app.agent.providers.base import OutputT, ProviderResult, StructuredRequest
 from app.agent.rag import RagRetrievalResult
@@ -327,7 +327,13 @@ class AgentWorkflowService:
             raise
         except (LLMProviderError, EmbeddingProviderError, RerankingProviderError) as error:
             error_code = error.code.value
-            await self._record_failure(run_id, error_code, started_at)
+            await self._record_failure(
+                run_id,
+                error_code,
+                started_at,
+                failure_stage=error.failure_stage if isinstance(error, LLMProviderError) else None,
+                output_failure_kind=error.output_failure_kind if isinstance(error, LLMProviderError) else None,
+            )
             raise AgentWorkflowExecutionError(run_id, error_code) from error
         except AgentWorkflowExecutionError:
             raise
@@ -401,6 +407,7 @@ class AgentWorkflowService:
             inference = await self.classifier.infer(command, agent_run_id=state["agent_run_id"])
         except LLMProviderError as error:
             if error.code != LLMErrorCode.LLM_REFUSAL:
+                error.failure_stage = LLMFailureStage.CLASSIFICATION
                 raise
             inference = IntentInferenceResult(
                 output=IntentModelOutput(
@@ -492,6 +499,7 @@ class AgentWorkflowService:
             generated = await self.generator.generate(request, ToolAnswerModelOutput)
         except LLMProviderError as error:
             if error.code != LLMErrorCode.LLM_REFUSAL:
+                error.failure_stage = LLMFailureStage.TOOL_DRAFT
                 raise
             return {"model_refusal": True, "state_path": ["TOOL_RESPONSE_DRAFTED"]}
         return {
@@ -590,6 +598,7 @@ class AgentWorkflowService:
             generated = await self.generator.generate(request, ToolGroundingReviewOutput)
         except LLMProviderError as error:
             if error.code != LLMErrorCode.LLM_REFUSAL:
+                error.failure_stage = LLMFailureStage.TOOL_SAFETY_REVIEW
                 raise
             return {
                 "model_refusal": True,
@@ -652,6 +661,7 @@ class AgentWorkflowService:
             generated = await self.generator.generate(request, FaqAnswerModelOutput)
         except LLMProviderError as error:
             if error.code != LLMErrorCode.LLM_REFUSAL:
+                error.failure_stage = LLMFailureStage.FAQ_DRAFT
                 raise
             return {"model_refusal": True, "state_path": ["RESPONSE_DRAFTED"]}
         return {
@@ -716,6 +726,7 @@ class AgentWorkflowService:
             generated = await self.generator.generate(request, GroundingReviewOutput)
         except LLMProviderError as error:
             if error.code != LLMErrorCode.LLM_REFUSAL:
+                error.failure_stage = LLMFailureStage.SAFETY_REVIEW
                 raise
             return {
                 "model_refusal": True,
@@ -821,13 +832,17 @@ class AgentWorkflowService:
             return {"state_path": ["REPLY_TRANSLATED"]}
         command = state["command"]
         draft_reply = self._safe_draft_reply(state)
-        translation = await self.translation_service.translate_bundle(
-            trigger_message_id=command.trigger_message_id,
-            message=command.message,
-            draft_reply=draft_reply,
-            target_language=command.reply_profile.operator_language,
-            trace_id=command.trace_id,
-        )
+        try:
+            translation = await self.translation_service.translate_bundle(
+                trigger_message_id=command.trigger_message_id,
+                message=command.message,
+                draft_reply=draft_reply,
+                target_language=command.reply_profile.operator_language,
+                trace_id=command.trace_id,
+            )
+        except LLMProviderError as error:
+            error.failure_stage = LLMFailureStage.TRANSLATION
+            raise
         if translation is None:
             return {"state_path": ["REPLY_TRANSLATED"]}
         return {
@@ -1000,7 +1015,15 @@ class AgentWorkflowService:
             trace_id=state["command"].trace_id,
         )
 
-    async def _record_failure(self, run_id: uuid.UUID, error_code: str, started_at: float) -> None:
+    async def _record_failure(
+        self,
+        run_id: uuid.UUID,
+        error_code: str,
+        started_at: float,
+        *,
+        failure_stage: LLMFailureStage | None = None,
+        output_failure_kind: LLMOutputFailureKind | None = None,
+    ) -> None:
         """在独立提交中保存失败终态，外部异常不会抹去运行证据。"""
         timeout_codes = {
             LLMErrorCode.LLM_TIMEOUT.value,
@@ -1016,4 +1039,6 @@ class AgentWorkflowService:
             self.classifier.provider_name,
             self.classifier.model_name,
             max(0, int((time.perf_counter() - started_at) * 1000)),
+            failure_stage=failure_stage,
+            output_failure_kind=output_failure_kind,
         )

@@ -8,6 +8,8 @@ FAQ 回答 Prompt 中的知识来源标签也使用现有 DLP 脱敏函数。来
 
 模型返回结构化信封；JSON Output、枚举、长度、引用和安全状态必须通过校验才可进入应用。错误、超时、协议漂移或 DLP 不确定时失败关闭并转人工，不透传第三方响应正文。
 
+完整 Agent 工作流遇到 `LLM_OUTPUT_INVALID` 时，运行记录沿用现有 `output_summary`，仅追加固定模型节点（分类、FAQ/工具草稿、安全复核或翻译）及 Provider 已分类的 `unfinished`、`empty`、`invalid_structure`、`invalid_json`、`invalid_schema`。缺失或不在白名单的诊断字段不写入；Prompt、模型正文、原始异常和请求 ID 不持久化。诊断只用于定位失败，公开错误码、失败关闭、DLP、评分及发送开关不因此改变。
+
 ## Prompt 与策略版本
 
 系统 Prompt、DLP 规则、结构化声明和回复策略使用可审计版本。Agent 配置只能选择受控语气、语言和品牌名，不能写任意 Prompt、模型或阈值。版本变化必须更新评测和发布基线。

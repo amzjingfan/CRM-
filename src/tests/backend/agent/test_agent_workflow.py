@@ -20,7 +20,7 @@ from app.agent.business_claims import (
     BusinessClaimSubjectType,
     BusinessClaimTense,
 )
-from app.agent.errors import LLMErrorCode, LLMProviderError
+from app.agent.errors import LLMErrorCode, LLMFailureStage, LLMProviderError
 from app.agent.prompt_registry import BusinessPromptId
 from app.agent.providers.base import OutputT, ProviderResult, StructuredRequest
 from app.agent.rag import RagRetrievalResult
@@ -120,7 +120,7 @@ class FixedRagService:
 class ScriptedGenerator:
     """按节点顺序返回结构化答案和复核结果。"""
 
-    def __init__(self, outcomes: list[BaseModel | dict[str, Any]]) -> None:
+    def __init__(self, outcomes: list[BaseModel | dict[str, Any] | LLMProviderError]) -> None:
         self.outcomes = deque(outcomes)
         self.requests: list[StructuredRequest] = []
 
@@ -130,7 +130,10 @@ class ScriptedGenerator:
         response_schema: type[OutputT],
     ) -> ProviderResult[OutputT]:
         self.requests.append(request)
-        output = response_schema.model_validate(self.outcomes.popleft())
+        outcome = self.outcomes.popleft()
+        if isinstance(outcome, LLMProviderError):
+            raise outcome
+        output = response_schema.model_validate(outcome)
         return ProviderResult(
             provider="fake-llm",
             model="fake-answer",
@@ -150,6 +153,8 @@ class MemoryWorkflowRecorder:
         self.started: AgentRunStart | None = None
         self.completed: AgentWorkflowRunCompletion | None = None
         self.failed: tuple[AgentRunStatus, AgentAction, str] | None = None
+        self.failure_stage: LLMFailureStage | None = None
+        self.output_failure_kind: str | None = None
 
     async def start(self, values: AgentRunStart) -> uuid.UUID:
         self.started = values
@@ -168,9 +173,14 @@ class MemoryWorkflowRecorder:
         provider_name: str,
         model_name: str,
         latency_ms: int,
+        *,
+        failure_stage: LLMFailureStage | None = None,
+        output_failure_kind: str | None = None,
     ) -> None:
         assert run_id == self.run_id
         self.failed = (status, action, error_code)
+        self.failure_stage = failure_stage
+        self.output_failure_kind = output_failure_kind
 
 
 class ScriptedToolService:
@@ -290,7 +300,7 @@ def service(
     *,
     message_intent: IntentModelOutput,
     rag_result: RagRetrievalResult,
-    outcomes: list[BaseModel | dict[str, Any]],
+    outcomes: list[BaseModel | dict[str, Any] | LLMProviderError],
     tool_batches: list[AgentToolBatchResult] | None = None,
     enable_translation: bool = False,
 ) -> tuple[AgentWorkflowService, FixedRagService, ScriptedGenerator, MemoryWorkflowRecorder]:
@@ -1228,6 +1238,86 @@ async def test_translation_model_failure_fails_workflow_without_success_record()
     assert error_info.value.error_code == "LLM_TIMEOUT"
     assert recorder.completed is None
     assert recorder.failed == (AgentRunStatus.TIMEOUT, AgentAction.FAILED, "LLM_TIMEOUT")
+    assert recorder.failure_stage == LLMFailureStage.TRANSLATION
+    assert recorder.output_failure_kind is None
+
+
+@pytest.mark.parametrize(
+    ("stage", "fail_at_review"),
+    [(LLMFailureStage.FAQ_DRAFT, False), (LLMFailureStage.SAFETY_REVIEW, True)],
+)
+@pytest.mark.asyncio
+async def test_invalid_llm_output_records_stage_and_fixed_kind(
+    stage: LLMFailureStage,
+    fail_at_review: bool,
+) -> None:
+    """草稿和复核失败时保留固定诊断，且不生成成功终态。"""
+    rag_result = retrieval(0.92)
+    failure = LLMProviderError(
+        LLMErrorCode.LLM_OUTPUT_INVALID,
+        "sensitive model output must not be saved",
+        retriable=False,
+        output_failure_kind="invalid_schema",
+    )
+    draft = FaqAnswerModelOutput(
+        answer="签收后七天内可申请退货。",
+        citation_chunk_ids=[rag_result.hits[0].chunk_id],
+        grounding_confidence=0.90,
+        answer_language="zh-CN",
+        needs_human=False,
+        business_claims=empty_claim_inventory(),
+    )
+    workflow, _, _, recorder = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.94,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[draft, failure] if fail_at_review else [failure],
+    )
+
+    with pytest.raises(AgentWorkflowExecutionError) as error_info:
+        await workflow.run(cast_session(), command())
+
+    assert error_info.value.error_code == "LLM_OUTPUT_INVALID"
+    assert recorder.failed == (AgentRunStatus.FAILED, AgentAction.FAILED, "LLM_OUTPUT_INVALID")
+    assert recorder.failure_stage == stage
+    assert recorder.output_failure_kind == "invalid_schema"
+    assert recorder.completed is None
+
+
+@pytest.mark.asyncio
+async def test_invalid_classification_output_records_classification_stage() -> None:
+    """分类节点失败可与 FAQ 草稿失败区分。"""
+    workflow, _, _, recorder = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.94,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=retrieval(),
+        outcomes=[],
+    )
+
+    class FailingClassifier:
+        provider_name = "fake-llm"
+        model_name = "fake-intent"
+
+        async def infer(self, command: AgentWorkflowCommand, *, agent_run_id: uuid.UUID | None) -> None:
+            raise LLMProviderError(
+                LLMErrorCode.LLM_OUTPUT_INVALID,
+                "sensitive output",
+                retriable=False,
+                output_failure_kind="empty",
+            )
+
+    workflow.classifier = FailingClassifier()  # type: ignore[assignment]
+    with pytest.raises(AgentWorkflowExecutionError):
+        await workflow.run(cast_session(), command())
+
+    assert recorder.failure_stage == LLMFailureStage.CLASSIFICATION
+    assert recorder.output_failure_kind == "empty"
 
 
 @pytest.mark.asyncio

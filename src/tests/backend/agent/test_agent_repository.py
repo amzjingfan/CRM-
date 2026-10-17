@@ -2,11 +2,13 @@
 
 import uuid
 from decimal import Decimal
+from typing import cast
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.errors import LLMFailureStage, LLMOutputFailureKind
 from app.agent.models import AgentRun
 from app.agent.repository import AgentRunStart, AgentWorkflowRunCompletion, SqlAlchemyAgentRunRecorder
 from app.agent.schemas import AgentAction, AgentRunStatus, ClassificationState, IntentName
@@ -70,6 +72,84 @@ async def test_failure_terminal_state_is_committed_without_raw_model_output() ->
     assert run.output_summary == "error_code=LLM_TIMEOUT"
     assert run.model_provider == "anthropic"
     session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_invalid_model_output_records_only_fixed_failure_stage_and_kind() -> None:
+    """G5 故障摘要只接受受控枚举，不回写任何模型正文或异常。"""
+    run = AgentRun(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        conversation_id=uuid.uuid4(),
+        model_provider="deepseek",
+        model_name="test-model",
+        action=AgentAction.HUMAN_REVIEW.value,
+        status=AgentRunStatus.RUNNING.value,
+    )
+    session = Mock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=run)
+    session.commit = AsyncMock()
+    recorder = SqlAlchemyAgentRunRecorder(session)
+
+    await recorder.fail(
+        run.id,
+        AgentRunStatus.FAILED,
+        AgentAction.FAILED,
+        "LLM_OUTPUT_INVALID",
+        "deepseek",
+        "test-model",
+        42,
+        failure_stage=LLMFailureStage.FAQ_DRAFT,
+        output_failure_kind="invalid_schema",
+    )
+
+    assert (
+        run.output_summary == "error_code=LLM_OUTPUT_INVALID;failure_stage=faq_draft;output_failure_kind=invalid_schema"
+    )
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_failure_summary_rejects_unlisted_values_and_non_output_errors() -> None:
+    """即使调用者误传动态字段，也只能留下已有稳定错误码。"""
+    run = AgentRun(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        conversation_id=uuid.uuid4(),
+        model_provider="deepseek",
+        model_name="test-model",
+        action=AgentAction.HUMAN_REVIEW.value,
+        status=AgentRunStatus.RUNNING.value,
+    )
+    session = Mock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=run)
+    session.commit = AsyncMock()
+    recorder = SqlAlchemyAgentRunRecorder(session)
+    await recorder.fail(
+        run.id,
+        AgentRunStatus.FAILED,
+        AgentAction.FAILED,
+        "LLM_OUTPUT_INVALID",
+        "deepseek",
+        "test-model",
+        42,
+        failure_stage=cast(LLMFailureStage, "raw private prompt"),
+        output_failure_kind=cast(LLMOutputFailureKind, "raw model answer"),
+    )
+    assert run.output_summary == "error_code=LLM_OUTPUT_INVALID"
+
+    await recorder.fail(
+        run.id,
+        AgentRunStatus.TIMEOUT,
+        AgentAction.FAILED,
+        "LLM_TIMEOUT",
+        "deepseek",
+        "test-model",
+        42,
+        failure_stage=LLMFailureStage.FAQ_DRAFT,
+        output_failure_kind="invalid_json",
+    )
+    assert run.output_summary == "error_code=LLM_TIMEOUT"
 
 
 @pytest.mark.asyncio
