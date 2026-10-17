@@ -228,6 +228,7 @@ def test_emergency_rollback_uses_shared_deployment_lock() -> None:
         ("ContentCheck", None),
         ("ContentPrepare", "prepare-50-isolated-g5-messages"),
         ("ReconcileFixture", "replace-50-isolated-g5-return-questions"),
+        ("ReconcileFaqV3", "replace-one-isolated-g5-faq-answer-v3"),
         ("RenewCredentials", "renew-50-existing-g5-tokens"),
     ],
 )
@@ -239,7 +240,7 @@ def test_content_modes_reach_host_gate_only_with_exact_confirmation(mode: str, c
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
-@pytest.mark.parametrize("mode", ["ContentPrepare", "ReconcileFixture", "RenewCredentials"])
+@pytest.mark.parametrize("mode", ["ContentPrepare", "ReconcileFixture", "ReconcileFaqV3", "RenewCredentials"])
 def test_content_writes_reject_missing_confirmation_before_host_access(
     mode: str,
 ) -> None:
@@ -302,6 +303,36 @@ def test_replacement_accepts_only_original_four_file_inventory() -> None:
         )
 
     exact = [f"g5-38852775454-{index}.json" for index in range(1, 5)]
+    assert check(exact).returncode == 0
+    assert check(exact[:-1]).returncode != 0
+    assert check([*exact, "unexpected.json"]).returncode != 0
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_third_faq_reconciliation_requires_exact_five_file_inventory() -> None:
+    policy = SOURCE_ROOT / "scripts" / "Assert-StagingG5PrivateFileSet.ps1"
+
+    def check(names: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [
+                POWERSHELL,
+                "-NoProfile",
+                "-NonInteractive",
+                "-File",
+                str(policy),
+                "-Mode",
+                "ReconcileFaqV3",
+                "-NamesJson",
+                json.dumps(names),
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+            timeout=15,
+        )
+
+    exact = [f"g5-38852775454-{index}.json" for index in range(1, 6)]
     assert check(exact).returncode == 0
     assert check(exact[:-1]).returncode != 0
     assert check([*exact, "unexpected.json"]).returncode != 0

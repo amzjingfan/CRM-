@@ -4,7 +4,7 @@ import os
 import uuid
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.audit.models import AuditLog
@@ -211,6 +211,33 @@ async def test_synthetic_content_uses_knowledge_approval_without_persistent_perm
             assert replaced.document.document_version == 2
             assert replaced.document.vectorization_status == "pending"
             assert {message.content for message in replaced.messages} == {fixture.G5_SYNTHETIC_QUESTION}
+            assert await ready_chunks(session, manifest.store_id) == []
+            await session.execute(delete(KnowledgeChunk).where(KnowledgeChunk.store_id == manifest.store_id))
+            replaced.document.vectorization_status = "ready"
+            session.add(
+                KnowledgeChunk(
+                    store_id=manifest.store_id,
+                    document_id=replaced.document.id,
+                    document_version=2,
+                    chunk_index=0,
+                    content=fixture.G5_SYNTHETIC_ANSWER_V2,
+                    token_count=45,
+                    embedding=[0.0] * 1024,
+                    metadata_json={},
+                )
+            )
+            await session.flush()
+            second = await content.inspect_content_fixture(session, manifest)
+            assert second.state == "prepared"
+            await content.replace_third_faq_answer(session, manifest, second)
+            await session.flush()
+            third = await content.inspect_content_fixture(session, manifest)
+            assert third.state == "prepared_v3"
+            assert third.document is not None
+            assert third.document.answer == fixture.G5_SYNTHETIC_ANSWER
+            assert third.document.document_version == 3
+            assert third.document.vectorization_status == "pending"
+            assert {message.content for message in third.messages} == {fixture.G5_SYNTHETIC_QUESTION}
             assert await ready_chunks(session, manifest.store_id) == []
             assert (
                 await session.scalar(

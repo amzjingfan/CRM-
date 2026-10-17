@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G5 R45/R46 当前恢复点：获批的手动 G5 窗口完成候选部署、第五份仓库外短期凭证和 50/50 只读预检；唯一合成 SSE 返回 HTTP 200、总耗时约 7.83 秒，但没有安全 `delta`，因此未运行 50 并发。已恢复原后端、G3 限定会话人工发送、工作台翻译及限流 10，三健康 200 和固定出口通过。九份低敏机器报告与现场 SHA-256 一致，完整入口见 [R45 TR](../reports/tests/TR-MVP-006-20261017-R45.md)。本地 DLP 复现发现两个 Prompt 入参风险：FAQ 答案的逗号以及未脱敏来源标签；R46 有界源码修复 subject `c8d68a1f7815c299093b64722b76fd7ba33ace81` 已提交并进行最终验证，不能据此推定真实 `delta`。下一步最多三项：①合并 R46 源码及证据；②分别获准新镜像与 staging 切换、现场 FAQ 版本 3 写入及本地 BGE；③续期隔离凭证并安排有界付费单会话，安全 `delta` 通过后才进行 50 并发和恢复。G5 `DOING`、production No-Go。
+
 2026-10-17 G3 R04 受控双向闭环：PR #301 的 subject `2a62debe16a58b1263c62eb794982ab01a4856cb` 经 main `70d8968a` 手动发布 staging，门禁、三健康与单会话运行隔离通过。用户精确授权后，项目工作台只向受控买家发送一次普通文本；TikTok 官方只读历史返回同一平台消息 ID，工具与审计成功且非 Mock，手机买家回复经已验签的 Webhook 自动出现在 CRM。其他 179 个同店铺会话仍不可真实发送，无待对账出站。[R04 IR](../records/implementation/IR-MVP-004-20261017-R04.md)、[TR](../reports/tests/TR-MVP-004-20261017-R04.md)、[RR](../reports/reviews/RR-MVP-004-20261017-R04.md)与[低敏证据](../../release/evidence/staging/crm-staging-g3-bidirectional-20261017.json)由 PR #307 合入 main `32aee09d28d03a4fe8c8bfa3b1e627ab6a7c6ffd`；三个索引从主分支 129/133/127 条源记录复核，无缺漏或重复，恢复 `CURRENT`。G3 staging 受控会话验收通过；G2 重试/乱序/持续恢复、G8 与 production 仍未通过。Seller Center 本次出站画面未独立观察。下一步：①继续 G2 异常投递和恢复验收；②若共享 staging 被其他任务部署，重新核对单会话运行模式。
 
 2026-10-17 G5 R43/R44 当前恢复点：用户分别批准的一次 `ReconcileFixture` 和一次本地 BGE `VectorizeG5` 已完成，原隔离 50 条合成问题与唯一 FAQ 为退货流程版本 2，最终只读 50/50、`knowledge_ready=true`、DeepSeek 0 调用；见 [R43 TR](../reports/tests/TR-MVP-006-20261017-R43.md)和[低敏证据](../../release/evidence/staging/crm-staging-g5-r43-fixture-20261017.json)。经确认的 R44 恢复源码 subject `43c89e08bcaa5ae48658b0e0ad547fc9b955570c` 已用 215 项本地门禁、Ruff 和 PowerShell AST 验证，并经独立只读复审；快照绑定原六摘要、G3 单会话及翻译状态，共享锁内拒绝窗口外运行态。见 [IR](../records/implementation/IR-MVP-006-20261017-R44.md)、[TR](../reports/tests/TR-MVP-006-20261017-R44.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R44.md)。[PR #309](https://github.com/CP11-gh/CRM/pull/309) 已 squash 合入远端 main `522f5f99a2c169a1c5d36042ba2c0c58aa01c9c0`；三个索引从该主分支源记录核对为 131/135/129 条，无缺漏或重复，恢复 `CURRENT`。本轮没有 staging 服务切换或 DeepSeek 请求；G5 `DOING`、production No-Go。下一步：①精确授权一次 staging 安全单会话复测；②通过后安排 50 并发及资源/断连采样；③现场验证原 G3 单会话模式恢复。
@@ -21,9 +23,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r44-index-current-20261017
-Governance base SHA: 522f5f99a2c169a1c5d36042ba2c0c58aa01c9c0
-CANDIDATE_SUBJECT_SHA: 43c89e08bcaa5ae48658b0e0ad547fc9b955570c
+Working branch at this snapshot: fix/g5-r46-faq-prompt-fixture
+Governance base SHA: ba0f5e0b7d4494b00386c18c5754bd777af1bb37
+CANDIDATE_SUBJECT_SHA: c8d68a1f7815c299093b64722b76fd7ba33ace81
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: KNOWN_TEMP — R40 与 R42 镜像发布的隔离 Docker CLI 配置目录保留在已忽略测试临时区；均已退出 GHCR 且认证项为 0，R40 目录删除曾被自动审批拒绝
 ```

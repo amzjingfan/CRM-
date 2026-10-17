@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -133,3 +133,5 @@ View: `CURRENT`
 | RR-MVP-006-20261017-R41 | MVP-006 | R41 | APPROVE | `14148597739dd53bb5a5c81a3773c7f73aad47fb` | current-main / ancestor-commit / exact-build-inputs / runtime-digest / fail-closed | 2026-10-17T15:32:53+08:00 | [`RR-MVP-006-20261017-R41.md`](RR-MVP-006-20261017-R41.md) |
 | RR-MVP-006-20261017-R43 | MVP-006 | R43 | APPROVE | `b90f31712cb0f9452fdb0bc0f572802e39f9f536` | fixture-isolation / exact-write-scope / local-bge / readback / no-platform-write | 2026-10-17T17:04:36+08:00 | [`RR-MVP-006-20261017-R43.md`](RR-MVP-006-20261017-R43.md) |
 | RR-MVP-006-20261017-R44 | MVP-006 | R44 | APPROVE | `43c89e08bcaa5ae48658b0e0ad547fc9b955570c` | restore-scope / immutable-images / manual-send-isolation / deployment-race / failed-deploy-recovery | 2026-10-17T17:30:48+08:00 | [`RR-MVP-006-20261017-R44.md`](RR-MVP-006-20261017-R44.md) |
+| RR-MVP-006-20261017-R45 | MVP-006 | R45 | APPROVE | `ba0f5e0b7d4494b00386c18c5754bd777af1bb37` | manual-window / credentials / conditional-load / exact-restore / evidence-redaction | 2026-10-17T18:20:31+08:00 | [`RR-MVP-006-20261017-R45.md`](RR-MVP-006-20261017-R45.md) |
+| RR-MVP-006-20261017-R46 | MVP-006 | R46 | APPROVE | `c8d68a1f7815c299093b64722b76fd7ba33ace81` | prompt-sanitization / exact-fixture-scope / vector-version / fail-closed / credentials / production-boundary | 2026-10-17T18:30:22+08:00 | [`RR-MVP-006-20261017-R46.md`](RR-MVP-006-20261017-R46.md) |

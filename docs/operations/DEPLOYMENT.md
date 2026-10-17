@@ -10,6 +10,8 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 ## Split-ingress Rootless staging
 
+2026-10-17 G5 R45：一次获批的手动窗口完成六摘要预取、G5 部署、第五份短期测试凭证及 50/50 只读预检。唯一合成 SSE 为 HTTP 200、总耗时约 7.83 秒，但没有安全 `delta`；按门禁未启动 50 并发。随后按窗口快照恢复原后端 `sha256:04c4f64d…bd1dcc`、G3 限定会话人工发送与工作台翻译；LLM/SSE 关闭、限流 10，三健康 200 和固定出口通过。见 [R45 现场报告](../reports/tests/TR-MVP-006-20261017-R45.md)。本地 DLP 重现提示 FAQ 答案的逗号和来源标签需要 R46 有界修复；真实根因仍以新版本现场复测为准。R46 的新源码、FAQ 版本 3 写入、本地 BGE、新镜像、staging 切换及 DeepSeek 复测互不代替，后几项尚未执行。
+
 2026-10-17 G5 R40：获准从 main `7d4a72d7` 以现有 GitHub 凭据手动发布唯一私有后端候选 `ghcr.io/cp11-gh/crm-backend@sha256:8a418e6c1e192a29bd7a44d307cd48d5a3924493fc66e21e89282b1784796221`。远端核对 linux/amd64、OCI revision 与压缩层通过，详见[低敏证据](../../release/evidence/staging/crm-staging-g5-r40-manual-backend-image-20261017.json)。镜像未部署；staging 仍保持 R38 已验证的旧后端只读加工作台翻译模式。后续隔离内容写入、单 FAQ 向量化、付费单会话和 50 并发都须分别锁定范围及现场核对。
 
 2026-10-17 G5 R38：修复后的 main `d9b3b18e` 手动部署通过六摘要预取、内部检索令牌一致性 validate、迁移头、运行态与公网健康；原隔离 50 人第四份凭证独占签发，公网只读身份/会话预检 50/50。唯一合成 SSE 的 `done` 成功但没有安全 `delta`；Agent 只读摘要显示 `insufficient_context` 安全转人工、检索候选 0，G5 未通过。已立即部署回旧后端 `sha256:758c4d51…41522`、TikTok Webhook 只读和工作台翻译，LLM/SSE 关闭、限流 10，三健康 200 且固定出口通过；[R38 TR](../reports/tests/TR-MVP-006-20261017-R38.md)及[低敏证据](../../release/evidence/staging/crm-staging-g5-r38-restore-deploy-20261017.json)可复核。第四份凭证仅留仓库外，不得以本次协议完成替代安全输出或 50 并发验收。

@@ -42,12 +42,14 @@ from app.agent.schemas import (
     ToolGroundingReviewOutput,
     WorkflowTerminalState,
 )
+from app.agent.security import PromptSafetyState, evaluate_prompt_safety
 from app.agent.tool_execution import AgentToolBatchResult, ExecutedAgentTool
 from app.agent.translation import TranslationBundleModelOutput, TranslationService
 from app.agent.workflow import AgentWorkflowExecutionError, AgentWorkflowService
 from app.agent.workflow_prompt import (
     FAQ_ANSWER_SYSTEM_PROMPT,
     TOOL_ANSWER_SYSTEM_PROMPT,
+    build_faq_answer_prompt,
 )
 from app.knowledge_base.schemas import (
     KnowledgeCustomerScope,
@@ -248,6 +250,39 @@ def retrieval(score: float = 0.92) -> RagRetrievalResult:
         embedding_model="fake-1536",
         embedding_input_tokens=5,
         embedding_latency_ms=2,
+    )
+
+
+def test_g5_faq_prompt_sanitizes_source_label_before_provider() -> None:
+    from scripts.prepare_sse_staging_fixture import (
+        G5_SYNTHETIC_ANSWER,
+        G5_SYNTHETIC_ANSWER_V2,
+        G5_SYNTHETIC_QUESTION,
+    )
+
+    hit = (
+        retrieval()
+        .hits[0]
+        .model_copy(
+            update={
+                "source_label": "g5-synthetic-only",
+                "content": f"问题：{G5_SYNTHETIC_QUESTION}\n答案：{G5_SYNTHETIC_ANSWER}",
+            }
+        )
+    )
+    prompt = build_faq_answer_prompt(command(G5_SYNTHETIC_QUESTION), [hit], "en")
+
+    assert '"source_label": "[SENSITIVE_ID]"' in prompt
+    assert "g5-synthetic-only" not in prompt
+    previous_hit = hit.model_copy(update={"content": f"问题：{G5_SYNTHETIC_QUESTION}\n答案：{G5_SYNTHETIC_ANSWER_V2}"})
+    previous_prompt = build_faq_answer_prompt(command(G5_SYNTHETIC_QUESTION), [previous_hit], "en")
+    assert (
+        evaluate_prompt_safety(previous_prompt, business_prompt_id=BusinessPromptId.FAQ_ANSWER).state
+        != PromptSafetyState.ALLOWED
+    )
+    assert (
+        evaluate_prompt_safety(prompt, business_prompt_id=BusinessPromptId.FAQ_ANSWER).state
+        == PromptSafetyState.ALLOWED
     )
 
 

@@ -2,7 +2,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5')][string]$Mode,
+    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'ReconcileFaqV3', 'RenewCredentials', 'VectorizeG5')][string]$Mode,
     [Parameter(Mandatory = $true)][string]$NamesJson
 )
 
@@ -16,12 +16,13 @@ if ($names.Count -lt 2 -or
     @($names | Where-Object { $expected -cnotcontains $_ }).Count -ne 0 -or
     @($expected | Where-Object { $names -cnotcontains $_ }).Count -ne 0 -or
     ($Mode -ceq 'ContentPrepare' -and $names.Count -ne 2) -or
-    ($Mode -ceq 'VectorizeG5' -and $names.Count -cnotin @(2, 4)) -or
-    ($Mode -ceq 'ReconcileFixture' -and $names.Count -ne 4)) {
+    ($Mode -ceq 'VectorizeG5' -and $names.Count -cnotin @(2, 4, 5)) -or
+    ($Mode -ceq 'ReconcileFixture' -and $names.Count -ne 4) -or
+    ($Mode -ceq 'ReconcileFaqV3' -and $names.Count -ne 5)) {
     throw 'G5 private fixture files differ from the exact allowed batch.'
 }
 
 $generation = if ($Mode -ceq 'RenewCredentials') { $names.Count + 1 }
-    elseif ($Mode -cin @('ContentCheck', 'VectorizeG5', 'ReconcileFixture')) { [Math]::Max(3, $names.Count) }
+    elseif ($Mode -cin @('ContentCheck', 'VectorizeG5', 'ReconcileFixture', 'ReconcileFaqV3')) { [Math]::Max(3, $names.Count) }
     else { 3 }
 Write-Output "g5-38852775454-$generation.json"

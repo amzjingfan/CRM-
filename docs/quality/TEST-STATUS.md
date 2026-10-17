@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R45/R46：R45 获批手动窗口的 50/50 只读预检通过；唯一合成 SSE HTTP 200，但 `first_delta_ms=null`、总耗时约 7.83 秒，性能门禁失败，50 并发未启动。恢复旧后端、G3 限定会话发送与翻译后三健康 200、固定出口通过；见 [R45 TR](../reports/tests/TR-MVP-006-20261017-R45.md)。本地安全判定复现原隔离 FAQ 答案的逗号与来源标签导致 Prompt 不放行；R46 subject `c8d68a1f7815c299093b64722b76fd7ba33ace81` 的隔离 PostgreSQL 全量回归为 2064 passed、3 skipped，Ruff、mypy 与 PowerShell AST 通过；本地 Prompt 安全判定放行新载荷，不能替代新的 staging 单会话、50 并发及资源/断连证据。G5 与 production 仍未通过。
+
 2026-10-17 G5 R41 合并后只读预检：PR #304 已合入 main `a0788e77`。GitHub 比较确认 R40 镜像提交是 main 的祖先（ahead 3、behind 0），但 `src/backend` 树 SHA 不一致；手动门禁返回非零并在任何写入前停止。Dockerfile blob 一致。现有 SSH 密钥被 staging 拒绝，运行容器未检查；未写测试数据、调用 BGE/DeepSeek 或执行并发。见[低敏预检证据](../../release/evidence/staging/crm-staging-g5-r41-ancestor-preflight-20261017.json)。R40 镜像不能用于本次夹具替换，G5 与 production 仍未通过。
 
 2026-10-17 G5 R41 源码候选：手动 `ReconcileFixture` 从当前 main 的受审源码运行，运行镜像来自较早提交时必须在写入前证明祖先关系及后端树、Dockerfile 完全一致，并继续核对不可变运行摘要与 OCI revision。先红后绿相关 49 项；最新 main 基线完整后端 `2006 passed, 27 skipped, 2 warnings`，Ruff、mypy 和 PowerShell AST 通过。当前 main 的后端树已变化，R40 旧镜像只读预检应失败关闭；尚未更新 staging 数据或运行 G5 容量测试，见 [R41 TR](../reports/tests/TR-MVP-006-20261017-R41.md)。

@@ -89,7 +89,7 @@ def build_faq_answer_prompt(
         "knowledge": [
             {
                 "chunk_id": str(hit.chunk_id),
-                "source_label": hit.source_label,
+                "source_label": sanitize_prompt_text(hit.source_label),
                 "score": hit.score,
                 "content": sanitize_prompt_text(hit.content),
                 "answer_template": (

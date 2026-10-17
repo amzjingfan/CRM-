@@ -42,9 +42,14 @@ G5_LEGACY_ANSWER = (
     "or refund status. A human agent must check authorized records for real customer requests."
 )
 G5_SYNTHETIC_QUESTION = "What is the return request process for an item purchased from the G5 test shop?"
-G5_SYNTHETIC_ANSWER = (
+G5_SYNTHETIC_ANSWER_V2 = (
     "For the isolated G5 test shop, open a return request from the order page and provide a reason. "
     "A human agent reviews the request, and processing begins only after platform approval. "
+    "This FAQ does not confirm an individual order or refund outcome."
+)
+G5_SYNTHETIC_ANSWER = (
+    "For the isolated G5 test shop: open a return request from the order page and provide a reason. "
+    "A human agent reviews the request. Processing begins only after platform approval. "
     "This FAQ does not confirm an individual order or refund outcome."
 )
 

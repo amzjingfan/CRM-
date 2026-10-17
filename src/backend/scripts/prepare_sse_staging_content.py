@@ -39,6 +39,7 @@ from scripts.prepare_sse_staging_fixture import (
     G5_LEGACY_QUESTION,
     G5_ORIGINAL_QUESTION,
     G5_SYNTHETIC_ANSWER,
+    G5_SYNTHETIC_ANSWER_V2,
     G5_SYNTHETIC_QUESTION,
     ReconciliationManifest,
     build_renewed_credentials,
@@ -69,7 +70,7 @@ def assert_single_vector_target(
     document = snapshot.document
     if (
         (snapshot.state, document.document_version if document is not None else None)
-        not in {("legacy_prepared", 1), ("prepared", 2)}
+        not in {("legacy_prepared", 1), ("prepared", 2), ("prepared_v3", 3)}
         or document is None
         or document.store_id != manifest.store_id
         or document.source != FAQ_SOURCE
@@ -116,9 +117,9 @@ async def replace_synthetic_content(
     document = snapshot.document
     assert document is not None
     document.question = G5_SYNTHETIC_QUESTION
-    document.answer = G5_SYNTHETIC_ANSWER
+    document.answer = G5_SYNTHETIC_ANSWER_V2
     document.title = G5_SYNTHETIC_QUESTION[:500]
-    document.content_hash = content_hash(G5_SYNTHETIC_QUESTION, G5_SYNTHETIC_ANSWER)
+    document.content_hash = content_hash(G5_SYNTHETIC_QUESTION, G5_SYNTHETIC_ANSWER_V2)
     document.statement_type = KnowledgeStatementType.POLICY
     document.document_version = 2
     document.vectorization_status = "pending"
@@ -136,6 +137,62 @@ async def replace_synthetic_content(
             resource_id=document.id,
             request_id=str(manifest.run_id),
             after_data={"sessions": 50, "synthetic_faq": 1, "version": 2, "knowledge_ready": False},
+            result="success",
+        )
+    )
+    await session.flush()
+
+
+def assert_third_faq_target(manifest: ReconciliationManifest, snapshot: ContentSnapshot) -> None:
+    """只认领原隔离店铺已就绪的版本 2 FAQ；50 条提问不得变化。"""
+    document = snapshot.document
+    if (
+        snapshot.state != "prepared"
+        or len(snapshot.messages) != 50
+        or document is None
+        or document.store_id != manifest.store_id
+        or document.source != FAQ_SOURCE
+        or document.source_type != "faq"
+        or document.tags != ["g5-synthetic"]
+        or document.question != G5_SYNTHETIC_QUESTION
+        or document.answer != G5_SYNTHETIC_ANSWER_V2
+        or document.status != "published"
+        or document.vectorization_status != "ready"
+        or document.document_version != 2
+        or document.statement_type != KnowledgeStatementType.POLICY
+        or document.customer_scope != KnowledgeCustomerScope.GENERIC
+        or document.publication_approval != KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW
+        or document.approved_by != snapshot.approver.id
+        or document.approved_at is None
+        or document.deleted_at is not None
+        or any(message.content != G5_SYNTHETIC_QUESTION for message in snapshot.messages)
+    ):
+        raise ValueError("G5 third FAQ target mismatch")
+
+
+async def replace_third_faq_answer(
+    session: AsyncSession, manifest: ReconciliationManifest, snapshot: ContentSnapshot
+) -> None:
+    """单事务替换唯一 FAQ 的答案，旧版本向量立即失效。"""
+    assert_third_faq_target(manifest, snapshot)
+    document = snapshot.document
+    assert document is not None
+    document.answer = G5_SYNTHETIC_ANSWER
+    document.content_hash = content_hash(G5_SYNTHETIC_QUESTION, G5_SYNTHETIC_ANSWER)
+    document.document_version = 3
+    document.vectorization_status = "pending"
+    document.approved_at = datetime.now(UTC)
+    document.published_at = document.approved_at
+    session.add(
+        AuditLog(
+            store_id=manifest.store_id,
+            actor_type="system",
+            actor_id=None,
+            action="g5.fixture.faq_v3_replace",
+            resource_type="knowledge_document",
+            resource_id=document.id,
+            request_id=str(manifest.run_id),
+            after_data={"sessions": 50, "synthetic_faq": 1, "version": 3, "knowledge_ready": False},
             result="success",
         )
     )
@@ -267,9 +324,13 @@ def assert_content_mode_inventory(
     """写入模式将私有凭证批次与唯一 FAQ 版本精确绑定。"""
     if mode == "replace_content":
         allowed = generation == 4 and output_exists
+    elif mode == "replace_answer_v3":
+        allowed = generation == 5 and output_exists and document_version == 2
     elif mode == "vectorize_one":
-        allowed = (document_version == 1 and generation == 3 and not output_exists) or (
-            document_version == 2 and generation == 4 and output_exists
+        allowed = (
+            (document_version == 1 and generation == 3 and not output_exists)
+            or (document_version == 2 and generation == 4 and output_exists)
+            or (document_version == 3 and generation == 5 and output_exists)
         )
     else:
         raise ValueError("G5 content mode is invalid")
@@ -366,18 +427,23 @@ async def inspect_content_fixture(
                         "g5.fixture.reconcile_email",
                         "g5.fixture.content_prepare",
                         "g5.fixture.content_replace",
+                        "g5.fixture.faq_v3_replace",
                     ]
                 ),
             )
         )
     ).all()
     audit_actions = [row.action for row in audits]
+    if state == "prepared" and audit_actions.count("g5.fixture.faq_v3_replace") == 1:
+        state = "prepared_v3"
     if (
         audit_actions.count("g5.fixture.provision") != 1
         or audit_actions.count("g5.fixture.reconcile_email") != 1
         or audit_actions.count("g5.fixture.content_prepare") != (1 if state != "original" else 0)
-        or audit_actions.count("g5.fixture.content_replace") != (1 if state == "prepared" else 0)
-        or len(audits) != (4 if state == "prepared" else 3 if state == "legacy_prepared" else 2)
+        or audit_actions.count("g5.fixture.content_replace") != (1 if state in {"prepared", "prepared_v3"} else 0)
+        or audit_actions.count("g5.fixture.faq_v3_replace") != (1 if state == "prepared_v3" else 0)
+        or len(audits)
+        != (5 if state == "prepared_v3" else 4 if state == "prepared" else 3 if state == "legacy_prepared" else 2)
     ):
         raise ValueError("G5 fixture audit mismatch")
     document_query = select(KnowledgeDocument).where(KnowledgeDocument.store_id == manifest.store_id)
@@ -385,8 +451,9 @@ async def inspect_content_fixture(
     document = documents[0] if len(documents) == 1 else None
     if state == "original" and documents:
         raise ValueError("G5 fixture knowledge already exists")
-    if state in {"legacy_prepared", "prepared"}:
+    if state in {"legacy_prepared", "prepared", "prepared_v3"}:
         legacy = state == "legacy_prepared"
+        third = state == "prepared_v3"
         if (
             document is None
             or document.deleted_at is not None
@@ -394,7 +461,8 @@ async def inspect_content_fixture(
             or document.source_type != "faq"
             or document.tags != ["g5-synthetic"]
             or document.question != (G5_LEGACY_QUESTION if legacy else G5_SYNTHETIC_QUESTION)
-            or document.answer != (G5_LEGACY_ANSWER if legacy else G5_SYNTHETIC_ANSWER)
+            or document.answer
+            != (G5_LEGACY_ANSWER if legacy else G5_SYNTHETIC_ANSWER if third else G5_SYNTHETIC_ANSWER_V2)
             or document.content_hash != content_hash(document.question, document.answer)
             or document.status != "published"
             or document.statement_type
@@ -403,14 +471,18 @@ async def inspect_content_fixture(
             or document.publication_approval != KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW
             or document.approved_by != manifest.user_ids[0]
             or document.approved_at is None
-            or document.document_version != (1 if legacy else 2)
+            or document.document_version != (1 if legacy else 3 if third else 2)
             or document.vectorization_status not in {"pending", "processing", "ready"}
         ):
             raise ValueError("G5 fixture knowledge mismatch")
         all_chunks = (
             await session.scalars(select(KnowledgeChunk).where(KnowledgeChunk.store_id == manifest.store_id))
         ).all()
-        expected_version = 1 if legacy or document.vectorization_status != "ready" else 2
+        expected_version = (
+            document.document_version
+            if document.vectorization_status == "ready"
+            else max(1, document.document_version - 1)
+        )
         expected_count = 0 if legacy and document.vectorization_status != "ready" else 1
         if len(all_chunks) != expected_count or any(
             chunk.document_id != document.id or chunk.document_version != expected_version for chunk in all_chunks
@@ -492,10 +564,12 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
         source,
         output,
         writable=writable,
-        allow_renewed=mode in {"check_only", "replace_content", "vectorize_one"},
+        allow_renewed=mode in {"check_only", "replace_content", "replace_answer_v3", "vectorize_one"},
     )
     if mode == "replace_content":
         assert_content_mode_inventory(mode, generation, output.exists(), None)
+    if mode == "replace_answer_v3":
+        assert_content_mode_inventory(mode, generation, output.exists(), 2)
     validate_database_target(settings.database_url, expected_database_sha256)
     payload, manifest = read_private_source(source)
     if mode == "vectorize_one":
@@ -510,11 +584,11 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
                 await session.scalars(select(KnowledgeChunk).where(KnowledgeChunk.store_id == store_id))
             ).all()
             if (version == 1 and existing_chunks) or (
-                version == 2
+                version in {2, 3}
                 and (
                     len(existing_chunks) != 1
                     or existing_chunks[0].document_id != document_id
-                    or existing_chunks[0].document_version != 1
+                    or existing_chunks[0].document_version != version - 1
                 )
             ):
                 raise ValueError("G5 vector target has unexpected chunks")
@@ -555,9 +629,24 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
                 "knowledge_ready": False,
                 "provider_calls": 0,
             }
+        if mode == "replace_answer_v3":
+            async with session.begin():
+                snapshot = await inspect_content_fixture(session, manifest, lock=True)
+                assert_content_mode_inventory(
+                    mode, generation, output.exists(), snapshot.document.document_version if snapshot.document else None
+                )
+                await replace_third_faq_answer(session, manifest, snapshot)
+            return {
+                "mode": mode,
+                "matched_sessions": 50,
+                "synthetic_faq": 1,
+                "document_version": 3,
+                "knowledge_ready": False,
+                "provider_calls": 0,
+            }
         snapshot = await inspect_content_fixture(session, manifest)
         knowledge_ready = (
-            snapshot.state in {"legacy_prepared", "prepared"}
+            snapshot.state in {"legacy_prepared", "prepared", "prepared_v3"}
             and snapshot.document is not None
             and snapshot.document.vectorization_status == "ready"
         )
@@ -583,6 +672,7 @@ def main() -> None:
     mode.add_argument("--check-only", action="store_true")
     mode.add_argument("--prepare-content", action="store_true")
     mode.add_argument("--replace-content", action="store_true")
+    mode.add_argument("--replace-answer-v3", action="store_true")
     mode.add_argument("--renew-credentials", action="store_true")
     mode.add_argument("--vectorize-one", action="store_true")
     parser.add_argument("--source-credentials-file", type=Path, required=True)
@@ -591,6 +681,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.vectorize_one:
         selected = "vectorize_one"
+    elif args.replace_answer_v3:
+        selected = "replace_answer_v3"
     elif args.replace_content:
         selected = "replace_content"
     elif args.prepare_content:
