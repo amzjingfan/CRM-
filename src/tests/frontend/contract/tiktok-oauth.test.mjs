@@ -12,7 +12,7 @@ test("TikTok channel uses server OAuth instead of browser credential input", asy
   assert.equal(page.includes("startTikTokOAuth(selectedStoreId)"), true);
   assert.equal(page.includes("window.location.assign(result.authorization_url)"), true);
   assert.equal(page.includes('value="tiktok"'), false);
-  const oauthCard = page.split("<h3>TikTok Shop OAuth</h3>")[1].split("</article>")[0];
+  const oauthCard = page.split("<h2>TikTok Shop OAuth</h2>")[1].split("</article>")[0];
   assert.equal(oauthCard.includes("access_token_ref"), false);
   assert.equal(oauthCard.includes("refresh_token"), false);
 });

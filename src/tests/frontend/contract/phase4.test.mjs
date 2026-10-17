@@ -25,14 +25,14 @@ test("settings pages cover stores channels and team", async () => {
     read("app/settings/team/page.tsx"),
   ]);
   assert.match(sources[0], /createStore/);
-  assert.match(sources[0], /Store management/);
+  assert.match(sources[0], /Store list/);
   assert.match(sources[1], /契约级 Mock/);
-  assert.match(sources[1], /Channel management/);
+  assert.match(sources[1], /Store authorizations/);
   assert.match(sources[2], /disableTeamMember/);
   assert.match(sources[2], /deleteTeamMember/);
   assert.match(sources[2], /status-badge/);
   assert.match(sources[2], /永久删除/);
-  assert.match(sources[2], /Team management/);
+  assert.match(sources[2], /Account management/);
 });
 
 test("Phase 4 English mode covers Agent forms and workspace SSE content", async () => {

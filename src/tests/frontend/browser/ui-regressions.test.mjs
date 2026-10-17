@@ -152,6 +152,7 @@ test("marketing workflow creation stays disabled until a store is available", as
 test("store code with punctuation is rejected by browser validation", async () => {
   const { context, page } = await openPage("/settings/stores");
   try {
+    await page.getByRole("button", { name: "添加店铺" }).click();
     const code = page.locator('input[name="code"]');
     await code.fill("c's");
     assert.equal(await code.evaluate((input) => input.validity.valid), false);
@@ -163,6 +164,7 @@ test("store code with punctuation is rejected by browser validation", async () =
 test("store creation error is visibly announced", async () => {
   const { context, page } = await openPage("/settings/stores");
   try {
+    await page.getByRole("button", { name: "添加店铺" }).click();
     await context.route("**/v1/settings/stores", async (route) => {
       if (route.request().method() !== "POST") return route.fallback();
       await route.fulfill({
@@ -176,6 +178,23 @@ test("store creation error is visibly announced", async () => {
     await page.locator('input[name="code"]').fill("test_store");
     await page.getByRole("button", { name: "创建店铺" }).click();
     await page.getByRole("status").getByText("编码格式不正确").waitFor({ state: "visible", timeout: 5000 });
+  } finally {
+    await context.close();
+  }
+});
+
+test("store settings filter real rows without inventing authorization fields", async () => {
+  const pausedStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Paused Store", code: "paused", status: "disabled" };
+  const { context, page } = await openPage("/settings/stores", { "GET /v1/settings/stores": [store, pausedStore] });
+  try {
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
+    await page.getByRole("button", { name: "其他 (1)" }).click();
+    assert.equal(await page.getByRole("row", { name: /US Demo Store/ }).count(), 0);
+    await page.getByRole("row", { name: /Paused Store/ }).waitFor();
+    await page.getByRole("button", { name: "全部 (2)" }).click();
+    await page.getByRole("textbox", { name: "搜索店铺" }).fill("US Demo");
+    assert.equal(await page.getByRole("row", { name: /Paused Store/ }).count(), 0);
+    assert.equal(await page.getByRole("row", { name: /US Demo Store/ }).count(), 1);
   } finally {
     await context.close();
   }
@@ -468,6 +487,7 @@ test("Agent form without a store disables save and points to store setup", async
 test("team form without a store disables employee creation and points to setup", async () => {
   const { context, page } = await openPage("/settings/team");
   try {
+    await page.getByRole("button", { name: "新建账号" }).click();
     await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
     assert.equal(await page.getByRole("button", { name: "创建员工" }).isDisabled(), true);
   } finally {
@@ -496,6 +516,7 @@ test("team form permits system admin without store and resets to disabled agent 
     });
   });
   try {
+    await page.getByRole("button", { name: "新建账号" }).click();
     await page.locator('select[name="role"]').selectOption("admin");
     assert.equal(await page.getByRole("button", { name: "创建员工" }).isEnabled(), true);
     await page.locator('input[name="name"]').fill("Admin Two");
@@ -503,6 +524,7 @@ test("team form permits system admin without store and resets to disabled agent 
     await page.locator('input[name="temporary_password"]').fill("ExamplePass123!");
     await page.getByRole("button", { name: "创建员工" }).click();
     await page.getByRole("status").getByText(/员工已创建/).waitFor();
+    await page.getByRole("button", { name: "新建账号" }).click();
     assert.equal(await page.locator('select[name="role"]').inputValue(), "agent");
     assert.equal(await page.getByRole("button", { name: "创建员工" }).isDisabled(), true);
   } finally {
@@ -672,6 +694,10 @@ test("buyer and seller bubbles stay on opposite sides and show Chinese beneath t
   try {
     const buyer = page.locator(".message.incoming");
     const seller = page.locator(".message.outgoing");
+    const listTime = page.locator(".conversation-time");
+    await listTime.waitFor();
+    assert.match(await listTime.innerText(), /^\d{2}-\d{2} \d{2}:\d{2}$/);
+    assert.equal(await listTime.getAttribute("datetime"), conversation.last_message_at);
     await buyer.waitFor();
     assert.ok((await buyer.boundingBox()).x < (await seller.boundingBox()).x);
     await buyer.getByRole("button", { name: "译成中文" }).click();
