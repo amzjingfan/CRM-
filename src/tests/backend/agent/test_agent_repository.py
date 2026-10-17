@@ -1,6 +1,7 @@
 """验证 Agent 运行记录独立提交和失败终态持久化。"""
 
 import uuid
+from dataclasses import replace
 from decimal import Decimal
 from typing import cast
 from unittest.mock import AsyncMock, Mock
@@ -10,7 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.errors import LLMFailureStage, LLMOutputFailureKind, LLMOutputSchemaIssue
 from app.agent.models import AgentRun
-from app.agent.repository import AgentRunStart, AgentWorkflowRunCompletion, SqlAlchemyAgentRunRecorder
+from app.agent.repository import (
+    AgentDecisionReason,
+    AgentRunStart,
+    AgentWorkflowRunCompletion,
+    SqlAlchemyAgentRunRecorder,
+)
 from app.agent.schemas import AgentAction, AgentRunStatus, ClassificationState, IntentName
 
 
@@ -312,34 +318,41 @@ async def test_workflow_completion_records_scores_and_safe_trace_only() -> None:
     recorder = SqlAlchemyAgentRunRecorder(session)
     citation_id = uuid.uuid4()
 
-    await recorder.complete_workflow(
-        run.id,
-        AgentWorkflowRunCompletion(
-            provider_name="deepseek",
-            model_name="answer-model",
-            prompt_version="faq-agent-workflow-v1.0.0",
-            intent=IntentName.RETURN_POLICY,
-            classification_state=ClassificationState.CLASSIFIED,
-            intent_confidence=0.9,
-            retrieval_score=0.85,
-            final_confidence=0.8,
-            action=AgentAction.AUTO_REPLY,
-            input_tokens=100,
-            output_tokens=20,
-            latency_ms=300,
-            state_path=["RECEIVED", "KNOWLEDGE_RETRIEVED", "AUTO_REPLY_READY"],
-            citation_ids=[citation_id],
-            required_tools=[],
-            prompt_versions={"answer": "faq-answer-v1.0.0"},
-        ),
+    completion = AgentWorkflowRunCompletion(
+        provider_name="deepseek",
+        model_name="answer-model",
+        prompt_version="faq-agent-workflow-v1.0.0",
+        intent=IntentName.RETURN_POLICY,
+        classification_state=ClassificationState.CLASSIFIED,
+        intent_confidence=0.9,
+        retrieval_score=0.85,
+        final_confidence=0.8,
+        action=AgentAction.AUTO_REPLY,
+        input_tokens=100,
+        output_tokens=20,
+        latency_ms=300,
+        state_path=["RECEIVED", "KNOWLEDGE_RETRIEVED", "AUTO_REPLY_READY"],
+        citation_ids=[citation_id],
+        required_tools=[],
+        prompt_versions={"answer": "faq-answer-v1.0.0"},
+        decision_reason="faq_review_confidence_low",
     )
+    await recorder.complete_workflow(run.id, completion)
 
     assert run.retrieval_score == Decimal("0.8500")
     assert run.final_confidence == Decimal("0.8000")
     assert str(citation_id) in (run.output_summary or "")
+    assert "decision_reason=faq_review_confidence_low" in (run.output_summary or "")
     assert "签收后" not in (run.output_summary or "")
     assert run.status == AgentRunStatus.SUCCEEDED.value
     session.commit.assert_awaited_once()
+
+    await recorder.complete_workflow(
+        run.id,
+        replace(completion, decision_reason=cast(AgentDecisionReason, "raw private model text")),
+    )
+    assert "decision_reason=unknown" in (run.output_summary or "")
+    assert "raw private model text" not in (run.output_summary or "")
 
 
 @pytest.mark.asyncio

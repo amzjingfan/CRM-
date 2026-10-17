@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R63 源码：[R63 TR](../reports/tests/TR-MVP-006-20261018-R63.md)记录固定转人工原因的先红后绿测试、提交后完整后端 2069 passed/27 skipped，以及 Ruff/mypy 通过。它只增强白名单诊断，不改变 Agent 动作或安全阈值；尚未发布或部署 R63 镜像，也未运行新 DeepSeek 单会话。[R62 现场](../reports/tests/TR-MVP-006-20261018-R62.md)仍是最新真实结果：无安全 `delta`、50 并发未启动、旧 G3 模式已恢复。G5 与 production No-Go。
+
 2026-10-18 G5 R62 最新现场：[R62 TR](../reports/tests/TR-MVP-006-20261018-R62.md)记录 R61 后端手动临时部署、唯一 FAQ 就绪、第九代 50 枚隔离短期令牌续期及 50/50 身份会话预检通过。唯一合成 SSE HTTP 200 并正常结束，但没有安全 `delta`；Agent `transfer_human`、最终置信度 0，故 `performance_gate_passed=false`，50 并发未启动。旧后端和 G3 限定会话已恢复，三健康及固定出口通过。下一步先用固定低敏原因定位转人工，G5 与 production No-Go。
 
 2026-10-18 G5 R61 源码候选：[R61 TR](../reports/tests/TR-MVP-006-20261018-R61.md)记录五条业务声明不变量固定分类及 FAQ 政策 Prompt `v1.6.2` 的先红后绿测试。定向 119 passed、完整后端 2064 passed/27 skipped，Ruff lint/format 与 mypy 通过；尚未发布镜像、部署或调用 DeepSeek。[R60 现场](../reports/tests/TR-MVP-006-20261018-R60.md)仍是最新真实结果：无安全 `delta`、9.613 秒、50 并发未运行，旧 G3 模式已恢复。G5 与 production No-Go。

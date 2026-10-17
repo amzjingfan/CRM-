@@ -1447,6 +1447,69 @@ async def test_medium_final_confidence_returns_reviewable_draft() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    (
+        "draft_needs_human",
+        "review_is_safe",
+        "review_is_grounded",
+        "claims_consistent",
+        "review_confidence",
+        "expected_reason",
+    ),
+    [
+        (True, True, True, True, 0.88, "faq_draft_needs_human"),
+        (False, False, True, True, 0.88, "faq_review_unsafe"),
+        (False, True, False, True, 0.88, "faq_review_ungrounded"),
+        (False, True, True, False, 0.88, "faq_review_claims_inconsistent"),
+        (False, True, True, True, 0.0, "faq_review_confidence_low"),
+    ],
+)
+async def test_faq_transfer_records_fixed_decision_reason_without_changing_action(
+    draft_needs_human: bool,
+    review_is_safe: bool,
+    review_is_grounded: bool,
+    claims_consistent: bool,
+    review_confidence: float,
+    expected_reason: str,
+) -> None:
+    """G5 转人工须可定位固定原因；不扩大草稿可见性或放宽安全阈值。"""
+    rag_result = retrieval(0.92)
+    workflow, _, _, recorder = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.94,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[
+            FaqAnswerModelOutput(
+                answer="签收后七天内可以申请退货。",
+                citation_chunk_ids=[rag_result.hits[0].chunk_id],
+                grounding_confidence=0.90,
+                answer_language="zh-CN",
+                needs_human=draft_needs_human,
+                business_claims=empty_claim_inventory(),
+            ),
+            GroundingReviewOutput(
+                is_safe=review_is_safe,
+                is_grounded=review_is_grounded,
+                business_claims_consistent=claims_consistent,
+                confidence=review_confidence,
+                reason_codes=[],
+            ),
+        ],
+    )
+
+    result = await workflow.run(cast_session(), command())
+
+    assert result.action == AgentAction.TRANSFER_HUMAN
+    assert result.draft_reply is None
+    assert result.final_confidence == 0.0
+    assert recorder.completed is not None
+    assert recorder.completed.decision_reason == expected_reason
+
+
+@pytest.mark.asyncio
 async def test_successful_logistics_tool_generates_grounded_reply_without_platform_send() -> None:
     """实时物流查询成功后可解释结果，但仍不能隐式调用平台发送工具。"""
     query_call_id = uuid.uuid4()

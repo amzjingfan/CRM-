@@ -26,6 +26,7 @@ from app.agent.reply_rendering import (
 )
 from app.agent.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
 from app.agent.repository import (
+    AgentDecisionReason,
     AgentRunStart,
     AgentWorkflowRunCompletion,
     AgentWorkflowRunRecorder,
@@ -171,6 +172,7 @@ class WorkflowState(TypedDict, total=False):
     customer_translation: TranslationBundleResult
     translation_error_code: str
     safety_reason_codes: list[str]
+    decision_reason: AgentDecisionReason
 
 
 class AgentWorkflowExecutionError(Exception):
@@ -291,6 +293,7 @@ class AgentWorkflowService:
                     ),
                     translation_error_code=state.get("translation_error_code"),
                     safety_reason_codes=result.safety_reason_codes,
+                    decision_reason=state["decision_reason"],
                     business_claim_summaries=[
                         (
                             f"{claim.subject_type.value}:{claim.action.value}:"
@@ -817,9 +820,45 @@ class AgentWorkflowService:
         if action == AgentAction.AUTO_REPLY and not state.get("automatic_delivery_allowed", False):
             # 语言模型草稿只能供人工复核；自动就绪必须来自当次可信数据的固定文本。
             action = AgentAction.HUMAN_REVIEW
+        decision_reason: AgentDecisionReason = "none"
+        if action == AgentAction.TRANSFER_HUMAN:
+            if uses_tools:
+                decision_reason = "tool_path"
+            elif output.classification_state != ClassificationState.CLASSIFIED:
+                decision_reason = "classification_unresolved"
+            elif output.confidence < self.human_review_threshold:
+                decision_reason = "intent_confidence_low"
+            elif not state.get("hits"):
+                decision_reason = "faq_knowledge_missing"
+            elif state.get("model_refusal", False):
+                decision_reason = "model_refusal"
+            else:
+                draft = state.get("draft")
+                review = state.get("review")
+                if draft is not None and draft.needs_human:
+                    decision_reason = "faq_draft_needs_human"
+                elif review is not None and not review.is_safe:
+                    decision_reason = "faq_review_unsafe"
+                elif review is not None and not review.is_grounded:
+                    decision_reason = "faq_review_ungrounded"
+                elif review is not None and not review.business_claims_consistent:
+                    decision_reason = "faq_review_claims_inconsistent"
+                elif state.get("safety_reason_codes"):
+                    decision_reason = "faq_safety_rejected"
+                elif review is None:
+                    decision_reason = "faq_review_missing"
+                elif review.confidence < self.human_review_threshold:
+                    decision_reason = "faq_review_confidence_low"
+                elif draft is not None and draft.grounding_confidence < self.human_review_threshold:
+                    decision_reason = "faq_draft_confidence_low"
+                elif retrieval_score < self.human_review_threshold:
+                    decision_reason = "faq_retrieval_confidence_low"
+                else:
+                    decision_reason = "unknown"
         return {
             "final_confidence": final_confidence,
             "action": action,
+            "decision_reason": decision_reason,
             "state_path": ["CONFIDENCE_EVALUATED"],
         }
 

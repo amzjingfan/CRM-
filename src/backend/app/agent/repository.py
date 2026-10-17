@@ -3,7 +3,7 @@
 import uuid
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Protocol, get_args
+from typing import Literal, Protocol, get_args
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +23,26 @@ from app.agent.schemas import (
     IntentClassificationResult,
     IntentName,
 )
+
+AgentDecisionReason = Literal[
+    "none",
+    "classification_unresolved",
+    "intent_confidence_low",
+    "faq_knowledge_missing",
+    "model_refusal",
+    "faq_draft_needs_human",
+    "faq_safety_rejected",
+    "faq_review_unsafe",
+    "faq_review_ungrounded",
+    "faq_review_claims_inconsistent",
+    "faq_review_missing",
+    "faq_review_confidence_low",
+    "faq_draft_confidence_low",
+    "faq_retrieval_confidence_low",
+    "tool_path",
+    "unknown",
+]
+_SAFE_DECISION_REASONS = frozenset(get_args(AgentDecisionReason))
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +122,7 @@ class AgentWorkflowRunCompletion:
     translation_error_code: str | None = None
     safety_reason_codes: list[str] = field(default_factory=list)
     business_claim_summaries: list[str] = field(default_factory=list)
+    decision_reason: AgentDecisionReason = "none"
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,6 +357,11 @@ class SqlAlchemyAgentRunRecorder:
             f"candidate_count={result.retrieval_candidate_count}"
         )
         safety_reasons = ",".join(result.safety_reason_codes) or "none"
+        decision_reason = (
+            result.decision_reason
+            if isinstance(result.decision_reason, str) and result.decision_reason in _SAFE_DECISION_REASONS
+            else "unknown"
+        )
         business_claims = ",".join(result.business_claim_summaries) or "none"
         translation = (
             f"detected_language={result.detected_language.value};reply_language={result.reply_language};"
@@ -348,6 +374,7 @@ class SqlAlchemyAgentRunRecorder:
             f"required_tools={required_tools};tool_calls={tool_calls};"
             f"business_claims={business_claims};prompts={prompt_versions};"
             f"safety_reasons={safety_reasons};"
+            f"decision_reason={decision_reason};"
             f"{translation};{retrieval_models}"
         )
         await self.session.commit()
