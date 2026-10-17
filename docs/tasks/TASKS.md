@@ -67,6 +67,8 @@ DOING/VERIFYING → BLOCKED
 
 `MVP-006` R41 合并与只读预检：[PR #304](https://github.com/CP11-gh/CRM/pull/304) 已合入 main `a0788e77`；对 R40 镜像的 GitHub 比较确认提交为祖先，但后端 Git 树变化，门禁在任何写入前拒绝。现有 SSH 密钥被 staging 拒绝，运行镜像摘要尚未只读核对；[低敏证据](../../release/evidence/staging/crm-staging-g5-r41-ancestor-preflight-20261017.json)。下一步需单独精确批准从新 main 发布后端镜像，并恢复主机读取入口；50 条问题/FAQ 写入、BGE、DeepSeek 与 50 并发均未执行，`MVP-006` 仍为 `DOING`。
 
+`MVP-006` R42 手动候选镜像：用户单独批准从 main `335e959b03d4c87ffec789dc0144121610a9b60c` 发布 1 个私有后端镜像。远端不可变摘要 `sha256:14f79918…66c63`、`linux/amd64`、OCI revision 与 12 层压缩 110,929,839 字节已核对，见[发布证据](../../release/evidence/staging/crm-staging-g5-r42-manual-backend-image-20261017.json)。尚未部署 staging，已知两把 SSH 公钥由客户端提供但 `crmdeploy` 均拒绝；需要恢复主机访问后再核对运行摘要。隔离店铺 50 条问题与 FAQ 写入、本地 BGE、付费单会话与真实 50 并发仍待各自精确授权和现场验证；G5 保持 `DOING`、production No-Go。
+
 ## P1：v0.1 之后
 
 这些主题明确不属于当前 v0.1 放行范围。开始前必须建立独立需求、验收、安全边界和门禁，不能复用 v0.1 的限定结论。

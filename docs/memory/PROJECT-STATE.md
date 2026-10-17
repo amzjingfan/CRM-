@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G5 R42 手动候选镜像：用户单独授权后，从 main `335e959b03d4c87ffec789dc0144121610a9b60c` 用现有 GitHub 凭据发布一份私有 `crm-backend`；GHCR 不可变摘要 `sha256:14f79918…66c63` 经远端 manifest 与按摘要拉回核对，平台 `linux/amd64`、OCI revision 精确匹配，12 层压缩合计 110,929,839 字节，见 [低敏证据](../../release/evidence/staging/crm-staging-g5-r42-manual-backend-image-20261017.json)。未部署 staging，未写隔离店铺数据、运行 BGE/DeepSeek 或 50 并发。两把已知 SSH 密钥均被 `crmdeploy` 拒绝；客户端确认公钥已提交给主机，须在主机端恢复授权或取得可用账号。G5 `DOING`、production No-Go。
+
 2026-10-17 G5 R41 合并及只读预检：受审门禁修复 [PR #304](https://github.com/CP11-gh/CRM/pull/304) 已 squash 合入 main `a0788e770f46edb7a678edf5eb0633f29479c9e5`。对 R40 镜像的 GitHub 祖先及构建输入检查证实祖先关系成立、Dockerfile 一致，但当前 main 的 `src/backend` 树已变化，门禁非零失败关闭；[低敏证据](../../release/evidence/staging/crm-staging-g5-r41-ancestor-preflight-20261017.json)。staging SSH 认证失败，运行摘要未核对；未写数据或调用模型。下一步须单独精确批准从新的 main 发布后端镜像，并先恢复 staging 主机读取入口；数据替换与本地向量化仍各自待授权。G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R41 候选：获批的手动门禁修复保留当前 main 源码要求，只有运行镜像提交是祖先且后端树和 Dockerfile 完全相同才允许 `ReconcileFixture` 复用旧镜像；不可变运行摘要与 OCI revision 仍精确核对。subject `14148597739dd53bb5a5c81a3773c7f73aad47fb` 先红后绿相关 49 项，最新 main 上完整后端 `2006 passed, 27 skipped`，Ruff/mypy/PowerShell AST 通过，独立只读审查无本次差异阻断。当前 main `70d8968a` 的后端树已变化，R40 镜像预检预期失败关闭；合并与获准只读预检尚待执行。没有写隔离店铺数据、运行 BGE/DeepSeek 或 50 并发；G5 `DOING`、production No-Go。
@@ -15,11 +17,11 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r42-preflight-20261017
-Governance base SHA: a0788e770f46edb7a678edf5eb0633f29479c9e5
-CANDIDATE_SUBJECT_SHA: 14148597739dd53bb5a5c81a3773c7f73aad47fb
+Working branch at this snapshot: spike/g5-backend-image-20261017
+Governance base SHA: 335e959b03d4c87ffec789dc0144121610a9b60c
+CANDIDATE_SUBJECT_SHA: 335e959b03d4c87ffec789dc0144121610a9b60c
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: KNOWN_TEMP — 本次镜像发布的隔离 Docker CLI 配置目录仍在已忽略测试临时区；已退出 GHCR 且认证项为 0，自动审批拒绝了删除命令
+Workspace hygiene: KNOWN_TEMP — R40 与 R42 镜像发布的隔离 Docker CLI 配置目录保留在已忽略测试临时区；均已退出 GHCR 且认证项为 0，R40 目录删除曾被自动审批拒绝
 ```
 
 2026-10-17 G2/G3 当前恢复点：受控手机买家消息在 Seller Center 与 CRM 可见，staging 只读聚合证实 1 个验签、店铺绑定和处理均成功的 `NEW_MESSAGE` 事件，原只读加翻译运行模式已恢复；真实写仍关闭。R03 代码已准备工作台可见标签页 5 秒刷新、官方 202606 人工文本契约和 staging 单会话发送门禁，合并 main 后完整后端 `1999 passed, 27 skipped`、前端浏览器 27 项通过，尚未发布或真实发送；见 [IR](../records/implementation/IR-MVP-004-20261017-R03.md)、[TR](../reports/tests/TR-MVP-004-20261017-R03.md)、[RR](../reports/reviews/RR-MVP-004-20261017-R03.md) 与[低敏预检](../../release/evidence/staging/crm-staging-tiktok-inbound-preflight-20261017.json)。三个派生索引在本候选分支为 `CANDIDATE_VIEW`，G2/G3 继续 `DOING`、production No-Go。下一步：①合并受审源码并手动构建不可变镜像；②单会话 staging 门禁部署并核对其他会话写入关闭；③取得具体外发正文确认后仅发一次并在买家端、Seller Center、CRM 与审计对账。
@@ -366,6 +368,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 按当前 main 和运行镜像重新核对手动 staging 门禁；原隔离店铺的 50 条问题和唯一 FAQ 现场更新、随后本地 BGE 向量化分别按精确范围执行并只读对账。安全单会话的 DeepSeek 复测及真实 50 并发仍须分别取得现场证据，不能由源码测试代替。
+1. 恢复 `crmdeploy` 的 staging 主机 SSH 入口，先只读核对运行镜像及手动门禁；候选后端已从 main `335e959b` 发布。原隔离店铺的 50 条问题和唯一 FAQ 现场更新、随后本地 BGE 向量化分别按精确范围执行并只读对账。安全单会话的 DeepSeek 复测及真实 50 并发仍须分别取得现场证据，不能由源码测试代替。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。

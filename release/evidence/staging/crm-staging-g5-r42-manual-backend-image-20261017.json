@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "evidence_type": "manual_backend_image_publish",
+  "source_sha": "335e959b03d4c87ffec789dc0144121610a9b60c",
+  "tag": "ghcr.io/cp11-gh/crm-backend:g5-r42-335e959b-20261017",
+  "reference": "ghcr.io/cp11-gh/crm-backend@sha256:14f7991870fb5fda8b70aaca7d94e209404b55e592b2929302013ec18a766c63",
+  "platform": "linux/amd64",
+  "child_digest": "sha256:422dad0bd04333ce562933d8587710c43e4e5acc596bf05aaa1aa8cf7aa50865",
+  "config_digest": "sha256:5bc822862068581cfed4c1d5f4313f52c99377bb89bc11fcf03c964cb6b050e2",
+  "layer_count": 12,
+  "compressed_bytes": 110929839,
+  "local_bytes": 110942956,
+  "remote_manifest_status": "PASS",
+  "remote_digest_pull_status": "PASS",
+  "remote_revision_status": "PASS",
+  "tag_preexisting": false,
+  "staging_deployed": false,
+  "production_release": false,
+  "github_actions_used": false,
+  "temporary_auth_status": "logged_out_zero_auth_entries_directory_retained",
+  "observed_at_utc": "2026-10-17T07:55:23Z"
+}
