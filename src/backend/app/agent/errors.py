@@ -7,6 +7,11 @@ LLMOutputFailureKind = Literal["unfinished", "empty", "invalid_structure", "inva
 LLMOutputSchemaPath = Literal[
     "root",
     "unknown",
+    "answer",
+    "citation_chunk_ids",
+    "grounding_confidence",
+    "answer_language",
+    "needs_human",
     "decision",
     "content",
     "language",

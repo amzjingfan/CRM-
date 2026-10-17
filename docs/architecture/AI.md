@@ -10,6 +10,8 @@ FAQ 回答 Prompt 中的知识来源标签也使用现有 DLP 脱敏函数。来
 
 完整 Agent 工作流遇到 `LLM_OUTPUT_INVALID` 时，运行记录沿用现有 `output_summary`，仅追加固定模型节点（分类、FAQ/工具草稿、安全复核或翻译）及 Provider 已分类的 `unfinished`、`empty`、`invalid_structure`、`invalid_json`、`invalid_schema`。仅在 `invalid_schema` 时，Provider 已映射的 Schema 字段路径与 Pydantic 错误类型可写入最多八组；记录端口再次按固定白名单校验、去重和截断。其他失败类别不写 Schema 明细。缺失或不在白名单的诊断字段不写入；Prompt、模型正文、字段值、原始异常和请求 ID 不持久化。诊断只用于定位失败，公开错误码、失败关闭、DLP、评分、调用次数及发送开关不因此改变。
 
+G5 R53 的受控单会话在 FAQ 草稿处记录 `business_claims:model_type` 与 `unknown:missing`，没有保存模型正文，后者不能倒推出具体字段。FAQ 生成 Prompt `faq-answer-v1.6.1` 明列 `FaqAnswerModelOutput` 的全部必需顶层字段，以及 `business_claims={complete:true, claims:[...]}` 的对象结构；无业务命题时 `claims=[]`，有业务命题时仍须完整列出。低敏 Schema 路径白名单仅新增 `answer`、`citation_chunk_ids`、`grounding_confidence`、`answer_language`、`needs_human`，不记录模型字段值。注册摘要同步更新；严格 Schema、DLP、评分、调用次数及 TikTok 发送边界未改变。确定性测试不能证明新 Prompt 的真实模型输出或 G5 单会话通过。
+
 ## Prompt 与策略版本
 
 系统 Prompt、DLP 规则、结构化声明和回复策略使用可审计版本。Agent 配置只能选择受控语气、语言和品牌名，不能写任意 Prompt、模型或阈值。版本变化必须更新评测和发布基线。

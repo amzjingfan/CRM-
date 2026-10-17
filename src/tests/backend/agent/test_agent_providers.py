@@ -32,7 +32,7 @@ from app.agent.providers.deepseek_provider import DeepSeekProvider
 from app.agent.providers.factory import build_provider_pair
 from app.agent.providers.openai_provider import OpenAIProvider
 from app.agent.real_model_evaluation import RealModelEvaluationOutput
-from app.agent.schemas import ClassificationState, IntentModelOutput, IntentName
+from app.agent.schemas import ClassificationState, FaqAnswerModelOutput, IntentModelOutput, IntentName
 from app.agent.security import TRUSTED_PROVIDER_CONTRACT_SYSTEM_PROMPT
 from app.agent.translation import TRANSLATION_SYSTEM_PROMPT, TranslationBundleModelOutput
 from app.shared.config.settings import Settings
@@ -699,6 +699,36 @@ async def test_deepseek_schema_diagnostics_allowlist_paths_and_types() -> None:
     assert ("unknown", "extra_forbidden") in captured.value.output_schema_issues
     assert "private_secret_field" not in str(captured.value.output_schema_issues)
     assert "must-never-appear" not in str(captured.value.output_schema_issues)
+
+
+@pytest.mark.asyncio
+async def test_deepseek_faq_schema_diagnostics_name_required_fields_without_values() -> None:
+    """FAQ 缺字段与错误的声明容器只记录固定路径和错误类别。"""
+    content = json.dumps(
+        {
+            "answer": "Synthetic return policy answer",
+            "citation_chunk_ids": ["00000000-0000-0000-0000-000000000001"],
+            "grounding_confidence": 0.9,
+            "business_claims": [],
+        }
+    )
+    resource = FakeResource(
+        SimpleNamespace(
+            choices=[SimpleNamespace(finish_reason="stop", message=SimpleNamespace(content=content))],
+            usage=SimpleNamespace(prompt_tokens=12, completion_tokens=8),
+        )
+    )
+    provider = provider_with_resource("deepseek", resource)
+
+    with pytest.raises(LLMProviderError) as captured:
+        await provider.generate_structured(request(), FaqAnswerModelOutput)
+
+    assert captured.value.output_failure_kind == "invalid_schema"
+    assert captured.value.output_schema_issues == (
+        ("answer_language", "missing"),
+        ("needs_human", "missing"),
+        ("business_claims", "model_type"),
+    )
 
 
 @pytest.mark.asyncio

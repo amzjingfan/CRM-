@@ -111,6 +111,12 @@ REGISTERED_PROMPTS = {
 }
 
 
+def test_faq_prompt_describes_every_required_output_field_and_claim_inventory() -> None:
+    """JSON 模式不提供 Schema，FAQ 系统指令必须明确对象结构。"""
+    assert all(f'"{field}"' in FAQ_ANSWER_SYSTEM_PROMPT for field in FaqAnswerModelOutput.model_fields)
+    assert '"business_claims":{"complete":true,"claims":[]}' in FAQ_ANSWER_SYSTEM_PROMPT
+
+
 @pytest.mark.parametrize(("prompt_id", "expected"), REGISTERED_PROMPTS.items())
 def test_business_prompt_registry_binds_version_digest_purpose_and_schema(
     prompt_id: BusinessPromptId,

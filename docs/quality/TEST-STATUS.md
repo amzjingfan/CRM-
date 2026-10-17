@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R54 源码候选：针对 [R53 单会话诊断](../reports/tests/TR-MVP-006-20261017-R53.md) 的 `business_claims:model_type`，FAQ Prompt `faq-answer-v1.6.1` 明列必需字段及声明对象结构；FAQ 顶层字段进入低敏 Schema 路径白名单。新增测试先红后绿，相关 169 passed，全量后端 2049 passed/3 skipped、2 项依赖弃用警告，Ruff lint/format 与 mypy 通过。本轮尚未发布新镜像、部署 staging 或调用 DeepSeek，G5 单会话和 50 并发仍未通过，production No-Go。
+
 2026-10-17 G5 R53 获批手动诊断窗口：[R53 TR](../reports/tests/TR-MVP-006-20261017-R53.md)记录六摘要预取、G5 临时部署、现有凭证 50/50 只读预检通过；唯一合成 SSE HTTP 200，accepted 1047.6 ms，却在 FAQ 草稿 `invalid_schema` 后以公开 `50003` 结束，安全 `delta` 为空。只读白名单诊断为 `business_claims:model_type` 和 `unknown:missing`，后者仍不能定位具体字段。单会话失败，50 并发未启动；旧后端与 G3 限定会话模式已恢复，三健康与固定出口通过。G5 和 production No-Go。
 
 2026-10-17 G5 R52 手动镜像证据：从 main `19437e64` 发布的诊断后端 OCI index `sha256:d85e1767…819f7` 已核对 linux/amd64、revision、12 层压缩大小及按摘要拉回，见[低敏证据](../../release/evidence/staging/crm-staging-g5-r52-manual-backend-image-20261017.json)。镜像尚未部署，R50 的单会话失败与 G5 No-Go 结论不变。
