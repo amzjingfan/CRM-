@@ -11,14 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/mvp006-g5-manual-candidate-20261017
-Governance base SHA: f618dfff6bd7b2b6366798bcf600ea2e59afa0c8
+Working branch at this snapshot: docs/g5-r32-index-current-20261017
+Governance base SHA: 0efea525e49788daa7ebc18ee44673d92a1e1115
 CANDIDATE_SUBJECT_SHA: 4eee10257815d9ed920f6678e28cc63908a0a15e
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 G5 R32：用户分别授权手动发布一枚 main `f618dfff` 后端镜像及一次 staging 单会话窗口。六摘要预取、G5 validate/deploy 后，唯一合成 SSE 在 accepted 后返回 `50003`、无 delta；立即恢复 TikTok 只读加工作台翻译，LLM/SSE 关闭、限流 10，三个公网健康 200。根因是 G5 backend 覆盖层未开启 Agent 必需的本地检索。获批的有界代码修复 subject `4eee102` 为 G5 backend 开启该开关，并在 Compose 与运行态核对；全量本地后端 `1959 passed, 27 skipped`，没有第二次现场或付费复测。见 [IR](../records/implementation/IR-MVP-006-20261017-R32.md)、[TR](../reports/tests/TR-MVP-006-20261017-R32.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R32.md)。G5 仍 `DOING`、production No-Go。下一步：合并修复并核对新 main；新镜像、staging 切换与付费单会话复测分别取得精确范围；单会话通过后再准备 50 并发与恢复证据。
+2026-10-17 G5 R32：用户分别授权手动发布一枚 main `f618dfff` 后端镜像及一次 staging 单会话窗口。六摘要预取、G5 validate/deploy 后，唯一合成 SSE 在 accepted 后返回 `50003`、无 delta；立即恢复 TikTok 只读加工作台翻译，LLM/SSE 关闭、限流 10，三个公网健康 200。根因是 G5 backend 覆盖层未开启 Agent 必需的本地检索。获批的有界代码修复 subject `4eee102` 为 G5 backend 开启该开关，并在 Compose 与运行态核对；全量本地后端 `1959 passed, 27 skipped`。[PR #287](https://github.com/CP11-gh/CRM/pull/287) 已合入 main `0efea525`，没有第二次现场或付费复测。见 [IR](../records/implementation/IR-MVP-006-20261017-R32.md)、[TR](../reports/tests/TR-MVP-006-20261017-R32.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R32.md)。三份派生索引从该 main 的源记录核对 121/124/119 条，无缺漏或重复，本收尾分支恢复为 `CURRENT`。G5 仍 `DOING`、production No-Go。下一步：新镜像、staging 切换与付费单会话复测分别取得精确范围；单会话通过后再准备 50 并发与恢复证据。
 
 2026-10-17 `MVP-SETTINGS-UI-001` 完成：PR #280/#282/#284 已合入 `main`，前端 subject `6a4398491a6956b4e55ef998debf989834f74244`；工作台真实 TikTok 会话列表显示最近消息 `MM-DD HH:mm`，设置页只呈现现有店铺授权与员工账号，窄屏表格可横向滚动且状态单行。最终前端镜像 `ghcr.io/cp11-gh/crm-frontend@sha256:8b2883bc0af901fa33470a2bb183fa4d2deb19b2066798453296c7353c6e7dfe` 已手动部署 staging，validate/deploy 通过、三公网健康 200、现场刷新后真实会话时间及 3 家店铺可见；后端/检索在该部署窗口保持原摘要，真实 TikTok 发送仍关闭，production 未发布。见 [IR](../records/implementation/IR-MVP-SETTINGS-UI-001-20261017-R01.md)、[TR](../reports/tests/TR-MVP-SETTINGS-UI-001-20261017-R01.md) 与 [低敏部署证据](../../release/evidence/staging/crm-staging-settings-ui-deploy-20261017-r03.json)。
 
