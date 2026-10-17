@@ -16,6 +16,8 @@ G5 R56 的受控单会话通过 FAQ 草稿，但安全复核返回 `invalid_sche
 
 G5 R58 的 FAQ 草稿再次返回 `business_claims:missing,other,extra_forbidden`，说明提示文字与 JSON Output 未稳定满足业务结构。R59 候选仅将已注册 FAQ 草稿请求改为 DeepSeek Responses 的完整 `FaqAnswerModelOutput` JSON Schema；模型仍不能决定业务放行，应用仍逐项执行 Pydantic、证据、DLP 与独立安全复核。其他模型场景和调用次数不变。一次合成接口探针验证当前 staging 模型接受完整 Schema 并返回必需字段（HTTP 200，约 1.65 秒），不能替代真实 FAQ 安全 `delta`、延迟或 50 并发验收。
 
+R60 真实单会话说明 JSON Schema 约束了字段形状，但 `business_claims` 仍被本地业务语义校验以泛化 `value_error` 拒绝。当前低敏记录不能确认具体不变量；服务已恢复 G3 模式，G5 保持 No-Go。后续诊断只能输出固定不变量类别，不保存声明值或模型正文，严格校验不能放宽。
+
 ## Prompt 与策略版本
 
 系统 Prompt、DLP 规则、结构化声明和回复策略使用可审计版本。Agent 配置只能选择受控语气、语言和品牌名，不能写任意 Prompt、模型或阈值。版本变化必须更新评测和发布基线。

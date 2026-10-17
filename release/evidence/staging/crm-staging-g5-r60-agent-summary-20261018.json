@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "evidence_type": "g5_agent_failure_whitelist",
+  "query_window_start_utc": "2026-10-17T18:34:30Z",
+  "query_window_end_utc": "2026-10-17T18:35:10Z",
+  "db_transaction": "read_only",
+  "matching_rows": 1,
+  "rows": [
+    {
+      "status": "failed",
+      "error_code": "LLM_OUTPUT_INVALID",
+      "failure_stage": "faq_draft",
+      "output_failure_kind": "invalid_schema",
+      "output_schema_issues": "business_claims:value_error",
+      "latency_ms": 7572
+    }
+  ]
+}
