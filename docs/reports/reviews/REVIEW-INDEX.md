@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -143,3 +143,4 @@ View: `CURRENT`
 | RR-MVP-006-20261018-R54 | MVP-006 | R54 | APPROVE | `1c8f7d0f66b468ed9fd5ecfe44476151706a3bf9` | prompt-schema-alignment / registered-digest / diagnostic-whitelist / fail-closed / scope-control | 2026-10-18T00:05:00+08:00 | [`RR-MVP-006-20261018-R54.md`](RR-MVP-006-20261018-R54.md) |
 | RR-MVP-006-20261018-R56 | MVP-006 | R56 | APPROVE | `f936e6a1c5f032c5853739dfff98e9489a5b837b` | staging-window / isolated-credentials / safety-failure / conditional-load / restore | 2026-10-18T01:01:00+08:00 | [`RR-MVP-006-20261018-R56.md`](RR-MVP-006-20261018-R56.md) |
 | RR-MVP-006-20261018-R57 | MVP-006 | R57 | APPROVE | `11fb78bd1a064ede90742b40e2ff279a87eccf45` | prompt-schema-alignment / registered-digest / diagnostic-whitelist / fail-closed / scope-control | 2026-10-18T01:18:00+08:00 | [`RR-MVP-006-20261018-R57.md`](RR-MVP-006-20261018-R57.md) |
+| RR-MVP-006-20261018-R58 | MVP-006 | R58 | APPROVE | `28280a728efae1f4e7277ba5d225a11801f13fc6` | image-provenance / isolated-credentials / schema-redaction / conditional-load / manual-restore | 2026-10-18T01:42:00+08:00 | [`RR-MVP-006-20261018-R58.md`](RR-MVP-006-20261018-R58.md) |
