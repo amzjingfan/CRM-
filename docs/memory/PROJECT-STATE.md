@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-2026-10-17 G5 R47 当前恢复点：用户获批的手动窗口已部署 main `d29d5e0a` 后端候选，原隔离店铺唯一 FAQ 精确更新至版本 3 并由本地 BGE 向量化；第六份仓库外短期凭证签发后，50/50 授权用户只读预检通过。唯一合成 SSE 返回 HTTP 200、公开 `50003`，内部稳定码 `LLM_OUTPUT_INVALID`，无安全 `delta`；按条件未启动 50 并发与资源采样。首次恢复尝试被旧源码参数门禁拒绝，随后用与旧镜像构建输入一致的受审源码按快照恢复原后端 `sha256:04c4f64d…bd1dcc`、G3 限定会话人工发送、Webhook 只读与翻译；LLM/SSE 关闭、限流 10，三公网健康 200 和固定出口通过。见 [R47 TR](../reports/tests/TR-MVP-006-20261017-R47.md)及[低敏单会话证据](../../release/evidence/staging/crm-staging-g5-r47-single-20261017.json)。现有 Agent 持久记录无法区分模型输出失败节点与子类；G5 `DOING`、production No-Go。
+2026-10-17 G5 R47 当前恢复点：用户获批的手动窗口已部署 main `d29d5e0a` 后端候选，原隔离店铺唯一 FAQ 精确更新至版本 3 并由本地 BGE 向量化；第六份仓库外短期凭证签发后，50/50 授权用户只读预检通过。唯一合成 SSE 返回 HTTP 200、公开 `50003`，内部稳定码 `LLM_OUTPUT_INVALID`，无安全 `delta`；按条件未启动 50 并发与资源采样。首次恢复尝试被旧源码参数门禁拒绝，随后用与旧镜像构建输入一致的受审源码按快照恢复原后端 `sha256:04c4f64d…bd1dcc`、G3 限定会话人工发送、Webhook 只读与翻译；LLM/SSE 关闭、限流 10，三公网健康 200 和固定出口通过。见 [R47 TR](../reports/tests/TR-MVP-006-20261017-R47.md)及[低敏单会话证据](../../release/evidence/staging/crm-staging-g5-r47-single-20261017.json)。[PR #313](https://github.com/CP11-gh/CRM/pull/313) 已合入 main `a21da7b6`；三个派生索引从主分支源记录核对为 `CURRENT`。现有 Agent 持久记录无法区分模型输出失败节点与子类；G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R45/R46 当前恢复点：获批的手动 G5 窗口完成候选部署、第五份仓库外短期凭证和 50/50 只读预检；唯一合成 SSE 返回 HTTP 200、总耗时约 7.83 秒，但没有安全 `delta`，因此未运行 50 并发。已恢复原后端、G3 限定会话人工发送、工作台翻译及限流 10，三健康 200 和固定出口通过。九份低敏机器报告与现场 SHA-256 一致，完整入口见 [R45 TR](../reports/tests/TR-MVP-006-20261017-R45.md)。本地 DLP 复现发现两个 Prompt 入参风险：FAQ 答案的逗号以及未脱敏来源标签；R46 有界源码修复 subject `c8d68a1f7815c299093b64722b76fd7ba33ace81` 经隔离 PostgreSQL 全量回归 2064 passed、3 skipped，并由 [PR #311](https://github.com/CP11-gh/CRM/pull/311) squash 合入 main `1a836c2c3d4897cb01cde85c4f69fb94fdad3782`。两个 GitHub Actions 作业因账户计费在步骤前失败；用户选定手动路径，本次使用本地等价检查。三个索引按 main 源记录核对为 133/137/131 条，无缺漏或重复，恢复 `CURRENT`。不能据源码推定真实 `delta`。下一步最多三项：①分别获准新镜像与 staging 切换、现场 FAQ 版本 3 写入及本地 BGE；②续期隔离凭证并安排有界付费单会话；③安全 `delta` 通过后执行 50 并发和恢复验收。G5 `DOING`、production No-Go。
 
@@ -25,8 +25,8 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: feature/g5-r47-manual-image-prep-20261017
-Governance base SHA: d29d5e0af82f14a8f3a5756f67c748d0fec35bd8
+Working branch at this snapshot: docs/g5-r47-index-current-20261017
+Governance base SHA: a21da7b67b0c2b40084b35108ba4a48ea0d36659
 CANDIDATE_SUBJECT_SHA: d29d5e0af82f14a8f3a5756f67c748d0fec35bd8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: KNOWN_TEMP — R40 与 R42 镜像发布的隔离 Docker CLI 配置目录保留在已忽略测试临时区；均已退出 GHCR 且认证项为 0，R40 目录删除曾被自动审批拒绝
