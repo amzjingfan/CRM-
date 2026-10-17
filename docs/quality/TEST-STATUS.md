@@ -4,7 +4,9 @@
 
 ## 模块状态
 
-2026-10-17 `TEST-CI-FORMAT-001`：锁定 Ruff 0.16.3 对三个既有 G5 测试文件作纯排版修复；全量 Ruff lint/format 通过，三文件 AST 一致、定向 43 passed，见 [TR](../reports/tests/TR-TEST-CI-FORMAT-001-20261017-R01.md)。GitHub CI 作业因账户付款或支出上限问题在首步前被拒绝，PR 合并待账户恢复和实际 CI 核对。
+2026-10-17 G5 R31：只读资源/TCP 队列采样器与格式修复主线整合后的 `9712c5a8` 本地全量后端 pytest `1955 passed, 27 skipped`、Ruff lint/format 与 mypy 通过；前端 47 项契约、lint/typecheck/build 通过。PR #281 的 GitHub Actions 作业均在首步前失败，不能作为代码测试结论；用户决定 G5 改用 GitHub 凭据和 staging 手动路径。格式基线已由 PR #283 修复，采样器仍待合并，尚未在 Linux staging 运行；单会话安全 `delta`、真实 50 并发、资源峰值与恢复仍无现场结论，G5/production 未通过。见 [R31 TR](../reports/tests/TR-MVP-006-20261017-R31.md)。
+
+2026-10-17 `TEST-CI-FORMAT-001`：锁定 Ruff 0.16.3 对三个既有 G5 测试文件作纯排版修复；全量 Ruff lint/format 通过，三文件 AST 一致、定向 43 passed，见 [TR](../reports/tests/TR-TEST-CI-FORMAT-001-20261017-R01.md)。PR #283 已经按手动等价验证 squash 合入 main `2da8e172`；GitHub Actions 作业因账户计费在首步前失败，未被记为通过。
 
 2026-10-17 G5 R29：用户精确授权的单次凭证续期返回 50 枚短期令牌、数据库写入和 Provider 调用均为 0；独立只读 `ContentCheck` 为 50/50 会话、凭证 renewed、知识 ready，第三份私有文件权限 `600`。见 [R29 TR](../reports/tests/TR-MVP-006-20261017-R29.md)。未运行 `/auth/me` 端到端预检、单会话 SSE 或真实 50 并发，G5/production 未通过。
 

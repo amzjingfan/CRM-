@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -121,3 +121,4 @@ View: `CURRENT`
 | RR-MVP-006-20261017-R27 | MVP-006 | R27 | APPROVE | `faf4d49c4ac4172d33902406d2b7c6dcfad6f287` | source-mount / immutable-runtime / fail-closed / no-retry | 2026-10-17T10:40:00+08:00 | [`RR-MVP-006-20261017-R27.md`](RR-MVP-006-20261017-R27.md) |
 | RR-MVP-006-20261017-R28 | MVP-006 | R28 | APPROVE | `ca5ebea3e34df37101d7297a7cbd0f55b73a88d3` | single-document / local-model / tenant-isolation / immutable-runtime / no-deepseek / runtime-unchanged | 2026-10-17T11:00:00+08:00 | [`RR-MVP-006-20261017-R28.md`](RR-MVP-006-20261017-R28.md) |
 | RR-MVP-006-20261017-R29 | MVP-006 | R29 | APPROVE | `5ad110d4286a6cbfa53289360d109a930f1afaa9` | single-renewal / private-credentials / no-provider / no-service-switch | 2026-10-17T09:37:00+08:00 | [`RR-MVP-006-20261017-R29.md`](RR-MVP-006-20261017-R29.md) |
+| RR-MVP-006-20261017-R31 | MVP-006 | R31 | APPROVE | `9712c5a8cc9cb539cda79c4ec172f3773512ee73` | read-only-scope / exact-runtime-image / numeric-output-allowlist / tcp-queue-semantics / private-evidence / fail-closed | 2026-10-17T10:44:34+08:00 | [`RR-MVP-006-20261017-R31.md`](RR-MVP-006-20261017-R31.md) |

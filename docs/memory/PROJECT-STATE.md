@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: fix/ci-format-baseline-20261017
+Working branch at this snapshot: feature/mvp006-g5-r31-capacity-sampler-20261017
 Governance base SHA: 1abc9d30bdcdb5284c54085c75802f8cb2ecc6b2
-CANDIDATE_SUBJECT_SHA: 1cda61d171566aed91976ef02788b6653dc6d7b9
+CANDIDATE_SUBJECT_SHA: 9712c5a8cc9cb539cda79c4ec172f3773512ee73
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 `TEST-CI-FORMAT-001` 当前恢复点：三个既有 G5 测试文件仅用锁定 Ruff 0.16.3 格式化，AST 相同，定向 43 passed、全量 Ruff lint/format 通过；[IR](../records/implementation/IR-TEST-CI-FORMAT-001-20261017-R01.md) 与 [TR](../reports/tests/TR-TEST-CI-FORMAT-001-20261017-R01.md) 绑定 subject `1cda61d`，派生索引为 `CANDIDATE_VIEW`。GitHub PR #281、格式修复 PR #283 及此前多个 CI 作业的检查注解明确指出账户付款失败或 Actions 支出上限不足，作业零步骤；账户设置未修改。PR 附件登记因当前任务超过 100 项限制返回 `UI_UNAVAILABLE`，真实 PR 链接保留在本记录。G5 只读采样器在独立 PR #281 未合并，staging 未切换。下一步最多三项：由账户所有者恢复 GitHub Billing & plans；确认格式 PR 与 G5 PR 的真实 CI 再依序合并并恢复索引；另获精确授权后才安排 G5 现场窗口。
+2026-10-17 G5 R31 当前恢复点：subject `02b1ecf` 的只读资源/TCP 队列采样器相关回归 62 passed；[IR](../records/implementation/IR-MVP-006-20261017-R31.md)、[TR](../reports/tests/TR-MVP-006-20261017-R31.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R31.md) 绑定原 subject。PR #283 的三个既有测试排版差异已用本地全量 Ruff 与 43 项测试核对并合入 main `2da8e172`；PR #281 已与新主线集成，最终候选 `9712c5a8` 的本地全量后端与前端门禁通过，GitHub Actions 因账户计费在首步前失败，不作为测试结论。用户坚持 G5 使用 GitHub 凭据加 staging 主机手动路径。root SSH 已重新核对可用；运行仍是 TikTok 只读加工作台翻译，后端 `sha256:477d571d…cb293`、前端 `sha256:08214701…9dd91`、检索 `sha256:feeee5a3…623059`，SSE/LLM 关闭、限流 10。受审旧源码的只读 `ContentCheck` 再确认 50/50 会话、FAQ ready、凭证文件存在、Provider 与数据库写入 0；短期令牌实时有效性尚未验证。采样器未在 Linux 现场运行，G5/production No-Go。下一步最多三项：复核并合并 PR #281；核对当前 main/镜像和凭证有效期后准备单会话安全窗口；另获精确范围后执行 50 并发、采样与恢复。
+
+2026-10-17 `TEST-CI-FORMAT-001`：三个既有 G5 测试文件仅按 Ruff 0.16.3 排版，AST 一致，相关 43 passed、全量 Ruff lint/format 通过；[IR](../records/implementation/IR-TEST-CI-FORMAT-001-20261017-R01.md) 与 [TR](../reports/tests/TR-TEST-CI-FORMAT-001-20261017-R01.md) 绑定 subject `1cda61d`。PR #283 已在无 Actions 的手动等价检查后 squash 合入 main `2da8e172`；作业账户级失败未被记为通过。PR 附件登记超出 100 项时返回 `UI_UNAVAILABLE`，真实链接仍可直接访问。
 
 2026-10-17 G5 R29 最新现场恢复点：用户精确授权一次 `RenewCredentials`，与运行后端相同 OCI revision 的受审源码为原 50 个隔离 CRM 测试账号独占创建第三份仓库外短期凭证；原两份保留。独立只读 `ContentCheck` 为 50/50 会话、凭证 renewed、FAQ ready、Provider/数据库写入 0。低敏证据的本机和现场 SHA-256 一致，新文件权限 `600`。见 [R29 IR](../records/implementation/IR-MVP-006-20261017-R29.md)、[TR](../reports/tests/TR-MVP-006-20261017-R29.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R29.md)。下一步：单会话安全 delta；在有效凭证及独立付费窗口下测真实 50 并发；恢复原只读加翻译模式。G5 `DOING`、production No-Go；[PR #278](https://github.com/CP11-gh/CRM/pull/278) 已合入 main `0296056e`；三个派生索引按 117/120/117 条源记录核对并恢复为 `CURRENT`。
 
