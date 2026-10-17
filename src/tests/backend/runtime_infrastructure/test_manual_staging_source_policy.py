@@ -65,4 +65,5 @@ def test_recovery_accepts_reviewed_commit_after_main_moves(mode: str) -> None:
 def test_gate_calls_shared_policy_and_checks_recovery_image_revision() -> None:
     gate = (SOURCE_ROOT / "scripts" / "Invoke-StagingManualG5.ps1").read_text("utf-8")
     assert "Assert-StagingManualSourcePolicy.ps1" in gate
-    assert "candidate.Config.Labels.'org.opencontainers.image.revision' -cne $SourceSha" in gate
+    assert gate.count("Assert-StagingManualBackendImageSource.ps1") == 2
+    assert "-ImageRevisionSha ([string]$candidate.Config.Labels.'org.opencontainers.image.revision')" in gate

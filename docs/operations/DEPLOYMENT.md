@@ -54,6 +54,8 @@ G5 内容准备改用 `Invoke-StagingManualG5.ps1` 的 `ContentCheck`、`Content
 
 2026-10-17 G5 续期工具源码修复：原固定第三份私有凭证到期后，手动入口可从完整连续编号的原批次选择下一个文件，独占创建、不覆盖历史；`ContentCheck` 核对全部保留代际的文件权限、JWT 签名及 50 个用户/会话映射。缺号、额外文件、符号链接、旧结果不确定时失败关闭。真实压测必须选择最新编号且先用只读身份/会话预检确认未过期。本条只描述源码行为，未签发新凭证、部署镜像或运行 G5 负载。
 
+G5 手动新部署仍锁定当前 GitHub main。发布证据等后续提交使 main 前进时，候选后端镜像可保留原 OCI revision，但必须由 GitHub 比较接口确认该 revision 是当前 main 的祖先，并逐项核对 `src/backend` Git 树及 `src/docker/Dockerfile.backend` blob 摘要完全一致；接口不完整、鉴权失败、提交分叉或任一构建输入变化均停止。恢复和回滚模式仍要求镜像 revision 与审核源码完全相同。此门禁不授权 staging 切换、模型调用或 production 发布。
+
 ### TikTok 固定出口契约
 
 staging 的 TikTok 出站与 split-ingress 入口分离：应用只经 `socks5h://tiktok-egress:1080` 访问独立 helper，helper 再以 `crm-egress@38.55.145.52` 建立 SSH 动态转发。公网账号只允许 local/dynamic forwarding 到 `auth.tiktok-shops.com:443`、`open-api.tiktokglobalshop.com:443` 和门禁专用 `checkip.amazonaws.com:443`；不得复用 `crm-tunnel`、开放代理端口或放宽为任意目标。

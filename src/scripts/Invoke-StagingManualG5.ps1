@@ -217,9 +217,9 @@ try {
                 }
             }
             $candidate = Assert-LocalImage $CandidateBackendImage
-            if ($candidate.Config.Labels.'org.opencontainers.image.revision' -cne $SourceSha) {
-                throw 'The candidate backend image revision differs from the reviewed source.'
-            }
+            & (Join-Path $PSScriptRoot 'Assert-StagingManualBackendImageSource.ps1') -Mode $Mode `
+                -SourceSha $SourceSha `
+                -ImageRevisionSha ([string]$candidate.Config.Labels.'org.opencontainers.image.revision') -Token $token
         }
         else {
             $targetImages = if ($Mode -ceq 'RollbackPrevious') {
@@ -232,9 +232,9 @@ try {
                 $null = Assert-LocalImage $reference
             }
             $candidate = Assert-LocalImage $CandidateBackendImage
-            if ($candidate.Config.Labels.'org.opencontainers.image.revision' -cne $SourceSha) {
-                throw 'The running candidate backend revision differs from the reviewed recovery source.'
-            }
+            & (Join-Path $PSScriptRoot 'Assert-StagingManualBackendImageSource.ps1') -Mode $Mode `
+                -SourceSha $SourceSha `
+                -ImageRevisionSha ([string]$candidate.Config.Labels.'org.opencontainers.image.revision') -Token $token
         }
 
         if ($Mode -ceq 'RollbackPrevious') {
