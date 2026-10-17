@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r34-index-closure-20261017
-Governance base SHA: 69a769d29ad8a967d39482ea303eb10b49b25f40
+Working branch at this snapshot: docs/g5-r35-manual-image-evidence-20261017
+Governance base SHA: 529c3a2e417286053f16eeb34abd20746248980b
 CANDIDATE_SUBJECT_SHA: abc945df1d55f9459ef372f3e883ab8955d06fcf
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
-2026-10-17 G5 R34：从 main `ada2773` 的 subject `abc945d` 已将原 R05 测试凭证扩为连续编号、全代际验签与逐一映射核对，独占创建保留旧文件；[IR](../records/implementation/IR-MVP-006-20261017-R34.md)、[TR](../reports/tests/TR-MVP-006-20261017-R34.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R34.md) 记录本地 `1962 passed, 27 skipped`、Ruff/mypy/PowerShell AST 通过。[PR #291](https://github.com/CP11-gh/CRM/pull/291) 已合入 main `69a769d29ad8a967d39482ea303eb10b49b25f40`，三个索引按权威源记录核对后恢复 `CURRENT`。第三份 50/50 令牌仍已过期，尚未现场签发第四份、发布新镜像或进行 G5 复测；staging 保持 TikTok 只读加工作台翻译、LLM/SSE 关闭、限流 10。下一步：按精确范围发布包含 R32/R34 的新后端镜像；再独立核准 staging 切换、第四份签发和只读核对；最后在付费窗口完成单会话、50 并发与恢复。G5 `DOING`、production No-Go。
+2026-10-17 G5 R35：获单镜像精确授权后，从 main `529c3a2e417286053f16eeb34abd20746248980b` 手动发布 [后端候选](../../release/evidence/staging/crm-staging-g5-r35-manual-backend-image-20261017.json) `sha256:0bc1e287…1e77c`；远端 `linux/amd64`、OCI revision、12 层压缩总量 110,924,361 字节及拉回摘要均核对通过，未运行 GitHub Actions。staging 仍运行旧后端 `sha256:758c4d51…41522`；第三份 50/50 令牌仍过期，未签发第四份、未切换服务或调用 DeepSeek。下一步：精确核准 staging 手动预取/只读部署并核对运行态；再单独核准第四份凭证续期与只读预检；最后分别执行单会话、50 并发和原模式恢复。G5 `DOING`、production No-Go。
+
+2026-10-17 G5 R34：从 main `ada2773` 的 subject `abc945d` 已将原 R05 测试凭证扩为连续编号、全代际验签与逐一映射核对，独占创建保留旧文件；[IR](../records/implementation/IR-MVP-006-20261017-R34.md)、[TR](../reports/tests/TR-MVP-006-20261017-R34.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R34.md) 记录本地 `1962 passed, 27 skipped`、Ruff/mypy/PowerShell AST 通过。[PR #291](https://github.com/CP11-gh/CRM/pull/291) 已合入 main `69a769d29ad8a967d39482ea303eb10b49b25f40`，三个索引按权威源记录核对后恢复 `CURRENT`。当时第三份 50/50 令牌已过期，尚未现场签发第四份或发布新镜像；staging 保持 TikTok 只读加工作台翻译、LLM/SSE 关闭、限流 10。
 
 2026-10-17 G5 R33：现运行 backend `sha256:758c4d51…41522` 的空闲 staging 上，受审 R31 采样器从 `crmdeploy`/Rootless 取得 3 组资源与 TCP 指标，低敏报告服务器/本机 SHA-256 一致；见 [TR](../reports/tests/TR-MVP-006-20261017-R33.md)。[PR #289](https://github.com/CP11-gh/CRM/pull/289) 已合入 main `a97612b9d7692aa5ca66b4014f54440062b69bb8`，三个派生索引按源记录核对后恢复为 `CURRENT`。此结果只证明 Linux 现场兼容，真实 50 并发仍未测。只读有效期核对确认第三份 50/50 令牌全部过期；原续期工具只允许固定第三份文件，现由 R34 源码修复但未现场运行。G5 `DOING`、production No-Go。
 
