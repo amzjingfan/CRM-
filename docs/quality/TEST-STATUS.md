@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R40：从 main `7d4a72d7` 本地构建 linux/amd64 后端，并从 GHCR 远端核对不可变索引摘要 `sha256:8a418e6c…796221`、OCI revision、12 个压缩层 110,929,110 字节；[发布证据](../../release/evidence/staging/crm-staging-g5-r40-manual-backend-image-20261017.json)。镜像发布通过不代表 staging 部署或 G5 容量通过；现场内容更新、BGE、DeepSeek 与 50 并发均未执行。
+
 2026-10-17 G5 R39 源码候选：旧版隔离提问的精确识别、店铺/50 会话/唯一 FAQ 拒绝条件、版本 2 旧切片失效及手动确认值已做红绿测试；内容工具与向量化 35 passed。完整后端及隔离 PostgreSQL 回归 `2019 passed, 3 skipped, 2 warnings`，Ruff lint/format、183 个源文件 mypy、4 个 PowerShell AST 与 `git diff --check` 通过。此为代码与测试证据；没有执行 staging 数据更新、向量化、DeepSeek 单会话或 50 并发，G5/production 仍未通过。
 
 2026-10-17 G5 R38：获批手动 staging 窗口的六摘要预取、修复版 G5 validate/deploy、第四份短期测试凭证签发及公网 50/50 只读预检通过。唯一合成 SSE 为 HTTP 200、协议完成，却无安全 `delta`，`first_delta_ms=null`、性能门禁 false；只读 Agent 追踪为 `insufficient_context`、`transfer_human`、检索候选 0。旧后端、Webhook 只读与工作台翻译已恢复，三健康 200、LLM/SSE 关闭、限流 10。没有 50 并发，G5/production 继续未通过。见 [R38 TR](../reports/tests/TR-MVP-006-20261017-R38.md)。

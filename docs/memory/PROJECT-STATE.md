@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r39-index-closure-20261017
-Governance base SHA: 490ae4526871c7f1ce1353318c854dcaf507b348
+Working branch at this snapshot: docs/g5-r40-image-evidence-20261017
+Governance base SHA: 7d4a72d7de5c760af80e6618630505a556063ef7
 CANDIDATE_SUBJECT_SHA: 457de2656ccb55daf90caf93c937ce7d0ecf94f8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
-Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
+Workspace hygiene: KNOWN_TEMP — 本次镜像发布的隔离 Docker CLI 配置目录仍在已忽略测试临时区；已退出 GHCR 且认证项为 0，自动审批拒绝了删除命令
 ```
+
+2026-10-17 G5 R40 手动候选镜像：用户精确授权从 main `7d4a72d7de5c760af80e6618630505a556063ef7` 使用现有 GitHub 凭据发布一份私有 `crm-backend`。GHCR 返回并远端复核不可变摘要 `sha256:8a418e6c…796221`、linux/amd64、OCI revision 精确匹配、12 层压缩 110,929,110 字节；见 [R40 低敏证据](../../release/evidence/staging/crm-staging-g5-r40-manual-backend-image-20261017.json)。未运行 GitHub Actions、未部署 staging、未写测试店数据、未调用 BGE/DeepSeek 或执行 50 并发。隔离 Docker CLI 凭据已退出且认证项为 0；清理该临时目录的命令遭自动审批拒绝，目录保留。G5 `DOING`、production No-Go；下一步仅在独立精确授权后执行隔离内容对账写入与本地向量化。
 
 2026-10-17 G5 R39 源码：针对 R38 的 `insufficient_context` 安全转人工，用户确认只更新原隔离店铺的 50 条合成问题和唯一内部 FAQ。subject `457de2656ccb55daf90caf93c937ce7d0ecf94f8` 增加 `ReconcileFixture` 一次性精确入口、版本 2 失效旧切片门禁与本地 BGE 版本 2 重建路径；保持生产分类器、Prompt、安全门禁及 TikTok 开关不变。内容工具与向量化 35 项、完整隔离 PostgreSQL 回归 2019 passed/3 skipped、Ruff/mypy/PowerShell AST 通过；见 [IR](../records/implementation/IR-MVP-006-20261017-R39.md)、[TR](../reports/tests/TR-MVP-006-20261017-R39.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R39.md)。[PR #300](https://github.com/CP11-gh/CRM/pull/300) 已合入 main `490ae4526871c7f1ce1353318c854dcaf507b348`；三个派生索引从 main 源记录核对为 `CURRENT`。尚未发布新镜像、写 staging 测试店、向量化、付费复测或 50 并发；旧后端仍运行只读加工作台翻译，G5 `DOING`、production No-Go。下一步：现场数据更新与本地向量化分别精确授权；安全单会话通过后再安排 50 并发。
 
