@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "evidence_type": "g5_single_agent_summary",
+  "source": "read_only_sql_whitelist",
+  "created_at_utc": "2026-10-17 12:53:33.606201+00",
+  "status": "failed",
+  "action": "failed",
+  "error_code": "LLM_OUTPUT_INVALID",
+  "latency_ms": 5627,
+  "input_tokens": null,
+  "output_tokens": null,
+  "provider_failure_stage": "unknown",
+  "provider_output_failure_kind": "unknown"
+}

@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "mode": "manual_staging_check_only",
+  "source_sha": "d29d5e0af82f14a8f3a5756f67c748d0fec35bd8",
+  "source_archive_sha256": "851256444754994e34341f134916ac511ff4ab1705396ac94047da2149fac957",
+  "archive_source_verified": true,
+  "clean_git_checkout_verified": true,
+  "rootless_target_ready": true,
+  "service_mutation": false,
+  "candidate_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:b33b3faa927f0081f7b8005ababb86ec51e082fd0d38f0c751f9963aa6dc4eeb",
+  "candidate_image_prefetched": false,
+  "provider_calls": 0,
+  "github_actions_used": false
+}

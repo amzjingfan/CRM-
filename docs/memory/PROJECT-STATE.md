@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G5 R47 当前恢复点：用户获批的手动窗口已部署 main `d29d5e0a` 后端候选，原隔离店铺唯一 FAQ 精确更新至版本 3 并由本地 BGE 向量化；第六份仓库外短期凭证签发后，50/50 授权用户只读预检通过。唯一合成 SSE 返回 HTTP 200、公开 `50003`，内部稳定码 `LLM_OUTPUT_INVALID`，无安全 `delta`；按条件未启动 50 并发与资源采样。首次恢复尝试被旧源码参数门禁拒绝，随后用与旧镜像构建输入一致的受审源码按快照恢复原后端 `sha256:04c4f64d…bd1dcc`、G3 限定会话人工发送、Webhook 只读与翻译；LLM/SSE 关闭、限流 10，三公网健康 200 和固定出口通过。见 [R47 TR](../reports/tests/TR-MVP-006-20261017-R47.md)及[低敏单会话证据](../../release/evidence/staging/crm-staging-g5-r47-single-20261017.json)。现有 Agent 持久记录无法区分模型输出失败节点与子类；G5 `DOING`、production No-Go。
+
 2026-10-17 G5 R45/R46 当前恢复点：获批的手动 G5 窗口完成候选部署、第五份仓库外短期凭证和 50/50 只读预检；唯一合成 SSE 返回 HTTP 200、总耗时约 7.83 秒，但没有安全 `delta`，因此未运行 50 并发。已恢复原后端、G3 限定会话人工发送、工作台翻译及限流 10，三健康 200 和固定出口通过。九份低敏机器报告与现场 SHA-256 一致，完整入口见 [R45 TR](../reports/tests/TR-MVP-006-20261017-R45.md)。本地 DLP 复现发现两个 Prompt 入参风险：FAQ 答案的逗号以及未脱敏来源标签；R46 有界源码修复 subject `c8d68a1f7815c299093b64722b76fd7ba33ace81` 经隔离 PostgreSQL 全量回归 2064 passed、3 skipped，并由 [PR #311](https://github.com/CP11-gh/CRM/pull/311) squash 合入 main `1a836c2c3d4897cb01cde85c4f69fb94fdad3782`。两个 GitHub Actions 作业因账户计费在步骤前失败；用户选定手动路径，本次使用本地等价检查。三个索引按 main 源记录核对为 133/137/131 条，无缺漏或重复，恢复 `CURRENT`。不能据源码推定真实 `delta`。下一步最多三项：①分别获准新镜像与 staging 切换、现场 FAQ 版本 3 写入及本地 BGE；②续期隔离凭证并安排有界付费单会话；③安全 `delta` 通过后执行 50 并发和恢复验收。G5 `DOING`、production No-Go。
 
 2026-10-17 G3 R04 受控双向闭环：PR #301 的 subject `2a62debe16a58b1263c62eb794982ab01a4856cb` 经 main `70d8968a` 手动发布 staging，门禁、三健康与单会话运行隔离通过。用户精确授权后，项目工作台只向受控买家发送一次普通文本；TikTok 官方只读历史返回同一平台消息 ID，工具与审计成功且非 Mock，手机买家回复经已验签的 Webhook 自动出现在 CRM。其他 179 个同店铺会话仍不可真实发送，无待对账出站。[R04 IR](../records/implementation/IR-MVP-004-20261017-R04.md)、[TR](../reports/tests/TR-MVP-004-20261017-R04.md)、[RR](../reports/reviews/RR-MVP-004-20261017-R04.md)与[低敏证据](../../release/evidence/staging/crm-staging-g3-bidirectional-20261017.json)由 PR #307 合入 main `32aee09d28d03a4fe8c8bfa3b1e627ab6a7c6ffd`；三个索引从主分支 129/133/127 条源记录复核，无缺漏或重复，恢复 `CURRENT`。G3 staging 受控会话验收通过；G2 重试/乱序/持续恢复、G8 与 production 仍未通过。Seller Center 本次出站画面未独立观察。下一步：①继续 G2 异常投递和恢复验收；②若共享 staging 被其他任务部署，重新核对单会话运行模式。
@@ -23,9 +25,9 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r46-index-current-20261017
-Governance base SHA: 1a836c2c3d4897cb01cde85c4f69fb94fdad3782
-CANDIDATE_SUBJECT_SHA: c8d68a1f7815c299093b64722b76fd7ba33ace81
+Working branch at this snapshot: feature/g5-r47-manual-image-prep-20261017
+Governance base SHA: d29d5e0af82f14a8f3a5756f67c748d0fec35bd8
+CANDIDATE_SUBJECT_SHA: d29d5e0af82f14a8f3a5756f67c748d0fec35bd8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: KNOWN_TEMP — R40 与 R42 镜像发布的隔离 Docker CLI 配置目录保留在已忽略测试临时区；均已退出 GHCR 且认证项为 0，R40 目录删除曾被自动审批拒绝
 ```
@@ -374,6 +376,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 恢复 `crmdeploy` 的 staging 主机 SSH 入口，先只读核对运行镜像及手动门禁；候选后端已从 main `335e959b` 发布。原隔离店铺的 50 条问题和唯一 FAQ 现场更新、随后本地 BGE 向量化分别按精确范围执行并只读对账。安全单会话的 DeepSeek 复测及真实 50 并发仍须分别取得现场证据，不能由源码测试代替。
-2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
-3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。
+1. G5 对 `LLM_OUTPUT_INVALID` 补低敏节点与固定失败子类诊断，保持安全校验；之后再安排一次有界单会话复测。
+2. 仅在安全 `delta` 与单会话门禁通过后执行 50 并发、资源和断连验收，并再次恢复原 G3 限定会话人工发送模式。
+3. 并行推进 G2 异常投递和持续恢复验收；G1-L 等适用 CBT 首程包裹或平台说明，G5/G6 与外部门禁完成前 G8/production 保持 No-Go。
