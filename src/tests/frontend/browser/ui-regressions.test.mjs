@@ -209,9 +209,13 @@ test("store settings keep readable columns in a narrow desktop window", async ()
       viewportWidth: wrapper.clientWidth,
       contentWidth: wrapper.scrollWidth,
       statusWidth: wrapper.querySelector("tbody tr td:nth-child(3)")?.getBoundingClientRect().width ?? 0,
+      statusText: wrapper.querySelector("tbody tr td:nth-child(3) .status-badge")?.textContent ?? "",
+      statusHeight: wrapper.querySelector("tbody tr td:nth-child(3) .status-badge")?.getBoundingClientRect().height ?? 0,
     }));
     assert.ok(dimensions.contentWidth > dimensions.viewportWidth);
     assert.ok(dimensions.statusWidth >= 60);
+    assert.equal(dimensions.statusText, "正常");
+    assert.ok(dimensions.statusHeight <= 32);
   } finally {
     await context.close();
   }
