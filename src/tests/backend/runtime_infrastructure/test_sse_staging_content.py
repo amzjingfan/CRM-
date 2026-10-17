@@ -86,3 +86,14 @@ def test_prepared_fixture_must_have_all_fifty_matching_questions() -> None:
     messages[1].content = fixture.G5_ORIGINAL_QUESTION
     with pytest.raises(ValueError, match="fixture"):
         fixture.verify_g5_content_snapshot(manifest, store, users, conversations, messages)
+
+
+def test_legacy_fixture_requires_exactly_fifty_old_questions_before_replacement() -> None:
+    manifest, store, users, conversations, messages = content_snapshot()
+    for message in messages:
+        message.content = "What can this test assistant help with?"
+
+    assert fixture.verify_g5_content_snapshot(manifest, store, users, conversations, messages) == "legacy_prepared"
+    messages[0].content = "How do I return a real order?"
+    with pytest.raises(ValueError, match="fixture"):
+        fixture.verify_g5_content_snapshot(manifest, store, users, conversations, messages)

@@ -2,7 +2,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'RenewCredentials', 'VectorizeG5')][string]$Mode,
+    [Parameter(Mandatory = $true)][ValidateSet('ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5')][string]$Mode,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$SourceSha,
     [Parameter(Mandatory = $true)][string]$BackendImage,
     [Parameter(Mandatory = $true)][string]$ReviewRoot,
@@ -17,6 +17,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 if (($Mode -ceq 'ContentPrepare' -and $ConfirmContent -cne 'prepare-50-isolated-g5-messages') -or
+    ($Mode -ceq 'ReconcileFixture' -and $ConfirmContent -cne 'replace-50-isolated-g5-return-questions') -or
     ($Mode -ceq 'RenewCredentials' -and $ConfirmContent -cne 'renew-50-existing-g5-tokens') -or
     ($Mode -ceq 'VectorizeG5' -and $ConfirmContent -cne 'vectorize-one-isolated-g5-faq') -or
     ($Mode -ceq 'ContentCheck' -and $ConfirmContent)) {
@@ -116,6 +117,7 @@ try {
     if ($Mode -cne 'RenewCredentials') { $mount += ',readonly' }
     $action = switch ($Mode) {
         'ContentPrepare' { '--prepare-content' }
+        'ReconcileFixture' { '--replace-content' }
         'RenewCredentials' { '--renew-credentials' }
         'VectorizeG5' { '--vectorize-one' }
         default { '--check-only' }
@@ -147,7 +149,7 @@ try {
     $report = ($output -join "`n") | ConvertFrom-Json -ErrorAction Stop
     $evidence = switch ($Mode) {
         'ContentCheck' {
-            if ($report.mode -cne 'check_only' -or $report.fixture_state -cnotin @('original', 'prepared') -or
+            if ($report.mode -cne 'check_only' -or $report.fixture_state -cnotin @('original', 'legacy_prepared', 'prepared') -or
                 $report.credentials_state -cnotin @('original', 'renewed') -or
                 $report.matched_sessions -ne 50 -or $report.provider_calls -ne 0 -or $report.database_writes -ne 0 -or
                 ($report.credentials_state -ceq 'renewed') -ne (Test-Path -LiteralPath (Join-Path $privateDir $credentialName))) {
@@ -162,6 +164,15 @@ try {
                 throw 'G5 content preparation outcome is inconclusive.'
             }
             @{ mode = 'prepare_content'; updated_sessions = 50; synthetic_faq = 1; provider_calls = 0 }
+        }
+        'ReconcileFixture' {
+            if ($report.mode -cne 'replace_content' -or $report.updated_sessions -ne 50 -or
+                $report.synthetic_faq -ne 1 -or $report.document_version -ne 2 -or
+                $report.knowledge_ready -ne $false -or $report.provider_calls -ne 0) {
+                throw 'G5 fixture replacement outcome is inconclusive.'
+            }
+            @{ mode = 'replace_content'; updated_sessions = 50; synthetic_faq = 1;
+                document_version = 2; knowledge_ready = $false; provider_calls = 0 }
         }
         'RenewCredentials' {
             if ($report.mode -cne 'renew_credentials' -or $report.rotated_tokens -ne 50 -or

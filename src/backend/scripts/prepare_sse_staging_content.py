@@ -9,6 +9,7 @@ import os
 import stat
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -27,13 +28,15 @@ from app.knowledge_base.schemas import (
     KnowledgePublicationApproval,
     KnowledgeStatementType,
 )
-from app.knowledge_base.service import create_entry, set_entry_status
+from app.knowledge_base.service import content_hash, create_entry, set_entry_status
 from app.knowledge_base.vector_port import SqlAlchemyKnowledgeVectorPort
 from app.shared.config.settings import Settings, get_settings
 from app.shared.database.base import Permission, Role, User, role_permissions, user_roles
 from app.shared.database.session import session_factory
 from app.stores.models import Store
 from scripts.prepare_sse_staging_fixture import (
+    G5_LEGACY_ANSWER,
+    G5_LEGACY_QUESTION,
     G5_ORIGINAL_QUESTION,
     G5_SYNTHETIC_ANSWER,
     G5_SYNTHETIC_QUESTION,
@@ -65,17 +68,78 @@ def assert_single_vector_target(
     """只允许原隔离店铺中刚发布、尚未向量化的唯一合成 FAQ。"""
     document = snapshot.document
     if (
-        snapshot.state != "prepared"
+        (snapshot.state, document.document_version if document is not None else None)
+        not in {("legacy_prepared", 1), ("prepared", 2)}
         or document is None
         or document.store_id != manifest.store_id
         or document.source != FAQ_SOURCE
         or document.status != "published"
         or document.vectorization_status != "pending"
-        or document.document_version != 1
         or document.deleted_at is not None
     ):
         raise ValueError("G5 vector target mismatch")
     return document.id, manifest.store_id, document.document_version
+
+
+def assert_replacement_target(manifest: ReconciliationManifest, snapshot: ContentSnapshot) -> None:
+    """一次性替换只接受已向量化的原隔离 FAQ 和完整的旧 50 条提问。"""
+    document = snapshot.document
+    if (
+        snapshot.state != "legacy_prepared"
+        or len(snapshot.messages) != 50
+        or document is None
+        or document.store_id != manifest.store_id
+        or document.source != FAQ_SOURCE
+        or document.source_type != "faq"
+        or document.tags != ["g5-synthetic"]
+        or document.question != G5_LEGACY_QUESTION
+        or document.answer != G5_LEGACY_ANSWER
+        or document.status != "published"
+        or document.vectorization_status != "ready"
+        or document.document_version != 1
+        or document.statement_type != KnowledgeStatementType.NON_ASSERTIVE_PROPOSITION
+        or document.customer_scope != KnowledgeCustomerScope.GENERIC
+        or document.publication_approval != KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW
+        or document.approved_by != snapshot.approver.id
+        or document.approved_at is None
+        or document.deleted_at is not None
+        or any(message.content != G5_LEGACY_QUESTION for message in snapshot.messages)
+    ):
+        raise ValueError("G5 replacement target mismatch")
+
+
+async def replace_synthetic_content(
+    session: AsyncSession, manifest: ReconciliationManifest, snapshot: ContentSnapshot
+) -> None:
+    """在一个事务内更新原 50 条问题与唯一 FAQ；版本门禁立即使旧向量失效。"""
+    assert_replacement_target(manifest, snapshot)
+    document = snapshot.document
+    assert document is not None
+    document.question = G5_SYNTHETIC_QUESTION
+    document.answer = G5_SYNTHETIC_ANSWER
+    document.title = G5_SYNTHETIC_QUESTION[:500]
+    document.content_hash = content_hash(G5_SYNTHETIC_QUESTION, G5_SYNTHETIC_ANSWER)
+    document.statement_type = KnowledgeStatementType.POLICY
+    document.document_version = 2
+    document.vectorization_status = "pending"
+    document.approved_at = datetime.now(UTC)
+    document.published_at = document.approved_at
+    for message in snapshot.messages:
+        message.content = G5_SYNTHETIC_QUESTION
+    session.add(
+        AuditLog(
+            store_id=manifest.store_id,
+            actor_type="system",
+            actor_id=None,
+            action="g5.fixture.content_replace",
+            resource_type="knowledge_document",
+            resource_id=document.id,
+            request_id=str(manifest.run_id),
+            after_data={"sessions": 50, "synthetic_faq": 1, "version": 2, "knowledge_ready": False},
+            result="success",
+        )
+    )
+    await session.flush()
 
 
 class ScopedG5VectorPort(SqlAlchemyKnowledgeVectorPort):
@@ -197,6 +261,22 @@ def validate_content_paths(
     return generation
 
 
+def assert_content_mode_inventory(
+    mode: str, generation: int, output_exists: bool, document_version: int | None
+) -> None:
+    """写入模式将私有凭证批次与唯一 FAQ 版本精确绑定。"""
+    if mode == "replace_content":
+        allowed = generation == 4 and output_exists
+    elif mode == "vectorize_one":
+        allowed = (document_version == 1 and generation == 3 and not output_exists) or (
+            document_version == 2 and generation == 4 and output_exists
+        )
+    else:
+        raise ValueError("G5 content mode is invalid")
+    if not allowed:
+        raise ValueError("G5 content batch does not match document version")
+
+
 def validate_renewed_payload(payload: object, manifest: ReconciliationManifest) -> None:
     """只读验签续期文件的全部 50 个用户和会话映射，不输出令牌。"""
     if validate_reconciliation_payload(payload) != manifest:
@@ -248,9 +328,11 @@ def read_private_source(source: Path) -> tuple[dict[str, Any], ReconciliationMan
     return payload, manifest
 
 
-async def inspect_content_fixture(session: AsyncSession, manifest: ReconciliationManifest) -> ContentSnapshot:
+async def inspect_content_fixture(
+    session: AsyncSession, manifest: ReconciliationManifest, *, lock: bool = False
+) -> ContentSnapshot:
     """只读核对原批次、权限、审计、全部消息和知识的唯一安全状态。"""
-    store = await session.get(Store, manifest.store_id)
+    store = await session.get(Store, manifest.store_id, with_for_update=lock)
     role = await session.get(Role, manifest.role_id)
     if role is None or role.code != f"g5-{manifest.run_id.hex}":
         raise ValueError("G5 fixture role mismatch")
@@ -258,7 +340,8 @@ async def inspect_content_fixture(session: AsyncSession, manifest: Reconciliatio
     conversations = (
         await session.scalars(select(Conversation).where(Conversation.id.in_(manifest.conversation_ids)))
     ).all()
-    messages = (await session.scalars(select(Message).where(Message.store_id == manifest.store_id))).all()
+    message_query = select(Message).where(Message.store_id == manifest.store_id)
+    messages = (await session.scalars(message_query.with_for_update() if lock else message_query)).all()
     state = verify_g5_content_snapshot(manifest, store, users, conversations, messages)
     permission_id = await session.scalar(select(Permission.id).where(Permission.code == "workspace.view"))
     role_permission_ids = (
@@ -278,7 +361,12 @@ async def inspect_content_fixture(session: AsyncSession, manifest: Reconciliatio
             select(AuditLog).where(
                 AuditLog.store_id == manifest.store_id,
                 AuditLog.action.in_(
-                    ["g5.fixture.provision", "g5.fixture.reconcile_email", "g5.fixture.content_prepare"]
+                    [
+                        "g5.fixture.provision",
+                        "g5.fixture.reconcile_email",
+                        "g5.fixture.content_prepare",
+                        "g5.fixture.content_replace",
+                    ]
                 ),
             )
         )
@@ -287,47 +375,47 @@ async def inspect_content_fixture(session: AsyncSession, manifest: Reconciliatio
     if (
         audit_actions.count("g5.fixture.provision") != 1
         or audit_actions.count("g5.fixture.reconcile_email") != 1
-        or audit_actions.count("g5.fixture.content_prepare") != (1 if state == "prepared" else 0)
-        or len(audits) != (3 if state == "prepared" else 2)
+        or audit_actions.count("g5.fixture.content_prepare") != (1 if state != "original" else 0)
+        or audit_actions.count("g5.fixture.content_replace") != (1 if state == "prepared" else 0)
+        or len(audits) != (4 if state == "prepared" else 3 if state == "legacy_prepared" else 2)
     ):
         raise ValueError("G5 fixture audit mismatch")
-    documents = (
-        await session.scalars(select(KnowledgeDocument).where(KnowledgeDocument.store_id == manifest.store_id))
-    ).all()
+    document_query = select(KnowledgeDocument).where(KnowledgeDocument.store_id == manifest.store_id)
+    documents = (await session.scalars(document_query.with_for_update() if lock else document_query)).all()
     document = documents[0] if len(documents) == 1 else None
     if state == "original" and documents:
         raise ValueError("G5 fixture knowledge already exists")
-    if state == "prepared":
+    if state in {"legacy_prepared", "prepared"}:
+        legacy = state == "legacy_prepared"
         if (
             document is None
             or document.deleted_at is not None
             or document.source != FAQ_SOURCE
-            or document.question != G5_SYNTHETIC_QUESTION
-            or document.answer != G5_SYNTHETIC_ANSWER
+            or document.source_type != "faq"
+            or document.tags != ["g5-synthetic"]
+            or document.question != (G5_LEGACY_QUESTION if legacy else G5_SYNTHETIC_QUESTION)
+            or document.answer != (G5_LEGACY_ANSWER if legacy else G5_SYNTHETIC_ANSWER)
+            or document.content_hash != content_hash(document.question, document.answer)
             or document.status != "published"
-            or document.statement_type != KnowledgeStatementType.NON_ASSERTIVE_PROPOSITION
+            or document.statement_type
+            != (KnowledgeStatementType.NON_ASSERTIVE_PROPOSITION if legacy else KnowledgeStatementType.POLICY)
             or document.customer_scope != KnowledgeCustomerScope.GENERIC
             or document.publication_approval != KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW
             or document.approved_by != manifest.user_ids[0]
             or document.approved_at is None
-            or document.document_version != 1
+            or document.document_version != (1 if legacy else 2)
             or document.vectorization_status not in {"pending", "processing", "ready"}
         ):
             raise ValueError("G5 fixture knowledge mismatch")
-        if document.vectorization_status == "ready":
-            chunk_count = len(
-                (
-                    await session.scalars(
-                        select(KnowledgeChunk.id).where(
-                            KnowledgeChunk.store_id == manifest.store_id,
-                            KnowledgeChunk.document_id == document.id,
-                            KnowledgeChunk.document_version == document.document_version,
-                        )
-                    )
-                ).all()
-            )
-            if chunk_count < 1:
-                raise ValueError("G5 fixture ready knowledge has no chunks")
+        all_chunks = (
+            await session.scalars(select(KnowledgeChunk).where(KnowledgeChunk.store_id == manifest.store_id))
+        ).all()
+        expected_version = 1 if legacy or document.vectorization_status != "ready" else 2
+        expected_count = 0 if legacy and document.vectorization_status != "ready" else 1
+        if len(all_chunks) != expected_count or any(
+            chunk.document_id != document.id or chunk.document_version != expected_version for chunk in all_chunks
+        ):
+            raise ValueError("G5 fixture chunks mismatch")
     users_by_id = {user.id: user for user in users}
     return ContentSnapshot(state, users_by_id[manifest.user_ids[0]], list(messages), document)
 
@@ -358,8 +446,8 @@ async def prepare_synthetic_content(
         snapshot.approver,
         KnowledgeEntryCreate(
             store_id=manifest.store_id,
-            question=G5_SYNTHETIC_QUESTION,
-            answer=G5_SYNTHETIC_ANSWER,
+            question=G5_LEGACY_QUESTION,
+            answer=G5_LEGACY_ANSWER,
             source=FAQ_SOURCE,
             tags=["g5-synthetic"],
             statement_type=KnowledgeStatementType.NON_ASSERTIVE_PROPOSITION,
@@ -371,7 +459,7 @@ async def prepare_synthetic_content(
     for message in snapshot.messages:
         if message.content != G5_ORIGINAL_QUESTION:
             raise ValueError("G5 fixture message changed during preparation")
-        message.content = G5_SYNTHETIC_QUESTION
+        message.content = G5_LEGACY_QUESTION
     session.add(
         AuditLog(
             store_id=manifest.store_id,
@@ -399,7 +487,15 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
     """读检查、一次性内容写入与零数据库写入续期分开执行。"""
     writable = mode == "renew_credentials"
     settings = get_settings()
-    validate_content_paths(settings.app_env, source, output, writable=writable, allow_renewed=mode == "check_only")
+    generation = validate_content_paths(
+        settings.app_env,
+        source,
+        output,
+        writable=writable,
+        allow_renewed=mode in {"check_only", "replace_content", "vectorize_one"},
+    )
+    if mode == "replace_content":
+        assert_content_mode_inventory(mode, generation, output.exists(), None)
     validate_database_target(settings.database_url, expected_database_sha256)
     payload, manifest = read_private_source(source)
     if mode == "vectorize_one":
@@ -409,11 +505,19 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
         if mode == "vectorize_one":
             snapshot = await inspect_content_fixture(session, manifest)
             document_id, store_id, version = assert_single_vector_target(manifest, snapshot)
+            assert_content_mode_inventory(mode, generation, output.exists(), version)
             existing_chunks = (
-                await session.scalars(select(KnowledgeChunk.id).where(KnowledgeChunk.document_id == document_id))
+                await session.scalars(select(KnowledgeChunk).where(KnowledgeChunk.store_id == store_id))
             ).all()
-            if existing_chunks:
-                raise ValueError("G5 vector target already has chunks")
+            if (version == 1 and existing_chunks) or (
+                version == 2
+                and (
+                    len(existing_chunks) != 1
+                    or existing_chunks[0].document_id != document_id
+                    or existing_chunks[0].document_version != 1
+                )
+            ):
+                raise ValueError("G5 vector target has unexpected chunks")
             service = KnowledgeVectorizationService(
                 vector_port=ScopedG5VectorPort(store_id, document_id, version),
                 embedding_service=build_embedding_service(settings),
@@ -439,9 +543,21 @@ async def run_content_mode(mode: str, source: Path, output: Path, expected_datab
                 snapshot = await inspect_content_fixture(session, manifest)
                 await prepare_synthetic_content(session, manifest, snapshot)
             return {"mode": mode, "updated_sessions": 50, "synthetic_faq": 1, "provider_calls": 0}
+        if mode == "replace_content":
+            async with session.begin():
+                snapshot = await inspect_content_fixture(session, manifest, lock=True)
+                await replace_synthetic_content(session, manifest, snapshot)
+            return {
+                "mode": mode,
+                "updated_sessions": 50,
+                "synthetic_faq": 1,
+                "document_version": 2,
+                "knowledge_ready": False,
+                "provider_calls": 0,
+            }
         snapshot = await inspect_content_fixture(session, manifest)
         knowledge_ready = (
-            snapshot.state == "prepared"
+            snapshot.state in {"legacy_prepared", "prepared"}
             and snapshot.document is not None
             and snapshot.document.vectorization_status == "ready"
         )
@@ -466,6 +582,7 @@ def main() -> None:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check-only", action="store_true")
     mode.add_argument("--prepare-content", action="store_true")
+    mode.add_argument("--replace-content", action="store_true")
     mode.add_argument("--renew-credentials", action="store_true")
     mode.add_argument("--vectorize-one", action="store_true")
     parser.add_argument("--source-credentials-file", type=Path, required=True)
@@ -474,6 +591,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.vectorize_one:
         selected = "vectorize_one"
+    elif args.replace_content:
+        selected = "replace_content"
     elif args.prepare_content:
         selected = "prepare_content"
     elif args.renew_credentials:

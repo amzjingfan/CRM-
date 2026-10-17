@@ -142,6 +142,7 @@ def test_read_and_translation_restore_uses_both_existing_gate_switches() -> None
     [
         ("ContentCheck", None),
         ("ContentPrepare", "prepare-50-isolated-g5-messages"),
+        ("ReconcileFixture", "replace-50-isolated-g5-return-questions"),
         ("RenewCredentials", "renew-50-existing-g5-tokens"),
     ],
 )
@@ -152,7 +153,7 @@ def test_content_modes_reach_host_gate_only_with_exact_confirmation(mode: str, c
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
-@pytest.mark.parametrize("mode", ["ContentPrepare", "RenewCredentials"])
+@pytest.mark.parametrize("mode", ["ContentPrepare", "ReconcileFixture", "RenewCredentials"])
 def test_content_writes_reject_missing_confirmation_before_host_access(
     mode: str,
 ) -> None:
@@ -166,6 +167,43 @@ def test_content_prepare_rejects_confirmation_for_credential_renewal() -> None:
     result = invoke(mode="ContentPrepare", confirm_content="renew-50-existing-g5-tokens")
     assert result.returncode != 0
     assert "content confirmation" in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_replacement_rejects_other_write_confirmation() -> None:
+    result = invoke(mode="ReconcileFixture", confirm_content="prepare-50-isolated-g5-messages")
+    assert result.returncode != 0
+    assert "content confirmation" in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_replacement_accepts_only_original_four_file_inventory() -> None:
+    policy = SOURCE_ROOT / "scripts" / "Assert-StagingG5PrivateFileSet.ps1"
+
+    def check(names: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [
+                POWERSHELL,
+                "-NoProfile",
+                "-NonInteractive",
+                "-File",
+                str(policy),
+                "-Mode",
+                "ReconcileFixture",
+                "-NamesJson",
+                json.dumps(names),
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+            timeout=15,
+        )
+
+    exact = [f"g5-38852775454-{index}.json" for index in range(1, 5)]
+    assert check(exact).returncode == 0
+    assert check(exact[:-1]).returncode != 0
+    assert check([*exact, "unexpected.json"]).returncode != 0
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")

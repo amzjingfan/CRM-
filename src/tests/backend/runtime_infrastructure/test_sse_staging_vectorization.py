@@ -14,7 +14,7 @@ def target() -> tuple[object, object]:
     document_id = uuid.uuid4()
     manifest = SimpleNamespace(store_id=store_id)
     snapshot = SimpleNamespace(
-        state="prepared",
+        state="legacy_prepared",
         document=SimpleNamespace(
             id=document_id,
             store_id=store_id,
@@ -36,6 +36,16 @@ def test_exact_prepared_faq_is_eligible_for_one_local_vectorization() -> None:
         manifest.store_id,
         1,
     )
+
+
+def test_replacement_faq_version_two_is_eligible_but_old_version_is_not() -> None:
+    manifest, snapshot = target()
+    snapshot.state = "prepared"
+    snapshot.document.document_version = 2
+    assert content.assert_single_vector_target(manifest, snapshot)[2] == 2
+    snapshot.document.document_version = 3
+    with pytest.raises(ValueError, match="G5 vector target"):
+        content.assert_single_vector_target(manifest, snapshot)
 
 
 @pytest.mark.parametrize("change", ["other_store", "ready", "failed", "wrong_source", "missing"])

@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R39 源码候选：旧版隔离提问的精确识别、店铺/50 会话/唯一 FAQ 拒绝条件、版本 2 旧切片失效及手动确认值已做红绿测试；内容工具与向量化 35 passed。完整后端及隔离 PostgreSQL 回归 `2019 passed, 3 skipped, 2 warnings`，Ruff lint/format、183 个源文件 mypy、4 个 PowerShell AST 与 `git diff --check` 通过。此为代码与测试证据；没有执行 staging 数据更新、向量化、DeepSeek 单会话或 50 并发，G5/production 仍未通过。
+
 2026-10-17 G5 R38：获批手动 staging 窗口的六摘要预取、修复版 G5 validate/deploy、第四份短期测试凭证签发及公网 50/50 只读预检通过。唯一合成 SSE 为 HTTP 200、协议完成，却无安全 `delta`，`first_delta_ms=null`、性能门禁 false；只读 Agent 追踪为 `insufficient_context`、`transfer_human`、检索候选 0。旧后端、Webhook 只读与工作台翻译已恢复，三健康 200、LLM/SSE 关闭、限流 10。没有 50 并发，G5/production 继续未通过。见 [R38 TR](../reports/tests/TR-MVP-006-20261017-R38.md)。
 
 2026-10-17 G5 R37：已授权的手动窗口完成六摘要预取和 G5 validate，迁移容器因 backend 未收到仓库外已有的内部检索令牌而失败；没有签发第四份凭证或发起合成 SSE/DeepSeek。旧后端、TikTok Webhook 只读和工作台翻译按门禁恢复，三健康 200。修复仅在 G5 backend 注入令牌并于部署前要求与检索服务一致且长度至少 32；本地完整后端 `1973 passed, 27 skipped`，subject 后 staging 门禁 `145 passed`，Ruff 和 PowerShell AST 通过。修复后的现场部署及单会话尚未执行，G5/production 继续未通过。见 [R37 TR](../reports/tests/TR-MVP-006-20261017-R37.md)。

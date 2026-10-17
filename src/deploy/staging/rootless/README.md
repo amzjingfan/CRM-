@@ -228,3 +228,9 @@ Variable: CRM_STAGING_BASE_URL=https://staging.overselfx.com
 #### G5 单条合成 FAQ 的一次性本地向量化
 
 `VectorizeG5` 只用于 R24 已准备的隔离店铺唯一内部审阅 FAQ。它要求受审脚本取自**运行时远端当前 main** 的干净持久 Git clone，`-SourceSha` 为该 main 完整 SHA；`-RuntimeBackendSourceSha` 为现场运行后端镜像的 OCI revision（允许该镜像较旧）。其余六摘要按运行现场提供，`-ConfirmContent vectorize-one-isolated-g5-faq`，证据使用全新私有目录。脚本把当前 main 的完整受审 backend 源码只读挂入当前后端镜像，满足原有容器挂载安全门禁，一次性容器临时开启 `EMBEDDING_ENABLED=true`，强制关闭通用 LLM 与 TikTok 写入，且仅允许 `http://retrieval-model-service:8010` 的本地 BGE-M3；常驻服务配置不变。认领 SQL 限定原店铺、原文档、版本 1、内部审批与 pending，且只认领 1 条。若结果不确定，停止并使用旧运行镜像及其受审源码运行 `ContentCheck` 只读对账；绝不盲目重试向量写入。此操作不续期凭证、不运行 SSE 或 DeepSeek，也不表示 G5 通过。
+
+#### R38 后隔离退货流程 fixture 的精确替换
+
+现场新写入尚未授权。源码提供 `ReconcileFixture`，仅对 R05 原隔离店铺的四份连续私有凭证、50 条原提问及唯一版本 1、`ready`、内部审批 FAQ 做精确对账。将 `-SourceSha` 指向执行时当前 main 的干净受审源码，运行镜像 OCI revision 必须与该 SHA 相同；使用现有六摘要、全新私有 `-EvidenceDirectory` 和 `-ConfirmContent replace-50-isolated-g5-return-questions`。写入前 `ContentCheck` 应显示 `fixture_state=legacy_prepared`。入口在单一事务内将 50 条问题和 FAQ 改为退货流程问答，FAQ 升为版本 2、`pending`，并记录不含正文的审计。此时旧版本切片不参与检索，`knowledge_ready=false` 是预期；立即运行只读 `ContentCheck` 核对 `fixture_state=prepared` 和 50/50。任何状态不符或结果不确定时停止，不重发写入。
+
+另获精确向量化授权后才以 `VectorizeG5` 处理该版本 2 FAQ：只允许原店铺唯一旧版本 1 切片，使用本地 BGE 原子替换；结果以 `ContentCheck` 的 `knowledge_ready=true` 和当前版本切片只读核对。版本 1 首次向量化仍只接受原两份私有凭证，版本 2 替换只接受原四份；不得扫描其他店铺。随后单会话 DeepSeek 与 50 并发各自另行授权和验收，不执行 GitHub Actions。

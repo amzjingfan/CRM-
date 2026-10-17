@@ -11,7 +11,8 @@ from app.audit.models import AuditLog
 from app.auth.service import build_user_view
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
-from app.knowledge_base.models import KnowledgeDocument
+from app.knowledge_base.models import KnowledgeChunk, KnowledgeDocument
+from app.knowledge_base.vector_port import ready_chunks
 from app.shared.database import models as _models  # noqa: F401
 from app.shared.database.base import Role, User, role_permissions, user_roles
 from app.stores.models import Store
@@ -183,10 +184,34 @@ async def test_synthetic_content_uses_knowledge_approval_without_persistent_perm
             await session.flush()
 
             prepared = await content.inspect_content_fixture(session, manifest)
-            assert prepared.state == "prepared"
+            assert prepared.state == "legacy_prepared"
             assert prepared.document is not None
             assert prepared.document.approved_by == manifest.user_ids[0]
             assert prepared.document.vectorization_status == "pending"
+            prepared.document.vectorization_status = "ready"
+            session.add(
+                KnowledgeChunk(
+                    store_id=manifest.store_id,
+                    document_id=prepared.document.id,
+                    document_version=1,
+                    chunk_index=0,
+                    content=fixture.G5_LEGACY_ANSWER,
+                    token_count=30,
+                    embedding=[0.0] * 1024,
+                    metadata_json={},
+                )
+            )
+            await session.flush()
+            legacy = await content.inspect_content_fixture(session, manifest)
+            await content.replace_synthetic_content(session, manifest, legacy)
+            await session.flush()
+            replaced = await content.inspect_content_fixture(session, manifest)
+            assert replaced.state == "prepared"
+            assert replaced.document is not None
+            assert replaced.document.document_version == 2
+            assert replaced.document.vectorization_status == "pending"
+            assert {message.content for message in replaced.messages} == {fixture.G5_SYNTHETIC_QUESTION}
+            assert await ready_chunks(session, manifest.store_id) == []
             assert (
                 await session.scalar(
                     select(func.count())

@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious', 'ContentCheck', 'ContentPrepare', 'RenewCredentials', 'VectorizeG5')]
+    [ValidateSet('CheckOnly', 'DeployG5', 'RestoreDefault', 'RestoreReadAndTranslation', 'RollbackPrevious', 'ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5')]
     [string]$Mode,
     [Parameter(Mandatory = $true)][string]$SourceSha,
     [Parameter(Mandatory = $true)][string]$CandidateBackendImage,
@@ -45,9 +45,10 @@ function Assert-LocalImage([string]$Reference) {
 
 if ($ConfirmTarget -cne 'staging') { throw 'ConfirmTarget must equal staging.' }
 if (($Mode -ceq 'ContentPrepare' -and $ConfirmContent -cne 'prepare-50-isolated-g5-messages') -or
+    ($Mode -ceq 'ReconcileFixture' -and $ConfirmContent -cne 'replace-50-isolated-g5-return-questions') -or
     ($Mode -ceq 'RenewCredentials' -and $ConfirmContent -cne 'renew-50-existing-g5-tokens') -or
     ($Mode -ceq 'VectorizeG5' -and $ConfirmContent -cne 'vectorize-one-isolated-g5-faq') -or
-    ($Mode -cnotin @('ContentPrepare', 'RenewCredentials', 'VectorizeG5') -and $ConfirmContent)) {
+    ($Mode -cnotin @('ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5') -and $ConfirmContent)) {
     throw 'Exact G5 content confirmation is required only for the selected write mode.'
 }
 if (($Mode -ceq 'VectorizeG5' -and $RuntimeBackendSourceSha -cnotmatch '^[0-9a-f]{40}$') -or
@@ -176,7 +177,7 @@ try {
     & chmod 0700 $EvidenceDirectory
     if ($LASTEXITCODE -ne 0) { throw 'Unable to protect the evidence directory.' }
 
-    if ($Mode -cin @('ContentCheck', 'ContentPrepare', 'RenewCredentials', 'VectorizeG5')) {
+    if ($Mode -cin @('ContentCheck', 'ContentPrepare', 'ReconcileFixture', 'RenewCredentials', 'VectorizeG5')) {
         & (Join-Path $PSScriptRoot 'Invoke-StagingManualG5Content.ps1') -Mode $Mode `
             -SourceSha $SourceSha -BackendImage $CandidateBackendImage -ReviewRoot $reviewRoot `
             -EnvironmentFile $environmentFile -DockerHost $dockerHost `

@@ -39,7 +39,7 @@ def check(mode: str, *, current_main: str = SOURCE, resolved_commit: str = SOURC
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
-@pytest.mark.parametrize("mode", ["CheckOnly", "DeployG5", "VectorizeG5"])
+@pytest.mark.parametrize("mode", ["CheckOnly", "DeployG5", "ReconcileFixture", "VectorizeG5"])
 def test_new_deployment_requires_current_main(mode: str) -> None:
     assert check(mode).returncode == 0
     assert check(mode, current_main=NEXT_MAIN).returncode != 0

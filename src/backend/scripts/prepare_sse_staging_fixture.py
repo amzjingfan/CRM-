@@ -36,10 +36,16 @@ class FixtureCommitUnknownError(RuntimeError):
 
 
 G5_ORIGINAL_QUESTION = "What is the status of my test order?"
-G5_SYNTHETIC_QUESTION = "What can this test assistant help with?"
-G5_SYNTHETIC_ANSWER = (
+G5_LEGACY_QUESTION = "What can this test assistant help with?"
+G5_LEGACY_ANSWER = (
     "This is an isolated synthetic chat test. I cannot verify real order, shipping, return, "
     "or refund status. A human agent must check authorized records for real customer requests."
+)
+G5_SYNTHETIC_QUESTION = "What is the return request process for an item purchased from the G5 test shop?"
+G5_SYNTHETIC_ANSWER = (
+    "For the isolated G5 test shop, open a return request from the order page and provide a reason. "
+    "A human agent reviews the request, and processing begins only after platform approval. "
+    "This FAQ does not confirm an individual order or refund outcome."
 )
 
 
@@ -106,6 +112,8 @@ def verify_g5_content_snapshot(
         content.add(message.content)
     if content == {G5_ORIGINAL_QUESTION}:
         return "original"
+    if content == {G5_LEGACY_QUESTION}:
+        return "legacy_prepared"
     if content == {G5_SYNTHETIC_QUESTION}:
         return "prepared"
     raise ValueError("fixture content state mismatch")

@@ -11,12 +11,14 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/g5-r38-index-closure-20261017
-Governance base SHA: 4dc97734d70f28bae49d579e38b30c4f66f0f680
-CANDIDATE_SUBJECT_SHA: 51479c2e7b0bcf5929ec7cf05f9349abe3d9f1a0
+Working branch at this snapshot: fix/g5-synthetic-return-fixture-20261017
+Governance base SHA: 93883948ec5639a49b536902bc4329f90334eddd
+CANDIDATE_SUBJECT_SHA: 457de2656ccb55daf90caf93c937ce7d0ecf94f8
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
+
+2026-10-17 G5 R39 源码候选：针对 R38 的 `insufficient_context` 安全转人工，用户确认只更新原隔离店铺的 50 条合成问题和唯一内部 FAQ。subject `457de2656ccb55daf90caf93c937ce7d0ecf94f8` 增加 `ReconcileFixture` 一次性精确入口、版本 2 失效旧切片门禁与本地 BGE 版本 2 重建路径；保持生产分类器、Prompt、安全门禁及 TikTok 开关不变。内容工具与向量化 35 项、完整隔离 PostgreSQL 回归 2019 passed/3 skipped、Ruff/mypy/PowerShell AST 通过；见 [IR](../records/implementation/IR-MVP-006-20261017-R39.md)、[TR](../reports/tests/TR-MVP-006-20261017-R39.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R39.md)。三个派生索引在本分支为 `CANDIDATE_VIEW`。尚未发布新镜像、写 staging 测试店、向量化、付费复测或 50 并发；旧后端仍运行只读加工作台翻译，G5 `DOING`、production No-Go。下一步：合并受审源码；现场数据更新与本地向量化分别精确授权；安全单会话通过后再安排 50 并发。
 
 2026-10-17 G5 R38：从当前 main `d9b3b18e` 获批执行一次手动 staging 单会话窗口；六摘要预取、修复后的令牌 validate/deploy、第四份短期凭证签发和公网 50/50 只读预检均通过。唯一合成 SSE 返回 HTTP 200 和协议成功 `done`，却无安全 `delta`，性能门禁 false；只读 Agent 摘要为 `insufficient_context`→`transfer_human`、检索候选 0。原 fixture 问题具有指代歧义，是待验证的原因判断；没有运行 50 并发。旧 backend `sha256:758c4d51…41522`、TikTok Webhook 只读与工作台翻译已恢复，LLM/SSE 关闭、限流 10、三健康 200。见 [IR](../records/implementation/IR-MVP-006-20261017-R38.md)、[TR](../reports/tests/TR-MVP-006-20261017-R38.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R38.md) 和 [低敏证据](../../release/evidence/staging/crm-staging-g5-r38-single-20261017.json)。R38 事实记录已由 [PR #298](https://github.com/CP11-gh/CRM/pull/298) 合入 main `4dc97734d70f28bae49d579e38b30c4f66f0f680`；三个派生索引从主分支源记录核对后恢复为 `CURRENT`。G5 `DOING`、production No-Go。下一步：按已确认的有界设计修复隔离合成 fixture；现场数据更新、向量化与付费单会话分别精确授权；安全输出通过后再安排 50 并发。
 
@@ -356,6 +358,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 已建 50 个隔离账号；R06 的 50 次认证均失败、运行限流为 10，R08 单令牌 `/auth/me` 为 HTTP 500 / 50001，R11 固定窗日志回查零匹配。先按已呈交的有界设计处理测试邮箱并精确核对现有夹具，禁止重跑 provision；随后重验 50 身份/会话、限流、已审批知识与单会话安全 `delta`，真实 50 并发和费用另按边界执行。
+1. 合并 G5 R39 源码候选后，按当前 main 和运行镜像重新核对手动 staging 门禁；原隔离店铺的 50 条问题和唯一 FAQ 现场更新、随后本地 BGE 向量化分别按精确范围执行并只读对账。安全单会话的 DeepSeek 复测及真实 50 并发仍须分别取得现场证据，不能由源码测试代替。
 2. G2 取得店铺所有者可控的真实买家消息或平台官方测试投递；核对 Webhook 入站、审计和恢复。G3 保持真实写关闭，待受控会话和单次外部发送授权。
 3. G1-L 等待适用 CBT 首程包裹或平台说明；G5、G6 与这些外部门禁完成前，G8 和 production 维持 No-Go。
