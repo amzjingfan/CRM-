@@ -117,6 +117,15 @@ def test_faq_prompt_describes_every_required_output_field_and_claim_inventory() 
     assert '"business_claims":{"complete":true,"claims":[]}' in FAQ_ANSWER_SYSTEM_PROMPT
 
 
+def test_faq_review_prompt_requires_complete_typed_output() -> None:
+    """复核节点必须显式给出结构化字段，不能让 JSON 模式猜测。"""
+    for field in GroundingReviewOutput.model_fields:
+        assert f'"{field}"' in GROUNDING_REVIEW_SYSTEM_PROMPT
+    assert "布尔值" in GROUNDING_REVIEW_SYSTEM_PROMPT
+    assert "0 到 1 的数字" in GROUNDING_REVIEW_SYSTEM_PROMPT
+    assert "字符串数组" in GROUNDING_REVIEW_SYSTEM_PROMPT
+
+
 @pytest.mark.parametrize(("prompt_id", "expected"), REGISTERED_PROMPTS.items())
 def test_business_prompt_registry_binds_version_digest_purpose_and_schema(
     prompt_id: BusinessPromptId,

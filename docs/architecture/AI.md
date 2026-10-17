@@ -12,6 +12,8 @@ FAQ 回答 Prompt 中的知识来源标签也使用现有 DLP 脱敏函数。来
 
 G5 R53 的受控单会话在 FAQ 草稿处记录 `business_claims:model_type` 与 `unknown:missing`，没有保存模型正文，后者不能倒推出具体字段。FAQ 生成 Prompt `faq-answer-v1.6.1` 明列 `FaqAnswerModelOutput` 的全部必需顶层字段，以及 `business_claims={complete:true, claims:[...]}` 的对象结构；无业务命题时 `claims=[]`，有业务命题时仍须完整列出。低敏 Schema 路径白名单仅新增 `answer`、`citation_chunk_ids`、`grounding_confidence`、`answer_language`、`needs_human`，不记录模型字段值。注册摘要同步更新；严格 Schema、DLP、评分、调用次数及 TikTok 发送边界未改变。确定性测试不能证明新 Prompt 的真实模型输出或 G5 单会话通过。
 
+G5 R56 的受控单会话通过 FAQ 草稿，但安全复核返回 `invalid_schema / unknown:missing`，低敏证据不能还原具体缺失字段。`faq-grounding-review-v1.5.1` 明列 `GroundingReviewOutput` 的五个顶层字段及布尔、数字、字符串数组类型；运行失败摘要只允许记录新增白名单路径 `is_safe`、`is_grounded`、`business_claims_consistent`、`confidence`、`reason_codes` 和既有固定错误类型。注册正文哈希已同步，工作流版本为 `faq-agent-workflow-v1.7.1`。这只改输出指令与诊断名称，严格 Schema、DLP、安全判分、最多调用次数和 TikTok 开关不变；本地确定性测试不能证明现场会产生安全 `delta`。
+
 ## Prompt 与策略版本
 
 系统 Prompt、DLP 规则、结构化声明和回复策略使用可审计版本。Agent 配置只能选择受控语气、语言和品牌名，不能写任意 Prompt、模型或阈值。版本变化必须更新评测和发布基线。

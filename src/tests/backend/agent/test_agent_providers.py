@@ -32,7 +32,13 @@ from app.agent.providers.deepseek_provider import DeepSeekProvider
 from app.agent.providers.factory import build_provider_pair
 from app.agent.providers.openai_provider import OpenAIProvider
 from app.agent.real_model_evaluation import RealModelEvaluationOutput
-from app.agent.schemas import ClassificationState, FaqAnswerModelOutput, IntentModelOutput, IntentName
+from app.agent.schemas import (
+    ClassificationState,
+    FaqAnswerModelOutput,
+    GroundingReviewOutput,
+    IntentModelOutput,
+    IntentName,
+)
 from app.agent.security import TRUSTED_PROVIDER_CONTRACT_SYSTEM_PROMPT
 from app.agent.translation import TRANSLATION_SYSTEM_PROMPT, TranslationBundleModelOutput
 from app.shared.config.settings import Settings
@@ -658,7 +664,7 @@ async def test_deepseek_empty_or_invalid_output_is_retriable(content: str | None
     assert captured.value.code == LLMErrorCode.LLM_OUTPUT_INVALID
     assert captured.value.retriable is True
     expected_kind = "empty" if not content else "invalid_json" if content == "not-json" else "invalid_schema"
-    expected_issues = (("unknown", "missing"),) if content == '{"intent":"general"}' else ()
+    expected_issues = (("confidence", "missing"), ("unknown", "missing")) if content == '{"intent":"general"}' else ()
     assert captured.value.output_failure_kind == expected_kind
     assert captured.value.output_schema_issues == expected_issues
 
@@ -728,6 +734,29 @@ async def test_deepseek_faq_schema_diagnostics_name_required_fields_without_valu
         ("answer_language", "missing"),
         ("needs_human", "missing"),
         ("business_claims", "model_type"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_deepseek_faq_review_missing_fields_have_only_allowlisted_paths() -> None:
+    """复核缺字段只输出固定路径和错误类型，不泄露模型正文。"""
+    resource = FakeResource(
+        SimpleNamespace(
+            choices=[SimpleNamespace(finish_reason="stop", message=SimpleNamespace(content="{}"))],
+            usage=SimpleNamespace(prompt_tokens=12, completion_tokens=2),
+        )
+    )
+    provider = provider_with_resource("deepseek", resource)
+
+    with pytest.raises(LLMProviderError) as captured:
+        await provider.generate_structured(request(), GroundingReviewOutput)
+
+    assert captured.value.output_failure_kind == "invalid_schema"
+    assert captured.value.output_schema_issues == (
+        ("is_safe", "missing"),
+        ("is_grounded", "missing"),
+        ("business_claims_consistent", "missing"),
+        ("confidence", "missing"),
     )
 
 
