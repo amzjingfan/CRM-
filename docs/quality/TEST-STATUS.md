@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-17 G5 R33：[staging 空闲采样](../reports/tests/TR-MVP-006-20261017-R33.md)在 Linux/Rootless 下读取 3 组 backend/worker/agent-worker 资源与 backend TCP 白名单指标，服务器与入库副本哈希一致。未施加 SSE 负载，不能作为 50 并发容量证据；第三份凭证的 50/50 枚令牌已过期。G5/production 继续未通过。
+
 2026-10-17 G5 R32：获批的手动单会话 SSE 在 `accepted` 后返回 `50003`，没有安全 `delta`，随后原 TikTok 只读加工作台翻译模式已通过 validate/deploy 与三个公网健康检查恢复。G5 backend 缺少 Agent 必需的本地检索开关；修复 subject `4eee102` 的定向 14 项、完整 staging 门禁文件 142 项及全量后端 `1959 passed, 27 skipped`，Ruff/PowerShell AST 均通过。修复尚未在 staging 复测；G5/production 未通过。见 [R32 TR](../reports/tests/TR-MVP-006-20261017-R32.md)。
 
 2026-10-17 G5 R31：只读资源/TCP 队列采样器与格式修复主线整合后的 `9712c5a8` 本地全量后端 pytest `1955 passed, 27 skipped`、Ruff lint/format 与 mypy 通过；前端 47 项契约、lint/typecheck/build 通过。PR #281 的 GitHub Actions 作业均在首步前失败，不能作为代码测试结论；用户决定 G5 改用 GitHub 凭据和 staging 手动路径。格式基线已由 PR #283 修复，采样器仍待合并，尚未在 Linux staging 运行；单会话安全 `delta`、真实 50 并发、资源峰值与恢复仍无现场结论，G5/production 未通过。见 [R31 TR](../reports/tests/TR-MVP-006-20261017-R31.md)。
