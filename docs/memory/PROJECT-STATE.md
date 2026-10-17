@@ -11,14 +11,16 @@ Project phase: ACTIVE
 Governance tier: STANDARD
 Repository identity: origin=ssh://git@ssh.github.com:443/CP11-gh/CRM.git
 Primary branch: main
-Working branch at this snapshot: docs/settings-inbox-ui-evidence-20261017
-Governance base SHA: cf288ab5afd8347b835ace61a5d13501b7f47c8c
+Working branch at this snapshot: docs/settings-ui-index-current-20261017
+Governance base SHA: 9f060597721fb92ac6edac276bc90ad8e53cd68a
 CANDIDATE_SUBJECT_SHA: 6a4398491a6956b4e55ef998debf989834f74244
 EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: CLEAN — 当前隔离 worktree 的新证据/记录均属本任务；其他 worktree、备份不在本任务范围
 ```
 
 2026-10-17 `MVP-SETTINGS-UI-001` 完成：PR #280/#282/#284 已合入 `main`，前端 subject `6a4398491a6956b4e55ef998debf989834f74244`；工作台真实 TikTok 会话列表显示最近消息 `MM-DD HH:mm`，设置页只呈现现有店铺授权与员工账号，窄屏表格可横向滚动且状态单行。最终前端镜像 `ghcr.io/cp11-gh/crm-frontend@sha256:8b2883bc0af901fa33470a2bb183fa4d2deb19b2066798453296c7353c6e7dfe` 已手动部署 staging，validate/deploy 通过、三公网健康 200、现场刷新后真实会话时间及 3 家店铺可见；后端/检索保持原摘要，真实 TikTok 发送仍关闭，production 未发布。见 [IR](../records/implementation/IR-MVP-SETTINGS-UI-001-20261017-R01.md)、[TR](../reports/tests/TR-MVP-SETTINGS-UI-001-20261017-R01.md) 与 [低敏部署证据](../../release/evidence/staging/crm-staging-settings-ui-deploy-20261017-r03.json)。本任务 worktree 的证据文件均已归属，Workspace hygiene: CLEAN；其他 worktree 和备份不在本任务范围。
+
+PR #285 已将上述实施、测试和 staging 证据合入 `main=9f060597721fb92ac6edac276bc90ad8e53cd68a`。三份派生索引在主分支按源记录核对为 120/123/118 条，ID 无缺漏或重复，状态和 subject SHA 一致，现恢复为 `CURRENT`。
 
 2026-10-17 G5 R31 当前恢复点：subject `9712c5a8` 的只读资源/TCP 队列采样器本地全量后端与前端门禁通过；[IR](../records/implementation/IR-MVP-006-20261017-R31.md)、[TR](../reports/tests/TR-MVP-006-20261017-R31.md)、[RR](../reports/reviews/RR-MVP-006-20261017-R31.md) 已入 main，PR #281 合并为 `f618dfff`。GitHub Actions 因账户计费在首步前失败，不作为测试结论。用户决定 G5 走 GitHub 凭据加 staging 主机手动路径；采样器未在 Linux 现场运行，G5/production No-Go。当前 staging 为 TikTok 只读加工作台翻译，后端 `sha256:477d571d…cb293`、前端 `sha256:8b2883bc…e7dfe`、检索 `sha256:feeee5a3…623059`，SSE/LLM 与真实发送关闭、限流 10。此前只读 `ContentCheck` 确认 50/50 会话、FAQ ready、凭证文件存在、Provider 与数据库写入 0；短期令牌实时有效性尚未验证。下一步最多三项：核对凭证有效期并准备单会话安全窗口；获精确范围后执行 50 并发、采样与恢复；由账户所有者处理 Actions 计费问题（本次手动路径不依赖它）。
 
