@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-17 G5 R48 源码候选：运行记录现在只在 `LLM_OUTPUT_INVALID` 时追加白名单模型节点和固定输出失败子类，未知诊断不入库；公开错误、DLP、评分和发送开关未变。subject `a927156a` 的本地后端回归 2045 passed、27 skipped，Ruff 与 mypy 通过；见 [R48 TR](../reports/tests/TR-MVP-006-20261017-R48.md)。尚未发布镜像、部署或在 staging 复现故障，G5 与 production 仍未通过。
+2026-10-17 G5 R48 已合入源码：[PR #315](https://github.com/CP11-gh/CRM/pull/315) 将 subject `a927156a` 合入 main `e0d3fc3`。运行记录只在 `LLM_OUTPUT_INVALID` 时追加白名单模型节点和固定输出失败子类，未知诊断不入库；公开错误、DLP、评分和发送开关未变。本地后端回归 2045 passed、27 skipped，Ruff 与 mypy 通过；见 [R48 TR](../reports/tests/TR-MVP-006-20261017-R48.md)。尚未发布镜像、部署或在 staging 复现故障，G5 与 production 仍未通过。
 
 2026-10-17 G5 R47：获批手动窗口已从 main `d29d5e0a` 完成 G5 部署、唯一隔离 FAQ 版本 3 更新及本地 BGE 向量化、第六份 50 枚短期凭证续期，50/50 不同授权用户只读预检通过。唯一合成 SSE HTTP 200，但公开码 `50003`、内部码 `LLM_OUTPUT_INVALID`、无安全 `delta`，性能门禁失败；没有启动 50 并发或资源采样。恢复原后端与 G3 限定会话人工发送后，LLM/SSE 关闭、限流 10、三公网健康 200 和固定出口通过。现有持久记录无法定位模型输出失败节点或子类；见 [R47 TR](../reports/tests/TR-MVP-006-20261017-R47.md)。G5 与 production 仍未通过。
 
