@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R64 | MVP-006 | R64 | APPROVE | `665e05f6b5508d4e615feb73d8483532c822f49c` | local-ghcr-auth / image-provenance / isolated-credentials / conditional-load / latency-gate / manual-restore | 2026-10-18T07:42:00+08:00 | [`RR-MVP-006-20261018-R64.md`](RR-MVP-006-20261018-R64.md) |
 | RR-MVP-006-20261018-R63 | MVP-006 | R63 | APPROVE | `0996a25fd6fe5c8648277cc0c26b8ff5e37f9d03` | fixed-decision-reason / repository-allowlist / no-model-text / unchanged-action / fail-closed | 2026-10-18T03:40:00+08:00 | [`RR-MVP-006-20261018-R63.md`](RR-MVP-006-20261018-R63.md) |
 | RR-MVP-006-20261018-R62 | MVP-006 | R62 | APPROVE | `c6915ba456c200ca2e3a84f431982220e680714f` | image-provenance / isolated-credentials / conditional-load / low-sensitivity-diagnosis / manual-restore | 2026-10-18T03:15:00+08:00 | [`RR-MVP-006-20261018-R62.md`](RR-MVP-006-20261018-R62.md) |
 | RR-MVP-006-20261018-R61 | MVP-006 | R61 | APPROVE | `b9196051522d4b12f1e1c66bdadfbd0d10747d13` | fixed-diagnostics / provider-redaction / repository-allowlist / faq-policy-claims / fail-closed | 2026-10-18T02:57:00+08:00 | [`RR-MVP-006-20261018-R61.md`](RR-MVP-006-20261018-R61.md) |
