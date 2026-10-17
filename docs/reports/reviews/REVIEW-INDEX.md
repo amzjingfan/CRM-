@@ -1,6 +1,6 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
@@ -128,5 +128,6 @@ View: `CURRENT`
 | RR-MVP-006-20261017-R37 | MVP-006 | R37 | APPROVE | `da2eb6575da06d34923b72323bff0a4631222898` | staging-secret-scope / fail-closed / token-redaction / recovery / no-platform-write | 2026-10-17T13:57:36+08:00 | [`RR-MVP-006-20261017-R37.md`](RR-MVP-006-20261017-R37.md) |
 | RR-MVP-006-20261017-R38 | MVP-006 | R38 | APPROVE | `51479c2e7b0bcf5929ec7cf05f9349abe3d9f1a0` | scope / fixture-isolation / provider-budget / secret-redaction / fail-closed / recovery | 2026-10-17T14:32:00+08:00 | [`RR-MVP-006-20261017-R38.md`](RR-MVP-006-20261017-R38.md) |
 | RR-MVP-004-20261017-R03 | MVP-004 | R03 | APPROVE | `2a62debe16a58b1263c62eb794982ab01a4856cb` | correctness / security / tenant-isolation / deployment | 2026-10-17T15:05:00+08:00 | [`RR-MVP-004-20261017-R03.md`](RR-MVP-004-20261017-R03.md) |
+| RR-MVP-004-20261017-R04 | MVP-004 | R04 | APPROVE | `2a62debe16a58b1263c62eb794982ab01a4856cb` | deployment-provenance / tenant-isolation / external-send / idempotency / audit / production-boundary | 2026-10-17T15:53:50+08:00 | [`RR-MVP-004-20261017-R04.md`](RR-MVP-004-20261017-R04.md) |
 | RR-MVP-006-20261017-R39 | MVP-006 | R39 | APPROVE | `457de2656ccb55daf90caf93c937ce7d0ecf94f8` | fixture-isolation / exact-private-batch / version-gate / fail-closed / no-platform-write | 2026-10-17T15:02:54+08:00 | [`RR-MVP-006-20261017-R39.md`](RR-MVP-006-20261017-R39.md) |
 | RR-MVP-006-20261017-R41 | MVP-006 | R41 | APPROVE | `14148597739dd53bb5a5c81a3773c7f73aad47fb` | current-main / ancestor-commit / exact-build-inputs / runtime-digest / fail-closed | 2026-10-17T15:32:53+08:00 | [`RR-MVP-006-20261017-R41.md`](RR-MVP-006-20261017-R41.md) |

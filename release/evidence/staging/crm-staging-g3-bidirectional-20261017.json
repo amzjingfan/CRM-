@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_controlled_tiktok_bidirectional_manual_message",
+  "recorded_at_utc": "2026-10-17T07:53:50Z",
+  "environment": "staging",
+  "source_subject_sha": "2a62debe16a58b1263c62eb794982ab01a4856cb",
+  "deployed_main_revision": "70d8968a0d5245f5578f703ca734990d547ab564",
+  "deployment_gate_status": "passed",
+  "deployment_gate_sha256": "94e99819dee8722f7e1032ba76a68eb41739654334aec42de7cb3416bccc68c5",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:04c4f64da19ccd0ce3f71aea3c6e2f60b1ca1d1d96db9e522e15f58d40bd1dcc",
+  "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:573b8466bee1d63c3c3d177954c8fd5a99b6af5f46f29de9c5855fbf52badf7c",
+  "runtime": {
+    "manual_send_enabled": true,
+    "webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "production_release": false,
+    "controlled_conversation_send_mode": "real",
+    "other_same_store_conversations_disabled": 179,
+    "other_same_store_conversations_real": 0,
+    "health_status_codes": [200, 200, 200],
+    "database_migration": "heads_applied"
+  },
+  "outbound": {
+    "authorized_once": true,
+    "matching_messages": 1,
+    "status": "sent",
+    "delivery_mode": "real",
+    "platform_message_id_present": true,
+    "manual_tool_calls_succeeded_unmocked": 1,
+    "manual_audit_entries_succeeded_unmocked": 1,
+    "official_readback_message_id_matches": 1,
+    "official_readback_content_matches": true,
+    "official_readback_sender_role": "CUSTOMER_SERVICE",
+    "official_readback_visible": true
+  },
+  "inbound_reply": {
+    "buyer_reported_reply_from_mobile": true,
+    "matching_crm_messages": 1,
+    "matching_webhook_events": 1,
+    "webhook_signature_valid": true,
+    "webhook_channel_store_bound": true,
+    "webhook_sender_role": "BUYER",
+    "webhook_status": "succeeded",
+    "platform_to_receipt_seconds": 2.3,
+    "receipt_to_processing_seconds": 0.5,
+    "workbench_reply_visible": true
+  },
+  "store_pending_or_unknown_outbound_messages": 0,
+  "seller_center_outbound_observed": false,
+  "customer_content_or_identifiers_included": false,
+  "g3_staging_controlled_conversation_result": "pass",
+  "g2_retry_out_of_order_recovery_result": "not_tested"
+}

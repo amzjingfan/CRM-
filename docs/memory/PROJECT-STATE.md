@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-17 G3 R04 受控双向闭环：PR #301 的 subject `2a62debe16a58b1263c62eb794982ab01a4856cb` 经 main `70d8968a` 手动发布 staging，门禁、三健康与单会话运行隔离通过。用户精确授权后，项目工作台只向受控买家发送一次普通文本；TikTok 官方只读历史返回同一平台消息 ID，工具与审计成功且非 Mock，手机买家回复经已验签的 Webhook 自动出现在 CRM。其他 179 个同店铺会话仍不可真实发送，无待对账出站。[R04 IR](../records/implementation/IR-MVP-004-20261017-R04.md)、[TR](../reports/tests/TR-MVP-004-20261017-R04.md)、[RR](../reports/reviews/RR-MVP-004-20261017-R04.md)与[低敏证据](../../release/evidence/staging/crm-staging-g3-bidirectional-20261017.json)。G3 staging 受控会话验收通过；G2 重试/乱序/持续恢复、G8 与 production 仍未通过。Seller Center 本次出站画面未独立观察。下一步：①完成本轮证据 PR 与索引合并；②继续 G2 异常投递和恢复验收；③若共享 staging 被其他任务部署，重新核对单会话运行模式。
+
 2026-10-17 G5 R42 手动候选镜像：用户单独授权后，从 main `335e959b03d4c87ffec789dc0144121610a9b60c` 用现有 GitHub 凭据发布一份私有 `crm-backend`；GHCR 不可变摘要 `sha256:14f79918…66c63` 经远端 manifest 与按摘要拉回核对，平台 `linux/amd64`、OCI revision 精确匹配，12 层压缩合计 110,929,839 字节，见 [低敏证据](../../release/evidence/staging/crm-staging-g5-r42-manual-backend-image-20261017.json)。未部署 staging，未写隔离店铺数据、运行 BGE/DeepSeek 或 50 并发。两把已知 SSH 密钥均被 `crmdeploy` 拒绝；客户端确认公钥已提交给主机，须在主机端恢复授权或取得可用账号。G5 `DOING`、production No-Go。
 
 2026-10-17 G5 R41 合并及只读预检：受审门禁修复 [PR #304](https://github.com/CP11-gh/CRM/pull/304) 已 squash 合入 main `a0788e770f46edb7a678edf5eb0633f29479c9e5`。对 R40 镜像的 GitHub 祖先及构建输入检查证实祖先关系成立、Dockerfile 一致，但当前 main 的 `src/backend` 树已变化，门禁非零失败关闭；[低敏证据](../../release/evidence/staging/crm-staging-g5-r41-ancestor-preflight-20261017.json)。staging SSH 认证失败，运行摘要未核对；未写数据或调用模型。下一步须单独精确批准从新的 main 发布后端镜像，并先恢复 staging 主机读取入口；数据替换与本地向量化仍各自待授权。G5 `DOING`、production No-Go。
@@ -24,7 +26,7 @@ EVIDENCE_HEAD_SHA: READ_AT_GATE
 Workspace hygiene: KNOWN_TEMP — R40 与 R42 镜像发布的隔离 Docker CLI 配置目录保留在已忽略测试临时区；均已退出 GHCR 且认证项为 0，R40 目录删除曾被自动审批拒绝
 ```
 
-2026-10-17 G2/G3 当前恢复点：受控手机买家消息在 Seller Center 与 CRM 可见，staging 只读聚合证实 1 个验签、店铺绑定和处理均成功的 `NEW_MESSAGE` 事件，原只读加翻译运行模式已恢复；真实写仍关闭。R03 代码已准备工作台可见标签页 5 秒刷新、官方 202606 人工文本契约和 staging 单会话发送门禁，合并 main 后完整后端 `1999 passed, 27 skipped`、前端浏览器 27 项通过，尚未发布或真实发送；见 [IR](../records/implementation/IR-MVP-004-20261017-R03.md)、[TR](../reports/tests/TR-MVP-004-20261017-R03.md)、[RR](../reports/reviews/RR-MVP-004-20261017-R03.md) 与[低敏预检](../../release/evidence/staging/crm-staging-tiktok-inbound-preflight-20261017.json)。三个派生索引在本候选分支为 `CANDIDATE_VIEW`，G2/G3 继续 `DOING`、production No-Go。下一步：①合并受审源码并手动构建不可变镜像；②单会话 staging 门禁部署并核对其他会话写入关闭；③取得具体外发正文确认后仅发一次并在买家端、Seller Center、CRM 与审计对账。
+2026-10-17 G2/G3 R03 历史准备点：受控手机买家的首条真实消息在 Seller Center 与 CRM 可见；R03 代码、测试、单会话门禁和[低敏预检](../../release/evidence/staging/crm-staging-tiktok-inbound-preflight-20261017.json)为其后 R04 部署和双向测试的前置事实。当前 G3 结论见本节顶部 R04，G2 仍需异常投递与恢复验收。
 
 2026-10-17 G5 R40 手动候选镜像：用户精确授权从 main `7d4a72d7de5c760af80e6618630505a556063ef7` 使用现有 GitHub 凭据发布一份私有 `crm-backend`。GHCR 返回并远端复核不可变摘要 `sha256:8a418e6c…796221`、linux/amd64、OCI revision 精确匹配、12 层压缩 110,929,110 字节；见 [R40 低敏证据](../../release/evidence/staging/crm-staging-g5-r40-manual-backend-image-20261017.json)。未运行 GitHub Actions、未部署 staging、未写测试店数据、未调用 BGE/DeepSeek 或执行 50 并发。隔离 Docker CLI 凭据已退出且认证项为 0；清理该临时目录的命令遭自动审批拒绝，目录保留。G5 `DOING`、production No-Go；下一步仅在独立精确授权后执行隔离内容对账写入与本地向量化。
 
