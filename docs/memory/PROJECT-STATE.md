@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 G5 R85 索引收尾：[PR #392](https://github.com/CP11-gh/CRM/pull/392) 已将现场证据合入权威 main `dae01b2db70b44593293b15843d6a3452adf29b0`。从该 main 的源记录核对 IR/TR/RR 分别 171/176/168 份，三个派生索引与源记录行数一致，本收尾分支恢复为 `CURRENT`。现场严格首输出 P99 未过、独立断连未验收，G5 `DOING`、production No-Go；原 G3 模式保持恢复状态。
+
 2026-10-18 G5 R85 手动现场：从 main `42d5ea2befb8654c768f8f8492dd1a5eb06dd97b` 发布私有后端 `sha256:29dce96d…52bc5a`，临时部署并完成 50/50 身份、安全 `delta`、单会话门槛。50 并发首输出 P99 4696.9 ms 仍超 3000 ms，虽总耗时 P99 4699.2 ms 通过；PostgreSQL 长开事务峰值由 R83 的 45 降至 15。原旧后端和 G3 单店人工发送已按快照恢复，健康与固定出口通过，详见 [IR](../records/implementation/IR-MVP-006-20261018-R85.md)、[TR](../reports/tests/TR-MVP-006-20261018-R85.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R85.md)。`CANDIDATE_SUBJECT_SHA=42d5ea2befb8654c768f8f8492dd1a5eb06dd97b`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`；派生索引在任务分支为 `CANDIDATE_VIEW`。G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree 与私有凭证/快照保留，未知文件未处理。下一步：①区分接入、检索连接获取与 SQL 长尾；②单点修复并严格复测 50/50 与 P99；③独立断连及 G3 恢复验收。
 
 2026-10-18 G5 R84 已合并候选：`CANDIDATE_SUBJECT_SHA=9c1b0c63fc8617f86e5dbcff91a64f77a5decf77`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R84.md)、[TR](../reports/tests/TR-MVP-006-20261018-R84.md)及[RR](../reports/reviews/RR-MVP-006-20261018-R84.md)记录独立短时 FAQ 检索会话、异常/取消释放和 2129 passed/27 skipped、237 条离线安全样本；PR #390 已合入 main `26cd1b2ba49a0a5ff466f7363e8639cb16f5e5f6`，三个派生索引恢复 `CURRENT`。尚未发布匹配镜像或运行新窗口，staging 仍为旧后端/G3 单店人工发送，R83 严格 P99 失败有效。G5 `DOING`、production No-Go。Workspace hygiene：保留活动 worktree 与仓库外凭证，未知文件未处理。下一步：①手动合并源码并发布匹配镜像；②可恢复窗口复测单会话、50/50、严格 P99 与数据库状态；③独立断连和 G3 恢复验收。
