@@ -21,6 +21,8 @@ G5 [R79 本地候选](../reports/tests/TR-MVP-006-20261018-R79.md)已通过连�
 
 G5 [R80 现场](../reports/tests/TR-MVP-006-20261018-R80.md)已验证 R79 候选 50/50 安全输出及原 G3 恢复；并发 P99 仍失败，资源未含 BGE、断连未独立验收。以该轮真实结果作为当前 G5 结论，先做零 DeepSeek 分阶段诊断。
 
+G5 [R81 只读诊断](../reports/tests/TR-MVP-006-20261018-R81.md)在恢复 G3 后测得空载四路本地 BGE/50 路 FAQ SQL 较快；与 R80 真实并发检索长尾并存，尚不能确认原因。按同批匿名客户端关联，接入和检索/Agent 都与首安全输出变慢共同变化。下一现场窗口须同步采样负载时的本地 BGE、SQL 和接入阶段，再依据证据修复；不得用空载探针宣称 G5 通过。
+
 G5 R69 组合 FAQ 源码已合并并在 R70 手动窗口实测。真实模型虽然完成分类与草稿，但把内容层 `needs_human` 与 CRM 固有人工发送复核混同，安全转人工；没有可计时的安全 `delta`。R70 的 Agent 检索/组合调用/独立复核耗时 269/1948/637 ms，内部首次输出 3004 ms 不代替 SSE 安全输出。R71 本地候选仅修正 Prompt 歧义并通过确定性回归，尚无真实模型与延迟证据；不能用这一次 HTTP 200 启动 50 并发。
 
 G5 [R49 手动候选镜像](../../release/evidence/staging/crm-staging-g5-r49-manual-backend-image-20261017.json)随后经 OCI index `sha256:8dabe73b…c017` 完成两次获批的 [R50 手动窗口](../reports/tests/TR-MVP-006-20261017-R50.md)。第一次单会话被 Origin/CORS 拒绝；第二次 HTTP 200 但 FAQ 草稿 `invalid_schema`，无安全 `delta`，50 并发未启动。旧后端与 G3 限定会话已恢复，production 仍为 No-Go。

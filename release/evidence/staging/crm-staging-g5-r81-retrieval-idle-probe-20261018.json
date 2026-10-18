@@ -1,0 +1,1 @@
+{"read_only":true,"deepseek_calls":0,"isolated_sessions_verified":50,"mode":"temporary_candidate_container","single_embedding_ms":99.7,"four_embeddings":{"completed":4,"failures":{},"median_ms":222.95499999999998,"p99_ms":350.67},"single_database_ms":23.37,"fifty_database":{"completed":50,"failures":{},"candidate_counts":{"1":50},"median_ms":11.965,"p99_ms":93.45}}

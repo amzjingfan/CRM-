@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 G5 R81 只读诊断：`CANDIDATE_SUBJECT_SHA=7ec491d5f7833c62490c0a090b5f658890228e99`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R81.md)、[TR](../reports/tests/TR-MVP-006-20261018-R81.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R81.md)与[低敏关联](../../release/evidence/staging/crm-staging-g5-r81-correlated-timing-20261018.json)记录：G3 已恢复后，临时候选进程只读验证原隔离店铺，零 DeepSeek 调用下四路本地 BGE 向量化插值 P99 350.7 ms、50 路 FAQ SQL 插值 P99 93.5 ms；对 R80 同批 50 个匿名客户端关联既有 Agent 行，首 `delta` 与 `accepted`、Agent、检索耗时相关分别为 0.854/0.687/0.728。空载与真实负载不同，不能据此判定单一根因。索引在任务分支为 `CANDIDATE_VIEW`；G5 仍 `DOING`、production No-Go。Workspace hygiene：保留活动 worktree、仓库外凭证与私有快照；未知文件未处理。下一步：①负载时同步采本地 BGE、数据库/入口分段；②只针对实测瓶颈修复；③重测严格 P99、资源、断连并恢复 G3。
+
 2026-10-18 G5 R80 手动现场：`CANDIDATE_SUBJECT_SHA=22e9f8a1684c54f8f5917d229dd257c0f24e56ca`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[PR #382](https://github.com/CP11-gh/CRM/pull/382) 已 squash 合入 main `5749d521545291e8af2bd1d17bbebe5a7b7a5107`。[IR](../records/implementation/IR-MVP-006-20261018-R80.md)、[TR](../reports/tests/TR-MVP-006-20261018-R80.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R80.md)与 [低敏证据](../../release/evidence/staging/crm-staging-g5-r80-concurrent-20261018.json)记录：本机 GHCR 登录恢复，手动发布并临时部署 R79 后端 `sha256:2f8ae4cf…8aff`；50/50 身份、知识 ready、单会话严格门槛及 50/50 并发安全输出通过，但首输出/总耗时 P99 为 7287.4/7293.9 ms，严格门槛失败。资源完整窗口采 7 点，BGE 服务资源与断连仍缺独立验收。已恢复旧后端 `sha256:8913c09c…83a958`、G3 已审核单店人工发送、健康和固定出口。从权威 main 核对 IR/TR/RR 源记录与索引分别为 166/171/163，无缺漏或重复，三个派生索引恢复 `CURRENT`；G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree、仓库外凭证与私有恢复快照保留，未知文件未处理。下一步：①零 DeepSeek 只读分阶段诊断 BGE/数据库/入口；②据证据作单一有界修复；③重测严格 50 并发、资源、断连并恢复 G3。
 
 2026-10-18 G5 R79 本地候选：`CANDIDATE_SUBJECT_SHA=ae836ee5aa45f47e7db0f053367ed4e60f66f68c`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[PR #380](https://github.com/CP11-gh/CRM/pull/380) 已 squash 合入 main `9883ed0f70ad27441cfa288b020b6fac2ccecf90`；IR/TR/RR 源记录与索引分别为 165/170/162，无缺漏或重复，三个派生索引恢复 `CURRENT`。R78 之后在已恢复的 G3 上做零模型调用入口探针，健康、认证和会话各 50/50 HTTP 200，P99 为 863.2/1061.5/1013.3 ms；它不代表 G5 负载。R79 将 G5 backend 的 DeepSeek/本地 BGE 连接池按进程复用、仍逐请求创建店铺搜索和运行记录，独立 FAQ 安全复核用温度 0，仅临时 G5 覆盖层改为 4 个 worker。完整后端 2126 passed/27 skipped、Ruff/mypy/lock 及 237 条离线安全样本通过；见 [IR](../records/implementation/IR-MVP-006-20261018-R79.md)、[TR](../reports/tests/TR-MVP-006-20261018-R79.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R79.md)。尚未发布新镜像或现场复测，staging 保持 R78 恢复的 G3，G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree与仓库外私有资料保留，未知文件未处理。下一步：①手动发布匹配 main 的后端；②在可恢复窗口先测单会话；③仅严格达标后测 50/50 安全输出、P99、资源与断连，并恢复 G3。
@@ -446,6 +448,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 在当前已恢复的 G3 上做零 DeepSeek、只读分阶段探针，区分本地 BGE、数据库检索与请求入口成本，并复核 R80 低敏证据。
-2. 只针对测得的瓶颈做有界修复和确定性验证，再用可恢复手动窗口重测 50/50 安全输出、严格 P99、资源与断连。
+1. 在下一可恢复 G5 窗口同步采本地 BGE 资源、向量化/SQL 与接入/Agent 前后阶段的低敏耗时；空载 R81 不能代替负载时归因。
+2. 只针对负载时测得的瓶颈做有界修复和确定性验证，再重测 50/50 安全输出、严格 P99、资源与断连。
 3. 按独立任务推进 G2 异常投递及 G1-L；G5 与后续五日 G6 未通过前，G8/production 保持 No-Go。
