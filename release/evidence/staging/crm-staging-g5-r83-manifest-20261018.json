@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "evidence_type": "g5_r83_evidence_manifest",
+  "source_sha": "4228e0b5f8a12e27f29132cbeb8afd002e8913e9",
+  "file_count": 24,
+  "entries": [
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-agent-profiles-20261018.json",
+      "sha256": "02a5d53956446345df089e77937cbfcf2451d7038760a710aadaf543eb1f2446",
+      "bytes": 10377
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-concurrent-20261018.json",
+      "sha256": "ea26901076b6c0e1c9ca2b0fbe6c4c6b39f1a020d509bf64ed86ad9777b76b30",
+      "bytes": 10763
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-concurrent-20261018.json",
+      "sha256": "7a739192f074b5347e536563b236ff2aed865a58fa6fcf20862db16850f4b112",
+      "bytes": 10793
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-content-20261018.json",
+      "sha256": "f38252b6e55c09c2e64646e56a12c2d205a5eea7c2d978d647c96aa775d2f0ca",
+      "bytes": 166
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-deploy-20261018.json",
+      "sha256": "82d0d669a7e6ae59e66ad4dc3cfd5cc552a34a89136a3e84563f2fae005d9735",
+      "bytes": 2625
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-deploy-validate-20261018.json",
+      "sha256": "69a9c6e06430f00e3cdcdb301da2c57c1255682d648512df098cbb45c1265af5",
+      "bytes": 2303
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-pg-activity-20261018.json",
+      "sha256": "470b928e6bd3eef39cd8de564e5d4a853b06e871c16aff48a2e28118b3ba07b7",
+      "bytes": 5085
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-prefetch-20261018.json",
+      "sha256": "d0e026938d2020fcf42bb844a6be7681b94df943cb827b44aa095e1c5c01453e",
+      "bytes": 944
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-preflight-20261018.json",
+      "sha256": "78d3746e712673a64810981163b4a28d956e70bda685b9d88fe74d4ba3abaa3a",
+      "bytes": 153
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-resources-20261018.json",
+      "sha256": "84b5d847b4fa3881fd6348d58a5e7b817371ca5b82a98c8b77d2055013078ce0",
+      "bytes": 1009
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-restore-deploy-20261018.json",
+      "sha256": "62e151e16a5b69a226bf18acfb659191ba1b8d542250bb7293c6187f86f06d10",
+      "bytes": 2840
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-restore-validate-20261018.json",
+      "sha256": "ffb12c5f3d289610350d03927234a2e2565feef4047631426d9e5b85b1895923",
+      "bytes": 2518
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-connection-single-20261018.json",
+      "sha256": "63c9dcbc9eec3b1db4080b93896e7846d1e3e7a8561756db427c1492c81bfb75",
+      "bytes": 939
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-content-20261018.json",
+      "sha256": "4d567695a2f2db07101d79e2f0cded55c92841f0075a43fbd1f14686a45cb463",
+      "bytes": 166
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-correlated-timing-20261018.json",
+      "sha256": "2b42dc89e1b147ca6974cda9b55dcdb571b2eeb886ca73f64db38e1e0f5bea33",
+      "bytes": 1775
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-deploy-20261018.json",
+      "sha256": "b4cfa0d6a9c6236ac6bca88d297e9e7be408a4fa83a5c7091702b7213e511e0a",
+      "bytes": 2625
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-deploy-validate-20261018.json",
+      "sha256": "57cfa8d65d95805f2932e3d0ef687b69f1b560a83d39e1aaa7bbf7d1afda4060",
+      "bytes": 2303
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-manual-backend-image-20261018.json",
+      "sha256": "c8d007c8dcfa271f4fcebfffaad3e9b16409e6d3d143313fe4fc631f00ce771d",
+      "bytes": 1032
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-prefetch-20261018.json",
+      "sha256": "bd6df08a72a10f46860e87dd55e3d66d693bb3a9d376d9288766fb4c3ef487c9",
+      "bytes": 944
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-preflight-20261018.json",
+      "sha256": "78d3746e712673a64810981163b4a28d956e70bda685b9d88fe74d4ba3abaa3a",
+      "bytes": 153
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-resources-20261018.json",
+      "sha256": "54b29fc73308c28708a58dc361e9d4263f2be5802d6abae2194ee28349f1f10d",
+      "bytes": 1009
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-restore-deploy-20261018.json",
+      "sha256": "731ab217afa712ba986b09d557f481af3d41e3bf37f33f74d1fff70fe4043958",
+      "bytes": 2840
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-restore-validate-20261018.json",
+      "sha256": "c17e0d997972561b34315076426186a85898330a26985e7ce9b34a73184d98d9",
+      "bytes": 2518
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-g5-r83-single-20261018.json",
+      "sha256": "f8ec083045cace41ca73ae05a222f98640948ed9259871370ae04107005118b8",
+      "bytes": 936
+    }
+  ]
+}
