@@ -1,0 +1,23 @@
+{
+  "window_start_utc": "2026-10-18T01:38:30Z",
+  "window_end_utc": "2026-10-18T01:39:00Z",
+  "read_only": true,
+  "matching_rows": 1,
+  "rows": [
+    {
+      "action": "human_review",
+      "status": "succeeded",
+      "latency_ms": 3359,
+      "first_output_latency_ms": 3491,
+      "input_tokens": 3127,
+      "output_tokens": 276,
+      "node_timings_ms": {
+        "classification": 1185,
+        "retrieval": 392,
+        "faq_draft": 1108,
+        "safety_review": 660,
+        "translation": 0
+      }
+    }
+  ]
+}
