@@ -733,6 +733,64 @@ test("buyer and seller bubbles stay on opposite sides and show Chinese beneath t
   }
 });
 
+test("real-send reply composer stays visible with a long AI suggestion and accepts a draft", async () => {
+  const customer = { id: "customer-draft", name: "Buyer", email: null, avatar: null, tags: [] };
+  const session = {
+    id: "session-draft", store_id: store.id, platform: "tiktok", status: "active", unread_count: 0,
+    assigned_user_id: null, last_message_at: "2026-10-17T06:00:00Z", last_message: "Hello", customer,
+  };
+  const messages = Array.from({ length: 100 }, (_, index) => ({ id: `message-${index}`, role: "user", content: `Message ${index}`,
+    status: "received", created_at: "2026-10-17T06:00:00Z", error_code: null, delivery_mode: "inbound" }));
+  const cors = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" };
+  let sendCalls = 0;
+  const { context, page } = await openPage("/workspace", {}, async (context) => {
+    await context.route("**/v1/chat/query", async (route) => {
+      const advice = "Review the buyer request and check the store policy before replying. ".repeat(50);
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: cors,
+        body: `event: delta\ndata: ${JSON.stringify({ text: advice })}\n\nevent: done\ndata: {"reason":"completed"}\n\n` });
+    });
+    await context.route("**/v1/workspace/sessions**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/v1/workspace/sessions" && route.request().method() === "GET") {
+        return route.fulfill({ status: 200, contentType: "application/json", headers: cors,
+          body: JSON.stringify({ code: 0, message: "ok", data: { items: [session], pagination: { page: 1, page_size: 30, total: 1 } } }) });
+      }
+      if (path === "/v1/workspace/sessions/session-draft/messages" && route.request().method() === "GET") {
+        return route.fulfill({ status: 200, contentType: "application/json", headers: cors,
+          body: JSON.stringify({ code: 0, message: "ok", data: { session, messages, customer,
+            recent_orders: [], ai_suggestion: null, pagination: { page: 1, page_size: 100, total: 100 },
+            send_mode: "real", requires_confirmation: true } }) });
+      }
+      if (route.request().method() === "POST") sendCalls += 1;
+      return route.fallback();
+    });
+  });
+  try {
+    await page.setViewportSize({ width: 903, height: 787 });
+    await page.getByLabel("AI 建议").getByRole("button", { name: "生成" }).click();
+    await page.getByLabel("AI 建议").getByText(/Review the buyer request/).waitFor();
+    const reply = page.getByRole("textbox", { name: "回复内容" });
+    await reply.waitFor();
+    assert.equal(await reply.isEnabled(), true);
+    const sendButton = page.getByRole("button", { name: "确认并发送" });
+    for (const viewport of [{ width: 903, height: 787 }, { width: 1440, height: 768 }, { width: 390, height: 768 }]) {
+      await page.setViewportSize(viewport);
+      const replyBounds = await reply.boundingBox();
+      assert.ok(replyBounds && replyBounds.y >= 0 && replyBounds.y + replyBounds.height <= viewport.height,
+        `Reply input must fit within ${JSON.stringify(viewport)}: ${JSON.stringify(replyBounds)}`);
+      const buttonBounds = await sendButton.boundingBox();
+      assert.ok(buttonBounds && buttonBounds.y >= 0 && buttonBounds.y + buttonBounds.height <= viewport.height,
+        `Send button must fit within ${JSON.stringify(viewport)}: ${JSON.stringify(buttonBounds)}`);
+    }
+    await reply.pressSequentially("Draft only; do not send.");
+    assert.equal(await reply.inputValue(), "Draft only; do not send.");
+    assert.equal(await sendButton.isEnabled(), true);
+    assert.equal(sendCalls, 0);
+  } finally {
+    await context.close();
+  }
+});
+
 test("open workspace picks up a new buyer message without reloading or changing the selected conversation", async () => {
   const customer = { id: "customer-live", name: "Buyer", email: null, avatar: null, tags: [] };
   const session = { id: "session-live", store_id: store.id, platform: "tiktok", status: "active", unread_count: 0,

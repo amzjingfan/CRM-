@@ -87,8 +87,9 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .message-translate-button { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
 .message-translate-button:disabled { cursor: wait; opacity: .6; }
 .ai-suggestion { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--primary-soft) 58%, var(--surface)); padding: 11px 18px; }
+.ai-suggestion > div:first-child { max-height: min(20vh, 140px); overflow-y: auto; overflow-wrap: anywhere; }
 .ai-suggestion p { color: var(--muted); font-size: .75rem; }
-.composer { border-top: 1px solid var(--border); padding: 14px 18px 16px; }
+.composer { flex-shrink: 0; border-top: 1px solid var(--border); padding: 14px 18px 16px; }
 .composer textarea { width: 100%; min-height: 70px; resize: none; border: 0; background: transparent; color: var(--text); outline: none; }
 .customer-panel { position: relative; overflow-y: auto; padding: 20px; }
 .customer-profile { display: grid; justify-items: center; border-bottom: 1px solid var(--border); padding: 12px 0 24px; text-align: center; }
