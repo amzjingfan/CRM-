@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import time
 import uuid
 from collections import OrderedDict
 from dataclasses import dataclass, replace
@@ -108,6 +109,8 @@ class RagRetrievalResult:
     embedding_model: str
     embedding_input_tokens: int
     embedding_latency_ms: int
+    embedding_wait_ms: int | None = None
+    search_wall_ms: int | None = None
     reranker_provider: str | None = None
     reranker_model: str | None = None
     reranker_revision: str | None = None
@@ -165,9 +168,12 @@ class RagRetrievalService:
         sanitized_query = sanitize_prompt_text(query).strip()
         if not sanitized_query:
             raise ValueError("RAG 查询不能为空")
+        embedding_started_at = time.perf_counter_ns()
         embedding_result = await _embed_query(self.embedding_service, store_id, sanitized_query)
+        embedding_wait_ms = max(0, (time.perf_counter_ns() - embedding_started_at) // 1_000_000)
         if len(embedding_result.vectors) != 1:
             raise RuntimeError("查询 Embedding 返回数量错误")
+        search_started_at = time.perf_counter_ns()
         candidates = await self.search_port.hybrid_search(
             session,
             store_id,
@@ -178,6 +184,7 @@ class RagRetrievalService:
             candidate_top_k=self.candidate_top_k,
             rrf_k=self.rrf_k,
         )
+        search_wall_ms = max(0, (time.perf_counter_ns() - search_started_at) // 1_000_000)
         if not candidates:
             return RagRetrievalResult(
                 hits=[],
@@ -187,6 +194,8 @@ class RagRetrievalService:
                 embedding_model=embedding_result.model,
                 embedding_input_tokens=embedding_result.input_tokens,
                 embedding_latency_ms=embedding_result.latency_ms,
+                embedding_wait_ms=embedding_wait_ms,
+                search_wall_ms=search_wall_ms,
                 candidate_count=0,
             )
         reranking_result: RerankingResult | None = None
@@ -224,6 +233,8 @@ class RagRetrievalService:
             embedding_model=embedding_result.model,
             embedding_input_tokens=embedding_result.input_tokens,
             embedding_latency_ms=embedding_result.latency_ms,
+            embedding_wait_ms=embedding_wait_ms,
+            search_wall_ms=search_wall_ms,
             reranker_provider=reranking_result.provider if reranking_result else None,
             reranker_model=reranking_result.model if reranking_result else None,
             reranker_revision=reranking_result.revision if reranking_result else None,

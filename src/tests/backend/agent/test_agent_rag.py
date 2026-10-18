@@ -162,6 +162,8 @@ async def test_rag_retrieval_sanitizes_query_and_forwards_store_scope() -> None:
     assert result.top_score == 0.91
     assert [item.chunk_id for item in result.hits] == [item.chunk_id for item in port.hits]
     assert result.hits[0].reranker_score is None
+    assert type(result.embedding_wait_ms) is int and result.embedding_wait_ms >= 0
+    assert type(result.search_wall_ms) is int and result.search_wall_ms >= 0
 
 
 @pytest.mark.asyncio

@@ -28,13 +28,16 @@ def test_docker_stats_are_reduced_to_fixed_numeric_fields() -> None:
             ("crm-staging-backend-1", "12.5%", "120MiB / 2GiB", "7"),
             ("crm-staging-worker-1", "1.2%", "10MiB / 2GiB", "2"),
             ("crm-staging-agent-worker-1", "0.1%", "3MiB / 2GiB", "1"),
+            ("crm-staging-retrieval-model-service-1", "8.0%", "600MiB / 4GiB", "5"),
+            ("crm-staging-postgres-1", "3.0%", "90MiB / 2GiB", "8"),
         )
     )
 
     result = sampler().parse_docker_stats(raw)
 
     assert result["backend"] == {"cpu_percent": 12.5, "memory_bytes": 125829120, "pids": 7}
-    assert set(result) == {"backend", "worker", "agent_worker"}
+    assert set(result) == {"backend", "worker", "agent_worker", "retrieval_model", "postgres"}
+    assert result["retrieval_model"] == {"cpu_percent": 8.0, "memory_bytes": 629145600, "pids": 5}
     assert "never-report-this" not in json.dumps(result)
 
 
@@ -75,6 +78,8 @@ def test_report_uses_peak_numbers_and_never_includes_raw_errors() -> None:
                 "backend": {"cpu_percent": 10.0, "memory_bytes": 100, "pids": 5},
                 "worker": {"cpu_percent": 1.0, "memory_bytes": 20, "pids": 2},
                 "agent_worker": {"cpu_percent": 0.0, "memory_bytes": 10, "pids": 1},
+                "retrieval_model": {"cpu_percent": 8.0, "memory_bytes": 1000, "pids": 5},
+                "postgres": {"cpu_percent": 3.0, "memory_bytes": 300, "pids": 8},
             },
             "backend_tcp": {
                 "accept_queue_pending": 1,
@@ -88,6 +93,8 @@ def test_report_uses_peak_numbers_and_never_includes_raw_errors() -> None:
                 "backend": {"cpu_percent": 20.0, "memory_bytes": 90, "pids": 6},
                 "worker": {"cpu_percent": 0.0, "memory_bytes": 30, "pids": 2},
                 "agent_worker": {"cpu_percent": 0.0, "memory_bytes": 10, "pids": 1},
+                "retrieval_model": {"cpu_percent": 20.0, "memory_bytes": 1200, "pids": 6},
+                "postgres": {"cpu_percent": 4.0, "memory_bytes": 330, "pids": 9},
             },
             "backend_tcp": {
                 "accept_queue_pending": 0,
@@ -102,6 +109,11 @@ def test_report_uses_peak_numbers_and_never_includes_raw_errors() -> None:
 
     assert result["sample_count"] == 2
     assert result["containers"]["backend"] == {"cpu_percent_peak": 20.0, "memory_bytes_peak": 100, "pids_peak": 6}
+    assert result["containers"]["retrieval_model"] == {
+        "cpu_percent_peak": 20.0,
+        "memory_bytes_peak": 1200,
+        "pids_peak": 6,
+    }
     assert result["backend_tcp"]["accept_queue_pending_peak"] == 1
     assert result["backend_tcp"]["established_connections_peak"] == 5
     assert result["application_queue"] == "not_applicable_sync_workflow"

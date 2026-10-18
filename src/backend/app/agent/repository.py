@@ -369,7 +369,15 @@ class SqlAlchemyAgentRunRecorder:
             f"translation_prompt={result.translation_prompt_version or 'none'};"
             f"translation_error={result.translation_error_code or 'none'}"
         )
-        allowed_nodes = {"classification", "retrieval", "faq_draft", "safety_review", "translation"}
+        allowed_nodes = {
+            "classification",
+            "retrieval",
+            "faq_draft",
+            "safety_review",
+            "translation",
+            "retrieval_embedding_wait",
+            "retrieval_search",
+        }
         safe_timings: list[str] = []
         seen_nodes: set[str] = set()
         for item in result.node_timings_ms:

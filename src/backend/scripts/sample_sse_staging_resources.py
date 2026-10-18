@@ -19,6 +19,8 @@ CONTAINERS = {
     "backend": "crm-staging-backend-1",
     "worker": "crm-staging-worker-1",
     "agent_worker": "crm-staging-agent-worker-1",
+    "retrieval_model": "crm-staging-retrieval-model-service-1",
+    "postgres": "crm-staging-postgres-1",
 }
 DOCKER_HOST = "unix:///run/user/1004/docker.sock"
 OUTPUT_PATTERN = re.compile(r"/home/crmdeploy/\.cache/crm-g5-manual/[a-z0-9-]+/resources\.json")
@@ -34,7 +36,7 @@ def _memory_bytes(value: str) -> int:
 
 
 def parse_docker_stats(raw: str) -> dict[str, dict[str, float | int]]:
-    """只接受固定三个容器，并把 Docker 的自由格式输出缩减为数值白名单。"""
+    """只接受固定容器，并把 Docker 的自由格式输出缩减为数值白名单。"""
 
     result: dict[str, dict[str, float | int]] = {}
     names = {name: role for role, name in CONTAINERS.items()}

@@ -119,4 +119,6 @@ R34 低敏诊断已随 R35 镜像部署 staging。[R37 单次获批 live](../rep
 
 R38 候选仅收窄后续 G4 低敏诊断：DeepSeek 结构失败按 `invalid_json` 与 `invalid_schema` 区分，保留历史 `invalid_structure` 枚举兼容既有记录。Schema 失败最多保存八组经固定白名单映射的字段路径和 Pydantic 错误类型；未知字段只记 `unknown`，未知错误只记 `other`，不写模型正文、原始字段名/值、异常消息或供应商请求 ID。工作流复核两层白名单及数量，非 Schema 失败必须没有 Schema 明细。此诊断不改变原有 JSON/Schema 拒绝、失败关闭、评分器、冻结集、85% 门槛、调用上限、Prompt、DLP 或 TikTok 发送开关；现有 staging 镜像不含 R38，R37 原报告不可回填细分原因。部署与新付费 live 均需另行精确授权。
 
+G5 R82 仅补成功运行的数值诊断：`retrieval_embedding_wait` 为请求等待本地向量结果的墙钟耗时，包含短时缓存或并发复用时的等待；`retrieval_search` 为店铺隔离混合检索端口的墙钟耗时，包含两路 SQL 查询与结果融合，不能解释为数据库纯执行时间。两项仅在实际检索后进入既有 `node_timings_ms` 白名单；没有检索或失败终态不伪造成功计时。不保存查询正文、Prompt、模型输出或请求 ID，不改变检索排序、审批、DLP、独立复核、发送开关和 3 秒/5 秒门槛。
+
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。

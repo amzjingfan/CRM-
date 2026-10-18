@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R82 | MVP-006 | R82 | APPROVE | `eda0eb6ca4ebc944d721593943d6a1c37e4734ec` | store-isolation, timing-semantics, low-sensitive-output, sampler-fail-closed, no-safety-bypass, restore-boundary | 2026-10-18T17:53:00+08:00 | [`RR-MVP-006-20261018-R82.md`](RR-MVP-006-20261018-R82.md) |
 | RR-MVP-006-20261018-R81 | MVP-006 | R81 | APPROVE | `7ec491d5f7833c62490c0a090b5f658890228e99` | isolated-scope, read-only-database, local-bge-only, low-sensitive-correlation, noncausal-limit, production-boundary | 2026-10-18T17:35:00+08:00 | [`RR-MVP-006-20261018-R81.md`](RR-MVP-006-20261018-R81.md) |
 | RR-MVP-006-20261018-R80 | MVP-006 | R80 | APPROVE | `22e9f8a1684c54f8f5917d229dd257c0f24e56ca` | manual-image-provenance, isolated-users, safe-delta-completeness, strict-latency, resource-limitations, restore, production-boundary | 2026-10-18T17:18:00+08:00 | [`RR-MVP-006-20261018-R80.md`](RR-MVP-006-20261018-R80.md) |
 | RR-MVP-006-20261018-R79 | MVP-006 | R79 | APPROVE | `ae836ee5aa45f47e7db0f053367ed4e60f66f68c` | store-isolation, client-lifecycle, fallback, independent-review, g5-only-capacity, manual-restore | 2026-10-18T16:03:00+08:00 | [`RR-MVP-006-20261018-R79.md`](RR-MVP-006-20261018-R79.md) |

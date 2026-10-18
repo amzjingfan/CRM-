@@ -142,6 +142,8 @@ python scripts/verify_tiktok_egress.py
 - SSE `delta` 是经安全校验后的草稿分块，不把模型原生流直接暴露给客户端。
 - G5 单会话超时定位读取该次 `agent_runs.output_summary` 的 `node_timings_ms`：成功运行只包含实际执行的 `classification`、`retrieval`、`faq_draft`、`safety_review`、`translation` 固定节点及整数毫秒；`none` 或缺失不代表耗时为零。记录时再次白名单过滤，诊断只比较节点耗时与 Agent/SSE 总耗时，不提取客户正文、Prompt、Token、请求 ID 或原始日志。R64 的 7829.7 ms 首 `delta` 未通过严格小于 3000 ms 门槛；先用新诊断做可恢复单会话，达标后才启动 50 并发，禁止为了通过而降低门槛或跳过独立安全复核。
 
+R82 的 G5 负载诊断在上述成功运行摘要中另允许 `retrieval_embedding_wait` 与 `retrieval_search` 两项非负整数毫秒；后者包含 SQL 查询和融合，不是 PostgreSQL 纯执行时间。手动 50 并发窗口同步用固定资源采样器读取本地 BGE 与 PostgreSQL 的 CPU、内存和进程峰值，和原 backend/worker/连接指标一起核对。空载探针与资源峰值都不能单独证明因果；只针对负载时实际长尾做后续容量修复，严格 P99 和安全门槛不变。
+
 ## 模型资产
 
 模型固定 Revision、权重清单、SHA-256、质量和容量证据的机器权威入口是 `src/deploy/models/model-manifest.json`。实际权重不进入 Git。部署前校验文件名、大小和哈希；不允许漂移到浮动分支或静默降级模型。

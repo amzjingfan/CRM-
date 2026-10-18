@@ -303,6 +303,13 @@ class AgentWorkflowService:
         try:
             state = cast(WorkflowState, await self._graph.ainvoke(initial_state))
             result = self._build_result(state, max(0, int((time.perf_counter() - started_at) * 1000)))
+            retrieval_phase_timings: list[tuple[str, int]] = []
+            retrieval = state.get("retrieval")
+            if retrieval is not None:
+                if retrieval.embedding_wait_ms is not None:
+                    retrieval_phase_timings.append(("retrieval_embedding_wait", retrieval.embedding_wait_ms))
+                if retrieval.search_wall_ms is not None:
+                    retrieval_phase_timings.append(("retrieval_search", retrieval.search_wall_ms))
             await self.run_recorder.complete_workflow(
                 run_id,
                 AgentWorkflowRunCompletion(
@@ -340,7 +347,7 @@ class AgentWorkflowService:
                     translation_error_code=state.get("translation_error_code"),
                     safety_reason_codes=result.safety_reason_codes,
                     decision_reason=state["decision_reason"],
-                    node_timings_ms=state["node_timings_ms"],
+                    node_timings_ms=[*state["node_timings_ms"], *retrieval_phase_timings],
                     business_claim_summaries=[
                         (
                             f"{claim.subject_type.value}:{claim.action.value}:"
