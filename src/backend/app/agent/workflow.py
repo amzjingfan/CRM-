@@ -6,12 +6,19 @@ import operator
 import time
 import uuid
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Annotated, Any, Protocol, TypedDict, cast
 
 from langgraph.graph import END, START, StateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.business_claims import BusinessClaimInventory
+from app.agent.business_claims import (
+    BusinessClaimAction,
+    BusinessClaimEvidenceType,
+    BusinessClaimInventory,
+    BusinessClaimSubjectType,
+    BusinessClaimTense,
+)
 from app.agent.embeddings import EmbeddingErrorCode, EmbeddingProviderError
 from app.agent.errors import LLMErrorCode, LLMFailureStage, LLMOutputFailureKind, LLMOutputSchemaIssue, LLMProviderError
 from app.agent.prompt_registry import BusinessPromptId
@@ -22,6 +29,7 @@ from app.agent.reply_rendering import (
     bind_redacted_tool_claims,
     build_authoritative_tool_claims,
     build_trusted_tool_evidence,
+    extract_trusted_faq_answer,
     render_trusted_faq_reply,
     render_trusted_tool_reply,
 )
@@ -50,8 +58,10 @@ from app.agent.schemas import (
     RequiredToolName,
     ToolAnswerModelOutput,
     ToolGroundingReviewOutput,
+    TrustedFaqReviewOutput,
     WorkflowTerminalState,
 )
+from app.agent.security import sanitize_prompt_text
 from app.agent.service import build_input_summary
 from app.agent.tool_execution import AgentToolBatchResult, ExecutedAgentTool
 from app.agent.tool_routing import detect_required_tools
@@ -67,15 +77,36 @@ from app.agent.workflow_prompt import (
     TOOL_ANSWER_SYSTEM_PROMPT,
     TOOL_GROUNDING_REVIEW_PROMPT_VERSION,
     TOOL_GROUNDING_REVIEW_SYSTEM_PROMPT,
+    TRUSTED_FAQ_REVIEW_PROMPT_VERSION,
+    TRUSTED_FAQ_REVIEW_SYSTEM_PROMPT,
     WORKFLOW_PROMPT_VERSION,
     build_faq_answer_prompt,
     build_grounding_review_prompt,
     build_tool_answer_prompt,
     build_tool_grounding_review_prompt,
+    build_trusted_faq_review_prompt,
 )
-from app.knowledge_base.schemas import KnowledgeRetrievalHit
+from app.knowledge_base.schemas import (
+    KnowledgeCustomerScope,
+    KnowledgePublicationApproval,
+    KnowledgeRetrievalHit,
+    KnowledgeStatementType,
+)
 
 logger = logging.getLogger(__name__)
+TRUSTED_FAQ_TEMPLATE_VERSION = "approved-faq-template-v1"
+
+
+@dataclass(frozen=True)
+class TrustedFaqPrefetch:
+    """分类同时进行的店铺 FAQ 检索和独立模型复核结果。"""
+
+    retrieval: RagRetrievalResult
+    retrieval_ms: int
+    answer: str | None = None
+    review: ProviderResult[TrustedFaqReviewOutput] | None = None
+    review_ms: int = 0
+    error: LLMProviderError | None = None
 
 
 class IntentInferenceClient(Protocol):
@@ -156,6 +187,9 @@ class WorkflowState(TypedDict, total=False):
     unresolved_tools: list[RequiredToolName]
     draft: FaqAnswerModelOutput
     combined_faq_attempted: bool
+    trusted_faq_attempted: bool
+    trusted_faq_review: TrustedFaqReviewOutput
+    prefetched_review_ms: int
     review: GroundingReviewOutput
     tool_draft: ToolAnswerModelOutput
     tool_review: ToolGroundingReviewOutput
@@ -207,6 +241,7 @@ class AgentWorkflowService:
         auto_reply_threshold: float,
         human_review_threshold: float,
         combined_faq_enabled: bool = False,
+        trusted_faq_enabled: bool = False,
     ) -> None:
         if not 0 <= human_review_threshold < auto_reply_threshold <= 1:
             raise ValueError("Agent 置信度阈值必须满足 0 <= 人工复核 < 自动回复 <= 1")
@@ -220,6 +255,7 @@ class AgentWorkflowService:
         self.auto_reply_threshold = auto_reply_threshold
         self.human_review_threshold = human_review_threshold
         self.combined_faq_enabled = combined_faq_enabled
+        self.trusted_faq_enabled = trusted_faq_enabled
         self._graph = self._build_graph()
 
     async def run(self, session: AsyncSession, command: AgentWorkflowCommand) -> AgentWorkflowResult:
@@ -411,6 +447,9 @@ class AgentWorkflowService:
             started_at = time.perf_counter_ns()
             update = await node(state)
             elapsed_ms = max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
+            if name == "safety_review":
+                # 已在分类等待期间完成的复核仍计入该节点的模型耗时。
+                elapsed_ms += state.get("prefetched_review_ms", 0)
             return {**update, "node_timings_ms": [(name, elapsed_ms)]}
 
         return run_timed
@@ -437,6 +476,10 @@ class AgentWorkflowService:
             detect_required_tools(command.message, intent) for intent in IntentName
         ):
             return await self._classify_and_draft_faq(state)
+        if self.trusted_faq_enabled and not any(
+            detect_required_tools(command.message, intent) for intent in IntentName
+        ):
+            return await self._classify_with_trusted_faq_review(state)
         retrieval_task: asyncio.Task[tuple[RagRetrievalResult, int]] | None = None
         # 命中任何确定性工具规则的提问保持原工具路径，不做推测性 FAQ 查询。
         if not any(detect_required_tools(command.message, intent) for intent in IntentName):
@@ -495,6 +538,147 @@ class AgentWorkflowService:
                 if not retrieval_task.done():
                     retrieval_task.cancel()
                 await asyncio.gather(retrieval_task, return_exceptions=True)
+
+    def _trusted_faq_answer(self, state: WorkflowState, retrieval: RagRetrievalResult) -> str | None:
+        """只从本店当前审批版本的单条政策 FAQ 提取原文。"""
+        if len(retrieval.hits) != 1 or retrieval.top_score < self.human_review_threshold:
+            return None
+        hit = retrieval.hits[0]
+        metadata = hit.safety_metadata
+        if (
+            metadata.store_id != state["command"].store_id
+            or metadata.document_version != hit.document_version
+            or metadata.approved_document_version != hit.document_version
+            or metadata.publication_approval == KnowledgePublicationApproval.DRAFT
+            or metadata.statement_type != KnowledgeStatementType.POLICY
+            or metadata.customer_scope != KnowledgeCustomerScope.GENERIC
+        ):
+            return None
+        answer = extract_trusted_faq_answer(hit)
+        if answer is None or sanitize_prompt_text(answer) != answer:
+            return None
+        if detect_customer_language(answer).value != state["reply_language"]:
+            return None
+        preview = self.reply_safety_policy.evaluate(
+            answer,
+            evidence_kind=ReplyEvidenceKind.FAQ,
+            faq_evidence_ids={hit.chunk_id},
+            expected_store_id=state["command"].store_id,
+            knowledge_safety_metadata=[metadata],
+            content_origin=ReplyContentOrigin.TRUSTED_FAQ_TEMPLATE,
+        )
+        return answer if preview.is_safe else None
+
+    async def _classify_with_trusted_faq_review(self, state: WorkflowState) -> WorkflowState:
+        """分类与店铺检索并行；原文复核一旦可用即独立启动。"""
+        command = state["command"]
+
+        async def prefetch() -> TrustedFaqPrefetch:
+            retrieval_started_at = time.perf_counter_ns()
+            retrieval = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+            retrieval_ms = max(0, (time.perf_counter_ns() - retrieval_started_at) // 1_000_000)
+            answer = self._trusted_faq_answer(state, retrieval)
+            if answer is None:
+                return TrustedFaqPrefetch(retrieval, retrieval_ms)
+            hit = retrieval.hits[0]
+            review_started_at = time.perf_counter_ns()
+            try:
+                request = StructuredRequest(
+                    system_prompt=TRUSTED_FAQ_REVIEW_SYSTEM_PROMPT,
+                    user_prompt=build_trusted_faq_review_prompt(command, hit, answer, state["reply_language"]),
+                    trace_id=command.trace_id,
+                    max_output_tokens=512,
+                    business_prompt_id=BusinessPromptId.FAQ_TRUSTED_REVIEW,
+                )
+                generated = await self.generator.generate(request, TrustedFaqReviewOutput)
+            except LLMProviderError as error:
+                review_ms = max(0, (time.perf_counter_ns() - review_started_at) // 1_000_000)
+                return TrustedFaqPrefetch(retrieval, retrieval_ms, answer=answer, review_ms=review_ms, error=error)
+            review_ms = max(0, (time.perf_counter_ns() - review_started_at) // 1_000_000)
+            return TrustedFaqPrefetch(retrieval, retrieval_ms, answer=answer, review=generated, review_ms=review_ms)
+
+        prefetch_task = asyncio.create_task(prefetch())
+        try:
+            classification_started_at = time.perf_counter_ns()
+            try:
+                inference = await self.classifier.infer(command, agent_run_id=state["agent_run_id"])
+            except LLMProviderError as error:
+                if error.code != LLMErrorCode.LLM_REFUSAL:
+                    error.failure_stage = LLMFailureStage.CLASSIFICATION
+                    raise
+                inference = IntentInferenceResult(
+                    output=IntentModelOutput(
+                        intent=None,
+                        confidence=0,
+                        classification_state=ClassificationState.MODEL_REFUSAL,
+                    ),
+                    provider=self.classifier.provider_name,
+                    model=self.classifier.model_name,
+                    prompt_version="intent-classifier-v1.0.1",
+                    input_tokens=0,
+                    output_tokens=0,
+                    latency_ms=0,
+                )
+            classification_ms = max(0, (time.perf_counter_ns() - classification_started_at) // 1_000_000)
+            update: WorkflowState = {
+                "inference": inference,
+                "provider": inference.provider,
+                "model": inference.model,
+                "input_tokens": state["input_tokens"] + inference.input_tokens,
+                "output_tokens": state["output_tokens"] + inference.output_tokens,
+                "node_timings_ms": [("classification", classification_ms)],
+                "state_path": ["INTENT_CLASSIFIED"],
+            }
+            output = inference.output
+            if (
+                output.classification_state != ClassificationState.CLASSIFIED
+                or output.confidence < self.human_review_threshold
+                or output.intent != IntentName.RETURN_POLICY
+                or detect_required_tools(command.message, output.intent)
+            ):
+                return update
+            prefetched = await prefetch_task
+            update["retrieval"] = prefetched.retrieval
+            update["node_timings_ms"] = [
+                ("classification", classification_ms),
+                ("retrieval", prefetched.retrieval_ms),
+            ]
+            if prefetched.answer is None:
+                return update
+            update["trusted_faq_attempted"] = True
+            update["prefetched_review_ms"] = prefetched.review_ms
+            if prefetched.error is not None:
+                if prefetched.error.code != LLMErrorCode.LLM_REFUSAL:
+                    prefetched.error.failure_stage = LLMFailureStage.SAFETY_REVIEW
+                    raise prefetched.error
+                update["model_refusal"] = True
+                return update
+            if prefetched.review is None:
+                return update
+            reviewed = prefetched.review.parsed_output
+            hit = prefetched.retrieval.hits[0]
+            update.update(
+                {
+                    "draft": FaqAnswerModelOutput(
+                        answer=prefetched.answer,
+                        citation_chunk_ids=[hit.chunk_id],
+                        grounding_confidence=min(hit.score, reviewed.confidence),
+                        answer_language=state["reply_language"],
+                        needs_human=reviewed.needs_human,
+                        business_claims=reviewed.business_claims,
+                    ),
+                    "trusted_faq_review": reviewed,
+                    "provider": prefetched.review.provider,
+                    "model": prefetched.review.model,
+                    "input_tokens": update["input_tokens"] + prefetched.review.input_tokens,
+                    "output_tokens": update["output_tokens"] + prefetched.review.output_tokens,
+                }
+            )
+            return update
+        finally:
+            if not prefetch_task.done():
+                prefetch_task.cancel()
+            await asyncio.gather(prefetch_task, return_exceptions=True)
 
     async def _classify_and_draft_faq(self, state: WorkflowState) -> WorkflowState:
         """先读取当前店铺 FAQ，再用一次严格结构化请求分类并生成草稿。"""
@@ -813,7 +997,7 @@ class AgentWorkflowService:
         """无知识时禁止调用答案模型，直接进入保守决策。"""
         if not state.get("hits"):
             return "confidence_evaluated"
-        if state.get("combined_faq_attempted"):
+        if state.get("combined_faq_attempted") or state.get("trusted_faq_attempted"):
             return "safety_checked" if state.get("draft") else "confidence_evaluated"
         return "response_drafted"
 
@@ -859,6 +1043,25 @@ class AgentWorkflowService:
                 "safety_reason_codes": ["INVALID_FAQ_REFERENCE"],
                 "state_path": ["SAFETY_CHECKED"],
             }
+        if state.get("trusted_faq_review") is not None:
+            claims = draft.business_claims.claims
+            if (
+                len(claims) != 1
+                or claims[0].subject_type != BusinessClaimSubjectType.REFUND_POLICY
+                or claims[0].subject_id is not None
+                or claims[0].action != BusinessClaimAction.EXPLAIN_POLICY
+                or claims[0].tense != BusinessClaimTense.TIMELESS
+                or claims[0].evidence_type != BusinessClaimEvidenceType.FAQ_CHUNK
+                or claims[0].evidence_id not in cited_ids
+            ):
+                # 原文路径不让同一个复核模型用空清单或客户实例声明自证安全。
+                return {
+                    "safety_passed": False,
+                    "grounding_confidence": 0.0,
+                    "automatic_delivery_allowed": False,
+                    "safety_reason_codes": ["FAQ_TRUSTED_CLAIMS_INVALID"],
+                    "state_path": ["SAFETY_CHECKED"],
+                }
         trusted_reply = render_trusted_faq_reply(state["hits"], draft.citation_chunk_ids, draft.answer)
         deterministic_safety = self.reply_safety_policy.evaluate(
             draft.answer,
@@ -884,43 +1087,58 @@ class AgentWorkflowService:
                 "safety_reason_codes": list(dict.fromkeys(reason_codes)),
                 "state_path": ["SAFETY_CHECKED"],
             }
-        command = state["command"]
-        request = StructuredRequest(
-            system_prompt=GROUNDING_REVIEW_SYSTEM_PROMPT,
-            user_prompt=build_grounding_review_prompt(command, state["hits"], draft),
-            trace_id=command.trace_id,
-            max_output_tokens=256,
-            business_prompt_id=BusinessPromptId.FAQ_GROUNDING_REVIEW,
-        )
-        try:
-            generated = await self.generator.generate(request, GroundingReviewOutput)
-        except LLMProviderError as error:
-            if error.code != LLMErrorCode.LLM_REFUSAL:
-                error.failure_stage = LLMFailureStage.SAFETY_REVIEW
-                raise
-            return {
-                "model_refusal": True,
-                "safety_passed": False,
-                "grounding_confidence": 0.0,
-                "automatic_delivery_allowed": False,
-                "safety_reason_codes": ["MODEL_REFUSAL"],
-                "state_path": ["SAFETY_CHECKED"],
-            }
-        review = generated.parsed_output
+        trusted_review = state.get("trusted_faq_review")
+        if trusted_review is None:
+            command = state["command"]
+            request = StructuredRequest(
+                system_prompt=GROUNDING_REVIEW_SYSTEM_PROMPT,
+                user_prompt=build_grounding_review_prompt(command, state["hits"], draft),
+                trace_id=command.trace_id,
+                max_output_tokens=256,
+                business_prompt_id=BusinessPromptId.FAQ_GROUNDING_REVIEW,
+            )
+            try:
+                generated = await self.generator.generate(request, GroundingReviewOutput)
+            except LLMProviderError as error:
+                if error.code != LLMErrorCode.LLM_REFUSAL:
+                    error.failure_stage = LLMFailureStage.SAFETY_REVIEW
+                    raise
+                return {
+                    "model_refusal": True,
+                    "safety_passed": False,
+                    "grounding_confidence": 0.0,
+                    "automatic_delivery_allowed": False,
+                    "safety_reason_codes": ["MODEL_REFUSAL"],
+                    "state_path": ["SAFETY_CHECKED"],
+                }
+            review = generated.parsed_output
+        else:
+            review = trusted_review
         safety_passed = (
             review.is_safe and review.is_grounded and review.business_claims_consistent and not draft.needs_human
         )
+        if trusted_review is not None:
+            safety_passed = safety_passed and trusted_review.answers_question
+        review_reasons = list(review.reason_codes)
+        if trusted_review is not None and not trusted_review.answers_question:
+            review_reasons.append("FAQ_ANSWER_NOT_RELEVANT")
         return {
             "review": review,
             "safety_passed": safety_passed,
-            "automatic_delivery_allowed": safety_passed and deterministic_safety.automatic_delivery_allowed,
+            "automatic_delivery_allowed": (
+                safety_passed and deterministic_safety.automatic_delivery_allowed and trusted_review is None
+            ),
             "trusted_reply": trusted_reply or "",
             "grounding_confidence": min(draft.grounding_confidence, review.confidence) if safety_passed else 0.0,
-            "safety_reason_codes": [] if safety_passed else review.reason_codes,
-            "provider": generated.provider,
-            "model": generated.model,
-            "input_tokens": state["input_tokens"] + generated.input_tokens,
-            "output_tokens": state["output_tokens"] + generated.output_tokens,
+            "safety_reason_codes": [] if safety_passed else list(dict.fromkeys(review_reasons)),
+            "provider": state["provider"] if trusted_review is not None else generated.provider,
+            "model": state["model"] if trusted_review is not None else generated.model,
+            "input_tokens": state["input_tokens"]
+            if trusted_review is not None
+            else state["input_tokens"] + generated.input_tokens,
+            "output_tokens": state["output_tokens"]
+            if trusted_review is not None
+            else state["output_tokens"] + generated.output_tokens,
             "state_path": ["SAFETY_CHECKED"],
         }
 
@@ -1210,9 +1428,17 @@ class AgentWorkflowService:
                 "workflow": WORKFLOW_PROMPT_VERSION,
                 "intent": inference.prompt_version,
                 "answer": (
-                    COMBINED_FAQ_PROMPT_VERSION if state.get("combined_faq_attempted") else FAQ_ANSWER_PROMPT_VERSION
+                    TRUSTED_FAQ_TEMPLATE_VERSION
+                    if state.get("trusted_faq_attempted")
+                    else COMBINED_FAQ_PROMPT_VERSION
+                    if state.get("combined_faq_attempted")
+                    else FAQ_ANSWER_PROMPT_VERSION
                 ),
-                "review": GROUNDING_REVIEW_PROMPT_VERSION,
+                "review": (
+                    TRUSTED_FAQ_REVIEW_PROMPT_VERSION
+                    if state.get("trusted_faq_attempted")
+                    else GROUNDING_REVIEW_PROMPT_VERSION
+                ),
                 "tool_answer": TOOL_ANSWER_PROMPT_VERSION,
                 "tool_review": TOOL_GROUNDING_REVIEW_PROMPT_VERSION,
                 "translation": TRANSLATION_PROMPT_VERSION,

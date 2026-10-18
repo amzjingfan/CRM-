@@ -6,7 +6,7 @@
 
 FAQ 回答 Prompt 中的知识来源标签也使用现有 DLP 脱敏函数。来源标签只帮助模型区分证据，不能携带未脱敏的业务标识；答案正文仍按现有位置文本、敏感信息与注册业务载荷规则检查。G5 的隔离 FAQ 版本 3 仅调整合成测试答案的句子分隔，不改变 DLP 策略、知识审批或公开发送边界。
 
-模型返回结构化信封；DeepSeek FAQ 草稿使用 Responses JSON Schema，其余现有场景使用 Chat Completions JSON Output。两条路径的枚举、长度、引用和安全状态都必须经本地 Pydantic 与业务安全校验才可进入应用。错误、超时、协议漂移或 DLP 不确定时失败关闭并转人工，不透传第三方响应正文。
+模型返回结构化信封；DeepSeek FAQ 草稿及审批 FAQ 原文独立复核使用 Responses JSON Schema，其余现有场景使用 Chat Completions JSON Output。两条路径的枚举、长度、引用和安全状态都必须经本地 Pydantic 与业务安全校验才可进入应用。错误、超时、协议漂移或 DLP 不确定时失败关闭并转人工，不透传第三方响应正文。
 
 完整 Agent 工作流遇到 `LLM_OUTPUT_INVALID` 时，运行记录沿用现有 `output_summary`，仅追加固定模型节点（分类、FAQ/工具草稿、安全复核或翻译）及 Provider 已分类的 `unfinished`、`empty`、`invalid_structure`、`invalid_json`、`invalid_schema`。仅在 `invalid_schema` 时，Provider 已映射的 Schema 字段路径与 Pydantic 错误类型可写入最多八组；记录端口再次按固定白名单校验、去重和截断。其他失败类别不写 Schema 明细。缺失或不在白名单的诊断字段不写入；Prompt、模型正文、字段值、原始异常和请求 ID 不持久化。诊断只用于定位失败，公开错误码、失败关闭、DLP、评分、调用次数及发送开关不因此改变。
 
@@ -31,6 +31,8 @@ G5 R69 在现有后端 Agent 工厂的非工具 FAQ 路径，先用可信 `store
 G5 R70 现场组合草稿因 `faq_draft_needs_human` 无安全 `delta`。R71 仅在组合 Prompt 移除单节点 FAQ 中“草稿一律需要人工复核”的歧义句，改为明确：`needs_human` 表示内容是否需额外人工判断，有充分证据时为 false；所有草稿仍由员工审核并确认发送，且必须通过独立安全复核。单节点 FAQ Prompt、严格 Schema、店铺证据、DLP、阈值和发送权限均不变。组合 Prompt 版本为 `faq-classified-draft-v1.0.1`，工作流版本为 `faq-agent-workflow-v1.8.1`，正文摘要 `d271eefc26792e86e50368f8974915805e0d7888f1c7d784726478f293313519`；本地契约测试不能证明真实模型与 G5 延迟门槛通过。
 
 G5 R72 现场组合请求已产生安全 `delta`，但首安全输出 3743.8 ms，严格 3 秒门槛未过。R73 从运行工厂重新选择 R67 已测试的分类与当前店铺 FAQ 检索并行路径：分类达到原置信度且无需确定性工具时才消费检索结果；拒判、工具、检索异常和取消沿用已验证的失败关闭与后台任务清理。FAQ 草稿恢复为独立模型请求，必须依次经过本次引用、店铺知识、业务声明、DLP、语言及原独立安全复核；实际会有三次模型调用，不能由本地测试推断更快。单节点 FAQ Prompt 同步移除“草稿一律需要人工复核”的内容级歧义，明确 `needs_human` 只判断内容是否需额外人工判断，所有草稿仍须员工审核并确认发送。工作流 `faq-agent-workflow-v1.8.2`、单节点 FAQ `faq-answer-v1.6.3`（SHA-256 `81627e3766265d1460d68ed58d3790487bbc4984359e497d4c4edd3d3d2abaaa`）；组合路径保留但非运行默认，因嵌入单节点 Prompt 而同步登记为 `faq-classified-draft-v1.0.2`（SHA-256 `85823b54c12e8968977a1b1b146188f30e9427bdaaa74f07cdf9c9308f2fe3a1`）。3 秒/5 秒、50 并发、DLP、Schema、评分和 TikTok 开关不变；仅 staging 实测决定 G5 是否继续。
+
+G5 R75 候选在非工具问题中并行执行分类与本店 FAQ 检索；仅单条当前版本、人工审批、通用退货政策 FAQ 的答案原文通过本地预检后，才提前发起一次独立 `faq-trusted-review-v1.0.0` 结构化复核。分类仍须确认 `return_policy` 且达到原人工阈值；复核必须确认回答相关、安全、证据与完整业务声明。应用再次核对声明的政策主体、动作、空实例 ID、唯一当前引用，并执行原 DLP、引用、语言与安全门禁。草稿只能交员工审核，不能自动发送；拒判、其他意图、版本或店铺不符、检索或复核失败均关闭快路径，取消未使用的并行请求。工作流版本 `faq-agent-workflow-v1.8.3`，新增复核 Prompt SHA-256 `703c863bea159b150a8f5c06de4499dfafa4b1b93609f2401f6331d39a3053af`。本地确定性测试不代表真实时延：单会话仍须同时满足首安全输出小于 3 秒及总耗时小于 5 秒，才允许开始 50 个独立账号并发；窗口后恢复 G3 人工发送模式。
 
 ## Prompt 与策略版本
 

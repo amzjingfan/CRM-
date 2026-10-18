@@ -4,7 +4,7 @@ import uuid
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.agent.business_claims import BusinessClaimInventory
 from app.agent.reply_policy import AgentReplyProfile, CustomerLanguage, SupportedLanguage
@@ -223,6 +223,17 @@ class GroundingReviewOutput(BaseModel):
     business_claims_consistent: bool
     confidence: float = Field(ge=0, le=1)
     reason_codes: list[str] = Field(default_factory=list, max_length=5)
+
+
+class TrustedFaqReviewOutput(GroundingReviewOutput):
+    """独立复核人工审批 FAQ 原文，并声明其业务命题。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    answers_question: bool
+    needs_human: bool
+    business_claims: BusinessClaimInventory
+    reason_codes: list[str] = Field(max_length=5)
 
 
 class ToolAnswerModelOutput(BaseModel):

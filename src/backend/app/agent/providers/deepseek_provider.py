@@ -169,7 +169,11 @@ class DeepSeekProvider(LLMProvider):
         response: object
         try:
             # ensure_safe_for_external_provider 已按注册表锁定 FAQ 的响应 Schema 名称。
-            if request.business_prompt_id in (BusinessPromptId.FAQ_ANSWER, BusinessPromptId.FAQ_CLASSIFIED_DRAFT):
+            if request.business_prompt_id in (
+                BusinessPromptId.FAQ_ANSWER,
+                BusinessPromptId.FAQ_CLASSIFIED_DRAFT,
+                BusinessPromptId.FAQ_TRUSTED_REVIEW,
+            ):
                 structured_response = await self._client.responses.create(
                     model=self.model_name,
                     instructions=request.system_prompt,

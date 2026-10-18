@@ -69,10 +69,11 @@
 
 | 用途 | 版本 |
 | --- | --- |
-| 工作流 | `faq-agent-workflow-v1.8.2` |
+| 工作流 | `faq-agent-workflow-v1.8.3` |
 | FAQ 组合分类与草稿（保留路径） | `faq-classified-draft-v1.0.2` |
 | FAQ 回答（当前并行分类/检索路径） | `faq-answer-v1.6.3` |
 | FAQ 依据复核 | `faq-grounding-review-v1.5.1` |
+| 审批 FAQ 原文独立复核 | `faq-trusted-review-v1.0.0` |
 | 工具结果解释 | `tool-answer-v1.6.0` |
 | 工具依据复核 | `tool-grounding-review-v1.5.0` |
 | 客户翻译 | `customer-translation-v1.0.1` |

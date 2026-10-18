@@ -311,6 +311,7 @@ def service(
     tool_batches: list[AgentToolBatchResult] | None = None,
     enable_translation: bool = False,
     combined_faq_enabled: bool = False,
+    trusted_faq_enabled: bool = False,
 ) -> tuple[AgentWorkflowService, FixedRagService, ScriptedGenerator, MemoryWorkflowRecorder]:
     """组装完全离线的工作流测试实例。"""
     rag = FixedRagService(rag_result)
@@ -326,6 +327,7 @@ def service(
         auto_reply_threshold=0.80,
         human_review_threshold=0.60,
         combined_faq_enabled=combined_faq_enabled,
+        trusted_faq_enabled=trusted_faq_enabled,
     )
     return workflow, rag, generator, recorder
 
@@ -2489,6 +2491,361 @@ async def test_invalid_completion_claim_forces_transfer_without_exposing_draft()
     assert result.action == AgentAction.TRANSFER_HUMAN
     assert result.final_confidence == 0
     assert result.draft_reply is None
+
+
+@pytest.mark.asyncio
+async def test_trusted_faq_uses_exact_approved_answer_and_one_independent_review() -> None:
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    review = {
+        "is_safe": True,
+        "is_grounded": True,
+        "business_claims_consistent": True,
+        "answers_question": True,
+        "needs_human": False,
+        "confidence": 0.94,
+        "reason_codes": [],
+        "business_claims": BusinessClaimInventory(
+            complete=True,
+            claims=[
+                BusinessClaim(
+                    subject_type=BusinessClaimSubjectType.REFUND_POLICY,
+                    subject_id=None,
+                    action=BusinessClaimAction.EXPLAIN_POLICY,
+                    tense=BusinessClaimTense.TIMELESS,
+                    polarity=BusinessClaimPolarity.AFFIRMED,
+                    condition=BusinessClaimCondition.CONDITIONAL,
+                    evidence_type=BusinessClaimEvidenceType.FAQ_CHUNK,
+                    evidence_id=hit.chunk_id,
+                    confidence=0.94,
+                )
+            ],
+        ),
+    }
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[review],
+        trusted_faq_enabled=True,
+    )
+
+    result = await workflow.run(cast_session(), command())
+
+    assert result.action == AgentAction.HUMAN_REVIEW
+    assert result.draft_reply == "签收后七天内可申请退货。"
+    assert result.send_performed is False
+    assert [item.business_prompt_id for item in generator.requests] == [BusinessPromptId.FAQ_TRUSTED_REVIEW]
+    assert generator.requests[0].prompt_safety_state == PromptSafetyState.ALLOWED
+    assert result.input_tokens == 35
+
+
+@pytest.mark.asyncio
+async def test_trusted_faq_review_rejection_hides_answer() -> None:
+    rag_result = retrieval(0.92)
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[
+            {
+                "is_safe": False,
+                "is_grounded": False,
+                "business_claims_consistent": False,
+                "answers_question": False,
+                "needs_human": True,
+                "confidence": 0.1,
+                "reason_codes": ["INSUFFICIENT_EVIDENCE"],
+                "business_claims": empty_claim_inventory(),
+            }
+        ],
+        trusted_faq_enabled=True,
+    )
+
+    result = await workflow.run(cast_session(), command())
+
+    assert result.action == AgentAction.TRANSFER_HUMAN
+    assert result.draft_reply is None
+    assert len(generator.requests) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("claim_damage", ["empty", "foreign_evidence", "past_tense"])
+async def test_trusted_faq_review_cannot_self_certify_invalid_policy_claims(claim_damage: str) -> None:
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    claims = empty_claim_inventory()
+    if claim_damage != "empty":
+        claims = BusinessClaimInventory(
+            complete=True,
+            claims=[
+                BusinessClaim(
+                    subject_type=BusinessClaimSubjectType.REFUND_POLICY,
+                    subject_id=None,
+                    action=BusinessClaimAction.EXPLAIN_POLICY,
+                    tense=BusinessClaimTense.PAST if claim_damage == "past_tense" else BusinessClaimTense.TIMELESS,
+                    polarity=BusinessClaimPolarity.AFFIRMED,
+                    condition=BusinessClaimCondition.CONDITIONAL,
+                    evidence_type=BusinessClaimEvidenceType.FAQ_CHUNK,
+                    evidence_id=uuid.uuid4() if claim_damage == "foreign_evidence" else hit.chunk_id,
+                    confidence=0.94,
+                )
+            ],
+        )
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[
+            {
+                "is_safe": True,
+                "is_grounded": True,
+                "business_claims_consistent": True,
+                "answers_question": True,
+                "needs_human": False,
+                "confidence": 0.94,
+                "reason_codes": [],
+                "business_claims": claims,
+            }
+        ],
+        trusted_faq_enabled=True,
+    )
+
+    result = await workflow.run(cast_session(), command())
+
+    assert result.action == AgentAction.TRANSFER_HUMAN
+    assert result.draft_reply is None
+    assert result.safety_reason_codes == ["FAQ_TRUSTED_CLAIMS_INVALID"]
+    assert len(generator.requests) == 1
+
+
+@pytest.mark.asyncio
+async def test_trusted_faq_extra_case_check_still_transfers_to_human() -> None:
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    workflow, _, _, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[
+            {
+                "is_safe": True,
+                "is_grounded": True,
+                "business_claims_consistent": True,
+                "answers_question": True,
+                "needs_human": True,
+                "confidence": 0.94,
+                "reason_codes": [],
+                "business_claims": BusinessClaimInventory(
+                    complete=True,
+                    claims=[
+                        BusinessClaim(
+                            subject_type=BusinessClaimSubjectType.REFUND_POLICY,
+                            subject_id=None,
+                            action=BusinessClaimAction.EXPLAIN_POLICY,
+                            tense=BusinessClaimTense.TIMELESS,
+                            polarity=BusinessClaimPolarity.AFFIRMED,
+                            condition=BusinessClaimCondition.CONDITIONAL,
+                            evidence_type=BusinessClaimEvidenceType.FAQ_CHUNK,
+                            evidence_id=hit.chunk_id,
+                            confidence=0.94,
+                        )
+                    ],
+                ),
+            }
+        ],
+        trusted_faq_enabled=True,
+    )
+
+    result = await workflow.run(cast_session(), command())
+
+    assert result.action == AgentAction.TRANSFER_HUMAN
+    assert result.draft_reply is None
+
+
+@pytest.mark.asyncio
+async def test_trusted_faq_review_starts_while_classification_is_pending() -> None:
+    review_started = asyncio.Event()
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=retrieval(0.92),
+        outcomes=[
+            {
+                "is_safe": False,
+                "is_grounded": False,
+                "business_claims_consistent": False,
+                "answers_question": False,
+                "needs_human": True,
+                "confidence": 0.1,
+                "reason_codes": ["INSUFFICIENT_EVIDENCE"],
+                "business_claims": empty_claim_inventory(),
+            }
+        ],
+        trusted_faq_enabled=True,
+    )
+    original_generate = generator.generate
+
+    async def signal_review(request: StructuredRequest, response_schema: type[OutputT]) -> ProviderResult[OutputT]:
+        review_started.set()
+        return await original_generate(request, response_schema)
+
+    async def wait_for_review(
+        workflow_command: AgentWorkflowCommand, *, agent_run_id: uuid.UUID | None
+    ) -> IntentInferenceResult:
+        await asyncio.wait_for(review_started.wait(), timeout=1)
+        return await FixedClassifier(
+            IntentModelOutput(
+                intent=IntentName.RETURN_POLICY,
+                confidence=0.96,
+                classification_state=ClassificationState.CLASSIFIED,
+            )
+        ).infer(workflow_command, agent_run_id=agent_run_id)
+
+    generator.generate = signal_review  # type: ignore[method-assign]
+    workflow.classifier.infer = wait_for_review  # type: ignore[method-assign]
+
+    result = await asyncio.wait_for(workflow.run(cast_session(), command()), timeout=2)
+
+    assert review_started.is_set()
+    assert result.action == AgentAction.TRANSFER_HUMAN
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("damage", ["wrong_store", "stale_approval", "draft"])
+async def test_trusted_faq_rejects_unapproved_or_cross_store_source(damage: str) -> None:
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    metadata = hit.safety_metadata
+    if damage == "wrong_store":
+        hit.safety_metadata = metadata.model_copy(update={"store_id": uuid.uuid4()})
+    elif damage == "stale_approval":
+        hit.safety_metadata = metadata.model_copy(update={"approved_document_version": 2})
+    else:
+        hit.safety_metadata = KnowledgeSafetyMetadata.unapproved(
+            store_id=TEST_STORE_ID, document_version=hit.document_version
+        )
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[
+            FaqAnswerModelOutput(
+                answer="签收后七天内可申请退货。",
+                citation_chunk_ids=[hit.chunk_id],
+                grounding_confidence=0.9,
+                answer_language="zh-CN",
+                needs_human=False,
+                business_claims=empty_claim_inventory(),
+            )
+        ],
+        trusted_faq_enabled=True,
+    )
+
+    result = await workflow.run(cast_session(), command())
+
+    assert generator.requests[0].business_prompt_id == BusinessPromptId.FAQ_ANSWER
+    assert result.draft_reply is None
+
+
+@pytest.mark.asyncio
+async def test_trusted_faq_reviewer_cancellation_stops_pending_request() -> None:
+    review_started = asyncio.Event()
+    review_cancelled = asyncio.Event()
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=retrieval(0.92),
+        outcomes=[],
+        trusted_faq_enabled=True,
+    )
+
+    async def wait_forever(request: StructuredRequest, response_schema: type[OutputT]) -> ProviderResult[OutputT]:
+        review_started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            review_cancelled.set()
+        raise AssertionError("cancelled review cannot return")
+
+    generator.generate = wait_forever  # type: ignore[method-assign]
+    pending = asyncio.create_task(workflow.run(cast_session(), command()))
+    await asyncio.wait_for(review_started.wait(), timeout=1)
+    pending.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(pending, timeout=1)
+    assert review_cancelled.is_set()
+
+
+@pytest.mark.asyncio
+async def test_trusted_faq_review_accepts_existing_g5_synthetic_policy_prompt() -> None:
+    from scripts.prepare_sse_staging_fixture import G5_SYNTHETIC_ANSWER, G5_SYNTHETIC_QUESTION
+
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    hit.content = f"Question: {G5_SYNTHETIC_QUESTION}\nAnswer: {G5_SYNTHETIC_ANSWER}"
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.96,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[
+            {
+                "is_safe": True,
+                "is_grounded": True,
+                "business_claims_consistent": True,
+                "answers_question": True,
+                "needs_human": False,
+                "confidence": 0.94,
+                "reason_codes": [],
+                "business_claims": BusinessClaimInventory(
+                    complete=True,
+                    claims=[
+                        BusinessClaim(
+                            subject_type=BusinessClaimSubjectType.REFUND_POLICY,
+                            subject_id=None,
+                            action=BusinessClaimAction.EXPLAIN_POLICY,
+                            tense=BusinessClaimTense.TIMELESS,
+                            polarity=BusinessClaimPolarity.AFFIRMED,
+                            condition=BusinessClaimCondition.CONDITIONAL,
+                            evidence_type=BusinessClaimEvidenceType.FAQ_CHUNK,
+                            evidence_id=hit.chunk_id,
+                            confidence=0.94,
+                        )
+                    ],
+                ),
+            }
+        ],
+        trusted_faq_enabled=True,
+    )
+
+    result = await workflow.run(cast_session(), command(G5_SYNTHETIC_QUESTION))
+
+    assert result.draft_reply == G5_SYNTHETIC_ANSWER
+    assert generator.requests[0].prompt_safety_state == PromptSafetyState.ALLOWED
 
 
 def cast_session() -> AsyncSession:
