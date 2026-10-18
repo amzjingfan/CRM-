@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "evidence_type": "manual_g5_r91_manifest",
+  "source_sha": "a708347fe8dcef565e1b526ce8e5cf822f103b1a",
+  "environment": "staging",
+  "evidence_count": 16,
+  "files": [
+    {
+      "name": "crm-staging-g5-r91-content-a708347-content-20261018.json",
+      "sha256": "1d8860d4e38b5f0838942935f3dec9b4a5b7841370fa3beb714e5f3f5b898087"
+    },
+    {
+      "name": "crm-staging-g5-r91-deploy-a708347-deploy-20261018.json",
+      "sha256": "6b5c44cc9171c769fccfaf5df37d3c0afde94553fec16b961055b0248eb058d7"
+    },
+    {
+      "name": "crm-staging-g5-r91-deploy-a708347-prefetch-20261018.json",
+      "sha256": "ef7de7fe237d8376d33ff23f764ab86feae04d665f5ace4f54d7c75b4ae384c6"
+    },
+    {
+      "name": "crm-staging-g5-r91-manual-backend-image-20261018.json",
+      "sha256": "48f78176c94aec1e798fe3f8c82f6707ef4d82f5d15131a42b58d8aa253f0fa5"
+    },
+    {
+      "name": "crm-staging-g5-r91-preflight-a708347-prepare-20261018.json",
+      "sha256": "b31f0f7a307654bbdcd9bb27228c210bb1b00ea8fa0e534397400c4fee160ab2"
+    },
+    {
+      "name": "crm-staging-g5-r91-restore-a708347-deploy-20261018.json",
+      "sha256": "d16627de6237d9f6c71c11584591df0878300cb67011962197b6d43c0f2e3665"
+    },
+    {
+      "name": "crm-staging-g5-r91b-concurrent-a708347-admission-phases-20261018.json",
+      "sha256": "bf435acb33f3997c00bb15253d0e4604b3deb0220d8b2ff5450052460d1ac7c1"
+    },
+    {
+      "name": "crm-staging-g5-r91b-concurrent-a708347-concurrent-20261018.json",
+      "sha256": "a03dd28861662b57c5911a3eca89b15b06fea975db7c1c73c65e71a0f118716a"
+    },
+    {
+      "name": "crm-staging-g5-r91b-concurrent-a708347-resources-20261018.json",
+      "sha256": "1a319f66c99f3f45dd166207e892b4623c2cf437a8ff0427c45092df58e8ab3e"
+    },
+    {
+      "name": "crm-staging-g5-r91b-deploy-a708347-deploy-20261018.json",
+      "sha256": "ba318d594f936af55fe06cb3805ce0314d4ea2cfe36eb09e9d322d99c5181c8e"
+    },
+    {
+      "name": "crm-staging-g5-r91b-deploy-a708347-prefetch-20261018.json",
+      "sha256": "d6b58d89c467f6a807a9becd6aa190cb5e51ca0108a19afff5edcb3904fd0c38"
+    },
+    {
+      "name": "crm-staging-g5-r91b-pg-activity-a708347-pg-activity-20261018.json",
+      "sha256": "ac500126a79b8e1287e86c956f4b078ecc3d25266e28957a33147e2a5c2133c4"
+    },
+    {
+      "name": "crm-staging-g5-r91b-preflight-a708347-prepare-20261018.json",
+      "sha256": "78d3746e712673a64810981163b4a28d956e70bda685b9d88fe74d4ba3abaa3a"
+    },
+    {
+      "name": "crm-staging-g5-r91b-renew-a708347-content-20261018.json",
+      "sha256": "5e40b275e4e61b544743db7c934b0248c2ddebe43c8b26ea58c7e34b7a732b7f"
+    },
+    {
+      "name": "crm-staging-g5-r91b-restore-a708347-deploy-20261018.json",
+      "sha256": "f238fea72aba5b2cbcff69de047ba8fcf2a77160aa187062271f5a4ed571624a"
+    },
+    {
+      "name": "crm-staging-g5-r91b-single-a708347-single-20261018.json",
+      "sha256": "cd1198bd5c45502263cc7ce637bc15ba71ad0b4c1ef260b8a7413114e16a5b3b"
+    }
+  ],
+  "sensitive_payload_saved": false,
+  "production_release": false
+}

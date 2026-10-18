@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "evidence_type": "manual_ghcr_backend_image",
+  "status": "passed",
+  "environment": "staging",
+  "source_sha": "a708347fe8dcef565e1b526ce8e5cf822f103b1a",
+  "image_index": "ghcr.io/cp11-gh/crm-backend@sha256:8c53fb3197763586182a0f4d4091dfd0514e9d3e6192e00a83937f66d0e0540e",
+  "image_linux_amd64_manifest": "sha256:fee0524181f51644616655b38f6cb95491c6cca004464ac03bed7afd45c47b95",
+  "image_config": "sha256:340756b8a2a6d17e3ece77a7b12617cdcb4cafec59b91da2eabd6d3707aaf1a6",
+  "oci_revision": "a708347fe8dcef565e1b526ce8e5cf822f103b1a",
+  "compressed_layer_count": 12,
+  "compressed_layer_bytes": 110975078,
+  "verification": [
+    "docker buildx imagetools inspect index",
+    "docker buildx imagetools inspect --raw linux/amd64 manifest",
+    "docker image inspect OCI revision",
+    "staging six-role digest prefetch"
+  ],
+  "github_actions_used": false,
+  "production_release": false
+}
