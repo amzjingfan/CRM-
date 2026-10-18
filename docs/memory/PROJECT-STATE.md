@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+R89 现场记录已由 PR #400 合入权威 main `bdc15025f4b736a1b891845790ef62b27b8da1c7`；三份派生索引已从已合并源记录核对为 `CURRENT`，G5 仍为 No-Go。
+
 2026-10-18 G5 R89 现场恢复点：`CANDIDATE_SUBJECT_SHA=fcdabfc99634118eef58f76a3b79081612691b1f`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R89.md)、[TR](../reports/tests/TR-MVP-006-20261018-R89.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R89.md)和[14 份低敏原件清单](../../release/evidence/staging/crm-staging-g5-r88b-manifest-20261018.json)记录私有镜像、临时 G5、50/50 安全输出和原 G3 恢复。首 `delta` P99 3991.09 ms 仍高于严格 3000 ms；认证连接获取 P99 1422 ms、服务端内部首输出 P99 2996 ms，PostgreSQL 长开事务峰值 17，同批安全复核 P99 1648 ms。独立断连尚未验收；G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree 与仓库外凭证/快照保留，未知文件未处理。下一步：①分清首 `delta` 前接入、指标写入及模型复核的同请求耗时；②仅针对实测长尾做有界修复与本地门禁；③手动可恢复窗口重测严格 50/50、P99、资源和断连，恢复 G3。
 
 2026-10-18 G5 R88 已合并候选：`CANDIDATE_SUBJECT_SHA=b19390ef7e8d9253aa4f0b697e2b6817896c0e35`、`EVIDENCE_HEAD_SHA=fedc045928ffd80c9de210e08327c79e17bfaae7`。[IR](../records/implementation/IR-MVP-006-20261018-R88.md)、[TR](../reports/tests/TR-MVP-006-20261018-R88.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R88.md)记录认证三阶段与上下文三阶段的低敏计时；完整后端第二轮 2136 passed/27 skipped，静态门禁通过。首轮旧毫秒计时用例一次失败后单项及完整次轮通过，保留抖动风险。主分支三索引为 `CURRENT`。尚未发布/部署 R88 匹配镜像；staging 仍为 R87 恢复后的原 G3，严格首输出 P99 失败和独立断连缺口不变。Workspace hygiene：活动 worktree 与仓库外私有凭证/快照保留，未知文件未处理。下一步：①手动合入源码并发布匹配 main 的后端；②可恢复 G5 窗口补连接池、上下文和 PostgreSQL 活动分段；③依据同批请求定位瓶颈后单点修复、严格复测并恢复 G3。G5 `DOING`、production No-Go。
