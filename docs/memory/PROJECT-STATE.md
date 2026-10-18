@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 `MVP-TIKTOK-STORE-SEND-001` 单店人工范围现场验收：`CANDIDATE_SUBJECT_SHA=6394282897abdb89349dee7399bb05629220ca2e`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。源码 PR #348/#350 已合并；手动 staging validate/deploy、一个已审核店铺 180 个现有会话 `send_mode=real` 汇总、两个真实会话 UI 模式和 337 项定向测试通过。G5 R70 临时窗口已恢复原后端与单店人工范围；未向新的买家发送消息。见[IR](../records/implementation/IR-MVP-TIKTOK-STORE-SEND-001-20261018-R01.md)、[TR](../reports/tests/TR-MVP-TIKTOK-STORE-SEND-001-20261018-R01.md)、[RR](../reports/reviews/RR-MVP-TIKTOK-STORE-SEND-001-20261018-R01.md)及[低敏运行证据](../../release/evidence/staging/crm-staging-store-send-runtime-20261018.json)。production 与其他店铺未放行；平台可达性须以每次回执判断，不确定结果先人工对账。Workspace hygiene：活动 worktree 和仓库外私有资料保留，未知文件未处理。下一步：①合并证据 PR 并完成任务状态；②从权威 main 恢复索引 `CURRENT`；③按独立门禁推进 G5。
+
 2026-10-18 R71 索引收口：[PR #364](https://github.com/CP11-gh/CRM/pull/364) 已 squash 合入 main `da2f3085db085e296b29ffa5b1d56c3985c61523`。从此权威 main 逐项核对 IR/TR/RR 源记录与索引 156/161/153 条，无缺漏或重复，三个派生索引恢复 `CURRENT`。R71 仅是本地 Prompt 修复，未发布新镜像或实测 G5；R70 无安全 `delta` 仍是最近现场结论。GitHub CI 两项在零步骤失败，不作为测试通过证据；本地结果见 R71 TR。G5 `DOING`、production No-Go。
 
 2026-10-18 G5 R71 本地源码候选：`CANDIDATE_SUBJECT_SHA=3897e21a2163142557b9a07abd365604f0aa6fa9`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。组合 FAQ Prompt v1.0.1 明确内容级 `needs_human` 与员工审核发送分离，单节点 FAQ Prompt 及独立安全门禁不变；先红后绿的契约与完整后端 2101 passed/27 skipped、Ruff/mypy/lock 检查通过。见 [IR](../records/implementation/IR-MVP-006-20261018-R71.md)、[TR](../reports/tests/TR-MVP-006-20261018-R71.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R71.md)。三份派生索引在此任务分支为 `CANDIDATE_VIEW`。尚未发布 R71 镜像或实测；最近 R70 单会话仍无安全 `delta`，staging 已恢复 G3 原模式。下一步：①完成源码 PR 与主分支索引收口；②手动发布匹配新 main 的后端并从可恢复窗口测单会话；③仅严格达标后运行 50 并发与采样，随后恢复。G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree 与仓库外私有资料保留，未知文件未处理。

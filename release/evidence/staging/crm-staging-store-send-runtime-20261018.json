@@ -1,0 +1,23 @@
+{
+  "auto_reply_disabled": true,
+  "checked_existing_session_modes": [
+    "real",
+    "real"
+  ],
+  "conversation_count": 180,
+  "environment": "staging",
+  "evidence_type": "staging_tiktok_store_send_runtime_check",
+  "generated_at_utc": "2026-10-18T02:03:15.006598+00:00",
+  "high_risk_write_disabled": true,
+  "llm_disabled": true,
+  "manual_write_enabled": true,
+  "production_release": false,
+  "runtime_conversation_scope_empty": true,
+  "runtime_store_scope_exact": true,
+  "schema_version": 1,
+  "send_modes": {
+    "real": 180
+  },
+  "unresolved_outbound_count": 0,
+  "webhook_enabled": true
+}

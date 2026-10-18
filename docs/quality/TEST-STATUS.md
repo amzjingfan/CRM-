@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 `MVP-TIKTOK-STORE-SEND-001` staging 已审核单店人工普通文本范围：[R01 TR](../reports/tests/TR-MVP-TIKTOK-STORE-SEND-001-20261018-R01.md)记录 PR #348/#350 的店铺/单会话互斥与失败关闭、手动 validate/deploy、同店铺 180 个现有会话 `send_mode=real` 的只读汇总、两个已登录真实会话的现场模式，以及 337 项定向测试通过；Ruff lint/format 和 mypy 通过。原受控单会话真实外发与买家回复仍由 `MVP-004` R04 独立证明，本轮未向其他真实买家发送。G5 R70 之后已恢复 G3 单店模式；production 未发布。
+
 2026-10-18 G5 R71 本地候选：[R71 TR](../reports/tests/TR-MVP-006-20261018-R71.md)记录组合 FAQ Prompt 对 `needs_human` 与员工确认发送语义的有界修复，契约先红后绿；完整后端 2101 passed/27 skipped，Ruff、格式、mypy 与锁文件检查通过。尚无新镜像或真实 DeepSeek SSE 复测；R70 的无安全 `delta` 仍是最新现场结论，50 并发未启动，G5/production No-Go。
 
 2026-10-18 G5 R70 最新现场：[R70 TR](../reports/tests/TR-MVP-006-20261018-R70.md)记录从 main `86f3dae` 手动发布并临时部署 R69 组合 FAQ 后端；FAQ v3 ready、第十三代短期令牌、50/50 身份会话通过。唯一合成 SSE HTTP 200、总耗时 3155.2 ms，但无安全 `delta`；只读 Agent 摘要为组合 Prompt 已运行、分类成功、`faq_draft_needs_human`，独立复核仍执行。严格首输出门槛失败，50 并发未启动。按私有快照恢复原后端 `sha256:8913c09c…83a958`、当前前端 `sha256:1addb6c8…2db795`、检索与 G3 单店人工发送，三健康与固定出口通过。G5/production No-Go。
