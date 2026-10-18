@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-2026-10-18 G5 R92 当前候选：`CANDIDATE_SUBJECT_SHA=eeb3234da4a1b874b7485e4dbc9fdea1f636a358`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R92.md)、[TR](../reports/tests/TR-MVP-006-20261018-R92.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R92.md)记录经用户批准的首安全 `delta` P99 严格 5 秒门槛与原样本[事后复算](../../release/evidence/staging/crm-staging-g5-r92-retrospective-20261018.json)。R89/R91 性能子门禁在新口径下通过，旧现场报告不改写；独立断连仍缺，G5 `DOING`、production No-Go。任务分支索引为 `CANDIDATE_VIEW`；原 staging G3 模式保持 R91 恢复状态。Workspace hygiene：活动 worktree 与仓库外凭证/快照保留，未知文件未处理。
+2026-10-18 G5 R92 已由 [PR #406](https://github.com/CP11-gh/CRM/pull/406) 合入权威 main `44e3fc856b81b9866b79600760c1bef55ade5bfc`：`CANDIDATE_SUBJECT_SHA=eeb3234da4a1b874b7485e4dbc9fdea1f636a358`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R92.md)、[TR](../reports/tests/TR-MVP-006-20261018-R92.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R92.md)记录经用户批准的首安全 `delta` P99 严格 5 秒门槛与原样本[事后复算](../../release/evidence/staging/crm-staging-g5-r92-retrospective-20261018.json)。R89/R91 性能子门禁在新口径下通过，旧现场报告不改写；独立断连仍缺，G5 `DOING`、production No-Go。三个派生索引已从权威 main 的源记录重建为 `CURRENT`；原 staging G3 模式保持 R91 恢复状态。Workspace hygiene：活动 worktree 与仓库外凭证/快照保留，未知文件未处理。
 
 R91 现场记录已由 [PR #404](https://github.com/CP11-gh/CRM/pull/404) 合入权威 main `6d3d14801244e980d691a7885013f68020a4c785`；三份派生索引从已合并源记录重建为 `CURRENT`，G5/production No-Go。
 
@@ -482,6 +482,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 合并 R92 当前 5 秒严格门槛与低敏复算证据，确认派生索引从权威 main 重建为 `CURRENT`。
-2. 在可恢复 G5 手动窗口独立验证断连、50/50 安全输出、当前严格 P99、资源与原 G3 恢复；缺任何一项则 G5 不关闭。
+1. 在可恢复 G5 手动窗口独立验证断连、50/50 安全输出、当前严格 P99、资源与原 G3 恢复；缺任何一项则 G5 不关闭。
+2. 若断连失败，先按现场错误分类做最小修复并重测，不为通过而修改安全规则或阈值。
 3. 按独立任务推进 G2 异常投递及 G1-L；G5 与后续五日 G6 未通过前，G8/production 保持 No-Go。
