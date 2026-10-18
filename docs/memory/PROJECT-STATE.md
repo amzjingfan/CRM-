@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 R71 索引收口：[PR #364](https://github.com/CP11-gh/CRM/pull/364) 已 squash 合入 main `da2f3085db085e296b29ffa5b1d56c3985c61523`。从此权威 main 逐项核对 IR/TR/RR 源记录与索引 156/161/153 条，无缺漏或重复，三个派生索引恢复 `CURRENT`。R71 仅是本地 Prompt 修复，未发布新镜像或实测 G5；R70 无安全 `delta` 仍是最近现场结论。GitHub CI 两项在零步骤失败，不作为测试通过证据；本地结果见 R71 TR。G5 `DOING`、production No-Go。
+
 2026-10-18 G5 R71 本地源码候选：`CANDIDATE_SUBJECT_SHA=3897e21a2163142557b9a07abd365604f0aa6fa9`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。组合 FAQ Prompt v1.0.1 明确内容级 `needs_human` 与员工审核发送分离，单节点 FAQ Prompt 及独立安全门禁不变；先红后绿的契约与完整后端 2101 passed/27 skipped、Ruff/mypy/lock 检查通过。见 [IR](../records/implementation/IR-MVP-006-20261018-R71.md)、[TR](../reports/tests/TR-MVP-006-20261018-R71.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R71.md)。三份派生索引在此任务分支为 `CANDIDATE_VIEW`。尚未发布 R71 镜像或实测；最近 R70 单会话仍无安全 `delta`，staging 已恢复 G3 原模式。下一步：①完成源码 PR 与主分支索引收口；②手动发布匹配新 main 的后端并从可恢复窗口测单会话；③仅严格达标后运行 50 并发与采样，随后恢复。G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree 与仓库外私有资料保留，未知文件未处理。
 
 2026-10-18 索引收口：G5 R70 [PR #359](https://github.com/CP11-gh/CRM/pull/359) 已 squash 合入 main `75718693ffc36c01ecdfd4666f64967016c4e3da`；从随后权威 main `ce3019e35ad591526e6a5f972fb0926d5d232d22` 核对 IR/TR/RR 源记录与索引分别为 155/160/152 条，无缺漏或重复，三个派生索引恢复 `CURRENT`。GitHub CI 两项均在执行步骤前失败，不作为测试通过证据；本次只同步源记录与索引，不改变 G5 未通过的结论。
