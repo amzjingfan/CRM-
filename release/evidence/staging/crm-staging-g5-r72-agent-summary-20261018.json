@@ -1,0 +1,26 @@
+{
+  "window_start_utc": "2026-10-18T04:13:20Z",
+  "window_end_utc": "2026-10-18T04:13:40Z",
+  "read_only": true,
+  "matching_rows": 1,
+  "diagnostic_script_sha256": "83f2287a6e5c5a116e0327371e5a59d9495bd51893a3cb35d567697d98b6b87e",
+  "row": {
+    "action": "human_review",
+    "status": "succeeded",
+    "error_code": null,
+    "classification_state": "classified",
+    "combined_prompt_recorded": true,
+    "decision_reason": "none",
+    "safety_reasons": "none",
+    "latency_ms": 2722,
+    "first_output_latency_ms": 2810,
+    "input_tokens": 3292,
+    "output_tokens": 256,
+    "node_timings_ms": {
+      "retrieval": 268,
+      "classification": 1855,
+      "safety_review": 585,
+      "translation": 0
+    }
+  }
+}

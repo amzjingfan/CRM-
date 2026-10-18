@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "evidence_type": "manual_backend_image_publish",
+  "source_sha": "1edd0a9e5bd7d9899d6670662ee52503130c6007",
+  "tag": "ghcr.io/cp11-gh/crm-backend:g5-r72-1edd0a9e5bd7-20261018",
+  "reference": "ghcr.io/cp11-gh/crm-backend@sha256:09018b433dd2120f27dfea4a32a22f5ecea06304fc8f958de5624fd3cab21c68",
+  "package_visibility": "private",
+  "platform": "linux/amd64",
+  "oci_revision": "1edd0a9e5bd7d9899d6670662ee52503130c6007",
+  "manifest_digest": "sha256:09018b433dd2120f27dfea4a32a22f5ecea06304fc8f958de5624fd3cab21c68",
+  "child_manifest_digest": "sha256:6d82554e0705ea9855814b16cc360f234721d74bcf4526929456bfe644a55e68",
+  "attestation_manifest_digest": "sha256:81ab271954c20d477a836ee415865d112f2461868f2437e1ed84f7bc9af1689b",
+  "config_digest": "sha256:6afc112422fdc8a3794daa3d73309d1ff0a605e0f56dee4b7f08a77229398565",
+  "compressed_layer_count": 12,
+  "compressed_layer_bytes": 110952871,
+  "largest_layer_bytes": 33262910,
+  "remote_manifest_verified": true,
+  "pullback_digest_verified": true,
+  "local_docker_ghcr_login": "succeeded_and_logged_out",
+  "github_actions_used": false,
+  "staging_deployed_during_publication": false,
+  "observed_at_utc": "2026-10-18T04:19:26Z"
+}
