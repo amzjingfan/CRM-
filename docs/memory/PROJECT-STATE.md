@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 G5 R71 本地源码候选：`CANDIDATE_SUBJECT_SHA=3897e21a2163142557b9a07abd365604f0aa6fa9`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。组合 FAQ Prompt v1.0.1 明确内容级 `needs_human` 与员工审核发送分离，单节点 FAQ Prompt 及独立安全门禁不变；先红后绿的契约与完整后端 2101 passed/27 skipped、Ruff/mypy/lock 检查通过。见 [IR](../records/implementation/IR-MVP-006-20261018-R71.md)、[TR](../reports/tests/TR-MVP-006-20261018-R71.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R71.md)。三份派生索引在此任务分支为 `CANDIDATE_VIEW`。尚未发布 R71 镜像或实测；最近 R70 单会话仍无安全 `delta`，staging 已恢复 G3 原模式。下一步：①完成源码 PR 与主分支索引收口；②手动发布匹配新 main 的后端并从可恢复窗口测单会话；③仅严格达标后运行 50 并发与采样，随后恢复。G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree 与仓库外私有资料保留，未知文件未处理。
+
 2026-10-18 索引收口：G5 R70 [PR #359](https://github.com/CP11-gh/CRM/pull/359) 已 squash 合入 main `75718693ffc36c01ecdfd4666f64967016c4e3da`；从随后权威 main `ce3019e35ad591526e6a5f972fb0926d5d232d22` 核对 IR/TR/RR 源记录与索引分别为 155/160/152 条，无缺漏或重复，三个派生索引恢复 `CURRENT`。GitHub CI 两项均在执行步骤前失败，不作为测试通过证据；本次只同步源记录与索引，不改变 G5 未通过的结论。
 
 2026-10-18 G5 R70 手动现场恢复点：`CANDIDATE_SUBJECT_SHA=86f3dae3e24f5b7f786fca9a31ba0373082d3e90`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。从该 main 手动发布私有后端 `sha256:5795cebb…42b43`，临时部署 G5；FAQ ready、50/50 身份会话及第十三代隔离令牌通过。唯一合成 SSE 为 HTTP 200、总耗时 3155.2 ms，但没有安全 `delta`；只读 Agent 摘要为 `faq_draft_needs_human`，50 并发与采样未启动。已恢复旧后端 `sha256:8913c09c…83a958`、前端 `sha256:1addb6c8…2db795`、检索 `sha256:feeee5a3…623059` 和 G3 单店人工发送，三健康及固定出口通过。见 [IR](../records/implementation/IR-MVP-006-20261018-R70.md)、[TR](../reports/tests/TR-MVP-006-20261018-R70.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R70.md)。下一步：①消除组合 Prompt 中人工审核与内容级 `needs_human` 的歧义；②在可恢复窗口严格复测单会话安全 `delta` 与 3 秒/5 秒门槛；③仅单会话通过后运行 50 并发、采样和原模式恢复。G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree 与仓库外私有资料保留，未知文件未处理。

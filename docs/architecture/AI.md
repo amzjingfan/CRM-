@@ -28,6 +28,8 @@ G5 R67 对无确定性工具请求的已授权提问，在分类模型等待期�
 
 G5 R69 在现有后端 Agent 工厂的非工具 FAQ 路径，先用可信 `store_id` 检索已审批知识。命中后注册的 `faq-classified-draft-v1.0.0` 一次严格 Responses JSON Schema 请求同时返回 `IntentModelOutput` 与可空 `FaqAnswerModelOutput`；无知识不调用模型，确定性工具问题继续使用原分类器。拒判、低置信度或无草稿不得展示内容；通过门槛的草稿仍依次核对本次引用、知识店铺、业务声明、DLP 和语言，并调用原独立安全复核。组合请求的计时记在 `classification`，检索单独计时；该路径不再有独立 `faq_draft` 节点耗时，二者不重复累计。`needs_human=false` 只表示草稿无需额外转人工理由，不赋予自动发送资格；店铺知识仍仅获内部人工审阅批准。工作流版本 `faq-agent-workflow-v1.8.0`，组合 Prompt 摘要由注册表锁定。本地确定性测试不证明真实模型会按组合 Schema 回复，也不证明 G5 单会话或 50 并发达标；3 秒/5 秒门槛及恢复策略保持不变。
 
+G5 R70 现场组合草稿因 `faq_draft_needs_human` 无安全 `delta`。R71 仅在组合 Prompt 移除单节点 FAQ 中“草稿一律需要人工复核”的歧义句，改为明确：`needs_human` 表示内容是否需额外人工判断，有充分证据时为 false；所有草稿仍由员工审核并确认发送，且必须通过独立安全复核。单节点 FAQ Prompt、严格 Schema、店铺证据、DLP、阈值和发送权限均不变。组合 Prompt 版本为 `faq-classified-draft-v1.0.1`，工作流版本为 `faq-agent-workflow-v1.8.1`，正文摘要 `d271eefc26792e86e50368f8974915805e0d7888f1c7d784726478f293313519`；本地契约测试不能证明真实模型与 G5 延迟门槛通过。
+
 ## Prompt 与策略版本
 
 系统 Prompt、DLP 规则、结构化声明和回复策略使用可审计版本。Agent 配置只能选择受控语气、语言和品牌名，不能写任意 Prompt、模型或阈值。版本变化必须更新评测和发布基线。

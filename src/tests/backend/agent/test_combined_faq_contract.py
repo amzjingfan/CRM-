@@ -14,7 +14,11 @@ from app.agent.prompt_registry import BUSINESS_PROMPT_REGISTRY, BusinessPromptId
 from app.agent.providers.base import StructuredRequest
 from app.agent.providers.deepseek_provider import DeepSeekProvider
 from app.agent.schemas import CombinedFaqModelOutput
-from app.agent.workflow_prompt import COMBINED_FAQ_PROMPT_VERSION, COMBINED_FAQ_SYSTEM_PROMPT
+from app.agent.workflow_prompt import (
+    COMBINED_FAQ_PROMPT_VERSION,
+    COMBINED_FAQ_SYSTEM_PROMPT,
+    FAQ_ANSWER_SYSTEM_PROMPT,
+)
 
 
 def combined_output(*, state: str = "classified", draft: bool = True) -> dict[str, object]:
@@ -75,8 +79,12 @@ def test_combined_prompt_is_registered_with_exact_schema_and_payload() -> None:
 
 
 def test_combined_prompt_keeps_human_review_separate_from_draft_insufficiency() -> None:
+    assert "FAQ 草稿一律需要人工复核" in FAQ_ANSWER_SYSTEM_PROMPT
+    assert "FAQ 草稿一律需要人工复核" not in COMBINED_FAQ_SYSTEM_PROMPT
+    assert "needs_human 只表示内容是否需要额外人工判断" in COMBINED_FAQ_SYSTEM_PROMPT
     assert "needs_human=false" in COMBINED_FAQ_SYSTEM_PROMPT
-    assert "人工复核" in COMBINED_FAQ_SYSTEM_PROMPT
+    assert "所有草稿仍须员工审核并确认发送" in COMBINED_FAQ_SYSTEM_PROMPT
+    assert "独立安全复核" in COMBINED_FAQ_SYSTEM_PROMPT
     assert "缺少证据" in COMBINED_FAQ_SYSTEM_PROMPT
 
 

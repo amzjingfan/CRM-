@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R71 本地候选：[R71 TR](../reports/tests/TR-MVP-006-20261018-R71.md)记录组合 FAQ Prompt 对 `needs_human` 与员工确认发送语义的有界修复，契约先红后绿；完整后端 2101 passed/27 skipped，Ruff、格式、mypy 与锁文件检查通过。尚无新镜像或真实 DeepSeek SSE 复测；R70 的无安全 `delta` 仍是最新现场结论，50 并发未启动，G5/production No-Go。
+
 2026-10-18 G5 R70 最新现场：[R70 TR](../reports/tests/TR-MVP-006-20261018-R70.md)记录从 main `86f3dae` 手动发布并临时部署 R69 组合 FAQ 后端；FAQ v3 ready、第十三代短期令牌、50/50 身份会话通过。唯一合成 SSE HTTP 200、总耗时 3155.2 ms，但无安全 `delta`；只读 Agent 摘要为组合 Prompt 已运行、分类成功、`faq_draft_needs_human`，独立复核仍执行。严格首输出门槛失败，50 并发未启动。按私有快照恢复原后端 `sha256:8913c09c…83a958`、当前前端 `sha256:1addb6c8…2db795`、检索与 G3 单店人工发送，三健康与固定出口通过。G5/production No-Go。
 
 2026-10-18 G5 R69 源码候选：现有非工具 FAQ 命中路径改为一次严格结构化请求同时取得意图与草稿，随后仍执行本地引用/店铺/DLP 校验和独立安全复核。新增组合结构、Prompt 注册、Provider 路由和拒判/低置信度/工具/无知识/错引用/跨店/独立复核否决/异常/取消的确定性验证；本分支最终完整后端 `2101 passed, 27 skipped`，Ruff lint/format、mypy 和锁文件检查通过。尚未发布该候选镜像或在 staging 复测，最新真实现场仍是 R68 的首次安全 `delta=4550.4 ms`，50 并发未启动；G5/production No-Go。
