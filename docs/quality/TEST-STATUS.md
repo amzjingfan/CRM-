@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R67 源码：[R67 TR](../reports/tests/TR-MVP-006-20261018-R67.md)记录分类与当前店铺 FAQ 检索并行、拒判/低置信度/取消时清理任务、FAQ 检索异常失败关闭的先红后绿测试。更新到 main `6394282` 后完整后端 2083 passed/27 skipped，Ruff lint/format 与 mypy 通过。此轮仅本地源码验证，尚无 R67 镜像、staging 部署或 DeepSeek 现场结果；最近真实单会话仍为 R66 的安全 `delta=3635.8 ms`，50 并发未启动。G5 与 production No-Go。
+
 2026-10-18 G5 R66 最新现场：[R66 TR](../reports/tests/TR-MVP-006-20261018-R66.md)记录从 main `ea8011b` 手动发布并临时部署 R65 计时后端。FAQ ready、第十一代隔离令牌和 50/50 身份会话只读预检通过；唯一合成 SSE HTTP 200、安全 `delta=3635.8 ms`、总耗时 3638.1 ms，严格首输出 <3000 ms 失败。Agent 分类/检索/FAQ 草稿/独立安全复核为 1185/392/1108/660 ms。50 并发未启动；旧后端与 G3 限定会话、健康及固定出口已恢复。G5 与 production No-Go。
 
 2026-10-18 G5 R65 源码：[R65 TR](../reports/tests/TR-MVP-006-20261018-R65.md)记录五个固定 Agent 节点耗时的先红后绿验证，提交后完整后端 2069 passed/27 skipped、Ruff/mypy 通过；仅成功运行的低敏摘要新增白名单毫秒数，原路由、安全复核与 3 秒/5 秒门槛未改变。尚未发布或部署 R65 镜像，也未复测真实模型。R64 仍是最新现场：安全 `delta` 7829.7 ms，50 并发未启动，原 G3 模式已恢复。G5 与 production No-Go。

@@ -1,5 +1,6 @@
 """验证 LangGraph FAQ 工作流的状态、置信度和保守降级。"""
 
+import asyncio
 import uuid
 from collections import deque
 from dataclasses import replace
@@ -20,6 +21,7 @@ from app.agent.business_claims import (
     BusinessClaimSubjectType,
     BusinessClaimTense,
 )
+from app.agent.embeddings import EmbeddingErrorCode, EmbeddingProviderError
 from app.agent.errors import LLMErrorCode, LLMFailureStage, LLMProviderError
 from app.agent.prompt_registry import BusinessPromptId
 from app.agent.providers.base import OutputT, ProviderResult, StructuredRequest
@@ -322,6 +324,152 @@ def service(
         human_review_threshold=0.60,
     )
     return workflow, rag, generator, recorder
+
+
+class CoordinatedClassifier(FixedClassifier):
+    """等待检索启动，以证明 FAQ 两条只读路径确实重叠。"""
+
+    def __init__(self, output: IntentModelOutput, retrieval_started: asyncio.Event) -> None:
+        super().__init__(output)
+        self.retrieval_started = retrieval_started
+
+    async def infer(self, command: AgentWorkflowCommand, *, agent_run_id: uuid.UUID | None) -> IntentInferenceResult:
+        await self.retrieval_started.wait()
+        return await super().infer(command, agent_run_id=agent_run_id)
+
+
+class CoordinatedRagService(FixedRagService):
+    """可控制检索完成与取消，不访问数据库。"""
+
+    def __init__(self, result: RagRetrievalResult, *, wait_forever: bool = False) -> None:
+        super().__init__(result)
+        self.started = asyncio.Event()
+        self.cancelled = asyncio.Event()
+        self.wait_forever = wait_forever
+
+    async def retrieve(self, session: AsyncSession, store_id: uuid.UUID, query: str) -> RagRetrievalResult:
+        self.calls += 1
+        assert store_id == TEST_STORE_ID
+        self.started.set()
+        if self.wait_forever:
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                self.cancelled.set()
+                raise
+        return self.result
+
+
+@pytest.mark.asyncio
+async def test_faq_classification_and_store_scoped_retrieval_overlap() -> None:
+    """检索可在分类等待模型时开始，但只在 FAQ 路由消费。"""
+    empty = replace(retrieval(), hits=[], top_score=0.0, context_tokens=0)
+    workflow, _, generator, recorder = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.94,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=empty,
+        outcomes=[],
+    )
+    rag = CoordinatedRagService(empty)
+    workflow.rag_service = rag
+    workflow.classifier = CoordinatedClassifier(
+        IntentModelOutput(
+            intent=IntentName.RETURN_POLICY, confidence=0.94, classification_state=ClassificationState.CLASSIFIED
+        ),
+        rag.started,
+    )
+
+    result = await asyncio.wait_for(workflow.run(cast_session(), command()), timeout=1)
+
+    assert result.action == AgentAction.TRANSFER_HUMAN
+    assert rag.calls == 1
+    assert generator.requests == []
+    assert recorder.completed is not None
+    assert [name for name, _ in recorder.completed.node_timings_ms] == ["classification", "retrieval", "translation"]
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        IntentModelOutput(intent=None, confidence=0, classification_state=ClassificationState.MODEL_REFUSAL),
+        IntentModelOutput(
+            intent=IntentName.RETURN_POLICY, confidence=0.2, classification_state=ClassificationState.CLASSIFIED
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_unused_speculative_retrieval_is_cancelled(output: IntentModelOutput) -> None:
+    """拒判及低置信度完成前须取消检索，不能让后台任务继续占用会话。"""
+    workflow, _, generator, recorder = service(message_intent=output, rag_result=retrieval(), outcomes=[])
+    rag = CoordinatedRagService(retrieval(), wait_forever=True)
+    workflow.rag_service = rag
+    workflow.classifier = CoordinatedClassifier(output, rag.started)
+
+    result = await asyncio.wait_for(workflow.run(cast_session(), command()), timeout=1)
+
+    assert result.action == AgentAction.TRANSFER_HUMAN
+    assert rag.cancelled.is_set()
+    assert generator.requests == []
+    assert recorder.completed is not None
+    assert "retrieval" not in [name for name, _ in recorder.completed.node_timings_ms]
+
+
+@pytest.mark.asyncio
+async def test_cancelling_classification_also_cancels_speculative_retrieval() -> None:
+    """SSE 断开时不得留下持有请求数据库会话的检索任务。"""
+    output = IntentModelOutput(
+        intent=IntentName.RETURN_POLICY, confidence=0.9, classification_state=ClassificationState.CLASSIFIED
+    )
+    workflow, _, _, recorder = service(message_intent=output, rag_result=retrieval(), outcomes=[])
+    rag = CoordinatedRagService(retrieval(), wait_forever=True)
+    workflow.rag_service = rag
+    workflow.classifier = CoordinatedClassifier(output, rag.started)
+    task = asyncio.create_task(workflow.run(cast_session(), command()))
+    await asyncio.wait_for(rag.started.wait(), timeout=1)
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(task, timeout=1)
+
+    assert rag.cancelled.is_set()
+    assert recorder.completed is None
+    assert recorder.failed is not None
+
+
+@pytest.mark.parametrize("faq_route", [True, False])
+@pytest.mark.asyncio
+async def test_speculative_retrieval_error_only_fails_faq_route(faq_route: bool) -> None:
+    """未使用的检索异常不得污染拒判；FAQ 路径仍按稳定错误码失败关闭。"""
+    output = IntentModelOutput(
+        intent=IntentName.RETURN_POLICY if faq_route else None,
+        confidence=0.9 if faq_route else 0,
+        classification_state=ClassificationState.CLASSIFIED if faq_route else ClassificationState.MODEL_REFUSAL,
+    )
+    workflow, _, generator, recorder = service(message_intent=output, rag_result=retrieval(), outcomes=[])
+    started = asyncio.Event()
+
+    class FailingRag:
+        async def retrieve(self, session: AsyncSession, store_id: uuid.UUID, query: str) -> RagRetrievalResult:
+            assert store_id == TEST_STORE_ID
+            started.set()
+            raise EmbeddingProviderError(EmbeddingErrorCode.EMBEDDING_TIMEOUT, "safe timeout", retriable=False)
+
+    workflow.rag_service = FailingRag()
+    workflow.classifier = CoordinatedClassifier(output, started)
+
+    if faq_route:
+        with pytest.raises(AgentWorkflowExecutionError) as error_info:
+            await asyncio.wait_for(workflow.run(cast_session(), command()), timeout=1)
+        assert error_info.value.error_code == "EMBEDDING_TIMEOUT"
+        assert recorder.completed is None
+    else:
+        result = await asyncio.wait_for(workflow.run(cast_session(), command()), timeout=1)
+        assert result.action == AgentAction.TRANSFER_HUMAN
+        assert recorder.completed is not None
+    assert generator.requests == []
 
 
 @pytest.mark.asyncio

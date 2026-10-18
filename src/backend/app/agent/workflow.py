@@ -45,6 +45,7 @@ from app.agent.schemas import (
     GroundingReviewOutput,
     IntentInferenceResult,
     IntentModelOutput,
+    IntentName,
     RequiredToolName,
     ToolAnswerModelOutput,
     ToolGroundingReviewOutput,
@@ -361,12 +362,12 @@ class AgentWorkflowService:
         """构建无循环工作流，硬性限制节点次数和模型消费。"""
         builder = StateGraph(WorkflowState)
         builder.add_node("context_loaded", self._context_loaded)
-        builder.add_node("intent_classified", self._timed_node("classification", self._intent_classified))
+        builder.add_node("intent_classified", self._intent_classified)
         builder.add_node("tool_required", self._tool_required)
         builder.add_node("tool_executed", self._tool_executed)
         builder.add_node("tool_response_drafted", self._tool_response_drafted)
         builder.add_node("tool_safety_checked", self._tool_safety_checked)
-        builder.add_node("knowledge_retrieved", self._timed_node("retrieval", self._knowledge_retrieved))
+        builder.add_node("knowledge_retrieved", self._knowledge_retrieved)
         builder.add_node("response_drafted", self._timed_node("faq_draft", self._response_drafted))
         builder.add_node("safety_checked", self._timed_node("safety_review", self._safety_checked))
         builder.add_node("confidence_evaluated", self._confidence_evaluated)
@@ -424,35 +425,66 @@ class AgentWorkflowService:
         }
 
     async def _intent_classified(self, state: WorkflowState) -> WorkflowState:
-        """复用 Phase 1 分类器，但不创建第二条运行记录。"""
+        """分类与当前店铺只读检索重叠；仅 FAQ 路径消费检索结果。"""
         command = state["command"]
+        retrieval_task: asyncio.Task[tuple[RagRetrievalResult, int]] | None = None
+        # 命中任何确定性工具规则的提问保持原工具路径，不做推测性 FAQ 查询。
+        if not any(detect_required_tools(command.message, intent) for intent in IntentName):
+
+            async def retrieve_timed() -> tuple[RagRetrievalResult, int]:
+                started_at = time.perf_counter_ns()
+                result = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+                return result, max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
+
+            retrieval_task = asyncio.create_task(retrieve_timed())
         try:
-            inference = await self.classifier.infer(command, agent_run_id=state["agent_run_id"])
-        except LLMProviderError as error:
-            if error.code != LLMErrorCode.LLM_REFUSAL:
-                error.failure_stage = LLMFailureStage.CLASSIFICATION
-                raise
-            inference = IntentInferenceResult(
-                output=IntentModelOutput(
-                    intent=None,
-                    confidence=0,
-                    classification_state=ClassificationState.MODEL_REFUSAL,
-                ),
-                provider=self.classifier.provider_name,
-                model=self.classifier.model_name,
-                prompt_version="intent-classifier-v1.0.1",
-                input_tokens=0,
-                output_tokens=0,
-                latency_ms=0,
-            )
-        return {
-            "inference": inference,
-            "provider": inference.provider,
-            "model": inference.model,
-            "input_tokens": state["input_tokens"] + inference.input_tokens,
-            "output_tokens": state["output_tokens"] + inference.output_tokens,
-            "state_path": ["INTENT_CLASSIFIED"],
-        }
+            classification_started_at = time.perf_counter_ns()
+            try:
+                inference = await self.classifier.infer(command, agent_run_id=state["agent_run_id"])
+            except LLMProviderError as error:
+                if error.code != LLMErrorCode.LLM_REFUSAL:
+                    error.failure_stage = LLMFailureStage.CLASSIFICATION
+                    raise
+                inference = IntentInferenceResult(
+                    output=IntentModelOutput(
+                        intent=None,
+                        confidence=0,
+                        classification_state=ClassificationState.MODEL_REFUSAL,
+                    ),
+                    provider=self.classifier.provider_name,
+                    model=self.classifier.model_name,
+                    prompt_version="intent-classifier-v1.0.1",
+                    input_tokens=0,
+                    output_tokens=0,
+                    latency_ms=0,
+                )
+            classification_ms = max(0, (time.perf_counter_ns() - classification_started_at) // 1_000_000)
+            update: WorkflowState = {
+                "inference": inference,
+                "provider": inference.provider,
+                "model": inference.model,
+                "input_tokens": state["input_tokens"] + inference.input_tokens,
+                "output_tokens": state["output_tokens"] + inference.output_tokens,
+                "node_timings_ms": [("classification", classification_ms)],
+                "state_path": ["INTENT_CLASSIFIED"],
+            }
+            output = inference.output
+            if (
+                retrieval_task is not None
+                and output.classification_state == ClassificationState.CLASSIFIED
+                and output.confidence >= self.human_review_threshold
+                and output.intent is not None
+                and not detect_required_tools(command.message, output.intent)
+            ):
+                retrieval, retrieval_ms = await retrieval_task
+                update["retrieval"] = retrieval
+                update["node_timings_ms"] = [("classification", classification_ms), ("retrieval", retrieval_ms)]
+            return update
+        finally:
+            if retrieval_task is not None:
+                if not retrieval_task.done():
+                    retrieval_task.cancel()
+                await asyncio.gather(retrieval_task, return_exceptions=True)
 
     def _route_after_intent(self, state: WorkflowState) -> str:
         """拒判和低置信度直接决策；实时业务需求进入工具门禁。"""
@@ -658,13 +690,21 @@ class AgentWorkflowService:
     async def _knowledge_retrieved(self, state: WorkflowState) -> WorkflowState:
         """查询当前 store_id 的发布 FAQ，并累计 Embedding Token。"""
         command = state["command"]
-        retrieval = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
-        return {
+        retrieval = state.get("retrieval")
+        timings: list[tuple[str, int]] = []
+        if retrieval is None:
+            started_at = time.perf_counter_ns()
+            retrieval = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+            timings = [("retrieval", max(0, (time.perf_counter_ns() - started_at) // 1_000_000))]
+        update: WorkflowState = {
             "retrieval": retrieval,
             "hits": retrieval.hits,
             "input_tokens": state["input_tokens"] + retrieval.embedding_input_tokens,
             "state_path": ["KNOWLEDGE_RETRIEVED"],
         }
+        if timings:
+            update["node_timings_ms"] = timings
+        return update
 
     def _route_after_retrieval(self, state: WorkflowState) -> str:
         """无知识时禁止调用答案模型，直接进入保守决策。"""
