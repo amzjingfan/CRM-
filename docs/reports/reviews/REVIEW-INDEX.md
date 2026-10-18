@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R74 | MVP-006 | R74 | APPROVE | `2225248d413799e1360fd7f6c8f428a03f85667e` | manual-image-provenance / tunnel-isolation / store-isolation / strict-latency / restore-snapshot / production-boundary | 2026-10-18T13:18:00+08:00 | [`RR-MVP-006-20261018-R74.md`](RR-MVP-006-20261018-R74.md) |
 | RR-MVP-006-20261018-R73 | MVP-006 | R73 | APPROVE | `82b1206d43d2573822cb25c8ed64456eb02c0d5c` | store-scope / refusal / tool-routing / cancellation / prompt-registration / independent-safety-review / latency-risk | 2026-10-18T12:40:00+08:00 | [`RR-MVP-006-20261018-R73.md`](RR-MVP-006-20261018-R73.md) |
 | RR-MVP-006-20261018-R72 | MVP-006 | R72 | APPROVE | `1edd0a9e5bd7d9899d6670662ee52503130c6007` | manual-image-provenance / safe-delta-threshold / store-isolation / restore-snapshot / production-boundary | 2026-10-18T12:20:00+08:00 | [`RR-MVP-006-20261018-R72.md`](RR-MVP-006-20261018-R72.md) |
 | RR-MVP-TIKTOK-STORE-SEND-001-20261018-R01 | MVP-TIKTOK-STORE-SEND-001 | R01 | APPROVE | `6394282897abdb89349dee7399bb05629220ca2e` | store-isolation / authorization / human-confirmation / idempotency / unknown-reconciliation / staging-gate / g5-restore | 2026-10-18T12:14:00+08:00 | [`RR-MVP-TIKTOK-STORE-SEND-001-20261018-R01.md`](RR-MVP-TIKTOK-STORE-SEND-001-20261018-R01.md) |

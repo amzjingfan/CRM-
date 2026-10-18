@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_reverse_tunnel_recovery",
+  "public_health_before": 504,
+  "business_loopback_health_before": 200,
+  "gateway_loopback_before": "timeout",
+  "business_tunnel_unit_before": "auto_restart_remote_forward_failed",
+  "gateway_listener_before": "stale_crm_tunnel_sshd",
+  "remediation": "terminate_only_verified_stale_gateway_tunnel_session",
+  "business_tunnel_unit_after": "active_running",
+  "gateway_loopback_health_after": 200,
+  "public_health_after": 200,
+  "gateway_vhost_changed": false,
+  "system_docker_changed": false,
+  "production_release": false
+}

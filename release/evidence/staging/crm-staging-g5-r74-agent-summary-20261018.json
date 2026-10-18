@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "evidence_type": "g5_agent_readonly_summary",
+  "source_sha": "2225248d413799e1360fd7f6c8f428a03f85667e",
+  "diagnostic_script_sha256": "94b6a33e5d0a9a505357e15459187577a098395d22e47d97ab1ab63ab72e3651",
+  "read_only": true,
+  "matching_rows": 1,
+  "row": {
+    "action": "human_review",
+    "status": "succeeded",
+    "error_code": null,
+    "classification_state": "classified",
+    "decision_reason": "none",
+    "safety_reasons": "none",
+    "node_timings_ms": "classification:1266,retrieval:323,faq_draft:1660,safety_review:938,translation:0",
+    "first_output_latency_ms": 4056,
+    "latency_ms": 3878,
+    "input_tokens": 3169,
+    "output_tokens": 251,
+    "standalone_prompt_recorded": true
+  },
+  "observed_at_utc": "2026-10-18T05:16:33Z"
+}

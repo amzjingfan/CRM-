@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "evidence_type": "g5_staging_identity_preflight",
+  "source_sha": "2225248d413799e1360fd7f6c8f428a03f85667e",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:42ac664ec3e8fa4ea0bad240cf69b63fbcbe403522a1acb151c182a57a8ff055",
+  "mode": "preflight",
+  "distinct_authorized_users": 50,
+  "required_clients": 50,
+  "failures": {},
+  "provider_calls": 0,
+  "ready": true,
+  "fixture_write": false
+}
