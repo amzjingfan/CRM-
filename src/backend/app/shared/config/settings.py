@@ -7,6 +7,7 @@ from math import ceil
 from pathlib import Path
 from typing import Literal, Self
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -180,6 +181,11 @@ class Settings(BaseSettings):
         default=None,
         pattern=r"^[0-9]{1,30}$",
         validation_alias="TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID",
+    )
+    tiktok_message_write_allowed_store_ids: str | None = Field(
+        default=None,
+        max_length=4096,
+        validation_alias="TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS",
     )
     real_tiktok_high_risk_write_enabled: bool = Field(
         default=False,
@@ -363,12 +369,20 @@ class Settings(BaseSettings):
         )
         if self.real_tiktok_message_write_enabled and not self.real_tiktok_read_enabled:
             raise ValueError("启用 TikTok 普通消息写入前必须先启用真实只读能力")
-        if (
-            self.app_env == "staging"
-            and self.real_tiktok_message_write_enabled
-            and not self.tiktok_message_write_allowed_conversation_id
+        allowed_stores = self.tiktok_message_write_allowed_store_ids
+        if allowed_stores:
+            try:
+                store_ids = allowed_stores.split(",")
+                if not store_ids or any(str(UUID(store_id)) != store_id for store_id in store_ids):
+                    raise ValueError
+                if len(set(store_ids)) != len(store_ids):
+                    raise ValueError
+            except ValueError as error:
+                raise ValueError("TikTok 真实发送店铺列表必须是无重复的小写标准 UUID") from error
+        if self.real_tiktok_message_write_enabled and (
+            bool(self.tiktok_message_write_allowed_conversation_id) == bool(allowed_stores)
         ):
-            raise ValueError("staging 真实消息发送必须指定一个受控会话")
+            raise ValueError("TikTok 真实消息发送必须且只能指定受控会话或店铺列表")
         if self.real_tiktok_webhook_enabled and not self.real_tiktok_read_enabled:
             raise ValueError("启用 TikTok Webhook 前必须先启用真实只读能力")
         if self.real_tiktok_high_risk_write_enabled and not self.real_tiktok_message_write_enabled:

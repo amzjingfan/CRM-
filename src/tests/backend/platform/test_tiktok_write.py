@@ -22,6 +22,7 @@ def real_write_settings(**overrides: Any) -> Settings:
         "APP_ENV": "development",
         "REAL_TIKTOK_READ_ENABLED": True,
         "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": True,
+        "TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID": "710688832392260838",
         "TIKTOK_APP_KEY": "unit-test-app-key",
         "TIKTOK_SERVICE_ID": "unit-test-service-id",
         "TIKTOK_APP_SECRET": "unit-test-app-secret-value",
@@ -131,6 +132,32 @@ async def test_staging_allowlisted_conversation_is_the_only_real_send_target() -
     assert attempts == 0
     assert result.status == "failed"
     assert result.error_code == "TIKTOK_CONVERSATION_NOT_ALLOWED"
+
+
+@pytest.mark.asyncio
+async def test_store_allowlist_sends_two_conversations_but_never_another_store() -> None:
+    attempts = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": str(722323407926368819 + attempts)}})
+
+    channel = connected_channel()
+    settings = real_write_settings(
+        TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID=None,
+        TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS=str(channel.store_id),
+    )
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = TikTokMessageClient(settings, channel, http_client)
+        first = await client.send_text_message(command())
+        second = await client.send_text_message(command(external_conversation_id="710688832392260839"))
+        other_channel = connected_channel()
+        blocked = await TikTokMessageClient(settings, other_channel, http_client).send_text_message(command())
+
+    assert (first.status, second.status, blocked.status) == ("sent", "sent", "failed")
+    assert blocked.error_code == "TIKTOK_CONVERSATION_NOT_ALLOWED"
+    assert attempts == 2
 
 
 @pytest.mark.asyncio

@@ -151,6 +151,7 @@ def test_real_tiktok_manual_message_write_can_start_after_real_fs04() -> None:
     settings = production_settings(
         REAL_TIKTOK_READ_ENABLED=True,
         REAL_TIKTOK_MESSAGE_WRITE_ENABLED=True,
+        TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS="11111111-1111-4111-8111-111111111111",
         TIKTOK_APP_KEY="real-app-key",
         TIKTOK_SERVICE_ID="real-service-id",
         TIKTOK_APP_SECRET="unit-test-app-secret",
@@ -162,9 +163,9 @@ def test_real_tiktok_manual_message_write_can_start_after_real_fs04() -> None:
     assert settings.auto_reply_enabled is False
 
 
-def test_staging_real_message_write_requires_one_explicit_conversation() -> None:
-    """staging 不能只打开全局开关就向任意买家发送。"""
-    with pytest.raises(ValidationError, match="受控会话"):
+def test_real_message_write_requires_exactly_one_explicit_target_mode() -> None:
+    """真实写入不能只靠全局开关，也不能混用单会话和店铺范围。"""
+    with pytest.raises(ValidationError, match="受控会话或店铺"):
         production_settings(
             APP_ENV="staging",
             REAL_TIKTOK_READ_ENABLED=True,
@@ -175,6 +176,41 @@ def test_staging_real_message_write_requires_one_explicit_conversation() -> None
             TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
             TIKTOK_OAUTH_REDIRECT_URI=TIKTOK_OAUTH_STAGING_REDIRECT_URI,
         )
+    with pytest.raises(ValidationError, match="受控会话或店铺"):
+        production_settings(
+            APP_ENV="staging",
+            REAL_TIKTOK_READ_ENABLED=True,
+            REAL_TIKTOK_MESSAGE_WRITE_ENABLED=True,
+            TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID="710688832392260838",
+            TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS="11111111-1111-4111-8111-111111111111",
+            TIKTOK_APP_KEY="real-app-key",
+            TIKTOK_SERVICE_ID="real-service-id",
+            TIKTOK_APP_SECRET="unit-test-app-secret",
+            TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+            TIKTOK_OAUTH_REDIRECT_URI=TIKTOK_OAUTH_STAGING_REDIRECT_URI,
+        )
+
+
+def test_real_message_store_scope_rejects_invalid_or_duplicate_ids() -> None:
+    for store_ids in ("not-a-uuid", "11111111-1111-4111-8111-111111111111,11111111-1111-4111-8111-111111111111"):
+        with pytest.raises(ValidationError, match="无重复的小写标准 UUID"):
+            production_settings(TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS=store_ids)
+
+
+def test_single_conversation_mode_accepts_empty_store_target_from_compose() -> None:
+    settings = production_settings(
+        REAL_TIKTOK_READ_ENABLED=True,
+        REAL_TIKTOK_MESSAGE_WRITE_ENABLED=True,
+        TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID="710688832392260838",
+        TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS="",
+        TIKTOK_APP_KEY="real-app-key",
+        TIKTOK_SERVICE_ID="real-service-id",
+        TIKTOK_APP_SECRET="unit-test-app-secret",
+        TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+    )
+
+    assert settings.tiktok_message_write_allowed_conversation_id == "710688832392260838"
+    assert settings.tiktok_message_write_allowed_store_ids == ""
 
 
 def test_real_tiktok_manual_write_rejects_auto_reply() -> None:
@@ -183,6 +219,7 @@ def test_real_tiktok_manual_write_rejects_auto_reply() -> None:
         production_settings(
             REAL_TIKTOK_READ_ENABLED=True,
             REAL_TIKTOK_MESSAGE_WRITE_ENABLED=True,
+            TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID="710688832392260838",
             AUTO_REPLY_ENABLED=True,
             LLM_ENABLED=True,
             LLM_PRIMARY_MODEL="unit-test-model",
@@ -200,6 +237,7 @@ def test_real_tiktok_high_risk_write_remains_blocked() -> None:
         production_settings(
             REAL_TIKTOK_READ_ENABLED=True,
             REAL_TIKTOK_MESSAGE_WRITE_ENABLED=True,
+            TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID="710688832392260838",
             REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=True,
             TIKTOK_APP_KEY="real-app-key",
             TIKTOK_SERVICE_ID="real-service-id",

@@ -16,11 +16,12 @@ from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
-from app.integrations.tiktok_write import TIKTOK_TEXT_MAX_LENGTH
+from app.integrations.tiktok_write import TIKTOK_TEXT_MAX_LENGTH, is_tiktok_send_target_allowed
 from app.orders.models import Order
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
+from app.stores.models import ChannelAccount, Store
 from app.tools.contracts import ToolExecutionContext, ToolInvocation
 from app.tools.executor import SqlAlchemyToolExecutor
 from app.tools.models import ToolCall
@@ -91,15 +92,45 @@ def _message_view(message: Message) -> MessageView:
     )
 
 
-def _message_send_mode(conversation: Conversation) -> Literal["disabled", "mock", "real"]:
+def _message_send_mode(
+    conversation: Conversation, channel: ChannelAccount | None = None
+) -> Literal["disabled", "mock", "real"]:
     """返回当前进程对指定平台的人工消息运行模式。"""
     settings = get_settings()
     if conversation.platform == "tiktok" and settings.real_tiktok_message_write_enabled:
-        allowed_id = settings.tiktok_message_write_allowed_conversation_id
-        return "real" if allowed_id is None or conversation.external_conversation_id == allowed_id else "disabled"
+        if (
+            channel is not None
+            and channel.store_id == conversation.store_id
+            and channel.status == "connected"
+            and "seller.customer_service" in (channel.scopes or [])
+            and isinstance((channel.metadata_json or {}).get("shop_cipher"), str)
+            and bool((channel.metadata_json or {}).get("shop_cipher"))
+            and (channel.token_expires_at is None or channel.token_expires_at > datetime.now(UTC))
+            and is_tiktok_send_target_allowed(settings, conversation.store_id, conversation.external_conversation_id)
+        ):
+            return "real"
+        return "disabled"
     if settings.allow_mock_platform_adapters:
         return "mock"
     return "disabled"
+
+
+async def _connected_send_channel(session: AsyncSession, conversation: Conversation) -> ChannelAccount | None:
+    """只使用活动店铺的匹配 TikTok 授权判断工作台与发送入口。"""
+    if conversation.platform != "tiktok" or not get_settings().real_tiktok_message_write_enabled:
+        return None
+    channel: ChannelAccount | None = await session.scalar(
+        select(ChannelAccount)
+        .join(Store, Store.id == ChannelAccount.store_id)
+        .where(
+            ChannelAccount.store_id == conversation.store_id,
+            ChannelAccount.platform == "tiktok",
+            ChannelAccount.status == "connected",
+            Store.status == "active",
+            Store.deleted_at.is_(None),
+        )
+    )
+    return channel
 
 
 async def get_session_list(
@@ -144,7 +175,7 @@ async def get_session_messages(
         customer=_customer_view(customer),
         recent_orders=[_order_view(item) for item in orders],
         pagination=PageMeta(page=page, page_size=page_size, total=total),
-        send_mode=_message_send_mode(conversation),
+        send_mode=_message_send_mode(conversation, await _connected_send_channel(session, conversation)),
         translation_enabled=(
             conversation.platform == "tiktok" and get_settings().workspace_message_translation_enabled
         ),
@@ -241,7 +272,7 @@ async def send_agent_message(
     conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
-    send_mode = _message_send_mode(conversation)
+    send_mode = _message_send_mode(conversation, await _connected_send_channel(session, conversation))
     if conversation.platform == "tiktok" and get_settings().real_tiktok_message_write_enabled and send_mode != "real":
         raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不在真实消息发送范围内", 403)
     if send_mode == "real" and len(content) > TIKTOK_TEXT_MAX_LENGTH:

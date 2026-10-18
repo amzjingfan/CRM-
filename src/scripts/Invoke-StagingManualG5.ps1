@@ -214,7 +214,10 @@ try {
         if ($restoreValue -cnotin @('true', 'false')) { throw 'The pre-window translation state is invalid.' }
         $restoreTranslation = $restoreValue -ceq 'true'
         if ($Mode -ceq 'RestoreManualSend') {
-            $restoredConversation = [string](Get-Content -LiteralPath $snapshotFile -Raw | ConvertFrom-Json).allowed_conversation_id
+            $manualSnapshot = Get-Content -LiteralPath $snapshotFile -Raw | ConvertFrom-Json
+            $restoredConversation = [string]$manualSnapshot.allowed_conversation_id
+            $storeProperty = $manualSnapshot.PSObject.Properties['allowed_store_ids']
+            $restoredStoreIds = if ($null -eq $storeProperty) { '' } else { [string]$storeProperty.Value }
         }
     }
     New-Item -ItemType Directory -Path $EvidenceDirectory | Out-Null
@@ -332,6 +335,7 @@ try {
             $common.EnableTikTokWebhookRead = $true
             $common.EnableTikTokManualSend = $true
             $common.AllowedTikTokConversationId = $restoredConversation
+            $common.AllowedTikTokStoreIds = $restoredStoreIds
             if ($restoreTranslation) { $common.EnableWorkspaceTranslation = $true }
         }
         if ($Mode -ceq 'DeployG5') {

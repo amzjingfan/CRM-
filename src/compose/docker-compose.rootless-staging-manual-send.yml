@@ -1,9 +1,10 @@
-# 仅 staging 单会话人工发送窗口；须在 Webhook 只读层之后叠加。
-# 会话 ID 从门禁参数注入，不写入仓库或发布证据。
+# staging 人工发送窗口；须在 Webhook 只读层之后叠加。
+# 受控会话或店铺列表从门禁参数注入，不写入仓库或发布证据。
 services:
   backend:
     environment:
       REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "true"
-      TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID: ${TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID:?}
+      TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID: ${TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID:-}
+      TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS: ${TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS:-}
       REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"
       AUTO_REPLY_ENABLED: "false"

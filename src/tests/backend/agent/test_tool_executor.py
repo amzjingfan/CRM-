@@ -489,6 +489,7 @@ async def test_real_message_write_is_blocked_until_previous_unknown_is_reconcile
         id=conversation_id,
         store_id=store_id,
         platform="tiktok",
+        external_conversation_id="710688832392260838",
     )
     channel = SimpleNamespace(status="connected")
     session = Mock(spec=AsyncSession)
@@ -496,6 +497,15 @@ async def test_real_message_write_is_blocked_until_previous_unknown_is_reconcile
     session.add = Mock()
     adapter = SimpleNamespace(real_writes=True)
     monkeypatch.setattr(executor_module, "get_message_adapter", lambda _platform: adapter)
+    monkeypatch.setattr(
+        executor_module,
+        "get_settings",
+        lambda: SimpleNamespace(
+            real_tiktok_message_write_enabled=True,
+            tiktok_message_write_allowed_conversation_id="710688832392260838",
+            tiktok_message_write_allowed_store_ids=None,
+        ),
+    )
     invocation = ToolInvocation(
         tool_name="send_platform_message",
         idempotency_key=str(uuid.uuid4()),
@@ -517,6 +527,56 @@ async def test_real_message_write_is_blocked_until_previous_unknown_is_reconcile
         )
 
     session.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_direct_tool_send_rejects_store_outside_real_write_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """绕过工作台直接调用工具也不能向未放行店铺创建消息。"""
+    store_id = uuid.uuid4()
+    conversation_id = uuid.uuid4()
+    conversation = SimpleNamespace(
+        id=conversation_id,
+        store_id=store_id,
+        platform="tiktok",
+        external_conversation_id="710688832392260838",
+    )
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock(side_effect=[conversation, SimpleNamespace(status="connected")])
+    session.add = Mock()
+    adapter = SimpleNamespace(real_writes=True, send_message=AsyncMock())
+    monkeypatch.setattr(executor_module, "get_message_adapter", lambda _platform: adapter)
+    monkeypatch.setattr(
+        executor_module,
+        "get_settings",
+        lambda: SimpleNamespace(
+            real_tiktok_message_write_enabled=True,
+            tiktok_message_write_allowed_conversation_id=None,
+            tiktok_message_write_allowed_store_ids=str(uuid.uuid4()),
+        ),
+    )
+    invocation = ToolInvocation(
+        tool_name="send_platform_message",
+        idempotency_key=str(uuid.uuid4()),
+        arguments={"conversation_id": str(conversation_id), "content": "approved message"},
+        context=ToolExecutionContext(
+            store_id=store_id,
+            actor_type="user",
+            actor_id=uuid.uuid4(),
+            permissions={"workspace.reply"},
+            human_confirmed=True,
+        ),
+    )
+
+    with pytest.raises(ToolDispatchError, match="TOOL_PLATFORM_DISABLED"):
+        await SqlAlchemyToolExecutor(session)._send_platform_message(
+            invocation,
+            uuid.uuid4(),
+            SendPlatformMessageArguments(conversation_id=conversation_id, content="approved message"),
+        )
+    session.add.assert_not_called()
+    adapter.send_message.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -542,6 +602,7 @@ async def test_real_message_write_requires_human_user_identity_and_confirmation(
         id=conversation_id,
         store_id=store_id,
         platform="tiktok",
+        external_conversation_id="710688832392260838",
     )
     channel = SimpleNamespace(status="connected")
     session = Mock(spec=AsyncSession)
@@ -549,6 +610,15 @@ async def test_real_message_write_requires_human_user_identity_and_confirmation(
     session.add = Mock()
     adapter = SimpleNamespace(real_writes=True, send_message=AsyncMock())
     monkeypatch.setattr(executor_module, "get_message_adapter", lambda _platform: adapter)
+    monkeypatch.setattr(
+        executor_module,
+        "get_settings",
+        lambda: SimpleNamespace(
+            real_tiktok_message_write_enabled=True,
+            tiktok_message_write_allowed_conversation_id="710688832392260838",
+            tiktok_message_write_allowed_store_ids=None,
+        ),
+    )
     invocation = ToolInvocation(
         tool_name="send_platform_message",
         idempotency_key=str(uuid.uuid4()),

@@ -43,6 +43,13 @@ function Get-Environment([object]$Config) {
     return $values
 }
 
+function Test-AllowedStoreIds([string]$Value) {
+    if (-not $Value -or $Value.Length -gt 4096) { return $false }
+    $ids = @($Value.Split(','))
+    return @($ids | Where-Object { $_ -cnotmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -eq 0 -and
+        @($ids | Sort-Object -Unique).Count -eq $ids.Count
+}
+
 function Get-RunningState {
     $backend = Get-RunningConfig 'backend'
     $frontend = Get-RunningConfig 'frontend'
@@ -55,6 +62,7 @@ function Get-RunningState {
     $environment = Get-Environment $backend
     $manualSend = $environment['REAL_TIKTOK_MESSAGE_WRITE_ENABLED'] -ceq 'true'
     $conversation = [string]$environment['TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID']
+    $storeIds = [string]$environment['TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS']
     $translation = [string]$environment['WORKSPACE_MESSAGE_TRANSLATION_ENABLED']
     $webhook = [string]$environment['REAL_TIKTOK_WEBHOOK_ENABLED']
     $read = [string]$environment['REAL_TIKTOK_READ_ENABLED']
@@ -63,8 +71,10 @@ function Get-RunningState {
     if ($translation -cnotin @('true', 'false') -or $webhook -cnotin @('true', 'false') -or
         $read -cne $webhook -or
         $embedding -cne 'false' -or
-        ($manualSend -and $conversation -cnotmatch '^[0-9]{1,30}$') -or
-        (-not $manualSend -and $conversation) -or
+        ($manualSend -and (([bool]$conversation -eq [bool]$storeIds) -or
+            ($conversation -and $conversation -cnotmatch '^[0-9]{1,30}$') -or
+            ($storeIds -and -not (Test-AllowedStoreIds $storeIds)))) -or
+        (-not $manualSend -and ($conversation -or $storeIds)) -or
         $environment['LLM_ENABLED'] -cne 'false' -or
         $environment['SSE_LOAD_TEST_ENABLED'] -cne 'false' -or
         $environment['CHAT_QUERY_LIMIT'] -cne '10') {
@@ -82,6 +92,7 @@ function Get-RunningState {
         manual_send_enabled = $manualSend
         webhook_read_enabled = ($webhook -ceq 'true')
         allowed_conversation_id = $conversation
+        allowed_store_ids = $storeIds
         workspace_translation_enabled = ($translation -ceq 'true')
     }
 }
@@ -122,12 +133,17 @@ if (-not (Test-Path -LiteralPath $SnapshotFile -PathType Leaf)) {
 }
 try { $snapshot = Get-Content -LiteralPath $SnapshotFile -Raw | ConvertFrom-Json -ErrorAction Stop }
 catch { throw 'The pre-window snapshot is invalid.' }
+if ($null -eq $snapshot.PSObject.Properties['allowed_store_ids']) {
+    $snapshot | Add-Member -NotePropertyName allowed_store_ids -NotePropertyValue ''
+}
 if ($snapshot.schema_version -cne 1 -or
     $snapshot.manual_send_enabled -isnot [bool] -or
     $snapshot.webhook_read_enabled -isnot [bool] -or
     $snapshot.workspace_translation_enabled -isnot [bool] -or
-    ($snapshot.manual_send_enabled -and [string]$snapshot.allowed_conversation_id -cnotmatch '^[0-9]{1,30}$') -or
-    (-not $snapshot.manual_send_enabled -and [string]$snapshot.allowed_conversation_id)) {
+    ($snapshot.manual_send_enabled -and (([bool]$snapshot.allowed_conversation_id -eq [bool]$snapshot.allowed_store_ids) -or
+        ($snapshot.allowed_conversation_id -and [string]$snapshot.allowed_conversation_id -cnotmatch '^[0-9]{1,30}$') -or
+        ($snapshot.allowed_store_ids -and -not (Test-AllowedStoreIds ([string]$snapshot.allowed_store_ids))))) -or
+    (-not $snapshot.manual_send_enabled -and ($snapshot.allowed_conversation_id -or $snapshot.allowed_store_ids))) {
     throw 'The pre-window snapshot has an invalid runtime mode.'
 }
 foreach ($key in $images.Keys) {
@@ -176,6 +192,7 @@ if ($Mode -ceq 'VerifyRecoverableCurrent') {
             if ($environment[$key] -cne $common[$key]) { $g5Mode = $false; break }
         }
         if ([string]$environment['TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID']) { $g5Mode = $false }
+        if ([string]$environment['TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS']) { $g5Mode = $false }
     }
     $previousMode = [string]$backend.Image -ceq $PreviousBackendImage -and
         $environment['LLM_ENABLED'] -ceq 'false' -and
@@ -185,6 +202,7 @@ if ($Mode -ceq 'VerifyRecoverableCurrent') {
         $environment['REAL_TIKTOK_WEBHOOK_ENABLED'] -ceq ([string]$snapshot.webhook_read_enabled).ToLowerInvariant() -and
         $environment['REAL_TIKTOK_MESSAGE_WRITE_ENABLED'] -ceq ([string]$snapshot.manual_send_enabled).ToLowerInvariant() -and
         [string]$environment['TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID'] -ceq [string]$snapshot.allowed_conversation_id -and
+        [string]$environment['TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS'] -ceq [string]$snapshot.allowed_store_ids -and
         $environment['WORKSPACE_MESSAGE_TRANSLATION_ENABLED'] -ceq ([string]$snapshot.workspace_translation_enabled).ToLowerInvariant()
     if ($previousMode) {
         $embedding = [string]$environment['EMBEDDING_ENABLED']

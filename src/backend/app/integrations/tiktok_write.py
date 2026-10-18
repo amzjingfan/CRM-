@@ -3,6 +3,7 @@
 import json
 import logging
 import time
+import uuid
 
 import httpx
 from pydantic import ValidationError
@@ -31,6 +32,19 @@ TIKTOK_TEXT_MAX_LENGTH = 2_000
 WRITE_UNKNOWN_PLATFORM_CODES = TRANSIENT_PLATFORM_CODES | {45101001}
 
 logger = logging.getLogger(__name__)
+
+
+def is_tiktok_send_target_allowed(settings: Settings, store_id: uuid.UUID, conversation_id: str) -> bool:
+    """部署总开关与单会话/店铺范围必须同时匹配，空范围永不放行。"""
+    if not settings.real_tiktok_message_write_enabled:
+        return False
+    allowed_conversation = settings.tiktok_message_write_allowed_conversation_id
+    if allowed_conversation:
+        return conversation_id == allowed_conversation
+    allowed_stores = settings.tiktok_message_write_allowed_store_ids
+    if not allowed_stores:
+        return False
+    return str(store_id) in allowed_stores.split(",")
 
 
 class TikTokMessageClient:
@@ -73,8 +87,7 @@ class TikTokMessageClient:
             return self._failed("REAL_WRITE_REQUIRES_HUMAN_CONFIRMATION")
         if not command.external_conversation_id.isdigit():
             return self._failed("TIKTOK_CONVERSATION_ID_INVALID")
-        allowed_id = self.settings.tiktok_message_write_allowed_conversation_id
-        if allowed_id is not None and command.external_conversation_id != allowed_id:
+        if not is_tiktok_send_target_allowed(self.settings, self.channel.store_id, command.external_conversation_id):
             return self._failed("TIKTOK_CONVERSATION_NOT_ALLOWED")
         if len(command.content) > TIKTOK_TEXT_MAX_LENGTH:
             return self._failed("TIKTOK_MESSAGE_TOO_LONG")

@@ -98,6 +98,31 @@ def test_restore_matches_only_captured_images_conversation_and_translation(tmp_p
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
+def test_restore_accepts_exact_store_scope_and_rejects_mixed_or_invalid_scope(tmp_path) -> None:
+    snapshot = tmp_path / "restore-snapshot.json"
+    state = {
+        "schema_version": 1,
+        "images": IMAGES,
+        "manual_send_enabled": True,
+        "webhook_read_enabled": True,
+        "allowed_conversation_id": "",
+        "allowed_store_ids": "11111111-1111-4111-8111-111111111111,22222222-2222-4222-8222-222222222222",
+        "workspace_translation_enabled": True,
+    }
+    snapshot.write_text(json.dumps(state), encoding="utf-8")
+    assert invoke(snapshot).returncode == 0
+
+    state["allowed_conversation_id"] = "123456789"
+    snapshot.write_text(json.dumps(state), encoding="utf-8")
+    assert invoke(snapshot).returncode != 0
+
+    state["allowed_conversation_id"] = ""
+    state["allowed_store_ids"] = "11111111-1111-4111-8111-111111111111,11111111-1111-4111-8111-111111111111"
+    snapshot.write_text(json.dumps(state), encoding="utf-8")
+    assert invoke(snapshot).returncode != 0
+
+
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
 def test_other_restore_modes_cannot_override_pre_window_manual_send(tmp_path) -> None:
     snapshot = tmp_path / "restore-snapshot.json"
     state = {

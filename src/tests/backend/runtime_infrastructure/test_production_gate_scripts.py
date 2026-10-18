@@ -678,6 +678,71 @@ def test_staging_manual_send_requires_one_exact_backend_conversation(staging_env
     assert "manual send target does not match reviewed mode" in normalized_process_output(rejected)
 
 
+def test_staging_manual_send_store_scope_is_exact_and_exclusive(staging_env_file: Path, tmp_path: Path) -> None:
+    """逐店放行只作用于 backend，且不能与受控单会话范围混用。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    for service_name in ("backend", "worker"):
+        config["services"][service_name]["environment"].update(
+            {"REAL_TIKTOK_READ_ENABLED": "true", "REAL_TIKTOK_WEBHOOK_ENABLED": "true"}
+        )
+    config["services"]["worker"]["environment"]["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
+    backend = config["services"]["backend"]["environment"]
+    backend["REAL_TIKTOK_MESSAGE_WRITE_ENABLED"] = "true"
+    store_ids = "11111111-1111-4111-8111-111111111111,22222222-2222-4222-8222-222222222222"
+    backend["TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS"] = store_ids
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    args = (
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(tmp_path / "store-send-validate.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableTikTokWebhookRead",
+        "-EnableTikTokManualSend",
+        "-AllowedTikTokStoreIds",
+        store_ids,
+        "-ValidateOnly",
+    )
+    accepted = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert accepted.returncode == 0, normalized_process_output(accepted)
+    evidence = json.loads((tmp_path / "store-send-validate.json").read_text(encoding="utf-8-sig"))
+    assert evidence["tiktok_manual_send_target"] == "store"
+    assert evidence["tiktok_manual_send_store_count"] == 2
+
+    backend["TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS"] = "33333333-3333-4333-8333-333333333333"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    drift = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert drift.returncode != 0
+    assert "manual send target does not match reviewed mode" in normalized_process_output(drift)
+
+    mixed = run_powershell(
+        PREFLIGHT_SCRIPT,
+        *args[:-1],
+        "-AllowedTikTokConversationId",
+        "710688832392260838",
+        "-ValidateOnly",
+        environment=environment,
+    )
+    assert mixed.returncode != 0
+
+
 @pytest.mark.parametrize(
     "service_name, capability, value",
     [

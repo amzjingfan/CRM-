@@ -35,6 +35,7 @@ param(
     [switch]$EnableTikTokWebhookRead,
     [switch]$EnableTikTokManualSend,
     [string]$AllowedTikTokConversationId,
+    [string]$AllowedTikTokStoreIds,
     [switch]$EnableWorkspaceTranslation,
     [switch]$EnableG5SSELoadTest,
     [string]$PreWindowSnapshotFile
@@ -322,6 +323,7 @@ function Assert-ProductionComposeContract {
         [switch]$EnableTikTokWebhookRead,
         [switch]$EnableTikTokManualSend,
         [string]$AllowedTikTokConversationId,
+        [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
         [switch]$EnableG5SSELoadTest
     )
@@ -422,6 +424,14 @@ function Assert-ProductionComposeContract {
         if ($allowedActual -cne $allowedExpected) {
             throw "Staging Compose manual send target does not match reviewed mode: $serviceName"
         }
+        $storeProperty = $applicationEnvironment.PSObject.Properties["TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS"]
+        $storeActual = if ($null -eq $storeProperty) { "" } else { [string]$storeProperty.Value }
+        $storeExpected = if ($EnableTikTokManualSend -and $serviceName -ceq "backend") {
+            $AllowedTikTokStoreIds
+        } else { "" }
+        if ($storeActual -cne $storeExpected) {
+            throw "Staging Compose manual send target does not match reviewed mode: $serviceName"
+        }
         $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
         $embeddingProperty = $applicationEnvironment.PSObject.Properties["EMBEDDING_ENABLED"]
         $actualEmbedding = if ($null -eq $embeddingProperty) { "false" } else { [string]$embeddingProperty.Value }
@@ -509,6 +519,7 @@ function Assert-RunningStagingMode {
         [switch]$EnableTikTokWebhookRead,
         [switch]$EnableTikTokManualSend,
         [string]$AllowedTikTokConversationId,
+        [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
         [switch]$EnableG5SSELoadTest
     )
@@ -567,6 +578,13 @@ function Assert-RunningStagingMode {
             $AllowedTikTokConversationId
         } else { "" }
         if ($allowedActual -cne $allowedExpected) {
+            throw "Staging runtime manual send target does not match reviewed mode: $serviceName"
+        }
+        $storeActual = [string]$runtimeEnvironment["TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS"]
+        $storeExpected = if ($EnableTikTokManualSend -and $serviceName -ceq "backend") {
+            $AllowedTikTokStoreIds
+        } else { "" }
+        if ($storeActual -cne $storeExpected) {
             throw "Staging runtime manual send target does not match reviewed mode: $serviceName"
         }
         $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
@@ -706,6 +724,11 @@ function Write-Evidence {
         tiktok_egress_overlay_sha256 = (Get-FileHash -LiteralPath $egressOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_webhook_read_enabled = [bool]$EnableTikTokWebhookRead
         tiktok_manual_send_enabled = [bool]$EnableTikTokManualSend
+        tiktok_manual_send_target = if (-not $EnableTikTokManualSend) { "disabled" }
+            elseif ($AllowedTikTokStoreIds) { "store" } else { "conversation" }
+        tiktok_manual_send_store_count = if ($AllowedTikTokStoreIds) {
+            @($AllowedTikTokStoreIds.Split(',')).Count
+        } else { 0 }
         g5_sse_load_test_enabled = [bool]$EnableG5SSELoadTest
         workspace_message_translation_enabled = [bool]$EnableWorkspaceTranslation
         backend_query_limit = if ($EnableG5SSELoadTest) { 60 } else { 10 }
@@ -740,12 +763,23 @@ Assert-RootlessDockerHost -Value $DockerHost
 if ($EnableTikTokWebhookRead -and $EnableG5SSELoadTest) {
     throw "G2 Webhook read and G5 SSE modes cannot be combined."
 }
-if ($EnableTikTokManualSend -and (-not $EnableTikTokWebhookRead -or $EnableG5SSELoadTest -or
-    $AllowedTikTokConversationId -cnotmatch '^[0-9]{1,30}$')) {
-    throw "Staging manual send requires Webhook read mode and one numeric reviewed conversation ID."
+if ($EnableTikTokManualSend) {
+    $storeIdsValid = $false
+    if ($AllowedTikTokStoreIds) {
+        $storeIds = @($AllowedTikTokStoreIds.Split(','))
+        $storeIdsValid = $AllowedTikTokStoreIds.Length -le 4096 -and
+            @($storeIds | Where-Object { $_ -cnotmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -eq 0 -and
+            @($storeIds | Sort-Object -Unique).Count -eq $storeIds.Count
+    }
+    if (-not $EnableTikTokWebhookRead -or $EnableG5SSELoadTest -or
+        ([bool]$AllowedTikTokConversationId -eq [bool]$AllowedTikTokStoreIds) -or
+        ($AllowedTikTokConversationId -and $AllowedTikTokConversationId -cnotmatch '^[0-9]{1,30}$') -or
+        ($AllowedTikTokStoreIds -and -not $storeIdsValid)) {
+        throw "Staging manual send requires Webhook read mode and exactly one reviewed conversation or store list."
+    }
 }
-if (-not $EnableTikTokManualSend -and $AllowedTikTokConversationId) {
-    throw "A manual send conversation ID requires explicit manual send mode."
+elseif ($AllowedTikTokConversationId -or $AllowedTikTokStoreIds) {
+    throw "A manual send target requires explicit manual send mode."
 }
 if ($EnableWorkspaceTranslation -and $EnableG5SSELoadTest) {
     throw "Workspace translation and G5 SSE modes cannot be combined."
@@ -824,6 +858,7 @@ foreach ($name in @($DisabledCapabilityVariables + @(
     "DOCKER_HOST",
     "DOCKER_CONTEXT",
     "TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID"
+    "TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS"
 ))) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
@@ -855,6 +890,7 @@ try {
     }
     Set-DisabledCapabilities
     [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID", $AllowedTikTokConversationId, "Process")
+    [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS", $AllowedTikTokStoreIds, "Process")
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
@@ -882,6 +918,7 @@ try {
         -ExpectedModelAssetDir $modelAssetDir -ExpectedEgressSecretDir $egressSecretDir `
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
+        -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation
 
     if ($ValidateOnly) {
@@ -911,6 +948,8 @@ try {
     if ($PreWindowSnapshotFile) {
         try { $snapshot = Get-Content -LiteralPath $PreWindowSnapshotFile -Raw | ConvertFrom-Json -ErrorAction Stop }
         catch { throw 'The G5 pre-window snapshot cannot be read under the deployment lock.' }
+        $snapshotStoreProperty = $snapshot.PSObject.Properties['allowed_store_ids']
+        $snapshotStoreIds = if ($null -eq $snapshotStoreProperty) { '' } else { [string]$snapshotStoreProperty.Value }
         $snapshotArgs = @{
             SnapshotFile = $PreWindowSnapshotFile
             CandidateBackendImage = [string]$snapshot.images.candidate_backend
@@ -941,7 +980,8 @@ try {
             $translation = & (Join-Path $PSScriptRoot 'Assert-StagingG5RestoreSnapshot.ps1') `
                 -Mode VerifyRestore -RestoreMode $restoreMode @snapshotArgs
             if ($translation -cne ([string][bool]$EnableWorkspaceTranslation).ToLowerInvariant() -or
-                $AllowedTikTokConversationId -cne [string]$snapshot.allowed_conversation_id) {
+                $AllowedTikTokConversationId -cne [string]$snapshot.allowed_conversation_id -or
+                $AllowedTikTokStoreIds -cne $snapshotStoreIds) {
                 throw 'Restore capabilities differ from the pre-window snapshot.'
             }
             & (Join-Path $PSScriptRoot 'Assert-StagingG5RestoreSnapshot.ps1') `
@@ -980,6 +1020,7 @@ try {
     Assert-RunningStagingMode -Command $compose -Arguments $composeArguments -ExpectedBackendImage $BackendImage `
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
+        -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation
 
     $healthChecks = @(

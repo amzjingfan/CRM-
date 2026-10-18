@@ -73,6 +73,8 @@ G5 压测窗口由同一工作流显式选择 `enable_g5_sse_load_test=true`，�
 
 ### G5 手动 staging 路径（不运行 GitHub Actions）
 
+TikTok 人工发送的受审范围可使用 `-AllowedTikTokConversationId` 指定一个测试会话，或使用 `-AllowedTikTokStoreIds` 指定一个或多个已授权店铺 UUID；必须且只能选择其一，同时启用 `-EnableTikTokWebhookRead -EnableTikTokManualSend`。店铺模式仅允许当前用户有权限、店铺有效、渠道已连接且具有客服 Scope 的会话在工作台确认发送。现有翻译能力可与店铺模式并用；自动回复、模型建议和高风险写入仍关闭。切换前只读核对授权、未结清出站和恢复摘要，`ValidateOnly` 通过后才手动部署，部署后核对两条同店铺真实会话及一条异店铺会话的发送模式。G5 恢复私有快照原样保存会话或店铺目标。
+
 G5 后端启用本地向量检索时，专用覆盖层只向 backend 注入仓库外现有的 `RETRIEVAL_MODEL_SERVICE_TOKEN`。`validate` 必须在切换服务前确认 backend 与 retrieval-model-service 的令牌相同且至少 32 字符；缺失或不一致立即停止，错误与证据均不得输出令牌值。普通 staging 模式不向 backend 注入该令牌。R37 曾因缺少此注入而在迁移检查阶段失败；恢复旧后端、TikTok 只读/Webhook 和工作台翻译的证据见 [R37 恢复](../../../../release/evidence/staging/crm-staging-g5-r37-restore-20261017.json)。
 
 `src/scripts/Invoke-StagingManualG5.ps1` 复用上述 Rootless 门禁，在 `crmdeploy` 的持久源码目录手动执行。新部署要求干净 Git clone 对应经 GitHub 验证的当前 `main` 完整 SHA；若候选 backend 的 OCI revision 较早，仅在 GitHub 核实它是当前 main 的祖先、`src/backend` 树和 `src/docker/Dockerfile.backend` blob 均完全相同时允许复用，否则失败关闭。默认恢复和上一版回滚仍要求候选 backend revision 与审核源码 SHA 完全相同；恢复测试前 G3 单会话模式时，原后端镜像也必须是受审源码的祖先且后端构建输入完全相同。全部镜像均须使用指定 GHCR 仓库的不可变摘要。运行人须先用 GitHub 凭据建立私有仓库只读和 `read:packages` 访问；凭据可来自进程环境中的 `GH_TOKEN` 或已登录的 `gh`。脚本把短期 GHCR 登录限制在 `/run/user/1004` 下的私有目录，并在退出时注销。不要把 Token 放进命令参数、证据或仓库。发布新候选镜像另需 `write:packages` 和精确资源授权，部署只读凭据不具备该权限。

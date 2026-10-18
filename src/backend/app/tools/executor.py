@@ -15,7 +15,9 @@ from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.integrations.adapters import get_message_adapter
 from app.integrations.schemas import SendMessageCommand
+from app.integrations.tiktok_write import is_tiktok_send_target_allowed
 from app.orders.models import Order
+from app.shared.config.settings import get_settings
 from app.shared.database.base import user_roles
 from app.shared.exceptions.errors import AppError
 from app.stores.models import ChannelAccount, Store
@@ -523,6 +525,10 @@ class SqlAlchemyToolExecutor:
         except AppError as error:
             raise ToolDispatchError("TOOL_PLATFORM_DISABLED") from error
         if adapter.real_writes:
+            if conversation.platform == "tiktok" and not is_tiktok_send_target_allowed(
+                get_settings(), conversation.store_id, conversation.external_conversation_id
+            ):
+                raise ToolDispatchError("TOOL_PLATFORM_DISABLED")
             # 普通消息真实写开关只授权“当前人工用户已二次确认”的入口。
             # Agent/Job 即使伪造 human_confirmed，也必须在创建消息和调用平台前失败关闭。
             if (
@@ -535,7 +541,13 @@ class SqlAlchemyToolExecutor:
             # 都通过未结清检查。若进程在平台调用前后退出，已提交的
             # processing 必须继续阻断新发送，等待人工核对平台事实。
             locked_store = await self.session.scalar(
-                select(Store.id).where(Store.id == invocation.context.store_id).with_for_update()
+                select(Store.id)
+                .where(
+                    Store.id == invocation.context.store_id,
+                    Store.status == "active",
+                    Store.deleted_at.is_(None),
+                )
+                .with_for_update()
             )
             if locked_store is None:
                 raise ToolDispatchError("TOOL_RESOURCE_NOT_FOUND")
