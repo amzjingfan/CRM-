@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 G5 R87 现场恢复点：`CANDIDATE_SUBJECT_SHA=3648b3da698fa3587bc42aaecbeed8105b4c6887`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R87.md)、[TR](../reports/tests/TR-MVP-006-20261018-R87.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R87.md)及[机器清单](../../release/evidence/staging/crm-staging-g5-r86-manifest-20261018.json)记录私有镜像、六摘要预取、临时 G5、50/50 安全输出、首 `delta` P99 4121.54 ms 失败和原 G3 模式恢复。认证 P99 1322 ms、检索连接获取/查询 299/290 ms，仍需收窄上下文数据库与模型长尾；本轮 PostgreSQL 采样失效且独立断连未验收。任务分支三索引为 `CANDIDATE_VIEW`。Workspace hygiene：活动 worktree、仓库外短期凭证和私有恢复快照保留，未知文件未处理。下一步：①只针对实测接入与上下文长尾作最小修复；②可恢复窗口严格复测 50/50、P99、资源/数据库状态及断连；③恢复 G3 并核对全部门禁。G5 `DOING`、production No-Go。
+
 2026-10-18 G5 R86 索引收尾：[PR #394](https://github.com/CP11-gh/CRM/pull/394) 已合入权威 main `e9110a5215af87278f71a5cf172123f3fd60f394`。从该 main 的源记录核对 IR/TR/RR 分别 172/177/169 份，三个派生索引行数一致，本收尾分支恢复为 `CURRENT`；`CANDIDATE_SUBJECT_SHA=fdb286de2eeb5e18c1a1e3fb447b888253c26b05`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。尚未发布或部署 R86 镜像，staging 保持已恢复的 G3；R85 首输出 P99 失败与独立断连未验收仍有效。下一步：①固定新 main 发布匹配后端；②可恢复 G5 窗口采分段并按真实瓶颈单点修复；③严格 50/50、P99 与断连复测并恢复 G3。G5 `DOING`、production No-Go。
 
 2026-10-18 G5 R86 本地候选：`CANDIDATE_SUBJECT_SHA=fdb286de2eeb5e18c1a1e3fb447b888253c26b05`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R86.md)、[TR](../reports/tests/TR-MVP-006-20261018-R86.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R86.md)记录认证、限流、租约及 FAQ 检索连接获取/查询的低敏数值分段；完整后端 2133 passed/27 skipped、离线安全 237 条通过。尚未发布/部署 R86 匹配镜像或调用 DeepSeek；staging 仍为恢复后的 G3。任务分支三索引为 `CANDIDATE_VIEW`。Workspace hygiene：活动 worktree 与仓库外私有凭证/快照保留，未知文件未处理。下一步：①手动合入源码并发布匹配 main 的后端；②可恢复窗口采 50 并发分段，按实测瓶颈单点修复；③严格重测 P99、独立断连并恢复 G3。G5 `DOING`、production No-Go。

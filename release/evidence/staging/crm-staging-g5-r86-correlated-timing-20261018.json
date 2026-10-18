@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "evidence_type": "g5_r86_correlated_numeric_timing",
+  "source_sha": "3648b3da698fa3587bc42aaecbeed8105b4c6887",
+  "matched_clients": 50,
+  "safe_delta_count": 50,
+  "accepted": {
+    "p50_ms": 885.73,
+    "p99_ms": 1583.29,
+    "min_ms": 317.72,
+    "max_ms": 1583.29
+  },
+  "first_delta": {
+    "p50_ms": 3347.8,
+    "p99_ms": 4121.54,
+    "min_ms": 1596.69,
+    "max_ms": 4121.54
+  },
+  "after_accepted": {
+    "p50_ms": 2505.34,
+    "p99_ms": 3113.39,
+    "min_ms": 1136.47,
+    "max_ms": 3113.39
+  },
+  "agent": {
+    "p50_ms": 1664.5,
+    "p99_ms": 2972,
+    "min_ms": 1086,
+    "max_ms": 2972
+  },
+  "nodes": {
+    "classification": {
+      "p50_ms": 772.5,
+      "p99_ms": 1801,
+      "min_ms": 421,
+      "max_ms": 1801
+    },
+    "retrieval": {
+      "p50_ms": 406.0,
+      "p99_ms": 752,
+      "min_ms": 107,
+      "max_ms": 752
+    },
+    "retrieval_embedding_wait": {
+      "p50_ms": 108.5,
+      "p99_ms": 408,
+      "min_ms": 0,
+      "max_ms": 408
+    },
+    "retrieval_search": {
+      "p50_ms": 331.5,
+      "p99_ms": 397,
+      "min_ms": 5,
+      "max_ms": 397
+    },
+    "retrieval_search_acquire": {
+      "p50_ms": 113.0,
+      "p99_ms": 299,
+      "min_ms": 0,
+      "max_ms": 299
+    },
+    "retrieval_search_query": {
+      "p50_ms": 166.5,
+      "p99_ms": 290,
+      "min_ms": 5,
+      "max_ms": 290
+    },
+    "safety_review": {
+      "p50_ms": 1195.5,
+      "p99_ms": 1871,
+      "min_ms": 903,
+      "max_ms": 1871
+    }
+  },
+  "admission_events": {
+    "g5_chat_auth_timing": {
+      "count": 50,
+      "p50_ms": 344,
+      "p99_ms": 1322,
+      "max_ms": 1322
+    },
+    "g5_chat_lease_timing": {
+      "count": 50,
+      "p50_ms": 7,
+      "p99_ms": 27,
+      "max_ms": 27
+    },
+    "g5_chat_limit_timing": {
+      "count": 50,
+      "p50_ms": 14,
+      "p99_ms": 36,
+      "max_ms": 36
+    }
+  },
+  "performance_gate_passed": false,
+  "p99_values_not_additive": true,
+  "pg_activity_sampler": "runtime_image_mismatch_no_sample",
+  "raw_text_included": false
+}

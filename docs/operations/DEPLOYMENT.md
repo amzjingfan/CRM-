@@ -2,6 +2,8 @@
 
 ## 环境分层
 
+2026-10-18 G5 R87：从 main `3648b3da698fa3587bc42aaecbeed8105b4c6887` 手动发布私有后端 `sha256:e9f00049…9a1c28`，linux/amd64、OCI revision、12 层压缩 110,973,352 字节及按摘要拉回通过；六摘要预取、临时 G5 validate/deploy、迁移头、健康与固定出口通过。原 50/50 身份、安全 `delta` 和单会话严格门槛通过，但 50 并发首输出 P99 4121.54 ms 超限。已按私有快照恢复旧后端 `sha256:8913c09c…83a958`、原前端/检索、G3 单店人工发送、Webhook 读取、翻译、限流 10、LLM/SSE 关闭和三健康 200；见[R87 TR](../reports/tests/TR-MVP-006-20261018-R87.md)与[低敏清单](../../release/evidence/staging/crm-staging-g5-r86-manifest-20261018.json)。没有发送 TikTok 消息、部署 production 或运行 GitHub Actions。
+
 - 本地/测试：默认 Mock 外部平台，不需要真实密钥。
 - Staging：验证真实 OAuth、Webhook、只读、人工消息、DeepSeek、容量、稳定性和恢复。
 - Production：只接受固定镜像、迁移、配置、模型资产和发布基线；所有门禁签署后才能放行。
