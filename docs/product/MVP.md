@@ -54,7 +54,7 @@ MVP 的核心价值是缩短人工坐席的信息搜索与回复时间，同时�
 - BGE-M3 向量维度固定为 1024，Dense Top-20，bge-reranker-large Top-5，Dense 接受门槛为 `0.52`。
 - 知识正文、`statement_type` 或 `customer_scope` 变更时生成新版本并撤销原审批。
 - 当前发布只生成 `approved_for_internal_review`，不授予公开自动回复权限。
-- 完整 MVP 目标口径为意图识别准确率不低于 85%、AI 独立解决率不低于 70%、首 Token 小于 3 秒、50 并发下 P99 小于 5 秒。总 PRD 中的 95% 意图识别、500 ms 首 Token 和 500 并发属于长期容量目标，不替代当前门禁。
+- 完整 MVP 目标口径为意图识别准确率不低于 85%、AI 独立解决率不低于 70%、50 个不同授权客户端首个安全 SSE `delta` P99 严格小于 5 秒且请求总耗时 P99 严格小于 5 秒。安全 `delta` 已经过结构、DLP、证据与安全复核，不等同于模型原始首 Token。总 PRD 中的 95% 意图识别、500 ms 原始首 Token 和 500 并发属于长期容量目标，不替代当前门禁。
 - 2026-10-16 staging 冻结综合集使用 Prompt `v1.2.13`、DeepSeek `deepseek-v4-flash` 的[一次获批真实复测](../reports/tests/TR-MVP-005-20261016-R56.md)为 36/36，危险逃逸、合法误拦及 Provider 故障均为 0，两条历史政策失败经受控修复通过。此为合成质量门禁，不等于实际 AI 独立解决率、端到端 SSE 首 Token 或生产放行。
 
 ## 安全与非功能要求

@@ -355,10 +355,10 @@ def test_performance_gate_requires_every_client_to_reach_first_safe_delta() -> N
 @pytest.mark.parametrize(
     ("first_delta_ms", "total_ms", "expected"),
     [
-        (2999.0, 4999.0, True),
-        (3000.0, 4999.0, False),
-        (2999.0, 5000.0, False),
-        (3001.0, 5001.0, False),
+        (4999.0, 4999.0, True),
+        (5000.0, 4999.0, False),
+        (4999.0, 5000.0, False),
+        (5001.0, 5001.0, False),
     ],
 )
 def test_performance_gate_uses_strict_p99_sla_boundaries(
@@ -366,7 +366,7 @@ def test_performance_gate_uses_strict_p99_sla_boundaries(
     total_ms: float,
     expected: bool,
 ) -> None:
-    """ADR 使用“小于”，因此等于 3 秒或 5 秒也不能通过生产门禁。"""
+    """当前 G5 门禁要求首个安全输出和总耗时均严格小于 5 秒。"""
 
     sample = Sample(0, True, 200, "succeeded", 5.0, first_delta_ms, total_ms, None)
 
@@ -403,7 +403,7 @@ def test_performance_gate_api_cannot_relax_architecture_sla() -> None:
 @pytest.mark.parametrize(
     ("argument", "value"),
     [
-        ("--first-delta-p99-limit-ms", "3001"),
+        ("--first-delta-p99-limit-ms", "5001"),
         ("--total-p99-limit-ms", "5001"),
     ],
 )

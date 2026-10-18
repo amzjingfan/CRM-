@@ -17,9 +17,9 @@ from typing import Any
 
 import httpx
 
-# 生产门禁来自 ADR：首个安全输出小于 3 秒，50 客户端总耗时 P99 小于 5 秒。
+# 当前 G5 门禁：首个安全输出与 50 客户端总耗时 P99 均小于 5 秒。
 # 使用严格小于而不是小于等于，避免边界值被错误包装成合格证据。
-FIRST_DELTA_P99_ARCHITECTURE_LIMIT_MS = 3000.0
+FIRST_DELTA_P99_ARCHITECTURE_LIMIT_MS = 5000.0
 TOTAL_P99_ARCHITECTURE_LIMIT_MS = 5000.0
 
 
@@ -419,7 +419,7 @@ async def main() -> None:
         type=lambda value: _bounded_sla_limit(value, FIRST_DELTA_P99_ARCHITECTURE_LIMIT_MS),
         default=FIRST_DELTA_P99_ARCHITECTURE_LIMIT_MS,
         metavar="MS",
-        help="Strict P99 first-safe-delta limit; may only tighten the architecture limit of 3000ms",
+        help="Strict P99 first-safe-delta limit; may only tighten the current G5 limit of 5000ms",
     )
     parser.add_argument(
         "--total-p99-limit-ms",

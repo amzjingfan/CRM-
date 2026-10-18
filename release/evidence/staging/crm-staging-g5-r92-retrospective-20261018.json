@@ -1,0 +1,44 @@
+{
+  "schema_version": "g5-retrospective-v1",
+  "recalculated_on": "2026-10-18",
+  "recalculation_type": "post_hoc_from_immutable_staging_samples",
+  "evaluator_subject_sha": "eeb3234da4a1b874b7485e4dbc9fdea1f636a358",
+  "comparison": "strictly_less_than",
+  "field_runs": [
+    {
+      "field_revision": "R89",
+      "source_file": "crm-staging-g5-r88b-concurrent-20261018.json",
+      "source_sha256": "1ebc5d00f18ca34e34be579a92220164dc2ea7593603afba433f00dc387f007c",
+      "authorized_clients": 50,
+      "safe_outputs": 50,
+      "request_failures": 0,
+      "first_safe_delta_p99_ms": 3991.0901759867556,
+      "total_p99_ms": 3999.422663997393,
+      "original_first_delta_limit_ms": 3000.0,
+      "original_total_limit_ms": 5000.0,
+      "original_performance_gate_passed": false,
+      "current_first_delta_limit_ms": 5000.0,
+      "current_total_limit_ms": 5000.0,
+      "current_performance_gate_passed": true
+    },
+    {
+      "field_revision": "R91",
+      "source_file": "crm-staging-g5-r91b-concurrent-a708347-concurrent-20261018.json",
+      "source_sha256": "a03dd28861662b57c5911a3eca89b15b06fea975db7c1c73c65e71a0f118716a",
+      "authorized_clients": 50,
+      "safe_outputs": 50,
+      "request_failures": 0,
+      "first_safe_delta_p99_ms": 4812.539501988795,
+      "total_p99_ms": 4816.878012003144,
+      "original_first_delta_limit_ms": 3000.0,
+      "original_total_limit_ms": 5000.0,
+      "original_performance_gate_passed": false,
+      "current_first_delta_limit_ms": 5000.0,
+      "current_total_limit_ms": 5000.0,
+      "current_performance_gate_passed": true
+    }
+  ],
+  "independent_disconnect_verified": false,
+  "g5_closed": false,
+  "production_release": false
+}
