@@ -310,6 +310,10 @@ class AgentWorkflowService:
                     retrieval_phase_timings.append(("retrieval_embedding_wait", retrieval.embedding_wait_ms))
                 if retrieval.search_wall_ms is not None:
                     retrieval_phase_timings.append(("retrieval_search", retrieval.search_wall_ms))
+                if retrieval.search_acquire_ms is not None:
+                    retrieval_phase_timings.append(("retrieval_search_acquire", retrieval.search_acquire_ms))
+                if retrieval.search_query_ms is not None:
+                    retrieval_phase_timings.append(("retrieval_search_query", retrieval.search_query_ms))
             await self.run_recorder.complete_workflow(
                 run_id,
                 AgentWorkflowRunCompletion(

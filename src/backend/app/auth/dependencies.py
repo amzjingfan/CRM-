@@ -1,6 +1,8 @@
 """FastAPI 认证和权限依赖。"""
 
 import hmac
+import logging
+import time
 from collections.abc import Callable
 from typing import Annotated
 
@@ -12,6 +14,8 @@ from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.database.session import DbSession
 from app.shared.exceptions.errors import AppError, ErrorCode
+
+logger = logging.getLogger(__name__)
 
 bearer_auth = HTTPBearer(
     auto_error=False,
@@ -47,7 +51,18 @@ async def get_current_user(
         token = access_cookie
     if not token:
         raise AppError(ErrorCode.AUTHENTICATION_REQUIRED, "请求未认证", 401)
-    return await resolve_access_user(session, token)
+    started_at = time.perf_counter_ns()
+    user = await resolve_access_user(session, token)
+    if request.url.path == "/v1/chat/query" and get_settings().sse_load_test_enabled:
+        logger.info(
+            "g5_chat_auth_timing",
+            extra={
+                "event": "g5_chat_auth_timing",
+                "trace_id": str(getattr(request.state, "trace_id", "")),
+                "latency_ms": max(0, (time.perf_counter_ns() - started_at) // 1_000_000),
+            },
+        )
+    return user
 
 
 def require_role(required_role: str) -> Callable[..., object]:

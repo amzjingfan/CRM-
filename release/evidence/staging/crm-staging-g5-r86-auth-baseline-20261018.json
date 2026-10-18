@@ -1,0 +1,1 @@
+{"mode":"g5_auth_read_only_concurrent","clients":50,"status_codes":{"200":50},"latency_p50_ms":314.81,"latency_p99_ms":352.45,"provider_calls":0,"database_writes":0}

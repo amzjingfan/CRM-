@@ -103,6 +103,54 @@ class FixedRerankingService:
         )
 
 
+@pytest.mark.asyncio
+async def test_independent_search_reports_connection_wait_separately_from_query() -> None:
+    """50 并发诊断必须区分连接获取与已取得连接后的店铺检索。"""
+    events: list[str] = []
+
+    class TimedSearchSession:
+        async def connection(self) -> object:
+            events.append("acquire")
+            await asyncio.sleep(0.003)
+            return object()
+
+    class TimedSearchPort(MemorySearchPort):
+        async def hybrid_search(self, *args: object, **kwargs: object) -> list[KnowledgeRetrievalHit]:
+            events.append("query")
+            await asyncio.sleep(0.004)
+            return await super().hybrid_search(*args, **kwargs)  # type: ignore[arg-type]
+
+    @asynccontextmanager
+    async def search_session_factory() -> AsyncIterator[AsyncSession]:
+        events.append("opened")
+        try:
+            yield cast(AsyncSession, TimedSearchSession())
+        finally:
+            events.append("closed")
+
+    service = RagRetrievalService(
+        embedding_service=CapturingEmbeddingService(),
+        search_port=TimedSearchPort([hit(score=0.91, token_count=20, label="退货流程")]),
+        reranking_service=FixedRerankingService(),
+        search_session_factory=search_session_factory,
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+
+    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？")
+
+    assert events == ["opened", "acquire", "query", "closed"]
+    assert result.search_acquire_ms is not None and result.search_acquire_ms >= 2
+    assert result.search_query_ms is not None and result.search_query_ms >= 3
+    assert result.search_wall_ms is not None and result.search_wall_ms >= 7
+
+
 def hit(*, score: float, token_count: int, label: str) -> KnowledgeRetrievalHit:
     """构造不含真实客户数据的检索命中。"""
     return KnowledgeRetrievalHit(

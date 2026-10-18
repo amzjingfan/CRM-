@@ -377,6 +377,8 @@ class SqlAlchemyAgentRunRecorder:
             "translation",
             "retrieval_embedding_wait",
             "retrieval_search",
+            "retrieval_search_acquire",
+            "retrieval_search_query",
         }
         safe_timings: list[str] = []
         seen_nodes: set[str] = set()

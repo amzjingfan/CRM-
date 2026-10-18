@@ -334,7 +334,9 @@ def service(
 
 @pytest.mark.asyncio
 async def test_combined_faq_uses_one_model_request_before_independent_review() -> None:
-    rag_result = replace(retrieval(0.92), embedding_wait_ms=11, search_wall_ms=17)
+    rag_result = replace(
+        retrieval(0.92), embedding_wait_ms=11, search_wall_ms=17, search_acquire_ms=7, search_query_ms=8
+    )
     hit = rag_result.hits[0]
     hit.content = "问题：帮助页面在哪里？\n答案：请查看店铺帮助页。"
     hit.safety_metadata = approved_knowledge_metadata(KnowledgeStatementType.NON_ASSERTIVE_PROPOSITION)
@@ -390,10 +392,14 @@ async def test_combined_faq_uses_one_model_request_before_independent_review() -
         "translation",
         "retrieval_embedding_wait",
         "retrieval_search",
+        "retrieval_search_acquire",
+        "retrieval_search_query",
     ]
-    assert recorder.completed.node_timings_ms[-2:] == [
+    assert recorder.completed.node_timings_ms[-4:] == [
         ("retrieval_embedding_wait", 11),
         ("retrieval_search", 17),
+        ("retrieval_search_acquire", 7),
+        ("retrieval_search_query", 8),
     ]
 
 

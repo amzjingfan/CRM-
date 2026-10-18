@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R86 本地候选：[R86 TR](../reports/tests/TR-MVP-006-20261018-R86.md)记录 G5 `/chat/query` 认证、限流、租约和 FAQ 检索连接获取/查询数值分段。完整后端 2133 passed/27 skipped，Ruff/格式、mypy、锁文件和 237 条离线安全样本通过；未部署 R86 镜像或调用 DeepSeek。R85 的 50/50 安全输出、首输出 P99 4696.9 ms 失败和 G3 恢复仍是最新现场结论；独立断连未验收，G5/production No-Go。
+
 2026-10-18 G5 R85 手动现场：[R85 TR](../reports/tests/TR-MVP-006-20261018-R85.md)核对 main `42d5ea2` 的私有镜像、六摘要预取与 G5 临时部署、50/50 身份及唯一 ready FAQ。单会话安全 `delta` 2004.4 ms、总 2006.8 ms；50 并发 50/50 安全输出，总耗时 P99 4699.2 ms 通过，首输出 P99 **4696.9 ms** 违反 `<3000 ms`。同步 PostgreSQL 长开事务峰值 15、接入 P99 2806.5 ms、检索 P99 1425 ms；仍需拆分连接等待和 SQL。窗口后恢复 G3 单店人工发送、Webhook 只读、翻译、健康及固定出口。独立断连未验收；G5/production No-Go。
 
 2026-10-18 G5 R84 本地候选：[R84 TR](../reports/tests/TR-MVP-006-20261018-R84.md)的检索会话生命周期测试先失败后通过；15 项定向、完整后端 2129 passed/27 skipped、Ruff/格式、mypy、锁文件和 237 条离线安全样本通过。运行工厂使用独立短时 FAQ 检索会话，检索结束、异常或取消时释放；尚未发布 R84 镜像或复测 staging。R83 的两轮严格首输出 P99 失败仍是当前现场结论，G5/production No-Go。

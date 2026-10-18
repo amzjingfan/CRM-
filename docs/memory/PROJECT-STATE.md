@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 G5 R86 本地候选：`CANDIDATE_SUBJECT_SHA=fdb286de2eeb5e18c1a1e3fb447b888253c26b05`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R86.md)、[TR](../reports/tests/TR-MVP-006-20261018-R86.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R86.md)记录认证、限流、租约及 FAQ 检索连接获取/查询的低敏数值分段；完整后端 2133 passed/27 skipped、离线安全 237 条通过。尚未发布/部署 R86 匹配镜像或调用 DeepSeek；staging 仍为恢复后的 G3。任务分支三索引为 `CANDIDATE_VIEW`。Workspace hygiene：活动 worktree 与仓库外私有凭证/快照保留，未知文件未处理。下一步：①手动合入源码并发布匹配 main 的后端；②可恢复窗口采 50 并发分段，按实测瓶颈单点修复；③严格重测 P99、独立断连并恢复 G3。G5 `DOING`、production No-Go。
+
 2026-10-18 G5 R85 索引收尾：[PR #392](https://github.com/CP11-gh/CRM/pull/392) 已将现场证据合入权威 main `dae01b2db70b44593293b15843d6a3452adf29b0`。从该 main 的源记录核对 IR/TR/RR 分别 171/176/168 份，三个派生索引与源记录行数一致，本收尾分支恢复为 `CURRENT`。现场严格首输出 P99 未过、独立断连未验收，G5 `DOING`、production No-Go；原 G3 模式保持恢复状态。
 
 2026-10-18 G5 R85 手动现场：从 main `42d5ea2befb8654c768f8f8492dd1a5eb06dd97b` 发布私有后端 `sha256:29dce96d…52bc5a`，临时部署并完成 50/50 身份、安全 `delta`、单会话门槛。50 并发首输出 P99 4696.9 ms 仍超 3000 ms，虽总耗时 P99 4699.2 ms 通过；PostgreSQL 长开事务峰值由 R83 的 45 降至 15。原旧后端和 G3 单店人工发送已按快照恢复，健康与固定出口通过，详见 [IR](../records/implementation/IR-MVP-006-20261018-R85.md)、[TR](../reports/tests/TR-MVP-006-20261018-R85.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R85.md)。`CANDIDATE_SUBJECT_SHA=42d5ea2befb8654c768f8f8492dd1a5eb06dd97b`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`；派生索引在任务分支为 `CANDIDATE_VIEW`。G5 `DOING`、production No-Go。Workspace hygiene：活动 worktree 与私有凭证/快照保留，未知文件未处理。下一步：①区分接入、检索连接获取与 SQL 长尾；②单点修复并严格复测 50/50 与 P99；③独立断连及 G3 恢复验收。

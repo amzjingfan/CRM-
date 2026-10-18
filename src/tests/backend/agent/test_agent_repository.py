@@ -366,6 +366,8 @@ async def test_workflow_completion_records_scores_and_safe_trace_only() -> None:
                 ("translation", 2),
                 ("retrieval_embedding_wait", 11),
                 ("retrieval_search", 17),
+                ("retrieval_search_acquire", 7),
+                ("retrieval_search_query", 8),
                 ("raw private model text", 999),
                 ("retrieval", 5),
                 ("classification", -1),
@@ -377,6 +379,7 @@ async def test_workflow_completion_records_scores_and_safe_trace_only() -> None:
         run.output_summary or ""
     )
     assert "retrieval_embedding_wait:11,retrieval_search:17" in (run.output_summary or "")
+    assert "retrieval_search_acquire:7,retrieval_search_query:8" in (run.output_summary or "")
     assert "raw private model text" not in (run.output_summary or "")
     assert "retrieval:5" not in (run.output_summary or "")
     assert "classification:-1" not in (run.output_summary or "")

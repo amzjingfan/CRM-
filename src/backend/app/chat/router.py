@@ -134,13 +134,34 @@ async def chat_query(
     user: Annotated[User, Depends(get_current_user)],
 ) -> StreamingResponse:
     """先输出阶段事件，Agent 返回安全草稿后再做传输层分块。"""
-    await _enforce_chat_limits(request, user)
     settings = get_settings()
+    g5_timing_enabled = getattr(settings, "sse_load_test_enabled", False)
+    limit_started_at = time.perf_counter_ns()
+    await _enforce_chat_limits(request, user)
+    if g5_timing_enabled:
+        logger.info(
+            "g5_chat_limit_timing",
+            extra={
+                "event": "g5_chat_limit_timing",
+                "trace_id": str(getattr(request.state, "trace_id", "")),
+                "latency_ms": max(0, (time.perf_counter_ns() - limit_started_at) // 1_000_000),
+            },
+        )
+    lease_started_at = time.perf_counter_ns()
     stream_lease_token = await acquire_chat_stream(
         user.id,
         settings.chat_user_concurrency,
         settings.chat_stream_lease_seconds,
     )
+    if g5_timing_enabled:
+        logger.info(
+            "g5_chat_lease_timing",
+            extra={
+                "event": "g5_chat_lease_timing",
+                "trace_id": str(getattr(request.state, "trace_id", "")),
+                "latency_ms": max(0, (time.perf_counter_ns() - lease_started_at) // 1_000_000),
+            },
+        )
     if stream_lease_token is None:
         raise AppError(ErrorCode.RATE_LIMITED, "同时进行的 AI 建议过多", 429)
     request_id = str(uuid.uuid4())

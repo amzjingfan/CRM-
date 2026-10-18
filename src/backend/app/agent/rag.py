@@ -113,6 +113,8 @@ class RagRetrievalResult:
     embedding_latency_ms: int
     embedding_wait_ms: int | None = None
     search_wall_ms: int | None = None
+    search_acquire_ms: int | None = None
+    search_query_ms: int | None = None
     reranker_provider: str | None = None
     reranker_model: str | None = None
     reranker_revision: str | None = None
@@ -191,12 +193,22 @@ class RagRetrievalService:
                 rrf_k=self.rrf_k,
             )
 
+        search_acquire_ms: int | None = None
+        search_query_ms: int | None = None
         if self.search_session_factory is None:
             candidates = await search(session)
         else:
             # 检索事务在模型重排/独立安全复核前结束，取消或失败也释放连接。
             async with self.search_session_factory() as search_session:
+                # 仅记录固定数值：先获取连接，再区分等待连接和两路 SQL/融合的耗时。
+                acquire = getattr(search_session, "connection", None)
+                if callable(acquire):
+                    acquire_started_at = time.perf_counter_ns()
+                    await acquire()
+                    search_acquire_ms = max(0, (time.perf_counter_ns() - acquire_started_at) // 1_000_000)
+                query_started_at = time.perf_counter_ns()
                 candidates = await search(search_session)
+                search_query_ms = max(0, (time.perf_counter_ns() - query_started_at) // 1_000_000)
         search_wall_ms = max(0, (time.perf_counter_ns() - search_started_at) // 1_000_000)
         if not candidates:
             return RagRetrievalResult(
@@ -209,6 +221,8 @@ class RagRetrievalService:
                 embedding_latency_ms=embedding_result.latency_ms,
                 embedding_wait_ms=embedding_wait_ms,
                 search_wall_ms=search_wall_ms,
+                search_acquire_ms=search_acquire_ms,
+                search_query_ms=search_query_ms,
                 candidate_count=0,
             )
         reranking_result: RerankingResult | None = None
@@ -248,6 +262,8 @@ class RagRetrievalService:
             embedding_latency_ms=embedding_result.latency_ms,
             embedding_wait_ms=embedding_wait_ms,
             search_wall_ms=search_wall_ms,
+            search_acquire_ms=search_acquire_ms,
+            search_query_ms=search_query_ms,
             reranker_provider=reranking_result.provider if reranking_result else None,
             reranker_model=reranking_result.model if reranking_result else None,
             reranker_revision=reranking_result.revision if reranking_result else None,

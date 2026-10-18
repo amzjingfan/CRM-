@@ -123,4 +123,6 @@ R38 候选仅收窄后续 G4 低敏诊断：DeepSeek 结构失败按 `invalid_js
 
 G5 R82 仅补成功运行的数值诊断：`retrieval_embedding_wait` 为请求等待本地向量结果的墙钟耗时，包含短时缓存或并发复用时的等待；`retrieval_search` 为店铺隔离混合检索端口的墙钟耗时，包含两路 SQL 查询与结果融合，不能解释为数据库纯执行时间。两项仅在实际检索后进入既有 `node_timings_ms` 白名单；没有检索或失败终态不伪造成功计时。不保存查询正文、Prompt、模型输出或请求 ID，不改变检索排序、审批、DLP、独立复核、发送开关和 3 秒/5 秒门槛。
 
+G5 R86 对现有耗时诊断进一步分段：仅在 SSE 压测开关开启时，以固定事件 `g5_chat_auth_timing`、`g5_chat_limit_timing`、`g5_chat_lease_timing` 记录 `/v1/chat/query` 成功认证、限流和会话租约的整数毫秒；正常 G3 模式不产生这些事件。独立 FAQ 检索的 `retrieval_search_acquire` 是等待数据库连接的时间，`retrieval_search_query` 是取得连接后的混合查询及融合时间，两者仅在成功工作流的既有白名单数值摘要中出现。`retrieval_search` 仍包含会话建立和关闭，因此不要求子项求和等于墙钟值。日志只保留固定事件名、经校验的追踪 UUID 与数值，不保存用户、Token、查询正文、模型输入输出或异常文本；此计时不放宽安全及 3 秒/5 秒门槛。
+
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。
