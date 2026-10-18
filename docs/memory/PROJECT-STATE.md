@@ -6,7 +6,9 @@
 
 ## 当前状态
 
-2026-10-18 G5 R91 候选现场：`CANDIDATE_SUBJECT_SHA=a708347fe8dcef565e1b526ce8e5cf822f103b1a`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R91.md)、[TR](../reports/tests/TR-MVP-006-20261018-R91.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R91.md)与[16 份低敏原件清单](../../release/evidence/staging/crm-staging-g5-r91-manifest-20261018.json)记录匹配镜像、首次旧凭证 0/50 后恢复、第二次续期后 50/50 安全输出与再次恢复。并发首 `delta` P99 4812.54 ms 仍超严格 3000 ms；认证连接获取 P99 2046 ms、首输出前指标持久化 P99 26 ms。独立断连未验收，G5 `DOING`、production No-Go。三个派生索引在本短期分支为 `CANDIDATE_VIEW`。Workspace hygiene：活动 worktree 和仓库外历史私有凭证/快照保留，未知文件未处理。下一步：①合并本轮现场证据并从主分支重建索引；②针对认证数据库连接等待和服务端输出长尾做最小有界修复；③手动可恢复窗口重测严格 50/50 与独立断连，恢复 G3。
+R91 现场记录已由 [PR #404](https://github.com/CP11-gh/CRM/pull/404) 合入权威 main `6d3d14801244e980d691a7885013f68020a4c785`；三份派生索引从已合并源记录重建为 `CURRENT`，G5/production No-Go。
+
+2026-10-18 G5 R91 现场：`CANDIDATE_SUBJECT_SHA=a708347fe8dcef565e1b526ce8e5cf822f103b1a`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R91.md)、[TR](../reports/tests/TR-MVP-006-20261018-R91.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R91.md)与[16 份低敏原件清单](../../release/evidence/staging/crm-staging-g5-r91-manifest-20261018.json)记录匹配镜像、首次旧凭证 0/50 后恢复、第二次续期后 50/50 安全输出与再次恢复。并发首 `delta` P99 4812.54 ms 仍超严格 3000 ms；认证连接获取 P99 2046 ms、首输出前指标持久化 P99 26 ms。独立断连未验收，G5 `DOING`、production No-Go。三个派生索引为 `CURRENT`。Workspace hygiene：活动 worktree 和仓库外历史私有凭证/快照保留，未知文件未处理。下一步：①核对并落实用户提出的 G5 首输出 5 秒验收修订；②针对认证数据库连接等待和服务端输出长尾做最小有界修复；③手动可恢复窗口验收 50/50 与独立断连，恢复 G3。
 
 R90 源码与诊断记录已由 PR #402 合入权威 main `b121be20f13e9b3786092a70ead865cd485893e1`；三份派生索引从已合并源记录重建为 `CURRENT`。匹配镜像及 staging 负载已由上方 R91 执行，G5/production 仍 No-Go。
 
