@@ -202,6 +202,19 @@ class FaqAnswerModelOutput(BaseModel):
         return self
 
 
+class CombinedFaqModelOutput(BaseModel):
+    """同一次严格结构化请求返回意图和 FAQ 草稿，应用分别执行原门禁。"""
+
+    classification: IntentModelOutput
+    draft: FaqAnswerModelOutput | None
+
+    @model_validator(mode="after")
+    def validate_refusal_has_no_draft(self) -> "CombinedFaqModelOutput":
+        if self.classification.classification_state != ClassificationState.CLASSIFIED and self.draft is not None:
+            raise ValueError("拒判不能携带 FAQ 草稿")
+        return self
+
+
 class GroundingReviewOutput(BaseModel):
     """独立复核节点对答案安全性和知识一致性的判断。"""
 

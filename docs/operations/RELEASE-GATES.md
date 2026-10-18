@@ -15,6 +15,8 @@
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G1 核心范围已按 2026-10-09 用户决定通过，但 G1-L、G2～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
 
+G5 R69 源码候选将命中已审批、同店铺 FAQ 的非工具路径收敛为一次意图加草稿结构化调用，保留独立模型复核与本地安全门禁。本地回归只证明路由和失败关闭；R68 的 4550.4 ms 仍是最新真实延迟，不能因此启动 50 并发或改写上表结论。待候选合入并手动发布后，先在可恢复窗口实测单会话严格 3 秒/5 秒，再决定是否运行 50 客户端压测。
+
 G5 [R49 手动候选镜像](../../release/evidence/staging/crm-staging-g5-r49-manual-backend-image-20261017.json)随后经 OCI index `sha256:8dabe73b…c017` 完成两次获批的 [R50 手动窗口](../reports/tests/TR-MVP-006-20261017-R50.md)。第一次单会话被 Origin/CORS 拒绝；第二次 HTTP 200 但 FAQ 草稿 `invalid_schema`，无安全 `delta`，50 并发未启动。旧后端与 G3 限定会话已恢复，production 仍为 No-Go。
 
 G5 [R34 续期源码](../reports/tests/TR-MVP-006-20261017-R34.md) 的连续编号、历史验签、精确路径与独占创建本地门禁通过；当时第三份 50 枚令牌已过期。第四份已在 [R38](../reports/tests/TR-MVP-006-20261017-R38.md) 精确现场窗口签发并核对；凭证就绪不代表安全 `delta` 或 50 并发验收通过。

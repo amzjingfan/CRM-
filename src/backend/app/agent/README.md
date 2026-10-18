@@ -44,9 +44,9 @@
 
 回复 Prompt 只接收解析后的语言、固定语气指令和清洗品牌名。FAQ 与营销输出继续携带 `BusinessClaimInventory(complete=true)` 供纵深检查；订单、物流、客户画像、地址请求、优惠券和平台消息的对象级声明由服务端执行层根据强类型工具结果生成，且声明、固定模板和证据提取边界都会再次执行工具输出 Schema 校验。模型必须返回空清单且不得猜测脱敏 ID。模型自报声明和独立模型复核都只能增加门禁，不能授予自动回复权限。
 
-外部 Provider 共用 `prompt-dlp-v1.3.0` 三态完整信封门禁。明确完整地址和结构化地址字段为 `blocked`；客户自由文本、带前缀 JSON、未知字段及未知嵌套结构为 `uncertain`；任意层级重复 JSON 键以 `JSON_DUPLICATE_KEY_REJECTED` 失败关闭并清除原始载荷。当前只有 `provider-contract-v1.1.0` 不可变 Provider 工程控制系统提示与纯 JSON 固定控制 DTO 的组合可为 `allowed`，且 DTO 会从已验证字段重新规范化序列化，禁止复用原始 JSON。工程提示显式要求返回 `json` 对象并提供无业务数据示例，以满足 DeepSeek JSON Output 契约；调用方不能通过动态自由文本补齐该条件。系统 Prompt 与用户 Prompt 任一字段非 `allowed` 时，三家 Provider 均不得调用 SDK。地址正则只做纵深阻断，不再以“未命中”证明可外发。日志只记录策略版本、状态和稳定原因码，不记录 Prompt 或客户正文。架构师批准本地 PII/DLP 能力和版本化业务 Prompt 注册表前，包含真实客户文本的回复、翻译和营销调用均保持失败关闭。
+外部 Provider 共用 `prompt-dlp-v1.3.0` 三态完整信封门禁。明确完整地址和结构化地址字段为 `blocked`；未知字段、未知嵌套结构和重复 JSON 键失败关闭。当前版本化业务 Prompt 注册表将系统正文 SHA-256、业务载荷字段与响应 Schema 名称绑定；系统 Prompt 与用户 Prompt 任一字段非 `allowed` 时，Provider 不得调用 SDK。G5 FAQ 组合路径也必须使用此信封，且只接收当前店铺已审批知识。日志不记录 Prompt 或客户正文。
 
-当前 FAQ 数据没有“政策/实例事实”类型和发布审批字段，因此 `published + ready + 逐字一致` 只证明内容来源，不证明自动交付权限。所有 FAQ 草稿最高进入 `HUMAN_REVIEW`。只有代码根据单次真实 `query_order/query_logistics` 结果生成的有限状态模板，并通过对象、店铺和证据绑定后，才可能进入 `AUTO_REPLY_READY`。
+当前 FAQ 已有政策/实例事实类型与发布审批字段，但批准级别仅为内部人工复核；`published + ready + 逐字一致` 不授予自动交付权限。所有 FAQ 草稿最高进入 `HUMAN_REVIEW`。只有代码根据单次真实 `query_order/query_logistics` 结果生成的有限状态模板，并通过对象、店铺和证据绑定后，才可能进入 `AUTO_REPLY_READY`。
 
 - 邮箱、手机或长标识符泄露。
 - 未授权的退款申请状态、审批决定、执行、资金移动或到账声明。当前没有退款事实工具，因此 FAQ 证据只能支持 `refund_policy/explain_policy`，不能支持具体客户结果。开放语言动词先由模型映射为有限动作，再由代码验证证据；文本扫描仅用于兼容入口和发现声明遗漏，不授予权限。
@@ -69,10 +69,11 @@
 
 | 用途 | 版本 |
 | --- | --- |
-| 工作流 | `faq-agent-workflow-v1.6.0` |
-| FAQ 回答 | `faq-answer-v1.5.0` |
-| FAQ 依据复核 | `faq-grounding-review-v1.5.0` |
-| 工具结果解释 | `tool-answer-v1.5.0` |
+| 工作流 | `faq-agent-workflow-v1.8.0` |
+| FAQ 组合分类与草稿 | `faq-classified-draft-v1.0.0` |
+| FAQ 回答（兼容路径） | `faq-answer-v1.6.2` |
+| FAQ 依据复核 | `faq-grounding-review-v1.5.1` |
+| 工具结果解释 | `tool-answer-v1.6.0` |
 | 工具依据复核 | `tool-grounding-review-v1.5.0` |
 | 客户翻译 | `customer-translation-v1.0.1` |
 | 营销文案 | `marketing-copy-v1.3.0` |

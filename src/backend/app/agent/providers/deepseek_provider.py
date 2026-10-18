@@ -92,7 +92,7 @@ def _safe_schema_issues(error: ValidationError) -> tuple[LLMOutputSchemaIssue, .
 
 
 class DeepSeekProvider(LLMProvider):
-    """FAQ 草稿用 JSON Schema，其余请求用 JSON Output；均在本地复核。
+    """FAQ 草稿及分类草稿组合用 JSON Schema，其余请求用 JSON Output；均在本地复核。
 
     两种端点的响应都转换成同一失败关闭边界，不把未校验正文传给工作流。
     """
@@ -169,7 +169,7 @@ class DeepSeekProvider(LLMProvider):
         response: object
         try:
             # ensure_safe_for_external_provider 已按注册表锁定 FAQ 的响应 Schema 名称。
-            if request.business_prompt_id == BusinessPromptId.FAQ_ANSWER:
+            if request.business_prompt_id in (BusinessPromptId.FAQ_ANSWER, BusinessPromptId.FAQ_CLASSIFIED_DRAFT):
                 structured_response = await self._client.responses.create(
                     model=self.model_name,
                     instructions=request.system_prompt,

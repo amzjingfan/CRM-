@@ -102,4 +102,5 @@ def build_agent_workflow(session: AsyncSession, settings: Settings) -> AgentWork
         reply_safety_policy=ReplySafetyPolicy(),
         auto_reply_threshold=settings.agent_auto_reply_threshold,
         human_review_threshold=settings.agent_human_review_threshold,
+        combined_faq_enabled=True,
     )
