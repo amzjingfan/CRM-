@@ -1,5 +1,7 @@
 """把可信业务上下文接入既有 Agent 工作流，不修改 AI 内部节点。"""
 
+import logging
+import time
 import uuid
 from decimal import Decimal
 from typing import Literal, cast
@@ -26,6 +28,19 @@ from app.stores.models import Store
 from app.tools.contracts import ToolName
 
 SAFE_SUGGESTION_TOOLS = {"query_order", "query_logistics", "query_customer_profile"}
+logger = logging.getLogger(__name__)
+
+
+def _log_g5_context_phase(event: str, trace_id: str, started_at: int) -> None:
+    """仅输出固定阶段和耗时，不记录店铺、用户或消息内容。"""
+    logger.info(
+        event,
+        extra={
+            "event": event,
+            "trace_id": trace_id,
+            "latency_ms": max(0, (time.perf_counter_ns() - started_at) // 1_000_000),
+        },
+    )
 
 
 def user_permissions(user: User) -> set[str]:
@@ -269,16 +284,27 @@ async def suggest_for_user(
     trace_id: str,
     runtime: SharedAgentRuntime | None = None,
 ) -> SuggestionView:
+    settings = get_settings()
+    g5_timing_enabled = settings.sse_load_test_enabled
+    started_at = time.perf_counter_ns()
+    store_ids = await allowed_store_ids(session, user)
+    if g5_timing_enabled:
+        _log_g5_context_phase("g5_chat_context_store_timing", trace_id, started_at)
+    started_at = time.perf_counter_ns()
     conversation, trigger = await _conversation_and_trigger(
         session,
         conversation_id,
         trigger_message_id,
-        await allowed_store_ids(session, user),
+        store_ids,
     )
+    if g5_timing_enabled:
+        _log_g5_context_phase("g5_chat_context_conversation_timing", trace_id, started_at)
+    started_at = time.perf_counter_ns()
     config = await find_enabled_config(session, conversation.store_id)
+    if g5_timing_enabled:
+        _log_g5_context_phase("g5_chat_context_config_timing", trace_id, started_at)
     if config is None:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "该店铺未启用 Agent", 409)
-    settings = get_settings()
     if settings.ai_synthetic_demo_enabled:
         store = await session.scalar(select(Store).where(Store.id == conversation.store_id))
         if store is not None and store.code == "ai-demo-store" and store.metadata_json.get("synthetic_demo") is True:

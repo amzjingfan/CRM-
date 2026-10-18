@@ -1,5 +1,6 @@
 """认证服务和 RBAC 规则。"""
 
+import time
 import uuid
 from datetime import UTC, datetime
 
@@ -60,10 +61,21 @@ def issue_token_data(user: User, user_view: UserView | None = None) -> TokenData
     )
 
 
-async def resolve_access_user(session: AsyncSession, token: str) -> User:
+async def resolve_access_user(session: AsyncSession, token: str, timing_ms: dict[str, int] | None = None) -> User:
     """解析 Access Token 并加载当前有效用户。"""
+    started_at = time.perf_counter_ns()
     payload = decode_token(token, "access")
-    user = await find_user_by_id(session, uuid.UUID(str(payload["sub"])))
+    user_id = uuid.UUID(str(payload["sub"]))
+    if timing_ms is not None:
+        timing_ms["decode"] = max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
+        # 先验证令牌，再单独量取连接池等待；普通请求仍沿用原查询路径。
+        started_at = time.perf_counter_ns()
+        await session.connection()
+        timing_ms["connection"] = max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
+        started_at = time.perf_counter_ns()
+    user = await find_user_by_id(session, user_id)
+    if timing_ms is not None:
+        timing_ms["lookup"] = max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
     if user is None:
         raise AppError(ErrorCode.AUTHENTICATION_REQUIRED, "用户不存在", 401)
     if user.status != "active":

@@ -9,7 +9,9 @@ import pytest
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.auth import dependencies as auth_dependencies
+from app.auth import service as auth_service
 from app.chat import router as chat_router
+from app.chat import service as chat_service
 from app.chat.schemas import ChatQueryRequest
 from app.shared.logging.setup import JsonFormatter
 
@@ -21,8 +23,10 @@ async def test_g5_auth_logs_only_numeric_duration(
     user = SimpleNamespace(id=uuid.uuid4())
     token = "test-sensitive-access-token"
 
-    async def resolve(_session: object, _token: str) -> object:
+    async def resolve(_session: object, _token: str, timing_ms: dict[str, int] | None = None) -> object:
         assert _token == token
+        if timing_ms is not None:
+            timing_ms.update(decode=1, connection=2, lookup=3)
         return user
 
     monkeypatch.setattr(auth_dependencies, "resolve_access_user", resolve)
@@ -47,6 +51,112 @@ async def test_g5_auth_logs_only_numeric_duration(
     assert formatted["event"] == "g5_chat_auth_timing"
     assert formatted["latency_ms"] == records[0].latency_ms
     assert token not in str(formatted)
+    for event, duration in (
+        ("g5_chat_auth_decode_timing", 1),
+        ("g5_chat_auth_connection_timing", 2),
+        ("g5_chat_auth_lookup_timing", 3),
+    ):
+        row = next(row for row in caplog.records if getattr(row, "event", "") == event)
+        assert row.latency_ms == duration
+        assert token not in str(json.loads(JsonFormatter().format(row)))
+
+
+@pytest.mark.asyncio
+async def test_g5_auth_splits_connection_wait_from_user_query(monkeypatch: pytest.MonkeyPatch) -> None:
+    order: list[str] = []
+    user_id = uuid.uuid4()
+    user = SimpleNamespace(status="active")
+
+    class Session:
+        async def connection(self) -> object:
+            order.append("connection")
+            return object()
+
+    def decode(_token: str, _kind: str) -> dict[str, str]:
+        order.append("decode")
+        return {"sub": str(user_id)}
+
+    async def lookup(_session: object, _user_id: uuid.UUID) -> object:
+        assert _user_id == user_id
+        order.append("lookup")
+        return user
+
+    monkeypatch.setattr(auth_service, "decode_token", decode)
+    monkeypatch.setattr(auth_service, "find_user_by_id", lookup)
+    timing_ms: dict[str, int] = {}
+    assert await auth_service.resolve_access_user(Session(), "synthetic-token", timing_ms=timing_ms) is user  # type: ignore[arg-type]
+    assert order == ["decode", "connection", "lookup"]
+    assert set(timing_ms) == {"decode", "connection", "lookup"}
+    assert all(type(duration) is int and duration >= 0 for duration in timing_ms.values())
+
+
+@pytest.mark.asyncio
+async def test_g5_auth_rejects_bad_token_before_acquiring_database_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Session:
+        async def connection(self) -> object:
+            pytest.fail("invalid token must not acquire a database connection")
+
+    def reject(_token: str, _kind: str) -> dict[str, str]:
+        raise ValueError("invalid synthetic token")
+
+    monkeypatch.setattr(auth_service, "decode_token", reject)
+    with pytest.raises(ValueError, match="invalid synthetic token"):
+        await auth_service.resolve_access_user(Session(), "synthetic-token", timing_ms={})  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+async def test_g5_context_logs_store_conversation_and_config_phases(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    store_id = uuid.uuid4()
+    result = object()
+
+    async def stores(_session: object, _user: object) -> set[uuid.UUID]:
+        return {store_id}
+
+    async def conversation(
+        _session: object, _id: uuid.UUID, _trigger: object, store_ids: set[uuid.UUID]
+    ) -> tuple[object, object]:
+        assert store_ids == {store_id}
+        return SimpleNamespace(store_id=store_id), object()
+
+    async def config(_session: object, _store_id: uuid.UUID) -> object:
+        assert _store_id == store_id
+        return object()
+
+    async def run(*_args: object, **_kwargs: object) -> object:
+        return result
+
+    monkeypatch.setattr(chat_service, "allowed_store_ids", stores)
+    monkeypatch.setattr(chat_service, "_conversation_and_trigger", conversation)
+    monkeypatch.setattr(chat_service, "find_enabled_config", config)
+    monkeypatch.setattr(chat_service, "run_agent_for_message", run)
+    monkeypatch.setattr(chat_service, "suggestion_view", lambda value: value)
+    monkeypatch.setattr(
+        chat_service,
+        "get_settings",
+        lambda: SimpleNamespace(sse_load_test_enabled=True, ai_synthetic_demo_enabled=False),
+    )
+    trace_id = str(uuid.uuid4())
+    with caplog.at_level(logging.INFO, logger=chat_service.__name__):
+        assert (
+            await chat_service.suggest_for_user(
+                object(),
+                SimpleNamespace(roles=[]),
+                uuid.uuid4(),
+                None,
+                trace_id,  # type: ignore[arg-type]
+            )
+            is result
+        )
+    for event in (
+        "g5_chat_context_store_timing",
+        "g5_chat_context_conversation_timing",
+        "g5_chat_context_config_timing",
+    ):
+        row = next(row for row in caplog.records if getattr(row, "event", "") == event)
+        assert type(row.latency_ms) is int and row.latency_ms >= 0
+        assert json.loads(JsonFormatter().format(row))["trace_id"] == trace_id
 
 
 @pytest.mark.asyncio

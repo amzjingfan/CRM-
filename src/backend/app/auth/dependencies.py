@@ -51,17 +51,33 @@ async def get_current_user(
         token = access_cookie
     if not token:
         raise AppError(ErrorCode.AUTHENTICATION_REQUIRED, "请求未认证", 401)
+    g5_timing_enabled = request.url.path == "/v1/chat/query" and get_settings().sse_load_test_enabled
+    timing_ms: dict[str, int] | None = {} if g5_timing_enabled else None
     started_at = time.perf_counter_ns()
-    user = await resolve_access_user(session, token)
-    if request.url.path == "/v1/chat/query" and get_settings().sse_load_test_enabled:
+    if timing_ms is None:
+        user = await resolve_access_user(session, token)
+    else:
+        user = await resolve_access_user(session, token, timing_ms=timing_ms)
+    if timing_ms is not None:
+        trace_id = str(getattr(request.state, "trace_id", ""))
         logger.info(
             "g5_chat_auth_timing",
             extra={
                 "event": "g5_chat_auth_timing",
-                "trace_id": str(getattr(request.state, "trace_id", "")),
+                "trace_id": trace_id,
                 "latency_ms": max(0, (time.perf_counter_ns() - started_at) // 1_000_000),
             },
         )
+        for phase in ("decode", "connection", "lookup"):
+            logger.info(
+                "g5_chat_auth_%s_timing",
+                phase,
+                extra={
+                    "event": f"g5_chat_auth_{phase}_timing",
+                    "trace_id": trace_id,
+                    "latency_ms": timing_ms[phase],
+                },
+            )
     return user
 
 

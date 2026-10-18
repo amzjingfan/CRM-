@@ -125,4 +125,6 @@ G5 R82 仅补成功运行的数值诊断：`retrieval_embedding_wait` 为请求�
 
 G5 R86 对现有耗时诊断进一步分段：仅在 SSE 压测开关开启时，以固定事件 `g5_chat_auth_timing`、`g5_chat_limit_timing`、`g5_chat_lease_timing` 记录 `/v1/chat/query` 成功认证、限流和会话租约的整数毫秒；正常 G3 模式不产生这些事件。独立 FAQ 检索的 `retrieval_search_acquire` 是等待数据库连接的时间，`retrieval_search_query` 是取得连接后的混合查询及融合时间，两者仅在成功工作流的既有白名单数值摘要中出现。`retrieval_search` 仍包含会话建立和关闭，因此不要求子项求和等于墙钟值。日志只保留固定事件名、经校验的追踪 UUID 与数值，不保存用户、Token、查询正文、模型输入输出或异常文本；此计时不放宽安全及 3 秒/5 秒门槛。
 
+G5 R88 继续以固定事件细分上述认证耗时：令牌解析、连接获取与用户/角色/权限查询各记录整数毫秒；令牌验证失败时不提前获取数据库连接。Agent 启动后的店铺授权范围、会话与触发消息、Agent 配置读取各记录一个固定阶段耗时。仅 `SSE_LOAD_TEST_ENABLED=true` 时输出这些低敏事件；不记录身份、店铺、正文、Token 或 SQL，普通 G3 路径和安全/性能阈值不变。阶段 P99 不能相加推导某个请求的端到端耗时；必须用同一追踪号核对后再决定单点优化。
+
 当前安全基线为 `AUTO_REPLY_ENABLED=false` 和 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`。任何开放都需要独立架构评审、真实门禁和回滚方案。
