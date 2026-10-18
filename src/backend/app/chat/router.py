@@ -174,6 +174,7 @@ async def chat_query(
         workflow_task: asyncio.Task[SuggestionView] | None = None
         stream_started_at = time.perf_counter()
         first_output_latency_ms: int | None = None
+        terminal_event_emitted = False
 
         async def mark_interrupted(error_code: str) -> None:
             if result is not None and not result_handed_to_transport:
@@ -205,6 +206,7 @@ async def chat_query(
             while not workflow_task.done():
                 if await request.is_disconnected():
                     await _cancel_task(workflow_task)
+                    terminal_event_emitted = True
                     logger.info(
                         "chat_stream_disconnected",
                         extra={
@@ -217,6 +219,7 @@ async def chat_query(
                 now = time.perf_counter()
                 if now >= deadline:
                     await _cancel_task(workflow_task)
+                    terminal_event_emitted = True
                     logger.warning(
                         "chat_stream_timeout",
                         extra={
@@ -243,6 +246,7 @@ async def chat_query(
             result = await workflow_task
             if await request.is_disconnected():
                 await mark_interrupted("SSE_DELIVERY_INTERRUPTED")
+                terminal_event_emitted = True
                 yield _event("done", sequence, {"reason": "disconnected"})
                 return
             first_output_latency_ms = int((time.perf_counter() - agent_started_at) * 1000)
@@ -263,6 +267,7 @@ async def chat_query(
             for index in range(0, len(content), 24):
                 if await request.is_disconnected():
                     await mark_interrupted("SSE_DELIVERY_INTERRUPTED")
+                    terminal_event_emitted = True
                     yield _event("done", sequence, {"reason": "disconnected"})
                     return
                 yield _event("delta", sequence, {"index": index // 24, "text": content[index : index + 24]})
@@ -270,9 +275,11 @@ async def chat_query(
                 await asyncio.sleep(0)
             if await request.is_disconnected():
                 await mark_interrupted("SSE_DELIVERY_INTERRUPTED")
+                terminal_event_emitted = True
                 yield _event("done", sequence, {"reason": "disconnected"})
                 return
             result_handed_to_transport = True
+            terminal_event_emitted = True
             yield _event("result", sequence, result.model_dump(mode="json"))
             sequence += 1
             yield _event("done", sequence, {"reason": "completed"})
@@ -293,6 +300,7 @@ async def chat_query(
             return
         except AgentWorkflowExecutionError as error:
             await mark_interrupted("SSE_DELIVERY_FAILED")
+            terminal_event_emitted = True
             failure = _agent_error_payload(error.error_code)
             logger.warning(
                 "chat_stream_agent_failed",
@@ -308,6 +316,7 @@ async def chat_query(
             yield _event("done", sequence + 1, {"reason": "failed"})
         except AppError as error:
             await mark_interrupted("SSE_DELIVERY_FAILED")
+            terminal_event_emitted = True
             yield _event(
                 "error",
                 sequence,
@@ -316,6 +325,7 @@ async def chat_query(
             yield _event("done", sequence + 1, {"reason": "failed"})
         except Exception:
             await mark_interrupted("SSE_DELIVERY_FAILED")
+            terminal_event_emitted = True
             logger.exception(
                 "chat_stream_failed",
                 extra={
@@ -328,7 +338,19 @@ async def chat_query(
             yield _event("error", sequence, {"code": 50001, "message": "AI 建议生成失败", "retryable": True})
             yield _event("done", sequence + 1, {"reason": "failed"})
         finally:
+            if workflow_task is not None and not workflow_task.done():
+                await _cancel_task(workflow_task)
             await release_chat_stream(user.id, stream_lease_token)
+            if not terminal_event_emitted:
+                # ASGI 传输层可能直接关闭生成器，绕过轮询式断线分支；释放租约后记录固定事件。
+                logger.info(
+                    "chat_stream_closed_early",
+                    extra={
+                        "event": "chat_stream_closed_early",
+                        "trace_id": trace_id,
+                        "total_latency_ms": int((time.perf_counter() - stream_started_at) * 1000),
+                    },
+                )
 
     return StreamingResponse(
         stream(),

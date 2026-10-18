@@ -1,0 +1,40 @@
+{
+  "evidence_type": "g5_staging_independent_disconnect_attempt",
+  "source_sha": "2c14fc7c9c5590b86318412343678457525107df",
+  "candidate_backend_index": "sha256:b79c59a586ef281e1c14e9d2b24f43ecc463d88eb0adc4a3800f181bcdeb5248",
+  "candidate_backend_amd64_manifest": "sha256:964c76c17949bee5e9f9be318f42f063f827c4c55f4d76db52a8c0394bf00017",
+  "compressed_layer_bytes": 110979569,
+  "first_attempt": {
+    "six_digest_prefetch": "passed",
+    "validate": "failed_source_checkout_missing",
+    "g3_restore": "passed",
+    "model_calls": 0
+  },
+  "second_attempt": {
+    "six_digest_prefetch": "passed",
+    "g5_deploy": "passed",
+    "knowledge_ready": true,
+    "matched_sessions": 50,
+    "content_check_provider_calls": 0,
+    "client_closed_after_accepted": true,
+    "accepted_ms": 182.29,
+    "redis_lease_before": 0,
+    "redis_lease_after": 0,
+    "server_disconnect_events": 0,
+    "server_completed_events": 0,
+    "disconnect_gate": "failed",
+    "g3_restore": "passed"
+  },
+  "private_original_sha256": {
+    "first-prefetch.json": "1c987dc1c0e891f2f774098d9c1adb5a745d0d19888fee3946e781e8b27eaf6b",
+    "first-restore.json": "88a140b66e5cedea345c5bd719041f218f4a44d53753a2ee0f8c1caa50eb73c8",
+    "prefetch.json": "af7ffba136eac840cb8209b17145a6e2b7a0c96757c952324e7e717e88e12e28",
+    "deploy.json": "b018a48a6aa387fc6ee10d58ccd2ef31a6eb97ac39a77150b0aa635628c89439",
+    "content.json": "c618e1ce8fce981a4b2f168a11a4e5340c572c7bfbfd652493f727522b3adf4b",
+    "disconnect-client.json": "9a90bbe313e68cfef8196c54f3a4bb79dad510a5d30873b648841cd6e3154bde",
+    "disconnect-server.json": "2215c690d84c4a5eeb8a3db66c249dbad6ffa36cd64f47e9950e2f03bdcf4c4d",
+    "restore.json": "42c2557c36492a8dc1c90b1a1913b6ea139ad9b49918758bee2978341ddd9e5f"
+  },
+  "production_release": false,
+  "g5_gate": "not_passed"
+}
