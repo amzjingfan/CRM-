@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R80 | MVP-006 | R80 | APPROVE | `22e9f8a1684c54f8f5917d229dd257c0f24e56ca` | manual-image-provenance, isolated-users, safe-delta-completeness, strict-latency, resource-limitations, restore, production-boundary | 2026-10-18T17:18:00+08:00 | [`RR-MVP-006-20261018-R80.md`](RR-MVP-006-20261018-R80.md) |
 | RR-MVP-006-20261018-R79 | MVP-006 | R79 | APPROVE | `ae836ee5aa45f47e7db0f053367ed4e60f66f68c` | store-isolation, client-lifecycle, fallback, independent-review, g5-only-capacity, manual-restore | 2026-10-18T16:03:00+08:00 | [`RR-MVP-006-20261018-R79.md`](RR-MVP-006-20261018-R79.md) |
 | RR-MVP-006-20261018-R78 | MVP-006 | R78 | APPROVE | `ebffdc80b14ec98f7be3ca7cf37a854cd17f9827` | manual-image-provenance, isolated-users, safe-delta-completeness, strict-latency, resource-limitations, restore, production-boundary | 2026-10-18T15:22:00+08:00 | [`RR-MVP-006-20261018-R78.md`](RR-MVP-006-20261018-R78.md) |
 | RR-MVP-006-20261018-R77 | MVP-006 | R77 | APPROVE | `55d718ffa65257841f404300cec87f39e59d6d13` | store-isolation, approved-knowledge, cache-cancellation, business-claims, dlp, latency-risk, manual-restore | 2026-10-18T14:54:00+08:00 | [`RR-MVP-006-20261018-R77.md`](RR-MVP-006-20261018-R77.md) |
