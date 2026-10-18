@@ -213,6 +213,22 @@ def test_single_conversation_mode_accepts_empty_store_target_from_compose() -> N
     assert settings.tiktok_message_write_allowed_store_ids == ""
 
 
+def test_store_mode_accepts_empty_conversation_target_from_compose() -> None:
+    settings = production_settings(
+        REAL_TIKTOK_READ_ENABLED=True,
+        REAL_TIKTOK_MESSAGE_WRITE_ENABLED=True,
+        TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID="",
+        TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS="11111111-1111-4111-8111-111111111111",
+        TIKTOK_APP_KEY="real-app-key",
+        TIKTOK_SERVICE_ID="real-service-id",
+        TIKTOK_APP_SECRET="unit-test-app-secret",
+        TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+    )
+
+    assert settings.tiktok_message_write_allowed_conversation_id == ""
+    assert settings.tiktok_message_write_allowed_store_ids == "11111111-1111-4111-8111-111111111111"
+
+
 def test_real_tiktok_manual_write_rejects_auto_reply() -> None:
     """REAL-FS-04 不得被自动回复 Worker 复用为公开自动发送。"""
     with pytest.raises(ValidationError, match="仅允许人工确认发送"):

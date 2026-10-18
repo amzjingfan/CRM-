@@ -179,7 +179,7 @@ class Settings(BaseSettings):
     )
     tiktok_message_write_allowed_conversation_id: str | None = Field(
         default=None,
-        pattern=r"^[0-9]{1,30}$",
+        pattern=r"^(?:[0-9]{1,30})?$",
         validation_alias="TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID",
     )
     tiktok_message_write_allowed_store_ids: str | None = Field(
