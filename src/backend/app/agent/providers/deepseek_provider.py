@@ -128,6 +128,10 @@ class DeepSeekProvider(LLMProvider):
             max_retries=0,
         )
 
+    async def aclose(self) -> None:
+        """释放应用生命周期内复用的 DeepSeek HTTP 连接池。"""
+        await self._client.close()
+
     async def generate_structured(
         self,
         request: StructuredRequest,

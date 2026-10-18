@@ -123,6 +123,10 @@ class LocalRetrievalModelClient:
         self._token = token
         self._client = client or httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=timeout_seconds)
 
+    async def aclose(self) -> None:
+        """释放应用生命周期内复用的本地模型 HTTP 连接池。"""
+        await self._client.aclose()
+
     async def embed(self, texts: list[str]) -> EmbeddingServiceResponse:
         """调用 BGE-M3 向量端点并执行响应结构校验。"""
         request = EmbeddingServiceRequest(texts=texts)

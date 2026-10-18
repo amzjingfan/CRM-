@@ -7,11 +7,12 @@ import time
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import suppress
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
+from app.agent.factory import SharedAgentRuntime
 from app.agent.workflow import AgentWorkflowExecutionError
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.chat.schemas import ChatQueryRequest, SuggestionRequest, SuggestionView
@@ -35,6 +36,12 @@ SSE_DESCRIPTION = (
     "accepted/status/delta/result/error/done，等待期间使用无业务数据的注释心跳，总超时后以 "
     "error + done(timeout) 结束；delta 为安全草稿完成后的传输层分块。"
 )
+
+
+def _agent_runtime(request: Request) -> SharedAgentRuntime | None:
+    """从当前进程获取共享连接池；独立测试请求可继续走请求级路径。"""
+    state = getattr(getattr(request, "app", None), "state", None)
+    return cast(SharedAgentRuntime | None, getattr(state, "agent_runtime", None))
 
 
 def _event(name: str, sequence: int, data: dict[str, object]) -> str:
@@ -107,7 +114,11 @@ async def suggest(
 ) -> ApiResponse[SuggestionView]:
     await _enforce_chat_limits(request, user)
     trace_id = str(getattr(request.state, "trace_id", uuid.uuid4()))
-    return ApiResponse(data=await suggest_for_user(session, user, session_id, payload.trigger_message_id, trace_id))
+    return ApiResponse(
+        data=await suggest_for_user(
+            session, user, session_id, payload.trigger_message_id, trace_id, _agent_runtime(request)
+        )
+    )
 
 
 @router.post(
@@ -162,6 +173,7 @@ async def chat_query(
                     payload.session_id,
                     payload.trigger_message_id,
                     trace_id,
+                    _agent_runtime(request),
                 )
             )
             # 允许无 I/O 的工作流测试替身先完成；真实工作流一旦等待外部依赖，

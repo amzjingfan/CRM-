@@ -5,6 +5,7 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
+from app import main
 from app.main import app
 
 
@@ -15,6 +16,24 @@ def test_health_endpoint_returns_ok() -> None:
     assert response.status_code == 200
     assert response.json()["code"] == 0
     assert response.json()["data"]["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_lifespan_owns_and_closes_shared_agent_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    """进程级连接池必须在服务退出时关闭，不能落入请求级清理。"""
+    closed = False
+
+    class Runtime:
+        async def aclose(self) -> None:
+            nonlocal closed
+            closed = True
+
+    runtime = Runtime()
+    monkeypatch.setattr(main, "build_shared_agent_runtime", lambda _settings: runtime, raising=False)
+    async with main.lifespan(app):
+        assert app.state.agent_runtime is runtime
+        assert closed is False
+    assert closed is True
 
 
 @pytest.mark.parametrize(

@@ -2539,6 +2539,7 @@ async def test_trusted_faq_uses_exact_approved_answer_and_one_independent_review
     assert result.draft_reply == "签收后七天内可申请退货。"
     assert result.send_performed is False
     assert [item.business_prompt_id for item in generator.requests] == [BusinessPromptId.FAQ_TRUSTED_REVIEW]
+    assert generator.requests[0].temperature == 0.0
     assert generator.requests[0].prompt_safety_state == PromptSafetyState.ALLOWED
     assert result.input_tokens == 35
 

@@ -36,6 +36,8 @@ G5 R75 候选在非工具问题中并行执行分类与本店 FAQ 检索；仅�
 
 G5 [R76 现场](../reports/tests/TR-MVP-006-20261018-R76.md)的 50 并发仅 45 条有安全输出，检索节点 P99 为 24731 ms；同店铺零 DeepSeek 探针把容量瓶颈定位在本地 BGE 向量化/重排排队，数据库检索 P99 为 8.74 ms。R77 候选只对本地 BGE 查询向量作进程内、按可信店铺与脱敏问题摘要及模型标识区分的最多 3 秒/128 项短时复用；每个请求仍重新执行店铺隔离、当前审批与版本的数据库检索，错误不缓存，无人等待时取消未完成的本地调用。只有一条召回候选时，Cross-Encoder 不可能改变排序，故跳过重排；原 Dense/词法阈值、上下文预算、引用及安全复核不变，多候选仍重排。`faq-trusted-review-v1.0.1` 明列政策声明的 `subject_type=refund_policy` 与 `action=explain_policy` 精确组合，严格 Schema 仍拒绝其他动作；工作流版本 `faq-agent-workflow-v1.8.4`，复核 Prompt SHA-256 `3207bb2f3d06c5d4ad414e229a470e39c63cc3aba5bb4ebe072835b4b540788e`。本地容量与 Prompt 契约不能证明真实 50 并发通过，必须重新执行安全输出、严格 P99 和 G3 恢复门禁。
 
+G5 R79 候选在启用 DeepSeek 和本地 BGE 且未配置备用模型的 backend 进程中，共用一个 DeepSeek HTTP 客户端和一个本地检索 HTTP 客户端；FastAPI 生命周期退出时关闭两者。每条请求仍独立构建 Agent 工作流、数据库记录器、工具执行器和带可信 `store_id` 的知识搜索端口，不共享客户上下文或模型输出。审批 FAQ 的独立安全复核固定 `temperature=0`，其严格 Schema、业务声明、DLP、失败关闭与员工确认发送不变。G5 临时 Compose 覆盖层将 backend 从普通模式的 2 个 worker 调整到 4 个；是否改善 R78 的 49/50 安全输出与 6 秒 P99，只能由相同合成负载的 staging 实测判断，不能据本地测试宣称达标。
+
 ## Prompt 与策略版本
 
 系统 Prompt、DLP 规则、结构化声明和回复策略使用可审计版本。Agent 配置只能选择受控语气、语言和品牌名，不能写任意 Prompt、模型或阈值。版本变化必须更新评测和发布基线。

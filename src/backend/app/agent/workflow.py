@@ -588,6 +588,7 @@ class AgentWorkflowService:
                     user_prompt=build_trusted_faq_review_prompt(command, hit, answer, state["reply_language"]),
                     trace_id=command.trace_id,
                     max_output_tokens=512,
+                    temperature=0.0,
                     business_prompt_id=BusinessPromptId.FAQ_TRUSTED_REVIEW,
                 )
                 generated = await self.generator.generate(request, TrustedFaqReviewOutput)

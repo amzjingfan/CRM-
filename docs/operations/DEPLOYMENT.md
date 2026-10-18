@@ -10,7 +10,7 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 ## Split-ingress Rootless staging
 
-2026-10-18 G5 R78：从 main `ebffdc80` 手动发布私有后端 `sha256:b905b39d…0b6576`，六摘要预取并临时部署 G5；50/50 隔离身份、唯一 FAQ ready，单会话严格 3 秒/5 秒通过。50 并发只有 49 条安全 `delta`，首输出/总耗时 P99 为 6021.2/6023.5 ms，G5 未通过。已按私有快照恢复旧后端 `sha256:8913c09c…83a958`、原前端/检索、G3 单店人工发送、Webhook 读取、工作台翻译、限流 10、三公网健康与固定出口。见[R78 TR](../reports/tests/TR-MVP-006-20261018-R78.md)；未发 TikTok 消息、部署 production 或主动运行 GitHub Actions。
+2026-10-18 G5 R78：从 main `ebffdc80` 手动发布私有后端 `sha256:b905b39d…0b6576`，六摘要预取并临时部署 G5；50/50 隔离身份、唯一 FAQ ready，单会话严格 3 秒/5 秒通过。50 并发只有 49 条安全 `delta`，首输出/总耗时 P99 为 6021.2/6023.5 ms，G5 未通过。已按私有快照恢复旧后端 `sha256:8913c09c…83a958`、原前端/检索、G3 单店人工发送、Webhook 读取、工作台翻译、限流 10、三公网健康与固定出口。见[R78 TR](../reports/tests/TR-MVP-006-20261018-R78.md)；未发 TikTok 消息、部署 production 或主动运行 GitHub Actions。R79 候选只在 G5 临时覆盖层使用 4 个 backend worker，普通 G3 层仍为 2 个；部署 validate 必须核对合并 Compose 命令，真实容量效果待手动窗口验证。
 
 2026-10-18 G5 R74：从 main `2225248d413799e1360fd7f6c8f428a03f85667e` 手动发布私有后端 `sha256:42ac664e…ff055`，linux/amd64、OCI revision、12 层压缩 110,952,855 字节及按摘要拉回通过。首次部署在公网健康处 504；业务机本地健康 200、网关 `18080` 超时，用户级隧道因旧 `crm-tunnel` SSH 会话占用端口而循环重启。只终止核对过的失效会话使隧道自动重连，公网恢复 200，原 G3 恢复门禁通过。再次部署 G5 后 50/50 身份和知识 ready，但唯一 SSE 首安全输出 5174.6 ms、总耗时 5476.1 ms，未达 3 秒/5 秒，未做 50 并发。已按第二次窗口快照恢复旧后端 `sha256:8913c09c…83a958`、当前前端/检索、G3 单店人工发送、Webhook 读取、翻译、限流 10、三公网健康与固定出口。见[R74 TR](../reports/tests/TR-MVP-006-20261018-R74.md)；未发 TikTok 消息、部署 production 或运行 GitHub Actions。
 

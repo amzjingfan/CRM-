@@ -17,6 +17,8 @@
 
 G5 [R77 修复](../reports/tests/TR-MVP-006-20261018-R77.md)已合入并在 [R78 现场](../reports/tests/TR-MVP-006-20261018-R78.md)完成手动单会话和 50 并发复测：本地检索排队显著缩短，但安全输出仍为 49/50 且首输出/总时延 P99 超限。旧 G3 模式已恢复；G5 和 production 仍未放行。
 
+G5 [R79 本地候选](../reports/tests/TR-MVP-006-20261018-R79.md)已通过连接池复用、G5 专用 4 worker 和独立复核温度 0 的确定性及完整后端门禁；零模型探针仅提供 G3 空载入口基线。它不改变上表 R78 的真实失败状态；必须经手动镜像、可恢复 staging 窗口重新取得 50/50 安全输出、严格时延、资源与断连证据。
+
 G5 R69 组合 FAQ 源码已合并并在 R70 手动窗口实测。真实模型虽然完成分类与草稿，但把内容层 `needs_human` 与 CRM 固有人工发送复核混同，安全转人工；没有可计时的安全 `delta`。R70 的 Agent 检索/组合调用/独立复核耗时 269/1948/637 ms，内部首次输出 3004 ms 不代替 SSE 安全输出。R71 本地候选仅修正 Prompt 歧义并通过确定性回归，尚无真实模型与延迟证据；不能用这一次 HTTP 200 启动 50 并发。
 
 G5 [R49 手动候选镜像](../../release/evidence/staging/crm-staging-g5-r49-manual-backend-image-20261017.json)随后经 OCI index `sha256:8dabe73b…c017` 完成两次获批的 [R50 手动窗口](../reports/tests/TR-MVP-006-20261017-R50.md)。第一次单会话被 Origin/CORS 拒绝；第二次 HTTP 200 但 FAQ 草稿 `invalid_schema`，无安全 `delta`，50 并发未启动。旧后端与 G3 限定会话已恢复，production 仍为 No-Go。

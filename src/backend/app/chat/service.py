@@ -7,7 +7,7 @@ from typing import Literal, cast
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.factory import build_agent_workflow
+from app.agent.factory import SharedAgentRuntime, build_agent_workflow
 from app.agent.models import AgentRun
 from app.agent.reply_policy import resolve_store_reply_profile
 from app.agent.schemas import AgentToolRuntimeContext, AgentWorkflowCommand, AgentWorkflowResult, MessageContext
@@ -121,6 +121,7 @@ async def run_agent_for_message(
     trace_id: str,
     permissions: set[str],
     allow_transfer: bool = False,
+    runtime: SharedAgentRuntime | None = None,
 ) -> AgentWorkflowResult:
     """调用既有内部工作流，并在全栈层补充配置关联。"""
     settings = get_settings()
@@ -135,7 +136,7 @@ async def run_agent_for_message(
         permissions,
         allow_transfer,
     )
-    result = await build_agent_workflow(session, settings).run(session, command)
+    result = await build_agent_workflow(session, settings, runtime=runtime).run(session, command)
     run = await session.get(AgentRun, result.agent_run_id)
     if run is not None:
         run.agent_config_id = config.id
@@ -266,6 +267,7 @@ async def suggest_for_user(
     conversation_id: uuid.UUID,
     trigger_message_id: uuid.UUID | None,
     trace_id: str,
+    runtime: SharedAgentRuntime | None = None,
 ) -> SuggestionView:
     conversation, trigger = await _conversation_and_trigger(
         session,
@@ -298,6 +300,7 @@ async def suggest_for_user(
         trigger,
         trace_id,
         user_permissions(user),
+        runtime=runtime,
     )
     return suggestion_view(result)
 

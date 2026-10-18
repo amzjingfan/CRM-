@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.agent.factory import build_shared_agent_runtime
 from app.api.v1.router import router as v1_router
 from app.shared.config.settings import get_settings
 from app.shared.exceptions.errors import AppError
@@ -24,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    """管理应用生命周期；基础设施连接在后续切片中接入。"""
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    """管理应用生命周期内的模型连接池。"""
     lifecycle_trace_id = str(uuid.uuid4())
     # 生产配置在 Settings 构建阶段统一失败关闭。这里不再因为 Mock 被禁用而
     # 阻止只读管理能力启动；平台调用仍由适配器和独立真实能力开关双重保护。
@@ -35,8 +36,15 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         settings.app_version,
         extra={"trace_id": lifecycle_trace_id, "event": "application_started"},
     )
-    yield
-    logger.info("应用关闭", extra={"trace_id": lifecycle_trace_id, "event": "application_stopped"})
+    runtime = build_shared_agent_runtime(settings)
+    application.state.agent_runtime = runtime
+    try:
+        yield
+    finally:
+        if runtime is not None:
+            await runtime.aclose()
+        application.state.agent_runtime = None
+        logger.info("应用关闭", extra={"trace_id": lifecycle_trace_id, "event": "application_stopped"})
 
 
 app = FastAPI(

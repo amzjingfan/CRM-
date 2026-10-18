@@ -105,6 +105,18 @@ def test_g5_staging_window_is_backend_only_and_default_mode_restores_closed_flag
         "CHAT_QUERY_LIMIT": "60",
         "RETRIEVAL_MODEL_SERVICE_TOKEN": "${RETRIEVAL_MODEL_SERVICE_TOKEN:?RETRIEVAL_MODEL_SERVICE_TOKEN is required}",
     }
+    assert g5["services"]["backend"]["command"] == [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--workers",
+        "4",
+        "--proxy-headers",
+        "--forwarded-allow-ips=*",
+    ]
 
 
 @pytest.mark.parametrize("g5_enabled", [False, True])
@@ -145,6 +157,8 @@ def test_docker_compose_resolves_g5_and_default_staging_modes(g5_enabled: bool, 
         assert service_env["SSE_LOAD_TEST_ENABLED"] == expected
         assert service_env.get("EMBEDDING_ENABLED", "false") == expected
     assert config["services"]["backend"]["environment"]["CHAT_QUERY_LIMIT"] == ("60" if g5_enabled else "10")
+    backend_command = config["services"]["backend"]["command"]
+    assert backend_command[backend_command.index("--workers") + 1] == ("4" if g5_enabled else "2")
     backend_token = config["services"]["backend"]["environment"].get("RETRIEVAL_MODEL_SERVICE_TOKEN")
     retrieval_token = config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"]
     assert retrieval_token == RETRIEVAL_TOKEN_SENTINEL

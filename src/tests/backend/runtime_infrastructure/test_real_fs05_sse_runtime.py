@@ -234,6 +234,7 @@ async def test_stream_timeout_cancels_workflow_and_ends_with_error_done(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     user = SimpleNamespace(id=uuid.uuid4())
+    runtime = object()
     cancelled = asyncio.Event()
     released: list[uuid.UUID] = []
 
@@ -248,6 +249,7 @@ async def test_stream_timeout_cancels_workflow_and_ends_with_error_done(
         released.append(user_id)
 
     async def never_finishes(*_args: object) -> Any:
+        assert _args[-1] is runtime
         try:
             await asyncio.Event().wait()
         finally:
@@ -271,6 +273,7 @@ async def test_stream_timeout_cancels_workflow_and_ends_with_error_done(
         ),
     )
     request = SimpleNamespace(
+        app=SimpleNamespace(state=SimpleNamespace(agent_runtime=runtime)),
         state=SimpleNamespace(trace_id=str(uuid.uuid4())),
         client=SimpleNamespace(host="127.0.0.1"),
         is_disconnected=connected,
