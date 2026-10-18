@@ -1,0 +1,1 @@
+{"read_only":true,"matching_failures":1,"diagnostic":{"failure_stage":"safety_review","output_failure_kind":"invalid_schema","output_schema_issues":"business_claims:claim_action_mismatch"}}

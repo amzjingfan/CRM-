@@ -4,6 +4,7 @@ View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R76 | MVP-006 | R76 | APPROVE | `1fbef29968e805fe0cbb6fae206c80df82766ba7` | manual-image-provenance / isolated-users / strict-sse-gate / retrieval-capacity / schema-failure / restore / production-boundary | 2026-10-18T14:35:00+08:00 | [`RR-MVP-006-20261018-R76.md`](RR-MVP-006-20261018-R76.md) |
 | RR-MVP-006-20261018-R75 | MVP-006 | R75 | APPROVE | `e9a1b81545355a1ac6feec6a4d495b6ed8edf1b8` | store-isolation / approval-version / business-claims / dlp / reviewer-independence / cancellation / manual-send / latency-risk | 2026-10-18T13:55:00+08:00 | [`RR-MVP-006-20261018-R75.md`](RR-MVP-006-20261018-R75.md) |
 | RR-MVP-006-20261018-R74 | MVP-006 | R74 | APPROVE | `2225248d413799e1360fd7f6c8f428a03f85667e` | manual-image-provenance / tunnel-isolation / store-isolation / strict-latency / restore-snapshot / production-boundary | 2026-10-18T13:18:00+08:00 | [`RR-MVP-006-20261018-R74.md`](RR-MVP-006-20261018-R74.md) |
 | RR-MVP-006-20261018-R73 | MVP-006 | R73 | APPROVE | `82b1206d43d2573822cb25c8ed64456eb02c0d5c` | store-scope / refusal / tool-routing / cancellation / prompt-registration / independent-safety-review / latency-risk | 2026-10-18T12:40:00+08:00 | [`RR-MVP-006-20261018-R73.md`](RR-MVP-006-20261018-R73.md) |
