@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R65 源码：[R65 TR](../reports/tests/TR-MVP-006-20261018-R65.md)记录五个固定 Agent 节点耗时的先红后绿验证，提交后完整后端 2069 passed/27 skipped、Ruff/mypy 通过；仅成功运行的低敏摘要新增白名单毫秒数，原路由、安全复核与 3 秒/5 秒门槛未改变。尚未发布或部署 R65 镜像，也未复测真实模型。R64 仍是最新现场：安全 `delta` 7829.7 ms，50 并发未启动，原 G3 模式已恢复。G5 与 production No-Go。
+
 2026-10-18 G5 R64 最新现场：[R64 TR](../reports/tests/TR-MVP-006-20261018-R64.md)记录本机 Docker Desktop 登录 GHCR 后手动发布不可变后端，staging 临时 G5 部署、FAQ 就绪、第十代隔离令牌与 50/50 身份会话预检通过。唯一合成 SSE HTTP 200 并产生安全 `delta`，但首 `delta` 7829.7 ms、总耗时 7837.6 ms，未满足严格 3000/5000 ms 门槛；50 并发与资源采样未启动。原后端及 G3 限定会话人工发送已恢复，三健康与固定出口通过。G5 与 production No-Go。
 
 2026-10-18 G5 R63 源码：[R63 TR](../reports/tests/TR-MVP-006-20261018-R63.md)记录固定转人工原因的先红后绿测试、提交后完整后端 2069 passed/27 skipped，以及 Ruff/mypy 通过。它只增强白名单诊断，不改变 Agent 动作或安全阈值；尚未发布或部署 R63 镜像，也未运行新 DeepSeek 单会话。[R62 现场](../reports/tests/TR-MVP-006-20261018-R62.md)仍是最新真实结果：无安全 `delta`、50 并发未启动、旧 G3 模式已恢复。G5 与 production No-Go。

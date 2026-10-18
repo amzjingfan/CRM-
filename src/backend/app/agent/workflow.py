@@ -5,6 +5,7 @@ import logging
 import operator
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from typing import Annotated, Any, Protocol, TypedDict, cast
 
 from langgraph.graph import END, START, StateGraph
@@ -142,6 +143,7 @@ class WorkflowState(TypedDict, total=False):
     session: AsyncSession
     agent_run_id: uuid.UUID
     state_path: Annotated[list[str], operator.add]
+    node_timings_ms: Annotated[list[tuple[str, int]], operator.add]
     inference: IntentInferenceResult
     retrieval: RagRetrievalResult
     hits: list[KnowledgeRetrievalHit]
@@ -235,6 +237,7 @@ class AgentWorkflowService:
                 "session": session,
                 "agent_run_id": run_id,
                 "state_path": ["RECEIVED"],
+                "node_timings_ms": [],
                 "required_tools": [],
                 "tool_executions": [],
                 "unresolved_tools": [],
@@ -294,6 +297,7 @@ class AgentWorkflowService:
                     translation_error_code=state.get("translation_error_code"),
                     safety_reason_codes=result.safety_reason_codes,
                     decision_reason=state["decision_reason"],
+                    node_timings_ms=state["node_timings_ms"],
                     business_claim_summaries=[
                         (
                             f"{claim.subject_type.value}:{claim.action.value}:"
@@ -357,16 +361,16 @@ class AgentWorkflowService:
         """构建无循环工作流，硬性限制节点次数和模型消费。"""
         builder = StateGraph(WorkflowState)
         builder.add_node("context_loaded", self._context_loaded)
-        builder.add_node("intent_classified", self._intent_classified)
+        builder.add_node("intent_classified", self._timed_node("classification", self._intent_classified))
         builder.add_node("tool_required", self._tool_required)
         builder.add_node("tool_executed", self._tool_executed)
         builder.add_node("tool_response_drafted", self._tool_response_drafted)
         builder.add_node("tool_safety_checked", self._tool_safety_checked)
-        builder.add_node("knowledge_retrieved", self._knowledge_retrieved)
-        builder.add_node("response_drafted", self._response_drafted)
-        builder.add_node("safety_checked", self._safety_checked)
+        builder.add_node("knowledge_retrieved", self._timed_node("retrieval", self._knowledge_retrieved))
+        builder.add_node("response_drafted", self._timed_node("faq_draft", self._response_drafted))
+        builder.add_node("safety_checked", self._timed_node("safety_review", self._safety_checked))
         builder.add_node("confidence_evaluated", self._confidence_evaluated)
-        builder.add_node("reply_translated", self._reply_translated)
+        builder.add_node("reply_translated", self._timed_node("translation", self._reply_translated))
         builder.add_node("handoff_executed", self._handoff_executed)
         builder.add_node("auto_reply_ready", self._auto_reply_ready)
         builder.add_node("human_review", self._human_review)
@@ -388,6 +392,21 @@ class AgentWorkflowService:
         builder.add_edge("human_review", END)
         builder.add_edge("transferred", END)
         return builder.compile()
+
+    @staticmethod
+    def _timed_node(
+        name: str,
+        node: Callable[[WorkflowState], Awaitable[WorkflowState]],
+    ) -> Any:
+        """仅累计固定节点的单调耗时；运行摘要写入端再执行白名单过滤。"""
+
+        async def run_timed(state: WorkflowState) -> WorkflowState:
+            started_at = time.perf_counter_ns()
+            update = await node(state)
+            elapsed_ms = max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
+            return {**update, "node_timings_ms": [(name, elapsed_ms)]}
+
+        return run_timed
 
     async def _context_loaded(self, state: WorkflowState) -> WorkflowState:
         """命令已由 Pydantic 完成长度和历史预算校验。"""

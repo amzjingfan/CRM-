@@ -354,6 +354,29 @@ async def test_workflow_completion_records_scores_and_safe_trace_only() -> None:
     assert "decision_reason=unknown" in (run.output_summary or "")
     assert "raw private model text" not in (run.output_summary or "")
 
+    await recorder.complete_workflow(
+        run.id,
+        replace(
+            completion,
+            node_timings_ms=[
+                ("classification", 12),
+                ("retrieval", 17),
+                ("faq_draft", 24),
+                ("safety_review", 31),
+                ("translation", 2),
+                ("raw private model text", 999),
+                ("retrieval", 5),
+                ("classification", -1),
+            ],
+        ),
+    )
+    assert "node_timings_ms=classification:12,retrieval:17,faq_draft:24,safety_review:31,translation:2" in (
+        run.output_summary or ""
+    )
+    assert "raw private model text" not in (run.output_summary or "")
+    assert "retrieval:5" not in (run.output_summary or "")
+    assert "classification:-1" not in (run.output_summary or "")
+
 
 @pytest.mark.asyncio
 async def test_workflow_completion_records_only_low_sensitive_tool_trace() -> None:

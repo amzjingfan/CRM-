@@ -1192,6 +1192,14 @@ async def test_workflow_returns_translation_linked_to_trigger_message() -> None:
     assert result.reply_language == "en"
     assert recorder.completed is not None
     assert "REPLY_TRANSLATED" in recorder.completed.state_path
+    assert [name for name, _ in recorder.completed.node_timings_ms] == [
+        "classification",
+        "retrieval",
+        "faq_draft",
+        "safety_review",
+        "translation",
+    ]
+    assert all(isinstance(elapsed_ms, int) and elapsed_ms >= 0 for _, elapsed_ms in recorder.completed.node_timings_ms)
 
 
 @pytest.mark.asyncio
@@ -1328,7 +1336,7 @@ async def test_invalid_classification_output_records_classification_stage() -> N
 @pytest.mark.asyncio
 async def test_realtime_logistics_routes_to_tool_required_and_transfer() -> None:
     """实时物流问题不应拿通用 FAQ 猜订单轨迹，也不能在本阶段执行工具。"""
-    workflow, rag, generator, _ = service(
+    workflow, rag, generator, recorder = service(
         message_intent=IntentModelOutput(
             intent=IntentName.LOGISTICS_QUERY,
             confidence=0.95,
@@ -1346,6 +1354,8 @@ async def test_realtime_logistics_routes_to_tool_required_and_transfer() -> None
     assert result.draft_reply is None
     assert rag.calls == 0
     assert generator.requests == []
+    assert recorder.completed is not None
+    assert [name for name, _ in recorder.completed.node_timings_ms] == ["classification", "translation"]
 
 
 @pytest.mark.asyncio

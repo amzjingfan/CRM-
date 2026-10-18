@@ -123,6 +123,7 @@ class AgentWorkflowRunCompletion:
     safety_reason_codes: list[str] = field(default_factory=list)
     business_claim_summaries: list[str] = field(default_factory=list)
     decision_reason: AgentDecisionReason = "none"
+    node_timings_ms: list[tuple[str, int]] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
@@ -368,6 +369,22 @@ class SqlAlchemyAgentRunRecorder:
             f"translation_prompt={result.translation_prompt_version or 'none'};"
             f"translation_error={result.translation_error_code or 'none'}"
         )
+        allowed_nodes = {"classification", "retrieval", "faq_draft", "safety_review", "translation"}
+        safe_timings: list[str] = []
+        seen_nodes: set[str] = set()
+        for item in result.node_timings_ms:
+            if not isinstance(item, tuple) or len(item) != 2:
+                continue
+            name, elapsed_ms = item
+            if (
+                isinstance(name, str)
+                and name in allowed_nodes
+                and name not in seen_nodes
+                and type(elapsed_ms) is int
+                and elapsed_ms >= 0
+            ):
+                safe_timings.append(f"{name}:{elapsed_ms}")
+                seen_nodes.add(name)
         run.output_summary = (
             f"classification_state={result.classification_state.value};"
             f"states={'>'.join(result.state_path)};citations={citations};"
@@ -375,7 +392,7 @@ class SqlAlchemyAgentRunRecorder:
             f"business_claims={business_claims};prompts={prompt_versions};"
             f"safety_reasons={safety_reasons};"
             f"decision_reason={decision_reason};"
-            f"{translation};{retrieval_models}"
+            f"{translation};{retrieval_models};node_timings_ms={','.join(safe_timings) or 'none'}"
         )
         await self.session.commit()
 

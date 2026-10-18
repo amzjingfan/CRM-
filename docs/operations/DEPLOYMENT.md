@@ -128,6 +128,7 @@ python scripts/verify_tiktok_egress.py
 - `canary` 与 `check_only` 的一次性容器进程使用现有 `live` 步骤相同的五项获批 DeepSeek 计价环境变量，以通过 `LLM_LIVE_EVAL=true` 的配置校验；这只修复评测进程配置，不修改运行中 backend 服务，也不代表模型调用获批。
 - G4 的全量 Provider 超时可用 `diagnose-staging-deepseek-transport.yml` 做一次性只读定位：从 `main` 填入精确源码 SHA 和运行后端摘要。默认 `transport` 模式让 Runner 与现有 backend 容器分别对固定 `api.deepseek.com` 执行无凭据的 DNS/TCP/TLS/HEAD 检查。另行选 `request_path` 时，额外各向固定 `/chat/completions` 路径发送一次无凭据、仅含空 JSON 的 POST；存在 HTTPS 代理配置时拒绝发送，意外收到 2xx 时立即失败关闭。新增证据只保留固定失败类别、HTTP 状态类别与 DNS/TCP/TLS/请求至首字节/总耗时分档，不保留响应正文、原始异常、代理值或凭据。该 POST 不含有效模型请求，不能验证真实生成阶段；探针不改服务，也不能替代付费 `live` 质量验收。
 - SSE `delta` 是经安全校验后的草稿分块，不把模型原生流直接暴露给客户端。
+- G5 单会话超时定位读取该次 `agent_runs.output_summary` 的 `node_timings_ms`：成功运行只包含实际执行的 `classification`、`retrieval`、`faq_draft`、`safety_review`、`translation` 固定节点及整数毫秒；`none` 或缺失不代表耗时为零。记录时再次白名单过滤，诊断只比较节点耗时与 Agent/SSE 总耗时，不提取客户正文、Prompt、Token、请求 ID 或原始日志。R64 的 7829.7 ms 首 `delta` 未通过严格小于 3000 ms 门槛；先用新诊断做可恢复单会话，达标后才启动 50 并发，禁止为了通过而降低门槛或跳过独立安全复核。
 
 ## 模型资产
 
