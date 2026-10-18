@@ -1,0 +1,15 @@
+{
+  "evidence_type": "manual_private_backend_image",
+  "observed_at_utc": "2026-10-18T13:05:37.874586+00:00",
+  "source_sha": "fcdabfc99634118eef58f76a3b79081612691b1f",
+  "index_digest": "sha256:42d2203e10966e6076996c7651f7422cf83b3eef97d7c568b03fcb3d268a59de",
+  "linux_amd64_manifest_digest": "sha256:5d9b6721ac1c0708a684c620cecb2212e83a6a2bbfd7b76ec397466e689c7f51",
+  "config_digest": "sha256:d9715edfcbc47004c266f4a9525b5bff5b774ba6b6a73dc066d034f82c3644c4",
+  "architecture": "linux/amd64",
+  "compressed_layer_count": 12,
+  "compressed_layer_bytes": 110974898,
+  "largest_compressed_layer_bytes": 33262910,
+  "package_visibility": "private",
+  "digest_pull_verified": true,
+  "github_actions_used": false
+}

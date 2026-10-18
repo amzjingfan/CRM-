@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R89 | MVP-006 | R89 | APPROVE | `fcdabfc99634118eef58f76a3b79081612691b1f` | image-provenance, isolated-users, strict-latency, low-sensitivity-timing, database-activity, restore, production-boundary | 2026-10-18T21:05:45+08:00 | [`RR-MVP-006-20261018-R89.md`](RR-MVP-006-20261018-R89.md) |
 | RR-MVP-006-20261018-R88 | MVP-006 | R88 | APPROVE | `b19390ef7e8d9253aa4f0b697e2b6817896c0e35` | auth-failure-closed, store-isolation, low-sensitivity-logs, connection-timing, g3-boundary, strict-latency | 2026-10-18T20:32:19+08:00 | [`RR-MVP-006-20261018-R88.md`](RR-MVP-006-20261018-R88.md) |
 | RR-MVP-006-20261018-R87 | MVP-006 | R87 | APPROVE | `3648b3da698fa3587bc42aaecbeed8105b4c6887` | image-provenance, isolated-users, safe-delta, strict-latency, low-sensitivity-timing, restore, production-boundary | 2026-10-18T20:12:00+08:00 | [`RR-MVP-006-20261018-R87.md`](RR-MVP-006-20261018-R87.md) |
 | RR-MVP-006-20261018-R86 | MVP-006 | R86 | APPROVE | `fdb286de2eeb5e18c1a1e3fb447b888253c26b05` | store-isolation, auth, low-sensitivity-logs, search-transaction, failure-closed, g3-restore | 2026-10-18T19:42:00+08:00 | [`RR-MVP-006-20261018-R86.md`](RR-MVP-006-20261018-R86.md) |
