@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261018-R70 | MVP-006 | R70 | APPROVE | `86f3dae3e24f5b7f786fca9a31ba0373082d3e90` | manual-image-provenance / store-isolation / no-safe-delta / restore-snapshot / production-boundary | 2026-10-18T11:45:00+08:00 | [`RR-MVP-006-20261018-R70.md`](RR-MVP-006-20261018-R70.md) |
 | RR-MVP-006-20261018-R69 | MVP-006 | R69 | APPROVE | `1b0a0b32427583d64581d981e4182f83a8f59add` | store-scope / prompt-schema / fail-closed / tool-routing / safety-review / token-accounting | 2026-10-18T11:20:00+08:00 | [`RR-MVP-006-20261018-R69.md`](RR-MVP-006-20261018-R69.md) |
 | RR-MVP-006-20261018-R68 | MVP-006 | R68 | APPROVE | `04f0fbe93cc271c1671703ec1a2cb1af53574fef` | manual-image-provenance / restore-revision-gate / isolated-credentials / latency-threshold / restored-g3-mode | 2026-10-18T10:30:00+08:00 | [`RR-MVP-006-20261018-R68.md`](RR-MVP-006-20261018-R68.md) |
 | RR-MVP-006-20261018-R67 | MVP-006 | R67 | APPROVE | `5f2e40e0bc24f6aee8609c10f25cabf945f6308b` | store-scope / task-lifecycle / tool-routing / fail-closed / node-timing / unchanged-safety | 2026-10-18T10:07:00+08:00 | [`RR-MVP-006-20261018-R67.md`](RR-MVP-006-20261018-R67.md) |

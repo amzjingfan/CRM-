@@ -1,0 +1,26 @@
+{
+  "window_start_utc": "2026-10-18T03:37:55Z",
+  "window_end_utc": "2026-10-18T03:38:15Z",
+  "read_only": true,
+  "matching_rows": 1,
+  "diagnostic_script_sha256": "ed7e5a9ed0fc2f8b00633fdfc9ebdfa9d7c7817486cf9e08cc3d3e25081ad309",
+  "row": {
+    "action": "transfer_human",
+    "status": "succeeded",
+    "error_code": null,
+    "classification_state": "classified",
+    "combined_prompt_recorded": true,
+    "decision_reason": "faq_draft_needs_human",
+    "safety_reasons": "none",
+    "latency_ms": 2866,
+    "first_output_latency_ms": 3004,
+    "input_tokens": 3286,
+    "output_tokens": 256,
+    "node_timings_ms": {
+      "retrieval": 269,
+      "classification": 1948,
+      "safety_review": 637,
+      "translation": 0
+    }
+  }
+}
