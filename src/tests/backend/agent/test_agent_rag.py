@@ -2,6 +2,8 @@
 
 import asyncio
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import cast
@@ -46,6 +48,7 @@ class MemorySearchPort:
     hits: list[KnowledgeRetrievalHit]
 
     def __post_init__(self) -> None:
+        self.session: AsyncSession | None = None
         self.store_id: uuid.UUID | None = None
         self.query_text: str | None = None
         self.dense_top_k: int | None = None
@@ -66,6 +69,7 @@ class MemorySearchPort:
         rrf_k: int,
     ) -> list[KnowledgeRetrievalHit]:
         assert len(query_embedding) == 1024
+        self.session = session
         self.store_id = store_id
         self.query_text = query_text
         self.dense_top_k = dense_top_k
@@ -164,6 +168,155 @@ async def test_rag_retrieval_sanitizes_query_and_forwards_store_scope() -> None:
     assert result.hits[0].reranker_score is None
     assert type(result.embedding_wait_ms) is int and result.embedding_wait_ms >= 0
     assert type(result.search_wall_ms) is int and result.search_wall_ms >= 0
+
+
+@pytest.mark.asyncio
+async def test_rag_closes_own_search_session_before_model_reranking() -> None:
+    """数据库查询完成即释放连接，后续模型等待不占用请求会话。"""
+    events: list[str] = []
+    caller_session = cast(AsyncSession, object())
+    search_session = cast(AsyncSession, object())
+    port = MemorySearchPort(
+        [hit(score=0.91, token_count=20, label="第一条"), hit(score=0.82, token_count=20, label="第二条")]
+    )
+
+    @asynccontextmanager
+    async def search_session_factory() -> AsyncIterator[AsyncSession]:
+        events.append("opened")
+        try:
+            yield search_session
+        finally:
+            events.append("closed")
+
+    class CheckingReranker(FixedRerankingService):
+        async def rerank(self, query: str, candidates: list[object]) -> RerankingResult:
+            assert events[-1] == "closed"
+            events.append("reranked")
+            return await super().rerank(query, candidates)
+
+    service = RagRetrievalService(
+        embedding_service=CapturingEmbeddingService(),
+        search_port=port,
+        reranking_service=CheckingReranker(),
+        search_session_factory=search_session_factory,
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+
+    result = await service.retrieve(caller_session, uuid.uuid4(), "退货流程？")
+
+    assert len(result.hits) == 2
+    assert port.session is search_session
+    assert port.session is not caller_session
+    assert events == ["opened", "closed", "reranked"]
+
+
+@pytest.mark.asyncio
+async def test_rag_search_session_closes_on_query_failure() -> None:
+    """检索失败关闭时同样释放独立会话，不在后续请求中留连接。"""
+    events: list[str] = []
+
+    @asynccontextmanager
+    async def search_session_factory() -> AsyncIterator[AsyncSession]:
+        events.append("opened")
+        try:
+            yield cast(AsyncSession, object())
+        finally:
+            events.append("closed")
+
+    class FailingSearchPort(MemorySearchPort):
+        async def hybrid_search(
+            self,
+            session: AsyncSession,
+            store_id: uuid.UUID,
+            query_text: str,
+            query_embedding: list[float],
+            *,
+            dense_top_k: int,
+            lexical_top_k: int,
+            candidate_top_k: int,
+            rrf_k: int,
+        ) -> list[KnowledgeRetrievalHit]:
+            raise RuntimeError("search unavailable")
+
+    service = RagRetrievalService(
+        embedding_service=CapturingEmbeddingService(),
+        search_port=FailingSearchPort([]),
+        reranking_service=FixedRerankingService(),
+        search_session_factory=search_session_factory,
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+
+    with pytest.raises(RuntimeError, match="search unavailable"):
+        await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？")
+    assert events == ["opened", "closed"]
+
+
+@pytest.mark.asyncio
+async def test_rag_search_session_closes_when_stream_is_cancelled() -> None:
+    """浏览器断线取消检索时，独立事务不能留在数据库连接池。"""
+    events: list[str] = []
+    search_started = asyncio.Event()
+
+    @asynccontextmanager
+    async def search_session_factory() -> AsyncIterator[AsyncSession]:
+        events.append("opened")
+        try:
+            yield cast(AsyncSession, object())
+        finally:
+            events.append("closed")
+
+    class BlockingSearchPort(MemorySearchPort):
+        async def hybrid_search(
+            self,
+            session: AsyncSession,
+            store_id: uuid.UUID,
+            query_text: str,
+            query_embedding: list[float],
+            *,
+            dense_top_k: int,
+            lexical_top_k: int,
+            candidate_top_k: int,
+            rrf_k: int,
+        ) -> list[KnowledgeRetrievalHit]:
+            search_started.set()
+            await asyncio.Event().wait()
+            return []
+
+    service = RagRetrievalService(
+        embedding_service=CapturingEmbeddingService(),
+        search_port=BlockingSearchPort([]),
+        reranking_service=FixedRerankingService(),
+        search_session_factory=search_session_factory,
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+    task = asyncio.create_task(service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？"))
+    await search_started.wait()
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert events == ["opened", "closed"]
 
 
 @pytest.mark.asyncio

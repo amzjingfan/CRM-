@@ -21,6 +21,7 @@ from app.agent.vectorization import KnowledgeVectorizationService
 from app.agent.workflow import AgentWorkflowService
 from app.knowledge_base.vector_port import SqlAlchemyKnowledgeSearchPort, SqlAlchemyKnowledgeVectorPort
 from app.shared.config.settings import Settings
+from app.shared.database.session import session_factory
 from app.tools.executor import SqlAlchemyToolExecutor
 
 
@@ -152,6 +153,7 @@ def build_agent_workflow(
         min_dense_score=settings.rag_min_score,
         min_lexical_score=settings.rag_min_lexical_score,
         max_context_tokens=settings.rag_max_context_tokens,
+        search_session_factory=session_factory,
     )
     generator = StructuredGenerationService(primary_provider, fallback_provider, max_attempts=2)
     return AgentWorkflowService(

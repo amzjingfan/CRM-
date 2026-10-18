@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-18 G5 R84 本地候选：`CANDIDATE_SUBJECT_SHA=9c1b0c63fc8617f86e5dbcff91a64f77a5decf77`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R84.md)、[TR](../reports/tests/TR-MVP-006-20261018-R84.md)及[RR](../reports/reviews/RR-MVP-006-20261018-R84.md)记录独立短时 FAQ 检索会话、异常/取消释放和 2129 passed/27 skipped、237 条离线安全样本；三个派生索引为 `CANDIDATE_VIEW`。尚未发布匹配镜像或运行新窗口，staging 仍为旧后端/G3 单店人工发送，R83 严格 P99 失败有效。G5 `DOING`、production No-Go。Workspace hygiene：保留活动 worktree 与仓库外凭证，未知文件未处理。下一步：①手动合并源码并发布匹配镜像；②可恢复窗口复测单会话、50/50、严格 P99 与数据库状态；③独立断连和 G3 恢复验收。
+
 2026-10-18 G5 R83 当前恢复点：main `4228e0b5f8a12e27f29132cbeb8afd002e8913e9` 的私有后端 `sha256:d4751c7a…44895` 已手动发布并在 staging 完成两次可恢复 G5 窗口，见 [IR](../records/implementation/IR-MVP-006-20261018-R83.md)、[TR](../reports/tests/TR-MVP-006-20261018-R83.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R83.md)与[低敏清单](../../release/evidence/staging/crm-staging-g5-r83-manifest-20261018.json)。两轮单会话严格门槛、50/50 隔离身份和安全 `delta` 均通过；50 并发首 `delta` P99 分别 6579.5/4878.8 ms，未过 3000 ms。BGE 向量等待 P99 197 ms、混合搜索端口 P99 2980 ms，负载时 PostgreSQL 最多 45 条 `idle in transaction`；尚未单独测出连接获取时间。两轮均恢复旧后端 `sha256:8913c09c…83a958`、G3 已审核单店人工发送、健康与固定出口。证据已通过 PR #388 合入 main `ff86836e446dfbd312a437b5802e638c22a37e1d`；G5 `DOING`，production No-Go。Workspace hygiene：活动 worktree、仓库外短期凭证和私有快照保留，未知文件未处理。下一步：①针对长开数据库事务做单一修复并本地验证；②可恢复窗口严格复测 50/50、P99、资源与独立断连；③复核原 G3 模式恢复。
 
 2026-10-18 G5 R82 索引收尾：[PR #386](https://github.com/CP11-gh/CRM/pull/386) 已将候选源码和证据 squash 合入权威 main `f17a4d005517728a4403111a800c110dbbb0dd2f`。从该 main 的 IR/TR/RR 源记录与索引逐项核对 ID，数量分别为 168/173/165、无缺漏，三个派生索引在本收尾分支恢复 `CURRENT`。R82 镜像、staging 负载诊断仍未运行；R80 的严格 P99 失败和 G3 恢复仍是最新现场结论。G5 `DOING`，production No-Go。

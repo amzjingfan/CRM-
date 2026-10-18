@@ -42,6 +42,7 @@ def test_runtime_factory_uses_parallel_store_scoped_faq_retrieval(monkeypatch: M
     workflow = factory.build_agent_workflow(cast(AsyncSession, object()), cast(Settings, settings))
 
     assert workflow.combined_faq_enabled is False
+    assert workflow.rag_service.search_session_factory is factory.session_factory
 
 
 def test_parallel_faq_draft_keeps_content_judgment_separate_from_employee_review() -> None:

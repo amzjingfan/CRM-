@@ -5,6 +5,8 @@ import hashlib
 import time
 import uuid
 from collections import OrderedDict
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, replace
 from typing import Protocol
 
@@ -135,6 +137,7 @@ class RagRetrievalService:
         min_dense_score: float,
         min_lexical_score: float,
         max_context_tokens: int,
+        search_session_factory: Callable[[], AbstractAsyncContextManager[AsyncSession]] | None = None,
     ) -> None:
         if not 1 <= dense_top_k <= 100 or not 1 <= lexical_top_k <= 100:
             raise ValueError("混合检索单路候选数必须在 1 到 100 之间")
@@ -157,6 +160,7 @@ class RagRetrievalService:
         self.min_dense_score = min_dense_score
         self.min_lexical_score = min_lexical_score
         self.max_context_tokens = max_context_tokens
+        self.search_session_factory = search_session_factory
 
     async def retrieve(
         self,
@@ -174,16 +178,25 @@ class RagRetrievalService:
         if len(embedding_result.vectors) != 1:
             raise RuntimeError("查询 Embedding 返回数量错误")
         search_started_at = time.perf_counter_ns()
-        candidates = await self.search_port.hybrid_search(
-            session,
-            store_id,
-            sanitized_query,
-            embedding_result.vectors[0],
-            dense_top_k=self.dense_top_k,
-            lexical_top_k=self.lexical_top_k,
-            candidate_top_k=self.candidate_top_k,
-            rrf_k=self.rrf_k,
-        )
+
+        async def search(search_session: AsyncSession) -> list[KnowledgeRetrievalHit]:
+            return await self.search_port.hybrid_search(
+                search_session,
+                store_id,
+                sanitized_query,
+                embedding_result.vectors[0],
+                dense_top_k=self.dense_top_k,
+                lexical_top_k=self.lexical_top_k,
+                candidate_top_k=self.candidate_top_k,
+                rrf_k=self.rrf_k,
+            )
+
+        if self.search_session_factory is None:
+            candidates = await search(session)
+        else:
+            # 检索事务在模型重排/独立安全复核前结束，取消或失败也释放连接。
+            async with self.search_session_factory() as search_session:
+                candidates = await search(search_session)
         search_wall_ms = max(0, (time.perf_counter_ns() - search_started_at) // 1_000_000)
         if not candidates:
             return RagRetrievalResult(
