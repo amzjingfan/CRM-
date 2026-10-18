@@ -12,7 +12,7 @@ from app.auth import dependencies as auth_dependencies
 from app.auth import service as auth_service
 from app.chat import router as chat_router
 from app.chat import service as chat_service
-from app.chat.schemas import ChatQueryRequest
+from app.chat.schemas import ChatQueryRequest, SuggestionView
 from app.shared.logging.setup import JsonFormatter
 
 
@@ -210,3 +210,92 @@ async def test_normal_auth_has_no_g5_timing(monkeypatch: pytest.MonkeyPatch, cap
             SimpleNamespace(), request, HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token"), None
         )
     assert not any(getattr(row, "event", "") == "g5_chat_auth_timing" for row in caplog.records)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("g5_enabled", [True, False])
+async def test_first_output_metric_write_is_timed_only_for_g5_without_changing_sse(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, g5_enabled: bool
+) -> None:
+    user = SimpleNamespace(id=uuid.uuid4())
+    run_id = uuid.uuid4()
+    trace_id = str(uuid.uuid4())
+    order: list[str] = []
+    sensitive_content = "合成安全草稿"
+
+    async def no_limit(*_args: object) -> None:
+        return None
+
+    async def acquire(*_args: object) -> str:
+        return "synthetic-lease"
+
+    async def release(*_args: object) -> None:
+        return None
+
+    async def suggest(*_args: object) -> SuggestionView:
+        return SuggestionView(
+            agent_run_id=run_id,
+            content=sensitive_content,
+            intent="faq",
+            confidence=0.9,
+            action="human_review",
+            terminal_state="HUMAN_REVIEW",
+            requires_human=True,
+            transfer_performed=False,
+            citations=[],
+            trace_id=trace_id,
+        )
+
+    async def persist(_session: object, saved_run_id: uuid.UUID, _latency_ms: int) -> None:
+        assert saved_run_id == run_id
+        order.append("persist")
+
+    async def connected() -> bool:
+        return False
+
+    monkeypatch.setattr(chat_router, "_enforce_chat_limits", no_limit)
+    monkeypatch.setattr(chat_router, "acquire_chat_stream", acquire)
+    monkeypatch.setattr(chat_router, "release_chat_stream", release)
+    monkeypatch.setattr(chat_router, "suggest_for_user", suggest)
+    monkeypatch.setattr(chat_router, "record_first_output_latency", persist)
+    monkeypatch.setattr(
+        chat_router,
+        "get_settings",
+        lambda: SimpleNamespace(
+            sse_load_test_enabled=g5_enabled,
+            chat_user_concurrency=2,
+            chat_stream_lease_seconds=660,
+            chat_stream_timeout_seconds=10,
+            chat_sse_heartbeat_seconds=1,
+        ),
+    )
+    request = SimpleNamespace(
+        app=SimpleNamespace(state=SimpleNamespace(agent_runtime=None)),
+        state=SimpleNamespace(trace_id=trace_id),
+        client=SimpleNamespace(host="127.0.0.1"),
+        is_disconnected=connected,
+    )
+    with caplog.at_level(logging.INFO, logger=chat_router.__name__):
+        response = await chat_router.chat_query(
+            ChatQueryRequest(session_id=uuid.uuid4()),
+            request,
+            SimpleNamespace(),
+            user,  # type: ignore[arg-type]
+        )
+        chunks = []
+        async for chunk in response.body_iterator:
+            chunks.append(chunk)
+            if "event: delta" in chunk:
+                order.append("delta")
+
+    assert order[:2] == ["persist", "delta"]
+    assert "event: delta" in "".join(chunks)
+    assert '"reason": "completed"' in "".join(chunks)
+    records = [row for row in caplog.records if getattr(row, "event", "") == "g5_chat_first_output_persist_timing"]
+    assert len(records) == int(g5_enabled)
+    if records:
+        formatted = json.loads(JsonFormatter().format(records[0]))
+        assert formatted["trace_id"] == trace_id
+        assert type(formatted["latency_ms"]) is int and formatted["latency_ms"] >= 0
+        assert sensitive_content not in str(formatted)
+        assert not any(hasattr(records[0], name) for name in ("content", "token", "user_id"))

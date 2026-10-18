@@ -246,7 +246,17 @@ async def chat_query(
                 yield _event("done", sequence, {"reason": "disconnected"})
                 return
             first_output_latency_ms = int((time.perf_counter() - agent_started_at) * 1000)
+            metric_started_at = time.perf_counter_ns()
             await record_first_output_latency(session, result.agent_run_id, first_output_latency_ms)
+            if g5_timing_enabled:
+                logger.info(
+                    "g5_chat_first_output_persist_timing",
+                    extra={
+                        "event": "g5_chat_first_output_persist_timing",
+                        "trace_id": trace_id,
+                        "latency_ms": max(0, (time.perf_counter_ns() - metric_started_at) // 1_000_000),
+                    },
+                )
             yield _event("status", sequence, {"stage": "finalizing"})
             sequence += 1
             content = result.content or ""

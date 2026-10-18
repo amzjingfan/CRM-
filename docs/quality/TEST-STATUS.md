@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-18 G5 R90 本地计时候选：[R90 TR](../reports/tests/TR-MVP-006-20261018-R90.md)给安全结果后、首个 `delta` 前原有指标写入增加 G5 专用低敏计时，SSE 顺序和普通 G3 模式保持原样。新测试先因事件缺失 1 failed/1 passed，最小实现后 2 passed；最终聚焦 8 passed、完整后端 **2138 passed/27 skipped**，Ruff、格式、mypy 和锁文件通过。尚无 R90 匹配镜像或 staging 负载，R89 的首 `delta` P99 3991.09 ms 失败仍是最新现场结论；G5/production No-Go。
+
 2026-10-18 G5 R89 手动现场：[R89 TR](../reports/tests/TR-MVP-006-20261018-R89.md)记录 R88 镜像私有 GHCR 手动发布、临时 G5 部署、50/50 只读身份、单会话安全 `delta=2293.93 ms` 及 50 并发 50/50 安全输出。总耗时 P99 3999.42 ms 通过，首 `delta` P99 **3991.09 ms** 超严格 3000 ms；服务端内部首次输出 P99 2996 ms 不等于客户端首 `delta`。认证连接获取 P99 1422 ms，PostgreSQL `idle in transaction` 峰值 17，安全复核 P99 1648 ms；同请求数值显示多个阶段共同影响长尾，不能单独归因。原后端与 G3 单店人工发送、健康及固定出口已恢复；独立断连仍缺。G5/production No-Go。
 
 2026-10-18 G5 R88 本地诊断候选：[R88 TR](../reports/tests/TR-MVP-006-20261018-R88.md)细分认证的令牌解析/连接获取/用户查询及上下文三段读取；先红后绿、完整后端第二轮 2136 passed/27 skipped、Ruff/格式/mypy/锁文件通过。首轮旧毫秒计时测试 1 failed，单项和完整次轮通过，已如实保留。R88 尚未发布镜像或在 staging 运行，最新现场仍为 R87 的首输出 P99 4121.54 ms 失败、原 G3 恢复；G5/production No-Go。
