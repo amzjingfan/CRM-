@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+R90 源码与诊断记录已由 PR #402 合入权威 main `b121be20f13e9b3786092a70ead865cd485893e1`；三份派生索引从已合并源记录重建为 `CURRENT`。R90 匹配镜像和 staging 负载尚未执行，G5/production No-Go。
+
 2026-10-18 G5 R90 本地候选：`CANDIDATE_SUBJECT_SHA=8bb55ff5bcc6fa0c7edbcb5e5dde5a994ede38d9`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。[IR](../records/implementation/IR-MVP-006-20261018-R90.md)、[TR](../reports/tests/TR-MVP-006-20261018-R90.md)、[RR](../reports/reviews/RR-MVP-006-20261018-R90.md)记录首 `delta` 前指标写入的 G5 专用低敏计时；完整后端 2138 passed/27 skipped，静态门禁通过。三份派生索引在此短期分支为 `CANDIDATE_VIEW`。尚无 R90 镜像或现场负载；R89 首 `delta` P99 3991.09 ms 失败与 G3 恢复仍是事实。Workspace hygiene：活动 worktree 与私有现场快照保留，未知文件未处理。下一步：①合并候选并手动发布匹配镜像；②可恢复窗口核对同请求指标写入、50/50 安全输出及严格 P99；③仅对实测阶段做单点优化并完成独立断连验收。G5 `DOING`、production No-Go。
 
 R89 现场记录已由 PR #400 合入权威 main `bdc15025f4b736a1b891845790ef62b27b8da1c7`；三份派生索引已从已合并源记录核对为 `CURRENT`，G5 仍为 No-Go。
