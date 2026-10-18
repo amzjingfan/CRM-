@@ -4,6 +4,10 @@
 
 ## 模块状态
 
+2026-10-18 G5 R73 本地源码候选：运行工厂重新选择已存在的分类与店铺 FAQ 检索并行路径；单节点 FAQ Prompt 澄清内容级 `needs_human` 与员工必审发送的区别，并同步注册版本及 SHA-256。两条新增契约先按预期失败再通过；FAQ/工具/拒判/检索异常/取消等相关 121 项通过，完整后端 `2103 passed, 27 skipped`，Ruff lint/format、mypy 183 个源码文件与锁文件检查通过。现有 R68 并行路径单会话曾测得 4550.4 ms，不能由本地结果推断 R73 达到严格 3 秒门槛；新镜像、staging 与 50 并发尚未执行，G5/production No-Go。
+
+2026-10-18 G5 R72 现场：[R72 TR](../reports/tests/TR-MVP-006-20261018-R72.md)记录组合 Prompt v1.0.1 后端手动发布、临时部署、FAQ ready、50/50 身份预检及唯一合成 SSE。HTTP 200 且有安全 `delta=3743.8 ms`，总耗时 3889.4 ms；严格首输出 `<3000 ms` 未通过，50 并发、资源与断连采样未启动。旧后端、G3 单店人工发送、三健康和固定出口恢复通过。R73 并行分类/店铺 FAQ 检索为本地候选，不能由确定性测试推定真实延迟。G5/production No-Go。
+
 2026-10-18 `MVP-TIKTOK-STORE-SEND-001` staging 已审核单店人工普通文本范围：[R01 TR](../reports/tests/TR-MVP-TIKTOK-STORE-SEND-001-20261018-R01.md)记录 PR #348/#350 的店铺/单会话互斥与失败关闭、手动 validate/deploy、同店铺 180 个现有会话 `send_mode=real` 的只读汇总、两个已登录真实会话的现场模式，以及 337 项定向测试通过；Ruff lint/format 和 mypy 通过。原受控单会话真实外发与买家回复仍由 `MVP-004` R04 独立证明，本轮未向其他真实买家发送。G5 R70 之后已恢复 G3 单店模式；production 未发布。
 
 2026-10-18 G5 R71 本地候选：[R71 TR](../reports/tests/TR-MVP-006-20261018-R71.md)记录组合 FAQ Prompt 对 `needs_human` 与员工确认发送语义的有界修复，契约先红后绿；完整后端 2101 passed/27 skipped，Ruff、格式、mypy 与锁文件检查通过。尚无新镜像或真实 DeepSeek SSE 复测；R70 的无安全 `delta` 仍是最新现场结论，50 并发未启动，G5/production No-Go。

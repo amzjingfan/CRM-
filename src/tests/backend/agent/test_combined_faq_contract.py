@@ -79,7 +79,7 @@ def test_combined_prompt_is_registered_with_exact_schema_and_payload() -> None:
 
 
 def test_combined_prompt_keeps_human_review_separate_from_draft_insufficiency() -> None:
-    assert "FAQ 草稿一律需要人工复核" in FAQ_ANSWER_SYSTEM_PROMPT
+    assert "FAQ 草稿一律需要人工复核" not in FAQ_ANSWER_SYSTEM_PROMPT
     assert "FAQ 草稿一律需要人工复核" not in COMBINED_FAQ_SYSTEM_PROMPT
     assert "needs_human 只表示内容是否需要额外人工判断" in COMBINED_FAQ_SYSTEM_PROMPT
     assert "needs_human=false" in COMBINED_FAQ_SYSTEM_PROMPT

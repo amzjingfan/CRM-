@@ -102,5 +102,6 @@ def build_agent_workflow(session: AsyncSession, settings: Settings) -> AgentWork
         reply_safety_policy=ReplySafetyPolicy(),
         auto_reply_threshold=settings.agent_auto_reply_threshold,
         human_review_threshold=settings.agent_human_review_threshold,
-        combined_faq_enabled=True,
+        # G5 使用已有的分类与店铺 FAQ 检索并行路径；草稿仍经独立安全复核。
+        combined_faq_enabled=False,
     )
