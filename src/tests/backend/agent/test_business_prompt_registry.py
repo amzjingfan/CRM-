@@ -137,6 +137,11 @@ def test_faq_prompt_describes_every_required_output_field_and_claim_inventory() 
     assert '"business_claims":{"complete":true,"claims":[]}' in FAQ_ANSWER_SYSTEM_PROMPT
 
 
+def test_trusted_faq_review_prompt_uses_exact_policy_claim_pair() -> None:
+    """独立复核必须明确字段和值，避免政策动作输出成其他主体的动作。"""
+    assert '"subject_type":"refund_policy","action":"explain_policy"' in TRUSTED_FAQ_REVIEW_SYSTEM_PROMPT
+
+
 def test_faq_prompt_binds_general_return_policy_to_one_cited_claim() -> None:
     """通用退货流程须按现有业务声明规则表示，不能伪造客户实例事实。"""
     for fragment in (

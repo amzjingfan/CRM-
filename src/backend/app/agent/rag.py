@@ -1,7 +1,10 @@
 """FAQ RAG 查询服务：脱敏、向量化、租户检索和上下文预算。"""
 
+import asyncio
+import hashlib
 import uuid
-from dataclasses import dataclass
+from collections import OrderedDict
+from dataclasses import dataclass, replace
 from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +30,71 @@ class QueryRerankingClient(Protocol):
     async def rerank(self, query: str, candidates: list[RerankCandidate]) -> RerankingResult:
         """返回与输入候选集合完全一致的稳定排序结果。"""
         ...
+
+
+@dataclass(slots=True)
+class _CachedQueryEmbedding:
+    task: asyncio.Task[EmbeddingResult]
+    expires_at: float
+    waiters: int = 0
+
+
+_QUERY_EMBEDDING_TTL_SECONDS = 3.0
+_QUERY_EMBEDDING_CACHE_LIMIT = 128
+_QueryKey = tuple[asyncio.AbstractEventLoop, uuid.UUID, str, int, bytes]
+_query_embeddings: OrderedDict[_QueryKey, _CachedQueryEmbedding] = OrderedDict()
+
+
+async def _embed_query(
+    service: QueryEmbeddingClient,
+    store_id: uuid.UUID,
+    query: str,
+) -> EmbeddingResult:
+    """短时共用同店同模型的查询向量；知识审批与店铺检索每次重新执行。"""
+    provider = getattr(service, "provider", None)
+    if getattr(provider, "provider_name", None) != "local_bge":
+        return await service.embed([query])
+    model = getattr(provider, "model_name", None)
+    dimensions = getattr(provider, "dimensions", None)
+    if not isinstance(model, str) or not isinstance(dimensions, int):
+        return await service.embed([query])
+    loop = asyncio.get_running_loop()
+    key = (loop, store_id, model, dimensions, hashlib.sha256(query.encode("utf-8")).digest())
+    now = loop.time()
+    for old_key, old_entry in list(_query_embeddings.items()):
+        if old_entry.task.done() and old_entry.expires_at <= now:
+            _query_embeddings.pop(old_key, None)
+    entry = _query_embeddings.get(key)
+    created = entry is None
+    if entry is None:
+        while len(_query_embeddings) >= _QUERY_EMBEDDING_CACHE_LIMIT:
+            _query_embeddings.popitem(last=False)
+        task = asyncio.create_task(service.embed([query]))
+        entry = _CachedQueryEmbedding(task=task, expires_at=float("inf"))
+        _query_embeddings[key] = entry
+
+        def finish(done: asyncio.Task[EmbeddingResult]) -> None:
+            if _query_embeddings.get(key) is not entry:
+                return
+            if done.cancelled() or done.exception() is not None:
+                _query_embeddings.pop(key, None)
+            else:
+                entry.expires_at = loop.time() + _QUERY_EMBEDDING_TTL_SECONDS
+
+        task.add_done_callback(finish)
+    else:
+        _query_embeddings.move_to_end(key)
+    entry.waiters += 1
+    try:
+        result = await asyncio.shield(entry.task)
+        # 同一向量只产生一次模型用量；复用请求仍单独记录检索总耗时。
+        return result if created else replace(result, input_tokens=0, latency_ms=0, provider_request_id=None)
+    finally:
+        entry.waiters -= 1
+        if entry.waiters == 0 and not entry.task.done():
+            if _query_embeddings.get(key) is entry:
+                _query_embeddings.pop(key, None)
+            entry.task.cancel()
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,7 +165,7 @@ class RagRetrievalService:
         sanitized_query = sanitize_prompt_text(query).strip()
         if not sanitized_query:
             raise ValueError("RAG 查询不能为空")
-        embedding_result = await self.embedding_service.embed([sanitized_query])
+        embedding_result = await _embed_query(self.embedding_service, store_id, sanitized_query)
         if len(embedding_result.vectors) != 1:
             raise RuntimeError("查询 Embedding 返回数量错误")
         candidates = await self.search_port.hybrid_search(
@@ -121,14 +189,23 @@ class RagRetrievalService:
                 embedding_latency_ms=embedding_result.latency_ms,
                 candidate_count=0,
             )
-        reranking_result = await self.reranking_service.rerank(
-            sanitized_query,
-            [RerankCandidate(candidate_id=str(candidate.chunk_id), text=candidate.content) for candidate in candidates],
-        )
-        candidates_by_id = {str(candidate.chunk_id): candidate for candidate in candidates}
+        reranking_result: RerankingResult | None = None
+        ordered_candidates = candidates
+        if len(candidates) > 1:
+            reranking_result = await self.reranking_service.rerank(
+                sanitized_query,
+                [
+                    RerankCandidate(candidate_id=str(candidate.chunk_id), text=candidate.content)
+                    for candidate in candidates
+                ],
+            )
+            candidates_by_id = {str(candidate.chunk_id): candidate for candidate in candidates}
+            ordered_candidates = [
+                candidates_by_id[item.candidate_id].model_copy(update={"reranker_score": item.score})
+                for item in reranking_result.scores
+            ]
         reranked_candidates: list[KnowledgeRetrievalHit] = []
-        for item in reranking_result.scores[: self.final_top_k]:
-            candidate = candidates_by_id[item.candidate_id].model_copy(update={"reranker_score": item.score})
+        for candidate in ordered_candidates[: self.final_top_k]:
             dense_score = max(candidate.score, candidate.dense_score)
             if dense_score >= self.min_dense_score or candidate.lexical_score >= self.min_lexical_score:
                 reranked_candidates.append(candidate)
@@ -147,9 +224,9 @@ class RagRetrievalService:
             embedding_model=embedding_result.model,
             embedding_input_tokens=embedding_result.input_tokens,
             embedding_latency_ms=embedding_result.latency_ms,
-            reranker_provider=reranking_result.provider,
-            reranker_model=reranking_result.model,
-            reranker_revision=reranking_result.revision,
-            reranker_latency_ms=reranking_result.latency_ms,
+            reranker_provider=reranking_result.provider if reranking_result else None,
+            reranker_model=reranking_result.model if reranking_result else None,
+            reranker_revision=reranking_result.revision if reranking_result else None,
+            reranker_latency_ms=reranking_result.latency_ms if reranking_result else 0,
             candidate_count=len(candidates),
         )

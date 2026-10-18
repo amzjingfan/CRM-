@@ -15,6 +15,8 @@
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G1 核心范围已按 2026-10-09 用户决定通过，但 G1-L、G2～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
 
+G5 [R77 本地候选](../reports/tests/TR-MVP-006-20261018-R77.md)针对 R76 的本地推理排队与政策声明结构失败完成确定性修复，尚未发布或实测。上表仍以 R76 的现场失败为准；下一次手动窗口先验严格单会话，达标后才进行 50 并发、资源与断连采样，随后恢复原 G3 模式。
+
 G5 R69 组合 FAQ 源码已合并并在 R70 手动窗口实测。真实模型虽然完成分类与草稿，但把内容层 `needs_human` 与 CRM 固有人工发送复核混同，安全转人工；没有可计时的安全 `delta`。R70 的 Agent 检索/组合调用/独立复核耗时 269/1948/637 ms，内部首次输出 3004 ms 不代替 SSE 安全输出。R71 本地候选仅修正 Prompt 歧义并通过确定性回归，尚无真实模型与延迟证据；不能用这一次 HTTP 200 启动 50 并发。
 
 G5 [R49 手动候选镜像](../../release/evidence/staging/crm-staging-g5-r49-manual-backend-image-20261017.json)随后经 OCI index `sha256:8dabe73b…c017` 完成两次获批的 [R50 手动窗口](../reports/tests/TR-MVP-006-20261017-R50.md)。第一次单会话被 Origin/CORS 拒绝；第二次 HTTP 200 但 FAQ 草稿 `invalid_schema`，无安全 `delta`，50 并发未启动。旧后端与 G3 限定会话已恢复，production 仍为 No-Go。

@@ -1,5 +1,6 @@
 """验证 FAQ RAG 查询脱敏、租户边界和上下文预算。"""
 
+import asyncio
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -160,7 +161,189 @@ async def test_rag_retrieval_sanitizes_query_and_forwards_store_scope() -> None:
     assert "buyer@example.com" not in str(port.query_text)
     assert result.top_score == 0.91
     assert [item.chunk_id for item in result.hits] == [item.chunk_id for item in port.hits]
-    assert result.hits[0].reranker_score == 1.0
+    assert result.hits[0].reranker_score is None
+
+
+@pytest.mark.asyncio
+async def test_single_candidate_skips_ordering_only_rerank_without_weakening_score_gate() -> None:
+    """只有一条候选时排序不变，仍按 Dense/词法分数与上下文预算筛选。"""
+    reranker = FixedRerankingService()
+    candidate = hit(score=0.91, token_count=30, label="已审批政策")
+    service = RagRetrievalService(
+        embedding_service=CapturingEmbeddingService(),
+        search_port=MemorySearchPort([candidate]),
+        reranking_service=reranker,
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+
+    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货政策是什么？")
+
+    assert [item.chunk_id for item in result.hits] == [candidate.chunk_id]
+    assert result.top_score == 0.91
+    assert result.reranker_provider is None
+    assert reranker.query is None
+
+
+@pytest.mark.asyncio
+async def test_same_store_query_coalesces_local_embedding_across_workflows() -> None:
+    """重复问句共用短时向量结果，每个请求仍独立执行店铺知识检索。"""
+
+    class DelayedLocalEmbedding(CapturingEmbeddingService):
+        provider_name = "local_bge"
+        model_name = "BAAI/bge-m3"
+        dimensions = 1024
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.provider = self
+            self.started = asyncio.Event()
+            self.release = asyncio.Event()
+            self.calls = 0
+
+        async def embed(self, texts: list[str]) -> EmbeddingResult:
+            self.calls += 1
+            self.started.set()
+            await self.release.wait()
+            return await super().embed(texts)
+
+    embedding = DelayedLocalEmbedding()
+    store_id = uuid.uuid4()
+    ports = [MemorySearchPort([hit(score=0.91, token_count=20, label="退货政策")]) for _ in range(50)]
+    services = [
+        RagRetrievalService(
+            embedding_service=embedding,
+            search_port=port,
+            reranking_service=FixedRerankingService(),
+            dense_top_k=20,
+            lexical_top_k=20,
+            candidate_top_k=20,
+            final_top_k=5,
+            rrf_k=60,
+            min_dense_score=0.45,
+            min_lexical_score=0.10,
+            max_context_tokens=100,
+        )
+        for port in ports
+    ]
+    tasks = [
+        asyncio.create_task(service.retrieve(cast(AsyncSession, object()), store_id, "本店的退货流程？"))
+        for service in services
+    ]
+    await embedding.started.wait()
+    await asyncio.sleep(0)
+    embedding.release.set()
+    results = await asyncio.gather(*tasks)
+
+    assert embedding.calls == 1
+    assert all(result.hits for result in results)
+    assert all(port.store_id == store_id for port in ports)
+    assert sum(result.embedding_input_tokens for result in results) == 8
+    cached = await services[0].retrieve(cast(AsyncSession, object()), store_id, "本店的退货流程？")
+    assert cached.embedding_input_tokens == 0
+    assert embedding.calls == 1
+    await services[0].retrieve(cast(AsyncSession, object()), uuid.uuid4(), "本店的退货流程？")
+    assert embedding.calls == 2
+
+
+@pytest.mark.asyncio
+async def test_failed_local_embedding_is_not_shared_with_later_request() -> None:
+    """本地模型错误不得进入短期缓存，下一请求必须重新获取向量。"""
+
+    class FailOnceEmbedding(CapturingEmbeddingService):
+        provider_name = "local_bge"
+        model_name = "BAAI/bge-m3"
+        dimensions = 1024
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.provider = self
+            self.calls = 0
+
+        async def embed(self, texts: list[str]) -> EmbeddingResult:
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("local model unavailable")
+            return await super().embed(texts)
+
+    embedding = FailOnceEmbedding()
+    service = RagRetrievalService(
+        embedding_service=embedding,
+        search_port=MemorySearchPort([]),
+        reranking_service=FixedRerankingService(),
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+    store_id = uuid.uuid4()
+
+    with pytest.raises(RuntimeError, match="local model unavailable"):
+        await service.retrieve(cast(AsyncSession, object()), store_id, "退款规则")
+    result = await service.retrieve(cast(AsyncSession, object()), store_id, "退款规则")
+
+    assert result.hits == []
+    assert embedding.calls == 2
+
+
+@pytest.mark.asyncio
+async def test_last_cancelled_waiter_stops_unused_local_embedding() -> None:
+    """已无人等待的本地推理不得在后台继续占用模型容量。"""
+
+    class BlockingLocalEmbedding(CapturingEmbeddingService):
+        provider_name = "local_bge"
+        model_name = "BAAI/bge-m3"
+        dimensions = 1024
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.provider = self
+            self.started = asyncio.Event()
+            self.release = asyncio.Event()
+            self.cancelled = asyncio.Event()
+
+        async def embed(self, texts: list[str]) -> EmbeddingResult:
+            self.started.set()
+            try:
+                await self.release.wait()
+            except asyncio.CancelledError:
+                self.cancelled.set()
+                raise
+            return await super().embed(texts)
+
+    embedding = BlockingLocalEmbedding()
+    service = RagRetrievalService(
+        embedding_service=embedding,
+        search_port=MemorySearchPort([]),
+        reranking_service=FixedRerankingService(),
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+    task = asyncio.create_task(service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "本店退货流程"))
+    await embedding.started.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    try:
+        assert embedding.cancelled.is_set()
+    finally:
+        embedding.release.set()
 
 
 @pytest.mark.asyncio

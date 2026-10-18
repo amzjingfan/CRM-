@@ -11,11 +11,11 @@ from app.agent.tool_execution import ExecutedAgentTool
 from app.knowledge_base.schemas import KnowledgeRetrievalHit
 from app.tools.contracts import TOOL_OUTPUT_SCHEMAS
 
-WORKFLOW_PROMPT_VERSION = "faq-agent-workflow-v1.8.3"
+WORKFLOW_PROMPT_VERSION = "faq-agent-workflow-v1.8.4"
 FAQ_ANSWER_PROMPT_VERSION = "faq-answer-v1.6.3"
 COMBINED_FAQ_PROMPT_VERSION = "faq-classified-draft-v1.0.2"
 GROUNDING_REVIEW_PROMPT_VERSION = "faq-grounding-review-v1.5.1"
-TRUSTED_FAQ_REVIEW_PROMPT_VERSION = "faq-trusted-review-v1.0.0"
+TRUSTED_FAQ_REVIEW_PROMPT_VERSION = "faq-trusted-review-v1.0.1"
 TOOL_ANSWER_PROMPT_VERSION = "tool-answer-v1.6.0"
 TOOL_GROUNDING_REVIEW_PROMPT_VERSION = "tool-grounding-review-v1.5.0"
 
@@ -81,8 +81,10 @@ TRUSTED_FAQ_REVIEW_SYSTEM_PROMPT = """你是独立的 CRM 客服 FAQ 安全复�
 只返回严格结构化对象：is_safe、is_grounded、business_claims_consistent、answers_question、needs_human 为布尔值；
 confidence 为 0 到 1 的数字；reason_codes 为最多五项的理由码字符串数组；
 business_claims 必须为 {complete:true,claims:[...]} 对象，并完整覆盖候选中的业务命题。
-一般退货/退款流程只说明政策，使用一条 refund_policy/explain_policy 声明：
-subject_id=null、tense=timeless、evidence_type=faq_chunk、evidence_id=本次唯一 chunk_id；
+一般退货/退款流程只说明政策，business_claims.claims 只使用一条
+{"subject_type":"refund_policy","action":"explain_policy"} 声明；这两个字段必须分别填上述精确枚举值，
+不得把 refund_request、submit_request、approve、execute 或 report_status 填入政策说明。
+该声明的 subject_id=null、tense=timeless、evidence_type=faq_chunk、evidence_id=本次唯一 chunk_id；
 保留 polarity、condition、confidence。不能从 FAQ 推断某客户的订单、申请、审批或退款结果。
 候选有缺失依据、错答、多意图未覆盖、业务声明不完整或不确定时，将相应布尔值设为 false；
 若需要额外核对客户个案或员工判断，needs_human=true；它不代表员工最终发送确认，所有草稿仍须人工确认。
