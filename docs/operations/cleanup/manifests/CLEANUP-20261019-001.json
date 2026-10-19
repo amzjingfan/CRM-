@@ -1,0 +1,307 @@
+{
+  "task_id": "MAINT-CLEANUP-20261019-001",
+  "batch_id": "CLEANUP-20261019-001",
+  "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+  "state": "DELETED",
+  "authorized_root": ".worktrees",
+  "removed_worktrees": 9,
+  "scanned_removed_bytes": 2653002607,
+  "items": [
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/ci-format-baseline-20261017",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 8322944,
+      "sha256": "N/A - tracked tree bound to Git HEAD 4f3acaff0f04601a44cb55e400a3baafa5416f39",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-17T10:25:40+08:00",
+      "reason": "merged; only reproducible Python caches and pytest cache",
+      "reference_checks": [
+        "PR #283 MERGED",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "fix/ci-format-baseline-20261017",
+        "PR #283 MERGED"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/ci-format-baseline-20261017 fix/ci-format-baseline-20261017",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/g1-core-close-g2-ready-20261009",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 156060213,
+      "sha256": "N/A - tracked tree bound to Git HEAD 8fa9110d2442e8f6ab04c7ed5c5e45178bb675a3",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-09T09:47:02+08:00",
+      "reason": "merged; only reproducible environment and test caches",
+      "reference_checks": [
+        "PR #100 MERGED",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "docs/mvp002-finalize-g2-ready-20261009",
+        "PR #100 MERGED"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/g1-core-close-g2-ready-20261009 docs/mvp002-finalize-g2-ready-20261009",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/mvp-g1-live-evidence-20261009",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 4379123,
+      "sha256": "N/A - tracked tree bound to Git HEAD 9ca847a009d2e229c39cd3579bff4f7ed188b519",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-09T09:22:27+08:00",
+      "reason": "merged; no ignored or untracked content",
+      "reference_checks": [
+        "PR #98 MERGED",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "docs/mvp-g1-live-evidence-20261009",
+        "PR #98 MERGED"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/mvp-g1-live-evidence-20261009 docs/mvp-g1-live-evidence-20261009",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/mvp002-g1-nonlogistics-20260928",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 641489932,
+      "sha256": "N/A - tracked tree bound to Git HEAD b08fc76b2a9c6de04d6daf7e1e0c2ed784ab5184",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-09-28T17:24:34+08:00",
+      "reason": "already contained in main; only reproducible dependencies and test caches",
+      "reference_checks": [
+        "HEAD ancestor of origin/main",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "docs/mvp002-oauth-live-replay-20260928",
+        "HEAD ancestor of origin/main"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/mvp002-g1-nonlogistics-20260928 docs/mvp002-oauth-live-replay-20260928",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/settings-inbox-ui-20261017",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 555356422,
+      "sha256": "N/A - tracked tree bound to Git HEAD a9f7177eb26e3bee9ed31d53abb6106fe8bbbc9f",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-17T09:41:30+08:00",
+      "reason": "superseded checkout; unique committed branch retained; only reproducible frontend build/dependencies",
+      "reference_checks": [
+        "PR #277 CLOSED unmerged; MVP-SETTINGS-UI-001 delivered via #280/#282/#284",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "feature/settings-inbox-ui-20261017",
+        "PR #277 CLOSED unmerged; MVP-SETTINGS-UI-001 delivered via #280/#282/#284"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/settings-inbox-ui-20261017 feature/settings-inbox-ui-20261017",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/settings-inbox-ui-code-20261017",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 553933559,
+      "sha256": "N/A - tracked tree bound to Git HEAD 05f4d624ba8f2a0b295acb214c1c5a84c6fd8243",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-17T11:02:37+08:00",
+      "reason": "merged; only reproducible frontend build/dependencies",
+      "reference_checks": [
+        "PR #286 MERGED",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "docs/settings-ui-index-current-20261017",
+        "PR #286 MERGED"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/settings-inbox-ui-code-20261017 docs/settings-ui-index-current-20261017",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/settings-ui-overflow-20261017",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 556161093,
+      "sha256": "N/A - tracked tree bound to Git HEAD 6a4398491a6956b4e55ef998debf989834f74244",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-17T10:41:56+08:00",
+      "reason": "contained in main; only reproducible frontend build/dependencies",
+      "reference_checks": [
+        "detached HEAD ancestor of origin/main",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "detached HEAD ancestor of origin/main"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add --detach .worktrees/settings-ui-overflow-20261017 6a4398491a6956b4e55ef998debf989834f74244",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/tiktok-conv-ui-live-20261016",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 7106613,
+      "sha256": "N/A - tracked tree bound to Git HEAD 5893dcc1903678dfd4ad1ccc8efd19aa9bc91df1",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-16T23:27:55+08:00",
+      "reason": "merged; no ignored or untracked content",
+      "reference_checks": [
+        "PR #265 MERGED",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "docs/tiktok-conv-ui-close-20261016",
+        "PR #265 MERGED"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/tiktok-conv-ui-live-20261016 docs/tiktok-conv-ui-close-20261016",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    },
+    {
+      "task_id": "MAINT-CLEANUP-20261019-001",
+      "batch_id": "CLEANUP-20261019-001",
+      "base_sha": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "original_path": ".worktrees/tiktok-translation-schema-20261016",
+      "kind": "directory",
+      "category": "merged-or-superseded-worktree",
+      "git_status": "clean; zero tracked/untracked changes; branch retained where present",
+      "size_bytes": 170192708,
+      "sha256": "N/A - tracked tree bound to Git HEAD 580032db724e933647d576ad439c58b9972e8f52",
+      "modified_at": "N/A - directory mtime was not captured before removal",
+      "head_committed_at": "2026-10-16T23:09:21+08:00",
+      "reason": "merged; only reproducible Python environment and pytest cache",
+      "reference_checks": [
+        "PR #263 MERGED",
+        "real path inside project .worktrees; not a reparse point",
+        "no unique ignored artifacts; only reproducible caches/dependencies where present",
+        "non-force git worktree remove succeeded"
+      ],
+      "related_tasks_or_worktrees": [
+        "fix/tiktok-translation-schema-20261016",
+        "PR #263 MERGED"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A - recoverable Git checkout; committed refs retained",
+      "retention_until": "N/A - Git checkout and reproducible generated content",
+      "restore_method": "git worktree add .worktrees/tiktok-translation-schema-20261016 fix/tiktok-translation-schema-20261016",
+      "verification": [
+        "directory absent",
+        "worktree registration absent",
+        "origin/main unchanged"
+      ]
+    }
+  ]
+}

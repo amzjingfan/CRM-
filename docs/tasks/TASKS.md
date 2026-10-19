@@ -106,6 +106,8 @@ DOING/VERIFYING → BLOCKED
 | MAINT-CLEANUP-20261014-002 | 清理业务服务器 2026-09-30 的旧 GHCR 预取缓存，仅涉及 manifest 中 31 个对象，保留当前索引依赖和全部 Docker 镜像 | [清理批次](../operations/cleanup/CLEANUP-20261014-002.md)；`BASE_SHA=032a5229b7dbe5db6c0ce990c848350ef9f1a6f5`；用户对清单 31 项精确授权 | DONE | PR #166 已合并 main `160172a155dfd74f181ada0156a22be319bb0b08`；docs/cleanup-prefetch-cache-close-20261014 | MAINT-CLEANUP-20261014-001 | N/A（服务器缓存清理，事实在批次） | 现场净释放 6,767,804,416 B；31 个原路径与隔离路径消失、11 个容器 ID 不变、三个健康端点 200；PR #166 最终 head 双 CI 合并后通过，合并时序偏差见批次 | N/A（无代码行为变化；批次含风险复核） | 99bb7cbd5b6bc0d520cf20be3b9c46c115813b9f |
 | TEST-001 | 所有测试源码、AI eval 数据与普通结果统一迁入 `src/tests/` 并按职责分类，所有现有质量入口保持可用 | [统一测试目录设计](../superpowers/specs/2026-09-16-centralized-test-layout-design.md) 的 10 项验收标准；`BASE_SHA=17bb9bf9501ead60aafe8eed6bddc331f26c43f0` | DONE | feature/unified-test-layout | none | [IR](../records/implementation/IR-TEST-001-20260916-R01.md) | [TR](../reports/tests/TR-TEST-001-20260916-R01.md) | [RR](../reports/reviews/RR-TEST-001-20260916-R01.md) | 4cd66643540d7e70acaeae2229a0f10620f7b6ae |
 
+| MAINT-CLEANUP-20261019-001 | 盘点项目目录与 Git worktree，仅移除已合并或被后续交付取代且无独有未提交内容的本地工作副本，保留其他资料并记录恢复方法 | [清理批次](../operations/cleanup/CLEANUP-20261019-001.md)；用户 2026-10-19 要求全目录整理和 worktree 清理；`BASE_SHA=37b8a6973fd8efd45666f40de5f1818bc41db42f`；`MERGE_TARGET=origin/main`；不处理服务器、远端 PR、生产数据、密钥、备份或未知文件 | VERIFYING | docs/workspace-hygiene-20261019 | none | N/A（本地 Git 工作副本与文档） | [批次复核](../operations/cleanup/CLEANUP-20261019-001.md#验证与恢复) | N/A（低风险本地清理，不改产品代码或安全边界） | |
+
 ## 维护规则
 
 1. 开始任务时只选择依赖已满足的最高优先级 `READY` 项，并在同一次更新中写入分支和基线。
