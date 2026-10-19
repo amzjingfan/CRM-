@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_customer_name_preservation",
+  "observed_at_utc": "2026-10-19T02:01:34Z",
+  "source_fix_merge_sha": "f48779af3779ef7804703feb1c6f1ff4755bbe36",
+  "reviewed_main_sha": "1476253091b5e1e2fda7e1952dc5bd2fb9cb088a",
+  "backend_image_revision": "6e1d24b3bf57674dafb5aabe4f7dc1335f13aa28",
+  "backend_build_inputs_match_reviewed_main": true,
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+  "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:8913c09ceffd0ea637a7f3b5d982521e2dd9980d507006a2157ac0a9bc83a958",
+  "previous_backend_image_still_local": true,
+  "running_services_on_backend_image": [
+    "backend",
+    "worker",
+    "jobs",
+    "agent-worker",
+    "tiktok-egress"
+  ],
+  "manual_gate": {
+    "status": "passed",
+    "private_deploy_evidence_sha256": "ca6f8edb5477863465bcc8e1ea116e63f87c27fd05e9b325f283ee66ac845012",
+    "database_migration": "heads_applied",
+    "public_health_status_codes": [200, 200, 200],
+    "tiktok_webhook_read_enabled": true,
+    "tiktok_manual_send_enabled": true,
+    "tiktok_manual_send_target": "store",
+    "tiktok_manual_send_store_count": 1,
+    "workspace_message_translation_enabled": true,
+    "g5_sse_load_test_enabled": false,
+    "runtime_mode_verified": true,
+    "egress_ip_matched": true
+  },
+  "target_conversation_customer_name_nonempty": true,
+  "authenticated_workspace_name_present_in_header": true,
+  "authenticated_workspace_name_present_in_sidebar": true,
+  "authenticated_workspace_name_present_in_list": true,
+  "prior_successful_new_message_webhooks_without_nickname": 3,
+  "new_live_webhook_after_deploy_tested": false,
+  "external_messages_sent_for_this_fix": 0,
+  "production_release": false
+}

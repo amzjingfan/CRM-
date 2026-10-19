@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-19 TikTok 买家昵称保留：[R02 TR](../reports/tests/TR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02.md) 记录缺昵称/提供昵称回归、staging Rootless 手动部署通过、运行镜像与源码一致、三个公网健康 200，以及已登录工作台标题、侧栏和列表均显示已有昵称。本次没有制造部署后新的真实通知；production 未发布。
+
 2026-10-19 G5 R95：[R95 TR](../reports/tests/TR-MVP-006-20261019-R95.md)记录同一旧镜像的两次可恢复断连窗口：50/50 身份就绪，客户端关闭、Redis 租约 0→0；第二次延迟 15 秒观察同 trace 7 条日志仍无断连终态。两次原 G3 恢复通过。新 subject `6fe51fe` 为 Agent 完成后断开分支补固定终态事件，新增断言先红后绿；完整后端 2144 passed/27 skipped，Ruff、格式、mypy 与锁文件通过。新镜像和现场复测尚未执行，G5/production No-Go。
 
 2026-10-18 G5 R92 当前口径：[R92 TR](../reports/tests/TR-MVP-006-20261018-R92.md)记录用户批准将首个安全 `delta` P99 改为严格 `<5000 ms`，总耗时仍严格 `<5000 ms`；完整后端 2138 passed/27 skipped，Ruff、mypy 与锁文件通过。R89/R91 原始 50 条样本的 SHA-256 已锁定，事后复算的首输出/总耗时 P99 为 3991.09/3999.42 ms 与 4812.54/4816.88 ms，当前**性能子门禁**均通过。历史 3000 ms 失败报告保留；独立断连尚未现场验收，G5/production No-Go。

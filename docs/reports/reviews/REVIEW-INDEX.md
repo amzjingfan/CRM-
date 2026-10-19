@@ -4,6 +4,7 @@ View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02 | MVP-TIKTOK-CUSTOMER-NAME-001 | R02 | APPROVE | `f48779af3779ef7804703feb1c6f1ff4755bbe36` | correctness, customer-data, staging-mode, rollback | 2026-10-19T10:02:00+08:00 | [`RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02.md`](RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02.md) |
 | RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R01 | MVP-TIKTOK-CUSTOMER-NAME-001 | R01 | APPROVE | `f48779af3779ef7804703feb1c6f1ff4755bbe36` | correctness, customer-data, store-isolation | 2026-10-19T09:35:00+08:00 | [`RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R01.md`](RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R01.md) |
 | RR-MVP-006-20261019-R95 | MVP-006 | R95 | APPROVE | `6fe51febbf1e26e16e0a139d24f262e487d94f13` | terminal-event-uniqueness, lease-release, low-sensitivity-trace, field-recovery | 2026-10-19T09:23:40+08:00 | [`RR-MVP-006-20261019-R95.md`](RR-MVP-006-20261019-R95.md) |
 | RR-MVP-006-20261018-R94 | MVP-006 | R94 | APPROVE | `73be3d5a68866b70f4cdff4e70092dd785813cf7` | transport-cancellation, lease-release, low-sensitivity-trace, terminal-event-uniqueness, restore | 2026-10-18T23:05:41+08:00 | [`RR-MVP-006-20261018-R94.md`](RR-MVP-006-20261018-R94.md) |
