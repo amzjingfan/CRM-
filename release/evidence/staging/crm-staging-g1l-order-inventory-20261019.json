@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g1l_readonly_order_inventory",
+  "captured_at_utc": "2026-10-19T05:53:27Z",
+  "environment": "staging",
+  "inspection_source_sha": "a6b91302af7c937382212d5b0daf5319f34da4f6",
+  "running_backend_revision": "6e1d24b3bf57674dafb5aabe4f7dc1335f13aa28",
+  "running_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+  "order_search": {
+    "visible_orders": 325,
+    "all_pages_read": true,
+    "latest_order_create_day_utc": "2026-09-30",
+    "active_status_counts": {
+      "IN_TRANSIT": 1,
+      "DELIVERED": 1
+    },
+    "first_page_size": 100,
+    "first_page_shipping_type_counts": {
+      "TIKTOK": 78,
+      "SELLER": 22
+    },
+    "first_page_fulfillment_by_seller_count": 100
+  },
+  "previous_202604_probe_evidence": "release/evidence/staging/crm-staging-g1-live-diagnostics-20261009.json",
+  "previous_distinct_order_business_errors": 5,
+  "previous_business_error_code": 11007009,
+  "confirmed_cbt_first_mile_eligible_order": "unknown",
+  "confirmed_platform_applicability": "unknown",
+  "enhanced_tracking_202604_called_this_round": false,
+  "g1l_passed": false,
+  "database_read_only": true,
+  "production_changed": false,
+  "contains_order_or_shop_identifiers": false
+}
