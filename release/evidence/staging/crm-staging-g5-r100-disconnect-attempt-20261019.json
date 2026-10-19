@@ -1,0 +1,68 @@
+{
+  "evidence_type": "g5_staging_independent_disconnect_followup",
+  "candidate_backend_index": "sha256:8e42d9ad2bd9d2f2e9d116defa290d1874893fb3e5c0df18546cce6fbca36255",
+  "candidate_source_sha": "1476253091b5e1e2fda7e1952dc5bd2fb9cb088a",
+  "r96": {
+    "client_closed_after_accepted": true,
+    "redis_lease_before": 0,
+    "redis_lease_after": 0,
+    "same_trace_log_count": 7,
+    "server_terminal_events": 0,
+    "disconnect_gate": "failed",
+    "g3_restore": "passed"
+  },
+  "r97": {
+    "snapshot_gate": "failed_service_not_unique",
+    "g5_deploy_by_this_task": false,
+    "disconnect_probe": "not_run"
+  },
+  "r97b": {
+    "g5_deploy": "passed",
+    "authorized_sessions": 50,
+    "client_closed_after_accepted": true,
+    "server_summary": "not_recorded_probe_type_error",
+    "g3_restore_retry": "passed"
+  },
+  "r98": {
+    "g5_deploy": "passed",
+    "content_gate": "failed_image_revision_mismatch",
+    "disconnect_probe": "not_run",
+    "g3_restore": "passed"
+  },
+  "r99": {
+    "six_digest_prefetch": "passed",
+    "g5_deploy": "passed",
+    "knowledge_ready": true,
+    "authorized_sessions": 50,
+    "client_closed_after_accepted": true,
+    "redis_lease_before": 0,
+    "redis_lease_during_client_open": 1,
+    "redis_lease_after": 0,
+    "same_trace_log_count": 11,
+    "server_disconnect_events": 0,
+    "server_closed_early_events": 0,
+    "server_completed_events": 0,
+    "server_timeout_events": 0,
+    "disconnect_gate": "failed",
+    "g3_restore": "passed"
+  },
+  "private_original_sha256": {
+    "r96-disconnect-client.json": "1fdb4144bcbbebad62794aedb5835067a1f82b496622d03ffcca719a631ba6e4",
+    "r96-disconnect-server.json": "8ccd2dd1b6f59fbb8f71d7a189412c28ee2a13c91617eb90b1d03464fcd7da02",
+    "r96-restore-deploy.json": "e6f5e8d58ae7c05fa3c3b7c586867c7925ebba3f3acbea19c36c73652479b6b3",
+    "r97b-disconnect-client.json": "773a02734822bcc515c0281f22d5ded3f443049945be37be84249158a3416935",
+    "r97b-restore-retry-deploy.json": "854a08e99f42a4a321a70f8f0798514edb71e590819e139732e8742600224186",
+    "r98-restore-deploy.json": "809b5885fbf5c30ce6d041a55dded15255a6620058ebc5c930b7536b3d2bccd3",
+    "r99-prefetch.json": "d05725f6b5b7e4c30c670c067f25a4125eb047c7968ade1f8677e68e1ad86499",
+    "r99-validate.json": "8e8fd00029e7ba741673f99092fbbcb84d0e9a84079ae6ebaf7eddcc2c6a7d34",
+    "r99-deploy.json": "07901f111fecd30dc42fbea68303e8c9de66a2fff725f5bd6eed6d5ed741192c",
+    "r99-content.json": "c676dec9448f4fa161e6bf963d0c877aedbb6f18d7777c9d1fd118049b3364f2",
+    "r99-preflight.json": "78d3746e712673a64810981163b4a28d956e70bda685b9d88fe74d4ba3abaa3a",
+    "r99-disconnect-client.json": "f407d2f08c64232559bf9a19d97fae259d5934bee10a69b867370892beb45da7",
+    "r99-disconnect-server.json": "55d56aa7d7e96d9b80a459fbdfaa5f71fef3d988b163a9f2764c8edfc2d01702",
+    "r99-restore-deploy.json": "369ac8097cdc707c88d1806ad69334279748e13f1caf9f869bb2c5ebcc414bb9",
+    "r99-restore-validate.json": "33b57b483d7d34952c0c1b114a061d0472abda9b42fd49734ad42d328174fa64"
+  },
+  "production_release": false,
+  "g5_gate": "not_passed"
+}

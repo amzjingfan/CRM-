@@ -69,6 +69,38 @@ async def test_transport_closes_after_accepted_without_workflow(
 
 
 @pytest.mark.asyncio
+async def test_early_close_is_logged_when_lease_release_is_cancelled_after_server_release(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    released: list[uuid.UUID] = []
+    user, request = _prepare_stream(monkeypatch, released)
+
+    async def release_then_cancel(user_id: uuid.UUID, lease_token: str) -> None:
+        assert lease_token == "test-lease"
+        released.append(user_id)
+        raise asyncio.CancelledError
+
+    monkeypatch.setattr(chat_router, "release_chat_stream", release_then_cancel)
+    response = await chat_router.chat_query(
+        ChatQueryRequest(session_id=uuid.uuid4()),
+        request,
+        SimpleNamespace(),
+        user,  # type: ignore[arg-type]
+    )
+
+    with caplog.at_level(logging.INFO, logger=chat_router.__name__):
+        assert "event: accepted" in await anext(response.body_iterator)
+        with pytest.raises(asyncio.CancelledError):
+            await response.body_iterator.aclose()
+
+    assert released == [user.id]
+    assert [record.message for record in caplog.records if record.message == "chat_stream_closed_early"] == [
+        "chat_stream_closed_early"
+    ]
+
+
+@pytest.mark.asyncio
 async def test_transport_cancellation_stops_workflow_and_releases_lease(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,

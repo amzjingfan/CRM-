@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261019-R100 | MVP-006 | R100 | APPROVE | `426ecfd1bde3041cd4425e7b4d6b757467311425` | terminal-event-uniqueness, cancellation-order, lease-release, field-recovery | 2026-10-19T10:45:25+08:00 | [`RR-MVP-006-20261019-R100.md`](RR-MVP-006-20261019-R100.md) |
 | RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02 | MVP-TIKTOK-CUSTOMER-NAME-001 | R02 | APPROVE | `f48779af3779ef7804703feb1c6f1ff4755bbe36` | correctness, customer-data, staging-mode, rollback | 2026-10-19T10:02:00+08:00 | [`RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02.md`](RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02.md) |
 | RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R01 | MVP-TIKTOK-CUSTOMER-NAME-001 | R01 | APPROVE | `f48779af3779ef7804703feb1c6f1ff4755bbe36` | correctness, customer-data, store-isolation | 2026-10-19T09:35:00+08:00 | [`RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R01.md`](RR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R01.md) |
 | RR-MVP-006-20261019-R95 | MVP-006 | R95 | APPROVE | `6fe51febbf1e26e16e0a139d24f262e487d94f13` | terminal-event-uniqueness, lease-release, low-sensitivity-trace, field-recovery | 2026-10-19T09:23:40+08:00 | [`RR-MVP-006-20261019-R95.md`](RR-MVP-006-20261019-R95.md) |

@@ -344,11 +344,8 @@ async def chat_query(
             yield _event("error", sequence, {"code": 50001, "message": "AI 建议生成失败", "retryable": True})
             yield _event("done", sequence + 1, {"reason": "failed"})
         finally:
-            if workflow_task is not None and not workflow_task.done():
-                await _cancel_task(workflow_task)
-            await release_chat_stream(user.id, stream_lease_token)
             if not terminal_event_emitted:
-                # ASGI 传输层可能直接关闭生成器，绕过轮询式断线分支；释放租约后记录固定事件。
+                # ASGI 传输层可能直接关闭生成器；异步清理可被取消，须先记录固定终态。
                 logger.info(
                     "chat_stream_closed_early",
                     extra={
@@ -357,6 +354,9 @@ async def chat_query(
                         "total_latency_ms": int((time.perf_counter() - stream_started_at) * 1000),
                     },
                 )
+            if workflow_task is not None and not workflow_task.done():
+                await _cancel_task(workflow_task)
+            await release_chat_stream(user.id, stream_lease_token)
 
     return StreamingResponse(
         stream(),
