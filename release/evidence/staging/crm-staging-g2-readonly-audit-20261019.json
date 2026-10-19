@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_webhook_readonly_audit",
+  "captured_at_utc": "2026-10-19T05:44:00Z",
+  "environment": "staging",
+  "inspection_source_sha": "557db02bec52a1a754d741b04b2af3d7f8efa8d0",
+  "running_backend_revision": "6e1d24b3bf57674dafb5aabe4f7dc1335f13aa28",
+  "running_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+  "subscription": {
+    "count": 1,
+    "event_types": ["NEW_MESSAGE"],
+    "matching_address_count": 1,
+    "unexpected_address_count": 0
+  },
+  "event_window_start_utc": "2026-10-09T03:54:01Z",
+  "new_message_events": 28,
+  "signature_valid_events": 28,
+  "succeeded_events": 3,
+  "ignored_events": 25,
+  "failed_events": 0,
+  "pending_events": 0,
+  "internal_retried_events": 0,
+  "unbound_tiktok_events": 0,
+  "succeeded_events_with_matching_inbound_message": 3,
+  "all_events_processed_at_present": true,
+  "ignored_event_categories": {
+    "system": 11,
+    "customer_service": 12,
+    "other": 2
+  },
+  "ignored_event_error_code": "UNSUPPORTED_EVENT_TYPE",
+  "first_received_utc": "2026-10-16T07:46:03.595023+00:00",
+  "last_received_utc": "2026-10-19T01:07:08.236263+00:00",
+  "buyer_event_create_times_monotonic_in_receipt_order": true,
+  "official_redelivery_observed": false,
+  "out_of_order_delivery_observed": false,
+  "database_read_only": true,
+  "production_changed": false,
+  "contains_identifiers_or_message_body": false
+}
