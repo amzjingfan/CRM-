@@ -15,6 +15,8 @@
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G1 核心、G1-L 通用物流 API、G2 v0.1 已授权店铺 staging 正常 Webhook 链路均按用户确认口径通过；G2 官方重投/乱序/同通知恢复保留为未实测风险，不再是本期 G2 必过项。G6 连续稳定性等仍未完成，安全、业务、运维尚未联合签署。CBT 增强 202604 是后续独立能力 | 汇总其余真实证据和 G2 残余风险，召开最终 Go/No-Go；production 仍不放行 |
 
+G6 观察窗口内的受控出口故障使第 4、5 槽不可用；第 4 槽发出告警，第 6 槽恢复。一次性恢复定时器与手动启动并发，不能把恢复单独归因于定时器。[低敏时序与原件前缀哈希](../../release/evidence/staging/crm-staging-g6-alert-recovery-20261019.json)已保存；这两槽计入最终可用性核算。
+
 G5 [R105 取消审计复核](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R03.md)从 main `2eea3ed4` 匹配镜像完成独立断连，唯一对应 AgentRun 为 `failed/AGENT_CANCELLED`，租约 0→1→0，G3 单店人工发送和三健康恢复。R104 在身份预检前遭 SSH 新连接中断，独立恢复后另开 R105；旧 R101/R102/R103 合成失败记录留作原件。此复核没有重跑 50 并发，也不改变 G5 仅限 staging 合成验收、G1-L/G2/G6/G8 与 production No-Go 的结论。
 
 G5 [R101 手动独立断连](../reports/tests/TR-MVP-006-20261019-R101.md)使用当时 main `e82b8dd` 的私有不可变后端，客户端收到 `accepted` 后关闭，同 trace 一条 `chat_stream_closed_early`、无完成/超时，Redis 租约 0→1→0；50/50 身份只读预检与 G3 恢复门禁通过。结合 R91 原始 50 并发、R92 用户批准的新口径事后复算，仅关闭 G5 staging 隔离合成验收；并未重跑本轮 50 并发或放行 production。当时只读发现取消后的单条 AgentRun 仍为 `running`，列为 `MVP-006-CANCEL-001` 审计缺陷，后由 R105 的新断连复核关闭前向行为。

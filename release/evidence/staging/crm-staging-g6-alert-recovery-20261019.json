@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-007",
+  "gate": "G6",
+  "environment": "staging-rootless",
+  "run_id": "g6-20261019-c4a12b",
+  "fault": "controlled_egress_helper_stop_with_prearmed_one_shot_recovery_timer",
+  "fault_started_utc": "2026-10-19T14:33:56Z",
+  "alert": {
+    "event": "G6_ALERT",
+    "slot": 4,
+    "at_utc": "2026-10-19T14:34:08.179631Z"
+  },
+  "unavailable_slots": [4, 5],
+  "slot_5": {
+    "sampled_at_utc": "2026-10-19T14:35:08.421166Z",
+    "public_http": [200, 200, 200],
+    "helper_running": false,
+    "helper_healthy": false,
+    "egress_ip_ok": false,
+    "resource_sample_ok": true,
+    "ok": false
+  },
+  "recovery": {
+    "systemd_timer_triggered_utc": "2026-10-19T14:35:11Z",
+    "systemd_recovery_service_result": "success",
+    "manual_docker_start_also_invoked": true,
+    "attribution_note": "Timer and manual start overlapped; this run does not prove which start call restored the container.",
+    "helper_started_at_utc": "2026-10-19T14:35:11.785118915Z",
+    "fixed_egress_verifier": "ok_38.55.145.52",
+    "helper_health": "healthy",
+    "event": "G6_RECOVERED",
+    "event_slot": 6,
+    "event_at_utc": "2026-10-19T14:36:06.762283Z"
+  },
+  "source_prefixes": {
+    "first_7_samples_sha256": "fa72546a03326e501bab8b9f08ad2b3fbf96cdb1eed988761150120e8aa291d5",
+    "first_2_alerts_sha256": "f0104affae109ecfdc3903d7899b44d6015ba6dd46e1b670a1cfad413abe8601"
+  },
+  "post_recovery_check": {
+    "checked_at_utc": "2026-10-19T14:36:35Z",
+    "observed_slots": 7,
+    "available_slots": 5,
+    "failed_slots": 2,
+    "missing_slots_at_check": 4313,
+    "observer_service": "active",
+    "observer_restart_count": 0,
+    "result": "in_progress"
+  },
+  "scope": "Only the controlled staging fault and early recovery. The 72-hour window and final G6 verdict remain pending."
+}
