@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-19 两个已关闭旧 PR 的本地工作树已按 [CLEANUP-20261019-004](../operations/cleanup/CLEANUP-20261019-004.md) 处理：用户选择保留当前主线，#42/#56 已关闭、未合并；三个独有忽略目录的 908 个文件（18,661,665 B）和 11 个独有受跟踪历史文件已在本机 `.maintenance/quarantine/` 归档，删除后逐文件 SHA-256 复核通过。两棵工作树已非强制移除，路径与 Git 注册项不存在；现有 14 个附加工作树，旧分支及归档仍可恢复。任务 `MAINT-CLEANUP-20261019-004` 正在 `VERIFYING` 等待静态记录 PR 门禁。Workspace hygiene: ATTENTION；G6/G8/production 状态不变。下一步：①合并并复核本批次记录后完成任务状态；②按精确批次继续审阅其余工作树与分支；③旧 OCI 缓存仍待本机执行策略放行或人工删除后复核。
+
 2026-10-19 剩余 worktree 再核对：[CLEANUP-20261019-003 的补记](../operations/cleanup/CLEANUP-20261019-003.md#2026-10-19-再核对旧-pr-与独有记录) 列出 PR #42/#56 对当前主线的 7/6 处冲突、一个无 PR 分支的独有历史记录，以及忽略目录中的私钥、现场材料和近期部署包。用户选择保留当前结论，两份旧 PR 已关闭、未合入；其本地材料须先归档。截图中的旧 `mvp008-ghcr-low-concurrency-20260930` 已移除；当前仍有 16 个附加 worktree，本次补记前为 408 条本地分支引用。旧 OCI 缓存删除仍受本机自动执行策略阻断。Workspace hygiene: ATTENTION。下一步：①归档两份已关闭 PR 工作树的独有材料并核对恢复；②对其他现场材料冻结精确路径、保留期和恢复位置；③仅对满足门禁的对象分批清理并复核。
 
 2026-10-19 worktree 复核：用户再次要求清理截图目录与多余本地分支。[CLEANUP-20261019-003](../operations/cleanup/CLEANUP-20261019-003.md) 已非强制移除一个 PR 已合并、无独有内容且过保留期的本地工作副本，并用非强制 `git branch -d` 删除十条已在 `origin/main` 历史中的未签出本地分支；[PR #443](https://github.com/CP11-gh/CRM/pull/443) 已合入 `main=b70331d152d4dc945b4fe83d4cb9a16094aedcde`，`MAINT-CLEANUP-20261019-003` 为 `DONE`。保留 16 个附加 worktree、407 条本地分支及其需保留理由，远端未改；GitHub Actions 两项作业零步骤失败，未计作 CI 通过。获批的旧 OCI 缓存仍被自动执行策略在命令启动前以 `blocked by policy` 拒绝，`MAINT-CLEANUP-20261019-002` 继续 `BLOCKED`；见 [CLEANUP-20261019-002](../operations/cleanup/CLEANUP-20261019-002.md)。Workspace hygiene: ATTENTION；G6/G8/production 状态不变。下一步：①环境策略放行后在原批次删除 OCI 缓存并复核；②如需继续减少本地分支，先审阅 squash 合并分支的冻结清单与恢复方案；③保留开放 PR、凭证和现场部署材料。
