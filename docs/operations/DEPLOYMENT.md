@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-10-19 工作台店铺筛选名称：从 `main` `e82b8ddba4297cabbc443311bb852952bb61d765` 手动发布前端 `sha256:77a71088…7344051`，其前端输入与功能 subject `6a3c5abc` 一致。G5 窗口恢复后 staging 手动 validate/deploy 通过；原后端 `sha256:2dc92fe5…c2f258`、检索及 G3 单店人工发送、Webhook 读取、翻译模式保持不变。数据库头 `024`、三个公网健康接口 200、固定出口与已登录工作台店铺名称均核对；见[TR](../reports/tests/TR-MVP-WORKSPACE-STORE-LABEL-001-20261019-R01.md)与[低敏部署证据](../../release/evidence/staging/crm-staging-store-label-deploy-20261019.json)。GHCR 直接拉取卡住后使用逐摘要校验、可续传导入；临时登录已注销。未发送 TikTok 消息、未使用 GitHub Actions 作为验收、未部署 production。
+
 当前 G5 手动 staging 验收采用首个安全 SSE `delta` P99 和总耗时 P99 均严格小于 5000 ms；单会话预检使用同一严格边界。50/50 授权身份与安全输出、独立断连、资源采样及窗口后恢复原 G3 模式分别核对。历史 R91 现场报告保留当时 3000 ms 的失败判定；R92 从原始低敏样本按用户授权的新口径事后复算，R101 另以当前不可变后端完成独立断连及恢复，二者结合仅关闭 G5 staging 隔离合成门禁，不代表 production 放行。
 
 2026-10-19 G5 R101：从 main `e82b8ddba4297cabbc443311bb852952bb61d765` 手动发布私有后端 `sha256:a36fc465…a280e`，远端 linux/amd64、OCI revision、12 层压缩 110,980,561 字节及摘要拉回通过。六摘要预取、临时 G5 部署、FAQ ready、50/50 隔离身份预检后，唯一客户端在 `accepted` 后断开；同 trace 只有一条 `chat_stream_closed_early`，无完成/超时，Redis 租约 0→1→0。窗口结束按快照恢复原后端 `sha256:2dc92fe5…c2f258`、前端/检索、G3 单店人工发送、Webhook 只读、翻译、限流 10、三健康与固定出口。[R101 TR](../reports/tests/TR-MVP-006-20261019-R101.md)及[低敏清单](../../release/evidence/staging/crm-staging-g5-r101-disconnect-pass-20261019.json)留证。取消后的单条 AgentRun 仍为 `running`，由 `MVP-006-CANCEL-001` 跟进；未发 TikTok 消息、未主动运行 GitHub Actions、未部署 production。
