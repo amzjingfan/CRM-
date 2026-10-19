@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_g1l_cbt_sample_absence_and_single_read_probe",
+  "captured_at_utc": "2026-10-19T06:16:07Z",
+  "environment": "staging",
+  "inspection_source_sha": "08c8326d1ff869d1777f9814814121eccab08c02",
+  "running_backend_revision": "6e1d24b3bf57674dafb5aabe4f7dc1335f13aa28",
+  "seller_center": {
+    "source": "user_supplied_screenshot_and_correction",
+    "filter": "CBT",
+    "visible_order_count": 0,
+    "independently_opened_by_codex": false,
+    "ui_status": "UI_UNAVAILABLE"
+  },
+  "exploratory_202604_probe": {
+    "candidate_create_day_utc": "2026-09-30",
+    "candidate_order_status": "DELIVERED",
+    "candidate_shipping_type": "TIKTOK",
+    "candidate_cbt_eligibility": "not_confirmed",
+    "request_count": 1,
+    "http_status": 200,
+    "platform_business_code": 11007009,
+    "result": "order_not_supported",
+    "first_mile_events_verified": false
+  },
+  "confirmed_eligible_cbt_first_mile_order_available": false,
+  "g1l_passed": false,
+  "database_read_only": true,
+  "production_changed": false,
+  "contains_order_or_shop_identifiers": false
+}

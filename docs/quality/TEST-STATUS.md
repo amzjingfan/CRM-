@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-19 G1-L [R02 TR](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R02.md) 为 `BLOCKED`：用户提供当前授权店铺 Seller Center 的 CBT 筛选 0 个订单截图；一笔未确认 CBT 资格的普通 TikTok 配送候选只调用一次 `202604`，平台仍为 `11007009`。无合格首程样本，不能验证增强物流成功；不影响已关闭的 G1 核心，也不放行 G8。
+
 2026-10-19 `MVP-006-CANCEL-001` R03：[TR](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R03.md) `PASS`，范围为**新取消行为**。R02 本地 2153 passed/27 skipped/1 deselected；R104 SSH 中断后独立恢复 G3；R105 匹配镜像、50/50 身份和一次隔离断连通过，唯一 AgentRun `failed/AGENT_CANCELLED`、Redis 租约 0→1→0、G3 恢复和三健康通过。R101/R102/R103 历史合成失败记录保留；本轮未重跑 50 并发，性能仍以 R91/R92 原件为准，production No-Go。
 
 2026-10-19 `MVP-006-CANCEL-001` R02：[TR](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R02.md) `PARTIAL`。R102/R103 同 trace 断连及租约释放通过，AgentRun 审计各留一条 `running`；两次原 G3 恢复通过。AnyIO 取消作用域新增用例先红后绿；R02 手动后端回归 2153 passed、27 skipped、1 个未改动 Windows 预取超时用例排除，mypy 与定向 Ruff/格式通过。新镜像现场同 trace `failed/AGENT_CANCELLED` 尚未核对，缺陷不能标记 DONE；G5 先前安全/性能门禁仍以原始 R91/R92/R101 证据为准。
