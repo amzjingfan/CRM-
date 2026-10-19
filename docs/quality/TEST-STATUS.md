@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-20 G6 本轮 48 小时门禁已不可达：截至 UTC 2026-10-19 23:08 核对原始前 517 槽，502 可用、15 不可用，超过最多 14 个不可用槽的冻结门槛。第 515 槽公网 `/healthz` 单次失败，第 516 槽恢复；原因尚未证实。[低敏前缀证据](../../release/evidence/staging/crm-staging-g6-early-no-go-20261020.json)保留样本和告警摘要哈希。采集仍继续至 48 小时终点，完整窗口及最终 IR/TR/RR 待形成；`MVP-007` 当前 `BLOCKED`，G8/production No-Go。
+
 2026-10-19 G6 48 小时观察中：用户将本期验收从 72 小时缩至 48 小时，沿用 UTC 14:30 已启动原件的前 2880 槽，至少 2866 槽可用；原 72 小时采集元数据和脚本保持冻结。窗口内第 4、5 槽已因受控固定出口故障不可用，`G6_ALERT` 与 `G6_RECOVERED` 均在原件中，见[启动证据](../../release/evidence/staging/crm-staging-g6-start-20261019.json)和[告警恢复证据](../../release/evidence/staging/crm-staging-g6-alert-recovery-20261019.json)。完整窗口及最终 IR/TR/RR 尚未形成，G6 仍 `DOING`，G8/production No-Go。
 
 2026-10-19 G2 R08：[TR](../reports/tests/TR-MVP-003-20261019-R08.md) 为 `PASS`，只适用于用户新确认的已授权店铺 staging 正常 Webhook 链路。真实唯一订阅、28 条消息主题验签与绑定、3 条买家入站及 G3 受控双向对话沿用原件；本轮只读核对入口 38 次 HTTP 200 与数据库 38 条唯一验签事件一致。G5 临时关闭 Webhook 期间有 10 次 503、恢复后 4 次成功入库，但不能关联为同一通知重投，恢复的 4 条均非买家成功消息。真实乱序和同通知恢复亦未证实；R07 旧口径 `PARTIAL` 保留。G6/G8/production 独立阻塞。

@@ -1,0 +1,45 @@
+{
+  "kind": "G6_INTERIM_GATE_EVIDENCE",
+  "run_id": "g6-20261019-c4a12b",
+  "checked_at_utc": "2026-10-19T23:08:23Z",
+  "acceptance_window_utc": {
+    "start": "2026-10-19T14:30:00Z",
+    "end": "2026-10-21T14:30:00Z",
+    "slots": 2880,
+    "minimum_available_slots": 2866,
+    "maximum_failed_slots": 14
+  },
+  "frozen_raw_collector_envelope_end_utc": "2026-10-22T14:30:00Z",
+  "observed_prefix": {
+    "first_slot": 0,
+    "last_slot": 516,
+    "observed_slots": 517,
+    "available_slots": 502,
+    "failed_slots": 15,
+    "failed_slot_indices": [4, 5, 15, 57, 60, 96, 110, 126, 129, 148, 158, 211, 212, 213, 515],
+    "resource_samples": 104,
+    "resource_coverage": "partial; final window requires 576 samples"
+  },
+  "new_failure": {
+    "slot": 515,
+    "sample_time_utc": "2026-10-19T23:05:16Z",
+    "public_http_statuses": [0, 200, 200],
+    "description": "Public /healthz probe failed once; backend, helper and fixed egress checks remained healthy. Slot 516 recovered. The cause is unconfirmed."
+  },
+  "runtime_check": {
+    "collector_service": "crm-g6-20261019-c4a12b.service",
+    "service_state": "active",
+    "service_restarts": 0,
+    "fixed_egress_verify": "ok",
+    "fixed_egress_ip": "38.55.145.52"
+  },
+  "sha256": {
+    "samples_jsonl_first_517_rows": "a31f772ce362944707f3a4811c9c4ff62a8c5406d6b66d5db2dabd3102d2e0c7",
+    "alerts_jsonl_first_24_rows": "3ee127607bfbf553df73df84a2c1dd32697d39004fde73544e7943a4cbd96bad",
+    "meta_json": "4b541473550b1d5c6ebd2d72f0681f78f53eb5a5034ff05343134e8599a0aa77",
+    "collector_script": "2369861d36f425e266e496b5ed9aaee0a2a23140f754bde5df910193a8a5858e",
+    "report_script_48h": "49e87f7c13f31e1634b5c618081497e027f65497e3fe27f6370968e22daedd2d"
+  },
+  "gate_conclusion": "NO_GO_MATHEMATICALLY_UNREACHABLE",
+  "explanation": "Fifteen failed slots already exceed the frozen limit of fourteen. Even if all remaining slots pass, no more than 2865 of 2880 can be available. Continue original collection to the window end; do not overwrite, backfill or splice samples. Final IR/TR/RR and root-cause investigation remain open. G8 and production remain No-Go."
+}
