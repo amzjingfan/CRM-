@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-19 G6 48 小时观察中：用户将本期验收从 72 小时缩至 48 小时，沿用 UTC 14:30 已启动原件的前 2880 槽，至少 2866 槽可用；原 72 小时采集元数据和脚本保持冻结。窗口内第 4、5 槽已因受控固定出口故障不可用，`G6_ALERT` 与 `G6_RECOVERED` 均在原件中，见[启动证据](../../release/evidence/staging/crm-staging-g6-start-20261019.json)和[告警恢复证据](../../release/evidence/staging/crm-staging-g6-alert-recovery-20261019.json)。完整窗口及最终 IR/TR/RR 尚未形成，G6 仍 `DOING`，G8/production No-Go。
+
 2026-10-19 G2 R08：[TR](../reports/tests/TR-MVP-003-20261019-R08.md) 为 `PASS`，只适用于用户新确认的已授权店铺 staging 正常 Webhook 链路。真实唯一订阅、28 条消息主题验签与绑定、3 条买家入站及 G3 受控双向对话沿用原件；本轮只读核对入口 38 次 HTTP 200 与数据库 38 条唯一验签事件一致。G5 临时关闭 Webhook 期间有 10 次 503、恢复后 4 次成功入库，但不能关联为同一通知重投，恢复的 4 条均非买家成功消息。真实乱序和同通知恢复亦未证实；R07 旧口径 `PARTIAL` 保留。G6/G8/production 独立阻塞。
 
 2026-10-19 G2 R07：[TR](../reports/tests/TR-MVP-003-20261019-R07.md) 为 `PARTIAL`。已有真实受控双向对话及 3 条验签、店铺绑定、成功入站的买家 Webhook 事件；本轮只读核对 staging 运行开关和三个公网健康端点，未触发新买家测试。按用户决定，当前已授权店铺的 staging 人工辅助正常链路受限放行。官方重投、真实乱序和故障恢复没有现场证据，完整 G2、G8 与 production 仍未通过。
@@ -321,11 +323,11 @@ Prompt `real-model-eval-v1.2.8` 的源码测试先红后绿，完整后端 `1765
 
 - `MVP-READONLY-LOG-001` 的源码门禁见 `TR-MVP-READONLY-LOG-001-20260928-R01`；staging 现有后端上的六项非物流真实只读重测见 `TR-MVP-G1-NONLOG-001-20260928-R01`。后者只证明这六项路径成功，不覆盖增强物流、重复回调或 G1 签署；真实 Token 自然刷新另见 `release/evidence/staging/crm-staging-g1-natural-token-refresh-20261008.json`。日志部署与增强物流的单独记录仍在 PR #56 草稿中。
 
-- G4 R56 的一次真实模型冻结综合集为 36/36，历史逐项失败已闭环；仍缺实际买家闭环、端到端 SSE 首 Token、本期 G6 连续三日稳定性及实际 AI 独立解决率证据。低敏报告不保存模型原文；后续任何候选仍须保留严格判分和冻结集。
+- G4 R56 的一次真实模型冻结综合集为 36/36，历史逐项失败已闭环；仍缺实际买家闭环、端到端 SSE 首 Token、本期 G6 连续 48 小时稳定性及实际 AI 独立解决率证据。低敏报告不保存模型原文；后续任何候选仍须保留严格判分和冻结集。
 - 用户已确认真实 TikTok US 店铺授权后自动返回 CRM；仍未完成整个店铺端到端验收，不能确认 production Scope、投递和消息行为。
 - `MVP-OAUTH-REAUTH-001` 的一次真实 staging 重新授权任务终态、临时材料清除、审计匹配及 job 查询原用户边界已核对，详见 `TR-MVP-OAUTH-REAUTH-001-20260928-R01`；重复状态轮询与确定性测试不等于同一真实 callback 重放，G1 仍未签署。
 - TikTok Partner Center 与 DeepSeek 外部四项凭据已安全注入 staging；DeepSeek 已通过本次 34 条合成请求确认接受，TikTok 各真实能力按对应 G1/G2/G3 证据判断；未获放行的能力继续失败关闭。
-- 本期 G6 连续 3 日（72 小时）至少 99.5% 稳定性尚未执行；50 客户端 SSE 的当前受限结论以 `RELEASE-GATES.md` 的 G5 行为准。
+- 本期 G6 连续 48 小时至少 99.5% 稳定性正在采集，尚未到验收终点；50 客户端 SSE 的当前受限结论以 `RELEASE-GATES.md` 的 G5 行为准。
 - 隔离备份恢复子项见 `TR-MVP-008-RESTORE-001-20260929-R01`；兼容上一版实际镜像回滚及候选切返见 `TR-MVP-008-20260930-R01`。活动 MinIO 业务桶为空，字节级恢复仅用隔离合成对象验证；两项均不证明 production 活动卷可直接覆盖或 G8 最终联合签署。
 
 ## 管理端本机交互回归

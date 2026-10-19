@@ -29,7 +29,9 @@ RESOURCE_CONTAINERS = (
     "crm-staging-retrieval-model-service-1",
     "crm-staging-postgres-1",
 )
+# 已启动的原始采集器冻结为 72 小时；本期 G6 验收在相同原件的前 48 小时截取。
 MINUTES = 4320
+ACCEPTANCE_MINUTES = 2880
 ROOT = Path("/home/crmdeploy/.cache/crm-g6")
 RUN_ID = re.compile(r"g6-[0-9]{8}-[a-z0-9]{6}\Z")
 INSPECT = re.compile(
@@ -191,8 +193,11 @@ def probe_once(slot: int) -> dict[str, Any]:
 
 
 def evaluate(rows: list[dict[str, object]], start: datetime, end: datetime, now: datetime) -> dict[str, Any]:
-    """72 小时固定 4320 槽；缺口按不可用计，重复或越界原件无效。"""
-    if end - start != timedelta(minutes=MINUTES) or start.tzinfo is None or end.tzinfo is None:
+    """冻结窗口按分钟计；缺口不可用，重复或越界原件无效。"""
+    minutes = int((end - start).total_seconds() // 60)
+    if minutes not in (ACCEPTANCE_MINUTES, MINUTES) or end - start != timedelta(minutes=minutes):
+        raise ValueError("invalid_window")
+    if start.tzinfo is None or end.tzinfo is None:
         raise ValueError("invalid_window")
     seen: set[int] = set()
     available = 0
@@ -200,28 +205,42 @@ def evaluate(rows: list[dict[str, object]], start: datetime, end: datetime, now:
     for row in rows:
         slot = row.get("slot")
         ok = row.get("ok")
-        if type(slot) is not int or not 0 <= slot < MINUTES or type(ok) is not bool or slot in seen:
+        if type(slot) is not int or not 0 <= slot < minutes or type(ok) is not bool or slot in seen:
             invalid = True
             continue
         seen.add(slot)
         available += int(ok)
-    missing = MINUTES - len(seen)
+    missing = minutes - len(seen)
     failed = len(seen) - available
-    result = "invalid" if invalid else "in_progress" if now < end else "pass" if available >= 4299 else "fail"
+    minimum_available = (minutes * 995 + 999) // 1000
+    result = (
+        "invalid" if invalid else "in_progress" if now < end else "pass" if available >= minimum_available else "fail"
+    )
     return {
         "result": result,
         "window_start_utc": start.isoformat(),
         "window_end_utc": end.isoformat(),
-        "expected_slots": MINUTES,
+        "expected_slots": minutes,
+        "minimum_available_slots": minimum_available,
         "observed_slots": len(seen),
         "available_slots": available,
         "failed_slots": failed,
         "missing_slots": missing,
-        "availability_percent": round(100 * available / MINUTES, 6),
+        "availability_percent": round(100 * available / minutes, 6),
         "resource_samples": sum(
             1 for row in rows if row.get("resource_sample_ok") is True and row.get("resource") is not None
         ),
     }
+
+
+def acceptance_rows(rows: list[dict[str, object]], minutes: int) -> list[dict[str, object]]:
+    """只排除采集原件中验收窗口结束后的合法槽，保留窗口内异常供判无效。"""
+    accepted = []
+    for row in rows:
+        slot = row.get("slot")
+        if type(slot) is not int or not minutes <= int(slot) < MINUTES:
+            accepted.append(row)
+    return accepted
 
 
 def _append(path: Path, record: dict[str, Any]) -> None:
@@ -342,6 +361,7 @@ def main() -> int:
     parser.add_argument("--run-id")
     parser.add_argument("--start-utc")
     parser.add_argument("--source-sha")
+    parser.add_argument("--acceptance-minutes", type=int, choices=(ACCEPTANCE_MINUTES, MINUTES))
     args = parser.parse_args()
     if (
         os.name != "posix"
@@ -357,6 +377,8 @@ def main() -> int:
         raise ValueError("run_id_required")
     directory = _run_dir(args.run_id)
     if args.mode == "collect":
+        if args.acceptance_minutes is not None:
+            raise ValueError("acceptance_override_report_only")
         if not args.start_utc or not args.source_sha or re.fullmatch(r"[0-9a-f]{40}", args.source_sha) is None:
             raise ValueError("source_identity_required")
         start = datetime.fromisoformat(args.start_utc.replace("Z", "+00:00"))
@@ -366,8 +388,16 @@ def main() -> int:
         return 0
     meta = json.loads((directory / "meta.json").read_text(encoding="utf-8"))
     start = datetime.fromisoformat(meta["start_utc"])
-    end = datetime.fromisoformat(meta["end_utc"])
-    print(json.dumps(evaluate(_read_rows(directory / "samples.jsonl"), start, end, utc_now()), sort_keys=True))
+    collection_end = datetime.fromisoformat(meta["end_utc"])
+    minutes = args.acceptance_minutes or ACCEPTANCE_MINUTES
+    end = start + timedelta(minutes=minutes)
+    if end > collection_end:
+        raise ValueError("acceptance_exceeds_collection_window")
+    result = evaluate(acceptance_rows(_read_rows(directory / "samples.jsonl"), minutes), start, end, utc_now())
+    result["collection_window_end_utc"] = collection_end.isoformat()
+    result["collector_script_sha256"] = meta["script_sha256"]
+    result["source_sha"] = meta["source_sha"]
+    print(json.dumps(result, sort_keys=True))
     return 0
 
 

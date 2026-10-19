@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-007",
+  "gate": "G6",
+  "user_change_date": "2026-10-19",
+  "change": "acceptance_window_reduced_from_72_to_48_hours",
+  "run_id": "g6-20261019-c4a12b",
+  "collection_source_sha": "162f7844aa218f8561102feabebd3a4ca21f9b31",
+  "frozen_collector_sha256": "2369861d36f425e266e496b5ed9aaee0a2a23140f754bde5df910193a8a5858e",
+  "collection_window_start_utc": "2026-10-19T14:30:00Z",
+  "collection_window_end_utc": "2026-10-22T14:30:00Z",
+  "acceptance_window_start_utc": "2026-10-19T14:30:00Z",
+  "acceptance_window_end_utc": "2026-10-21T14:30:00Z",
+  "acceptance_expected_slots": 2880,
+  "acceptance_minimum_available_slots": 2866,
+  "maximum_unavailable_whole_minute_slots": 14,
+  "earlier_failure_slots_preserved": [4, 5],
+  "collection_unchanged": true,
+  "separate_report_script_sha256": "d2ea8673ce04b4b1b42bbdccd702f344910445d36ccd2d0ef2834944b4776db9",
+  "interim_check": {
+    "checked_at_utc": "2026-10-19T14:45:07Z",
+    "collector_active": true,
+    "collector_restart_count": 0,
+    "observed_slots": 15,
+    "available_slots": 13,
+    "failed_slots": 2,
+    "conclusion": "in_progress"
+  },
+  "scope": "Amendment and interim progress only; final 48-hour result requires the full frozen prefix and independent gate review."
+}

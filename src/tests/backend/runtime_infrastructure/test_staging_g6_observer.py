@@ -1,4 +1,4 @@
-"""G6 72 小时现场观察的计数和低敏探针契约。"""
+"""G6 冻结原始采集和本期 48 小时验收的计数与低敏探针契约。"""
 
 import json
 from datetime import UTC, datetime, timedelta
@@ -33,6 +33,32 @@ def test_missing_duplicate_and_unfinished_window_cannot_pass() -> None:
     assert observer.evaluate(rows()[:-22], START, END, END)["result"] == "fail"
     assert observer.evaluate(rows() + [{"slot": 0, "ok": True}], START, END, END)["result"] == "invalid"
     assert observer.evaluate(rows(), START, END, END - timedelta(seconds=1))["result"] == "in_progress"
+
+
+def test_48_hour_acceptance_uses_first_2880_slots_and_995_percent() -> None:
+    end = START + timedelta(hours=48)
+    source = rows(set(range(14)))
+    accepted = observer.acceptance_rows(source, observer.ACCEPTANCE_MINUTES)
+    result = observer.evaluate(accepted, START, end, end)
+    assert result["result"] == "pass"
+    assert result["expected_slots"] == 2880
+    assert result["minimum_available_slots"] == 2866
+    assert result["available_slots"] == 2866
+    assert result["failed_slots"] == 14
+    assert observer.evaluate(accepted, START, end, end - timedelta(seconds=1))["result"] == "in_progress"
+
+    fifteen_down = observer.acceptance_rows(rows(set(range(15))), observer.ACCEPTANCE_MINUTES)
+    assert observer.evaluate(fifteen_down, START, end, end)["result"] == "fail"
+    assert observer.evaluate(accepted[:-15], START, end, end)["result"] == "fail"
+
+
+def test_48_hour_acceptance_preserves_invalid_rows_inside_or_outside_source_envelope() -> None:
+    end = START + timedelta(hours=48)
+    original = rows()
+    original.extend(({"slot": 4, "ok": True}, {"slot": 5000, "ok": True}))
+    accepted = observer.acceptance_rows(original, observer.ACCEPTANCE_MINUTES)
+    assert len(accepted) == 2882
+    assert observer.evaluate(accepted, START, end, end)["result"] == "invalid"
 
 
 def test_probe_reduces_commands_to_fixed_statuses_without_raw_values(monkeypatch: pytest.MonkeyPatch) -> None:
