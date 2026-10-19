@@ -1,5 +1,6 @@
 """REAL-AI-04 正式测试报告中两项 P1 缺陷的回归测试。"""
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -202,6 +203,7 @@ async def test_marketing_draft_approval_is_audited_but_never_sends(
 @pytest.mark.asyncio
 async def test_sse_disconnect_before_result_marks_delivery_interrupted(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """工作流完成后、result 交付前断开，运行记录不能保留单一成功语义。"""
     run_id = uuid.uuid4()
@@ -257,12 +259,17 @@ async def test_sse_disconnect_before_result_marks_delivery_interrupted(
         SimpleNamespace(),  # type: ignore[arg-type]
         user,  # type: ignore[arg-type]
     )
-    body = "".join([chunk async for chunk in response.body_iterator])
+    with caplog.at_level(logging.INFO, logger=chat_router.__name__):
+        body = "".join([chunk async for chunk in response.body_iterator])
 
     assert "event: result" not in body
     assert '"reason": "disconnected"' in body
     assert marked == [(run_id, "SSE_DELIVERY_INTERRUPTED")]
     assert released == [user.id]
+    assert [record.message for record in caplog.records if record.message == "chat_stream_disconnected"] == [
+        "chat_stream_disconnected"
+    ]
+    assert not any(record.message == "chat_stream_closed_early" for record in caplog.records)
 
 
 @pytest.mark.asyncio

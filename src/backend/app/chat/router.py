@@ -180,6 +180,16 @@ async def chat_query(
             if result is not None and not result_handed_to_transport:
                 await mark_suggestion_delivery_interrupted(session, result.agent_run_id, error_code)
 
+        def log_disconnected() -> None:
+            logger.info(
+                "chat_stream_disconnected",
+                extra={
+                    "event": "chat_stream_disconnected",
+                    "trace_id": trace_id,
+                    "total_latency_ms": int((time.perf_counter() - stream_started_at) * 1000),
+                },
+            )
+
         try:
             yield _event("accepted", sequence, {"request_id": request_id, "trace_id": trace_id})
             sequence += 1
@@ -207,14 +217,7 @@ async def chat_query(
                 if await request.is_disconnected():
                     await _cancel_task(workflow_task)
                     terminal_event_emitted = True
-                    logger.info(
-                        "chat_stream_disconnected",
-                        extra={
-                            "event": "chat_stream_disconnected",
-                            "trace_id": trace_id,
-                            "total_latency_ms": int((time.perf_counter() - stream_started_at) * 1000),
-                        },
-                    )
+                    log_disconnected()
                     return
                 now = time.perf_counter()
                 if now >= deadline:
@@ -247,6 +250,7 @@ async def chat_query(
             if await request.is_disconnected():
                 await mark_interrupted("SSE_DELIVERY_INTERRUPTED")
                 terminal_event_emitted = True
+                log_disconnected()
                 yield _event("done", sequence, {"reason": "disconnected"})
                 return
             first_output_latency_ms = int((time.perf_counter() - agent_started_at) * 1000)
@@ -268,6 +272,7 @@ async def chat_query(
                 if await request.is_disconnected():
                     await mark_interrupted("SSE_DELIVERY_INTERRUPTED")
                     terminal_event_emitted = True
+                    log_disconnected()
                     yield _event("done", sequence, {"reason": "disconnected"})
                     return
                 yield _event("delta", sequence, {"index": index // 24, "text": content[index : index + 24]})
@@ -276,6 +281,7 @@ async def chat_query(
             if await request.is_disconnected():
                 await mark_interrupted("SSE_DELIVERY_INTERRUPTED")
                 terminal_event_emitted = True
+                log_disconnected()
                 yield _event("done", sequence, {"reason": "disconnected"})
                 return
             result_handed_to_transport = True

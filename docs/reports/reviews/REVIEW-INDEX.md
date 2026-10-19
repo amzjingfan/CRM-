@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-20261019-R95 | MVP-006 | R95 | APPROVE | `6fe51febbf1e26e16e0a139d24f262e487d94f13` | terminal-event-uniqueness, lease-release, low-sensitivity-trace, field-recovery | 2026-10-19T09:23:40+08:00 | [`RR-MVP-006-20261019-R95.md`](RR-MVP-006-20261019-R95.md) |
 | RR-MVP-006-20261018-R94 | MVP-006 | R94 | APPROVE | `73be3d5a68866b70f4cdff4e70092dd785813cf7` | transport-cancellation, lease-release, low-sensitivity-trace, terminal-event-uniqueness, restore | 2026-10-18T23:05:41+08:00 | [`RR-MVP-006-20261018-R94.md`](RR-MVP-006-20261018-R94.md) |
 | RR-MVP-006-20261018-R93 | MVP-006 | R93 | APPROVE | `7ce2da4df1d5e5af9222d448f9f30f2cb88f020f` | synthetic-target, credential-boundary, output-redaction, disconnect-correlation, recovery | 2026-10-18T22:36:05+08:00 | [`RR-MVP-006-20261018-R93.md`](RR-MVP-006-20261018-R93.md) |
 | RR-MVP-006-20261018-R92 | MVP-006 | R92 | APPROVE | `eeb3234da4a1b874b7485e4dbc9fdea1f636a358` | acceptance-scope, strict-latency, original-evidence, safety-boundary, production-gate | 2026-10-18T22:14:00+08:00 | [`RR-MVP-006-20261018-R92.md`](RR-MVP-006-20261018-R92.md) |

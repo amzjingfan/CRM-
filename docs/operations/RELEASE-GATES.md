@@ -15,6 +15,8 @@
 | G7 | 高风险写入与自动化 | 范围外 | `AUTO_REPLY_ENABLED=false`、`REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false`；无放行证据 | v0.1 后另立需求、评审和门禁 |
 | G8 | 最终生产签署 | 阻塞 | G1 核心范围已按 2026-10-09 用户决定通过，但 G1-L、G2～G6 未全部完成，安全、业务、运维尚未联合签署 | 汇总真实证据并召开最终 Go/No-Go |
 
+G5 [R95 两次手动断连窗口](../reports/tests/TR-MVP-006-20261019-R95.md)均完成 FAQ ready、50/50 身份与原 G3 恢复；客户端收到 `accepted` 后关闭且 Redis 租约回到 0，但同 trace 服务端终态事件为 0。第二次等待 15 秒仍未出现终态，不将客户端关闭或租约状态单独算作通过。Agent 完成后断开的漏记分支已在新 subject `6fe51fe` 通过先红后绿及完整本地门禁；匹配镜像现场复测之前 G5/production No-Go。
+
 G5 [R77 修复](../reports/tests/TR-MVP-006-20261018-R77.md)已合入并在 [R78 现场](../reports/tests/TR-MVP-006-20261018-R78.md)完成手动单会话和 50 并发复测：本地检索排队显著缩短，但安全输出仍为 49/50 且首输出/总时延 P99 超限。旧 G3 模式已恢复；G5 和 production 仍未放行。
 
 G5 [R86 数值诊断](../reports/tests/TR-MVP-006-20261018-R86.md)已用于 [R87 手动窗口](../reports/tests/TR-MVP-006-20261018-R87.md)，本轮 50/50 安全输出与原 G3 恢复有现场证据；严格首输出 P99 仍失败，数据库活动采样及独立断连证据仍缺。
