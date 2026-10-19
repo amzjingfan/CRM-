@@ -1,0 +1,31 @@
+{
+  "task_id": "MAINT-CLEANUP-20261019-002",
+  "batch_id": "CLEANUP-20261019-002",
+  "base_sha": "acc2ba7d0c9db164476862ddab723b9f2f5f76fd",
+  "state": "APPROVED_FOR_DELETE",
+  "authorized_root": ".worktrees/mvp008-staging-recovery-20260929/src/tests/.artifacts",
+  "items": [
+    {
+      "task_id": "MAINT-CLEANUP-20261019-002",
+      "batch_id": "CLEANUP-20261019-002",
+      "base_sha": "acc2ba7d0c9db164476862ddab723b9f2f5f76fd",
+      "original_path": ".worktrees/mvp008-staging-recovery-20260929/src/tests/.artifacts/mvp008-oci-local-transfer",
+      "kind": "directory",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 11375891998,
+      "file_count": 5466,
+      "directory_count": 21,
+      "sha256": "N/A (directory; individual 11 GB blobs not rehashed for cleanup)",
+      "modified_at": "2026-09-30T17:50:45+08:00",
+      "reason": "Expired local staging OCI transfer cache; specific path authorized by user on 2026-10-19",
+      "reference_checks": ["Current main and affected worktree text scan: no active path reference", "MVP-008 G0 staging deployment and rollback evidence retained in release/evidence/staging", "Affected worktree PR #97 merged"],
+      "related_tasks_or_worktrees": ["MVP-008", "MAINT-CLEANUP-20261019-001", "mvp008-staging-recovery-20260929"],
+      "action": "candidate",
+      "quarantine_path": "N/A (exact-path permanent deletion approved)",
+      "retention_until": "2026-10-07T17:50:45+08:00",
+      "restore_method": "Re-fetch immutable images by retained digest from GHCR using the existing staging prefetch/import procedure; temporary chunk bytes are not guaranteed recoverable",
+      "verification": ["Deletion blocked by local execution policy before process creation on two attempts", "Target remains present; affected worktree HEAD and two untracked instruction file hashes unchanged", "Post-delete checks pending until policy is lifted or user performs authorized deletion"]
+    }
+  ]
+}

@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-19 目录卫生补记：用户已精确批准删除旧 worktree 内 `mvp008-oci-local-transfer/`；[CLEANUP-20261019-002](../operations/cleanup/CLEANUP-20261019-002.md) 完成路径、保留期、引用、恢复来源和保留文件核对，但本机自动执行策略两次在命令启动前拒绝 `Remove-Item`（`blocked by policy`）。目标 5,466 个文件、长度合计 11,375,891,998 B 仍在原位，所在 worktree 与两份未跟踪指令文件不变；任务 `MAINT-CLEANUP-20261019-002` 为 `BLOCKED`，解除条件与复核步骤见批次。Workspace hygiene: ATTENTION；G6/G8/production 状态不变。下一步：①环境策略允许后在原批次执行精确删除并复核，或用户手工删除后复核；②保留其他未获准材料；③继续当前产品门禁任务。
+
 2026-10-19 目录卫生：用户要求全目录盘点与 worktree 整理，`MAINT-CLEANUP-20261019-001` 的 [CLEANUP-20261019-001](../operations/cleanup/CLEANUP-20261019-001.md) 已按精确路径非强制移除九个无未提交交付内容的 Git 工作副本，扫描长度合计 2,653,002,607 B；原分支及提交保留。根 checkout 的 24 个未跟踪部署文件、两个工作树的未跟踪前端指令、开放 PR #42/#56、部署包/凭证相关材料、`outputs/` 用户交付和约 11.89 GB 的旧 OCI 原件均未触碰。批次的目录与 Git 注册复核已通过；证据 PR #440 已合入 `main=5913a7a5546223daf6a7c2150563a9e2c34601cf`，任务状态 `DONE`。Workspace hygiene: ATTENTION（保留对象需独立批次与精确授权）。G6/G8/production 状态不变。
 
 2026-10-19 G2 v0.1 范围调整完成：[PR #438](https://github.com/CP11-gh/CRM/pull/438) 已合入权威 main `6fbebdf17a0270ab9e291bc199cfb8b11365c885`，subject `cba4f5cf77b4622065469011a31c45e474b77920`。用户确认以已授权店铺 staging 正常 Webhook 链路放行；[R08 TR](../reports/tests/TR-MVP-003-20261019-R08.md)沿用真实买家入站/双向对话和既有确定性保护，追加[只读入口聚合](../../release/evidence/staging/crm-staging-g2-passive-ingress-20261019.json)：38 次 HTTP 200 对应 38 条唯一验签事件；G5 临时关闭 Webhook 的 10 次 503 后入口恢复，无法关联同一通知，真实乱序也未证明。旧 R07 `PARTIAL` 保留，异常投递转 `MVP-G2-EDGE-001` 被动监测。MVP-003 为 `DONE`；主分支 IR/TR/RR 源记录与索引 193/202/189 精确一致，均为 `CURRENT`。GitHub Actions 两作业零步骤失败，按用户指定的手动路径验证，不声称 CI 通过。G6/G8/production 独立阻塞；`EVIDENCE_HEAD_SHA=READ_AT_GATE`。Workspace hygiene：复用活动 worktree，未知文件未清理。下一步：①核对 G6 五日观察前提并启动合规窗口；②保留 G2 异常投递被动监测；③G8 汇总剩余证据和风险独立决策。
