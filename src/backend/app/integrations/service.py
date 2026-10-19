@@ -147,7 +147,9 @@ async def _upsert_customer(
     if customer is None:
         customer = Customer(store_id=store_id, platform=platform, external_customer_id=external_id)
         session.add(customer)
-    customer.name = data.name
+    # 新消息通知可不带昵称；缺失字段不能清空会话同步得到的买家名称。
+    if data.name is not None:
+        customer.name = data.name
     customer.email = data.email
     customer.avatar = data.avatar
     customer.last_seen_at = datetime.now(UTC)
