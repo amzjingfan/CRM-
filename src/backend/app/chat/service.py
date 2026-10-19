@@ -3,16 +3,24 @@
 import logging
 import time
 import uuid
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Literal, cast
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.factory import SharedAgentRuntime, build_agent_workflow
 from app.agent.models import AgentRun
 from app.agent.reply_policy import resolve_store_reply_profile
-from app.agent.schemas import AgentToolRuntimeContext, AgentWorkflowCommand, AgentWorkflowResult, MessageContext
+from app.agent.schemas import (
+    AgentAction,
+    AgentRunStatus,
+    AgentToolRuntimeContext,
+    AgentWorkflowCommand,
+    AgentWorkflowResult,
+    MessageContext,
+)
 from app.agent.security import SYNTHETIC_DEMO_PROMPT_VERSION
 from app.agent.synthetic_demo import generate_synthetic_demo, resolve_synthetic_demo_scenario
 from app.agent_management.models import AgentConfig
@@ -23,6 +31,7 @@ from app.conversations.models import Conversation, Message
 from app.orders.models import Order
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
+from app.shared.database.session import session_factory
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import Store
 from app.tools.contracts import ToolName
@@ -187,6 +196,53 @@ async def mark_suggestion_delivery_interrupted(
         f"{computation_summary};computation_status=succeeded;delivery_status=interrupted;delivery_error={error_code}"
     )
     await session.commit()
+
+
+async def reconcile_cancelled_sse_agent_run(
+    user: User,
+    conversation_id: uuid.UUID,
+    trace_id: str,
+    stream_started_at: datetime,
+) -> bool:
+    """请求会话被取消后，仅收敛本次授权范围内尚在运行的 Agent 审计记录。"""
+    async with session_factory() as audit_session:
+        store_ids = await allowed_store_ids(audit_session, user)
+        if not store_ids:
+            return False
+        candidates = (
+            await audit_session.scalars(
+                select(AgentRun.id)
+                .where(
+                    AgentRun.trace_id == trace_id,
+                    AgentRun.conversation_id == conversation_id,
+                    AgentRun.store_id.in_(store_ids),
+                    AgentRun.created_at >= stream_started_at - timedelta(seconds=5),
+                    AgentRun.status == AgentRunStatus.RUNNING.value,
+                )
+                .limit(2)
+            )
+        ).all()
+        if not candidates:
+            return False
+        if len(candidates) != 1:
+            raise RuntimeError("SSE 取消审计匹配多个运行记录")
+        updated = (
+            await audit_session.scalars(
+                update(AgentRun)
+                .where(AgentRun.id == candidates[0], AgentRun.status == AgentRunStatus.RUNNING.value)
+                .values(
+                    status=AgentRunStatus.FAILED.value,
+                    action=AgentAction.FAILED.value,
+                    error_code="AGENT_CANCELLED",
+                    output_summary="error_code=AGENT_CANCELLED",
+                )
+                .returning(AgentRun.id)
+            )
+        ).one_or_none()
+        if updated is None:
+            return False
+        await audit_session.commit()
+        return True
 
 
 def suggestion_view(result: AgentWorkflowResult) -> SuggestionView:

@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-19 `MVP-006-CANCEL-001` R01：SSE 取消后独立事务修正 AgentRun 的源码回归为 2151 passed、27 skipped、1 个既有 Windows 预取超时用例明确排除；最终定向 9 passed，Ruff、格式、mypy 和锁文件通过。仅代码测试，staging 独立数据库终态、旧遗留记录与原 G3 恢复尚待新镜像现场核对，任务 `VERIFYING`；见[R01 TR](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R01.md)。
+
 2026-10-19 工作台店铺筛选名称：[TR](../reports/tests/TR-MVP-WORKSPACE-STORE-LABEL-001-20261019-R01.md) `PASS`。修复前浏览器回归复现截断 ID，修复后名称与空列表选项稳定；合入 SHA 的 lint 0 错误、typecheck、47/47 契约测试、生产构建和 31/31 生产模式浏览器测试通过。staging 手动门禁、运行摘要、三健康 200 及已登录页面的真实名称只读复核通过。GitHub 自动作业零步骤失败，不作为本轮测试证据；production 未发布。
 
 2026-10-19 G5 R101：[R101 TR](../reports/tests/TR-MVP-006-20261019-R101.md)记录当前 main 私有后端六摘要、临时 G5 部署、FAQ ready、50/50 隔离身份预检；独立客户端收到 `accepted` 后断开，服务端同 trace 一条提前关闭终态、无完成/超时、Redis 租约 0→1→0，随后原 G3 六摘要、单店人工发送、翻译、三健康和固定出口恢复通过。R91 的 50/50 安全输出与 R92 新严格 `<5000/<5000 ms` 口径事后复算共同满足当前 G5 staging 合成门禁；R101 没有重跑 50 并发。R100 全量后端尝试有一项未改动的 Windows 假 Docker 30 秒超时，除该项外 2146 passed/27 skipped，不写成全量通过。取消 AgentRun 留 `running` 另列缺陷；G1-L、G2、G6、G8 和 production 仍未通过。

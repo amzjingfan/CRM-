@@ -7,6 +7,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import suppress
+from datetime import UTC, datetime
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Request
@@ -16,7 +17,12 @@ from app.agent.factory import SharedAgentRuntime
 from app.agent.workflow import AgentWorkflowExecutionError
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.chat.schemas import ChatQueryRequest, SuggestionRequest, SuggestionView
-from app.chat.service import mark_suggestion_delivery_interrupted, record_first_output_latency, suggest_for_user
+from app.chat.service import (
+    mark_suggestion_delivery_interrupted,
+    reconcile_cancelled_sse_agent_run,
+    record_first_output_latency,
+    suggest_for_user,
+)
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.database.redis import (
@@ -173,8 +179,10 @@ async def chat_query(
         result_handed_to_transport = False
         workflow_task: asyncio.Task[SuggestionView] | None = None
         stream_started_at = time.perf_counter()
+        stream_started_at_utc = datetime.now(UTC)
         first_output_latency_ms: int | None = None
         terminal_event_emitted = False
+        cancellation_reconcile_needed = False
 
         async def mark_interrupted(error_code: str) -> None:
             if result is not None and not result_handed_to_transport:
@@ -215,12 +223,14 @@ async def chat_query(
             next_heartbeat = agent_started_at + settings.chat_sse_heartbeat_seconds
             while not workflow_task.done():
                 if await request.is_disconnected():
+                    cancellation_reconcile_needed = True
                     await _cancel_task(workflow_task)
                     terminal_event_emitted = True
                     log_disconnected()
                     return
                 now = time.perf_counter()
                 if now >= deadline:
+                    cancellation_reconcile_needed = True
                     await _cancel_task(workflow_task)
                     terminal_event_emitted = True
                     logger.warning(
@@ -300,6 +310,7 @@ async def chat_query(
                 },
             )
         except asyncio.CancelledError:
+            cancellation_reconcile_needed = True
             if workflow_task is not None:
                 await _cancel_task(workflow_task)
             await mark_interrupted("SSE_DELIVERY_CANCELLED")
@@ -354,9 +365,37 @@ async def chat_query(
                         "total_latency_ms": int((time.perf_counter() - stream_started_at) * 1000),
                     },
                 )
-            if workflow_task is not None and not workflow_task.done():
-                await _cancel_task(workflow_task)
-            await release_chat_stream(user.id, stream_lease_token)
+                cancellation_reconcile_needed = workflow_task is not None
+            try:
+                if workflow_task is not None and not workflow_task.done():
+                    await _cancel_task(workflow_task)
+            finally:
+                try:
+                    if cancellation_reconcile_needed and not result_handed_to_transport:
+                        try:
+                            updated = await reconcile_cancelled_sse_agent_run(
+                                user, payload.session_id, trace_id, stream_started_at_utc
+                            )
+                        except Exception as error:
+                            logger.error(
+                                "chat_stream_agent_cancel_reconcile_failed",
+                                extra={
+                                    "event": "chat_stream_agent_cancel_reconcile_failed",
+                                    "trace_id": trace_id,
+                                    "error_type": type(error).__name__,
+                                },
+                            )
+                            raise
+                        logger.info(
+                            "chat_stream_agent_cancel_reconciled",
+                            extra={
+                                "event": "chat_stream_agent_cancel_reconciled",
+                                "trace_id": trace_id,
+                                "updated": updated,
+                            },
+                        )
+                finally:
+                    await release_chat_stream(user.id, stream_lease_token)
 
     return StreamingResponse(
         stream(),

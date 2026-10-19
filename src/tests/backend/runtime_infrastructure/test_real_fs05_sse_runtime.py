@@ -237,6 +237,7 @@ async def test_stream_timeout_cancels_workflow_and_ends_with_error_done(
     runtime = object()
     cancelled = asyncio.Event()
     released: list[uuid.UUID] = []
+    reconciled: list[uuid.UUID] = []
 
     async def allow_limits(*_args: object) -> None:
         return None
@@ -247,6 +248,10 @@ async def test_stream_timeout_cancels_workflow_and_ends_with_error_done(
     async def release(user_id: uuid.UUID, lease_token: str) -> None:
         assert lease_token == "test-lease"
         released.append(user_id)
+
+    async def reconcile(_user: object, conversation_id: uuid.UUID, *_args: object) -> bool:
+        reconciled.append(conversation_id)
+        return True
 
     async def never_finishes(*_args: object) -> Any:
         assert _args[-1] is runtime
@@ -261,6 +266,7 @@ async def test_stream_timeout_cancels_workflow_and_ends_with_error_done(
     monkeypatch.setattr(chat_router, "_enforce_chat_limits", allow_limits)
     monkeypatch.setattr(chat_router, "acquire_chat_stream", acquire)
     monkeypatch.setattr(chat_router, "release_chat_stream", release)
+    monkeypatch.setattr(chat_router, "reconcile_cancelled_sse_agent_run", reconcile)
     monkeypatch.setattr(chat_router, "suggest_for_user", never_finishes)
     monkeypatch.setattr(
         chat_router,
@@ -292,6 +298,7 @@ async def test_stream_timeout_cancels_workflow_and_ends_with_error_done(
     assert '"code": 50003' in body
     assert '"reason": "timeout"' in body
     assert released == [user.id]
+    assert len(reconciled) == 1
 
 
 @pytest.mark.asyncio

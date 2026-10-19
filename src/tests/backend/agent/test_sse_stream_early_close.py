@@ -35,9 +35,13 @@ def _prepare_stream(monkeypatch: pytest.MonkeyPatch, released: list[uuid.UUID]) 
         assert lease_token == "test-lease"
         released.append(user_id)
 
+    async def reconcile(*_args: object, **_kwargs: object) -> bool:
+        return False
+
     monkeypatch.setattr(chat_router, "_enforce_chat_limits", allow_limits)
     monkeypatch.setattr(chat_router, "acquire_chat_stream", acquire)
     monkeypatch.setattr(chat_router, "release_chat_stream", release)
+    monkeypatch.setattr(chat_router, "reconcile_cancelled_sse_agent_run", reconcile)
     return user, request
 
 
@@ -139,5 +143,93 @@ async def test_transport_cancellation_stops_workflow_and_releases_lease(
     assert released == [user.id]
     assert any(
         record.message == "chat_stream_closed_early" and record.trace_id == request.state.trace_id
+        for record in caplog.records
+    )
+
+
+@pytest.mark.asyncio
+async def test_transport_cancel_reconciles_running_agent_before_releasing_lease(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    released: list[uuid.UUID] = []
+    user, request = _prepare_stream(monkeypatch, released)
+    events: list[str] = []
+    started = asyncio.Event()
+
+    async def suggest(*_args: object, **_kwargs: object) -> None:
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            events.append("workflow_cancelled")
+
+    async def reconcile(*_args: object, **_kwargs: object) -> bool:
+        events.append("agent_run_failed")
+        return True
+
+    async def release(user_id: uuid.UUID, lease_token: str) -> None:
+        assert lease_token == "test-lease"
+        released.append(user_id)
+        events.append("lease_released")
+
+    monkeypatch.setattr(chat_router, "suggest_for_user", suggest)
+    monkeypatch.setattr(chat_router, "reconcile_cancelled_sse_agent_run", reconcile, raising=False)
+    monkeypatch.setattr(chat_router, "release_chat_stream", release)
+    response = await chat_router.chat_query(
+        ChatQueryRequest(session_id=uuid.uuid4()),
+        request,
+        SimpleNamespace(),
+        user,  # type: ignore[arg-type]
+    )
+
+    assert "event: accepted" in await anext(response.body_iterator)
+    await anext(response.body_iterator)
+    await anext(response.body_iterator)
+    pending = asyncio.create_task(anext(response.body_iterator))
+    await asyncio.wait_for(started.wait(), timeout=1)
+    pending.cancel()
+    with suppress(asyncio.CancelledError, StopAsyncIteration):
+        await pending
+
+    assert events == ["workflow_cancelled", "agent_run_failed", "lease_released"]
+    assert released == [user.id]
+
+
+@pytest.mark.asyncio
+async def test_cancel_audit_failure_still_releases_stream_lease(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    released: list[uuid.UUID] = []
+    user, request = _prepare_stream(monkeypatch, released)
+    started = asyncio.Event()
+
+    async def suggest(*_args: object, **_kwargs: object) -> None:
+        started.set()
+        await asyncio.Event().wait()
+
+    async def audit_unavailable(*_args: object, **_kwargs: object) -> bool:
+        raise RuntimeError("audit unavailable")
+
+    monkeypatch.setattr(chat_router, "suggest_for_user", suggest)
+    monkeypatch.setattr(chat_router, "reconcile_cancelled_sse_agent_run", audit_unavailable)
+    response = await chat_router.chat_query(
+        ChatQueryRequest(session_id=uuid.uuid4()),
+        request,
+        SimpleNamespace(),
+        user,  # type: ignore[arg-type]
+    )
+
+    assert "event: accepted" in await anext(response.body_iterator)
+    await anext(response.body_iterator)
+    await anext(response.body_iterator)
+    pending = asyncio.create_task(anext(response.body_iterator))
+    await asyncio.wait_for(started.wait(), timeout=1)
+    with caplog.at_level(logging.ERROR, logger=chat_router.__name__):
+        pending.cancel()
+        with pytest.raises(RuntimeError, match="audit unavailable"):
+            await pending
+    assert released == [user.id]
+    assert any(
+        record.message == "chat_stream_agent_cancel_reconcile_failed" and record.error_type == "RuntimeError"
         for record in caplog.records
     )
