@@ -610,6 +610,37 @@ test("conversation filter replaces a detail that is no longer in the list", asyn
   }
 });
 
+test("workspace store filter shows authorized names and keeps options after filtering", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Store", code: "second" };
+  const conversation = {
+    id: "session-store-filter", store_id: store.id, platform: "tiktok", status: "active", unread_count: 0,
+    assigned_user_id: null, last_message_at: "2026-10-19T00:00:00Z", last_message: "Hello",
+    customer: { id: "customer-store-filter", name: "Buyer", email: null, avatar: null, tags: [] },
+  };
+  const { context, page } = await openPage("/workspace", { "GET /v1/settings/stores": [store, otherStore] }, async (context) => {
+    await context.route("**/v1/workspace/sessions*", async (route) => {
+      if (new URL(route.request().url()).pathname !== "/v1/workspace/sessions") return route.fallback();
+      const items = new URL(route.request().url()).searchParams.has("store_id") ? [] : [conversation];
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 0, message: "ok", data: { items, pagination: { page: 1, page_size: 30, total: items.length } } }),
+      });
+    });
+  });
+  try {
+    const filter = page.getByRole("combobox", { name: "店铺" });
+    await page.locator(".conversation-card").waitFor();
+    assert.deepEqual(await filter.locator("option").allTextContents(), ["全部店铺", "US Demo Store", "Second Store"]);
+    await filter.selectOption(otherStore.id);
+    await page.getByText("暂无会话，平台消息到达后会显示在这里").waitFor();
+    assert.equal(await filter.inputValue(), otherStore.id);
+    assert.deepEqual(await filter.locator("option").allTextContents(), ["全部店铺", "US Demo Store", "Second Store"]);
+  } finally {
+    await context.close();
+  }
+});
+
 test("older conversation filter response cannot replace the latest list", async () => {
   const session = (name) => ({
     id: `session-${name}`,

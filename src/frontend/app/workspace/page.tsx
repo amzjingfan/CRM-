@@ -1,11 +1,11 @@
 "use client";
 
-import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, MapPin, Package, Ticket, UserFocus, UserSwitch, X } from "@phosphor-icons/react";
 import { AppShell } from "../../components/AppShell";
 import { MessageBubble } from "../../components/MessageBubble";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { getLogistics, getSessionMessages, getSessionMessagesPage, issueCoupon, listSessions, markSessionRead, sendMessage, streamChatQuery, transferSession, updateShippingAddress, type SessionListData, type SessionMessagesData, type Suggestion } from "../../lib/api";
+import { getLogistics, getSessionMessages, getSessionMessagesPage, issueCoupon, listSessions, listStores, markSessionRead, sendMessage, streamChatQuery, transferSession, updateShippingAddress, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
 
@@ -29,6 +29,8 @@ export default function WorkspacePage() {
   const [storeId, setStoreId] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [list, setList] = useState<SessionListData | null>(null);
+  const [stores, setStores] = useState<StoreView[]>([]);
+  const [storeError, setStoreError] = useState("");
   const [detail, setDetail] = useState<SessionMessagesData | null>(null);
   const [detailError, setDetailError] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -54,6 +56,12 @@ export default function WorkspacePage() {
     if (savedFilter === "unread" || savedFilter === "mine") setFilter(savedFilter);
   }, []);
   useEffect(() => () => suggestionController.current?.abort(), []);
+  useEffect(() => {
+    let active = true;
+    listStores().then((items) => { if (active) { setStores(items); setStoreError(""); } })
+      .catch(() => { if (active) setStoreError(en ? "Could not load stores. Refresh to retry." : "店铺加载失败，请刷新重试。"); });
+    return () => { active = false; };
+  }, [en]);
 
   const loadList = useCallback(async () => {
     const requestId = ++listRequestId.current;
@@ -162,7 +170,6 @@ export default function WorkspacePage() {
     return () => { isCurrentRequest = false; };
   }, [en, selectedId]);
 
-  const stores = useMemo(() => Array.from(new Set(list?.items.map((item) => item.store_id) ?? [])), [list]);
   const messageLimit = detail?.send_mode === "real" ? 2000 : 4000;
 
   async function submitMessage(content = draft, key = newKey()) {
@@ -253,7 +260,7 @@ export default function WorkspacePage() {
     <section className="conversation-panel" aria-label={en ? "Conversation list" : "会话列表"}>
       <div className="panel-heading"><div><p className="eyebrow">INBOX</p><h2 className="text-xl font-semibold">{en ? "Customer messages" : "客户消息"}</h2></div><span className="count-pill">{list?.pagination.total ?? 0}</span></div>
       <div className="filter-row" aria-label={en ? "Conversation filters" : "会话筛选"}>{(["all", "unread", "mine"] as Filter[]).map((item) => <button aria-pressed={filter === item} className={filter === item ? "filter active" : "filter"} key={item} onClick={() => setFilter(item)} type="button">{filterLabels[language][item]}</button>)}</div>
-      <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3"><select aria-label={en ? "Platform" : "平台"} className="compact-field" onChange={(event) => setPlatform(event.target.value)} value={platform}><option value="">{en ? "All platforms" : "全部平台"}</option><option value="tiktok">TikTok</option><option value="shopee">Shopee</option><option value="amazon">Amazon</option></select><select aria-label={en ? "Store" : "店铺"} className="compact-field" onChange={(event) => setStoreId(event.target.value)} value={storeId}><option value="">{en ? "All stores" : "全部店铺"}</option>{stores.map((id) => <option key={id} value={id}>{id.slice(0, 8)}</option>)}</select></div>
+      <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3"><select aria-label={en ? "Platform" : "平台"} className="compact-field" onChange={(event) => setPlatform(event.target.value)} value={platform}><option value="">{en ? "All platforms" : "全部平台"}</option><option value="tiktok">TikTok</option><option value="shopee">Shopee</option><option value="amazon">Amazon</option></select><select aria-label={en ? "Store" : "店铺"} className="compact-field" onChange={(event) => setStoreId(event.target.value)} value={storeId}><option value="">{en ? "All stores" : "全部店铺"}</option>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}{storeId && !stores.some((store) => store.id === storeId) ? <option value={storeId}>{en ? "Store name unavailable" : "店铺名称不可用"}</option> : null}</select>{storeError ? <p className="col-span-2 text-xs text-red-600" role="alert">{storeError}</p> : null}</div>
       <div className="conversation-scroll">{loading ? <LoadingState label={en ? "Loading conversations…" : "正在加载会话…"} /> : error ? <ErrorState message={error} retry={() => void loadList()} /> : !list?.items.length ? <EmptyState label={en ? "Conversations will appear when platform messages arrive" : "暂无会话，平台消息到达后会显示在这里"} /> : <>{list.items.map((item) => {
         const lastMessageTime = formatConversationTime(item.last_message_at, en ? "en-US" : "zh-CN");
         return <button aria-pressed={selectedId === item.id} className={selectedId === item.id ? "conversation-card active" : "conversation-card"} key={item.id} onClick={() => setSelectedId(item.id)} type="button">
