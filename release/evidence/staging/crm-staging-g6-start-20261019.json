@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-007",
+  "gate": "G6",
+  "environment": "staging-rootless",
+  "run_id": "g6-20261019-c4a12b",
+  "service_unit": "crm-g6-20261019-c4a12b.service",
+  "source_sha": "162f7844aa218f8561102feabebd3a4ca21f9b31",
+  "observer_sha256": "2369861d36f425e266e496b5ed9aaee0a2a23140f754bde5df910193a8a5858e",
+  "window_start_utc": "2026-10-19T14:30:00Z",
+  "window_end_utc": "2026-10-22T14:30:00Z",
+  "expected_minute_slots": 4320,
+  "minimum_available_slots": 4299,
+  "preflight": {
+    "sampled_at_utc": "2026-10-19T14:25:11.216150Z",
+    "public_http": [200, 200, 200],
+    "backend_healthy": true,
+    "egress_helper_healthy": true,
+    "fixed_egress_ip": "38.55.145.52",
+    "five_container_resource_sample": true,
+    "backend_tcp_queue_sample": true
+  },
+  "controlled_recovery_before_window": {
+    "egress_helper_stop": "success",
+    "business_egress_verifier_while_stopped": "failed_closed_exit_1",
+    "egress_helper_start": "success",
+    "business_egress_verifier_after_start": "ok_fixed_ip_38.55.145.52",
+    "egress_helper_health_after_start": "healthy"
+  },
+  "first_window_sample": {
+    "slot": 0,
+    "sampled_at_utc": "2026-10-19T14:30:09.913316Z",
+    "public_http": [200, 200, 200],
+    "egress_ip_ok": true,
+    "resource_sample_ok": true,
+    "ok": true
+  },
+  "first_service_check": {
+    "checked_at_utc": "2026-10-19T14:30:20Z",
+    "active_state": "active",
+    "sub_state": "running",
+    "restart_count": 0,
+    "observer_result": "in_progress",
+    "observed_slots": 1,
+    "available_slots": 1
+  },
+  "local_verification": {
+    "targeted_pytest": "8 passed",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "mypy": "passed",
+    "git_diff_check": "passed"
+  },
+  "github_actions": "two_jobs_failed_with_zero_steps; not_counted_as_ci_pass",
+  "scope": "Start and first sample only. Final 72-hour G6 acceptance remains pending."
+}
