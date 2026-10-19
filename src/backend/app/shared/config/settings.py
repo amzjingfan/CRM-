@@ -1,5 +1,6 @@
 """集中管理应用配置，避免业务代码直接读取环境变量。"""
 
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from functools import lru_cache
 from ipaddress import ip_address
@@ -173,6 +174,15 @@ class Settings(BaseSettings):
         default=900.0, ge=60, le=86_400, validation_alias="TIKTOK_CONVERSATION_SYNC_POLL_SECONDS"
     )
     real_tiktok_webhook_enabled: bool = Field(default=False, validation_alias="REAL_TIKTOK_WEBHOOK_ENABLED")
+    g2_webhook_probe_mode: Literal["off", "before_commit_503", "after_commit_503"] = Field(
+        default="off", validation_alias="G2_WEBHOOK_PROBE_MODE"
+    )
+    g2_webhook_probe_run_id: UUID | None = Field(default=None, validation_alias="G2_WEBHOOK_PROBE_RUN_ID")
+    g2_webhook_probe_store_id: UUID | None = Field(default=None, validation_alias="G2_WEBHOOK_PROBE_STORE_ID")
+    g2_webhook_probe_conversation_id: str | None = Field(
+        default=None, pattern=r"^[0-9]{1,30}$", validation_alias="G2_WEBHOOK_PROBE_CONVERSATION_ID"
+    )
+    g2_webhook_probe_expires_at: datetime | None = Field(default=None, validation_alias="G2_WEBHOOK_PROBE_EXPIRES_AT")
     real_tiktok_message_write_enabled: bool = Field(
         default=False,
         validation_alias="REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
@@ -321,6 +331,23 @@ class Settings(BaseSettings):
         """
         if self.app_env not in {"development", "test", "integration", "staging", "production"}:
             raise ValueError("APP_ENV 必须为受支持的环境名称")
+        probe_fields = (
+            self.g2_webhook_probe_run_id,
+            self.g2_webhook_probe_store_id,
+            self.g2_webhook_probe_conversation_id,
+            self.g2_webhook_probe_expires_at,
+        )
+        if self.g2_webhook_probe_mode == "off":
+            if any(field is not None for field in probe_fields):
+                raise ValueError("G2 Webhook 探针关闭时不得残留目标配置")
+        else:
+            expires_at = self.g2_webhook_probe_expires_at
+            if self.app_env != "staging" or not self.real_tiktok_webhook_enabled:
+                raise ValueError("G2 Webhook 探针仅允许 staging 真实 Webhook 模式")
+            if any(field is None for field in probe_fields) or expires_at is None:
+                raise ValueError("G2 Webhook 探针必须绑定运行、店铺、会话和失效时间")
+            if expires_at.tzinfo is None or expires_at > datetime.now(UTC) + timedelta(minutes=30):
+                raise ValueError("G2 Webhook 探针失效时间必须带时区且不超过 30 分钟")
         if self.app_env == "production" and self.llm_live_eval:
             raise ValueError("生产环境禁止启用真实模型评测")
         if self.ai_synthetic_demo_enabled and self.app_env not in {"development", "test"}:

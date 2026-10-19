@@ -5,6 +5,8 @@ import json
 import logging
 import subprocess
 import sys
+import uuid
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from _support import BACKEND_ROOT, SOURCE_ROOT
@@ -144,6 +146,48 @@ def test_real_tiktok_webhook_requires_read_capability() -> None:
     """Webhook 订单补全依赖只读 API，因此不能单独绕过只读门禁。"""
     with pytest.raises(ValidationError, match="Webhook 前必须先启用真实只读"):
         production_settings(REAL_TIKTOK_WEBHOOK_ENABLED=True)
+
+
+def test_g2_retry_probe_rejects_production_and_partial_target() -> None:
+    """一次性 503 不能在 production 或缺失精确目标时启动。"""
+    probe = {
+        "G2_WEBHOOK_PROBE_MODE": "before_commit_503",
+        "G2_WEBHOOK_PROBE_RUN_ID": str(uuid.uuid4()),
+        "G2_WEBHOOK_PROBE_STORE_ID": str(uuid.uuid4()),
+        "G2_WEBHOOK_PROBE_CONVERSATION_ID": "710688832392260838",
+        "G2_WEBHOOK_PROBE_EXPIRES_AT": (datetime.now(UTC) + timedelta(minutes=10)).isoformat(),
+    }
+    with pytest.raises(ValidationError, match="仅允许 staging"):
+        production_settings(REAL_TIKTOK_WEBHOOK_ENABLED=True, **probe)
+    with pytest.raises(ValidationError, match="必须绑定运行、店铺、会话和失效时间"):
+        production_settings(
+            APP_ENV="staging",
+            TIKTOK_OAUTH_REDIRECT_URI=TIKTOK_OAUTH_STAGING_REDIRECT_URI,
+            REAL_TIKTOK_WEBHOOK_ENABLED=True,
+            **{key: value for key, value in probe.items() if key != "G2_WEBHOOK_PROBE_STORE_ID"},
+        )
+
+
+def test_g2_retry_probe_accepts_bounded_staging_window() -> None:
+    """真实只读环境只接受不超过半小时且目标完整的诊断窗口。"""
+    settings = production_settings(
+        APP_ENV="staging",
+        TIKTOK_OAUTH_REDIRECT_URI=TIKTOK_OAUTH_STAGING_REDIRECT_URI,
+        REAL_TIKTOK_READ_ENABLED=True,
+        REAL_TIKTOK_WEBHOOK_ENABLED=True,
+        TIKTOK_APP_KEY="real-app-key",
+        TIKTOK_SERVICE_ID="real-service-id",
+        TIKTOK_APP_SECRET="unit-test-app-secret",
+        TIKTOK_CREDENTIAL_ENCRYPTION_KEY="unit-test-encryption-key-with-32-characters",
+        TIKTOK_REQUIRED_SCOPES="seller.authorization.info,seller.order.info,seller.customer_service,seller.logistics",
+        G2_WEBHOOK_PROBE_MODE="after_commit_503",
+        G2_WEBHOOK_PROBE_RUN_ID=str(uuid.uuid4()),
+        G2_WEBHOOK_PROBE_STORE_ID=str(uuid.uuid4()),
+        G2_WEBHOOK_PROBE_CONVERSATION_ID="710688832392260838",
+        G2_WEBHOOK_PROBE_EXPIRES_AT=(datetime.now(UTC) + timedelta(minutes=10)).isoformat(),
+    )
+    assert settings.g2_webhook_probe_mode == "after_commit_503"
+    assert settings.real_tiktok_message_write_enabled is False
 
 
 def test_real_tiktok_manual_message_write_can_start_after_real_fs04() -> None:

@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-19 G2 R06 代码候选：从权威 main `b355c98b6814424ab64ec5b9f075240920bd5809` 在 `fix/g2-webhook-redelivery-probe-20261019` 实现 staging 精确店铺/会话的一次性 503 重投探针、30 分钟绝对失效、低敏配对审计及手动部署门禁，subject `47b5285b89d3e149c5323f8c3c0b6789f23e7f08`。见 [IR](../records/implementation/IR-MVP-003-20261019-R05.md)、[TR](../reports/tests/TR-MVP-003-20261019-R06.md)、[RR](../reports/reviews/RR-MVP-003-20261019-R05.md)。仅代码/合成回归，尚未发布镜像或切换 staging；受控买家手机账号稍后可用，官方重投、乱序和恢复仍缺，G2 保持 `DOING`、G8/production No-Go。`EVIDENCE_HEAD_SHA=READ_AT_GATE`；分支索引为 `CANDIDATE_VIEW`。Workspace hygiene：复用活动 worktree，未知文件未清理。下一步：①合入候选；②买家可用时以原六摘要快照启动短窗口并恢复 G3；③核对官方同一通知重投、乱序与低敏审计后再判 G2。
+
 2026-10-19 G1-L R02：用户更正并提供 Seller Center 当前店铺“物流承运商：CBT”筛选 0 个订单截图；computer-use 无法访问紫鸟窗口。此前为定位样本而对一笔 2026-09-30 创建、未证实 CBT 资格的普通 TikTok 配送订单仅查询一次 `202604`，平台返回 `11007009`；不再盲查。见 [R02 TR](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R02.md)与[低敏证据](../../release/evidence/staging/crm-staging-g1l-cbt-absence-20261019.json)。G1-L 因外部合格样本缺失保持 BACKLOG，G8/production No-Go；G2 独立继续。Workspace hygiene：复用干净 worktree，未知文件未清理。下一步：①受控核对 G2 官方重投、乱序及恢复；②等待本店 CBT 首程订单或平台适用性说明；③真实证据齐备后再判定 G1-L/G8。
 
 2026-10-19 G1-L 手动只读复核：授权店铺官方订单列表仍为 325 笔，最新订单创建于 2026-09-30；首页 78 笔 TikTok 配送不能证明 CBT 首程资格。未重查此前返回 `11007009` 的五笔订单，严格保留每订单 8 小时频控；见 [R01 IR](../records/implementation/IR-MVP-G1-LOG-202604-001-20261019-R01.md)、[TR](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R01.md)及[低敏清单](../../release/evidence/staging/crm-staging-g1l-order-inventory-20261019.json)。待同店铺经 Seller Center 确认的 CBT 首程包裹或平台适用性说明后执行一次受控 `202604` 真值核对；G1-L/G8 未通过。Workspace hygiene：活动 worktree 保留，未知文件未清理。下一步：①获取合格首程包裹或官方适用性说明；②补 G2 真实重投/乱序与恢复；③证据齐备后判定两项门禁。

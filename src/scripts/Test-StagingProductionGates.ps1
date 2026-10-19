@@ -38,6 +38,12 @@ param(
     [string]$AllowedTikTokStoreIds,
     [switch]$EnableWorkspaceTranslation,
     [switch]$EnableG5SSELoadTest,
+    [switch]$EnableG2WebhookProbe,
+    [string]$G2ProbeMode,
+    [string]$G2ProbeRunId,
+    [string]$G2ProbeStoreId,
+    [string]$G2ProbeConversationId,
+    [string]$G2ProbeExpiresAt,
     [string]$PreWindowSnapshotFile
 )
 
@@ -81,6 +87,10 @@ $DisabledCapabilityVariables = @(
     "AUTO_REPLY_ENABLED"
 )
 $WebhookReadCapabilities = @("REAL_TIKTOK_READ_ENABLED", "REAL_TIKTOK_WEBHOOK_ENABLED")
+$G2ProbeVariables = @(
+    "G2_WEBHOOK_PROBE_MODE", "G2_WEBHOOK_PROBE_RUN_ID", "G2_WEBHOOK_PROBE_STORE_ID",
+    "G2_WEBHOOK_PROBE_CONVERSATION_ID", "G2_WEBHOOK_PROBE_EXPIRES_AT"
+)
 $StagingTlsInterpolationSentinel = "/__crm_staging_tls_not_used__"
 
 function Assert-StagingTarget {
@@ -165,12 +175,54 @@ function Assert-EnvironmentContract {
         $Values["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"].Trim().ToLowerInvariant() -ne "false") {
         throw "Staging preflight requires WORKSPACE_MESSAGE_TRANSLATION_ENABLED=false outside the reviewed overlay."
     }
+    foreach ($name in $G2ProbeVariables) {
+        if ($Values.ContainsKey($name) -and -not [string]::IsNullOrEmpty($Values[$name])) {
+            throw "G2 Webhook probe target must not be stored in the staging environment file."
+        }
+    }
     if (($EnableG5SSELoadTest -or $EnableWorkspaceTranslation) -and (
         -not $Values.ContainsKey("LLM_PRIMARY_PROVIDER") -or $Values["LLM_PRIMARY_PROVIDER"].Trim() -cne "deepseek" -or
         -not $Values.ContainsKey("LLM_PRIMARY_MODEL") -or [string]::IsNullOrWhiteSpace($Values["LLM_PRIMARY_MODEL"]) -or
         -not $Values.ContainsKey("DEEPSEEK_API_KEY") -or [string]::IsNullOrWhiteSpace($Values["DEEPSEEK_API_KEY"])
     )) {
         throw "Staging model mode requires an approved DeepSeek model and a configured API key."
+    }
+}
+
+function Assert-G2ProbeServiceEnvironment {
+    param(
+        [Parameter(Mandatory = $true)]$EnvironmentValues,
+        [Parameter(Mandatory = $true)][string]$ServiceName,
+        [Parameter(Mandatory = $true)][hashtable]$ExpectedValues
+    )
+    foreach ($name in $G2ProbeVariables) {
+        $actualValue = if ($EnvironmentValues -is [System.Collections.IDictionary]) {
+            $EnvironmentValues[$name]
+        } else {
+            $property = $EnvironmentValues.PSObject.Properties[$name]
+            if ($null -eq $property) { "" } else { $property.Value }
+        }
+        $actual = [string]$actualValue
+        $expected = if ($ServiceName -ceq "backend" -and $ExpectedValues.ContainsKey($name)) {
+            [string]$ExpectedValues[$name]
+        } else { "" }
+        if ($name -ceq "G2_WEBHOOK_PROBE_EXPIRES_AT" -and $expected) {
+            $actualExpiry = [DateTimeOffset]::MinValue
+            $expectedExpiry = [DateTimeOffset]::MinValue
+            $actualValid = if ($actualValue -is [DateTime]) {
+                $actualExpiry = [DateTimeOffset]$actualValue
+                $true
+            } else { [DateTimeOffset]::TryParse($actual, [ref]$actualExpiry) }
+            if ($actualValid -and
+                [DateTimeOffset]::TryParse($expected, [ref]$expectedExpiry) -and
+                $actualExpiry.ToUnixTimeSeconds() -eq $expectedExpiry.ToUnixTimeSeconds()) {
+                continue
+            }
+        }
+        if ($actual -cne $expected -and -not ($expected -ceq "" -and $name -ceq "G2_WEBHOOK_PROBE_MODE" -and
+            $actual -ceq "off")) {
+            throw "G2 Webhook probe runtime target differs from reviewed backend-only window: $ServiceName/$name"
+        }
     }
 }
 
@@ -325,7 +377,8 @@ function Assert-ProductionComposeContract {
         [string]$AllowedTikTokConversationId,
         [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
-        [switch]$EnableG5SSELoadTest
+        [switch]$EnableG5SSELoadTest,
+        [Parameter(Mandatory = $true)][hashtable]$G2ProbeExpected
     )
 
     foreach ($serviceName in $ExpectedImages.Keys) {
@@ -396,6 +449,8 @@ function Assert-ProductionComposeContract {
     foreach ($serviceName in @("backend", "worker", "jobs", "agent-worker")) {
         $applicationService = $Config.services.PSObject.Properties[$serviceName].Value
         $applicationEnvironment = $applicationService.environment
+        Assert-G2ProbeServiceEnvironment -EnvironmentValues $applicationEnvironment `
+            -ServiceName $serviceName -ExpectedValues $G2ProbeExpected
         if ([string]$applicationEnvironment.APP_ENV -ne "staging") {
             throw "Production Compose must set APP_ENV=staging for service: $serviceName"
         }
@@ -521,7 +576,8 @@ function Assert-RunningStagingMode {
         [string]$AllowedTikTokConversationId,
         [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
-        [switch]$EnableG5SSELoadTest
+        [switch]$EnableG5SSELoadTest,
+        [Parameter(Mandatory = $true)][hashtable]$G2ProbeExpected
     )
 
     # 仅从运行容器提取白名单开关；完整 Env 包含密钥，不可写入日志或证据。
@@ -556,6 +612,8 @@ function Assert-RunningStagingMode {
         if ($runtimeEnvironment["APP_ENV"] -cne "staging") {
             throw "Staging runtime capability does not match reviewed mode: $serviceName"
         }
+        Assert-G2ProbeServiceEnvironment -EnvironmentValues $runtimeEnvironment `
+            -ServiceName $serviceName -ExpectedValues $G2ProbeExpected
         foreach ($capabilityName in $DisabledCapabilityVariables) {
             $expectedValue = if ($EnableTikTokWebhookRead -and
                 (($serviceName -in @("backend", "worker") -and $capabilityName -in $WebhookReadCapabilities) -or
@@ -723,6 +781,8 @@ function Write-Evidence {
         rootless_overlay_sha256 = (Get-FileHash -LiteralPath $rootlessOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_egress_overlay_sha256 = (Get-FileHash -LiteralPath $egressOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
         tiktok_webhook_read_enabled = [bool]$EnableTikTokWebhookRead
+        g2_webhook_probe_enabled = [bool]$EnableG2WebhookProbe
+        g2_webhook_probe_mode = if ($EnableG2WebhookProbe) { $G2ProbeMode } else { "off" }
         tiktok_manual_send_enabled = [bool]$EnableTikTokManualSend
         tiktok_manual_send_target = if (-not $EnableTikTokManualSend) { "disabled" }
             elseif ($AllowedTikTokStoreIds) { "store" } else { "conversation" }
@@ -739,6 +799,10 @@ function Write-Evidence {
     if ($EnableTikTokWebhookRead) {
         $evidence["tiktok_webhook_read_overlay_sha256"] =
             (Get-FileHash -LiteralPath $webhookReadOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    if ($EnableG2WebhookProbe) {
+        $evidence["g2_webhook_probe_overlay_sha256"] =
+            (Get-FileHash -LiteralPath $g2ProbeOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
     }
     if ($EnableTikTokManualSend) {
         $evidence["tiktok_manual_send_overlay_sha256"] =
@@ -762,6 +826,33 @@ Assert-StagingTarget
 Assert-RootlessDockerHost -Value $DockerHost
 if ($EnableTikTokWebhookRead -and $EnableG5SSELoadTest) {
     throw "G2 Webhook read and G5 SSE modes cannot be combined."
+}
+$g2ProbeExpected = @{}
+if ($EnableG2WebhookProbe) {
+    $probeExpiry = [DateTimeOffset]::MinValue
+    if (-not $EnableTikTokWebhookRead -or $EnableG5SSELoadTest -or
+        $G2ProbeMode -cnotin @("before_commit_503", "after_commit_503") -or
+        $G2ProbeRunId -cnotmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' -or
+        $G2ProbeStoreId -cnotmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' -or
+        $G2ProbeConversationId -cnotmatch '^[0-9]{1,30}$' -or
+        -not [DateTimeOffset]::TryParse($G2ProbeExpiresAt, [ref]$probeExpiry) -or
+        $probeExpiry -le [DateTimeOffset]::UtcNow -or
+        $probeExpiry -gt [DateTimeOffset]::UtcNow.AddMinutes(30)) {
+        throw "G2 Webhook probe requires a complete staging-only target expiring within 30 minutes."
+    }
+    if ($Deploy -and -not $PreWindowSnapshotFile) {
+        throw "G2 Webhook probe deployment requires an exact pre-window restore snapshot."
+    }
+    $g2ProbeExpected = @{
+        G2_WEBHOOK_PROBE_MODE = $G2ProbeMode
+        G2_WEBHOOK_PROBE_RUN_ID = $G2ProbeRunId
+        G2_WEBHOOK_PROBE_STORE_ID = $G2ProbeStoreId
+        G2_WEBHOOK_PROBE_CONVERSATION_ID = $G2ProbeConversationId
+        G2_WEBHOOK_PROBE_EXPIRES_AT = $G2ProbeExpiresAt
+    }
+}
+elseif ($G2ProbeMode -or $G2ProbeRunId -or $G2ProbeStoreId -or $G2ProbeConversationId -or $G2ProbeExpiresAt) {
+    throw "G2 Webhook probe target requires explicit probe mode."
 }
 if ($EnableTikTokManualSend) {
     $storeIdsValid = $false
@@ -823,6 +914,7 @@ if ($configuredRetrievalModelImage -ne $RetrievalModelImage) {
 $egressOverlay = Join-Path $sourceRoot "compose/docker-compose.tiktok-egress.yml"
 $rootlessOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging.yml"
 $webhookReadOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-webhook.yml"
+$g2ProbeOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-g2-probe.yml"
 $manualSendOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-manual-send.yml"
 $g5SSEOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-g5-sse.yml"
 $translationOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-translation.yml"
@@ -834,6 +926,9 @@ if (-not (Test-Path -LiteralPath $rootlessOverlay -PathType Leaf)) {
 }
 if ($EnableTikTokWebhookRead -and -not (Test-Path -LiteralPath $webhookReadOverlay -PathType Leaf)) {
     throw "The repository-fixed staging Webhook read overlay does not exist."
+}
+if ($EnableG2WebhookProbe -and -not (Test-Path -LiteralPath $g2ProbeOverlay -PathType Leaf)) {
+    throw "The repository-fixed staging G2 probe overlay does not exist."
 }
 if ($EnableTikTokManualSend -and -not (Test-Path -LiteralPath $manualSendOverlay -PathType Leaf)) {
     throw "The repository-fixed staging manual send overlay does not exist."
@@ -847,7 +942,7 @@ if ($EnableWorkspaceTranslation -and -not (Test-Path -LiteralPath $translationOv
 
 $savedEnvironment = @{}
 $deploymentLock = $null
-foreach ($name in @($DisabledCapabilityVariables + @(
+foreach ($name in @($DisabledCapabilityVariables + $G2ProbeVariables + @(
     "BACKEND_IMAGE",
     "FRONTEND_IMAGE",
     "RETRIEVAL_MODEL_ASSET_DIR",
@@ -879,6 +974,9 @@ try {
     if ($EnableTikTokWebhookRead) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $webhookReadOverlay).Path)
     }
+    if ($EnableG2WebhookProbe) {
+        $composeArguments += @("-f", (Resolve-Path -LiteralPath $g2ProbeOverlay).Path)
+    }
     if ($EnableTikTokManualSend) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $manualSendOverlay).Path)
     }
@@ -891,6 +989,9 @@ try {
     Set-DisabledCapabilities
     [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID", $AllowedTikTokConversationId, "Process")
     [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS", $AllowedTikTokStoreIds, "Process")
+    foreach ($name in $G2ProbeVariables) {
+        [Environment]::SetEnvironmentVariable($name, $g2ProbeExpected[$name], "Process")
+    }
     $env:BACKEND_IMAGE = $BackendImage
     $env:FRONTEND_IMAGE = $FrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
@@ -919,7 +1020,7 @@ try {
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
-        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation
+        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -G2ProbeExpected $g2ProbeExpected
 
     if ($ValidateOnly) {
         Write-Evidence -Status "validated" -HealthChecks @()
@@ -959,7 +1060,7 @@ try {
             PreviousFrontendImage = [string]$snapshot.images.previous_frontend
             PreviousRetrievalModelImage = [string]$snapshot.images.previous_retrieval
         }
-        if ($EnableG5SSELoadTest) {
+        if ($EnableG5SSELoadTest -or $EnableG2WebhookProbe) {
             if ($BackendImage -cne $snapshotArgs.CandidateBackendImage -or
                 $FrontendImage -cne $snapshotArgs.FrontendImage -or
                 $RetrievalModelImage -cne $snapshotArgs.RetrievalModelImage) {
@@ -1021,7 +1122,7 @@ try {
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
-        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation
+        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -G2ProbeExpected $g2ProbeExpected
 
     $healthChecks = @(
         [ordered]@{ path = "/healthz"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/healthz") },

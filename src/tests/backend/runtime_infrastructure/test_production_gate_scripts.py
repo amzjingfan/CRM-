@@ -635,6 +635,80 @@ def test_staging_webhook_read_opt_in_only_enables_receiver_and_worker(
     assert any(argument.endswith("docker-compose.rootless-staging-webhook.yml") for argument in config_command)
 
 
+def test_staging_webhook_probe_requires_exact_backend_only_window(staging_env_file: Path, tmp_path: Path) -> None:
+    """一次性故障仅通过固定叠加层进入 backend；证据不保存店铺或会话标识。"""
+    from datetime import UTC, datetime, timedelta
+
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, command_log = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    for name in ("backend", "worker"):
+        config["services"][name]["environment"].update(
+            {"REAL_TIKTOK_READ_ENABLED": "true", "REAL_TIKTOK_WEBHOOK_ENABLED": "true"}
+        )
+    config["services"]["worker"]["environment"]["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
+    probe = {
+        "G2_WEBHOOK_PROBE_MODE": "after_commit_503",
+        "G2_WEBHOOK_PROBE_RUN_ID": "11111111-1111-4111-8111-111111111111",
+        "G2_WEBHOOK_PROBE_STORE_ID": "22222222-2222-4222-8222-222222222222",
+        "G2_WEBHOOK_PROBE_CONVERSATION_ID": "710688832392260838",
+        "G2_WEBHOOK_PROBE_EXPIRES_AT": (datetime.now(UTC) + timedelta(minutes=15)).isoformat().replace("+00:00", "Z"),
+    }
+    config["services"]["backend"]["environment"].update(probe)
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    evidence_file = tmp_path / "probe-validate.json"
+    args = (
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableTikTokWebhookRead",
+        "-EnableG2WebhookProbe",
+        "-G2ProbeMode",
+        probe["G2_WEBHOOK_PROBE_MODE"],
+        "-G2ProbeRunId",
+        probe["G2_WEBHOOK_PROBE_RUN_ID"],
+        "-G2ProbeStoreId",
+        probe["G2_WEBHOOK_PROBE_STORE_ID"],
+        "-G2ProbeConversationId",
+        probe["G2_WEBHOOK_PROBE_CONVERSATION_ID"],
+        "-G2ProbeExpiresAt",
+        probe["G2_WEBHOOK_PROBE_EXPIRES_AT"],
+        "-ValidateOnly",
+    )
+    result = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert result.returncode == 0, normalized_process_output(result)
+    evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
+    assert evidence["g2_webhook_probe_enabled"] is True
+    assert probe["G2_WEBHOOK_PROBE_CONVERSATION_ID"] not in evidence_file.read_text(encoding="utf-8-sig")
+    assert probe["G2_WEBHOOK_PROBE_STORE_ID"] not in evidence_file.read_text(encoding="utf-8-sig")
+    commands = [json.loads(line) for line in command_log.read_text(encoding="utf-8").splitlines()]
+    config_command = next(command for command in commands if "config" in command)
+    assert any(argument.endswith("docker-compose.rootless-staging-g2-probe.yml") for argument in config_command)
+
+    config["services"]["worker"]["environment"].update(probe)
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    rejected = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert rejected.returncode != 0
+    assert "g2 webhook probe" in normalized_process_output(rejected)
+
+
 def test_staging_manual_send_requires_one_exact_backend_conversation(staging_env_file: Path, tmp_path: Path) -> None:
     """手动发送模式只在受控会话和 backend 开启；门禁拒绝目标漂移。"""
     model_asset_dir = Path(

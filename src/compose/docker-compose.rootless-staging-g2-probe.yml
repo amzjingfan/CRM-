@@ -1,0 +1,10 @@
+# G2 临时真实重投探针；只能由 staging 手动门禁在 Webhook 层之后叠加。
+# 精确目标和绝对失效时间由门禁进程注入，不写入仓库或低敏证据。
+services:
+  backend:
+    environment:
+      G2_WEBHOOK_PROBE_MODE: ${G2_WEBHOOK_PROBE_MODE:?required}
+      G2_WEBHOOK_PROBE_RUN_ID: ${G2_WEBHOOK_PROBE_RUN_ID:?required}
+      G2_WEBHOOK_PROBE_STORE_ID: ${G2_WEBHOOK_PROBE_STORE_ID:?required}
+      G2_WEBHOOK_PROBE_CONVERSATION_ID: ${G2_WEBHOOK_PROBE_CONVERSATION_ID:?required}
+      G2_WEBHOOK_PROBE_EXPIRES_AT: ${G2_WEBHOOK_PROBE_EXPIRES_AT:?required}

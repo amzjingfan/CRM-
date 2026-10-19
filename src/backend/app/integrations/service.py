@@ -27,6 +27,7 @@ from app.integrations.schemas import (
 from app.marketing.models import CustomerReview
 from app.orders.models import Order, OrderItem
 from app.shared.config.settings import get_settings
+from app.shared.database.redis import redis_client
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount
 
@@ -64,6 +65,111 @@ def _duplicate_webhook_receipt(existing: WebhookEvent, event_id: str, payload_ha
     return WebhookAccepted(event_id=event_id, duplicate=True, accepted=True)
 
 
+def _probe_matches(payload: dict[str, object], platform: str, *, check_expiry: bool = True) -> bool:
+    settings = get_settings()
+    if settings.app_env != "staging" or not settings.real_tiktok_webhook_enabled:
+        return False
+    if settings.g2_webhook_probe_mode == "off" or platform != "tiktok" or type(payload.get("type")) is not int:
+        return False
+    if payload["type"] != 14:
+        return False
+    if check_expiry and (
+        settings.g2_webhook_probe_expires_at is None or settings.g2_webhook_probe_expires_at <= datetime.now(UTC)
+    ):
+        return False
+    data = payload.get("data")
+    if not isinstance(data, dict) or data.get("conversation_id") != settings.g2_webhook_probe_conversation_id:
+        return False
+    sender = data.get("sender")
+    return (
+        isinstance(sender, dict)
+        and sender.get("role") == "BUYER"
+        and data.get("is_visible", True) is True
+        and str(payload.get("tts_notification_id", "")).isdigit()
+        and str(payload.get("shop_id", "")).isdigit()
+        and str(sender.get("im_user_id", "")).isdigit()
+        and str(data.get("message_id", "")).isdigit()
+        and type(data.get("create_time")) is int
+    )
+
+
+def _probe_marker_key() -> str:
+    return f"g2:webhook-retry-probe:{get_settings().g2_webhook_probe_run_id}:first"
+
+
+def _probe_audit(
+    *, store_id: uuid.UUID, event: WebhookEvent | None, payload_hash: str, result: str, mode: str
+) -> AuditLog:
+    # 只存正文摘要和固定类别；真实买家消息、平台标识及原始异常均不进入探针审计。
+    return AuditLog(
+        store_id=store_id,
+        actor_type="system",
+        action="webhook.retry_probe",
+        resource_type="webhook_event",
+        resource_id=event.id if event is not None else None,
+        result=result,
+        after_data={"payload_sha256": payload_hash, "mode": mode},
+    )
+
+
+async def _maybe_force_probe_503(
+    session: AsyncSession,
+    *,
+    platform: str,
+    payload: dict[str, object],
+    payload_hash: str,
+    channel: ChannelAccount,
+    phase: str,
+    event: WebhookEvent | None = None,
+) -> None:
+    settings = get_settings()
+    if not _probe_matches(payload, platform) or settings.g2_webhook_probe_mode != phase:
+        return
+    if channel.store_id != settings.g2_webhook_probe_store_id:
+        return
+    marker = f"{payload_hash}:{channel.id}"
+    # Redis 的 NX 使多副本/并发通知也只能命中一次；配置的绝对失效时间防止 TTL 后再次武装。
+    if not await redis_client.set(_probe_marker_key(), marker, nx=True, ex=86400):
+        return
+    session.add(
+        _probe_audit(store_id=channel.store_id, event=event, payload_hash=payload_hash, result="forced_503", mode=phase)
+    )
+    await session.commit()
+    raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Webhook 暂时不可用", 503)
+
+
+async def _maybe_audit_probe_redelivery(
+    session: AsyncSession,
+    *,
+    platform: str,
+    payload: dict[str, object],
+    payload_hash: str,
+    event: WebhookEvent,
+) -> None:
+    settings = get_settings()
+    if not _probe_matches(payload, platform, check_expiry=False):
+        return
+    if settings.g2_webhook_probe_store_id is None:
+        return
+    marker = await redis_client.get(_probe_marker_key())
+    if marker != f"{payload_hash}:{event.channel_account_id}":
+        return
+    # 收到同一已验签正文后只留一条配对审计；是否属于官方重投仍须现场来源证据。
+    audit_key = f"{_probe_marker_key()}:redelivered"
+    if not await redis_client.set(audit_key, "1", nx=True, ex=86400):
+        return
+    session.add(
+        _probe_audit(
+            store_id=settings.g2_webhook_probe_store_id,
+            event=event,
+            payload_hash=payload_hash,
+            result="redelivered",
+            mode=settings.g2_webhook_probe_mode,
+        )
+    )
+    await session.commit()
+
+
 async def receive_webhook(
     session: AsyncSession,
     platform: str,
@@ -85,7 +191,11 @@ async def receive_webhook(
         )
     )
     if existing is not None:
-        return _duplicate_webhook_receipt(existing, event_id, payload_hash)
+        receipt = _duplicate_webhook_receipt(existing, event_id, payload_hash)
+        await _maybe_audit_probe_redelivery(
+            session, platform=platform, payload=payload, payload_hash=payload_hash, event=existing
+        )
+        return receipt
 
     external_store_id = webhook_external_store_id(payload)
     channel = await session.scalar(
@@ -97,6 +207,14 @@ async def receive_webhook(
     if channel is None:
         # 未绑定店铺的通知不得留下客户载荷或占用 ID，稍后授权后可正常重投。
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "平台店铺未授权", 404)
+    await _maybe_force_probe_503(
+        session,
+        platform=platform,
+        payload=payload,
+        payload_hash=payload_hash,
+        channel=channel,
+        phase="before_commit_503",
+    )
     event = WebhookEvent(
         platform=platform,
         channel_account_id=channel.id,
@@ -123,7 +241,23 @@ async def receive_webhook(
         )
         if existing is None:
             raise
-        return _duplicate_webhook_receipt(existing, event_id, payload_hash)
+        receipt = _duplicate_webhook_receipt(existing, event_id, payload_hash)
+        await _maybe_audit_probe_redelivery(
+            session, platform=platform, payload=payload, payload_hash=payload_hash, event=existing
+        )
+        return receipt
+    await _maybe_force_probe_503(
+        session,
+        platform=platform,
+        payload=payload,
+        payload_hash=payload_hash,
+        channel=channel,
+        phase="after_commit_503",
+        event=event,
+    )
+    await _maybe_audit_probe_redelivery(
+        session, platform=platform, payload=payload, payload_hash=payload_hash, event=event
+    )
     return WebhookAccepted(event_id=event_id, duplicate=False, accepted=True)
 
 

@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-19 G2 R06：[TR](../reports/tests/TR-MVP-003-20261019-R06.md) 为 `PARTIAL`。一次性 staging 503 重投探针在 subject `47b5285b` 上完成 2162 passed/27 skipped 的全量后端回归、6 项定向回归、Ruff/格式/mypy；未发布镜像或部署，受控买家稍后可用。真实官方重投、乱序和原 G3 恢复仍缺，G2/G8 不放行。
+
 2026-10-19 G1-L [R02 TR](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R02.md) 为 `BLOCKED`：用户提供当前授权店铺 Seller Center 的 CBT 筛选 0 个订单截图；一笔未确认 CBT 资格的普通 TikTok 配送候选只调用一次 `202604`，平台仍为 `11007009`。无合格首程样本，不能验证增强物流成功；不影响已关闭的 G1 核心，也不放行 G8。
 
 2026-10-19 `MVP-006-CANCEL-001` R03：[TR](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R03.md) `PASS`，范围为**新取消行为**。R02 本地 2153 passed/27 skipped/1 deselected；R104 SSH 中断后独立恢复 G3；R105 匹配镜像、50/50 身份和一次隔离断连通过，唯一 AgentRun `failed/AGENT_CANCELLED`、Redis 租约 0→1→0、G3 恢复和三健康通过。R101/R102/R103 历史合成失败记录保留；本轮未重跑 50 并发，性能仍以 R91/R92 原件为准，production No-Go。
