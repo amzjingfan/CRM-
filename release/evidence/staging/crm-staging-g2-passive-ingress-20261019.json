@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "evidence_type": "g2_passive_webhook_ingress_audit",
+  "observed_at_utc": "2026-10-19T09:10:34Z",
+  "window_start_utc": "2026-10-09T03:54:01Z",
+  "window_end_utc_exclusive": "2026-10-19T09:10:34Z",
+  "method": {
+    "gateway": "read-only staging nginx safe JSON access log; POST path and published US TikTok Shop webhook egress range filter; no query, payload, headers or client address exported",
+    "database": "SET TRANSACTION READ ONLY; one connected TikTok channel; grouped event metadata only",
+    "published_egress_reference": "https://partner.tiktokshop.com/docv2/page/iuhsev4x"
+  },
+  "gateway": {
+    "matching_post_requests": 48,
+    "status_200": 38,
+    "status_503": 10,
+    "all_200_response_body_bytes": 106,
+    "all_503_response_body_bytes": 84,
+    "status_503_minutes_utc": {
+      "2026-10-17T06:15": 2,
+      "2026-10-17T06:17": 2,
+      "2026-10-17T06:18": 1,
+      "2026-10-17T06:20": 1,
+      "2026-10-17T06:21": 4
+    },
+    "status_200_at_2026_10_17T06_23_utc": 4
+  },
+  "database": {
+    "unique_events": 38,
+    "signature_valid_events": 38,
+    "new_message_events": 28,
+    "other_topic_events": 10,
+    "succeeded_new_message_events": 3,
+    "ignored_new_message_events": 25,
+    "ignored_other_topic_events": 10,
+    "event_id_length_19_count": 38,
+    "events_at_2026_10_17T06_23_utc": {
+      "signature_valid_ignored_new_message": 3,
+      "signature_valid_ignored_other_topic": 1
+    }
+  },
+  "staging_g5_window": {
+    "g5_deploy_evidence": "release/evidence/staging/crm-staging-g5-r38-deploy-20261017.json",
+    "g5_deploy_at_utc": "2026-10-17T06:13:42.4997907Z",
+    "g5_webhook_enabled": false,
+    "restore_evidence": "release/evidence/staging/crm-staging-g5-r38-restore-deploy-20261017.json",
+    "restore_at_utc": "2026-10-17T06:23:35.5505160Z",
+    "restored_webhook_enabled": true
+  },
+  "current_runtime": {
+    "observed_at_utc": "2026-10-19T09:17:03Z",
+    "backend_state": "running",
+    "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+    "real_tiktok_webhook_enabled": true,
+    "real_tiktok_read_enabled": true,
+    "auto_reply_enabled": false,
+    "g2_probe_env_present": false,
+    "public_health_statuses": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    }
+  },
+  "interpretation": {
+    "normal_chain_signature_and_ingress_observed": true,
+    "ingress_resumed_after_g5_restore": true,
+    "same_notification_official_redelivery_proven": false,
+    "real_out_of_order_buyer_delivery_proven": false,
+    "reason": "Gateway safe logs omit notification IDs and request body hashes; 503 requests did not enter the event table; the four post-restore events were ignored non-buyer events. Published egress IP match alone does not authenticate a failed request."
+  }
+}
