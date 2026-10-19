@@ -8,7 +8,7 @@
 
 2026-10-19 G2 R06：[TR](../reports/tests/TR-MVP-003-20261019-R06.md) 为 `PARTIAL`。一次性 staging 503 重投探针在 subject `47b5285b` 上完成 2162 passed/27 skipped 的全量后端回归、6 项定向回归、Ruff/格式/mypy；未发布镜像或部署，受控买家稍后可用。真实官方重投、乱序和原 G3 恢复仍缺，G2/G8 不放行。
 
-2026-10-19 G1-L：用户将当前 v0.1 验收范围改为通用 `202309` 真实轨迹成功；[R03 原始复核](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R03.md)和[低敏证据](../../release/evidence/staging/crm-staging-g1l-generic-fedex-20261019.json)显示授权店铺一笔 FedEx 订单唯一匹配、平台码 0、轨迹 11 条。按新口径 G1-L staging 通用 API 通过；没有逐条 Seller Center 对账、没有 USPS 或 CBT 首程 `202604` 成功证据。正式适配器代码和 staging 运行版本另行核对。G2/G6/G8 与 production 仍未放行。
+2026-10-19 G1-L：用户将当前 v0.1 验收范围改为通用 `202309` 真实轨迹成功；[R03 原始复核](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R03.md)和[低敏证据](../../release/evidence/staging/crm-staging-g1l-generic-fedex-20261019.json)显示授权店铺一笔 FedEx 订单唯一匹配、平台码 0、轨迹 11 条。按新口径 G1-L staging 通用 API 通过；没有逐条 Seller Center 对账、没有 USPS 或 CBT 首程 `202604` 成功证据。正式通用适配器经 PR #436 合入 main、完整后端回归通过；新客户端尚未部署 staging。G2/G6/G8 与 production 仍未放行。
 
 2026-10-19 G1-L [R02 TR](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R02.md) 为 `BLOCKED`：用户提供当前授权店铺 Seller Center 的 CBT 筛选 0 个订单截图；一笔未确认 CBT 资格的普通 TikTok 配送候选只调用一次 `202604`，平台仍为 `11007009`。无合格首程样本，不能验证增强物流成功；不影响已关闭的 G1 核心，也不放行 G8。
 
