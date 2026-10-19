@@ -243,6 +243,76 @@ def acceptance_rows(rows: list[dict[str, object]], minutes: int) -> list[dict[st
     return accepted
 
 
+def summarize_resources(rows: list[dict[str, object]], minutes: int) -> dict[str, Any]:
+    """从验收窗口原件计算固定资源和 TCP 队列峰值，不读取业务正文。"""
+    expected = minutes // 5
+    seen: set[int] = set()
+    container_peaks = {name: {"cpu_percent": 0.0, "memory_bytes": 0, "pids": 0} for name in RESOURCE_CONTAINERS}
+    tcp_fields = (
+        "accept_queue_pending",
+        "established_connections",
+        "send_queue_bytes",
+        "receive_queue_bytes",
+    )
+    tcp_peaks = dict.fromkeys(tcp_fields, 0)
+    for row in rows:
+        resource = row.get("resource")
+        slot = row.get("slot")
+        if resource is None:
+            if type(slot) is int and int(slot) % 5 == 0 and row.get("ok") is True:
+                raise ValueError("invalid_resource_sample")
+            continue
+        if type(slot) is not int or not 0 <= int(slot) < minutes or int(slot) % 5 or slot in seen:
+            raise ValueError("unexpected_resource_slot")
+        if row.get("resource_sample_ok") is not True or not isinstance(resource, dict):
+            raise ValueError("invalid_resource_sample")
+        containers = resource.get("containers")
+        tcp = resource.get("backend_tcp")
+        if (
+            not isinstance(containers, dict)
+            or set(containers) != set(RESOURCE_CONTAINERS)
+            or not isinstance(tcp, dict)
+            or set(tcp) != set(tcp_fields)
+            or resource.get("application_queue") != "not_applicable_sync_workflow"
+        ):
+            raise ValueError("invalid_resource_sample")
+        for name in RESOURCE_CONTAINERS:
+            sample = containers[name]
+            if not isinstance(sample, dict):
+                raise ValueError("invalid_resource_sample")
+            cpu = sample.get("cpu_percent")
+            memory = sample.get("memory_bytes")
+            pids = sample.get("pids")
+            if (
+                isinstance(cpu, bool)
+                or not isinstance(cpu, (int, float))
+                or not 0 <= cpu < 100000
+                or type(memory) is not int
+                or memory < 0
+                or type(pids) is not int
+                or pids < 0
+            ):
+                raise ValueError("invalid_resource_sample")
+            container_peaks[name]["cpu_percent"] = max(container_peaks[name]["cpu_percent"], float(cpu))
+            container_peaks[name]["memory_bytes"] = max(container_peaks[name]["memory_bytes"], memory)
+            container_peaks[name]["pids"] = max(container_peaks[name]["pids"], pids)
+        for field in tcp_fields:
+            value = tcp[field]
+            if type(value) is not int or value < 0:
+                raise ValueError("invalid_resource_sample")
+            tcp_peaks[field] = max(tcp_peaks[field], value)
+        seen.add(int(slot))
+    return {
+        "expected_sample_slots": expected,
+        "observed_sample_slots": len(seen),
+        "missing_sample_slots": expected - len(seen),
+        "status": "no_samples" if not seen else "complete" if len(seen) == expected else "partial",
+        "container_peaks": container_peaks,
+        "backend_tcp_peaks": tcp_peaks,
+        "application_queue": "not_applicable_sync_workflow",
+    }
+
+
 def _append(path: Path, record: dict[str, Any]) -> None:
     flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
     fd = os.open(path, flags, 0o600)
@@ -393,7 +463,9 @@ def main() -> int:
     end = start + timedelta(minutes=minutes)
     if end > collection_end:
         raise ValueError("acceptance_exceeds_collection_window")
-    result = evaluate(acceptance_rows(_read_rows(directory / "samples.jsonl"), minutes), start, end, utc_now())
+    rows = acceptance_rows(_read_rows(directory / "samples.jsonl"), minutes)
+    result = evaluate(rows, start, end, utc_now())
+    result["resource_summary"] = summarize_resources(rows, minutes)
     result["collection_window_end_utc"] = collection_end.isoformat()
     result["collector_script_sha256"] = meta["script_sha256"]
     result["source_sha"] = meta["source_sha"]

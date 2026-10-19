@@ -149,6 +149,8 @@ python scripts/verify_tiktok_egress.py
 
 G6 手动观察使用 `src/backend/scripts/observe_staging_g6.py`，只在 `crmdeploy` UID 1004 与 Rootless socket `unix:///run/user/1004/docker.sock` 下执行。先由合入 `main` 的精确源码与 SHA-256 安装到该用户私有目录，运行 `preflight` 核对公网、容器、实际 SOCKS5H 出口和资源；再在窗口外完成一次 helper 故障与恢复演练。当前原始采集器在用户改期前已冻结 UTC 2026-10-19 14:30 至 2026-10-22 14:30 的 72 小时信封、源码与脚本 SHA，systemd 用户服务执行 `collect --run-id g6-20261019-c4a12b --start-utc 2026-10-19T14:30:00Z --source-sha 162f7844aa218f8561102feabebd3a4ca21f9b31`；**不得覆盖其运行脚本或修改既有 `meta.json`**。原件位于该用户私有 `/home/crmdeploy/.cache/crm-g6/g6-20261019-c4a12b/`，异常状态同时进入用户 journal。用户最新要求将本期验收缩至同一起点的前 48 小时，结束 UTC 2026-10-21 14:30；把新报告版本安装到不同私有文件名，运行 `report --run-id g6-20261019-c4a12b --acceptance-minutes 2880`，只对前 2880 槽核算，忽略原件中窗口外的合法后续槽，但保留窗口内重复、畸形、迟到及缺样本为失败或无效。到验收终点取得原件摘要和报告后停止原采集用户服务；报告不自动签署 G6。手动故障恢复、告警响应和窗口后 G3/固定出口复核需另留低敏证据；不触发 GitHub Actions，不改变现有 TikTok 开关。
 
+报告中的 `resource_summary` 只从窗口内每五分钟的固定资源样本计算样本覆盖和五容器 CPU/内存/PIDs、backend TCP 队列峰值；原始样本仍是权威证据，汇总为 `partial` 或 `no_samples` 时不得写成资源证据齐全。资源字段畸形时报告失败关闭，不能用平均值或 TCP 队列替代业务队列。
+
 本次用户仅限 staging 授权继续使用已验证的 backend/frontend 不可变摘要（与候选 `746c10c` 的构建输入零差异）和旧检索镜像摘要（检索服务源码与 Dockerfile 不变，但依赖锁文件**不同**）。新摘要 GHCR 下载失败/停滞不能写成已部署；下次镜像升级和 production 必须重新通过独立摘要与供应链门禁，不能沿用此例外。production 仍仅有可复用配置契约，未选择出口服务器、创建账号/密钥或实施部署。
 
 2026-09-23 UI 修复合并后，`main` 的 `58263b1` 已单独发布到 staging：新 frontend `e5d6bbfc...`、backend/helper `a3bb63c4...` 正在运行且健康，门禁 `35849490309`、固定出口、迁移头和三个公网健康端点均通过。全量同源尝试 `35845426383` 在新检索镜像下载阶段取消，取消前没有容器切换；用户为**这一次 staging UI 部署**另行批准保留当前健康的旧检索摘要 `bc99dfa3...`。检索服务源码/Dockerfile 相同，但依赖锁不同；这是明确的运行版本偏差，不是新检索镜像已部署或 production 供应链通过。恢复点、前后保护基线和未测项见 `release/evidence/staging/crm-staging-ui-rollout-20260923.json` 与 `MVP-UI-DEPLOY-001` R01。前一段固定出口任务的历史豁免仍只属于那次验收，本次授权不能延伸到下一次镜像升级。

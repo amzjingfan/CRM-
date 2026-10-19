@@ -61,6 +61,49 @@ def test_48_hour_acceptance_preserves_invalid_rows_inside_or_outside_source_enve
     assert observer.evaluate(accepted, START, end, end)["result"] == "invalid"
 
 
+def test_resource_summary_reports_fixed_peaks_and_sample_coverage() -> None:
+    def sample(slot: int, cpu: float, queue: int) -> dict[str, object]:
+        containers = {
+            name: {"cpu_percent": cpu, "memory_bytes": 100 + slot, "pids": 2 + slot}
+            for name in observer.RESOURCE_CONTAINERS
+        }
+        return {
+            "slot": slot,
+            "resource_sample_ok": True,
+            "resource": {
+                "containers": containers,
+                "backend_tcp": {
+                    "accept_queue_pending": queue,
+                    "established_connections": queue + 1,
+                    "send_queue_bytes": queue + 2,
+                    "receive_queue_bytes": queue + 3,
+                },
+                "application_queue": "not_applicable_sync_workflow",
+            },
+        }
+
+    summary = observer.summarize_resources([sample(0, 1.0, 0), sample(5, 2.5, 4)], 2880)
+    assert summary["expected_sample_slots"] == 576
+    assert summary["observed_sample_slots"] == 2
+    assert summary["missing_sample_slots"] == 574
+    assert summary["container_peaks"][observer.BACKEND] == {
+        "cpu_percent": 2.5,
+        "memory_bytes": 105,
+        "pids": 7,
+    }
+    assert summary["backend_tcp_peaks"]["accept_queue_pending"] == 4
+    assert summary["application_queue"] == "not_applicable_sync_workflow"
+
+
+def test_resource_summary_rejects_unexpected_or_invalid_samples() -> None:
+    with pytest.raises(ValueError, match="unexpected_resource_slot"):
+        observer.summarize_resources([{"slot": 1, "resource": {}}], 2880)
+    with pytest.raises(ValueError, match="invalid_resource_sample"):
+        observer.summarize_resources([{"slot": 0, "resource": {"containers": {}}}], 2880)
+    with pytest.raises(ValueError, match="invalid_resource_sample"):
+        observer.summarize_resources([{"slot": 0, "ok": True, "resource": None}], 2880)
+
+
 def test_probe_reduces_commands_to_fixed_statuses_without_raw_values(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[str, ...]] = []
 
