@@ -1,0 +1,69 @@
+{
+  "evidence_type": "g5_staging_independent_disconnect_acceptance",
+  "source_sha": "e82b8ddba4297cabbc443311bb852952bb61d765",
+  "candidate_backend_index": "sha256:a36fc465047acb82d5a85a4ce4ddf5c26a06fafe5dc50438b8446521560a280e",
+  "candidate_backend_amd64_manifest": "sha256:6145e4006e51819a20fb4c17ec69152e14a3f28f341cf51e073643554e1b4228",
+  "candidate_backend_compressed_layer_count": 12,
+  "candidate_backend_compressed_layer_bytes": 110980561,
+  "candidate_backend_oci_revision_verified": true,
+  "candidate_backend_immutable_digest_pull_verified": true,
+  "staging_window": {
+    "six_digest_prefetch": "passed",
+    "g5_deploy_and_health": "passed",
+    "isolated_credentials_renewed": 50,
+    "knowledge_ready": true,
+    "distinct_authorized_sessions": 50,
+    "client_closed_after_accepted": true,
+    "same_authorized_user": true,
+    "redis_lease_before": 0,
+    "redis_lease_during_client_open": 1,
+    "redis_lease_after": 0,
+    "server_disconnect_events": 0,
+    "server_closed_early_events": 1,
+    "server_completed_events": 0,
+    "server_timeout_events": 0,
+    "same_trace_log_count": 11,
+    "disconnect_gate": "passed"
+  },
+  "prior_50_client_gate": {
+    "source": "R89/R91 original 50-client samples; R92 approved retrospective calculation",
+    "r91_safe_outputs": 50,
+    "r91_clients": 50,
+    "r91_first_safe_delta_p99_ms": 4812.54,
+    "r91_total_p99_ms": 4816.88,
+    "current_strict_threshold_ms": 5000,
+    "safety_and_performance_subgate": "passed"
+  },
+  "restored_g3": {
+    "status": "passed",
+    "backend_index": "sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+    "frontend_index": "sha256:1addb6c82f9a76d27ec59e999e8dea172bc49f06227808ecee00e28a892db795",
+    "retrieval_index": "sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "manual_send_enabled_for_one_store": true,
+    "webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "sse_load_test_enabled": false,
+    "backend_query_limit": 10,
+    "public_health_statuses": [200, 200, 200],
+    "fixed_egress_verified": true
+  },
+  "followup_agent_run_status_counts": {
+    "running": 1
+  },
+  "private_original_sha256": {
+    "prefetch.json": "92ddbe580da08a9258168c8e4be6feee5fe52e70fd69f497cd1dc19a3b51ed53",
+    "g5-validate.json": "1f1c5e4ef9a037a287ae64f6d43e336355a6bfbfc20e426fed3d95b8d3f87ffd",
+    "g5-deploy.json": "d0fe7a5b352e071380d7cf3497dea62fbeedb6c95439208259dd39aff686205f",
+    "renew.json": "5e40b275e4e61b544743db7c934b0248c2ddebe43c8b26ea58c7e34b7a732b7f",
+    "content.json": "34310dcc4e2c4b83e5c21a5589a62759f5a4fb748ab7dfb37f0c671c3fbeb602",
+    "preflight.json": "78d3746e712673a64810981163b4a28d956e70bda685b9d88fe74d4ba3abaa3a",
+    "disconnect-client.json": "5694a5f385431d4e5888e2be861b06eaa346afd28807570af2fc9f72e7cef3d3",
+    "disconnect-server.json": "3a58f2bab00014a9b52bdf99652b56ab5acdbf0c8484e8fbacf6d5228713a44a",
+    "agent-run-status.json": "3d7c900be5d9e9a40cd3dc5405e49fc0632263d9d851eb2fa37513b4567f3948",
+    "restore-validate.json": "31af00708ceb87e2470b3a4dbf33cd9f40b23fd2b838345b32852319e8e23411",
+    "restore-deploy.json": "fb74372e8a51b9ba9f67035a52351dee4309213660c2070c818755742a544d7b"
+  },
+  "g5_gate": "passed",
+  "mvp_ready": false,
+  "production_release": false
+}

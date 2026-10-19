@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-19 G5 R101：[R101 TR](../reports/tests/TR-MVP-006-20261019-R101.md)记录当前 main 私有后端六摘要、临时 G5 部署、FAQ ready、50/50 隔离身份预检；独立客户端收到 `accepted` 后断开，服务端同 trace 一条提前关闭终态、无完成/超时、Redis 租约 0→1→0，随后原 G3 六摘要、单店人工发送、翻译、三健康和固定出口恢复通过。R91 的 50/50 安全输出与 R92 新严格 `<5000/<5000 ms` 口径事后复算共同满足当前 G5 staging 合成门禁；R101 没有重跑 50 并发。R100 全量后端尝试有一项未改动的 Windows 假 Docker 30 秒超时，除该项外 2146 passed/27 skipped，不写成全量通过。取消 AgentRun 留 `running` 另列缺陷；G1-L、G2、G6、G8 和 production 仍未通过。
+
 2026-10-19 TikTok 买家昵称保留：[R02 TR](../reports/tests/TR-MVP-TIKTOK-CUSTOMER-NAME-001-20261019-R02.md) 记录缺昵称/提供昵称回归、staging Rootless 手动部署通过、运行镜像与源码一致、三个公网健康 200，以及已登录工作台标题、侧栏和列表均显示已有昵称。本次没有制造部署后新的真实通知；production 未发布。
 
 2026-10-19 G5 R95：[R95 TR](../reports/tests/TR-MVP-006-20261019-R95.md)记录同一旧镜像的两次可恢复断连窗口：50/50 身份就绪，客户端关闭、Redis 租约 0→0；第二次延迟 15 秒观察同 trace 7 条日志仍无断连终态。两次原 G3 恢复通过。新 subject `6fe51fe` 为 Agent 完成后断开分支补固定终态事件，新增断言先红后绿；完整后端 2144 passed/27 skipped，Ruff、格式、mypy 与锁文件通过。新镜像和现场复测尚未执行，G5/production No-Go。

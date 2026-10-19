@@ -1,6 +1,8 @@
 # 部署与运行边界
 
-当前 G5 手动 staging 验收采用首个安全 SSE `delta` P99 和总耗时 P99 均严格小于 5000 ms；单会话预检使用同一严格边界。50/50 授权身份与安全输出、独立断连、资源采样及窗口后恢复原 G3 模式仍分别核对。历史 R91 现场报告保留当时 3000 ms 的失败判定；当前口径须从原始低敏样本另行复算并标明事后计算，不能改写原件或据此声称 G5 全部门禁通过。
+当前 G5 手动 staging 验收采用首个安全 SSE `delta` P99 和总耗时 P99 均严格小于 5000 ms；单会话预检使用同一严格边界。50/50 授权身份与安全输出、独立断连、资源采样及窗口后恢复原 G3 模式分别核对。历史 R91 现场报告保留当时 3000 ms 的失败判定；R92 从原始低敏样本按用户授权的新口径事后复算，R101 另以当前不可变后端完成独立断连及恢复，二者结合仅关闭 G5 staging 隔离合成门禁，不代表 production 放行。
+
+2026-10-19 G5 R101：从 main `e82b8ddba4297cabbc443311bb852952bb61d765` 手动发布私有后端 `sha256:a36fc465…a280e`，远端 linux/amd64、OCI revision、12 层压缩 110,980,561 字节及摘要拉回通过。六摘要预取、临时 G5 部署、FAQ ready、50/50 隔离身份预检后，唯一客户端在 `accepted` 后断开；同 trace 只有一条 `chat_stream_closed_early`，无完成/超时，Redis 租约 0→1→0。窗口结束按快照恢复原后端 `sha256:2dc92fe5…c2f258`、前端/检索、G3 单店人工发送、Webhook 只读、翻译、限流 10、三健康与固定出口。[R101 TR](../reports/tests/TR-MVP-006-20261019-R101.md)及[低敏清单](../../release/evidence/staging/crm-staging-g5-r101-disconnect-pass-20261019.json)留证。取消后的单条 AgentRun 仍为 `running`，由 `MVP-006-CANCEL-001` 跟进；未发 TikTok 消息、未主动运行 GitHub Actions、未部署 production。
 
 G5 独立断连探针 `src/backend/scripts/probe_sse_disconnect.py` 只接受 staging 后端同容器网络的 `http://127.0.0.1:8000` 与固定 `Origin`。它从仓库外 50 人隔离凭证池选一人，读取一次 `/auth/me`，在 SSE `accepted` 后立即关闭客户端；低敏报告只含固定类别、HTTP 状态和接受耗时。另一份权限 600 的私有关联文件仅用于在同一窗口内核对该用户 Redis SSE 租约从 0 回到 0、同一 trace 的 `chat_stream_disconnected` 或 `chat_stream_closed_early` 恰有一条且 `chat_stream_completed` 不出现；后者是 ASGI 直接取消/关闭生成器后释放租约的固定低敏事件。不得归档关联 ID、凭证、原始日志或响应正文。任一步异常则停止并按快照恢复 G3；探针成功也不能替代 50/50 性能、资源和恢复门禁。
 
