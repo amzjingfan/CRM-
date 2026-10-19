@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-19 G1-L 新口径：用户明确通用 `202309` 真实轨迹成功即放行 G1-L，CBT 增强 `202604` 转后续独立能力。已授权 staging 渠道对截图中的一笔 FedEx 订单做唯一匹配，官方通用接口一次 GET 平台码 0、返回 11 条轨迹；[R03 原始报告](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R03.md)及[低敏证据](../../release/evidence/staging/crm-staging-g1l-generic-fedex-20261019.json)可复核。未逐条核对 Seller Center、USPS 未查、CBT 未通过；正式适配器源码和运行版本需独立核对。G2 完整异常链路、G6 和 G8/production 仍未放行。下一步：①完成通用只读客户端契约与现场版本核对；②完整 G2 待官方重投/乱序/恢复证据或正式范围决定；③启动 G6 所需前提核对。`EVIDENCE_HEAD_SHA=READ_AT_GATE`。
+
 2026-10-19 G2 受限放行恢复点：[PR #434](https://github.com/CP11-gh/CRM/pull/434) 已将 R07 TR、R06 RR 与任务/门禁同步合入权威 main `86962845c1a8aeefe409299a21b80886edc0711c`。本分支从该合并提交的 191/199/187 份 IR/TR/RR 源记录重建三个索引为 `CURRENT`。PR 的两个 GitHub CI 作业因账户计费在零步骤前失败；按用户指定的手动路径，文档差异、链接、记录元数据和索引全量对账通过，不声称 CI 通过。用户决定不新增买家测试；当前已授权店铺 staging 人工辅助正常链路受限放行，完整 G2 仍因官方重投、乱序与恢复证据缺失而阻塞，G8/production No-Go。`EVIDENCE_HEAD_SHA=READ_AT_GATE`；Workspace hygiene：复用活动 worktree，未知文件未移动或删除。下一步：①维持现有 staging 人工辅助和自动回复关闭；②未来如需完整 G2，再取得官方异常投递/恢复证据或正式变更范围；③等待 G1-L 合格样本并推进 G6。
 
 2026-10-19 G2 R07：用户决定停止新增买家测试，并要求依据已完成的真实双向对话和 Webhook 入站证据放行。审查结论是 **当前已授权店铺的 staging 人工辅助正常链路受限放行**；[R07 TR](../reports/tests/TR-MVP-003-20261019-R07.md)及[R06 RR](../reports/reviews/RR-MVP-003-20261019-R06.md)记录 3 条真实买家入站匹配、只读运行状态及未观察到的官方重投、真实乱序和故障恢复。`MVP-003` 完整验收保持 `BLOCKED`，G8/production No-Go；G1-L 仍缺合格 CBT 首程包裹。主分支基线 `42368a17f2ad3b215bdfa72c5cfbb266a3d8b524`；本任务分支索引为 `CANDIDATE_VIEW`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。Workspace hygiene：复用活动 worktree，未知文件未移动或删除。下一步：①保持当前 staging 已授权人工辅助链路与自动回复关闭；②若今后需要完整 G2，取得官方异常投递/恢复证据或正式调整验收范围；③等待 G1-L 合格样本并推进 G6，G8 维持 No-Go。

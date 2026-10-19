@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-G1-LOG-GENERAL-001-20261019-R01 | MVP-G1-LOG-GENERAL-001 | R01 | APPROVE | `91f1593d98db710da2febb29ff8686da3617accf` | user-approved-scope, official-endpoint, shop-bound-signature, scope-denial, schema-failure-closed, evidence-limit | 2026-10-19T16:34:54+08:00 | [`RR-MVP-G1-LOG-GENERAL-001-20261019-R01.md`](RR-MVP-G1-LOG-GENERAL-001-20261019-R01.md) |
 | RR-MVP-003-20261019-R06 | MVP-003 | R06 | APPROVE | `42368a17f2ad3b215bdfa72c5cfbb266a3d8b524` | evidence-scope, real-webhook-delivery, missing-redelivery-and-ordering, staging-only-release, production-boundary | 2026-10-19T15:27:00+08:00 | [`RR-MVP-003-20261019-R06.md`](RR-MVP-003-20261019-R06.md) |
 | RR-MVP-003-20261019-R05 | MVP-003 | R05 | APPROVE | `47b5285b89d3e149c5323f8c3c0b6789f23e7f08` | signature-before-fault, tenant-and-conversation-scope, one-shot-failure, redacted-audit, expiry-and-restore | 2026-10-19T15:06:00+08:00 | [`RR-MVP-003-20261019-R05.md`](RR-MVP-003-20261019-R05.md) |
 | RR-MVP-006-CANCEL-001-20261019-R03 | MVP-006-CANCEL-001 | R03 | APPROVE | `8f2bbfa81977fafad123af263247a189884fdf66` | cancel-terminal-state, store-isolation, lease-release, ssh-interruption-recovery, evidence-minimization | 2026-10-19T12:51:10+08:00 | [`RR-MVP-006-CANCEL-001-20261019-R03.md`](RR-MVP-006-CANCEL-001-20261019-R03.md) |

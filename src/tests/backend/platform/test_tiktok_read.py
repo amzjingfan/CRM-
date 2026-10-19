@@ -414,6 +414,105 @@ async def test_tracking_202604_preserves_multiple_parcels_and_historical_numbers
 
 
 @pytest.mark.asyncio
+async def test_standard_tracking_reads_signed_202309_events_without_cbt_fields() -> None:
+    """普通承运商轨迹使用通用只读端点，不要求 CBT 首程专有字段。"""
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "request_id": "tracking-request-id",
+                "data": {
+                    "tracking": [
+                        {
+                            "description": "Delivered",
+                            "update_time_millis": 1718305585000,
+                            "action_code": 30901,
+                        }
+                    ]
+                },
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        events, request_id = await TikTokReadClient(
+            real_settings(), connected_channel(), http_client
+        ).get_standard_tracking("576461413038785752")
+
+    assert request_id == "tracking-request-id"
+    assert len(events) == 1
+    assert events[0].action_code == 30901
+    assert events[0].update_time_millis == 1718305585000
+    assert requests[0].method == "GET"
+    assert requests[0].url.path == "/fulfillment/202309/orders/576461413038785752/tracking"
+    assert requests[0].url.params["shop_cipher"] == "ROW_unit_test_shop_cipher"
+    assert requests[0].headers["x-tts-access-token"] == "unit-test-access-token"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "data",
+    [
+        {},
+        {"tracking": None},
+        {"tracking": [{"description": "Delivered", "update_time_millis": 1}]},
+    ],
+)
+async def test_standard_tracking_rejects_schema_drift_without_retry(data: dict[str, object]) -> None:
+    """通用物流缺少必需字段时失败关闭，避免把异常响应当成无轨迹。"""
+    attempts = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(200, json={"code": 0, "data": data})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(AppError) as caught:
+            await TikTokReadClient(real_settings(), connected_channel(), http_client).get_standard_tracking(
+                "576461413038785752"
+            )
+
+    assert caught.value.code == ErrorCode.THIRD_PARTY_ERROR
+    assert attempts == 1
+
+
+@pytest.mark.asyncio
+async def test_standard_tracking_rejects_missing_scope_before_http() -> None:
+    """当前渠道未获物流 Scope 时不向平台发送请求。"""
+    channel = connected_channel()
+    channel.scopes = [scope for scope in channel.scopes if scope != "seller.logistics"]
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise AssertionError("unexpected platform request")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(AppError) as caught:
+            await TikTokReadClient(real_settings(), channel, http_client).get_standard_tracking("576461413038785752")
+
+    assert caught.value.code == ErrorCode.PERMISSION_DENIED
+
+
+@pytest.mark.asyncio
+async def test_standard_tracking_rejects_invalid_order_id_before_http() -> None:
+    """订单标识必须在组成固定白名单路径之前校验。"""
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise AssertionError("unexpected platform request")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(AppError) as caught:
+            await TikTokReadClient(real_settings(), connected_channel(), http_client).get_standard_tracking(
+                "../other-shop"
+            )
+
+    assert caught.value.code == ErrorCode.VALIDATION_ERROR
+
+
+@pytest.mark.asyncio
 async def test_tracking_rejects_required_field_drift_without_retry() -> None:
     """202604 必需轨迹字段漂移时应立即失败，不能返回不完整物流或重复请求。"""
     attempts = 0

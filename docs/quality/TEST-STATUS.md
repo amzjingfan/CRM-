@@ -8,6 +8,8 @@
 
 2026-10-19 G2 R06：[TR](../reports/tests/TR-MVP-003-20261019-R06.md) 为 `PARTIAL`。一次性 staging 503 重投探针在 subject `47b5285b` 上完成 2162 passed/27 skipped 的全量后端回归、6 项定向回归、Ruff/格式/mypy；未发布镜像或部署，受控买家稍后可用。真实官方重投、乱序和原 G3 恢复仍缺，G2/G8 不放行。
 
+2026-10-19 G1-L：用户将当前 v0.1 验收范围改为通用 `202309` 真实轨迹成功；[R03 原始复核](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R03.md)和[低敏证据](../../release/evidence/staging/crm-staging-g1l-generic-fedex-20261019.json)显示授权店铺一笔 FedEx 订单唯一匹配、平台码 0、轨迹 11 条。按新口径 G1-L staging 通用 API 通过；没有逐条 Seller Center 对账、没有 USPS 或 CBT 首程 `202604` 成功证据。正式适配器代码和 staging 运行版本另行核对。G2/G6/G8 与 production 仍未放行。
+
 2026-10-19 G1-L [R02 TR](../reports/tests/TR-MVP-G1-LOG-202604-001-20261019-R02.md) 为 `BLOCKED`：用户提供当前授权店铺 Seller Center 的 CBT 筛选 0 个订单截图；一笔未确认 CBT 资格的普通 TikTok 配送候选只调用一次 `202604`，平台仍为 `11007009`。无合格首程样本，不能验证增强物流成功；不影响已关闭的 G1 核心，也不放行 G8。
 
 2026-10-19 `MVP-006-CANCEL-001` R03：[TR](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R03.md) `PASS`，范围为**新取消行为**。R02 本地 2153 passed/27 skipped/1 deselected；R104 SSH 中断后独立恢复 G3；R105 匹配镜像、50/50 身份和一次隔离断连通过，唯一 AgentRun `failed/AGENT_CANCELLED`、Redis 租约 0→1→0、G3 恢复和三健康通过。R101/R102/R103 历史合成失败记录保留；本轮未重跑 50 并发，性能仍以 R91/R92 原件为准，production No-Go。
@@ -267,7 +269,7 @@ Prompt `real-model-eval-v1.2.8` 的源码测试先红后绿，完整后端 `1765
 | M00 基础设施 | Split-ingress Rootless staging 已通过真实 DNS/TLS、两台主机部署、迁移头、容器/公网健康、隧道恢复和公司负载零变化验收；内部运行凭据已轮换，外部四项凭据已安全注入；PostgreSQL/MinIO 备份已在隔离目标恢复；2026-09-30 六摘要预取、候选部署、上一版实际切回和候选切返均通过，见 `TR-MVP-008-20260930-R01`。2026-10-08 代理配置改用持久源码后正式部署和再次重启通过，见 `TR-MVP-STAGING-PROXY-PERSIST-001-20261008-R01` | 外部平台实际接受验证和 production 放行；MinIO 原业务桶为空，真实业务对象恢复尚无样本；G6 连续五日仍未验证 |
 | M01 管理端/工作台 | 认证、权限、看板、会话、知识、团队、Agent 和人工消息主流程有自动化覆盖；本机生产构建浏览器 22/22、前端契约 41/41；新缓存修复已仅部署 staging，公网精确 HTML `no-store`、指纹 JS `immutable` | 带身份 staging 全按钮浏览器复验及真实 TikTok 业务验收 |
 | M02 数据与任务 | PostgreSQL/pgvector、Redis、Worker、幂等、审计和店铺隔离有模块/综合测试 | 真实负载、长稳和灾难恢复 |
-| M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 增强物流 `202604` 待合格 CBT 首程订单并须在 G8 前通过；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
+| M03 平台集成 | TikTok 首次 OAuth、Scope、Token 生命周期、六项非物流只读和跨店失败关闭有 staging 真实证据；2026-10-09 最新 job `connected`、临时密文清空、匹配成功审计 1 条，按用户新口径 G1 核心通过；Webhook、普通消息和 `unknown` 对账已有确定性检查 | G1-L 通用 `202309` 轨迹按用户新口径已通过；CBT 增强 `202604` 待适用订单，不再阻断 G8；G2 真实订阅/投递、G3 人工消息和对账未完成；G4 逐项闭环、G5/G6 门禁仍缺；同一 callback 现场重放未验但不再阻断 G1 核心 |
 | M04 AI 与 RAG | Provider、DLP、结构化声明、知识审批、工具边界及 BGE 已覆盖；[R56 live](../reports/tests/TR-MVP-005-20261016-R56.md) 为 36/36、危险逃逸 0、合法误拦 0、Provider 故障 0，机器 `passed=true` | G4 冻结合成质量通过；真实买家闭环、50 客户端 SSE、实际独立解决率与五日稳定性另验；公开自动回复/营销未放行 |
 
 2026-10-12 真实 `v1.2.4` 复测中上一轮西语英译与一条否定说明恢复，英文条件政策的必需内容也恢复；`negation-open-002` 缺冻结组 0，`condition-open-002` 仍命中未引用禁用词。原始报告只保留组/词序号及布尔提示，不能还原模型草稿。本机 `v1.2.4` 源码完整测试 `1718 passed, 19 skipped, 2 warnings`，Ruff、格式、mypy 和工作流静态解析通过；这是已被下一段 `v1.2.5` 现场结果取代的历史快照。

@@ -97,6 +97,14 @@ class TikTokTrackingEntry(TikTokModel):
     action_code_name: str = Field(min_length=1, max_length=100)
 
 
+class TikTokStandardTrackingEntry(TikTokModel):
+    """通用 202309 物流节点；普通承运商没有 CBT 专有单号和动作名称。"""
+
+    description: str = Field(min_length=1, max_length=1000)
+    update_time_millis: int = Field(ge=0)
+    action_code: int
+
+
 class TikTokLogisticsDetail(TikTokModel):
     """订单中的单个包裹；重发后最新单号与历史节点单号可以不同。"""
 
@@ -395,6 +403,16 @@ class TikTokReadClient:
         if logistics.order_id != order_id:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 返回订单不匹配", 502)
         return logistics.logistics_details, envelope.request_id
+
+    async def get_standard_tracking(self, order_id: str) -> tuple[list[TikTokStandardTrackingEntry], str | None]:
+        """按 202309 通用契约读取订单轨迹，不推断 CBT 首程或执行履约写入。"""
+        self._require_scope("seller.logistics")
+        if not order_id.isdigit():
+            raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 订单 ID 无效", 400)
+        path = f"/fulfillment/202309/orders/{order_id}/tracking"
+        envelope = await self._request("GET", path, {})
+        items = self._validated_list(envelope.data or {}, "tracking", TikTokStandardTrackingEntry)
+        return [item for item in items if isinstance(item, TikTokStandardTrackingEntry)], envelope.request_id
 
     async def get_conversations(
         self,
