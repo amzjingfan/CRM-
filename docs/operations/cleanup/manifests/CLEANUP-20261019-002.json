@@ -25,7 +25,7 @@
       "quarantine_path": "N/A (exact-path permanent deletion approved)",
       "retention_until": "2026-10-07T17:50:45+08:00",
       "restore_method": "Re-fetch immutable images by retained digest from GHCR using the existing staging prefetch/import procedure; temporary chunk bytes are not guaranteed recoverable",
-      "verification": ["Deletion blocked by local execution policy before process creation on two attempts", "Target remains present; affected worktree HEAD and two untracked instruction file hashes unchanged", "Post-delete checks pending until policy is lifted or user performs authorized deletion"]
+      "verification": ["Deletion blocked by local execution policy before process creation on multiple attempts, including after repeated user authorization", "Target remains present with 5,466 files and 11,375,891,998 bytes; affected worktree HEAD and two untracked instruction file hashes unchanged", "Post-delete checks pending until policy is lifted or user performs authorized deletion"]
     }
   ]
 }

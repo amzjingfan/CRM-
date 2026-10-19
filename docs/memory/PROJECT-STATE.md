@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-19 worktree 复核：用户再次要求清理截图目录与多余本地分支。[CLEANUP-20261019-003](../operations/cleanup/CLEANUP-20261019-003.md) 已非强制移除一个 PR 已合并、无独有内容且过保留期的本地工作副本，并用非强制 `git branch -d` 删除十条已在 `origin/main` 历史中的未签出本地分支；保留 16 个附加 worktree、407 条本地分支及其需保留理由，远端未改。获批的旧 OCI 缓存仍被自动执行策略在命令启动前以 `blocked by policy` 拒绝，`MAINT-CLEANUP-20261019-002` 继续 `BLOCKED`；见 [CLEANUP-20261019-002](../operations/cleanup/CLEANUP-20261019-002.md)。Workspace hygiene: ATTENTION；G6/G8/production 状态不变。下一步：①环境策略放行后在原批次删除 OCI 缓存并复核；②如需继续减少本地分支，先审阅 squash 合并分支的冻结清单与恢复方案；③保留开放 PR、凭证和现场部署材料。
+
 2026-10-19 目录卫生补记：用户已精确批准删除旧 worktree 内 `mvp008-oci-local-transfer/`；[CLEANUP-20261019-002](../operations/cleanup/CLEANUP-20261019-002.md) 完成路径、保留期、引用、恢复来源和保留文件核对，但本机自动执行策略两次在命令启动前拒绝 `Remove-Item`（`blocked by policy`）。目标 5,466 个文件、长度合计 11,375,891,998 B 仍在原位，所在 worktree 与两份未跟踪指令文件不变；任务 `MAINT-CLEANUP-20261019-002` 为 `BLOCKED`，解除条件与复核步骤见批次。Workspace hygiene: ATTENTION；G6/G8/production 状态不变。下一步：①环境策略允许后在原批次执行精确删除并复核，或用户手工删除后复核；②保留其他未获准材料；③继续当前产品门禁任务。
 
 2026-10-19 目录卫生：用户要求全目录盘点与 worktree 整理，`MAINT-CLEANUP-20261019-001` 的 [CLEANUP-20261019-001](../operations/cleanup/CLEANUP-20261019-001.md) 已按精确路径非强制移除九个无未提交交付内容的 Git 工作副本，扫描长度合计 2,653,002,607 B；原分支及提交保留。根 checkout 的 24 个未跟踪部署文件、两个工作树的未跟踪前端指令、开放 PR #42/#56、部署包/凭证相关材料、`outputs/` 用户交付和约 11.89 GB 的旧 OCI 原件均未触碰。批次的目录与 Git 注册复核已通过；证据 PR #440 已合入 `main=5913a7a5546223daf6a7c2150563a9e2c34601cf`，任务状态 `DONE`。Workspace hygiene: ATTENTION（保留对象需独立批次与精确授权）。G6/G8/production 状态不变。

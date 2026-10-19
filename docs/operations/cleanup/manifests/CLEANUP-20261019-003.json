@@ -1,0 +1,47 @@
+{
+  "task_id": "MAINT-CLEANUP-20261019-003",
+  "batch_id": "CLEANUP-20261019-003",
+  "base_sha": "536bba7f4c8ee850817525fd9b41222c4aa930a0",
+  "state": "DELETED",
+  "authorized_root": ".worktrees",
+  "removed_worktrees": 1,
+  "removed_local_branches": 10,
+  "observed_free_delta_bytes": 5505024,
+  "local_branch_action": "deleted with non-force git branch -d after exact SHA and origin/main ancestry checks",
+  "local_branch_candidates": [
+    {"branch": "docs/centralized-test-layout-design", "head": "17bb9bf9501ead60aafe8eed6bddc331f26c43f0"},
+    {"branch": "docs/mvp002-oauth-live-replay-20260928", "head": "b08fc76b2a9c6de04d6daf7e1e0c2ed784ab5184"},
+    {"branch": "docs/mvp005-g4-r41-live-timeout-20261015", "head": "fdc934686d17edf38c71e4248ef422883c4298f0"},
+    {"branch": "docs/tiktok-store-send-evidence-20261018", "head": "6394282897abdb89349dee7399bb05629220ca2e"},
+    {"branch": "feature/g5-r32-local-image-prep-20261017", "head": "156338ace2d61cff830d2ee1a3b4b3ca796b7deb"},
+    {"branch": "feature/g5-r34-local-image-prep-20261017", "head": "529c3a2e417286053f16eeb34abd20746248980b"},
+    {"branch": "feature/mvp006-g5-publish-14ec-20261016", "head": "14ec836a391e21374c973479897f216956ead594"},
+    {"branch": "feature/mvp006-g5-publish-ready-20261016", "head": "3aaf69f37b39dfcb8dbd5ae56970f63aba04e890"},
+    {"branch": "fix/mvp006-g5-r94-field-20261018", "head": "2c14fc7c9c5590b86318412343678457525107df"},
+    {"branch": "spike/mvp006-g5-image-candidate-20261017", "head": "7b7acc35ac47bf02f4732b27c7da157c201881e9"}
+  ],
+  "items": [
+    {
+      "task_id": "MAINT-CLEANUP-20261019-003",
+      "batch_id": "CLEANUP-20261019-003",
+      "base_sha": "536bba7f4c8ee850817525fd9b41222c4aa930a0",
+      "original_path": ".worktrees/mvp008-ghcr-low-concurrency-20260930",
+      "kind": "directory",
+      "category": "merged-worktree",
+      "git_status": "clean tracked checkout; ignored generated dependencies, caches and two PR-body copies",
+      "size_bytes": 4727146,
+      "file_count": 574,
+      "directory_count": 128,
+      "sha256": "N/A (Git worktree directory; HEAD identifies tracked content and two PR bodies match published PRs)",
+      "modified_at": "2026-09-30T17:06:34+08:00",
+      "reason": "PR #83 merged at the exact local HEAD; no unique tracked or untracked work; ignored PR bodies match PR #81/#83 and remaining items are regenerable caches",
+      "reference_checks": ["PR #83 merged, exact headRefOid 34870ab6551345e83433ec7c074d2c417739d945", "PR body copies exactly match PR #81 and #83 after newline/terminal whitespace normalization", "No reparse points in target; no tracked changes or non-ignored untracked files"],
+      "related_tasks_or_worktrees": ["MVP-008", "mvp008-ghcr-low-concurrency-20260930"],
+      "action": "deleted",
+      "quarantine_path": "N/A (Git commit and branch retained; PR text published)",
+      "retention_until": "2026-10-07T17:06:34+08:00",
+      "restore_method": "git worktree add --detach <new path> 34870ab6551345e83433ec7c074d2c417739d945; recover PR text from PR #81/#83 and rebuild dependencies/caches",
+      "verification": ["Exact-path non-force git worktree remove succeeded", "Directory and Git worktree registration absent", "Other 16 .worktrees directories unchanged", "Local branch and commit 34870ab6551345e83433ec7c074d2c417739d945 retained", "origin/main unchanged"]
+    }
+  ]
+}
