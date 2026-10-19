@@ -6,6 +6,7 @@ import uuid
 from contextlib import suppress
 from types import SimpleNamespace
 
+import anyio
 import pytest
 from fastapi import Request
 
@@ -190,6 +191,58 @@ async def test_transport_cancel_reconciles_running_agent_before_releasing_lease(
     pending.cancel()
     with suppress(asyncio.CancelledError, StopAsyncIteration):
         await pending
+
+    assert events == ["workflow_cancelled", "agent_run_failed", "lease_released"]
+    assert released == [user.id]
+
+
+@pytest.mark.asyncio
+async def test_anyio_cancel_scope_finishes_agent_audit_before_lease_release(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    released: list[uuid.UUID] = []
+    user, request = _prepare_stream(monkeypatch, released)
+    events: list[str] = []
+    started = asyncio.Event()
+
+    async def suggest(*_args: object, **_kwargs: object) -> None:
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            events.append("workflow_cancelled")
+
+    async def reconcile(*_args: object, **_kwargs: object) -> bool:
+        await asyncio.sleep(0)
+        events.append("agent_run_failed")
+        return True
+
+    async def release(user_id: uuid.UUID, lease_token: str) -> None:
+        await asyncio.sleep(0)
+        released.append(user_id)
+        events.append("lease_released")
+
+    monkeypatch.setattr(chat_router, "suggest_for_user", suggest)
+    monkeypatch.setattr(chat_router, "reconcile_cancelled_sse_agent_run", reconcile)
+    monkeypatch.setattr(chat_router, "release_chat_stream", release)
+    response = await chat_router.chat_query(
+        ChatQueryRequest(session_id=uuid.uuid4()),
+        request,
+        SimpleNamespace(),
+        user,  # type: ignore[arg-type]
+    )
+
+    async def consume() -> None:
+        assert "event: accepted" in await anext(response.body_iterator)
+        await anext(response.body_iterator)
+        await anext(response.body_iterator)
+        with suppress(asyncio.CancelledError, StopAsyncIteration):
+            await anext(response.body_iterator)
+
+    async with anyio.create_task_group() as group:
+        group.start_soon(consume)
+        await asyncio.wait_for(started.wait(), timeout=1)
+        group.cancel_scope.cancel()
 
     assert events == ["workflow_cancelled", "agent_run_failed", "lease_released"]
     assert released == [user.id]

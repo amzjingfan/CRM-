@@ -1,0 +1,66 @@
+{
+  "evidence_type": "g5_cancel_agent_audit_field_diagnosis",
+  "status": "partial",
+  "source_sha": "92e0aeaf41891dbf541d39713403e337f5c6951a",
+  "candidate_backend_index": "sha256:5b3f49bbd24411cd0cccf7abc0d16687c5eb589fd739c0af4bbcf0449e78762b",
+  "candidate_backend_amd64_manifest": "sha256:d855fdac1c6ea12af988ce69b8cd6ce862d3cac33c7a9716159bdc0ebc8943a8",
+  "candidate_backend_compressed_layers": 12,
+  "candidate_backend_compressed_layer_bytes": 110985199,
+  "oci_revision_verified": true,
+  "immutable_pull_verified": true,
+  "attempts": [
+    {
+      "label": "R102",
+      "six_digest_prefetch": "passed",
+      "temporary_g5_deploy": "passed",
+      "distinct_authorized_clients": 50,
+      "disconnect_after_accepted": true,
+      "server_closed_early_events": 1,
+      "server_completed_events": 0,
+      "redis_lease": [0, 1, 0],
+      "same_trace_agent_run": {"running": 1},
+      "audit_gate": "failed",
+      "g3_restore": "passed",
+      "private_sha256": {
+        "deploy.json": "64e329ecba4ab827aa9b485e168ab55845b7d1684f18ac41b4eae86ee0fefdfe",
+        "disconnect-server.json": "3a58f2bab00014a9b52bdf99652b56ab5acdbf0c8484e8fbacf6d5228713a44a",
+        "private-correlation.json": "3ef811a5fde2aa3bef3249a7fa0baf9a4ef0ebb869555a282a13e4d369b38b4e",
+        "restore-deploy.json": "700773e7aefd88f2750dbf0c3895627b6e255649479c6fd1b5ef805904d46639"
+      }
+    },
+    {
+      "label": "R103",
+      "six_digest_prefetch": "passed",
+      "temporary_g5_deploy": "passed",
+      "distinct_authorized_clients": 50,
+      "disconnect_after_accepted": true,
+      "server_closed_early_events": 1,
+      "server_completed_events": 0,
+      "redis_lease": [0, 1, 0],
+      "same_trace_cancel_audit_log_events": 0,
+      "same_trace_agent_run": {"running": 1},
+      "audit_gate": "failed",
+      "g3_restore": "passed",
+      "private_sha256": {
+        "deploy.json": "7c024de7093aa1cab9af40f083e9ff29b3c0b27738620062bc6db748c2d91bea",
+        "disconnect-server.json": "2a352f74b5f1c7095df9569cf91f0811deb30088cec1fc9dc2180046eccc1c14",
+        "private-correlation.json": "d4b1322449de2e7c6b396f7fa9738defc825c801a2f175a60d5ef70061ad4c1b",
+        "restore-deploy.json": "70f9dbd48c3f56d3e95ae0b9bf9c123479d6d76aa401f7d86c185966b47a2795"
+      }
+    }
+  ],
+  "restored_g3": {
+    "backend_index": "sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+    "frontend_index": "sha256:77a710880ea63a804de53f57b421c75ebed96a56c87c7efbd86a8e2877344051",
+    "retrieval_index": "sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "manual_send_store_count": 1,
+    "webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "sse_load_test_enabled": false,
+    "backend_query_limit": 10,
+    "public_health_statuses": [200, 200, 200],
+    "fixed_egress_verified": true
+  },
+  "production_release": false,
+  "g5_cancel_audit_gate": "failed"
+}

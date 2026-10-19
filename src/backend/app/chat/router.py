@@ -10,6 +10,7 @@ from contextlib import suppress
 from datetime import UTC, datetime
 from typing import Annotated, cast
 
+import anyio
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
@@ -366,36 +367,39 @@ async def chat_query(
                     },
                 )
                 cancellation_reconcile_needed = workflow_task is not None
-            try:
-                if workflow_task is not None and not workflow_task.done():
-                    await _cancel_task(workflow_task)
-            finally:
+            # Starlette/AnyIO 的断连取消作用域会取消其中每一次 await；
+            # 清理必须屏蔽该作用域，才能完成独立审计事务并释放租约。
+            with anyio.CancelScope(shield=True):
                 try:
-                    if cancellation_reconcile_needed and not result_handed_to_transport:
-                        try:
-                            updated = await reconcile_cancelled_sse_agent_run(
-                                user, payload.session_id, trace_id, stream_started_at_utc
-                            )
-                        except Exception as error:
-                            logger.error(
-                                "chat_stream_agent_cancel_reconcile_failed",
+                    if workflow_task is not None and not workflow_task.done():
+                        await _cancel_task(workflow_task)
+                finally:
+                    try:
+                        if cancellation_reconcile_needed and not result_handed_to_transport:
+                            try:
+                                updated = await reconcile_cancelled_sse_agent_run(
+                                    user, payload.session_id, trace_id, stream_started_at_utc
+                                )
+                            except Exception as error:
+                                logger.error(
+                                    "chat_stream_agent_cancel_reconcile_failed",
+                                    extra={
+                                        "event": "chat_stream_agent_cancel_reconcile_failed",
+                                        "trace_id": trace_id,
+                                        "error_type": type(error).__name__,
+                                    },
+                                )
+                                raise
+                            logger.info(
+                                "chat_stream_agent_cancel_reconciled",
                                 extra={
-                                    "event": "chat_stream_agent_cancel_reconcile_failed",
+                                    "event": "chat_stream_agent_cancel_reconciled",
                                     "trace_id": trace_id,
-                                    "error_type": type(error).__name__,
+                                    "updated": updated,
                                 },
                             )
-                            raise
-                        logger.info(
-                            "chat_stream_agent_cancel_reconciled",
-                            extra={
-                                "event": "chat_stream_agent_cancel_reconciled",
-                                "trace_id": trace_id,
-                                "updated": updated,
-                            },
-                        )
-                finally:
-                    await release_chat_stream(user.id, stream_lease_token)
+                    finally:
+                        await release_chat_stream(user.id, stream_lease_token)
 
     return StreamingResponse(
         stream(),

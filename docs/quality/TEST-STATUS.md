@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-19 `MVP-006-CANCEL-001` R02：[TR](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R02.md) `PARTIAL`。R102/R103 同 trace 断连及租约释放通过，AgentRun 审计各留一条 `running`；两次原 G3 恢复通过。AnyIO 取消作用域新增用例先红后绿；R02 手动后端回归 2153 passed、27 skipped、1 个未改动 Windows 预取超时用例排除，mypy 与定向 Ruff/格式通过。新镜像现场同 trace `failed/AGENT_CANCELLED` 尚未核对，缺陷不能标记 DONE；G5 先前安全/性能门禁仍以原始 R91/R92/R101 证据为准。
+
 2026-10-19 `MVP-006-CANCEL-001` R01：SSE 取消后独立事务修正 AgentRun 的源码回归为 2151 passed、27 skipped、1 个既有 Windows 预取超时用例明确排除；最终定向 9 passed，Ruff、格式、mypy 和锁文件通过。仅代码测试，staging 独立数据库终态、旧遗留记录与原 G3 恢复尚待新镜像现场核对，任务 `VERIFYING`；见[R01 TR](../reports/tests/TR-MVP-006-CANCEL-001-20261019-R01.md)。
 
 2026-10-19 工作台店铺筛选名称：[TR](../reports/tests/TR-MVP-WORKSPACE-STORE-LABEL-001-20261019-R01.md) `PASS`。修复前浏览器回归复现截断 ID，修复后名称与空列表选项稳定；合入 SHA 的 lint 0 错误、typecheck、47/47 契约测试、生产构建和 31/31 生产模式浏览器测试通过。staging 手动门禁、运行摘要、三健康 200 及已登录页面的真实名称只读复核通过。GitHub 自动作业零步骤失败，不作为本轮测试证据；production 未发布。
