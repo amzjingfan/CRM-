@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-19 G2 R07：用户决定停止新增买家测试，并要求依据已完成的真实双向对话和 Webhook 入站证据放行。审查结论是 **当前已授权店铺的 staging 人工辅助正常链路受限放行**；[R07 TR](../reports/tests/TR-MVP-003-20261019-R07.md)及[R06 RR](../reports/reviews/RR-MVP-003-20261019-R06.md)记录 3 条真实买家入站匹配、只读运行状态及未观察到的官方重投、真实乱序和故障恢复。`MVP-003` 完整验收保持 `BLOCKED`，G8/production No-Go；G1-L 仍缺合格 CBT 首程包裹。主分支基线 `42368a17f2ad3b215bdfa72c5cfbb266a3d8b524`；本任务分支索引为 `CANDIDATE_VIEW`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。Workspace hygiene：复用活动 worktree，未知文件未移动或删除。下一步：①保持当前 staging 已授权人工辅助链路与自动回复关闭；②若今后需要完整 G2，取得官方异常投递/恢复证据或正式调整验收范围；③等待 G1-L 合格样本并推进 G6，G8 维持 No-Go。
+
 2026-10-19 G2 R06 合并恢复点：[PR #432](https://github.com/CP11-gh/CRM/pull/432) 已合入权威 main `b1940e471d338181acea46cce77bdcbd714eae9a`；subject `47b5285b89d3e149c5323f8c3c0b6789f23e7f08` 的单次 503 探针及本地验证记录保持原样。GitHub Actions 因账户计费在零步骤失败，按用户指定的手动本地门禁合并。本分支从合并后 main 的 191/198/186 份 IR/TR/RR 重建三个索引为 `CURRENT`。受控买家账号稍后可用，staging 未切换；G2 真实重投、乱序和恢复仍待现场证据。`EVIDENCE_HEAD_SHA=READ_AT_GATE`；Workspace hygiene：活动 worktree 保留，未知文件未清理。下一步：①受控买家可用时预取匹配镜像并以私有快照开启短窗口；②核对同一通知重投和两条消息顺序；③恢复原 G3 后审定 G2。
 
 2026-10-19 G2 R06 代码候选：从权威 main `b355c98b6814424ab64ec5b9f075240920bd5809` 在 `fix/g2-webhook-redelivery-probe-20261019` 实现 staging 精确店铺/会话的一次性 503 重投探针、30 分钟绝对失效、低敏配对审计及手动部署门禁，subject `47b5285b89d3e149c5323f8c3c0b6789f23e7f08`。见 [IR](../records/implementation/IR-MVP-003-20261019-R05.md)、[TR](../reports/tests/TR-MVP-003-20261019-R06.md)、[RR](../reports/reviews/RR-MVP-003-20261019-R05.md)。仅代码/合成回归，尚未发布镜像或切换 staging；受控买家手机账号稍后可用，官方重投、乱序和恢复仍缺，G2 保持 `DOING`、G8/production No-Go。`EVIDENCE_HEAD_SHA=READ_AT_GATE`；分支索引为 `CANDIDATE_VIEW`。Workspace hygiene：复用活动 worktree，未知文件未清理。下一步：①合入候选；②买家可用时以原六摘要快照启动短窗口并恢复 G3；③核对官方同一通知重投、乱序与低敏审计后再判 G2。
@@ -508,6 +510,6 @@ PR #104 将订阅事实与当时的索引合入 main `9f474243c70e0b52717e0c1594
 
 ## 最多三个下一动作
 
-1. 在可恢复 G5 手动窗口独立验证断连、50/50 安全输出、当前严格 P99、资源与原 G3 恢复；缺任何一项则 G5 不关闭。
-2. 若断连失败，先按现场错误分类做最小修复并重测，不为通过而修改安全规则或阈值。
-3. 按独立任务推进 G2 异常投递及 G1-L；G5 与后续五日 G6 未通过前，G8/production 保持 No-Go。
+1. 保持当前已授权店铺的 staging 人工辅助正常收发链路，继续关闭自动回复；不启动新的 G2 买家测试。
+2. 完整 G2 仍待官方重投、乱序和恢复证据，或未来正式调整验收范围；G1-L 待合格 CBT 首程包裹或平台适用性说明。
+3. 独立推进 G6 五日稳定性证据；G8/production 在剩余门禁关闭前维持 No-Go。
