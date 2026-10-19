@@ -4,6 +4,7 @@ View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-006-CANCEL-001-20261019-R03 | MVP-006-CANCEL-001 | R03 | APPROVE | `8f2bbfa81977fafad123af263247a189884fdf66` | cancel-terminal-state, store-isolation, lease-release, ssh-interruption-recovery, evidence-minimization | 2026-10-19T12:51:10+08:00 | [`RR-MVP-006-CANCEL-001-20261019-R03.md`](RR-MVP-006-CANCEL-001-20261019-R03.md) |
 | RR-MVP-006-CANCEL-001-20261019-R02 | MVP-006-CANCEL-001 | R02 | APPROVE | `8f2bbfa81977fafad123af263247a189884fdf66` | anyio-cancel-scope, state-compare-and-swap, store-isolation, lease-release, field-failure | 2026-10-19T12:25:15+08:00 | [`RR-MVP-006-CANCEL-001-20261019-R02.md`](RR-MVP-006-CANCEL-001-20261019-R02.md) |
 | RR-MVP-006-CANCEL-001-20261019-R01 | MVP-006-CANCEL-001 | R01 | APPROVE | `3b643125909b5aa6cbff0f41672cac680a707925` | cancel-window, store-isolation, state-compare-and-swap, audit-failure, lease-release, low-sensitivity | 2026-10-19T11:49:00+08:00 | [`RR-MVP-006-CANCEL-001-20261019-R01.md`](RR-MVP-006-CANCEL-001-20261019-R01.md) |
 | RR-MVP-006-20261019-R101 | MVP-006 | R101 | APPROVE | `e82b8ddba4297cabbc443311bb852952bb61d765` | g5-synthetic-acceptance, disconnect-uniqueness, safe-output-performance, g3-restore, residual-agent-audit | 2026-10-19T11:12:00+08:00 | [`RR-MVP-006-20261019-R101.md`](RR-MVP-006-20261019-R101.md) |

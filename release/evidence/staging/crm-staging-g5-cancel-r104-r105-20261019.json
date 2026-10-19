@@ -1,0 +1,83 @@
+{
+  "evidence_type": "g5_cancel_agent_audit_field_verification",
+  "source_main_sha": "2eea3ed4a388edbe09e21c4cc3771fcb183fd450",
+  "subject_sha": "8f2bbfa81977fafad123af263247a189884fdf66",
+  "candidate_backend_index": "sha256:c56f5a0be2b6b686b050d078c5f50564a98b2e6004fda0cdfa5e93aa8d03a854",
+  "candidate_backend_amd64_manifest": "sha256:49c6718351fc25b462aeb856d98ca93d9b791e0fed464627e98d075f4dc5d1f5",
+  "candidate_backend_compressed_layers": 12,
+  "candidate_backend_compressed_layer_bytes": 110985858,
+  "oci_revision_verified": true,
+  "immutable_pull_verified": true,
+  "attempts": [
+    {
+      "label": "R104",
+      "status": "interrupted_before_identity_preflight",
+      "temporary_g5_deploy": "passed",
+      "content_check": "passed",
+      "disconnect_probe_started": false,
+      "probable_cause": "new_ssh_connection_dropped_by_host_maxstartups",
+      "initial_restore": "not_verified_due_to_ssh_drop",
+      "independent_restore_retry": "passed",
+      "private_sha256": {
+        "deploy.json": "b75123da86dddec9d98e90fa4000405c2185532f5ee96a17f8249118cd6d0039",
+        "content.json": "f0b92a3e3d9f87351731a62d0476b88b3d2e02f298f2b2285417b3224e12d547",
+        "restore-deploy.json": "141f24baa544827694afb34f799db621546d4102b00b130ef1c6fe91a5712a93"
+      }
+    },
+    {
+      "label": "R105",
+      "status": "passed",
+      "execution": "detached_staging_user_service",
+      "six_digest_prefetch": "passed",
+      "temporary_g5_deploy": "passed",
+      "migration": "heads_applied",
+      "temporary_backend_query_limit": 60,
+      "temporary_g5_sse_load_test_enabled": true,
+      "content_check": "passed",
+      "knowledge_ready": true,
+      "distinct_authorized_clients": 50,
+      "preflight_failures": 0,
+      "preflight_provider_calls": 0,
+      "disconnect_after_accepted": true,
+      "disconnect_http_status": 200,
+      "server_closed_early_events": 1,
+      "server_completed_events": 0,
+      "server_timeout_events": 0,
+      "redis_lease": [0, 1, 0],
+      "same_trace_cancel_reconcile_events": 1,
+      "same_trace_reconcile_updated": false,
+      "same_trace_agent_run": {"failed_AGENT_CANCELLED": 1, "other_status": 0},
+      "restore": "passed",
+      "ephemeral_ghcr_token_removed": true,
+      "private_sha256": {
+        "prefetch.json": "cc5986c6aeb42f2b8f8dd868608b566bde5ec3f2e3154dc0fa4024819b16dd75",
+        "validate.json": "dadfb32b1014cdeb95199add705f9e00b59b2c008211dd6ea30ab748d5d6f394",
+        "deploy.json": "3726e2a9f93520c960dc61cc70fd13e8961d0a96cd64de1f2aeada3055e01171",
+        "content.json": "1350bfb6733bdf194f11e94ab1d8b91d60ab3903b9745482e436fac38bec076b",
+        "prepare.json": "78d3746e712673a64810981163b4a28d956e70bda685b9d88fe74d4ba3abaa3a",
+        "disconnect-client.json": "74e34bfab77cf62200b1c400698831ce86020bef5ef7fa3daff1aee1e6dfa409",
+        "disconnect-server.json": "94e2ec956ec98389582dffc18eb8e51b95ae9c898b234524d264a2e8e2983f3e",
+        "private-correlation.json": "f9349c572f14f06424d2218a3d68983d7d5cece39928f0540f471ec4deeb4652",
+        "restore-validate.json": "9530ad2a39ab94b366c2d1066ac9d09cad944dff89a8e4a6a2a83d654412c64c",
+        "restore-deploy.json": "f237080965dadb6dae6827a27c1f101e207fa482fd6013ccc12e8fc8fcb8873c"
+      }
+    }
+  ],
+  "restored_g3": {
+    "backend_index": "sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+    "frontend_index": "sha256:77a710880ea63a804de53f57b421c75ebed96a56c87c7efbd86a8e2877344051",
+    "retrieval_index": "sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "manual_send_store_count": 1,
+    "webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "sse_load_test_enabled": false,
+    "backend_query_limit": 10,
+    "public_health_statuses": [200, 200, 200],
+    "fixed_egress_verified": true
+  },
+  "historical_r101_r102_r103_running_records": "preserved_as_failed_field_evidence",
+  "new_cancel_audit_gate": "passed",
+  "production_release": false,
+  "tiktok_message_sent": false,
+  "github_actions_invoked": false
+}
