@@ -24,6 +24,10 @@
 - 会话列表/详情、消息记录、状态更新和受控工具均位于 `/workspace`。
 - 已授权 TikTok 店铺的会话和历史经内部只读同步写入现有会话/消息表；列表和详情仍通过原 `/workspace` 接口按店铺权限读取。工作台会话列表每页取 30 条，按列表返回的 `pagination` 加载更多，店铺与平台筛选在每一页保持一致。详情消息按时间升序分页，前端先取最新页，可继续加载较早历史。
 - 工作台标签页可见时每 5 秒重新读取列表与当前会话最新消息；按消息 ID 合并并保留已加载的历史、选中会话及草稿，避免每次刷新重置界面。
+- `GET /workspace/sessions` 支持 `filter=all|unread|mine|starred|closed`；默认列表不含本地已关闭会话，`closed` 仅列出已关闭会话。列表和详情的 `session` 均返回 `unread_count`、`is_starred` 和 UTC `closed_at`。前端打开会话定位最新消息；读取较早页保持阅读位置，新消息不会把正在阅读历史的坐席拉到底部，并提供“到最新消息”。
+- TikTok 买家 Webhook 消息按平台消息 ID 幂等增加未读；只读同步补入晚于上次成功同步时间的买家新消息时也增加未读，首次历史回填不把旧消息算成新未读。
+- `PATCH /workspace/sessions/{session_id}/star` 接收 `{ "starred": true|false }`，只标记 CRM 内部差评风险；`PATCH /workspace/sessions/{session_id}/closed` 接收 `{ "closed": true|false }`，只更新 CRM 工作流；`GET /workspace/sessions/{session_id}/assignees` 只列出同店、在职且拥有 `workspace.reply` 的坐席。三者按授权店铺定位会话；写接口要求 `workspace.transfer`、CSRF 和状态变更审计。重复设置同一状态不重复审计。转交目标同样须在职、有当前店铺回复权限；关闭会话拒绝新发送和转交，未结清出站消息拒绝关闭。已关闭会话遇到晚于关闭时间的真实买家新消息会重新进入活跃列表，历史回填不触发重开。
+- `POST /chat/query` 的安全建议结果只填入空的本地可编辑草稿，已有人工草稿保留；使用建议不会自动触发平台发送。人工确认、真实发送白名单及 `unknown` 对账仍按现有契约执行。
 - `POST /workspace/sessions/{session_id}/suggest` 返回 AI 建议。
 - `POST /workspace/sessions/{session_id}/messages` 仅发送人工确认的普通文本；TikTok 真实发送要求 `seller.customer_service` Scope、CSRF 和 `Idempotency-Key`。
 - TikTok 写客户端按官方 `POST /customer_service/202606/conversations/{conversation_id}/messages` 契约发送一次 `TEXT`，`content` 为 JSON 序列化字符串，`sender_role=CUSTOMER_SERVICE`；传输或平台内部结果不确定时记录 `unknown`，不自动重试。

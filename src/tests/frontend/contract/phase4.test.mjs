@@ -44,7 +44,7 @@ test("Phase 4 English mode covers Agent forms and workspace SSE content", async 
   assert.match(agent, /Save operations configuration/);
   assert.match(workspace, /AI reply suggestion/);
   assert.match(workspace, /Suggestion inserted; review it before sending/);
-  assert.match(workspace, /Transfer to human/);
+  assert.match(workspace, /Transfer conversation/);
 });
 
 test("workspace ignores stale detail, updates read state, and clears filtered-out selection", async () => {

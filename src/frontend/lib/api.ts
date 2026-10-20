@@ -3,7 +3,9 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://loca
 export type UserView = { id: string; name: string; email: string; role: string; avatar: string | null; permissions: string[]; store_ids: string[] };
 export type ApiResponse<T> = { code: number; message: string; data: T };
 export type CustomerSummary = { id: string; name: string | null; email: string | null; avatar: string | null; tags: string[] };
-export type SessionSummary = { id: string; store_id: string; platform: string; status: string; unread_count: number; assigned_user_id: string | null; last_message_at: string | null; last_message: string | null; customer: CustomerSummary };
+export type SessionSummary = { id: string; store_id: string; platform: string; status: string; is_starred: boolean; closed_at: string | null; unread_count: number; assigned_user_id: string | null; last_message_at: string | null; last_message: string | null; customer: CustomerSummary };
+export type SessionActionResult = Pick<SessionSummary, "status" | "is_starred" | "closed_at">;
+export type SessionAssignee = { id: string; name: string };
 export type MessageView = { id: string; role: "user" | "agent" | "assistant" | "system"; content: string; status: "received" | "processing" | "sent" | "delivered" | "failed" | "unknown"; created_at: string; error_code: string | null; delivery_mode: "inbound" | "mock" | "real" | "unknown" };
 export type MessageTranslationView = { message_id: string; target_language: "zh-CN"; translated_text: string };
 export type OrderSummary = { id: string; external_order_id: string; platform: string; status: string; currency: string; total_amount: string; tracking_number: string | null; tracking_status: string | null };
@@ -116,7 +118,10 @@ export const getSessionMessages = async (sessionId: string): Promise<SessionMess
 export const sendMessage = (sessionId: string, content: string, idempotencyKey: string) => requestApi<MessageView>(`/workspace/sessions/${sessionId}/messages`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ content, confirmed: true }) });
 export const translateMessage = (sessionId: string, messageId: string) => requestApi<MessageTranslationView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}/translation`, { method: "POST" });
 export const markSessionRead = (sessionId: string) => requestApi<{ unread_count: number }>(`/workspace/sessions/${sessionId}/read`, { method: "POST" });
-export const transferSession = (sessionId: string, reason: string, idempotencyKey: string) => requestApi<{ transfer_id: string; status: "transferred" }>(`/workspace/sessions/${sessionId}/transfer`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ reason }) });
+export const setSessionStar = (sessionId: string, starred: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/star`, { method: "PATCH", body: JSON.stringify({ starred }) });
+export const setSessionClosed = (sessionId: string, closed: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/closed`, { method: "PATCH", body: JSON.stringify({ closed }) });
+export const listSessionAssignees = (sessionId: string) => requestApi<SessionAssignee[]>(`/workspace/sessions/${sessionId}/assignees`);
+export const transferSession = (sessionId: string, reason: string, idempotencyKey: string, assignTo?: string) => requestApi<{ transfer_id: string; status: "transferred" }>(`/workspace/sessions/${sessionId}/transfer`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ reason, assign_to: assignTo ?? null }) });
 export const listKnowledgeCategories = (storeId = "") => requestApi<KnowledgeCategory[]>(`/knowledge/categories${storeId ? `?store_id=${encodeURIComponent(storeId)}` : ""}`);
 export const createKnowledgeCategory = (payload: { store_id: string; parent_id: string | null; name: string; code: string }) => requestApi<KnowledgeCategory>("/knowledge/categories", { method: "POST", body: JSON.stringify(payload) });
 export const updateKnowledgeCategory = (categoryId: string, payload: Partial<{ name: string; parent_id: string | null; sort_order: number; status: string }>) => requestApi<KnowledgeCategory>(`/knowledge/categories/${categoryId}`, { method: "PATCH", body: JSON.stringify(payload) });

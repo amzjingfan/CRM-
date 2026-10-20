@@ -479,6 +479,35 @@ async def test_uncertain_platform_send_updates_persisted_message_for_manual_reco
 
 
 @pytest.mark.asyncio
+async def test_closed_conversation_cannot_send_through_direct_tool() -> None:
+    store_id, conversation_id = uuid.uuid4(), uuid.uuid4()
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock(
+        return_value=SimpleNamespace(id=conversation_id, store_id=store_id, platform="tiktok", status="closed")
+    )
+    invocation = ToolInvocation(
+        tool_name="send_platform_message",
+        idempotency_key=str(uuid.uuid4()),
+        arguments={"conversation_id": str(conversation_id), "content": "should not send"},
+        context=ToolExecutionContext(
+            store_id=store_id,
+            actor_type="user",
+            actor_id=uuid.uuid4(),
+            permissions={"workspace.reply"},
+            human_confirmed=True,
+        ),
+    )
+
+    with pytest.raises(ToolDispatchError, match="TOOL_PLATFORM_DISABLED"):
+        await SqlAlchemyToolExecutor(session)._send_platform_message(
+            invocation,
+            uuid.uuid4(),
+            SendPlatformMessageArguments(conversation_id=conversation_id, content="should not send"),
+        )
+    assert session.scalar.await_count == 1
+
+
+@pytest.mark.asyncio
 async def test_real_message_write_is_blocked_until_previous_unknown_is_reconciled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -490,6 +519,7 @@ async def test_real_message_write_is_blocked_until_previous_unknown_is_reconcile
         store_id=store_id,
         platform="tiktok",
         external_conversation_id="710688832392260838",
+        status="active",
     )
     channel = SimpleNamespace(status="connected")
     session = Mock(spec=AsyncSession)
@@ -541,6 +571,7 @@ async def test_direct_tool_send_rejects_store_outside_real_write_scope(
         store_id=store_id,
         platform="tiktok",
         external_conversation_id="710688832392260838",
+        status="active",
     )
     session = Mock(spec=AsyncSession)
     session.scalar = AsyncMock(side_effect=[conversation, SimpleNamespace(status="connected")])
@@ -603,6 +634,7 @@ async def test_real_message_write_requires_human_user_identity_and_confirmation(
         store_id=store_id,
         platform="tiktok",
         external_conversation_id="710688832392260838",
+        status="active",
     )
     channel = SimpleNamespace(status="connected")
     session = Mock(spec=AsyncSession)

@@ -27,16 +27,20 @@ from app.tools.schemas import (
 )
 from app.tools.service import issue_coupon, query_logistics, request_address_update
 from app.workspace.schemas import (
+    AssigneeView,
     AssignRequest,
+    ClosedRequest,
     MessageTranslationView,
     MessageView,
     OrderSummary,
     ReadResult,
     ReconcileMessageRequest,
     SendMessageRequest,
+    SessionActionResult,
     SessionListData,
     SessionMessagesData,
     SessionSummary,
+    StarRequest,
     TransferRequest,
     TransferResult,
 )
@@ -45,9 +49,12 @@ from app.workspace.service import (
     get_order,
     get_session_list,
     get_session_messages,
+    list_session_assignees,
     mark_read,
     reconcile_unknown_message,
     send_agent_message,
+    set_conversation_closed,
+    set_conversation_star,
     transfer_session,
     translate_message,
 )
@@ -86,7 +93,7 @@ async def message_translation(
 async def sessions(
     session: DbSession,
     user: Annotated[User, Depends(get_current_user)],
-    filter_name: Annotated[Literal["all", "unread", "mine"], Query(alias="filter")] = "all",
+    filter_name: Annotated[Literal["all", "unread", "mine", "starred", "closed"], Query(alias="filter")] = "all",
     platform: str | None = None,
     store_id: uuid.UUID | None = None,
     status: str | None = None,
@@ -180,6 +187,42 @@ async def read_session(
 ) -> ApiResponse[ReadResult]:
     """显式标记会话已读。"""
     return ApiResponse(data=ReadResult(unread_count=await mark_read(session, user, session_id)))
+
+
+@router.patch(
+    "/sessions/{session_id}/star",
+    response_model=ApiResponse[SessionActionResult],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.transfer"))],
+)
+async def star_session(
+    session_id: uuid.UUID, payload: StarRequest, session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[SessionActionResult]:
+    """标记或取消 CRM 内部差评风险星标。"""
+    return ApiResponse(data=await set_conversation_star(session, user, session_id, payload.starred))
+
+
+@router.patch(
+    "/sessions/{session_id}/closed",
+    response_model=ApiResponse[SessionActionResult],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.transfer"))],
+)
+async def close_session(
+    session_id: uuid.UUID, payload: ClosedRequest, session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[SessionActionResult]:
+    """仅更新 CRM 会话工作流；不调用 TikTok 关闭接口。"""
+    return ApiResponse(data=await set_conversation_closed(session, user, session_id, payload.closed))
+
+
+@router.get(
+    "/sessions/{session_id}/assignees",
+    response_model=ApiResponse[list[AssigneeView]],
+    dependencies=[Depends(require_permission("workspace.transfer"))],
+)
+async def assignees(
+    session_id: uuid.UUID, session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[list[AssigneeView]]:
+    """列出会话店铺可转交的在职坐席。"""
+    return ApiResponse(data=await list_session_assignees(session, user, session_id))
 
 
 @router.post(

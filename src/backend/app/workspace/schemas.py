@@ -25,6 +25,8 @@ class SessionSummary(BaseModel):
     store_id: uuid.UUID
     platform: str
     status: str
+    is_starred: bool
+    closed_at: datetime | None
     unread_count: int
     assigned_user_id: uuid.UUID | None
     last_message_at: datetime | None
@@ -129,6 +131,27 @@ class ReadResult(BaseModel):
     """已读操作结果。"""
 
     unread_count: int
+
+
+class SessionActionResult(BaseModel):
+    """会话操作后可直接合并到列表和当前详情的状态。"""
+
+    status: str
+    is_starred: bool
+    closed_at: datetime | None
+
+
+class StarRequest(BaseModel):
+    starred: bool
+
+
+class ClosedRequest(BaseModel):
+    closed: bool
+
+
+class AssigneeView(BaseModel):
+    id: uuid.UUID
+    name: str
 
 
 class AssignRequest(BaseModel):

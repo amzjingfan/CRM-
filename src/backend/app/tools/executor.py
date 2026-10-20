@@ -461,13 +461,17 @@ class SqlAlchemyToolExecutor:
     ) -> ToolDispatchOutcome:
         """更新会话接管状态并写入不可变审计记录。"""
         conversation = await self.session.scalar(
-            select(Conversation).where(
+            select(Conversation)
+            .where(
                 Conversation.id == arguments.conversation_id,
                 Conversation.store_id == invocation.context.store_id,
             )
+            .with_for_update()
         )
         if conversation is None:
             raise ToolDispatchError("TOOL_RESOURCE_NOT_FOUND")
+        if conversation.status == "closed":
+            raise ToolDispatchError("TOOL_PLATFORM_DISABLED")
         if arguments.assign_to is not None:
             assignment = await self.session.scalar(
                 select(user_roles.c.id).where(
@@ -504,13 +508,17 @@ class SqlAlchemyToolExecutor:
     ) -> ToolDispatchOutcome:
         """经平台适配器发送已批准消息，并保存 sent/failed/unknown 状态。"""
         conversation = await self.session.scalar(
-            select(Conversation).where(
+            select(Conversation)
+            .where(
                 Conversation.id == arguments.conversation_id,
                 Conversation.store_id == invocation.context.store_id,
             )
+            .with_for_update()
         )
         if conversation is None:
             raise ToolDispatchError("TOOL_RESOURCE_NOT_FOUND")
+        if conversation.status == "closed":
+            raise ToolDispatchError("TOOL_PLATFORM_DISABLED")
         channel = await self.session.scalar(
             select(ChannelAccount).where(
                 ChannelAccount.store_id == invocation.context.store_id,

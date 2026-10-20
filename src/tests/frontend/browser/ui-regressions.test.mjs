@@ -601,7 +601,7 @@ test("conversation filter replaces a detail that is no longer in the list", asyn
   });
   try {
     await page.getByLabel("聊天窗口").getByRole("heading", { name: "Alice" }).waitFor();
-    await page.getByRole("button", { name: "未读" }).click();
+    await page.getByRole("button", { name: "未读", exact: true }).click();
     await page.locator(".conversation-card").filter({ hasText: "Bob" }).waitFor();
     assert.equal(await page.locator(".conversation-card").filter({ hasText: "Bob" }).getAttribute("aria-pressed"), "true");
     await page.getByLabel("聊天窗口").getByRole("heading", { name: "Bob" }).waitFor();
@@ -778,7 +778,7 @@ test("real-send reply composer stays visible with a long AI suggestion and accep
     await context.route("**/v1/chat/query", async (route) => {
       const advice = "Review the buyer request and check the store policy before replying. ".repeat(50);
       await route.fulfill({ status: 200, contentType: "text/event-stream", headers: cors,
-        body: `event: delta\ndata: ${JSON.stringify({ text: advice })}\n\nevent: done\ndata: {"reason":"completed"}\n\n` });
+        body: `event: delta\ndata: ${JSON.stringify({ text: advice })}\n\nevent: result\ndata: ${JSON.stringify({ content: advice, confidence: 0.8, intent: "general", requires_human: false, demo_mode: false })}\n\nevent: done\ndata: {"reason":"completed"}\n\n` });
     });
     await context.route("**/v1/workspace/sessions**", async (route) => {
       const path = new URL(route.request().url()).pathname;
@@ -799,9 +799,8 @@ test("real-send reply composer stays visible with a long AI suggestion and accep
   try {
     await page.setViewportSize({ width: 903, height: 787 });
     await page.getByLabel("AI 建议").getByRole("button", { name: "生成" }).click();
-    await page.getByLabel("AI 建议").getByText(/Review the buyer request/).waitFor();
     const reply = page.getByRole("textbox", { name: "回复内容" });
-    await reply.waitFor();
+    await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value.startsWith("Review the buyer request"));
     assert.equal(await reply.isEnabled(), true);
     const sendButton = page.getByRole("button", { name: "确认并发送" });
     for (const viewport of [{ width: 903, height: 787 }, { width: 1440, height: 768 }, { width: 390, height: 768 }]) {
@@ -813,7 +812,7 @@ test("real-send reply composer stays visible with a long AI suggestion and accep
       assert.ok(buttonBounds && buttonBounds.y >= 0 && buttonBounds.y + buttonBounds.height <= viewport.height,
         `Send button must fit within ${JSON.stringify(viewport)}: ${JSON.stringify(buttonBounds)}`);
     }
-    await reply.pressSequentially("Draft only; do not send.");
+    await reply.fill("Draft only; do not send.");
     assert.equal(await reply.inputValue(), "Draft only; do not send.");
     assert.equal(await sendButton.isEnabled(), true);
     assert.equal(sendCalls, 0);

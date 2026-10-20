@@ -19,7 +19,7 @@ from app.customers.models import Customer
 from app.integrations.tiktok_write import TIKTOK_TEXT_MAX_LENGTH, is_tiktok_send_target_allowed
 from app.orders.models import Order
 from app.shared.config.settings import get_settings
-from app.shared.database.base import User, user_roles
+from app.shared.database.base import Permission, User, role_permissions, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount, Store
 from app.tools.contracts import ToolExecutionContext, ToolInvocation
@@ -34,11 +34,13 @@ from app.workspace.repository import (
     recent_orders,
 )
 from app.workspace.schemas import (
+    AssigneeView,
     CustomerSummary,
     MessageTranslationView,
     MessageView,
     OrderSummary,
     PageMeta,
+    SessionActionResult,
     SessionListData,
     SessionMessagesData,
     SessionSummary,
@@ -56,6 +58,8 @@ def _session_view(conversation: Conversation, customer: Customer, last: Message 
         store_id=conversation.store_id,
         platform=conversation.platform,
         status=conversation.status,
+        is_starred=conversation.is_starred,
+        closed_at=conversation.closed_at,
         unread_count=conversation.unread_count,
         assigned_user_id=conversation.assigned_user_id,
         last_message_at=conversation.last_message_at,
@@ -97,6 +101,8 @@ def _message_send_mode(
 ) -> Literal["disabled", "mock", "real"]:
     """返回当前进程对指定平台的人工消息运行模式。"""
     settings = get_settings()
+    if conversation.status == "closed":
+        return "disabled"
     if conversation.platform == "tiktok" and settings.real_tiktok_message_write_enabled:
         if (
             channel is not None
@@ -272,6 +278,8 @@ async def send_agent_message(
     conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if conversation.status == "closed":
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
     send_mode = _message_send_mode(conversation, await _connected_send_channel(session, conversation))
     if conversation.platform == "tiktok" and get_settings().real_tiktok_message_write_enabled and send_mode != "real":
         raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不在真实消息发送范围内", 403)
@@ -397,21 +405,140 @@ async def mark_read(session: AsyncSession, user: User, session_id: uuid.UUID) ->
     return 0
 
 
+def _action_result(conversation: Conversation) -> SessionActionResult:
+    return SessionActionResult(
+        status=conversation.status,
+        is_starred=conversation.is_starred,
+        closed_at=conversation.closed_at,
+    )
+
+
+async def set_conversation_star(
+    session: AsyncSession, actor: User, session_id: uuid.UUID, starred: bool
+) -> SessionActionResult:
+    """CRM 内部差评风险标记；重复设置同一状态不产生新审计。"""
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, actor), for_update=True
+    )
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if conversation.is_starred != starred:
+        conversation.is_starred = starred
+        session.add(
+            AuditLog(
+                store_id=conversation.store_id,
+                actor_type="user",
+                actor_id=actor.id,
+                action="conversation.star",
+                resource_type="conversation",
+                resource_id=conversation.id,
+                after_data={"is_starred": starred},
+                result="succeeded",
+            )
+        )
+        await session.commit()
+    return _action_result(conversation)
+
+
+async def set_conversation_closed(
+    session: AsyncSession, actor: User, session_id: uuid.UUID, closed: bool
+) -> SessionActionResult:
+    """本地关闭/重开；未结清出站消息时拒绝关闭。"""
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, actor), for_update=True
+    )
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if closed and conversation.status != "closed":
+        unresolved = await session.scalar(
+            select(Message.id)
+            .where(
+                Message.store_id == conversation.store_id,
+                Message.conversation_id == conversation.id,
+                Message.direction == "outbound",
+                Message.status.in_(("processing", "unknown")),
+            )
+            .limit(1)
+        )
+        if unresolved is not None:
+            raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话仍有待对账消息，暂不能关闭", 409)
+        conversation.status = "closed"
+        conversation.closed_at = datetime.now(UTC)
+    elif not closed and conversation.status == "closed":
+        conversation.status = "active"
+        conversation.closed_at = None
+    else:
+        return _action_result(conversation)
+    session.add(
+        AuditLog(
+            store_id=conversation.store_id,
+            actor_type="user",
+            actor_id=actor.id,
+            action="conversation.close" if closed else "conversation.reopen",
+            resource_type="conversation",
+            resource_id=conversation.id,
+            after_data={"status": conversation.status},
+            result="succeeded",
+        )
+    )
+    await session.commit()
+    return _action_result(conversation)
+
+
+async def list_session_assignees(session: AsyncSession, actor: User, session_id: uuid.UUID) -> list[AssigneeView]:
+    """只展示当前会话所属店铺的可用坐席。"""
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    rows = (
+        await session.execute(
+            select(User.id, User.name)
+            .join(user_roles, user_roles.c.user_id == User.id)
+            .join(role_permissions, role_permissions.c.role_id == user_roles.c.role_id)
+            .join(Permission, Permission.id == role_permissions.c.permission_id)
+            .where(
+                user_roles.c.store_id == conversation.store_id,
+                User.status == "active",
+                Permission.code == "workspace.reply",
+            )
+            .distinct()
+            .order_by(User.name, User.id)
+        )
+    ).all()
+    return [AssigneeView(id=user_id, name=name) for user_id, name in rows]
+
+
+async def _assignee_can_reply(session: AsyncSession, store_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    """转交目标必须在职、属于同店并有人工回复权限。"""
+    assignment = await session.scalar(
+        select(user_roles.c.id)
+        .join(User, User.id == user_roles.c.user_id)
+        .join(role_permissions, role_permissions.c.role_id == user_roles.c.role_id)
+        .join(Permission, Permission.id == role_permissions.c.permission_id)
+        .where(
+            user_roles.c.user_id == user_id,
+            user_roles.c.store_id == store_id,
+            User.status == "active",
+            Permission.code == "workspace.reply",
+        )
+        .limit(1)
+    )
+    return assignment is not None
+
+
 async def assign_session(
     session: AsyncSession, actor: User, session_id: uuid.UUID, assignee_id: uuid.UUID
 ) -> Conversation:
     """分配前验证目标客服确实拥有该店铺角色。"""
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, actor), for_update=True
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
-    assignment = await session.scalar(
-        select(user_roles.c.id).where(
-            user_roles.c.user_id == assignee_id,
-            user_roles.c.store_id == conversation.store_id,
-        )
-    )
-    if assignment is None:
-        raise AppError(ErrorCode.VALIDATION_ERROR, "目标客服未获得该店铺权限", 422)
+    if conversation.status == "closed":
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
+    if not await _assignee_can_reply(session, conversation.store_id, assignee_id):
+        raise AppError(ErrorCode.VALIDATION_ERROR, "目标客服没有当前店铺回复权限", 422)
     conversation.assigned_user_id = assignee_id
     session.add(
         AuditLog(
@@ -442,6 +569,10 @@ async def transfer_session(
     conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if conversation.status == "closed":
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
+    if assign_to and not await _assignee_can_reply(session, conversation.store_id, assign_to):
+        raise AppError(ErrorCode.VALIDATION_ERROR, "目标客服没有当前店铺回复权限", 422)
     tool_call, replayed, started = await begin_tool_call(
         session,
         conversation.store_id,
@@ -457,15 +588,11 @@ async def transfer_session(
         if isinstance(transfer_id, str):
             return TransferResult(transfer_id=uuid.UUID(transfer_id), status="transferred")
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "转人工历史结果不可重放", 409)
-    if assign_to:
-        assignment = await session.scalar(
-            select(user_roles.c.id).where(
-                user_roles.c.user_id == assign_to,
-                user_roles.c.store_id == conversation.store_id,
-            )
-        )
-        if assignment is None:
-            raise AppError(ErrorCode.VALIDATION_ERROR, "目标客服未获得该店铺权限", 422)
+    # begin_tool_call 会提交事务；重新加锁确认未被另一坐席同时关闭。
+    await session.refresh(conversation, with_for_update=True)
+    if conversation.status == "closed":
+        await finish_tool_call(session, tool_call, started, "failed", None, False, "CONVERSATION_CLOSED")
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
     conversation.status = "transferred"
     conversation.transfer_reason = reason
     conversation.assigned_user_id = assign_to

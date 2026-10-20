@@ -17,14 +17,13 @@ def scoped_conversation_query(store_ids: set[uuid.UUID]) -> Select[tuple[Convers
 
 
 async def find_conversation(
-    session: AsyncSession, session_id: uuid.UUID, store_ids: set[uuid.UUID]
+    session: AsyncSession, session_id: uuid.UUID, store_ids: set[uuid.UUID], *, for_update: bool = False
 ) -> Conversation | None:
     """按资源 ID 与允许店铺集合联合查询。"""
     if not store_ids:
         return None
-    result: Conversation | None = await session.scalar(
-        scoped_conversation_query(store_ids).where(Conversation.id == session_id)
-    )
+    query = scoped_conversation_query(store_ids).where(Conversation.id == session_id)
+    result: Conversation | None = await session.scalar(query.with_for_update() if for_update else query)
     return result
 
 
@@ -47,12 +46,20 @@ async def list_conversations(
         conditions.append(Conversation.unread_count > 0)
     elif filter_name == "mine":
         conditions.append(Conversation.assigned_user_id == user_id)
+    elif filter_name == "starred":
+        conditions.append(Conversation.is_starred.is_(True))
     if platform:
         conditions.append(Conversation.platform == platform)
     if store_id:
         conditions.append(Conversation.store_id == store_id)
-    if status:
+    if filter_name == "closed":
+        conditions.append(Conversation.status == "closed")
+        if status:
+            conditions.append(Conversation.status == status)
+    elif status:
         conditions.append(Conversation.status == status)
+    else:
+        conditions.append(Conversation.status != "closed")
     total = await session.scalar(select(func.count()).select_from(Conversation).where(*conditions)) or 0
     rows = (
         await session.execute(

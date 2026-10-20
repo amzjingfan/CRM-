@@ -13,6 +13,7 @@ from app.agent_management.models import AgentTask
 from app.agent_management.repository import find_enabled_config
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
+from app.conversations.workflow import reopen_on_new_buyer_message
 from app.customers.models import Customer
 from app.integrations.adapters import get_platform_adapter
 from app.integrations.models import WebhookEvent
@@ -301,10 +302,12 @@ async def _process_message(
     customer = await _upsert_customer(session, channel.store_id, event.platform, normalized.customer)
     assert customer is not None
     conversation = await session.scalar(
-        select(Conversation).where(
+        select(Conversation)
+        .where(
             Conversation.store_id == channel.store_id,
             Conversation.external_conversation_id == normalized.external_conversation_id,
         )
+        .with_for_update()
     )
     if conversation is None:
         conversation = Conversation(
@@ -342,6 +345,18 @@ async def _process_message(
     if conversation.last_message_at is None or normalized.created_at >= conversation.last_message_at:
         conversation.last_message_id = message.id
         conversation.last_message_at = normalized.created_at
+    if reopen_on_new_buyer_message(conversation, normalized.created_at):
+        session.add(
+            AuditLog(
+                store_id=channel.store_id,
+                actor_type="system",
+                action="conversation.reopen.inbound",
+                resource_type="conversation",
+                resource_id=conversation.id,
+                after_data={"status": "active"},
+                result="succeeded",
+            )
+        )
     conversation.unread_count += 1
     if get_settings().auto_reply_enabled:
         config = await find_enabled_config(session, channel.store_id)

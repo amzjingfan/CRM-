@@ -17,8 +17,12 @@ def test_only_allowlisted_tiktok_conversation_exposes_real_send(monkeypatch: pyt
     )
     monkeypatch.setattr(service, "get_settings", lambda: settings)
     store_id = uuid.uuid4()
-    allowed = SimpleNamespace(platform="tiktok", store_id=store_id, external_conversation_id="710688832392260838")
-    other = SimpleNamespace(platform="tiktok", store_id=store_id, external_conversation_id="710688832392260839")
+    allowed = SimpleNamespace(
+        platform="tiktok", store_id=store_id, external_conversation_id="710688832392260838", status="active"
+    )
+    other = SimpleNamespace(
+        platform="tiktok", store_id=store_id, external_conversation_id="710688832392260839", status="active"
+    )
     channel = SimpleNamespace(
         store_id=store_id,
         status="connected",
@@ -49,9 +53,15 @@ def test_allowlisted_store_exposes_all_its_conversations_only_with_connected_sco
         metadata_json={"shop_cipher": "test"},
         token_expires_at=None,
     )
-    first = SimpleNamespace(platform="tiktok", store_id=store_id, external_conversation_id="710688832392260838")
-    second = SimpleNamespace(platform="tiktok", store_id=store_id, external_conversation_id="710688832392260839")
-    other = SimpleNamespace(platform="tiktok", store_id=uuid.uuid4(), external_conversation_id="710688832392260840")
+    first = SimpleNamespace(
+        platform="tiktok", store_id=store_id, external_conversation_id="710688832392260838", status="active"
+    )
+    second = SimpleNamespace(
+        platform="tiktok", store_id=store_id, external_conversation_id="710688832392260839", status="active"
+    )
+    other = SimpleNamespace(
+        platform="tiktok", store_id=uuid.uuid4(), external_conversation_id="710688832392260840", status="active"
+    )
 
     assert service._message_send_mode(first, channel) == "real"
     assert service._message_send_mode(second, channel) == "real"

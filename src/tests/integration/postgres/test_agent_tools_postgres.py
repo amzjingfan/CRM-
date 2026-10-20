@@ -40,6 +40,8 @@ async def test_real_send_stops_when_prior_send_was_interrupted_after_pending_com
         "get_message_adapter",
         lambda _platform: SimpleNamespace(real_writes=True, send_message=send_message),
     )
+    # 本用例验证未结清消息熔断；用受控合成会话通过独立的目标白名单前置条件。
+    monkeypatch.setattr(executor_module, "is_tiktok_send_target_allowed", lambda *_args: True)
     try:
         async with sessions() as session:
             session.add(store)

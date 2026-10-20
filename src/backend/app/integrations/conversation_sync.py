@@ -7,7 +7,9 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
+from app.conversations.workflow import reopen_on_new_buyer_message
 from app.customers.models import Customer
 from app.integrations.adapters import _message_content
 from app.integrations.tiktok_read import TikTokConversation, TikTokConversationMessage, TikTokReadClient
@@ -57,8 +59,12 @@ async def _persist_page(
     customer: Customer,
     buyer_im_user_id: str,
     messages: list[TikTokConversationMessage],
-) -> int:
+    reopen_cutoff: datetime | None,
+) -> tuple[int, datetime | None]:
     inserted = 0
+    # 每页重新锁定会话，避免同步期间的人工关闭与回填互相覆盖。
+    await session.refresh(conversation, with_for_update=True)
+    closed_at = conversation.closed_at if conversation.status == "closed" else reopen_cutoff
     for remote in messages:
         if not remote.is_visible:
             continue
@@ -92,11 +98,29 @@ async def _persist_page(
             session.add(message)
             await session.flush()
             inserted += 1
+            if role == "user":
+                # 首次历史回填不制造大量未读；后续周期缺失 Webhook 时由只读同步补记新消息。
+                is_new_since_sync = channel.last_sync_at is not None and created_at > channel.last_sync_at
+                is_new_since_close = closed_at is not None and created_at > closed_at
+                if is_new_since_sync or is_new_since_close:
+                    conversation.unread_count += 1
+                if is_new_since_close and reopen_on_new_buyer_message(conversation, created_at):
+                    session.add(
+                        AuditLog(
+                            store_id=channel.store_id,
+                            actor_type="system",
+                            action="conversation.reopen.inbound",
+                            resource_type="conversation",
+                            resource_id=conversation.id,
+                            after_data={"status": "active"},
+                            result="succeeded",
+                        )
+                    )
         if conversation.last_message_at is None or message.created_at > conversation.last_message_at:
             conversation.last_message_id = message.id
             conversation.last_message_at = message.created_at
     await session.commit()
-    return inserted
+    return inserted, closed_at
 
 
 async def _sync_conversation(
@@ -144,11 +168,15 @@ async def _sync_conversation(
         return 0
 
     inserted = 0
+    reopen_cutoff: datetime | None = None
     page_token: str | None = None
     seen_tokens: set[str] = set()
     while True:
         page, next_token, _request_id = await client.get_conversation_messages(remote.id, page_token=page_token)
-        inserted += await _persist_page(session, channel, conversation, customer, buyer.im_user_id, page)
+        page_inserted, reopen_cutoff = await _persist_page(
+            session, channel, conversation, customer, buyer.im_user_id, page, reopen_cutoff
+        )
+        inserted += page_inserted
         if not next_token:
             break
         if next_token in seen_tokens:
