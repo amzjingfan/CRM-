@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-WORKSPACE-EXPERIENCE-DEPLOY-001-20261020-R01 | MVP-WORKSPACE-EXPERIENCE-DEPLOY-001 | R01 | APPROVE | `4cd019c26f15bcbff2fb83f5175021e6a672a5cb` | correctness, migration, staging-scope, credential-handling, rollback | 2026-10-20T14:37:25+08:00 | [`RR-MVP-WORKSPACE-EXPERIENCE-DEPLOY-001-20261020-R01.md`](RR-MVP-WORKSPACE-EXPERIENCE-DEPLOY-001-20261020-R01.md) |
 | RR-MVP-WORKSPACE-EXPERIENCE-001-20261020-R01 | MVP-WORKSPACE-EXPERIENCE-001 | R01 | APPROVE | `1aff6dfd4302c64c9e1c7394f1ebd9898b3652c4` | correctness, tenant-permission, send-boundary, idempotency-audit, migration-rollback | 2026-10-20T05:19:29Z | [`RR-MVP-WORKSPACE-EXPERIENCE-001-20261020-R01.md`](RR-MVP-WORKSPACE-EXPERIENCE-001-20261020-R01.md) |
 | RR-MVP-009-20261020-R01 | MVP-009 | R01 | APPROVE | `0478dc6ccbe42b44214052646b870a8a820618d6` | gate-evidence-traceability, production-topology, immutable-images, g6-risk-boundary, shared-gateway-ssh, rollback, authorization | 2026-10-20T02:28:53Z | [`RR-MVP-009-20261020-R01.md`](RR-MVP-009-20261020-R01.md) |
 | RR-MVP-007-20261020-R04 | MVP-007 | R04 | APPROVE | `883a7f0aae71b8b41eb038840130fc10129be915` | user-risk-acceptance, evidence-integrity, staging-scope, fixed-egress, g3-boundary, production-boundary | 2026-10-20T02:08:04Z | [`RR-MVP-007-20261020-R04.md`](RR-MVP-007-20261020-R04.md) |
