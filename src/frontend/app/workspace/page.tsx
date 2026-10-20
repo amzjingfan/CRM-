@@ -1,7 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, MagnifyingGlass, MapPin, Package, Star, Ticket, UserFocus, UserSwitch, X } from "@phosphor-icons/react";
+import { ArrowDown, ArrowLeft, ArrowRight, CaretDown, CaretRight, MagnifyingGlass, MapPin, Package, Star, Ticket, UserFocus, UserSwitch, X } from "@phosphor-icons/react";
 import { AppShell } from "../../components/AppShell";
 import { MessageBubble } from "../../components/MessageBubble";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
@@ -12,14 +12,22 @@ import { formatConversationTime } from "../../lib/conversationTime";
 type Filter = "all" | "unread" | "mine" | "starred" | "closed";
 type SearchScope = "all" | "buyer" | "order" | "tracking" | "product";
 type ReplyLanguage = "original" | DraftTargetLanguage;
+type SendChoice = "direct" | "translated";
 const replyLanguages: Array<{ value: ReplyLanguage; zh: string; en: string }> = [
   { value: "original", zh: "不翻译 · 原文", en: "Original · no translation" },
-  { value: "en", zh: "英语 English", en: "English" },
-  { value: "id", zh: "印尼语 Bahasa Indonesia", en: "Bahasa Indonesia" },
-  { value: "es", zh: "西班牙语 Español", en: "Español" },
-  { value: "pt", zh: "葡萄牙语 Português", en: "Português" },
-  { value: "fr", zh: "法语 Français", en: "Français" },
-  { value: "th", zh: "泰语 ไทย", en: "ไทย" },
+  { value: "en", zh: "英语", en: "English" },
+  { value: "id", zh: "印尼语", en: "Indonesian" },
+  { value: "fil", zh: "菲律宾语", en: "Filipino" },
+  { value: "ms", zh: "马来语", en: "Malay" },
+  { value: "th", zh: "泰语", en: "Thai" },
+  { value: "my", zh: "缅甸语", en: "Burmese" },
+  { value: "vi", zh: "越南语", en: "Vietnamese" },
+  { value: "pt", zh: "葡萄牙语", en: "Portuguese" },
+  { value: "es", zh: "西班牙语", en: "Spanish" },
+  { value: "pl", zh: "波兰语", en: "Polish" },
+  { value: "fr", zh: "法语", en: "French" },
+  { value: "zh-TW", zh: "中文繁体", en: "Traditional Chinese" },
+  { value: "zh-CN", zh: "中文简体", en: "Simplified Chinese" },
 ];
 const filterLabels: Record<"zh" | "en", Record<Filter, string>> = {
   zh: { all: "全部", unread: "未读", mine: "我的", starred: "星标", closed: "已关闭" },
@@ -60,7 +68,13 @@ export default function WorkspacePage() {
   const setDraft = (value: string) => { if (selectedId) { setDrafts((current) => ({ ...current, [selectedId]: value })); setFailedDraft(null); } };
   const [sending, setSending] = useState(false);
   const [failedDraft, setFailedDraft] = useState<{ sessionId: string; content: string; key: string } | null>(null);
-  const [replyLanguage, setReplyLanguage] = useState<ReplyLanguage>("original");
+  const [replyLanguage, setReplyLanguage] = useState<DraftTargetLanguage>("en");
+  const [sendChoice, setSendChoice] = useState<SendChoice>("translated");
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [moreLanguagesOpen, setMoreLanguagesOpen] = useState(false);
+  const [sendMenuOpen, setSendMenuOpen] = useState(false);
+  const composerMenusRef = useRef<HTMLDivElement | null>(null);
+  const currentComposeRef = useRef({ sessionId: selectedId, draft, language: replyLanguage, choice: sendChoice, translationEnabled: detail?.draft_translation_enabled === true });
   const [preview, setPreview] = useState<{ sessionId: string; source: string; language: DraftTargetLanguage; content: string } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
@@ -98,6 +112,22 @@ export default function WorkspacePage() {
     previewRequestId.current += 1;
     setPreview(null); setPreviewError(""); setPreviewLoading(false); setReview(null);
   }, [draft, replyLanguage, selectedId]);
+  useLayoutEffect(() => {
+    currentComposeRef.current = { sessionId: selectedId, draft, language: replyLanguage, choice: sendChoice, translationEnabled: detail?.draft_translation_enabled === true };
+  }, [selectedId, draft, replyLanguage, sendChoice, detail?.draft_translation_enabled]);
+  useEffect(() => {
+    const closeMenus = (event: PointerEvent) => {
+      if (!composerMenusRef.current?.contains(event.target as Node)) {
+        setLanguageMenuOpen(false); setSendMenuOpen(false); setMoreLanguagesOpen(false);
+      }
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") { setLanguageMenuOpen(false); setSendMenuOpen(false); setMoreLanguagesOpen(false); }
+    };
+    document.addEventListener("pointerdown", closeMenus);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeMenus); document.removeEventListener("keydown", closeOnEscape); };
+  }, []);
   useEffect(() => {
     let active = true;
     listStores().then((items) => { if (active) { setStores(items); setStoreError(""); } })
@@ -264,7 +294,8 @@ export default function WorkspacePage() {
     }
   }
 
-  const messageLimit = detail?.send_mode === "real" ? 2000 : 4000;
+  const messageLimit = 2000;
+  const activeSendChoice: SendChoice = detail?.draft_translation_enabled ? sendChoice : "direct";
 
   async function submitMessage(content: string, key: string, sessionId: string) {
     if (!selectedId || selectedId !== sessionId || !content.trim() || sending) return;
@@ -285,8 +316,8 @@ export default function WorkspacePage() {
     finally { setSending(false); }
   }
 
-  async function previewTranslation() {
-    if (!selectedId || !draft.trim() || replyLanguage === "original" || previewLoading || !detail?.draft_translation_enabled) return;
+  async function previewTranslation(): Promise<string | null> {
+    if (!selectedId || !draft.trim() || previewLoading || !detail?.draft_translation_enabled) return null;
     const requestId = ++previewRequestId.current;
     const sessionId = selectedId;
     const source = draft;
@@ -294,32 +325,39 @@ export default function WorkspacePage() {
     setPreview(null); setPreviewError(""); setPreviewLoading(true);
     try {
       const result = await translateDraft(sessionId, source, target);
-      if (requestId !== previewRequestId.current) return;
+      if (requestId !== previewRequestId.current || currentComposeRef.current.sessionId !== sessionId || currentComposeRef.current.draft !== source || currentComposeRef.current.language !== target) return null;
       if (result.target_language !== target || !result.translated_text.trim() || result.translated_text.length > messageLimit) {
         throw new Error(en ? "Translation is invalid or exceeds the message limit" : "译文无效或超过发送字数上限");
       }
       setPreview({ sessionId, source, language: target, content: result.translated_text });
+      return result.translated_text;
     } catch (caught) {
       if (requestId === previewRequestId.current) setPreviewError(caught instanceof Error ? caught.message : en ? "Translation failed" : "翻译失败");
+      return null;
     } finally { if (requestId === previewRequestId.current) setPreviewLoading(false); }
   }
 
-  function openReview() {
+  async function openReview(choice: SendChoice) {
     if (!selectedId || !detail || !draft.trim() || detail.send_mode === "disabled" || sending) return;
-    const content = replyLanguage === "original"
-      ? draft.trim()
-      : preview?.sessionId === selectedId && preview.source === draft && preview.language === replyLanguage
-        ? preview.content.trim() : "";
-    if (!content) {
-      const message = en ? "Preview the translation before reviewing the message" : "请先预览当前草稿的译文";
-      setPreviewError(message); setAnnouncement(message);
-      return;
+    const sessionId = selectedId;
+    const source = draft;
+    const language = replyLanguage;
+    let content = source.trim();
+    if (choice === "translated") {
+      if (!detail.draft_translation_enabled) {
+        setPreviewError(en ? "Draft translation is unavailable for this conversation" : "当前会话未开放草稿翻译");
+        return;
+      }
+      content = preview?.sessionId === sessionId && preview.source === source && preview.language === language
+        ? preview.content.trim() : (await previewTranslation())?.trim() ?? "";
     }
+    if (currentComposeRef.current.sessionId !== sessionId || currentComposeRef.current.draft !== source || currentComposeRef.current.language !== language || (choice === "translated" && (!currentComposeRef.current.translationEnabled || currentComposeRef.current.choice !== choice))) return;
+    if (!content) return;
     if (content.length > messageLimit) {
       setAnnouncement(en ? "Message exceeds the sending limit" : "消息超过发送字数上限");
       return;
     }
-    setReview({ sessionId: selectedId, source: draft, language: replyLanguage, content, key: newKey() });
+    setReview({ sessionId, source, language: choice === "direct" ? "original" : language, content, key: newKey() });
   }
 
   function applyBatchSearch() {
@@ -348,7 +386,7 @@ export default function WorkspacePage() {
     finally { setLoadingOlder(false); }
   }
   function composerKey(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); openReview(); }
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void openReview(activeSendChoice); }
   }
 
   async function showLogistics() {
@@ -488,16 +526,32 @@ export default function WorkspacePage() {
       <div className="message-area"><div className="message-scroll" onScroll={onMessageScroll} ref={messageScrollRef}>{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>{showLatest ? <button className="latest-button" onClick={scrollToLatest} type="button"><ArrowDown size={16} />{en ? "Latest message" : "到最新消息"}</button> : null}</div>
       <section className="ai-suggestion" aria-label={en ? "AI suggestion" : "AI 建议"}><div className="min-w-0 flex-1"><strong>{en ? "AI reply suggestion" : "AI 回复建议"}</strong><p aria-live="polite" className="truncate">{suggestionStatus || (suggestionDraft ? (en ? "Suggestion is ready in the draft" : "建议已填入草稿，可编辑后发送") : (en ? "Generate a draft on demand" : "按需生成草稿"))}</p></div><div className="flex gap-2">{suggestionLoading ? <button className="text-button" type="button" onClick={cancelSuggestion}><X size={16} />{en ? "Cancel" : "取消"}</button> : <button className="text-button" type="button" onClick={() => void requestSuggestion()}>{suggestionDraft ? (en ? "Refresh" : "刷新") : (en ? "Generate" : "生成")}</button>}{suggestionDraft && draft !== suggestionDraft ? <button className="secondary-button" type="button" onClick={() => { setDraft(suggestionDraft); setAnnouncement(en ? "Suggestion inserted; review it before sending" : "建议已填入输入框，确认后再发送"); }}>{en ? "Use" : "使用"}</button> : null}</div></section>
       <div className="composer">
-        <textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} maxLength={replyLanguage === "original" ? messageLimit : 2000} onChange={(event) => setDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a reply. Enter to review; Shift+Enter for a new line" : "输入中文或原文草稿，Enter 进入审阅，Shift+Enter 换行")} value={draft} />
-        <div className="workspace-translate-controls">
-          <select aria-label={en ? "Target language" : "目标语言"} className="compact-field" disabled={detail.send_mode === "disabled"} onChange={(event) => setReplyLanguage(event.target.value as ReplyLanguage)} value={replyLanguage}>{replyLanguages.map((item) => <option disabled={item.value !== "original" && !detail.draft_translation_enabled} key={item.value} value={item.value}>{en ? item.en : item.zh}</option>)}</select>
-          {replyLanguage !== "original" ? <button className="secondary-button" disabled={!draft.trim() || previewLoading || !detail.draft_translation_enabled} onClick={() => void previewTranslation()} type="button">{previewLoading ? (en ? "Translating…" : "翻译中…") : (en ? "Preview translation" : "预览译文")}</button> : null}
-        </div>
-        {replyLanguage !== "original" && !detail.draft_translation_enabled ? <p className="workspace-translation-error">{en ? "Draft translation is unavailable for this conversation" : "当前会话未开放草稿翻译"}</p> : null}
+        <textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} maxLength={messageLimit} onChange={(event) => setDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a message, Enter to review, Shift+Enter for a new line" : "请输入消息，Enter 进入发送审阅 / Shift+Enter 换行")} value={draft} />
         {previewError ? <p className="workspace-translation-error" role="alert">{previewError}</p> : null}
         {preview && preview.sessionId === selectedId && preview.source === draft && preview.language === replyLanguage ? <div className="workspace-translation-preview" aria-label={en ? "Translation preview" : "译文预览"}><strong>{en ? "Translation preview · review before sending" : "译文预览 · 发送前请核对"}</strong><p>{preview.content}</p><small>{en ? "Original draft" : "原始草稿"}：{draft}</small></div> : null}
         {failedDraft?.sessionId === selectedId ? <button className="text-button text-red-600" onClick={() => setReview({ sessionId: failedDraft.sessionId, source: failedDraft.content, language: "original", content: failedDraft.content, key: failedDraft.key })} type="button">{en ? "Request interrupted; review exact retry" : "请求中断，审阅原内容后重试"}</button> : null}
-        <div className="flex items-center justify-between"><small className="text-[var(--muted)]">{modeLabel(detail.send_mode, en)} · {draft.length}/{replyLanguage === "original" ? messageLimit : 2000}</small><button className="primary-button" disabled={!draft.trim() || sending || detail.send_mode === "disabled"} onClick={openReview} type="button">{sending ? (en ? "Sending…" : "发送中…") : (en ? "Review & send" : "审阅并发送")}</button></div>
+        <div className="workspace-composer-footer" ref={composerMenusRef}>
+          <small className="workspace-composer-count">{draft.length}/{messageLimit}<span> · {modeLabel(detail.send_mode, en)}</span></small>
+          <div className="workspace-composer-actions">
+            <div className="workspace-menu-anchor">
+              <button aria-expanded={languageMenuOpen} aria-haspopup="menu" aria-label={en ? "Target language" : "目标语言"} className="workspace-toolbar-button" disabled={!detail.draft_translation_enabled || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(!languageMenuOpen); setSendMenuOpen(false); }} type="button">{replyLanguages.find((item) => item.value === replyLanguage)?.[en ? "en" : "zh"]}<CaretDown size={14} /></button>
+              {languageMenuOpen ? <div aria-label={en ? "Target language options" : "目标语言选项"} className="workspace-popover workspace-language-menu" role="menu">
+                <button aria-checked={replyLanguage === "en"} onClick={() => { setReplyLanguage("en"); setLanguageMenuOpen(false); setMoreLanguagesOpen(false); }} role="menuitemradio" type="button">{en ? "English" : "英语"}</button>
+                <button aria-expanded={moreLanguagesOpen} className="workspace-more-button" onClick={() => setMoreLanguagesOpen(!moreLanguagesOpen)} role="menuitem" type="button">{en ? "More" : "更多"}<CaretRight size={14} /></button>
+                {moreLanguagesOpen ? <div className="workspace-more-languages">{replyLanguages.slice(2).map((item) => <button aria-checked={replyLanguage === item.value} key={item.value} onClick={() => { setReplyLanguage(item.value as DraftTargetLanguage); setLanguageMenuOpen(false); setMoreLanguagesOpen(false); }} role="menuitemradio" type="button">{en ? item.en : item.zh}</button>)}</div> : null}
+              </div> : null}
+            </div>
+            <button className="workspace-toolbar-button" disabled={!draft.trim() || previewLoading || !detail.draft_translation_enabled || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(false); setMoreLanguagesOpen(false); setSendMenuOpen(false); void previewTranslation(); }} type="button">{previewLoading ? (en ? "Translating…" : "翻译中…") : (en ? "Translate" : "翻译")}</button>
+            <div className="workspace-menu-anchor workspace-send-split">
+              <button className="workspace-send-main" disabled={!draft.trim() || sending || previewLoading || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(false); setMoreLanguagesOpen(false); setSendMenuOpen(false); void openReview(activeSendChoice); }} type="button">{sending ? (en ? "Sending…" : "发送中…") : activeSendChoice === "direct" ? (en ? "Send directly" : "直接发送") : (en ? "Translate & send" : "翻译后发送")}</button>
+              <button aria-expanded={sendMenuOpen} aria-haspopup="menu" aria-label={en ? "Choose send mode" : "选择发送方式"} className="workspace-send-toggle" disabled={sending || detail.send_mode === "disabled"} onClick={() => { setSendMenuOpen(!sendMenuOpen); setLanguageMenuOpen(false); }} type="button"><CaretDown size={14} /></button>
+              {sendMenuOpen ? <div aria-label={en ? "Send mode options" : "发送方式选项"} className="workspace-popover workspace-send-menu" role="menu">
+                <button aria-checked={activeSendChoice === "direct"} onClick={() => { setSendChoice("direct"); setSendMenuOpen(false); }} role="menuitemradio" type="button">{en ? "Send directly" : "直接发送"}</button>
+                <button aria-checked={activeSendChoice === "translated"} disabled={!detail.draft_translation_enabled} onClick={() => { setSendChoice("translated"); setSendMenuOpen(false); }} role="menuitemradio" type="button">{en ? "Translate & send" : "翻译后发送"}</button>
+              </div> : null}
+            </div>
+          </div>
+        </div>
       </div>
     </>}</section>
 

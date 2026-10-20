@@ -14,7 +14,18 @@ from app.agent.draft_translation import (
 )
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.workspace import service as workspace_service
-from app.workspace.schemas import SessionSearchRequest
+from app.workspace.schemas import DraftTranslationRequest, SessionSearchRequest
+
+
+def test_draft_translation_accepts_only_displayed_target_languages() -> None:
+    supported = ("en", "id", "fil", "ms", "th", "my", "vi", "pt", "es", "pl", "fr", "zh-TW", "zh-CN")
+    for language in supported:
+        assert DraftTranslationRequest(source_text="你好", target_language=language).target_language == language
+        assert (
+            DraftTranslationModelOutput(target_language=language, translated_text="Hello").target_language == language
+        )
+    with pytest.raises(ValidationError):
+        DraftTranslationRequest(source_text="你好", target_language="unsupported")
 
 
 def test_search_request_rejects_unbounded_terms_and_invalid_scope() -> None:

@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.agent.draft_translation import DraftTargetLanguage
+
 
 class CustomerSummary(BaseModel):
     """工作台客户摘要。"""
@@ -58,12 +60,12 @@ class DraftTranslationRequest(BaseModel):
     """坐席明确请求的回复草稿翻译；不会发送平台消息。"""
 
     source_text: str = Field(min_length=1, max_length=2000)
-    target_language: Literal["en", "id", "es", "pt", "fr", "th"]
+    target_language: DraftTargetLanguage
 
 
 class DraftTranslationView(BaseModel):
     source_text_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    target_language: Literal["en", "id", "es", "pt", "fr", "th"]
+    target_language: DraftTargetLanguage
     translated_text: str
 
 

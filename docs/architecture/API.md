@@ -36,7 +36,7 @@
 - 同店铺已有未结清的 TikTok `processing` 或 `unknown` 出站消息时，新真实发送返回冲突并保持零次新平台调用；旧 `processing` 不能作为确定失败自动重发。现有管理员对账接口只接受 `unknown`，中断遗留的 `processing` 须先经受审恢复路径收敛。
 - `POST /workspace/messages/{message_id}/reconcile` 对账 `unknown` 消息，不能通过重复平台发送猜测结果。
 - `POST /workspace/sessions/{session_id}/messages/{message_id}/translation` 供已授权坐席按需把 TikTok 单条文本译成中文；要求登录、`workspace.view`、CSRF、店铺/会话匹配与模型限流。服务端从已授权消息读取原文，不接受客户端正文；仅在 staging 专用开关开启时可调用 DeepSeek，响应只返回消息 ID、目标语言和译文，不改变消息或平台状态。会话详情的 `translation_enabled` 控制前端是否显示翻译按钮。
-- `POST /workspace/sessions/{session_id}/draft/translation` 接收 `source_text`（1～2000 字符）与 `target_language=en|id|es|pt|fr|th`，要求 `workspace.reply`、CSRF、店铺权限、可发送的未关闭 TikTok 会话、现有 staging 翻译开关和模型限流。输入与输出需通过现有 DLP；只返回原稿 SHA-256、目标语言和译文，不修改消息或触达 TikTok。会话详情的 `draft_translation_enabled` 决定前端是否展示非原文目标语言。坐席修改草稿或目标语言后必须重新预览，审阅框再显示准确外发内容；只有人工确认才调用原 `POST /messages`，沿用发送白名单、幂等和 unknown 对账。
+- `POST /workspace/sessions/{session_id}/draft/translation` 接收 `source_text`（1～2000 字符）与 `target_language=en|id|fil|ms|th|my|vi|pt|es|pl|fr|zh-TW|zh-CN`，要求 `workspace.reply`、CSRF、店铺权限、可发送的未关闭 TikTok 会话、现有 staging 翻译开关和模型限流。输入与输出需通过现有 DLP；只返回原稿 SHA-256、目标语言和译文，不修改消息或触达 TikTok。会话详情的 `draft_translation_enabled` 决定前端是否开放翻译菜单。坐席修改草稿或目标语言后旧译文失效；选择“翻译后发送”时可生成当前译文，审阅框显示准确外发内容；选择“直接发送”审阅原文。两种方式均须人工确认才调用原 `POST /messages`，沿用发送白名单、幂等和 unknown 对账。
 - `POST /chat/query` 使用 `accepted/status/delta/result/error/done` SSE 事件；`delta` 是安全草稿完成后的传输分块，不表示模型原生 Token。
 
 ### 知识库

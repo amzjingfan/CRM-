@@ -160,17 +160,12 @@ test("translation preview never sends and edit invalidates the reviewed translat
   try {
     const draft = page.getByRole("textbox", { name: "回复内容" });
     await draft.fill("你好，欢迎光临");
-    await page.getByRole("combobox", { name: "目标语言" }).selectOption("en");
-    await page.getByRole("button", { name: "预览译文" }).click();
+    await page.getByRole("button", { name: "翻译", exact: true }).click();
     await page.getByLabel("译文预览").getByText("Translated: 你好，欢迎光临").waitFor();
     assert.equal(calls.send, 0);
     await draft.fill("你好，请问有什么需要？");
     await page.getByLabel("译文预览").waitFor({ state: "hidden" });
-    await page.getByRole("button", { name: "审阅并发送" }).click();
-    assert.equal(await page.getByRole("dialog", { name: "审阅外发消息" }).count(), 0);
-    await page.getByRole("button", { name: "预览译文" }).click();
-    await page.getByLabel("译文预览").getByText("Translated: 你好，请问有什么需要？").waitFor();
-    await page.getByRole("button", { name: "审阅并发送" }).click();
+    await page.getByRole("button", { name: "翻译后发送", exact: true }).click();
     const review = page.getByRole("dialog", { name: "审阅外发消息" });
     await review.getByText("Translated: 你好，请问有什么需要？").waitFor();
     assert.equal(calls.send, 0);
@@ -181,17 +176,62 @@ test("translation preview never sends and edit invalidates the reviewed translat
   } finally { await context.close(); }
 });
 
+test("language and send menus keep direct text separate from translated review", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    const draft = page.getByRole("textbox", { name: "回复内容" });
+    await draft.fill("您好，包裹已发出");
+    await page.getByRole("button", { name: "目标语言" }).click();
+    await page.getByRole("menuitem", { name: "更多" }).click();
+    const languageMenu = page.getByRole("menu", { name: "目标语言选项" });
+    assert.equal(await languageMenu.getByRole("menuitemradio").count(), 13);
+    await languageMenu.getByRole("menuitemradio", { name: "越南语" }).click();
+    assert.match(await page.getByRole("button", { name: "目标语言" }).textContent(), /越南语/);
+    await page.getByRole("button", { name: "选择发送方式" }).click();
+    await page.getByRole("menuitemradio", { name: "直接发送" }).click();
+    await draft.press("Enter");
+    const review = page.getByRole("dialog", { name: "审阅外发消息" });
+    await review.getByText("您好，包裹已发出").waitFor();
+    assert.equal(calls.translation, 0);
+    assert.equal(calls.send, 0);
+    await review.getByRole("button", { name: "返回修改" }).click();
+    await page.getByRole("button", { name: "选择发送方式" }).click();
+    await page.getByRole("menuitemradio", { name: "翻译后发送" }).click();
+    await page.getByRole("button", { name: "翻译后发送", exact: true }).click();
+    await review.getByText("Translated: 您好，包裹已发出").waitFor();
+    await review.getByText("目标语言：越南语").waitFor();
+    assert.equal(calls.translation, 1);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
 test("late translation response cannot restore a preview after the draft changed", async () => {
   const { context, page, calls } = await openWorkspace(2);
   try {
     calls.translationDelay = 450;
     const draft = page.getByRole("textbox", { name: "回复内容" });
     await draft.fill("旧草稿");
-    await page.getByRole("combobox", { name: "目标语言" }).selectOption("en");
-    await page.getByRole("button", { name: "预览译文" }).click();
+    await page.getByRole("button", { name: "翻译", exact: true }).click();
     await draft.fill("新草稿");
     await page.waitForTimeout(650);
     assert.equal(await page.getByLabel("译文预览").count(), 0);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("changing send mode while translating cannot open an outdated review", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    calls.translationDelay = 450;
+    await page.getByRole("textbox", { name: "回复内容" }).fill("你好");
+    await page.getByRole("button", { name: "翻译后发送", exact: true }).click();
+    await page.getByRole("button", { name: "选择发送方式" }).click();
+    await page.getByRole("menuitemradio", { name: "直接发送" }).click();
+    await page.waitForTimeout(650);
+    assert.equal(await page.getByRole("dialog", { name: "审阅外发消息" }).count(), 0);
+    assert.equal(calls.send, 0);
+    await page.getByRole("button", { name: "直接发送" }).click();
+    await page.getByRole("dialog", { name: "审阅外发消息" }).getByText("你好").waitFor();
     assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });
@@ -201,7 +241,9 @@ test("an interrupted send retry stays bound to its original conversation", async
   try {
     calls.sendFailures = 1;
     await page.getByRole("textbox", { name: "回复内容" }).fill("Alice's message");
-    await page.getByRole("button", { name: "审阅并发送" }).click();
+    await page.getByRole("button", { name: "选择发送方式" }).click();
+    await page.getByRole("menuitemradio", { name: "直接发送" }).click();
+    await page.getByRole("button", { name: "直接发送" }).click();
     await page.getByRole("dialog", { name: "审阅外发消息" }).getByRole("button", { name: "确认并发送" }).click();
     await page.getByRole("button", { name: "请求中断，审阅原内容后重试" }).waitFor();
     await page.getByRole("button", { name: /Bob/ }).click();
