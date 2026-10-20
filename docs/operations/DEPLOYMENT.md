@@ -64,7 +64,7 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 当前 staging 固定使用双服务器入口分离：`staging.overselfx.com:443 → 38.55.145.52 宝塔 Nginx/TLS → 127.0.0.1:18080 → SSH 反向隧道 → 192.168.110.210:127.0.0.1:18081 → crmdeploy Rootless CRM`。Compose 项目名为 `crm-staging`，Docker socket 为 `unix:///run/user/1004/docker.sock`，数据和模型均留在 `/home/crmdeploy`。
 
-2026-10-20 G6 失联缓解候选：入口反向 SSH 与独立 TikTok 出口 SSH 的 `ServerAliveInterval/ServerAliveCountMax` 从 `30/3` 收紧为 `10/2`，分别由用户级 systemd 与 Docker 既有重启策略恢复；仅检测已建立连接的失活，不保证公网零抖动。staging `/healthz` 使用与其他路径相同的低敏 `crm_staging_safe_json` 访问日志，以便将探针失败定位到网关前或网关后；日志格式仅记录路径 `$uri`，不记录查询参数或正文。变更须从已合并源码部署并验证运行 argv、三公网健康、固定出口及其他服务不变，之后才能重新启动独立 G6 观察。
+2026-10-20 G6 失联缓解已在 staging 安装：入口反向 SSH 与独立 TikTok 出口 SSH 的 `ServerAliveInterval/ServerAliveCountMax` 从 `30/3` 收紧为 `10/2`，分别由用户级 systemd 与 Docker 既有重启策略恢复；仅检测已建立连接的失活，不保证公网零抖动。staging `/healthz` 使用与其他路径相同的低敏 `crm_staging_safe_json` 访问日志，格式仅记录路径 `$uri`，不记录查询参数或正文。来自已合并源码的运行 argv、三公网健康、固定出口及其他应用容器 ID 已现场核对，见 [R03 TR](../reports/tests/TR-MVP-007-20261020-R03.md)和[低敏证据](../../release/evidence/staging/crm-staging-g6-ssh-mitigation-live-20261020.json)。网关现场 vhost 比仓库受审文件多 `/activate/` 块，本次精确改动并保留，未来整体覆盖前须调和；公网 TLS 间歇超时仍阻塞新的独立 G6 观察。
 
 旧服务器系统 Docker 的 GitLab 已占用 `10080/10443`，这些容器、端口、卷、网络和 data-root 禁止修改。CRM 只发布单个回环 HTTP 端口 `18081`，不在旧服务器终止 TLS；历史同机 systemd 入口只作为 Git 历史，不是当前操作路径。新服务器只承载宝塔 Nginx、站点证书和回环隧道监听，不运行 CRM 数据或模型服务。
 

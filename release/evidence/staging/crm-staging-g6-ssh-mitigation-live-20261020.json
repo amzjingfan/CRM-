@@ -1,0 +1,57 @@
+{
+  "task_id": "MVP-007",
+  "observed_at_utc": "2026-10-20T01:54:13Z",
+  "scope": "staging SSH recovery and safe gateway health logging; no new G6 acceptance window",
+  "source": {
+    "pull_request": 456,
+    "merged_main_sha": "debbf4a48cf2b1b1cbac38b67f06a8e434dab9ba",
+    "subject_sha": "db501f3011257b528ab4e4137d6d8b894a7f6a6f"
+  },
+  "reverse_tunnel": {
+    "unit_source_sha256": "27fc2ca00cb393c152f692b69adb9b2b1a373b3fc0c71721e4e3944cb2a7ca05",
+    "previous_unit_backup_sha256": "b77e1f9d3f59e0a21ea03bb56104fe1360da664a1d67a058837ef16d967e4d89",
+    "previous_unit_backup": "/home/crmdeploy/.cache/crm-g6/liveness-debbf4a/tunnel-before.service",
+    "systemd": "active/running",
+    "restart_count": 0,
+    "server_alive_interval_seconds": 10,
+    "server_alive_count_max": 2,
+    "fixed_remote_bind": "127.0.0.1:18080:127.0.0.1:18081"
+  },
+  "tiktok_egress": {
+    "overlay_source_sha256": "c127156087e35b67eff3b438ac5634a05df6f53b21d48e33ec9e4953fd9d39a7",
+    "container_id": "6fb83eaac661ad8ff62d4d40aece40c60954af78757b41505c8cb58cd2748a85",
+    "container_status": "running/healthy",
+    "restart_count": 0,
+    "server_alive_interval_seconds": 10,
+    "server_alive_count_max": 2,
+    "fixed_exit_ip": "38.55.145.52",
+    "backend_exit_verifier": "ok; observed_ip equals configured_ip",
+    "recreated_scope": "tiktok-egress only, with --no-deps and --no-build"
+  },
+  "gateway": {
+    "previous_live_vhost_sha256": "45191e53fe09ed29fad061d7bad9bca43c3c36fa26924e05b610159a27b6e147",
+    "previous_live_vhost_backup": "/root/crm-g6-backups/staging.overselfx.com-before-healthz-log-20261020.conf",
+    "current_live_vhost_sha256": "6e7670fe1dc6194ccfe8b9bf2fa5133b6af3bc37348f29a060102e7d4a90a342",
+    "change": "healthz access_log off replaced with existing crm_staging_safe_json access log",
+    "nginx_config_test": "pass",
+    "nginx_reload": "pass",
+    "loopback_healthz": 200,
+    "safe_access_row": "healthz status 200, request_time 0.301s",
+    "preserved_unreviewed_live_block": "/activate/ location; absent from reviewed repository vhost"
+  },
+  "post_change": {
+    "application_container_ids_unchanged": [
+      "6b2390ab4b8d07ce64772cd233f628226218af7dfbc5143704865ed8be353ee2",
+      "3396e5327aecc831b0bd300a8814a71993293519ff6371ec0e8a8194c50def46",
+      "e0a16dbcdf1953f5874bbf6a3744fea026518099897852afd99a52b0fdf5de2d",
+      "4170d9cdd9cbeeaaacb41a4b2dcc39300402490ef40c2873df1f4b5ac7225ae7"
+    ],
+    "public_health_http_codes": {"/healthz": 200, "/v1/health": 200, "/v1/health/ready": 200},
+    "public_health_tls_verify_results": [0, 0, 0],
+    "old_g6_collector": "inactive/dead; original evidence preserved",
+    "production_changed": false
+  },
+  "remaining_blocker": "Two of 360 separate public probes timed out during TLS despite gateway loopback 90/90 success; upstream route or network segment responsible is not proven. SSH keepalive and logging do not prove 24-hour availability.",
+  "g6_gate": "BLOCKED",
+  "g8_and_production": "NO_GO"
+}
