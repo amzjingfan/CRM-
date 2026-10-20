@@ -22,7 +22,7 @@ async function openWorkspace(messageCount = 70) {
     { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [] } },
   ];
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, transfer: 0 };
+  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, translationDelay: 0, searchQueries: [] };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -37,20 +37,39 @@ async function openWorkspace(messageCount = 70) {
     let data;
     if (path === "/v1/auth/me") data = { id: assigneeId, name: "Agent", email: "agent@example.invalid", role: "agent", avatar: null, permissions: ["workspace.view", "workspace.reply", "workspace.transfer"], store_ids: [storeId] };
     else if (path === "/v1/settings/stores") data = [{ id: storeId, name: "TKW FITNESS", code: "tkw", status: "active", timezone: "America/Los_Angeles", currency: "USD", created_at: "2026-10-01T00:00:00Z" }];
-    else if (path === "/v1/workspace/sessions" && method === "GET") {
-      const filter = url.searchParams.get("filter");
-      const items = records.filter((item) => filter === "closed" ? item.status === "closed" : item.status !== "closed" && (filter !== "starred" || item.is_starred));
+    else if ((path === "/v1/workspace/sessions" && method === "GET") || (path === "/v1/workspace/sessions/search" && method === "POST")) {
+      const payload = method === "POST" ? JSON.parse(request.postData()) : null;
+      const filter = payload?.filter ?? url.searchParams.get("filter");
+      if (payload) calls.searchQueries.push(payload);
+      const scope = payload?.search_scope ?? "all";
+      const terms = payload?.terms?.length ? payload.terms : [payload?.q].filter(Boolean);
+      const searchable = { [firstId]: { buyer: "Alice", order: "ORDER-ALICE", tracking: "TRACK-A", product: "Walking pad" }, [secondId]: { buyer: "Bob", order: "ORDER-BOB", tracking: "TRACK-B", product: "Treadmill" } };
+      const matches = (item) => !terms.length || terms.some((term) => {
+        const fields = searchable[item.id];
+        return (scope === "all" ? Object.values(fields) : [fields[scope]]).some((value) => value.toLowerCase().includes(term.toLowerCase()));
+      });
+      const items = records.filter((item) => (filter === "closed" ? item.status === "closed" : item.status !== "closed" && (filter !== "starred" || item.is_starred)) && matches(item));
       data = { items, pagination: { page: 1, page_size: 30, total: items.length } };
     } else if (path.endsWith("/messages") && method === "GET") {
       const record = records.find((item) => path.includes(item.id));
       const page = Number(url.searchParams.get("page") ?? "1");
-      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: false };
+      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: false, draft_translation_enabled: record.status !== "closed" };
+    } else if (path.endsWith("/draft/translation") && method === "POST") {
+      calls.translation++;
+      if (calls.translationDelay) await new Promise((resolve) => setTimeout(resolve, calls.translationDelay));
+      const payload = JSON.parse(request.postData());
+      data = { source_text_sha256: "a".repeat(64), target_language: payload.target_language, translated_text: `Translated: ${payload.source_text}` };
     } else if (path.endsWith("/read")) { records.find((item) => path.includes(item.id)).unread_count = 0; data = { unread_count: 0 }; }
     else if (path.endsWith("/star")) { const record = records.find((item) => path.includes(item.id)); record.is_starred = JSON.parse(request.postData()).starred; data = { status: record.status, is_starred: record.is_starred, closed_at: record.closed_at }; }
     else if (path.endsWith("/closed")) { const record = records.find((item) => path.includes(item.id)); record.status = JSON.parse(request.postData()).closed ? "closed" : "active"; data = { status: record.status, is_starred: record.is_starred, closed_at: record.status === "closed" ? "2026-10-20T11:00:00Z" : null }; }
     else if (path.endsWith("/assignees")) data = [{ id: assigneeId, name: "Agent A" }];
     else if (path.endsWith("/transfer")) { calls.transfer++; const record = records.find((item) => path.includes(item.id)); record.status = "transferred"; record.assigned_user_id = JSON.parse(request.postData()).assign_to; data = { status: "transferred", transfer_id: "00000000-0000-4000-8000-000000000501" }; }
-    else if (path.endsWith("/messages") && method === "POST") { calls.send++; data = messages.at(-1); }
+    else if (path.endsWith("/messages") && method === "POST") {
+      calls.send++;
+      calls.sentContent.push(JSON.parse(request.postData()).content);
+      if (calls.sendFailures-- > 0) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "temporary failure", data: null }) });
+      data = messages.at(-1);
+    }
     else data = [];
     await route.fulfill({ status: 200, contentType: "application/json", headers, body: JSON.stringify({ code: 0, message: "ok", data }) });
   });
@@ -116,5 +135,82 @@ test("AI result fills editable draft without sending; star, transfer and close p
     await page.getByRole("button", { name: "全部" }).first().click();
     await page.getByRole("button", { name: "关闭会话" }).waitFor();
     assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("single and batch search send scoped terms to the server", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await page.getByRole("combobox", { name: "搜索范围" }).selectOption("order");
+    await page.getByRole("textbox", { name: "搜索会话" }).fill("ORDER-BOB");
+    await page.waitForFunction(() => document.querySelectorAll(".conversation-card").length === 1);
+    assert.equal(await page.locator(".conversation-card").count(), 1);
+    assert.ok(calls.searchQueries.some((query) => query.search_scope === "order" && query.q === "ORDER-BOB"));
+    await page.getByRole("button", { name: "批量搜索会话" }).click();
+    await page.getByRole("textbox", { name: "批量搜索关键词" }).fill("Alice\nWalking pad\nBob");
+    await page.getByRole("button", { name: "查看结果" }).click();
+    await page.getByText("3 个关键词 · 2 个会话").waitFor();
+    assert.equal(await page.locator(".conversation-card").count(), 2);
+    assert.ok(calls.searchQueries.some((query) => query.terms.includes("Alice") && query.terms.includes("Bob")));
+  } finally { await context.close(); }
+});
+
+test("translation preview never sends and edit invalidates the reviewed translation", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    const draft = page.getByRole("textbox", { name: "回复内容" });
+    await draft.fill("你好，欢迎光临");
+    await page.getByRole("combobox", { name: "目标语言" }).selectOption("en");
+    await page.getByRole("button", { name: "预览译文" }).click();
+    await page.getByLabel("译文预览").getByText("Translated: 你好，欢迎光临").waitFor();
+    assert.equal(calls.send, 0);
+    await draft.fill("你好，请问有什么需要？");
+    await page.getByLabel("译文预览").waitFor({ state: "hidden" });
+    await page.getByRole("button", { name: "审阅并发送" }).click();
+    assert.equal(await page.getByRole("dialog", { name: "审阅外发消息" }).count(), 0);
+    await page.getByRole("button", { name: "预览译文" }).click();
+    await page.getByLabel("译文预览").getByText("Translated: 你好，请问有什么需要？").waitFor();
+    await page.getByRole("button", { name: "审阅并发送" }).click();
+    const review = page.getByRole("dialog", { name: "审阅外发消息" });
+    await review.getByText("Translated: 你好，请问有什么需要？").waitFor();
+    assert.equal(calls.send, 0);
+    await review.getByRole("button", { name: "确认并发送" }).click();
+    await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value === "");
+    assert.deepEqual(calls.sentContent, ["Translated: 你好，请问有什么需要？"]);
+    assert.equal(calls.translation, 2);
+  } finally { await context.close(); }
+});
+
+test("late translation response cannot restore a preview after the draft changed", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    calls.translationDelay = 450;
+    const draft = page.getByRole("textbox", { name: "回复内容" });
+    await draft.fill("旧草稿");
+    await page.getByRole("combobox", { name: "目标语言" }).selectOption("en");
+    await page.getByRole("button", { name: "预览译文" }).click();
+    await draft.fill("新草稿");
+    await page.waitForTimeout(650);
+    assert.equal(await page.getByLabel("译文预览").count(), 0);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("an interrupted send retry stays bound to its original conversation", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    calls.sendFailures = 1;
+    await page.getByRole("textbox", { name: "回复内容" }).fill("Alice's message");
+    await page.getByRole("button", { name: "审阅并发送" }).click();
+    await page.getByRole("dialog", { name: "审阅外发消息" }).getByRole("button", { name: "确认并发送" }).click();
+    await page.getByRole("button", { name: "请求中断，审阅原内容后重试" }).waitFor();
+    await page.getByRole("button", { name: /Bob/ }).click();
+    await page.getByRole("heading", { name: "Bob" }).first().waitFor();
+    assert.equal(await page.getByRole("button", { name: "请求中断，审阅原内容后重试" }).count(), 0);
+    assert.equal(calls.send, 1);
+    await page.getByRole("button", { name: /Alice/ }).click();
+    await page.getByRole("button", { name: "请求中断，审阅原内容后重试" }).click();
+    await page.getByRole("dialog", { name: "审阅外发消息" }).getByText(/收件人：Alice/).waitFor();
+    assert.equal(calls.send, 1);
   } finally { await context.close(); }
 });

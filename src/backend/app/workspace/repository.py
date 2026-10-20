@@ -2,13 +2,14 @@
 
 import uuid
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
-from app.orders.models import Order
+from app.orders.models import Order, OrderItem
 
 
 def scoped_conversation_query(store_ids: set[uuid.UUID]) -> Select[tuple[Conversation]]:
@@ -37,6 +38,8 @@ async def list_conversations(
     status: str | None,
     page: int,
     page_size: int,
+    search_scope: str = "all",
+    search_terms: tuple[str, ...] = (),
 ) -> tuple[list[tuple[Conversation, Customer, Message | None]], int]:
     """稳定分页查询会话和最后一条消息。"""
     if not store_ids:
@@ -60,12 +63,29 @@ async def list_conversations(
         conditions.append(Conversation.status == status)
     else:
         conditions.append(Conversation.status != "closed")
-    total = await session.scalar(select(func.count()).select_from(Conversation).where(*conditions)) or 0
+    if search_terms:
+        conditions.append(or_(*(_search_term_condition(search_scope, term) for term in search_terms)))
+    total = (
+        await session.scalar(
+            select(func.count())
+            .select_from(Conversation)
+            .join(Customer, and_(Customer.id == Conversation.customer_id, Customer.store_id == Conversation.store_id))
+            .where(*conditions)
+        )
+        or 0
+    )
     rows = (
         await session.execute(
             select(Conversation, Customer, Message)
-            .join(Customer, Customer.id == Conversation.customer_id)
-            .outerjoin(Message, Message.id == Conversation.last_message_id)
+            .join(Customer, and_(Customer.id == Conversation.customer_id, Customer.store_id == Conversation.store_id))
+            .outerjoin(
+                Message,
+                and_(
+                    Message.id == Conversation.last_message_id,
+                    Message.conversation_id == Conversation.id,
+                    Message.store_id == Conversation.store_id,
+                ),
+            )
             .where(*conditions)
             .order_by(Conversation.last_message_at.desc().nullslast(), Conversation.id.desc())
             .offset((page - 1) * page_size)
@@ -73,6 +93,53 @@ async def list_conversations(
         )
     ).all()
     return [(conversation, customer, message) for conversation, customer, message in rows], int(total)
+
+
+def _search_term_condition(scope: str, term: str) -> ColumnElement[bool]:
+    """把买家、订单、物流和商品匹配约束到同一店铺、平台及买家。"""
+    escaped = term.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    pattern = f"%{escaped}%"
+
+    def matches(column: InstrumentedAttribute[str] | InstrumentedAttribute[str | None]) -> ColumnElement[bool]:
+        return func.lower(column).like(pattern, escape="\\")
+
+    buyer = matches(Customer.name)
+    order_scope = (
+        Order.store_id == Conversation.store_id,
+        Order.customer_id == Conversation.customer_id,
+        Order.platform == Conversation.platform,
+    )
+    order_number = select(Order.id).where(*order_scope, matches(Order.external_order_id)).exists()
+    tracking = select(Order.id).where(*order_scope, matches(Order.tracking_number)).exists()
+    product = (
+        select(OrderItem.id)
+        .join(Order, Order.id == OrderItem.order_id)
+        .where(
+            *order_scope,
+            or_(matches(OrderItem.product_name), matches(OrderItem.product_id), matches(OrderItem.sku)),
+        )
+        .exists()
+    )
+    if scope == "buyer":
+        return buyer
+    if scope == "order":
+        return order_number
+    if scope == "tracking":
+        return tracking
+    if scope == "product":
+        return product
+    preview = (
+        select(Message.id)
+        .where(
+            Message.id == Conversation.last_message_id,
+            Message.conversation_id == Conversation.id,
+            Message.store_id == Conversation.store_id,
+            matches(Message.content),
+        )
+        .correlate(Conversation)
+        .exists()
+    )
+    return or_(buyer, order_number, tracking, product, preview)
 
 
 async def list_messages(

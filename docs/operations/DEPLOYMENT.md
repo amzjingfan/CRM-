@@ -139,6 +139,8 @@ G5 SSE 压测使用显式 G5 覆盖层，不能与 G2 Webhook 只读模式同时
 
 工作台单条按需译文使用手动 staging 门禁的 `-EnableWorkspaceTranslation`；在默认 Rootless 层之后追加固定的 `docker-compose.rootless-staging-translation.yml`，仅 backend 的 `WORKSPACE_MESSAGE_TRANSLATION_ENABLED=true`。可与 G2 Webhook 只读模式组合，不与 G5 SSE 模式组合；通用 `LLM_ENABLED`、`AI_TRANSLATION_ENABLED`、真实消息写入及其他服务翻译开关保持 `false`。仓库外环境仍需开关为 `false`，并提供已配置的 DeepSeek 主模型与密钥。门禁核对合并配置和运行容器；无此开关的部署恢复默认关闭状态。用户授权真实消息送 DeepSeek 仅用于当前 staging 的坐席主动单条翻译，不表示生产翻译放行。
 
+2026-10-20 用户在此基础上要求多语言人工回复；新 `POST /workspace/sessions/{session_id}/draft/translation` 复用同一 staging 翻译开关与现有 DeepSeek 配置，坐席显式请求时只翻译可发送会话的低敏草稿，不触发 TikTok 外发。译文经预览和审阅后由坐席另行确认发送；切换镜像时若未保留 `-EnableWorkspaceTranslation`，草稿翻译也会关闭。生产翻译和真实消息发送范围不因该功能放行。
+
 门禁先以候选 backend RepoDigest 启动并等待 helper，再从同一候选 backend 镜像执行：
 
 ```text

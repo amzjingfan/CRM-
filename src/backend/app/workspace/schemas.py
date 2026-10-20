@@ -54,6 +54,19 @@ class MessageTranslationView(BaseModel):
     translated_text: str
 
 
+class DraftTranslationRequest(BaseModel):
+    """坐席明确请求的回复草稿翻译；不会发送平台消息。"""
+
+    source_text: str = Field(min_length=1, max_length=2000)
+    target_language: Literal["en", "id", "es", "pt", "fr", "th"]
+
+
+class DraftTranslationView(BaseModel):
+    source_text_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    target_language: Literal["en", "id", "es", "pt", "fr", "th"]
+    translated_text: str
+
+
 class OrderSummary(BaseModel):
     """订单摘要。"""
 
@@ -82,6 +95,20 @@ class SessionListData(BaseModel):
     pagination: PageMeta
 
 
+class SessionSearchRequest(BaseModel):
+    """搜索词放在请求体，避免买家标识进入访问日志中的 URL。"""
+
+    filter: Literal["all", "unread", "mine", "starred", "closed"] = "all"
+    platform: str | None = None
+    store_id: uuid.UUID | None = None
+    status: str | None = None
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=30, ge=1, le=100)
+    search_scope: Literal["all", "buyer", "order", "tracking", "product"] = "all"
+    q: str | None = Field(default=None, max_length=120)
+    terms: list[str] = Field(default_factory=list, max_length=20)
+
+
 class SessionMessagesData(BaseModel):
     """会话详情、客户、订单和消息。"""
 
@@ -94,6 +121,7 @@ class SessionMessagesData(BaseModel):
     send_mode: Literal["disabled", "mock", "real"]
     requires_confirmation: Literal[True] = True
     translation_enabled: bool = False
+    draft_translation_enabled: bool = False
 
 
 class SendMessageRequest(BaseModel):

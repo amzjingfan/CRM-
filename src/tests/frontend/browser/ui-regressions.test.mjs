@@ -802,7 +802,7 @@ test("real-send reply composer stays visible with a long AI suggestion and accep
     const reply = page.getByRole("textbox", { name: "回复内容" });
     await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value.startsWith("Review the buyer request"));
     assert.equal(await reply.isEnabled(), true);
-    const sendButton = page.getByRole("button", { name: "确认并发送" });
+    const sendButton = page.getByRole("button", { name: "审阅并发送" });
     for (const viewport of [{ width: 903, height: 787 }, { width: 1440, height: 768 }, { width: 390, height: 768 }]) {
       await page.setViewportSize(viewport);
       const replyBounds = await reply.boundingBox();

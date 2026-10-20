@@ -30,7 +30,8 @@ test("manual platform messages require confirmation and expose uncertain deliver
   const source = await readFile(new URL("app/workspace/page.tsx", frontendRoot), "utf8");
   const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
   assert.equal(api.includes("JSON.stringify({ content, confirmed: true })"), true);
-  assert.equal(source.includes("window.confirm(prompt)"), true);
+  assert.equal(source.includes('aria-label={en ? "Review outgoing message" : "审阅外发消息"}'), true);
+  assert.equal(source.includes("onClick={() => void submitMessage(review.content, review.key, review.sessionId)}"), true);
   assert.equal(source.includes("真实 TikTok 客户"), true);
   assert.equal(source.includes("发送结果未知，请勿重试并前往 TikTok 人工对账"), true);
   assert.equal(source.includes("detail.send_mode === \"disabled\""), true);

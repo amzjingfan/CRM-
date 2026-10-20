@@ -25,6 +25,7 @@
 - 已授权 TikTok 店铺的会话和历史经内部只读同步写入现有会话/消息表；列表和详情仍通过原 `/workspace` 接口按店铺权限读取。工作台会话列表每页取 30 条，按列表返回的 `pagination` 加载更多，店铺与平台筛选在每一页保持一致。详情消息按时间升序分页，前端先取最新页，可继续加载较早历史。
 - 工作台标签页可见时每 5 秒重新读取列表与当前会话最新消息；按消息 ID 合并并保留已加载的历史、选中会话及草稿，避免每次刷新重置界面。
 - `GET /workspace/sessions` 支持 `filter=all|unread|mine|starred|closed`；默认列表不含本地已关闭会话，`closed` 仅列出已关闭会话。列表和详情的 `session` 均返回 `unread_count`、`is_starred` 和 UTC `closed_at`。前端打开会话定位最新消息；读取较早页保持阅读位置，新消息不会把正在阅读历史的坐席拉到底部，并提供“到最新消息”。
+- `POST /workspace/sessions/search` 要求 `workspace.view` 和 CSRF，body 可带 `filter/platform/store_id/status/page/page_size/search_scope/q/terms`。`search_scope=all|buyer|order|tracking|product`；`q` 为单项搜索，`terms` 为批量任一命中，二者互斥，最多 20 项、每项 1～120 字符。结果仍按授权店铺稳定分页；订单、物流和商品仅通过同店同平台同买家订单关联。搜索词置于 body，避免 URL 访问日志收集买家及订单标识。普通无搜索列表仍使用 GET。
 - TikTok 买家 Webhook 消息按平台消息 ID 幂等增加未读；只读同步补入晚于上次成功同步时间的买家新消息时也增加未读，首次历史回填不把旧消息算成新未读。
 - `PATCH /workspace/sessions/{session_id}/star` 接收 `{ "starred": true|false }`，只标记 CRM 内部差评风险；`PATCH /workspace/sessions/{session_id}/closed` 接收 `{ "closed": true|false }`，只更新 CRM 工作流；`GET /workspace/sessions/{session_id}/assignees` 只列出同店、在职且拥有 `workspace.reply` 的坐席。三者按授权店铺定位会话；写接口要求 `workspace.transfer`、CSRF 和状态变更审计。重复设置同一状态不重复审计。转交目标同样须在职、有当前店铺回复权限；关闭会话拒绝新发送和转交，未结清出站消息拒绝关闭。已关闭会话遇到晚于关闭时间的真实买家新消息会重新进入活跃列表，历史回填不触发重开。
 - `POST /chat/query` 的安全建议结果只填入空的本地可编辑草稿，已有人工草稿保留；使用建议不会自动触发平台发送。人工确认、真实发送白名单及 `unknown` 对账仍按现有契约执行。
@@ -35,6 +36,7 @@
 - 同店铺已有未结清的 TikTok `processing` 或 `unknown` 出站消息时，新真实发送返回冲突并保持零次新平台调用；旧 `processing` 不能作为确定失败自动重发。现有管理员对账接口只接受 `unknown`，中断遗留的 `processing` 须先经受审恢复路径收敛。
 - `POST /workspace/messages/{message_id}/reconcile` 对账 `unknown` 消息，不能通过重复平台发送猜测结果。
 - `POST /workspace/sessions/{session_id}/messages/{message_id}/translation` 供已授权坐席按需把 TikTok 单条文本译成中文；要求登录、`workspace.view`、CSRF、店铺/会话匹配与模型限流。服务端从已授权消息读取原文，不接受客户端正文；仅在 staging 专用开关开启时可调用 DeepSeek，响应只返回消息 ID、目标语言和译文，不改变消息或平台状态。会话详情的 `translation_enabled` 控制前端是否显示翻译按钮。
+- `POST /workspace/sessions/{session_id}/draft/translation` 接收 `source_text`（1～2000 字符）与 `target_language=en|id|es|pt|fr|th`，要求 `workspace.reply`、CSRF、店铺权限、可发送的未关闭 TikTok 会话、现有 staging 翻译开关和模型限流。输入与输出需通过现有 DLP；只返回原稿 SHA-256、目标语言和译文，不修改消息或触达 TikTok。会话详情的 `draft_translation_enabled` 决定前端是否展示非原文目标语言。坐席修改草稿或目标语言后必须重新预览，审阅框再显示准确外发内容；只有人工确认才调用原 `POST /messages`，沿用发送白名单、幂等和 unknown 对账。
 - `POST /chat/query` 使用 `accepted/status/delta/result/error/done` SSE 事件；`delta` 是安全草稿完成后的传输分块，不表示模型原生 Token。
 
 ### 知识库

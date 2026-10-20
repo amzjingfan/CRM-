@@ -8,9 +8,11 @@ export type SessionActionResult = Pick<SessionSummary, "status" | "is_starred" |
 export type SessionAssignee = { id: string; name: string };
 export type MessageView = { id: string; role: "user" | "agent" | "assistant" | "system"; content: string; status: "received" | "processing" | "sent" | "delivered" | "failed" | "unknown"; created_at: string; error_code: string | null; delivery_mode: "inbound" | "mock" | "real" | "unknown" };
 export type MessageTranslationView = { message_id: string; target_language: "zh-CN"; translated_text: string };
+export type DraftTargetLanguage = "en" | "id" | "es" | "pt" | "fr" | "th";
+export type DraftTranslationView = { source_text_sha256: string; target_language: DraftTargetLanguage; translated_text: string };
 export type OrderSummary = { id: string; external_order_id: string; platform: string; status: string; currency: string; total_amount: string; tracking_number: string | null; tracking_status: string | null };
 export type SessionListData = { items: SessionSummary[]; pagination: { page: number; page_size: number; total: number } };
-export type SessionMessagesData = { session: SessionSummary; messages: MessageView[]; customer: CustomerSummary; recent_orders: OrderSummary[]; ai_suggestion: null; pagination: { page: number; page_size: number; total: number }; send_mode: "disabled" | "mock" | "real"; requires_confirmation: true; translation_enabled?: boolean };
+export type SessionMessagesData = { session: SessionSummary; messages: MessageView[]; customer: CustomerSummary; recent_orders: OrderSummary[]; ai_suggestion: null; pagination: { page: number; page_size: number; total: number }; send_mode: "disabled" | "mock" | "real"; requires_confirmation: true; translation_enabled?: boolean; draft_translation_enabled?: boolean };
 export type KnowledgeCategory = { id: string; store_id: string; parent_id: string | null; name: string; code: string; layer: string; sort_order: number; status: string };
 export type KnowledgeStatementType = "policy" | "technical_artifact" | "customer_instance_fact" | "non_assertive_proposition" | "unknown";
 export type KnowledgeCustomerScope = "none" | "generic" | "specific_customer";
@@ -108,7 +110,25 @@ export async function requestApi<T>(path: string, init: RequestInit = {}, retry 
 export const browserLogin = (email: string, password: string) => requestApi<{ expires_in: number; user: UserView }>("/auth/browser/login", { method: "POST", body: JSON.stringify({ email, password }) }, false);
 export const currentUser = () => requestApi<UserView>("/auth/me");
 export const logout = () => requestApi<{ logged_out: boolean }>("/auth/browser/logout", { method: "POST" }, false);
-export const listSessions = (query: URLSearchParams) => requestApi<SessionListData>(`/workspace/sessions?${query.toString()}`);
+export const listSessions = (query: URLSearchParams) => {
+  const terms = query.getAll("term");
+  const search = query.get("q");
+  if (!search && !terms.length) return requestApi<SessionListData>(`/workspace/sessions?${query.toString()}`);
+  // 买家昵称和订单号留在请求体中，避免进入代理及浏览器的 URL 访问记录。
+  return requestApi<SessionListData>("/workspace/sessions/search", {
+    method: "POST",
+    body: JSON.stringify({
+      filter: query.get("filter") ?? "all",
+      platform: query.get("platform"),
+      store_id: query.get("store_id"),
+      page: Number(query.get("page") ?? "1"),
+      page_size: Number(query.get("page_size") ?? "30"),
+      search_scope: query.get("search_scope") ?? "all",
+      q: search,
+      terms,
+    }),
+  });
+};
 export const getSessionMessagesPage = (sessionId: string, page: number) => requestApi<SessionMessagesData>(`/workspace/sessions/${sessionId}/messages?page=${page}&page_size=100`);
 export const getSessionMessages = async (sessionId: string): Promise<SessionMessagesData> => {
   const first = await getSessionMessagesPage(sessionId, 1);
@@ -117,6 +137,7 @@ export const getSessionMessages = async (sessionId: string): Promise<SessionMess
 };
 export const sendMessage = (sessionId: string, content: string, idempotencyKey: string) => requestApi<MessageView>(`/workspace/sessions/${sessionId}/messages`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ content, confirmed: true }) });
 export const translateMessage = (sessionId: string, messageId: string) => requestApi<MessageTranslationView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}/translation`, { method: "POST" });
+export const translateDraft = (sessionId: string, sourceText: string, targetLanguage: DraftTargetLanguage) => requestApi<DraftTranslationView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/draft/translation`, { method: "POST", body: JSON.stringify({ source_text: sourceText, target_language: targetLanguage }) });
 export const markSessionRead = (sessionId: string) => requestApi<{ unread_count: number }>(`/workspace/sessions/${sessionId}/read`, { method: "POST" });
 export const setSessionStar = (sessionId: string, starred: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/star`, { method: "PATCH", body: JSON.stringify({ starred }) });
 export const setSessionClosed = (sessionId: string, closed: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/closed`, { method: "PATCH", body: JSON.stringify({ closed }) });

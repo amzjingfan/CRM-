@@ -30,6 +30,8 @@ from app.workspace.schemas import (
     AssigneeView,
     AssignRequest,
     ClosedRequest,
+    DraftTranslationRequest,
+    DraftTranslationView,
     MessageTranslationView,
     MessageView,
     OrderSummary,
@@ -39,6 +41,7 @@ from app.workspace.schemas import (
     SessionActionResult,
     SessionListData,
     SessionMessagesData,
+    SessionSearchRequest,
     SessionSummary,
     StarRequest,
     TransferRequest,
@@ -56,10 +59,66 @@ from app.workspace.service import (
     set_conversation_closed,
     set_conversation_star,
     transfer_session,
+    translate_draft,
     translate_message,
 )
 
 router = APIRouter(prefix="/workspace", tags=["客服工作台"])
+
+
+@router.post(
+    "/sessions/search",
+    response_model=ApiResponse[SessionListData],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
+)
+async def search_sessions(
+    payload: SessionSearchRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[SessionListData]:
+    """从全部已授权会话中搜索，分页、店铺和状态范围同普通列表。"""
+    if not payload.q and not payload.terms:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "请输入搜索词", 422)
+    return ApiResponse(
+        data=await get_session_list(
+            session,
+            user,
+            payload.filter,
+            payload.platform,
+            payload.store_id,
+            payload.status,
+            payload.page,
+            payload.page_size,
+            payload.search_scope,
+            payload.q,
+            payload.terms,
+        )
+    )
+
+
+@router.post(
+    "/sessions/{session_id}/draft/translation",
+    response_model=ApiResponse[DraftTranslationView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.reply"))],
+)
+async def draft_translation(
+    session_id: uuid.UUID,
+    payload: DraftTranslationRequest,
+    request: Request,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[DraftTranslationView]:
+    """只生成待人工审阅的多语言译文，不发 TikTok 消息。"""
+    settings = get_settings()
+    if not settings.workspace_message_translation_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "草稿翻译未启用", 503)
+    client_ip = request.client.host if request.client else "unknown"
+    if not await consume_chat_query(user.id, client_ip, settings.chat_query_limit, settings.chat_query_window_seconds):
+        raise AppError(ErrorCode.RATE_LIMITED, "翻译请求过于频繁", 429)
+    trace_id = str(getattr(request.state, "trace_id", uuid.uuid4()))
+    return ApiResponse(
+        data=await translate_draft(session, user, session_id, payload.source_text, payload.target_language, trace_id)
+    )
 
 
 @router.post(

@@ -8,9 +8,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.draft_translation import DraftTargetLanguage, DraftTranslationService
 from app.agent.errors import LLMProviderError
 from app.agent.generation import StructuredGenerationService
 from app.agent.providers.factory import build_provider
+from app.agent.security import sanitize_prompt_text
 from app.agent.translation import TranslationService
 from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
@@ -36,6 +38,7 @@ from app.workspace.repository import (
 from app.workspace.schemas import (
     AssigneeView,
     CustomerSummary,
+    DraftTranslationView,
     MessageTranslationView,
     MessageView,
     OrderSummary,
@@ -148,13 +151,34 @@ async def get_session_list(
     status: str | None,
     page: int,
     page_size: int,
+    search_scope: Literal["all", "buyer", "order", "tracking", "product"] = "all",
+    search: str | None = None,
+    terms: list[str] | None = None,
 ) -> SessionListData:
     """查询租户隔离的会话列表。"""
+    if search_scope not in {"all", "buyer", "order", "tracking", "product"}:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "不支持的搜索范围", 422)
+    if search is not None and terms:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "单项搜索和批量搜索不能同时使用", 422)
+    raw_terms = terms if terms is not None else ([search] if search is not None else [])
+    if len(raw_terms) > 20 or any(not item.strip() or len(item.strip()) > 120 for item in raw_terms):
+        raise AppError(ErrorCode.VALIDATION_ERROR, "搜索最多 20 项且每项为 1～120 个字符", 422)
+    search_terms = tuple(dict.fromkeys(item.strip() for item in raw_terms))
     store_ids = await allowed_store_ids(session, user)
     if store_id and store_id not in store_ids:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     rows, total = await list_conversations(
-        session, store_ids, user.id, filter_name, platform, store_id, status, page, page_size
+        session,
+        store_ids,
+        user.id,
+        filter_name,
+        platform,
+        store_id,
+        status,
+        page,
+        page_size,
+        search_scope,
+        search_terms,
     )
     return SessionListData(
         items=[_session_view(conversation, customer, message) for conversation, customer, message in rows],
@@ -175,16 +199,94 @@ async def get_session_messages(
     messages, total = await list_messages(session, conversation.id, page, page_size)
     orders = await recent_orders(session, customer.id)
     last = await session.get(Message, conversation.last_message_id) if conversation.last_message_id else None
+    send_mode = _message_send_mode(conversation, await _connected_send_channel(session, conversation))
     return SessionMessagesData(
         session=_session_view(conversation, customer, last),
         messages=[_message_view(item) for item in messages],
         customer=_customer_view(customer),
         recent_orders=[_order_view(item) for item in orders],
         pagination=PageMeta(page=page, page_size=page_size, total=total),
-        send_mode=_message_send_mode(conversation, await _connected_send_channel(session, conversation)),
+        send_mode=send_mode,
         translation_enabled=(
             conversation.platform == "tiktok" and get_settings().workspace_message_translation_enabled
         ),
+        draft_translation_enabled=(
+            conversation.platform == "tiktok"
+            and send_mode != "disabled"
+            and get_settings().workspace_message_translation_enabled
+        ),
+    )
+
+
+async def translate_draft(
+    session: AsyncSession,
+    user: User,
+    session_id: uuid.UUID,
+    source_text: str,
+    target_language: DraftTargetLanguage,
+    trace_id: str,
+) -> DraftTranslationView:
+    """仅预览已授权会话的低敏草稿译文，不改变草稿或发送平台消息。"""
+    settings = get_settings()
+    if not settings.workspace_message_translation_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "草稿翻译未启用", 503)
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if conversation.platform != "tiktok" or conversation.status == "closed":
+        raise AppError(ErrorCode.VALIDATION_ERROR, "该会话不能预览回复译文", 422)
+    if _message_send_mode(conversation, await _connected_send_channel(session, conversation)) == "disabled":
+        raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不在消息发送范围内", 403)
+    if not source_text.strip() or len(source_text) > TIKTOK_TEXT_MAX_LENGTH:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "草稿必须为 1～2000 字符", 422)
+    if sanitize_prompt_text(source_text) != source_text:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "草稿含需脱敏内容，请先修改后再翻译", 422)
+    try:
+        provider = build_provider("deepseek", settings.llm_primary_model, settings)
+        translator = DraftTranslationService(StructuredGenerationService(provider, None, max_attempts=1))
+        result = await translator.translate(source_text=source_text, target_language=target_language, trace_id=trace_id)
+        if sanitize_prompt_text(result.translated_text) != result.translated_text:
+            raise ValueError("译文包含需脱敏内容")
+    except (LLMProviderError, ValueError) as error:
+        session.add(
+            AuditLog(
+                store_id=conversation.store_id,
+                actor_type="user",
+                actor_id=user.id,
+                action="draft.translate",
+                resource_type="conversation",
+                resource_id=conversation.id,
+                request_id=trace_id,
+                after_data={"target_language": target_language},
+                result="failed",
+            )
+        )
+        await session.commit()
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "草稿翻译暂不可用，请人工核对后重试", 503) from error
+    session.add(
+        AuditLog(
+            store_id=conversation.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action="draft.translate",
+            resource_type="conversation",
+            resource_id=conversation.id,
+            request_id=trace_id,
+            after_data={
+                "target_language": target_language,
+                "provider": result.provider,
+                "model": result.model,
+                "input_tokens": result.input_tokens,
+                "output_tokens": result.output_tokens,
+            },
+            result="succeeded",
+        )
+    )
+    await session.commit()
+    return DraftTranslationView(
+        source_text_sha256=result.source_text_sha256,
+        target_language=result.target_language,
+        translated_text=result.translated_text,
     )
 
 
