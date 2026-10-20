@@ -56,6 +56,12 @@ class TikTokPayment(TikTokModel):
 
     currency: str | None = Field(default=None, max_length=10)
     total_amount: str | None = Field(default=None, max_length=50)
+    sub_total: str | None = Field(default=None, max_length=50)
+    original_total_product_price: str | None = Field(default=None, max_length=50)
+    seller_discount: str | None = Field(default=None, max_length=50)
+    platform_discount: str | None = Field(default=None, max_length=50)
+    shipping_fee: str | None = Field(default=None, max_length=50)
+    tax: str | None = Field(default=None, max_length=50)
 
 
 class TikTokOrderLineItem(TikTokModel):
@@ -63,6 +69,8 @@ class TikTokOrderLineItem(TikTokModel):
 
     id: str | None = Field(default=None, max_length=200, pattern=r"^\d+$")
     product_id: str | None = Field(default=None, max_length=200, pattern=r"^\d+$")
+    sku_id: str | None = Field(default=None, max_length=200, pattern=r"^\d+$")
+    sku_image: str | None = Field(default=None, max_length=1000)
     product_name: str | None = Field(default=None, max_length=500)
     sku_name: str | None = Field(default=None, max_length=500)
     seller_sku: str | None = Field(default=None, max_length=200)
@@ -85,6 +93,44 @@ class TikTokOrder(TikTokModel):
     tracking_number: str | None = Field(default=None, max_length=200)
     payment: TikTokPayment | None = None
     line_items: list[TikTokOrderLineItem] = Field(default_factory=list, max_length=500)
+
+
+class TikTokProductInventory(TikTokModel):
+    quantity: int | None = Field(default=None, ge=0)
+
+
+class TikTokProductPrice(TikTokModel):
+    currency: str | None = None
+    sale_price: str | None = None
+
+
+class TikTokProductSku(TikTokModel):
+    id: str = Field(min_length=1, max_length=200)
+    seller_sku: str | None = Field(default=None, max_length=200)
+    price: TikTokProductPrice | None = None
+    inventory: list[TikTokProductInventory] = Field(default_factory=list)
+    sales_attributes: list[dict[str, object]] = Field(default_factory=list)
+
+
+class TikTokProduct(TikTokModel):
+    id: str = Field(min_length=1, max_length=200)
+    title: str = Field(min_length=1, max_length=1000)
+    status: str | None = None
+    skus: list[TikTokProductSku] = Field(default_factory=list)
+    main_images: list[dict[str, object]] = Field(default_factory=list)
+
+
+class TikTokCoupon(TikTokModel):
+    id: str = Field(min_length=1, max_length=200)
+    title: str = Field(min_length=1, max_length=500)
+    status: str | None = None
+    display_type: str | None = None
+    creation_source: str | None = None
+    promo_code: str | None = None
+    target_buyer_segment: str | None = None
+    discount: dict[str, object] = Field(default_factory=dict)
+    claim_duration: dict[str, object] = Field(default_factory=dict)
+    redemption_duration: dict[str, object] = Field(default_factory=dict)
 
 
 class TikTokTrackingEntry(TikTokModel):
@@ -388,6 +434,78 @@ class TikTokReadClient:
         envelope = await self._request("GET", "/order/202507/orders", {"ids": ",".join(order_ids)})
         items = self._validated_list(envelope.data or {}, "orders", TikTokOrder)
         return [item for item in items if isinstance(item, TikTokOrder)], envelope.request_id
+
+    async def search_products(
+        self,
+        page_size: int = 20,
+        page_token: str | None = None,
+        seller_skus: list[str] | None = None,
+        sku_ids: list[str] | None = None,
+    ) -> tuple[list[TikTokProduct], str | None, int | None]:
+        """按官方分页读取店铺商品；POST 是查询协议，不产生平台写入。"""
+        self._require_scope("seller.product.basic")
+        if not 1 <= page_size <= 100:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "商品分页大小无效", 422)
+        query: dict[str, str | int] = {"page_size": page_size}
+        if page_token:
+            query["page_token"] = page_token
+        body: dict[str, object] = {}
+        if seller_skus:
+            body["seller_skus"] = seller_skus
+        if sku_ids:
+            body["sku_ids"] = sku_ids
+        envelope = await self._request("POST", "/product/202502/products/search", query, body)
+        data = envelope.data or {}
+        items = self._validated_list(data, "products", TikTokProduct)
+        token = data.get("next_page_token")
+        total = data.get("total_count")
+        return (
+            [item for item in items if isinstance(item, TikTokProduct)],
+            str(token) if token else None,
+            total if isinstance(total, int) else None,
+        )
+
+    async def get_product(self, product_id: str) -> TikTokProduct:
+        """仅允许数字商品 ID，防止动态路径成为任意 URL。"""
+        self._require_scope("seller.product.basic")
+        if not product_id.isdigit():
+            raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 商品 ID 无效", 422)
+        envelope = await self._request("GET", f"/product/202309/products/{product_id}", {})
+        try:
+            product = TikTokProduct.model_validate(envelope.data)
+        except ValidationError as exc:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 商品数据结构异常", 502) from exc
+        if product.id != product_id:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 返回商品不匹配", 502)
+        return product
+
+    async def search_coupons(
+        self,
+        page_size: int = 20,
+        page_token: str | None = None,
+        title: str | None = None,
+    ) -> tuple[list[TikTokCoupon], str | None, int | None]:
+        """读取店铺优惠券目录；当前客服授权可使用官方只读接口。"""
+        if not {"seller.customer_service", "seller.promotion.info"}.intersection(self.channel.scopes):
+            raise AppError(ErrorCode.PERMISSION_DENIED, "TikTok 优惠券读取权限不足，请重新授权", 403)
+        if not 1 <= page_size <= 100:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "优惠券分页大小无效", 422)
+        query: dict[str, str | int] = {"page_size": page_size}
+        if page_token:
+            query["page_token"] = page_token
+        body: dict[str, object] = {}
+        if title:
+            body["title_keyword"] = title
+        envelope = await self._request("POST", "/promotion/202406/coupons/search", query, body)
+        data = envelope.data or {}
+        items = self._validated_list(data, "coupons", TikTokCoupon)
+        token = data.get("next_page_token")
+        total = data.get("total_count")
+        return (
+            [item for item in items if isinstance(item, TikTokCoupon)],
+            str(token) if token else None,
+            total if isinstance(total, int) else None,
+        )
 
     async def get_tracking(self, order_id: str) -> tuple[list[TikTokLogisticsDetail], str | None]:
         """按 202604 契约读取多包裹物流，不调用任何履约写接口。"""

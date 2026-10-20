@@ -403,6 +403,8 @@ async def _process_order(
     order.fulfillment_status = normalized.fulfillment_status
     order.currency = normalized.currency
     order.total_amount = normalized.total_amount
+    if normalized.payment_breakdown:
+        order.raw_payload = {**(order.raw_payload or {}), "payment_breakdown": normalized.payment_breakdown}
     order.tracking_number = normalized.tracking_number
     order.tracking_status = normalized.tracking_status
     order.ordered_at = normalized.ordered_at
@@ -412,12 +414,17 @@ async def _process_order(
             OrderItem(
                 order_id=order.id,
                 external_item_id=item.external_item_id,
+                product_id=item.product_id,
                 sku=item.sku,
                 product_name=item.product_name,
                 quantity=item.quantity,
                 unit_price=item.unit_price,
                 total_amount=Decimal(item.quantity) * item.unit_price,
-                raw_payload={},
+                raw_payload={
+                    "sku_id": item.sku_id,
+                    "sku_name": item.sku_name,
+                    "sku_image": item.sku_image,
+                },
             )
         )
 

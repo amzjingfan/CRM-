@@ -11,6 +11,15 @@ export type MessageTranslationView = { message_id: string; target_language: "zh-
 export type DraftTargetLanguage = "en" | "id" | "fil" | "ms" | "th" | "my" | "vi" | "pt" | "es" | "pl" | "fr" | "zh-TW" | "zh-CN";
 export type DraftTranslationView = { source_text_sha256: string; target_language: DraftTargetLanguage; translated_text: string };
 export type OrderSummary = { id: string; external_order_id: string; platform: string; status: string; currency: string; total_amount: string; tracking_number: string | null; tracking_status: string | null };
+export type SidebarOrderItem = { name: string; product_id: string | null; sku: string | null; sku_id: string | null; sku_name: string | null; image_url: string | null; quantity: number; unit_price: string; total_amount: string };
+export type SidebarOrder = { id: string; external_order_id: string; status: string; payment_status: string | null; currency: string; total_amount: string; payment_breakdown: Record<string, string>; ordered_at: string | null; tracking_number: string | null; tracking_status: string | null; items: SidebarOrderItem[] };
+export type SidebarOrders = { items: SidebarOrder[]; pagination: { page: number; page_size: number; total: number } };
+export type SidebarSku = { id: string; seller_sku: string | null; name: string | null; currency: string | null; sale_price: string | null; quantity: number | null };
+export type SidebarProduct = { id: string; title: string; status: string | null; image_url: string | null; skus: SidebarSku[] };
+export type SidebarProducts = { items: SidebarProduct[]; next_page_token: string | null; total_count: number | null; partial_search: boolean };
+export type SidebarCoupon = { id: string; title: string; status: string | null; display_type: string | null; promo_code: string | null; discount_type: string | null; discount_value: string | null; claim_end_time: number | null; chat_shareable: boolean };
+export type SidebarCoupons = { items: SidebarCoupon[]; next_page_token: string | null; total_count: number | null; partial_search: boolean };
+export type SidebarSearch = { section: "orders" | "products" | "coupons"; field: string; query: string; status?: "all" | "unpaid" | "ship" | "transit" | "done" | "cancel"; page?: number; page_token?: string | null };
 export type SessionListData = { items: SessionSummary[]; pagination: { page: number; page_size: number; total: number } };
 export type SessionMessagesData = { session: SessionSummary; messages: MessageView[]; customer: CustomerSummary; recent_orders: OrderSummary[]; ai_suggestion: null; pagination: { page: number; page_size: number; total: number }; send_mode: "disabled" | "mock" | "real"; requires_confirmation: true; translation_enabled?: boolean; draft_translation_enabled?: boolean };
 export type KnowledgeCategory = { id: string; store_id: string; parent_id: string | null; name: string; code: string; layer: string; sort_order: number; status: string };
@@ -130,6 +139,8 @@ export const listSessions = (query: URLSearchParams) => {
   });
 };
 export const getSessionMessagesPage = (sessionId: string, page: number) => requestApi<SessionMessagesData>(`/workspace/sessions/${sessionId}/messages?page=${page}&page_size=100`);
+export const searchCustomerSidebar = <T extends SidebarOrders | SidebarProducts | SidebarCoupons>(sessionId: string, payload: SidebarSearch) => requestApi<T>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/search`, { method: "POST", body: JSON.stringify(payload) });
+export const getCustomerSidebarProduct = (sessionId: string, productId: string) => requestApi<SidebarProduct>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/products/${encodeURIComponent(productId)}`);
 export const getSessionMessages = async (sessionId: string): Promise<SessionMessagesData> => {
   const first = await getSessionMessagesPage(sessionId, 1);
   const newestPage = Math.ceil(first.pagination.total / first.pagination.page_size);

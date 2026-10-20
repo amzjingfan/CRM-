@@ -22,7 +22,7 @@ async function openWorkspace(messageCount = 70) {
     { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [] } },
   ];
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, translationDelay: 0, searchQueries: [] };
+  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -54,6 +54,18 @@ async function openWorkspace(messageCount = 70) {
       const record = records.find((item) => path.includes(item.id));
       const page = Number(url.searchParams.get("page") ?? "1");
       data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: false, draft_translation_enabled: record.status !== "closed" };
+    } else if (path.endsWith("/sidebar/search") && method === "POST") {
+      const payload = JSON.parse(request.postData());
+      calls.sidebarQueries.push(payload);
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: "IN_TRANSIT", payment_status: "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", tracking_number: "878696895644", tracking_status: "IN_TRANSIT", items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
+      const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
+      const coupon = { id: "789", title: "Shop coupon", status: "ONGOING", display_type: "CHAT", promo_code: "SAVE5", discount_type: "FIXED_AMOUNT", discount_value: "5", claim_end_time: null, chat_shareable: true };
+      if (payload.section === "orders") data = { items: (payload.status === "all" || payload.status === "transit") && (!payload.query || [order.external_order_id, order.tracking_number, order.items[0].name, order.items[0].sku, order.items[0].sku_id, order.items[0].product_id].some((value) => value?.toLowerCase().includes(payload.query.toLowerCase()))) ? [order] : [], pagination: { page: payload.page, page_size: 20, total: 1 } };
+      else if (payload.section === "products") data = { items: !payload.query || product.title.toLowerCase().includes(payload.query.toLowerCase()) ? [product] : [], next_page_token: null, total_count: 1, partial_search: false };
+      else data = { items: !payload.query || coupon.title.toLowerCase().includes(payload.query.toLowerCase()) || coupon.promo_code.toLowerCase().includes(payload.query.toLowerCase()) ? [coupon] : [], next_page_token: null, total_count: 1, partial_search: false };
+    } else if (path.endsWith("/sidebar/products/123") && method === "GET") {
+      calls.productDetails++;
+      data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
     } else if (path.endsWith("/draft/translation") && method === "POST") {
       calls.translation++;
       if (calls.translationDelay) await new Promise((resolve) => setTimeout(resolve, calls.translationDelay));
@@ -254,5 +266,57 @@ test("an interrupted send retry stays bound to its original conversation", async
     await page.getByRole("button", { name: "请求中断，审阅原内容后重试" }).click();
     await page.getByRole("dialog", { name: "审阅外发消息" }).getByText(/收件人：Alice/).waitFor();
     assert.equal(calls.send, 1);
+  } finally { await context.close(); }
+});
+
+test("customer sidebar filters real order projections and keeps amount rows tied to returned data", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByText("577600000000000001").waitFor();
+    await page.getByRole("button", { name: "运送中" }).click();
+    await page.getByLabel("搜索字段").selectOption("tracking");
+    await page.getByLabel("客户信息搜索").fill("878696895644");
+    await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await card.getByText("878696895644").waitFor();
+    await card.locator("summary").click();
+    await card.getByText("商品小计").waitFor();
+    if (process.env.CAPTURE_SIDEBAR) await page.screenshot({ path: `${process.env.CAPTURE_SIDEBAR}/orders.png`, fullPage: true });
+    assert.equal(calls.sidebarQueries.at(-1).field, "tracking");
+    assert.equal(calls.sidebarQueries.at(-1).query, "878696895644");
+    assert.equal(new URL(page.url()).searchParams.has("query"), false);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("product and coupon tabs load shop data, expand SKU, and only fill an editable draft", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await page.getByRole("tab", { name: "商品" }).click();
+    const product = page.getByTestId("customer-product-card");
+    await product.getByText("Walking pad").waitFor();
+    await page.getByLabel("搜索字段").selectOption("name");
+    await page.getByLabel("客户信息搜索").fill("Walking");
+    await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await product.getByText("Walking pad").waitFor();
+    await product.locator("summary").click();
+    await product.getByText("Black with handrail").waitFor();
+    if (process.env.CAPTURE_SIDEBAR) await page.screenshot({ path: `${process.env.CAPTURE_SIDEBAR}/products.png`, fullPage: true });
+    assert.equal(calls.productDetails, 1);
+    await product.getByRole("button", { name: "填入回复草稿" }).click();
+    assert.match(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), /Walking pad/);
+    assert.equal(calls.send, 0);
+
+    await page.getByRole("tab", { name: "优惠券" }).click();
+    const coupon = page.getByTestId("customer-coupon-card");
+    await coupon.getByText("Shop coupon").waitFor();
+    await page.getByLabel("搜索字段").selectOption("code");
+    await page.getByLabel("客户信息搜索").fill("SAVE5");
+    await page.getByRole("button", { name: "搜索", exact: true }).click();
+    await coupon.getByText("SAVE5").waitFor();
+    if (process.env.CAPTURE_SIDEBAR) await page.screenshot({ path: `${process.env.CAPTURE_SIDEBAR}/coupons.png`, fullPage: true });
+    await coupon.getByRole("button", { name: "填入回复草稿" }).click();
+    assert.match(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), /SAVE5/);
+    assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });

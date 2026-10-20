@@ -79,6 +79,96 @@ def connected_channel() -> ChannelAccount:
     )
 
 
+@pytest.mark.asyncio
+async def test_sidebar_product_catalog_requires_product_basic_before_http() -> None:
+    """未授权商品目录不能退化为示例数据，也不能打到平台。"""
+    calls = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, json={"code": 0, "message": "Success", "data": {"products": []}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        reader = TikTokReadClient(real_settings(), connected_channel(), http_client)
+        with pytest.raises(AppError) as raised:
+            await reader.search_products()
+    assert raised.value.status_code == 403
+    assert calls == 0
+
+
+@pytest.mark.asyncio
+async def test_sidebar_catalog_reads_only_signed_product_and_coupon_search() -> None:
+    """商品与优惠券目录仅调用固定官方查询路径，并保留下一页游标。"""
+    seen: list[tuple[str, bytes]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.url.path, request.content))
+        assert request.headers["x-tts-access-token"] == "unit-test-access-token"
+        assert request.url.params.get("sign")
+        if request.url.path.startswith("/product/"):
+            return httpx.Response(
+                200,
+                json={
+                    "code": 0,
+                    "message": "Success",
+                    "request_id": "product-test",
+                    "data": {
+                        "products": [
+                            {
+                                "id": "123",
+                                "title": "Walking pad",
+                                "skus": [
+                                    {
+                                        "id": "456",
+                                        "seller_sku": "PAD-BLK",
+                                        "price": {"currency": "USD", "sale_price": "29.90"},
+                                        "inventory": [{"quantity": 4}],
+                                    }
+                                ],
+                            }
+                        ],
+                        "next_page_token": "next-product",
+                        "total_count": 2,
+                    },
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "message": "Success",
+                "request_id": "coupon-test",
+                "data": {
+                    "coupons": [
+                        {
+                            "id": "789",
+                            "title": "Shop coupon",
+                            "status": "ONGOING",
+                            "display_type": "CHAT",
+                            "creation_source": "SELLER_CENTER",
+                            "discount": {"type": "FIXED_AMOUNT", "reduction_amount": "5"},
+                        }
+                    ],
+                    "next_page_token": "next-coupon",
+                    "total_count": 3,
+                },
+            },
+        )
+
+    channel = connected_channel()
+    channel.scopes.append("seller.product.basic")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        reader = TikTokReadClient(real_settings(), channel, http_client)
+        products, product_token, product_total = await reader.search_products(seller_skus=["PAD-BLK"])
+        coupons, coupon_token, coupon_total = await reader.search_coupons(title="Shop")
+    assert (products[0].title, product_token, product_total) == ("Walking pad", "next-product", 2)
+    assert (coupons[0].title, coupon_token, coupon_total) == ("Shop coupon", "next-coupon", 3)
+    assert [path for path, _ in seen] == ["/product/202502/products/search", "/promotion/202406/coupons/search"]
+    assert json.loads(seen[0][1]) == {"seller_skus": ["PAD-BLK"]}
+    assert json.loads(seen[1][1]) == {"title_keyword": "Shop"}
+
+
 def test_real_webhook_signature_uses_authorization_app_secret_and_raw_body() -> None:
     """真实模式只接受官方 Authorization HMAC，不接受旧 Mock Header。"""
     body = b'{"type":14,"tts_notification_id":"event-1"}'

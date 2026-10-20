@@ -34,6 +34,10 @@ class OrderItemPayload(BaseModel):
     """统一订单商品。"""
 
     external_item_id: str | None = Field(default=None, max_length=200)
+    product_id: str | None = Field(default=None, max_length=200)
+    sku_id: str | None = Field(default=None, max_length=200)
+    sku_name: str | None = Field(default=None, max_length=500)
+    sku_image: str | None = Field(default=None, max_length=1000)
     sku: str | None = Field(default=None, max_length=200)
     product_name: str = Field(min_length=1, max_length=500)
     quantity: int = Field(ge=1, le=100_000)
@@ -53,6 +57,7 @@ class OrderUpdatedEvent(BaseModel):
     fulfillment_status: str | None = Field(default=None, max_length=30)
     currency: str = Field(min_length=3, max_length=10)
     total_amount: Decimal = Field(ge=0)
+    payment_breakdown: dict[str, str] = Field(default_factory=dict)
     tracking_number: str | None = Field(default=None, max_length=200)
     tracking_status: str | None = Field(default=None, max_length=100)
     ordered_at: datetime | None = None

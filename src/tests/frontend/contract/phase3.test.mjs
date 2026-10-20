@@ -12,6 +12,7 @@ const sourceUrls = {
   knowledge: new URL("app/knowledge/page.tsx", frontendRoot),
   marketing: new URL("app/marketing/page.tsx", frontendRoot),
   workspace: new URL("app/workspace/page.tsx", frontendRoot),
+  customerSidebar: new URL("components/CustomerSidebar.tsx", frontendRoot),
 };
 
 function readRequiredSource(sourceName) {
@@ -60,11 +61,12 @@ test("file import leaves multipart content type to the browser", () => {
   assert.match(apiSource, /!isForm/);
 });
 
-test("dangerous workspace tools require user confirmation and show mock status", () => {
+test("customer sidebar keeps high-risk actions unavailable and coupons draft-only", () => {
   const workspaceSource = readRequiredSource("workspace");
+  const sidebarSource = readRequiredSource("customerSidebar");
   assert.match(workspaceSource, /window\.confirm/);
-  assert.match(workspaceSource, /模拟提交/);
-  assert.match(workspaceSource, /模拟发放/);
+  assert.doesNotMatch(sidebarSource, /issueCoupon|updateShippingAddress|sendMessage/);
+  assert.match(sidebarSource, /onDraft\(content\)/);
 });
 
 test("knowledge and marketing pages expose loading empty error and AI waiting states", () => {

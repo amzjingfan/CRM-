@@ -308,6 +308,10 @@ def _normalize_tiktok_order(order: TikTokOrder, event_id: str, external_store_id
     items = [
         OrderItemPayload(
             external_item_id=item.id,
+            product_id=item.product_id,
+            sku_id=item.sku_id,
+            sku_name=item.sku_name,
+            sku_image=item.sku_image if item.sku_image and item.sku_image.startswith("https://") else None,
             sku=item.seller_sku,
             product_name=item.product_name or item.sku_name or "TikTok 商品",
             quantity=1,
@@ -334,6 +338,25 @@ def _normalize_tiktok_order(order: TikTokOrder, event_id: str, external_store_id
         fulfillment_status=order.status,
         currency=currency,
         total_amount=parse_money(payment.total_amount if payment else None),
+        payment_breakdown={
+            key: value
+            for key, value in (
+                payment.model_dump(
+                    exclude_none=True,
+                    include={
+                        "sub_total",
+                        "original_total_product_price",
+                        "seller_discount",
+                        "platform_discount",
+                        "shipping_fee",
+                        "tax",
+                    },
+                ).items()
+                if payment
+                else []
+            )
+            if isinstance(value, str)
+        },
         tracking_number=order.tracking_number,
         tracking_status=order.status,
         ordered_at=_unix_datetime(order.create_time, required=False),

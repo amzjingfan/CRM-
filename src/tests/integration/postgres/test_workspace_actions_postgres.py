@@ -14,9 +14,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.conversations.models import Conversation
 from app.customers.models import Customer
 from app.orders.models import Order, OrderItem
+from app.shared.exceptions.errors import AppError
 from app.stores.models import Store
 from app.workspace import service as workspace_service
+from app.workspace import sidebar as sidebar_service
 from app.workspace.repository import list_conversations
+from app.workspace.sidebar import SidebarSearch
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="需要隔离 PostgreSQL 测试库")
@@ -90,7 +93,9 @@ async def test_starred_and_closed_filters_are_scoped_and_persisted(
 
 
 @pytest.mark.asyncio
-async def test_unified_search_matches_related_orders_without_cross_store_leakage() -> None:
+async def test_unified_search_matches_related_orders_without_cross_store_leakage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     assert TEST_DATABASE_URL is not None
     engine = create_async_engine(TEST_DATABASE_URL)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
@@ -162,6 +167,7 @@ async def test_unified_search_matches_related_orders_without_cross_store_leakage
                     order_id=second_order.id,
                     product_name="Blue walking pad",
                     sku="SKU-BLUE",
+                    raw_payload={"sku_id": "SKU-ID-BLUE"},
                     quantity=1,
                     unit_price=Decimal("99.00"),
                     total_amount=Decimal("99.00"),
@@ -237,6 +243,39 @@ async def test_unified_search_matches_related_orders_without_cross_store_leakage
                 ("%",),
             )
             assert literal_wildcard == [] and wildcard_total == 0
+
+            monkeypatch.setattr(sidebar_service, "allowed_store_ids", AsyncMock(return_value={store.id}))
+            sidebar_actor = SimpleNamespace(id=actor)
+            matching = await sidebar_service.search_sidebar_orders(
+                session,
+                sidebar_actor,
+                second.id,
+                SidebarSearch(section="orders", field="sellerSku", query="SKU-BLUE"),
+            )
+            assert matching.pagination.total == 1
+            assert matching.items[0].external_order_id == "ORDER-BOB-2026"
+            by_sku_id = await sidebar_service.search_sidebar_orders(
+                session,
+                sidebar_actor,
+                second.id,
+                SidebarSearch(section="orders", field="sku", query="SKU-ID-BLUE"),
+            )
+            assert by_sku_id.pagination.total == 1
+            cross_store = await sidebar_service.search_sidebar_orders(
+                session,
+                sidebar_actor,
+                second.id,
+                SidebarSearch(section="orders", field="order", query="CROSS-STORE-SECRET"),
+            )
+            assert cross_store.items == []
+            with pytest.raises(AppError) as denied:
+                await sidebar_service.search_sidebar_orders(
+                    session,
+                    sidebar_actor,
+                    other.id,
+                    SidebarSearch(section="orders", field="order"),
+                )
+            assert denied.value.status_code == 404
     finally:
         if store_ids:
             async with sessions() as session:

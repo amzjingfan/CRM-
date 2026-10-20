@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-20 客户侧栏源码候选 [TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-001-20261020-R01.md) 为本地 `PASS`：隔离 PostgreSQL 2226 passed/3 skipped、前端契约 47/47、生产模式合成浏览器 42/42，Ruff/格式/mypy 和 webpack 生产构建通过。staging 当前唯一 TikTok 渠道只读核对为已连接且具备 Product Basic 与优惠券读取 Scope；新代码尚未手动部署，真实订单/商品/优惠券目录返回未验收。本次无买家外发，production No-Go；后续现场结论由独立部署 TR 记录。
+
 2026-10-20 工作台发送栏[TR](../reports/tests/TR-MVP-WORKSPACE-COMPOSER-MENU-001-20261020-R01.md)为 `PASS`：后端 2198 passed/29 skipped，前端契约 47/47、生产浏览器 39/39，最终受影响交互 9/9；staging 手动门禁、11 容器、三健康 200 与已登录页面核对通过。合成中文草稿经现有 DeepSeek 得到一次英文译文，直接/译后两种方式都进入独立人工审阅后退出，草稿清空，无买家外发。其他 12 种目标语言仅核对选项和契约，未逐一评价真实译文；production No-Go。GitHub Actions 零步骤失败不计为验收。
 
 2026-10-20 工作台统一搜索与多语言人工回复：[部署 R01](../reports/tests/TR-MVP-WORKSPACE-SEARCH-TRANSLATION-DEPLOY-001-20261020-R01.md)已记录 staging 手动门禁、真实单项搜索 230→1 和六语入口；[补充 R02](../reports/tests/TR-MVP-WORKSPACE-SEARCH-TRANSLATION-DEPLOY-001-20261020-R02.md)在已登录真实授权会话中用合成中文草稿取得一次真实 DeepSeek 英语译文，并核对独立人工审阅弹窗的准确发送内容。草稿和预览已清除，本轮无 TikTok 外发；其余五语的真实译文质量与译文真实外发未单独验收，production No-Go。

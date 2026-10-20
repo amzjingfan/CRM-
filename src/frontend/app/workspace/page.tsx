@@ -1,11 +1,12 @@
 "use client";
 
 import { KeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, CaretDown, CaretRight, MagnifyingGlass, MapPin, Package, Star, Ticket, UserFocus, UserSwitch, X } from "@phosphor-icons/react";
+import { ArrowDown, ArrowLeft, ArrowRight, CaretDown, CaretRight, MagnifyingGlass, Star, UserFocus, UserSwitch, X } from "@phosphor-icons/react";
 import { AppShell } from "../../components/AppShell";
+import { CustomerSidebar } from "../../components/CustomerSidebar";
 import { MessageBubble } from "../../components/MessageBubble";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { getLogistics, getSessionMessages, getSessionMessagesPage, issueCoupon, listSessionAssignees, listSessions, listStores, markSessionRead, sendMessage, setSessionClosed, setSessionStar, streamChatQuery, transferSession, translateDraft, updateShippingAddress, type DraftTargetLanguage, type SessionAssignee, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
+import { getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendMessage, setSessionClosed, setSessionStar, streamChatQuery, transferSession, translateDraft, type DraftTargetLanguage, type SessionAssignee, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
 
@@ -389,27 +390,6 @@ export default function WorkspacePage() {
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void openReview(activeSendChoice); }
   }
 
-  async function showLogistics() {
-    const order = detail?.recent_orders[0]; if (!order) { setAnnouncement(en ? "No order available" : "暂无可查询订单"); return; }
-    try { const result = await getLogistics(order.id); setAnnouncement(en ? `Logistics: ${result.tracking_status ?? "No status"}; tracking number ${result.tracking_number ?? "Unavailable"}` : `物流：${result.tracking_status ?? "暂无状态"}，单号 ${result.tracking_number ?? "暂无"}`); }
-    catch (caught) { setAnnouncement(caught instanceof Error ? caught.message : en ? "Logistics lookup failed" : "物流查询失败"); }
-  }
-
-  async function changeAddress() {
-    const order = detail?.recent_orders[0]; if (!order) { setAnnouncement(en ? "No order can be updated" : "暂无可修改订单"); return; }
-    const address = window.prompt(en ? "Enter the new address (Phase 3 uses a simulated submission)" : "请输入新的详细地址（Phase 3 为模拟提交）"); if (!address) return;
-    if (!window.confirm(en ? "Submit the address change request? The simulated result will not overwrite the platform address." : "确认提交地址修改请求？模拟结果不会覆盖平台权威地址。")) return;
-    try { const result = await updateShippingAddress(order.id, { recipient_name: detail?.customer.name ?? "Customer", address_line1: address, city: "Pending", postal_code: "000000", country_code: "CN" }, newKey()); setAnnouncement(result.mocked ? (en ? "Address change simulated; awaiting platform confirmation" : "地址修改已模拟提交，等待平台确认") : (en ? "Address change submitted" : "地址修改已提交")); }
-    catch (caught) { setAnnouncement(caught instanceof Error ? caught.message : en ? "Address update failed" : "地址修改失败"); }
-  }
-
-  async function sendCouponToCustomer() {
-    if (!detail) return; const code = window.prompt(en ? "Enter coupon code" : "请输入优惠券编码"); if (!code) return;
-    if (!window.confirm(en ? `Issue coupon ${code} to this customer?` : `确认向该客户发放优惠券 ${code}？`)) return;
-    try { const result = await issueCoupon(detail.customer.id, code, newKey()); setAnnouncement(result.mocked ? (en ? "Coupon issuance simulated" : "优惠券已模拟发放") : (en ? "Coupon issued" : "优惠券已发放")); }
-    catch (caught) { setAnnouncement(caught instanceof Error ? caught.message : en ? "Coupon issuance failed" : "发券失败"); }
-  }
-
   async function requestSuggestion() {
     if (!selectedId || suggestionLoading) return;
     suggestionController.current?.abort(); const controller = new AbortController(); suggestionController.current = controller;
@@ -555,7 +535,7 @@ export default function WorkspacePage() {
       </div>
     </>}</section>
 
-    <aside className={`customer-panel ${customerOpen ? "open" : ""}`} aria-label={en ? "Customer and quick actions" : "客户与快捷操作"}><button aria-label={en ? "Close customer details" : "关闭客户信息"} className="drawer-close" onClick={() => setCustomerOpen(false)} type="button"><X size={21} /></button>{detail ? <><div className="customer-profile"><span className="avatar large">{detail.customer.name?.slice(0, 1) ?? "?"}</span><h2>{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><p>{detail.customer.email ?? (en ? "Email not provided" : "未提供邮箱")}</p>{detail.customer.tags.length ? <div className="customer-tags">{detail.customer.tags.map((tag) => <span className="status-badge" key={tag}>{tag}</span>)}</div> : null}</div><section className="side-section"><h3>{en ? "Quick actions" : "快捷操作"}</h3><button className="action-row" onClick={() => void showLogistics()} type="button"><span><Package size={17} />{en ? "Check logistics" : "查询物流"}</span><ArrowRight size={16} /></button><button className="action-row" onClick={() => void changeAddress()} type="button"><span><MapPin size={17} />{en ? "Change address" : "修改地址"}</span><ArrowRight size={16} /></button><button className="action-row" onClick={() => void sendCouponToCustomer()} type="button"><span><Ticket size={17} />{en ? "Issue coupon" : "发优惠券"}</span><ArrowRight size={16} /></button></section><section className="side-section"><h3>{en ? "Recent orders" : "最近订单"}</h3>{detail.recent_orders.length ? detail.recent_orders.map((order) => <div className="order-card" key={order.id}><strong>{order.external_order_id}</strong><span>{order.currency} {order.total_amount}</span><small>{order.status}{order.tracking_status ? ` · ${order.tracking_status}` : ""}</small></div>) : <p className="text-sm text-[var(--muted)]">{en ? "No orders" : "暂无订单"}</p>}</section></> : <EmptyState label={en ? "Select a conversation to view customer details" : "选择会话后查看客户信息"} />}</aside>
+    <aside className={`customer-panel ${customerOpen ? "open" : ""}`} aria-label={en ? "Customer and quick actions" : "客户与快捷操作"}><CustomerSidebar detail={detail} en={en} key={detail?.session.id ?? "none"} onClose={() => setCustomerOpen(false)} onDraft={(content) => { setDraft(content); setAnnouncement(en ? "Added to draft; review before sending" : "已填入草稿，请核对后发送"); }} storeName={stores.find((store) => store.id === detail?.session.store_id)?.name ?? null} /></aside>
     {customerOpen ? <button aria-label={en ? "Close drawer overlay" : "关闭抽屉遮罩"} className="drawer-backdrop" onClick={() => setCustomerOpen(false)} type="button" /> : null}
     {batchOpen ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Batch search conversations" : "批量搜索会话"} aria-modal="true" className="action-dialog" role="dialog"><h2>{en ? "Batch search conversations" : "批量搜索会话"}</h2><p>{en ? "Enter buyer names, order numbers, tracking numbers or products. One keyword per line; any match is shown." : "可按买家昵称、订单号、物流号或商品名称一次输入多个关键词。每行一个，命中任一关键词即显示会话。"}</p><textarea aria-label={en ? "Batch keywords" : "批量搜索关键词"} className="batch-search-textarea" onChange={(event) => setBatchDraft(event.target.value)} placeholder={en ? "One keyword per line" : "每行输入一个关键词"} value={batchDraft} />{batchError ? <p className="workspace-translation-error" role="alert">{batchError}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setBatchOpen(false)} type="button">{en ? "Cancel" : "取消"}</button><button className="secondary-button" onClick={() => { setBatchTerms([]); setSearchInput(""); setSearch(""); setSearchScope("all"); setBatchOpen(false); }} type="button">{en ? "Clear filters" : "清空筛选"}</button><button className="primary-button" onClick={applyBatchSearch} type="button">{en ? "View results" : "查看结果"}</button></div></section></div> : null}
     {review && review.sessionId === selectedId ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Review outgoing message" : "审阅外发消息"} aria-modal="true" className="action-dialog workspace-review-dialog" role="dialog"><h2>{en ? "Review outgoing message" : "审阅外发消息"}</h2><p>{en ? "Recipient" : "收件人"}：{detail?.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} · {detail?.session.platform}</p><p>{en ? "Target language" : "目标语言"}：{replyLanguages.find((item) => item.value === review.language)?.[en ? "en" : "zh"]}</p><div className="workspace-review-content"><strong>{en ? "Exact message to send" : "即将发送的准确内容"}</strong><p>{review.content}</p></div>{review.language !== "original" ? <div className="workspace-review-source"><strong>{en ? "Original draft" : "原始草稿"}</strong><p>{review.source}</p></div> : null}<p>{detail?.send_mode === "real" ? (en ? "This sends a real TikTok message and is audited." : "确认后将向真实 TikTok 买家发送，操作会被审计。") : (en ? "This runs simulated delivery." : "确认后执行模拟发送。")}</p><div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setReview(null)} type="button">{en ? "Back to edit" : "返回修改"}</button><button className="primary-button" disabled={sending || detail?.send_mode === "disabled"} onClick={() => void submitMessage(review.content, review.key, review.sessionId)} type="button">{en ? "Confirm & send" : "确认并发送"}</button></div></section></div> : null}

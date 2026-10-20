@@ -62,8 +62,56 @@ from app.workspace.service import (
     translate_draft,
     translate_message,
 )
+from app.workspace.sidebar import (
+    SidebarCoupons,
+    SidebarOrders,
+    SidebarProduct,
+    SidebarProducts,
+    SidebarSearch,
+    get_sidebar_product,
+    search_sidebar_coupons,
+    search_sidebar_orders,
+    search_sidebar_products,
+)
 
 router = APIRouter(prefix="/workspace", tags=["客服工作台"])
+
+
+@router.post(
+    "/sessions/{session_id}/sidebar/search",
+    response_model=ApiResponse[SidebarOrders | SidebarProducts | SidebarCoupons],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
+)
+async def sidebar_search(
+    session_id: uuid.UUID,
+    payload: SidebarSearch,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[SidebarOrders | SidebarProducts | SidebarCoupons]:
+    """按会话授权读取侧栏数据；搜索词放请求体，避免进入访问日志。"""
+    data: SidebarOrders | SidebarProducts | SidebarCoupons
+    if payload.section == "orders":
+        data = await search_sidebar_orders(session, user, session_id, payload)
+    elif payload.section == "products":
+        data = await search_sidebar_products(session, user, session_id, payload)
+    else:
+        data = await search_sidebar_coupons(session, user, session_id, payload)
+    return ApiResponse(data=data)
+
+
+@router.get(
+    "/sessions/{session_id}/sidebar/products/{product_id}",
+    response_model=ApiResponse[SidebarProduct],
+    dependencies=[Depends(require_permission("workspace.view"))],
+)
+async def sidebar_product(
+    session_id: uuid.UUID,
+    product_id: str,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[SidebarProduct]:
+    """展开商品卡时按会话店铺授权读取 SKU 属性和图片。"""
+    return ApiResponse(data=await get_sidebar_product(session, user, session_id, product_id))
 
 
 @router.post(

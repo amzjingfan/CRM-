@@ -80,7 +80,9 @@ async function openPage(path, responses = {}, setup = async () => {}) {
       return;
     }
     const response = responses[`${request.method()} ${pathname}`] ??
-      (pathname === "/v1/auth/me" ? user : []);
+      (pathname.endsWith("/sidebar/search")
+        ? { items: [], pagination: { page: 1, page_size: 20, total: 0 } }
+        : pathname === "/v1/auth/me" ? user : []);
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -697,7 +699,7 @@ test("older conversation filter response cannot replace the latest list", async 
     await page.getByRole("button", { name: "未读" }).click();
     await unreadStartedPromise;
     await page.getByText(/正在加载会话/).waitFor({ state: "visible" });
-    await page.getByRole("button", { name: "全部" }).click();
+    await page.getByLabel("会话筛选").getByRole("button", { name: "全部" }).click();
     await secondAllPromise;
     await page.getByText(/正在加载会话/).waitFor({ state: "hidden" });
     const unreadResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/v1/workspace/sessions" && new URL(response.url()).searchParams.get("filter") === "unread");
@@ -792,7 +794,7 @@ test("real-send reply composer stays visible with a long AI suggestion and accep
             recent_orders: [], ai_suggestion: null, pagination: { page: 1, page_size: 100, total: 100 },
             send_mode: "real", requires_confirmation: true } }) });
       }
-      if (route.request().method() === "POST") sendCalls += 1;
+      if (path === "/v1/workspace/sessions/session-draft/messages" && route.request().method() === "POST") sendCalls += 1;
       return route.fallback();
     });
   });
