@@ -126,7 +126,9 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .workspace-popover button { display: flex; width: 100%; min-height: 32px; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 3px; color: var(--text); font-size: .76rem; text-align: left; white-space: nowrap; }
 .workspace-popover button:hover:not(:disabled), .workspace-popover button[aria-checked="true"] { background: var(--primary-soft); color: var(--primary); }
 .workspace-popover button:disabled { color: var(--muted); cursor: not-allowed; }
-.workspace-more-languages { display: grid; border-top: 1px solid var(--border); margin-top: 3px; padding-top: 3px; }
+.workspace-language-menu { overflow: visible; }
+.workspace-more-languages { position: absolute; bottom: 0; left: calc(100% + 6px); display: grid; min-width: 122px; max-height: min(390px, 55vh); overflow-y: auto; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 4px; box-shadow: 0 8px 24px rgb(0 0 0 / 16%); }
+.workspace-more-languages[data-side="left"] { right: calc(100% + 6px); left: auto; }
 .workspace-send-split { display: flex; }
 .workspace-send-main, .workspace-send-toggle { display: inline-flex; min-height: 32px; align-items: center; justify-content: center; background: var(--primary); color: white; font-size: .76rem; white-space: nowrap; }
 .workspace-send-main { border-radius: 3px 0 0 3px; padding: 5px 13px; }
@@ -144,7 +146,6 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 @media (max-width: 680px) {
   .workspace-composer-footer { align-items: flex-start; flex-direction: column; }
   .workspace-composer-actions { width: 100%; justify-content: flex-end; }
-  .workspace-composer-count span { display: none; }
 }
 .customer-panel { position: relative; display: flex; min-height: 0; flex-direction: column; overflow: hidden; padding: 0; }
 .customer-side-profile { display: flex; min-height: 75px; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); padding: 12px 14px; }

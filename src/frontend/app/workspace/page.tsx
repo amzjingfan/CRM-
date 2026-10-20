@@ -73,6 +73,7 @@ export default function WorkspacePage() {
   const [sendChoice, setSendChoice] = useState<SendChoice>("translated");
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [moreLanguagesOpen, setMoreLanguagesOpen] = useState(false);
+  const [moreLanguagesLeft, setMoreLanguagesLeft] = useState(false);
   const [sendMenuOpen, setSendMenuOpen] = useState(false);
   const composerMenusRef = useRef<HTMLDivElement | null>(null);
   const currentComposeRef = useRef({ sessionId: selectedId, draft, language: replyLanguage, choice: sendChoice, translationEnabled: detail?.draft_translation_enabled === true });
@@ -511,14 +512,14 @@ export default function WorkspacePage() {
         {preview && preview.sessionId === selectedId && preview.source === draft && preview.language === replyLanguage ? <div className="workspace-translation-preview" aria-label={en ? "Translation preview" : "译文预览"}><strong>{en ? "Translation preview · review before sending" : "译文预览 · 发送前请核对"}</strong><p>{preview.content}</p><small>{en ? "Original draft" : "原始草稿"}：{draft}</small></div> : null}
         {failedDraft?.sessionId === selectedId ? <button className="text-button text-red-600" onClick={() => setReview({ sessionId: failedDraft.sessionId, source: failedDraft.content, language: "original", content: failedDraft.content, key: failedDraft.key })} type="button">{en ? "Request interrupted; review exact retry" : "请求中断，审阅原内容后重试"}</button> : null}
         <div className="workspace-composer-footer" ref={composerMenusRef}>
-          <small className="workspace-composer-count">{draft.length}/{messageLimit}<span> · {modeLabel(detail.send_mode, en)}</span></small>
+          <small className="workspace-composer-count">{draft.length}/{messageLimit}</small>
           <div className="workspace-composer-actions">
             <div className="workspace-menu-anchor">
               <button aria-expanded={languageMenuOpen} aria-haspopup="menu" aria-label={en ? "Target language" : "目标语言"} className="workspace-toolbar-button" disabled={!detail.draft_translation_enabled || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(!languageMenuOpen); setSendMenuOpen(false); }} type="button">{replyLanguages.find((item) => item.value === replyLanguage)?.[en ? "en" : "zh"]}<CaretDown size={14} /></button>
               {languageMenuOpen ? <div aria-label={en ? "Target language options" : "目标语言选项"} className="workspace-popover workspace-language-menu" role="menu">
                 <button aria-checked={replyLanguage === "en"} onClick={() => { setReplyLanguage("en"); setLanguageMenuOpen(false); setMoreLanguagesOpen(false); }} role="menuitemradio" type="button">{en ? "English" : "英语"}</button>
-                <button aria-expanded={moreLanguagesOpen} className="workspace-more-button" onClick={() => setMoreLanguagesOpen(!moreLanguagesOpen)} role="menuitem" type="button">{en ? "More" : "更多"}<CaretRight size={14} /></button>
-                {moreLanguagesOpen ? <div className="workspace-more-languages">{replyLanguages.slice(2).map((item) => <button aria-checked={replyLanguage === item.value} key={item.value} onClick={() => { setReplyLanguage(item.value as DraftTargetLanguage); setLanguageMenuOpen(false); setMoreLanguagesOpen(false); }} role="menuitemradio" type="button">{en ? item.en : item.zh}</button>)}</div> : null}
+                <button aria-expanded={moreLanguagesOpen} aria-haspopup="menu" className="workspace-more-button" onClick={(event) => { setMoreLanguagesLeft(window.innerWidth - event.currentTarget.getBoundingClientRect().right < 148); setMoreLanguagesOpen(!moreLanguagesOpen); }} role="menuitem" type="button">{en ? "More" : "更多"}<CaretRight size={14} /></button>
+                {moreLanguagesOpen ? <div aria-label={en ? "More target languages" : "更多目标语言"} className="workspace-more-languages" data-side={moreLanguagesLeft ? "left" : "right"} role="menu">{replyLanguages.slice(2).map((item) => <button aria-checked={replyLanguage === item.value} key={item.value} onClick={() => { setReplyLanguage(item.value as DraftTargetLanguage); setLanguageMenuOpen(false); setMoreLanguagesOpen(false); }} role="menuitemradio" type="button">{en ? item.en : item.zh}</button>)}</div> : null}
               </div> : null}
             </div>
             <button className="workspace-toolbar-button" disabled={!draft.trim() || previewLoading || !detail.draft_translation_enabled || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(false); setMoreLanguagesOpen(false); setSendMenuOpen(false); void previewTranslation(); }} type="button">{previewLoading ? (en ? "Translating…" : "翻译中…") : (en ? "Translate" : "翻译")}</button>

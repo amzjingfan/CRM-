@@ -217,6 +217,29 @@ test("language and send menus keep direct text separate from translated review",
   } finally { await context.close(); }
 });
 
+test("composer keeps the count separate and opens more languages beside the short menu", async () => {
+  const { context, page } = await openWorkspace(2);
+  try {
+    assert.equal((await page.locator(".workspace-composer-count").textContent()).trim(), "0/2000");
+    await page.getByRole("button", { name: "目标语言" }).click();
+    const menu = page.getByRole("menu", { name: "目标语言选项" });
+    await menu.getByRole("menuitem", { name: "更多" }).click();
+    const more = page.getByRole("menu", { name: "更多目标语言" });
+    const menuBox = await menu.boundingBox();
+    const moreBox = await more.boundingBox();
+    assert.ok(menuBox && moreBox);
+    assert.ok(moreBox.x >= menuBox.x + menuBox.width - 2, "language submenu should open beside the short menu");
+    assert.ok(moreBox.x + moreBox.width <= 1440, "language submenu should stay in the viewport");
+    assert.ok(moreBox.y >= 0, "language submenu should not extend above the viewport");
+    await page.setViewportSize({ width: 375, height: 900 });
+    await menu.getByRole("menuitem", { name: "更多" }).click();
+    await menu.getByRole("menuitem", { name: "更多" }).click();
+    const mobileMoreBox = await more.boundingBox();
+    assert.ok(mobileMoreBox);
+    assert.ok(mobileMoreBox.x >= 0 && mobileMoreBox.x + mobileMoreBox.width <= 375, "language submenu should stay visible on mobile");
+  } finally { await context.close(); }
+});
+
 test("late translation response cannot restore a preview after the draft changed", async () => {
   const { context, page, calls } = await openWorkspace(2);
   try {
