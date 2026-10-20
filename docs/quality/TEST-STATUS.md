@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-20 G6 [R04 TR](../reports/tests/TR-MVP-007-20261020-R04.md)对**用户明确接受风险后的当前 staging 单店人工辅助限定条件**为 `PASS`：[低敏证据](../../release/evidence/staging/crm-staging-g6-risk-accepted-20261020.json)保留前 634 槽 619 可用、15 失败、12 次告警和恢复、127 条资源样本以及本次三健康/固定出口/G3 边界复核。旧 24 小时、99.5% 目标仍 `FAIL_INCOMPLETE`，806 槽未采，公网间歇故障未定位；限定放行不是持续稳定性保证。`MVP-007 VERIFYING` 待 PR 合并后关闭；G8/production No-Go。下方 R01～R03 为形成时的历史结论，不覆盖本次限定决策。
+2026-10-20 G6 [R04 TR](../reports/tests/TR-MVP-007-20261020-R04.md)对**用户明确接受风险后的当前 staging 单店人工辅助限定条件**为 `PASS`：[低敏证据](../../release/evidence/staging/crm-staging-g6-risk-accepted-20261020.json)保留前 634 槽 619 可用、15 失败、12 次告警和恢复、127 条资源样本以及本次三健康/固定出口/G3 边界复核。旧 24 小时、99.5% 目标仍 `FAIL_INCOMPLETE`，806 槽未采，公网间歇故障未定位；限定放行不是持续稳定性保证。`MVP-007 DONE`（PR #459 已合入 main）；G8/production No-Go。下方 R01～R03 为形成时的历史结论，不覆盖本次限定决策。
 
 2026-10-20 G6 staging 缓解现场检查为[部分通过](../reports/tests/TR-MVP-007-20261020-R03.md)：反向 SSH 与出口 helper 的 `10/2` 保活生效，固定出口和三个指定公网健康接口瞬时正常，其他应用容器未重建；[低敏现场证据](../../release/evidence/staging/crm-staging-g6-ssh-mitigation-live-20261020.json)。公网 TLS 曾独立出现 2/360 次 8 秒超时，原因与持续稳定性未证实；旧轮中止记录仍失败，未开始新 24 小时验收。`MVP-007 BLOCKED`，G8/production No-Go。
 
