@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-20 G8 [R01 TR](../reports/tests/TR-MVP-009-20261020-R01.md)的只读证据核对与决策流程为 `PASS`，**production 决策结果为 No-Go**。三公网健康、固定出口、现有 G3 单店开关和 11 个 CRM 容器在本次检查时正常；生产拓扑未确定、当前主线镜像/生产回滚目标未就绪，G6 旧量化稳定性失败且公网风险仅在 staging 被接受。共享网关的 SSH root/密码认证开启，需独立评审；外部失败登录尝试与 G6 故障无已证实因果。见[决策材料](../operations/G8-DECISION-20261020.md)与[低敏摘要](../../release/evidence/staging/crm-staging-g8-readiness-20261020.json)。`MVP-009 VERIFYING` 待 PR 合并后关闭；production 未部署，现有 staging 范围不扩大。
+2026-10-20 G8 [R01 TR](../reports/tests/TR-MVP-009-20261020-R01.md)的只读证据核对与决策流程为 `PASS`，**production 决策结果为 No-Go**。三公网健康、固定出口、现有 G3 单店开关和 11 个 CRM 容器在本次检查时正常；生产拓扑未确定、当前主线镜像/生产回滚目标未就绪，G6 旧量化稳定性失败且公网风险仅在 staging 被接受。共享网关的 SSH root/密码认证开启，需独立评审；外部失败登录尝试与 G6 故障无已证实因果。见[决策材料](../operations/G8-DECISION-20261020.md)与[低敏摘要](../../release/evidence/staging/crm-staging-g8-readiness-20261020.json)。PR #461 已合入 main；`MVP-009 DONE` 指本轮决策任务完成，production 未部署，现有 staging 范围不扩大。GitHub Actions 两作业因账户计费零步骤失败，不计为 CI 通过。
 
 2026-10-20 G6 [R04 TR](../reports/tests/TR-MVP-007-20261020-R04.md)对**用户明确接受风险后的当前 staging 单店人工辅助限定条件**为 `PASS`：[低敏证据](../../release/evidence/staging/crm-staging-g6-risk-accepted-20261020.json)保留前 634 槽 619 可用、15 失败、12 次告警和恢复、127 条资源样本以及本次三健康/固定出口/G3 边界复核。旧 24 小时、99.5% 目标仍 `FAIL_INCOMPLETE`，806 槽未采，公网间歇故障未定位；限定放行不是持续稳定性保证。`MVP-007 DONE`（PR #459 已合入 main）；G8/production No-Go。下方 R01～R03 为形成时的历史结论，不覆盖本次限定决策。
 
