@@ -1,0 +1,42 @@
+{
+  "kind": "G6_ACCEPTANCE_WINDOW_AMENDMENT",
+  "recorded_at_utc": "2026-10-20T00:56:56Z",
+  "decision": "User shortened the current G6 acceptance window from 48 to 24 elapsed hours, including all time already observed. The 99.5% availability threshold and other G6 evidence requirements remain unchanged.",
+  "run_id": "g6-20261019-c4a12b",
+  "acceptance_window_utc": {
+    "start": "2026-10-19T14:30:00Z",
+    "end": "2026-10-20T14:30:00Z",
+    "slots": 1440,
+    "minimum_available_slots": 1433,
+    "maximum_failed_slots": 7
+  },
+  "original_collection_envelope_end_utc": "2026-10-22T14:30:00Z",
+  "observed_prefix": {
+    "first_slot": 0,
+    "last_slot": 626,
+    "observed_slots": 627,
+    "available_slots": 612,
+    "failed_slots": 15,
+    "failed_slot_indices": [4, 5, 15, 57, 60, 96, 110, 126, 129, 148, 158, 211, 212, 213, 515],
+    "alert_rows": 24,
+    "resource_samples": 126,
+    "expected_resource_sample_slots": 288
+  },
+  "runtime_check": {
+    "collector_service": "crm-g6-20261019-c4a12b.service",
+    "service_state": "active",
+    "service_restarts": 0,
+    "fixed_egress_verify": "ok",
+    "fixed_egress_ip": "38.55.145.52"
+  },
+  "sha256": {
+    "samples_jsonl_first_627_rows": "7a4e4b82099a3a739ccd97878b8f8a16bcd7c9bf940e82f7f0af45194b95986c",
+    "alerts_jsonl_first_24_rows": "3ee127607bfbf553df73df84a2c1dd32697d39004fde73544e7943a4cbd96bad",
+    "meta_json": "4b541473550b1d5c6ebd2d72f0681f78f53eb5a5034ff05343134e8599a0aa77",
+    "collector_script": "2369861d36f425e266e496b5ed9aaee0a2a23140f754bde5df910193a8a5858e",
+    "report_script_48h": "49e87f7c13f31e1634b5c618081497e027f65497e3fe27f6370968e22daedd2d",
+    "separate_report_script_24h": "6712da854d65f2d35d3323dd540a0ebbeac3f4e366ac5fe771149da0aa4efa4d"
+  },
+  "gate_conclusion": "NO_GO_MATHEMATICALLY_UNREACHABLE",
+  "explanation": "Fifteen failed slots already exceed the new maximum of seven. Even if all remaining slots pass, at most 1425 of 1440 slots can be available. Continue the unchanged original collector until the 24-hour acceptance end, then preserve the raw files, stop the collector, and issue a final failed-window report. No backfill or stitching. G8 and production remain No-Go."
+}
