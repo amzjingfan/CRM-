@@ -62,6 +62,9 @@ async def test_search_validates_batch_bounds_before_store_query(
     )
     assert listing.await_args.args[-2:] == ("all", ("Alice", "O-7"))
 
+    await workspace_service.get_session_list(session, actor, "all", None, None, None, 1, 30, "buyer", "Test Buyer", [])
+    assert listing.await_args.args[-2:] == ("buyer", ("Test Buyer",))
+
 
 @pytest.mark.asyncio
 async def test_draft_translation_registers_safe_prompt_and_does_not_send() -> None:

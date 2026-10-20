@@ -160,7 +160,7 @@ async def get_session_list(
         raise AppError(ErrorCode.VALIDATION_ERROR, "不支持的搜索范围", 422)
     if search is not None and terms:
         raise AppError(ErrorCode.VALIDATION_ERROR, "单项搜索和批量搜索不能同时使用", 422)
-    raw_terms = terms if terms is not None else ([search] if search is not None else [])
+    raw_terms = terms if terms else ([search] if search is not None else [])
     if len(raw_terms) > 20 or any(not item.strip() or len(item.strip()) > 120 for item in raw_terms):
         raise AppError(ErrorCode.VALIDATION_ERROR, "搜索最多 20 项且每项为 1～120 个字符", 422)
     search_terms = tuple(dict.fromkeys(item.strip() for item in raw_terms))
