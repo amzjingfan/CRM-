@@ -271,6 +271,49 @@ async def test_search_orders_signs_exact_compact_json_body() -> None:
 
 
 @pytest.mark.asyncio
+async def test_sidebar_order_link_uses_official_conversation_and_buyer_filter() -> None:
+    """订单域 user_id 必须来自官方单会话买家，不接受 IM ID 直接查询。"""
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "GET":
+            data: dict[str, object] = {
+                "conversation": {
+                    "id": "700001",
+                    "create_time": 1,
+                    "participants": [{"role": "BUYER", "im_user_id": "800001", "user_id": "900001"}],
+                }
+            }
+        else:
+            data = {"orders": [], "next_page_token": ""}
+        return httpx.Response(200, json={"code": 0, "data": data})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = TikTokReadClient(real_settings(), connected_channel(), http_client)
+        buyer = (await client.get_conversation("700001")).participants[0]
+        await client.search_orders(buyer_user_id=buyer.user_id)
+
+    assert requests[0].url.path == "/customer_service/202601/conversations/700001"
+    assert requests[1].url.path == "/order/202309/orders/search"
+    assert json.loads(requests[1].content) == {"buyer_user_id": "900001"}
+
+
+@pytest.mark.asyncio
+async def test_sidebar_conversation_identity_mismatch_fails_closed() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"code": 0, "data": {"conversation": {"id": "700002", "create_time": 1, "participants": []}}}
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = TikTokReadClient(real_settings(), connected_channel(), http_client)
+        with pytest.raises(AppError) as raised:
+            await client.get_conversation("700001")
+    assert raised.value.status_code == 502
+
+
+@pytest.mark.asyncio
 async def test_shop_tracking_conversation_message_and_webhook_reads_use_get_only() -> None:
     """其余首期能力必须全部调用官方 GET 读取端点，且有效店铺查询不附加 shop_cipher。"""
     requests: list[httpx.Request] = []

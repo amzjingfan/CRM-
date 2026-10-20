@@ -405,6 +405,7 @@ class TikTokReadClient:
         page_size: int = 20,
         page_token: str | None = None,
         order_status: str | None = None,
+        buyer_user_id: str | None = None,
     ) -> tuple[list[TikTokOrder], str | None, str | None]:
         """分页读取订单；POST 仅是 TikTok 查询协议，不产生平台写操作。"""
         self._require_scope("seller.order.info")
@@ -416,6 +417,10 @@ class TikTokReadClient:
         body: dict[str, object] = {}
         if order_status:
             body["order_status"] = order_status
+        if buyer_user_id is not None:
+            if not buyer_user_id.isdigit():
+                raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 买家 ID 无效", 422)
+            body["buyer_user_id"] = buyer_user_id
         envelope = await self._request("POST", "/order/202309/orders/search", query, body)
         data = envelope.data or {}
         items = self._validated_list(data, "orders", TikTokOrder)
@@ -553,6 +558,20 @@ class TikTokReadClient:
             str(next_token) if next_token else None,
             envelope.request_id,
         )
+
+    async def get_conversation(self, conversation_id: str) -> TikTokConversation:
+        """读取单个会话的官方参与者身份，用于安全关联订单域买家 ID。"""
+        self._require_scope("seller.customer_service")
+        if not conversation_id.isdigit():
+            raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 会话 ID 无效", 422)
+        envelope = await self._request("GET", f"/customer_service/202601/conversations/{conversation_id}", {})
+        try:
+            conversation = TikTokConversation.model_validate((envelope.data or {}).get("conversation"))
+        except ValidationError as exc:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 返回数据结构异常", 502) from exc
+        if conversation.id != conversation_id:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话身份不匹配", 502)
+        return conversation
 
     async def get_conversation_messages(
         self,

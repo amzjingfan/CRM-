@@ -56,9 +56,10 @@ const statusText: Record<string, { zh: string; en: string }> = {
   CANCELED: { zh: "已取消", en: "Cancelled" },
 };
 
-function money(currency: string, value: string) {
+function money(currency: string, value: string | null) {
+  if (value === null) return "—";
   const amount = Number(value);
-  return Number.isFinite(amount) ? `${currency} ${amount.toFixed(2)}` : `${currency} ${value}`;
+  return Number.isFinite(amount) ? `${currency ? `${currency} ` : ""}${amount.toFixed(2)}` : `${currency ? `${currency} ` : ""}${value}`;
 }
 function dateTime(value: string | null, en: boolean) {
   if (!value) return "—";

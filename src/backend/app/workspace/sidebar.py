@@ -1,8 +1,8 @@
 """客户侧栏只读投影。平台目录按当前会话的店铺授权读取。"""
 
 import uuid
-from datetime import datetime
-from decimal import Decimal
+from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -12,7 +12,8 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.auth.store_access import allowed_store_ids
 from app.conversations.models import Conversation
-from app.integrations.tiktok_read import TikTokCoupon, TikTokProduct, TikTokReadClient
+from app.customers.models import Customer
+from app.integrations.tiktok_read import TikTokCoupon, TikTokOrder, TikTokProduct, TikTokReadClient
 from app.orders.models import Order, OrderItem
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
@@ -44,8 +45,8 @@ class SidebarOrderItem(BaseModel):
     sku_name: str | None
     image_url: str | None
     quantity: int
-    unit_price: Decimal
-    total_amount: Decimal
+    unit_price: Decimal | None
+    total_amount: Decimal | None
 
 
 class SidebarOrder(BaseModel):
@@ -54,7 +55,7 @@ class SidebarOrder(BaseModel):
     status: str
     payment_status: str | None
     currency: str
-    total_amount: Decimal
+    total_amount: Decimal | None
     payment_breakdown: dict[str, str]
     ordered_at: datetime | None
     tracking_number: str | None
@@ -145,6 +146,139 @@ def _order_status_condition(status: OrderStatus) -> ColumnElement[bool] | None:
     return Order.status.in_(statuses[status]) if status != "all" else None
 
 
+def _live_order_matches(order: TikTokOrder, payload: SidebarSearch) -> bool:
+    statuses: dict[str, tuple[str, ...]] = {
+        "unpaid": ("UNPAID",),
+        "ship": ("AWAITING_SHIPMENT", "AWAITING_COLLECTION"),
+        "transit": ("IN_TRANSIT", "SHIPPED"),
+        "done": ("DELIVERED", "COMPLETED"),
+        "cancel": ("CANCELLED", "CANCELED"),
+    }
+    if payload.status != "all" and order.status not in statuses[payload.status]:
+        return False
+    query = payload.query.strip().casefold()
+    if not query:
+        return True
+    values: dict[str, list[str | None]] = {
+        "order": [order.id],
+        "tracking": [order.tracking_number, *(item.tracking_number for item in order.line_items)],
+        "product": [item.product_name for item in order.line_items],
+        "spu": [item.product_id for item in order.line_items],
+        "sku": [item.sku_id for item in order.line_items],
+        "sellerSku": [item.seller_sku for item in order.line_items],
+    }
+    return any(query in value.casefold() for value in values[payload.field] if value)
+
+
+def _live_order_view(order: TikTokOrder) -> SidebarOrder:
+    def amount(value: str | None) -> Decimal | None:
+        if value is None:
+            return None
+        try:
+            result = Decimal(value)
+        except InvalidOperation as exc:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单金额异常", 502) from exc
+        if not result.is_finite():
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单金额异常", 502)
+        return result
+
+    payment = order.payment
+    currency = (payment.currency if payment and payment.currency else None) or next(
+        (item.currency for item in order.line_items if item.currency), ""
+    )
+    total_amount = amount(payment.total_amount) if payment else None
+    breakdown = {
+        key: value
+        for key in (
+            "original_total_product_price",
+            "sub_total",
+            "seller_discount",
+            "platform_discount",
+            "shipping_fee",
+            "tax",
+        )
+        if payment is not None and (value := getattr(payment, key)) is not None
+    }
+    return SidebarOrder(
+        id=uuid.uuid5(uuid.NAMESPACE_URL, f"tiktok:order:{order.id}"),
+        external_order_id=order.id,
+        status=order.status,
+        payment_status=None,
+        currency=currency,
+        total_amount=total_amount,
+        payment_breakdown=breakdown,
+        ordered_at=datetime.fromtimestamp(order.create_time, UTC) if order.create_time else None,
+        tracking_number=order.tracking_number
+        or next((item.tracking_number for item in order.line_items if item.tracking_number), None),
+        tracking_status=None,
+        items=[
+            SidebarOrderItem(
+                name=item.product_name or "商品名称未提供",
+                product_id=item.product_id,
+                sku=item.seller_sku,
+                sku_id=item.sku_id,
+                sku_name=item.sku_name,
+                image_url=item.sku_image if item.sku_image and item.sku_image.startswith("https://") else None,
+                quantity=1,
+                unit_price=amount(item.sale_price),
+                total_amount=amount(item.sale_price),
+            )
+            for item in order.line_items
+        ],
+    )
+
+
+async def _search_live_orders(
+    session: AsyncSession, conversation: Conversation, payload: SidebarSearch
+) -> SidebarOrders:
+    customer = await session.get(Customer, conversation.customer_id)
+    if (
+        customer is None
+        or customer.store_id != conversation.store_id
+        or customer.platform != conversation.platform
+        or not customer.external_customer_id
+    ):
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "会话买家身份不可验证", 502)
+    client = await _tiktok_client(session, conversation.store_id)
+    remote = await client.get_conversation(conversation.external_conversation_id)
+    buyers = [participant for participant in remote.participants if participant.role == "BUYER"]
+    if len(buyers) != 1 or buyers[0].im_user_id != customer.external_customer_id or not buyers[0].user_id:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "会话买家身份不可验证", 502)
+    buyer_user_id = buyers[0].user_id
+    orders: list[TikTokOrder] = []
+    token: str | None = None
+    seen_tokens: set[str] = set()
+    seen_order_ids: set[str] = set()
+    # 买家订单超过安全上限时显式失败，避免把不完整搜索结果当成全部订单。
+    for _ in range(20):
+        page, next_token, _ = await client.search_orders(page_size=100, page_token=token, buyer_user_id=buyer_user_id)
+        if any(order.user_id != buyer_user_id for order in page):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单买家身份不匹配", 502)
+        if len({order.id for order in page}) != len(page) or any(order.id in seen_order_ids for order in page):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单分页异常", 502)
+        seen_order_ids.update(order.id for order in page)
+        orders.extend(page)
+        if not next_token:
+            break
+        if next_token in seen_tokens:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单分页异常", 502)
+        seen_tokens.add(next_token)
+        token = next_token
+    else:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "买家订单超过当前查询上限", 502)
+    matches = sorted(
+        (order for order in orders if _live_order_matches(order, payload)),
+        key=lambda order: (order.create_time or 0, order.id),
+        reverse=True,
+    )
+    page_size = 20
+    selected = matches[(payload.page - 1) * page_size : payload.page * page_size]
+    return SidebarOrders(
+        items=[_live_order_view(order) for order in selected],
+        pagination=PageMeta(page=payload.page, page_size=page_size, total=len(matches)),
+    )
+
+
 async def search_sidebar_orders(
     session: AsyncSession,
     user: User,
@@ -154,6 +288,8 @@ async def search_sidebar_orders(
     conversation = await _conversation(session, user, session_id)
     if payload.field not in {"order", "tracking", "product", "spu", "sku", "sellerSku"}:
         raise AppError(ErrorCode.VALIDATION_ERROR, "不支持的订单搜索字段", 422)
+    if conversation.platform == "tiktok" and get_settings().real_tiktok_read_enabled:
+        return await _search_live_orders(session, conversation, payload)
     filters = [
         Order.store_id == conversation.store_id,
         Order.customer_id == conversation.customer_id,
