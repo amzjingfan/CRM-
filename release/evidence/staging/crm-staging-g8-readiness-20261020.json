@@ -1,0 +1,43 @@
+{
+  "task_id": "MVP-009",
+  "gate": "G8",
+  "source_main_sha_at_review_start": "2496ec7f7d6f56b11299f83296474dac1e945504",
+  "decision_date": "2026-10-20",
+  "production_decision": "NO_GO",
+  "staging_scope": "Existing authorized single-store assisted-manual operation remains limited by G6 risk acceptance.",
+  "read_only_observation_utc": {
+    "business_host": "2026-10-20T02:24:09Z",
+    "gateway": "2026-10-20T02:25:00Z"
+  },
+  "public_health": {
+    "/healthz": {"http": 200, "tls_verify_code": 0},
+    "/v1/health": {"http": 200, "tls_verify_code": 0},
+    "/v1/health/ready": {"http": 200, "tls_verify_code": 0}
+  },
+  "business_host": {
+    "crm_running_container_count": 11,
+    "reverse_tunnel": "active",
+    "egress_helper": "running/healthy",
+    "fixed_egress_verifier": "status=ok; observed_ip=configured_ip=38.55.145.52",
+    "old_g6_collector": "inactive",
+    "four_application_image_id": "sha256:2dc92fe528d5287a2d724e27247d8465eefef85f5ee7df77bd238c2dd6c2f258",
+    "four_application_restart_count": 0,
+    "g3_scope": "backend manual ordinary-message write restricted to authorized store; read/webhook/translation enabled; limit 10; other app writes, SSE, LLM, automatic reply and high-risk write disabled"
+  },
+  "gateway": {
+    "nginx_config_test": "pass",
+    "loopback_healthz_http": 200,
+    "sshd_effective_permit_root_login": "yes",
+    "sshd_effective_password_authentication": "yes",
+    "external_failed_login_attempts_observed": true,
+    "relationship_to_g6_outage": "unproven"
+  },
+  "historical_evidence_limits": {
+    "g6_old_24h_gate": "FAIL_INCOMPLETE; 619 available and 15 failed in 634 observed slots; 806 unobserved",
+    "g6_current_gate": "RISK_ACCEPTED_LIMITED_STAGING_RELEASE",
+    "production_topology": "undecided in current production runbook",
+    "production_image_manifest": "historical f7c0f9f9 source, not current main",
+    "production_deployment": "not performed"
+  },
+  "operations_performed": "Read-only inspection of Git, existing evidence, public health, business host and shared gateway; no container changes, external messages, image publication or production deployment."
+}

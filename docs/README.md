@@ -21,7 +21,7 @@
 - 架构与接口：`architecture/SYSTEM.md` 保存系统组件、数据流、隔离和数据结构；`architecture/API.md` 保存当前管理端接口族、权限与规划接口边界；`architecture/AI.md` 保存模型、RAG、知识审批、工具和失败关闭契约。
 - 工程：`engineering/DEVELOPMENT.md` 保存编码、测试、安全、Git 和 PR 规则。
 - 质量：`quality/TEST-STRATEGY.md` 保存测试布局、层级、数据和门禁策略；`quality/TEST-STATUS.md` 保存最新有效测试结论。
-- 运维与发布：`operations/DEPLOYMENT.md` 保存环境、模型资产、staging、备份和回滚；`operations/RELEASE-GATES.md` 保存 G0～G8 当前状态与阻断条件。
+- 运维与发布：`operations/DEPLOYMENT.md` 保存环境、模型资产、staging、备份和回滚；`operations/RELEASE-GATES.md` 保存 G0～G8 当前状态与阻断条件；`operations/G8-DECISION-20261020.md` 保存本轮生产 No-Go 决策与复审条件。
 - 治理与任务：`governance/GOVERNANCE.md` 保存 Codex STANDARD 架构、Git、任务、证据、恢复、清理和发布治理；`tasks/TASKS.md` 是唯一任务状态源。
 - 恢复与历史：`memory/PROJECT-STATE.md` 保存当前恢复摘要、风险和最多三个下一动作；`history/PROJECT-HISTORY.md` 保存里程碑与历史追溯方法。
 - 过程文档：`superpowers/specs/` 保存已确认设计，`superpowers/plans/` 保存对应实施计划；其中旧文件是形成时的历史记录，不批量改写旧路径。
