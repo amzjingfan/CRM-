@@ -22,7 +22,7 @@ async function openWorkspace(messageCount = 70) {
     { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [] } },
   ];
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0 };
+  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -57,12 +57,16 @@ async function openWorkspace(messageCount = 70) {
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
-      const order = { id: "order-1", external_order_id: "577600000000000001", status: "IN_TRANSIT", payment_status: "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", tracking_number: "878696895644", tracking_status: "IN_TRANSIT", items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: "IN_TRANSIT", payment_status: "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", tracking_number: "878696895644", tracking_status: "IN_TRANSIT", live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
       const coupon = { id: "789", title: "Shop coupon", status: "ONGOING", display_type: "CHAT", promo_code: "SAVE5", discount_type: "FIXED_AMOUNT", discount_value: "5", claim_end_time: null, chat_shareable: true };
       if (payload.section === "orders") data = { items: (payload.status === "all" || payload.status === "transit") && (!payload.query || [order.external_order_id, order.tracking_number, order.items[0].name, order.items[0].sku, order.items[0].sku_id, order.items[0].product_id].some((value) => value?.toLowerCase().includes(payload.query.toLowerCase()))) ? [order] : [], pagination: { page: payload.page, page_size: 20, total: 1 } };
       else if (payload.section === "products") data = { items: !payload.query || product.title.toLowerCase().includes(payload.query.toLowerCase()) ? [product] : [], next_page_token: null, total_count: 1, partial_search: false };
       else data = { items: !payload.query || coupon.title.toLowerCase().includes(payload.query.toLowerCase()) || coupon.promo_code.toLowerCase().includes(payload.query.toLowerCase()) ? [coupon] : [], next_page_token: null, total_count: 1, partial_search: false };
+    } else if (path.endsWith("/sidebar/orders/detail") && method === "POST") {
+      calls.orderDetails++;
+      assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
+      data = { payment_method_name: "Card", shipping_provider: "Carrier A", latest_tracking_description: "Package dispatched", latest_tracking_at: "2026-10-16T23:26:48Z" };
     } else if (path.endsWith("/sidebar/products/123") && method === "GET") {
       calls.productDetails++;
       data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
@@ -289,6 +293,20 @@ test("an interrupted send retry stays bound to its original conversation", async
     await page.getByRole("button", { name: "请求中断，审阅原内容后重试" }).click();
     await page.getByRole("dialog", { name: "审阅外发消息" }).getByText(/收件人：Alice/).waitFor();
     assert.equal(calls.send, 1);
+  } finally { await context.close(); }
+});
+
+test("customer order card reveals authorized payment and latest logistics details", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByText("577600000000000001").waitFor();
+    await card.getByRole("button", { name: "详情" }).click();
+    await card.getByText("Carrier A").waitFor();
+    assert.equal(await card.getByText("Card").count(), 1);
+    assert.equal(await card.getByText("Package dispatched").count(), 1);
+    assert.equal(calls.orderDetails, 1);
+    assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });
 

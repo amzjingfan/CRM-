@@ -12,7 +12,8 @@ export type DraftTargetLanguage = "en" | "id" | "fil" | "ms" | "th" | "my" | "vi
 export type DraftTranslationView = { source_text_sha256: string; target_language: DraftTargetLanguage; translated_text: string };
 export type OrderSummary = { id: string; external_order_id: string; platform: string; status: string; currency: string; total_amount: string; tracking_number: string | null; tracking_status: string | null };
 export type SidebarOrderItem = { name: string; product_id: string | null; sku: string | null; sku_id: string | null; sku_name: string | null; image_url: string | null; quantity: number; unit_price: string | null; total_amount: string | null };
-export type SidebarOrder = { id: string; external_order_id: string; status: string; payment_status: string | null; currency: string; total_amount: string | null; payment_breakdown: Record<string, string>; ordered_at: string | null; tracking_number: string | null; tracking_status: string | null; items: SidebarOrderItem[] };
+export type SidebarOrder = { id: string; external_order_id: string; status: string; payment_status: string | null; currency: string; total_amount: string | null; payment_breakdown: Record<string, string>; ordered_at: string | null; tracking_number: string | null; tracking_status: string | null; items: SidebarOrderItem[]; live_detail_available: boolean };
+export type SidebarOrderDetail = { payment_method_name: string | null; shipping_provider: string | null; latest_tracking_description: string | null; latest_tracking_at: string | null };
 export type SidebarOrders = { items: SidebarOrder[]; pagination: { page: number; page_size: number; total: number } };
 export type SidebarSku = { id: string; seller_sku: string | null; name: string | null; currency: string | null; sale_price: string | null; quantity: number | null };
 export type SidebarProduct = { id: string; title: string; status: string | null; image_url: string | null; skus: SidebarSku[] };
@@ -140,6 +141,7 @@ export const listSessions = (query: URLSearchParams) => {
 };
 export const getSessionMessagesPage = (sessionId: string, page: number) => requestApi<SessionMessagesData>(`/workspace/sessions/${sessionId}/messages?page=${page}&page_size=100`);
 export const searchCustomerSidebar = <T extends SidebarOrders | SidebarProducts | SidebarCoupons>(sessionId: string, payload: SidebarSearch) => requestApi<T>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/search`, { method: "POST", body: JSON.stringify(payload) });
+export const getCustomerSidebarOrderDetail = (sessionId: string, orderId: string) => requestApi<SidebarOrderDetail>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/detail`, { method: "POST", body: JSON.stringify({ order_id: orderId }) });
 export const getCustomerSidebarProduct = (sessionId: string, productId: string) => requestApi<SidebarProduct>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/products/${encodeURIComponent(productId)}`);
 export const getSessionMessages = async (sessionId: string): Promise<SessionMessagesData> => {
   const first = await getSessionMessagesPage(sessionId, 1);

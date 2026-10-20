@@ -64,10 +64,13 @@ from app.workspace.service import (
 )
 from app.workspace.sidebar import (
     SidebarCoupons,
+    SidebarOrderDetail,
+    SidebarOrderDetailRequest,
     SidebarOrders,
     SidebarProduct,
     SidebarProducts,
     SidebarSearch,
+    get_sidebar_order_detail,
     get_sidebar_product,
     search_sidebar_coupons,
     search_sidebar_orders,
@@ -97,6 +100,21 @@ async def sidebar_search(
     else:
         data = await search_sidebar_coupons(session, user, session_id, payload)
     return ApiResponse(data=data)
+
+
+@router.post(
+    "/sessions/{session_id}/sidebar/orders/detail",
+    response_model=ApiResponse[SidebarOrderDetail],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
+)
+async def sidebar_order_detail(
+    session_id: uuid.UUID,
+    payload: SidebarOrderDetailRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[SidebarOrderDetail]:
+    """仅在会话买家身份经官方核对后读取该订单的只读物流详情。"""
+    return ApiResponse(data=await get_sidebar_order_detail(session, user, session_id, payload.order_id))
 
 
 @router.get(

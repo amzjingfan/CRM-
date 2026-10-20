@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-21 客户侧栏真实订单详情源码候选：`MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001 VERIFYING`，`CANDIDATE_SUBJECT_SHA=26faf36d0570c4ce90f5875ce26618adb112558d`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。官方只读对账确认选中会话与订单的买家身份一致、物流轨迹 8 条；源码提交上的后端全量 2212 passed/29 skipped，前端契约 47/47、生产构建浏览器 44/44，RR 对源码 `APPROVE`。新接口尚未发布 staging，已登录页面仍待核对；TR 为 `PARTIAL`，无买家外发，production G8 No-Go。Workspace hygiene: ATTENTION（活动工作树及主 checkout 未知文件保留）。下一步：①合并本次受审源码；②按现有手动路径更新 staging；③核对真实订单卡片与跨买家失败关闭，定稿低敏证据。
+
 2026-10-21 发送栏侧边菜单源码候选：`MVP-WORKSPACE-COMPOSER-FLYOUT-001 VERIFYING`，`CANDIDATE_SUBJECT_SHA=ac46e7a4461a3c41588f321f31eed6f0c59c52ff`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`，分支索引 `CANDIDATE_VIEW`；本地 47/47 契约与 43/43 生产浏览器测试通过，目标语言子菜单可在右侧展开并保持窄屏可见。staging 当前仍运行 `433f340d`，未部署本次发送栏修复。客户侧栏订单代码已在该 staging 版本上线，真实只读核到 1 笔订单，但已登录 UI 仍 `UI_UNAVAILABLE`。Workspace hygiene: ATTENTION（其他活动工作树及未知文件保留）。下一步：①合并发送栏源码并手动发布 staging；②核对已登录发送栏与客户订单侧栏；③定稿低敏部署证据与任务状态。无买家外发，production G8 No-Go。
 
 2026-10-20 客户侧栏源码候选：任务 `MVP-WORKSPACE-CUSTOMER-SIDEBAR-001 VERIFYING`，`CANDIDATE_SUBJECT_SHA=9cd859d637c9852d7780e929c0e8818d781bfa59`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`，分支索引为 `CANDIDATE_VIEW`。原型 A 的订单、商品/SKU、优惠券真实只读入口与草稿操作已实现；隔离 PostgreSQL 2226 passed/3 skipped、前端契约 47/47、生产模式合成浏览器 42/42，见 [IR](../records/implementation/IR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-001-20261020-R01.md)、[TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-001-20261020-R01.md)、[RR](../reports/reviews/RR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-001-20261020-R01.md)。staging 唯一已连接 TikTok 渠道只读确认 Product Basic 与优惠券 Scope 均具备；新代码未部署，真实目录响应未核对。Workspace hygiene: ATTENTION（其他活动工作树的未知文件保留；本工作树依赖链接和一次隔离浏览器诊断截图未纳入提交，删除命令被自动审批拒绝）。下一步：①合并源码 PR；②从精确合并主线手动发布 staging；③只读验收真实侧栏并留回滚证据。Production G8 No-Go。

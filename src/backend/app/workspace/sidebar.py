@@ -61,11 +61,23 @@ class SidebarOrder(BaseModel):
     tracking_number: str | None
     tracking_status: str | None
     items: list[SidebarOrderItem]
+    live_detail_available: bool = False
 
 
 class SidebarOrders(BaseModel):
     items: list[SidebarOrder]
     pagination: PageMeta
+
+
+class SidebarOrderDetailRequest(BaseModel):
+    order_id: str = Field(min_length=1, max_length=200, pattern=r"^[0-9]+$")
+
+
+class SidebarOrderDetail(BaseModel):
+    payment_method_name: str | None
+    shipping_provider: str | None
+    latest_tracking_description: str | None
+    latest_tracking_at: datetime | None
 
 
 class SidebarSku(BaseModel):
@@ -211,6 +223,7 @@ def _live_order_view(order: TikTokOrder) -> SidebarOrder:
         tracking_number=order.tracking_number
         or next((item.tracking_number for item in order.line_items if item.tracking_number), None),
         tracking_status=None,
+        live_detail_available=True,
         items=[
             SidebarOrderItem(
                 name=item.product_name or "商品名称未提供",
@@ -231,20 +244,8 @@ def _live_order_view(order: TikTokOrder) -> SidebarOrder:
 async def _search_live_orders(
     session: AsyncSession, conversation: Conversation, payload: SidebarSearch
 ) -> SidebarOrders:
-    customer = await session.get(Customer, conversation.customer_id)
-    if (
-        customer is None
-        or customer.store_id != conversation.store_id
-        or customer.platform != conversation.platform
-        or not customer.external_customer_id
-    ):
-        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "会话买家身份不可验证", 502)
     client = await _tiktok_client(session, conversation.store_id)
-    remote = await client.get_conversation(conversation.external_conversation_id)
-    buyers = [participant for participant in remote.participants if participant.role == "BUYER"]
-    if len(buyers) != 1 or buyers[0].im_user_id != customer.external_customer_id or not buyers[0].user_id:
-        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "会话买家身份不可验证", 502)
-    buyer_user_id = buyers[0].user_id
+    buyer_user_id = await _verified_buyer_user_id(session, conversation, client)
     orders: list[TikTokOrder] = []
     token: str | None = None
     seen_tokens: set[str] = set()
@@ -276,6 +277,55 @@ async def _search_live_orders(
     return SidebarOrders(
         items=[_live_order_view(order) for order in selected],
         pagination=PageMeta(page=payload.page, page_size=page_size, total=len(matches)),
+    )
+
+
+async def _verified_buyer_user_id(session: AsyncSession, conversation: Conversation, client: TikTokReadClient) -> str:
+    customer = await session.get(Customer, conversation.customer_id)
+    if (
+        customer is None
+        or customer.store_id != conversation.store_id
+        or customer.platform != conversation.platform
+        or not customer.external_customer_id
+    ):
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "会话买家身份不可验证", 502)
+    remote = await client.get_conversation(conversation.external_conversation_id)
+    buyers = [participant for participant in remote.participants if participant.role == "BUYER"]
+    if len(buyers) != 1 or buyers[0].im_user_id != customer.external_customer_id or not buyers[0].user_id:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "会话买家身份不可验证", 502)
+    return buyers[0].user_id
+
+
+async def get_sidebar_order_detail(
+    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
+) -> SidebarOrderDetail:
+    conversation = await _conversation(session, user, session_id)
+    if conversation.platform != "tiktok" or not get_settings().real_tiktok_read_enabled:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单详情不可用", 404)
+    if not order_id.isascii() or not order_id.isdigit() or len(order_id) > 200:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 订单 ID 无效", 422)
+    client = await _tiktok_client(session, conversation.store_id)
+    buyer_user_id = await _verified_buyer_user_id(session, conversation, client)
+    orders, _ = await client.get_order_details([order_id])
+    if len(orders) != 1 or orders[0].id != order_id or orders[0].user_id != buyer_user_id:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在", 404)
+    order = orders[0]
+    latest_description: str | None = None
+    latest_at: datetime | None = None
+    if order.tracking_number or any(item.tracking_number for item in order.line_items):
+        events, _ = await client.get_standard_tracking(order_id)
+        if events:
+            latest = max(events, key=lambda event: event.update_time_millis)
+            try:
+                latest_at = datetime.fromtimestamp(latest.update_time_millis / 1000, UTC)
+            except (OverflowError, OSError, ValueError) as exc:
+                raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 物流时间异常", 502) from exc
+            latest_description = latest.description
+    return SidebarOrderDetail(
+        payment_method_name=order.payment_method_name,
+        shipping_provider=order.shipping_provider,
+        latest_tracking_description=latest_description,
+        latest_tracking_at=latest_at,
     )
 
 

@@ -90,6 +90,8 @@ class TikTokOrder(TikTokModel):
     create_time: int | None = None
     paid_time: int | None = None
     fulfillment_type: str | None = Field(default=None, max_length=30)
+    shipping_provider: str | None = Field(default=None, max_length=200)
+    payment_method_name: str | None = Field(default=None, max_length=200)
     tracking_number: str | None = Field(default=None, max_length=200)
     payment: TikTokPayment | None = None
     line_items: list[TikTokOrderLineItem] = Field(default_factory=list, max_length=500)
