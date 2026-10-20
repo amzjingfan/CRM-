@@ -1,0 +1,45 @@
+{
+  "task_id": "MVP-007",
+  "run_id": "g6-20261019-c4a12b",
+  "recorded_at_utc": "2026-10-20T01:13:00Z",
+  "acceptance_window_utc": {
+    "start": "2026-10-19T14:30:00Z",
+    "planned_end": "2026-10-20T14:30:00Z",
+    "minutes": 1440,
+    "required_available_slots": 1433
+  },
+  "outcome": "ABORTED_EARLY_GATE_UNREACHABLE",
+  "reason": "15 failed slots already exceeded the 7-slot budget; the user requested repair before another acceptance run.",
+  "collector_stopped_at_utc": "2026-10-20T01:03:28Z",
+  "collector_after_stop": {
+    "active_state": "inactive",
+    "sub_state": "dead",
+    "restart_count": 0
+  },
+  "observed_prefix": {
+    "slots": 634,
+    "first_slot": 0,
+    "last_slot": 633,
+    "available_slots": 619,
+    "failed_slots": 15,
+    "failed_slot_indices": [4, 5, 15, 57, 60, 96, 110, 126, 129, 148, 158, 211, 212, 213, 515],
+    "unobserved_acceptance_slots": 806,
+    "resource_samples": 127,
+    "alert_records": 24,
+    "alert_events": 12,
+    "recovered_events": 12
+  },
+  "private_raw_artifact_sha256": {
+    "meta.json": "4b541473550b1d5c6ebd2d72f0681f78f53eb5a5034ff05343134e8599a0aa77",
+    "samples.jsonl": "871e4afd44aec2d65e595a360a051056117a89dc34c0b8ae0d02ee73706b4072",
+    "alerts.jsonl": "3ee127607bfbf553df73df84a2c1dd32697d39004fde73544e7943a4cbd96bad",
+    "runtime-baseline.json": "879fe88ff1b090d83640b37fb36ef38659cb6d13a8ebb3c324dc4b750f6b7ee0"
+  },
+  "evidence_limits": [
+    "The 24-hour window was not fully sampled and cannot be reported as complete.",
+    "The original 72-hour collector script, metadata and existing samples were not overwritten or backfilled.",
+    "The source of the intermittent public and fixed-egress failures remains unproven."
+  ],
+  "gate": "NO_GO",
+  "production": "NO_GO"
+}

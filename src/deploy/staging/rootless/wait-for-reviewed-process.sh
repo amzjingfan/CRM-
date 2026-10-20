@@ -22,8 +22,8 @@ expected_argv=(
     -o ExitOnForwardFailure=yes
     -o IdentitiesOnly=yes
     -o StrictHostKeyChecking=yes
-    -o ServerAliveInterval=30
-    -o ServerAliveCountMax=3
+    -o ServerAliveInterval=10
+    -o ServerAliveCountMax=2
     -o UserKnownHostsFile=/home/crmdeploy/secrets/tunnel/known_hosts
     -i /home/crmdeploy/secrets/tunnel/id_ed25519
     -R 127.0.0.1:18080:127.0.0.1:18081

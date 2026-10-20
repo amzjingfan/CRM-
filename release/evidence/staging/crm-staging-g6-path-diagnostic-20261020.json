@@ -1,0 +1,54 @@
+{
+  "task_id": "MVP-007",
+  "observed_at_utc": "2026-10-20T01:36:00Z",
+  "scope": "read-only diagnosis after the failed G6 run; not an acceptance window",
+  "business_host_public_probe": {
+    "requests": 360,
+    "failed": 2,
+    "curl_max_time_seconds": 8,
+    "failures": [
+      {
+        "at_utc": "2026-10-20T01:28:41Z",
+        "path": "/v1/health",
+        "curl_exit": 28,
+        "http_code": 0,
+        "dns_seconds": 0.01459,
+        "tcp_connect_seconds": 1.21286,
+        "tls_handshake_seconds": 7.868955,
+        "total_seconds": 8.000196,
+        "gateway_access_status": 499,
+        "gateway_request_seconds": 0.182,
+        "inner_proxy_status": 200,
+        "inner_proxy_request_seconds": 0.003
+      },
+      {
+        "at_utc": "2026-10-20T01:33:28Z",
+        "path": "/healthz",
+        "curl_exit": 28,
+        "http_code": 0,
+        "dns_seconds": 0.016285,
+        "tcp_connect_seconds": 1.206033,
+        "tls_handshake_seconds": 7.657308,
+        "total_seconds": 8.001071,
+        "gateway_access_status": "not_logged_by_old_healthz_location"
+      }
+    ]
+  },
+  "gateway_loopback_tls_probe": {
+    "requests": 90,
+    "failed": 0,
+    "max_tls_handshake_seconds": 0.197,
+    "max_total_seconds": 2.564
+  },
+  "icmp_samples": [
+    {"path": "business_host_to_gateway", "sent": 100, "received": 89, "loss_percent": 11},
+    {"path": "business_host_to_1.1.1.1", "sent": 100, "received": 100, "loss_percent": 0},
+    {"path": "gateway_to_1.1.1.1", "sent": 100, "received": 92, "loss_percent": 8},
+    {"path": "gateway_to_first_hop", "sent": 100, "received": 92, "loss_percent": 8},
+    {"path": "gateway_to_first_hop_at_1hz", "sent": 30, "received": 29, "loss_percent": 3.333333},
+    {"path": "business_host_to_gateway_at_1hz", "sent": 30, "received": 26, "loss_percent": 13.333333}
+  ],
+  "interpretation": "The captured public probe failure spent nearly the whole 8-second budget establishing TLS while the gateway and inner proxy handled the request quickly. Packet loss is observed on the path to the gateway, including its upstream first hop. ICMP may be rate limited and does not alone establish the responsible network segment or operator.",
+  "not_proven": ["cause of packet loss", "which network provider owns the fault", "future 24-hour availability"],
+  "g6_gate": "NO_GO"
+}

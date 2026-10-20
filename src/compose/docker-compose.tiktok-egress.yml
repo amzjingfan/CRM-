@@ -18,9 +18,9 @@ services:
       - -o
       - UserKnownHostsFile=/run/secrets/tiktok-egress/known_hosts
       - -o
-      - ServerAliveInterval=30
+      - ServerAliveInterval=10
       - -o
-      - ServerAliveCountMax=3
+      - ServerAliveCountMax=2
       - -i
       - /run/secrets/tiktok-egress/id_ed25519
       - crm-egress@38.55.145.52

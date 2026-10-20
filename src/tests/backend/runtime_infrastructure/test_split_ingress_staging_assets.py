@@ -14,6 +14,7 @@ from _support import SOURCE_ROOT
 
 ROOTLESS_OVERLAY = SOURCE_ROOT / "compose" / "docker-compose.rootless-staging.yml"
 ROOTLESS_WEBHOOK_OVERLAY = SOURCE_ROOT / "compose" / "docker-compose.rootless-staging-webhook.yml"
+TIKTOK_EGRESS_OVERLAY = SOURCE_ROOT / "compose" / "docker-compose.tiktok-egress.yml"
 ROOTLESS_TUNNEL_NGINX = SOURCE_ROOT / "deploy" / "nginx" / "nginx-tunnel.conf"
 ROOTLESS_DIR = SOURCE_ROOT / "deploy" / "staging" / "rootless"
 TUNNEL_UNIT = ROOTLESS_DIR / "systemd" / "user" / "crm-staging-tunnel.service"
@@ -100,10 +101,21 @@ def test_reverse_tunnel_is_loopback_only_and_targets_crm_port() -> None:
     assert "ExitOnForwardFailure=yes" in command
     assert "StrictHostKeyChecking=yes" in command
     assert "IdentitiesOnly=yes" in command
+    assert "ServerAliveInterval=10" in command
+    assert "ServerAliveCountMax=2" in command
     assert "StrictHostKeyChecking=no" not in command
     assert "crm-tunnel@38.55.145.52" in command
     assert unit["Service"]["Restart"] == "always"
     assert unit["Service"]["RestartSec"] == "5"
+
+
+def test_staging_egress_ssh_detects_dead_gateway_connection() -> None:
+    """出口隧道失联须尽快退出，交由既有 Docker 重启策略恢复。"""
+    config = yaml.safe_load(TIKTOK_EGRESS_OVERLAY.read_text(encoding="utf-8"))
+    command = config["services"]["tiktok-egress"]["command"]
+    assert "ServerAliveInterval=10" in command
+    assert "ServerAliveCountMax=2" in command
+    assert config["services"]["tiktok-egress"]["restart"] == "unless-stopped"
 
 
 def test_tunnel_installers_preserve_account_and_key_boundaries() -> None:
@@ -436,9 +448,9 @@ def _ssh_cmdline(*overrides: str) -> bytes:
         "-o",
         "StrictHostKeyChecking=yes",
         "-o",
-        "ServerAliveInterval=30",
+        "ServerAliveInterval=10",
         "-o",
-        "ServerAliveCountMax=3",
+        "ServerAliveCountMax=2",
         "-o",
         "UserKnownHostsFile=/home/crmdeploy/secrets/tunnel/known_hosts",
         "-i",
@@ -514,9 +526,9 @@ def test_process_waiter_reloads_pid_until_reviewed_tunnel_command(tmp_path: Path
             "-o",
             "StrictHostKeyChecking=yes",
             "-o",
-            "ServerAliveInterval=30",
+            "ServerAliveInterval=10",
             "-o",
-            "ServerAliveCountMax=3",
+            "ServerAliveCountMax=2",
             "-o",
             "UserKnownHostsFile=/home/crmdeploy/secrets/tunnel/known_hosts",
             "-i",
@@ -577,6 +589,8 @@ def test_public_vhost_never_targets_gitlab_or_private_host() -> None:
     assert "/www/server/panel/vhost/cert/staging.overselfx.com/fullchain.pem" in source
     assert "/www/server/panel/vhost/cert/staging.overselfx.com/privkey.pem" in source
     assert "proxy_pass http://127.0.0.1:18080" in source
+    healthz_location = source.split("location = /healthz {", 1)[1].split("}", 1)[0]
+    assert "access_log /www/wwwlogs/staging.overselfx.com.log crm_staging_safe_json;" in healthz_location
     assert "proxy_set_header Host staging.overselfx.com" in source
     assert "proxy_set_header X-Forwarded-Proto https" in source
     assert "proxy_buffering off" in source

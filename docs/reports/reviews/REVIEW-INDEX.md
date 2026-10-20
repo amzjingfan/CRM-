@@ -1,9 +1,11 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-007-20261020-R02 | MVP-007 | R02 | APPROVE | `db501f3011257b528ab4e4137d6d8b894a7f6a6f` | ssh-fail-closed, gateway-identity, egress-restriction, logging-minimization, restart-recovery, production-boundary | 2026-10-20T09:27:00+08:00 | [`RR-MVP-007-20261020-R02.md`](RR-MVP-007-20261020-R02.md) |
+| RR-MVP-007-20261020-R01 | MVP-007 | R01 | BLOCKED | `162f7844aa218f8561102feabebd3a4ca21f9b31` | raw-evidence-integrity, availability-budget, gateway-ssh-recovery, g3-boundary, production-gate | 2026-10-20T09:23:00+08:00 | [`RR-MVP-007-20261020-R01.md`](RR-MVP-007-20261020-R01.md) |
 | RR-MVP-003-20261019-R07 | MVP-003 | R07 | APPROVE | `cba4f5cf77b4622065469011a31c45e474b77920` | user-approved-scope, real-webhook-normal-chain, deterministic-safeguards, missing-redelivery-and-ordering, production-boundary | 2026-10-19T17:10:34+08:00 | [`RR-MVP-003-20261019-R07.md`](RR-MVP-003-20261019-R07.md) |
 | RR-MVP-G1-LOG-GENERAL-001-20261019-R01 | MVP-G1-LOG-GENERAL-001 | R01 | APPROVE | `91f1593d98db710da2febb29ff8686da3617accf` | user-approved-scope, official-endpoint, shop-bound-signature, scope-denial, schema-failure-closed, evidence-limit | 2026-10-19T16:34:54+08:00 | [`RR-MVP-G1-LOG-GENERAL-001-20261019-R01.md`](RR-MVP-G1-LOG-GENERAL-001-20261019-R01.md) |
 | RR-MVP-003-20261019-R06 | MVP-003 | R06 | APPROVE | `42368a17f2ad3b215bdfa72c5cfbb266a3d8b524` | evidence-scope, real-webhook-delivery, missing-redelivery-and-ordering, staging-only-release, production-boundary | 2026-10-19T15:27:00+08:00 | [`RR-MVP-003-20261019-R06.md`](RR-MVP-003-20261019-R06.md) |
