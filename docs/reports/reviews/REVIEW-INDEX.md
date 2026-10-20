@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-007-20261020-R04 | MVP-007 | R04 | APPROVE | `883a7f0aae71b8b41eb038840130fc10129be915` | user-risk-acceptance, evidence-integrity, staging-scope, fixed-egress, g3-boundary, production-boundary | 2026-10-20T02:08:04Z | [`RR-MVP-007-20261020-R04.md`](RR-MVP-007-20261020-R04.md) |
 | RR-MVP-007-20261020-R03 | MVP-007 | R03 | BLOCKED | `db501f3011257b528ab4e4137d6d8b894a7f6a6f` | staging-change-scope, fixed-egress, gateway-log-minimization, unreviewed-live-drift, public-tls-risk, production-boundary | 2026-10-20T09:55:00+08:00 | [`RR-MVP-007-20261020-R03.md`](RR-MVP-007-20261020-R03.md) |
 | RR-MVP-007-20261020-R02 | MVP-007 | R02 | APPROVE | `db501f3011257b528ab4e4137d6d8b894a7f6a6f` | ssh-fail-closed, gateway-identity, egress-restriction, logging-minimization, restart-recovery, production-boundary | 2026-10-20T09:27:00+08:00 | [`RR-MVP-007-20261020-R02.md`](RR-MVP-007-20261020-R02.md) |
 | RR-MVP-007-20261020-R01 | MVP-007 | R01 | BLOCKED | `162f7844aa218f8561102feabebd3a4ca21f9b31` | raw-evidence-integrity, availability-budget, gateway-ssh-recovery, g3-boundary, production-gate | 2026-10-20T09:23:00+08:00 | [`RR-MVP-007-20261020-R01.md`](RR-MVP-007-20261020-R01.md) |

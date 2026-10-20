@@ -1,0 +1,67 @@
+{
+  "task_id": "MVP-007",
+  "gate": "G6",
+  "decision_date": "2026-10-20",
+  "decision_basis": "The user explicitly accepted lower stability for the current staging assisted-manual scope and directed G6 release.",
+  "decision": "RISK_ACCEPTED_LIMITED_STAGING_RELEASE",
+  "scope": "Existing authorized single-store staging assisted-manual TikTok operation only; no permission expansion, automatic reply, high-risk write, G8 sign-off or production deployment.",
+  "historical_quantitative_result": {
+    "run_id": "g6-20261019-c4a12b",
+    "old_24h_gate": "FAIL_INCOMPLETE",
+    "planned_slots": 1440,
+    "required_available_slots": 1433,
+    "observed_contiguous_slots": 634,
+    "available_observed_slots": 619,
+    "failed_observed_slots": 15,
+    "unobserved_planned_slots": 806,
+    "observed_only_availability_percent": 97.6340694,
+    "failed_slot_indices": [4, 5, 15, 57, 60, 96, 110, 126, 129, 148, 158, 211, 212, 213, 515],
+    "collector_stopped_at_utc": "2026-10-20T01:03:28Z",
+    "collector_after_stop": "inactive/dead; zero restarts"
+  },
+  "raw_artifact_sha256_reverified": {
+    "meta.json": "4b541473550b1d5c6ebd2d72f0681f78f53eb5a5034ff05343134e8599a0aa77",
+    "samples.jsonl": "871e4afd44aec2d65e595a360a051056117a89dc34c0b8ae0d02ee73706b4072",
+    "alerts.jsonl": "3ee127607bfbf553df73df84a2c1dd32697d39004fde73544e7943a4cbd96bad",
+    "runtime-baseline.json": "879fe88ff1b090d83640b37fb36ef38659cb6d13a8ebb3c324dc4b750f6b7ee0"
+  },
+  "observed_supporting_evidence": {
+    "resource_samples": 127,
+    "alert_records": 24,
+    "alert_events": 12,
+    "recovered_events": 12,
+    "application_queue": "not_applicable_sync_workflow",
+    "backend_tcp_queue_peaks": {
+      "accept_queue_pending": 0,
+      "established_connections": 0,
+      "receive_queue_bytes": 0,
+      "send_queue_bytes": 0
+    },
+    "five_container_cpu_peak_percent": {
+      "agent-worker": 0.04,
+      "backend": 19.31,
+      "postgres": 5.7,
+      "retrieval": 19.79,
+      "worker": 0.67
+    }
+  },
+  "live_read_only_check": {
+    "checked_at_utc": "2026-10-20T02:08:04Z",
+    "public_health": {
+      "/healthz": {"http": 200, "tls_verify_code": 0},
+      "/v1/health": {"http": 200, "tls_verify_code": 0},
+      "/v1/health/ready": {"http": 200, "tls_verify_code": 0}
+    },
+    "reverse_tunnel": "active/running; zero restarts",
+    "egress_helper": "running/healthy; zero restarts",
+    "backend_egress_verifier": "status=ok; observed and configured fixed egress 38.55.145.52",
+    "g3_boundary": "backend manual write restricted to one authorized store; webhook/read/translation enabled; limit 10; other application writes, SSE, LLM, automatic reply and high-risk write disabled"
+  },
+  "residual_risks": [
+    "Intermittent public TLS/routing failures have not been attributed to a proven root cause.",
+    "The 24-hour, 99.5-percent technical stability objective failed and the unobserved period cannot be counted as available.",
+    "Current healthy probes do not guarantee future availability."
+  ],
+  "g8": "NO_GO_PENDING_SEPARATE_FINAL_REVIEW",
+  "production": "NO_GO"
+}
