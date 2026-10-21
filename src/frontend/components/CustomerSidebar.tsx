@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import {
   getCustomerSidebarOrderDetail,
@@ -102,22 +102,35 @@ function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; s
   const [detail, setDetail] = useState<SidebarOrderDetail | null>(null);
   const [detailError, setDetailError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
-  const loadDetail = () => {
-    if (detailLoading) return;
+  const cardRef = useRef<HTMLElement>(null);
+  const detailRequestInFlight = useRef(false);
+  const loadDetail = useCallback(() => {
+    if (detailRequestInFlight.current) return;
+    detailRequestInFlight.current = true;
     setDetailLoading(true);
     setDetail(null);
     setDetailError("");
     getCustomerSidebarOrderDetail(sessionId, order.external_order_id)
       .then(setDetail)
       .catch((cause) => setDetailError(cause instanceof Error ? cause.message : "订单详情加载失败"))
-      .finally(() => setDetailLoading(false));
-  };
+      .finally(() => { detailRequestInFlight.current = false; setDetailLoading(false); });
+  }, [sessionId, order.external_order_id]);
+  useEffect(() => {
+    if (!order.live_detail_available || !cardRef.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { observer.disconnect(); loadDetail(); }
+    }, { rootMargin: "100px 0px" });
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [loadDetail, order.live_detail_available]);
   const first = order.items[0];
   const label = statusText[order.status]?.[en ? "en" : "zh"] ?? order.status;
   const isShipping = ["AWAITING_SHIPMENT", "AWAITING_COLLECTION"].includes(order.status);
   const isInTransit = ["IN_TRANSIT", "SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status);
   const isCancelled = ["CANCELLED", "CANCELED"].includes(order.status);
-  const totalLabel = order.status === "UNPAID" ? (en ? "Order amount" : "订单金额") : (en ? "Order total" : "订单总额");
+  const totalLabel = order.status === "UNPAID" ? (en ? "Order amount" : "订单金额") : order.live_detail_available ? (en ? "Buyer paid amount" : "买家实付金额") : (en ? "Order total" : "订单总额");
+  const logisticsOrderStage = ["IN_TRANSIT", "SHIPPED", "DELIVERED"].includes(order.status) ? order.status : "";
+  const logisticsStatus = statusText[order.tracking_status ?? ""]?.[en ? "en" : "zh"] ?? statusText[logisticsOrderStage]?.[en ? "en" : "zh"] ?? "—";
   const breakdown: Array<{ key: string; zh: string; en: string }> = [
     { key: "original_total_product_price", zh: "商品总价", en: "Original product total" },
     { key: "sub_total", zh: "商品小计", en: "Product subtotal" },
@@ -126,7 +139,7 @@ function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; s
     { key: "shipping_fee", zh: "实付运费", en: "Shipping" },
     { key: "tax", zh: "税费", en: "Tax" },
   ];
-  return <article className="customer-side-card" data-testid="customer-order-card">
+  return <article className="customer-side-card" data-testid="customer-order-card" ref={cardRef}>
     <div className="customer-card-top"><strong>{label}</strong><time>{dateTime(order.ordered_at, en)}</time></div>
     <p className="customer-order-id" title={order.external_order_id}>{order.external_order_id}</p>
     {first ? <div className="customer-item-row">{first.image_url ? <img alt="" className="customer-product-image" src={first.image_url} /> : <div className="customer-item-thumb" aria-hidden="true">{first.name.slice(0, 1)}</div>}<div className="customer-item-copy"><strong title={first.name}>{first.name}</strong><small>{first.product_id ? `SPU ${first.product_id}` : en ? "Product ID unavailable" : "商品 ID 暂无"}</small><small>{first.sku_name ?? (en ? "Variant unavailable" : "规格暂无")}</small><small>{first.sku_id ? `SKU ${first.sku_id}` : first.sku ? `${en ? "Seller SKU" : "卖家 SKU"} ${first.sku}` : (en ? "SKU unavailable" : "SKU 暂无")}</small></div><div className="customer-item-price">{money(order.currency, first.total_amount)}<small>×{first.quantity}</small></div></div> : <p className="customer-side-muted">{en ? "Item details unavailable" : "暂无商品明细"}</p>}
@@ -138,11 +151,11 @@ function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; s
     {isShipping ? <div className="customer-info-line"><span>{en ? "Fulfillment" : "出货状态"}</span><span>{label}</span></div> : null}
     {isShipping ? <div className="customer-info-line"><span>{en ? "Ship by" : "最晚发货"}</span><span>—</span></div> : null}
     {detail?.payment_method_name ? <div className="customer-info-line"><span>{en ? "Payment method" : "支付方式"}</span><span>{detail.payment_method_name}</span></div> : null}
-    {isInTransit ? <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><span>{statusText[order.tracking_status ?? ""]?.[en ? "en" : "zh"] ?? (order.tracking_status ?? "—")}</span></div> : null}
+    {isInTransit ? <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><span>{logisticsStatus}</span></div> : null}
     {isInTransit ? <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number ?? ""}>{order.tracking_number ?? "—"}</span></div> : null}
-    {detail?.shipping_provider ? <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail.shipping_provider}</span></div> : null}
-    {detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest update" : "最新物流"}</span><span>{detail.latest_tracking_description}</span></div> : null}
-    {detail?.latest_tracking_at ? <div className="customer-info-line"><span>{en ? "Updated at" : "物流时间"}</span><span>{dateTime(detail.latest_tracking_at, en)}</span></div> : null}
+    {isInTransit || detail?.shipping_provider ? <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail?.shipping_provider ?? "—"}</span></div> : null}
+    {isInTransit || detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><span>{detail?.latest_tracking_description ?? "—"}</span></div> : null}
+    {isInTransit || detail?.latest_tracking_at ? <div className="customer-info-line"><span>{en ? "Latest tracking time" : "最新物流时间"}</span><span>{dateTime(detail?.latest_tracking_at ?? null, en)}</span></div> : null}
     {isCancelled ? <><div className="customer-info-line"><span>{en ? "Cancellation reason" : "取消原因"}</span><span>—</span></div><div className="customer-info-line"><span>{en ? "Refund status" : "退款状态"}</span><span>—</span></div></> : null}
     {detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}
     <div className="customer-card-actions">{order.live_detail_available ? <button disabled={detailLoading} onClick={loadDetail} type="button">{detailLoading ? (en ? "Loading…" : "加载中…") : detailError ? (en ? "Retry details" : "重试详情") : detail ? (en ? "Refresh details" : "刷新详情") : (en ? "Details" : "详情")}</button> : null}<button onClick={() => fillDraft(en ? `Could you please check order ${order.external_order_id}?` : `请核对订单 ${order.external_order_id}。`)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button><button disabled title={en ? "Refund is not available in this version" : "当前版本不支持真实退款"} type="button">{en ? "Refund" : "退款"}</button></div>

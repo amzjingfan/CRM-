@@ -57,7 +57,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT") {
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
-      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: orderStatus, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
       const coupon = { id: "789", title: "Shop coupon", status: "EXPIRED", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
       if (payload.section === "orders") {
@@ -299,15 +299,19 @@ test("an interrupted send retry stays bound to its original conversation", async
   } finally { await context.close(); }
 });
 
-test("customer order card reveals authorized payment and latest logistics details", async () => {
+test("visible customer order card loads six real payment and logistics rows without a detail click", async () => {
   const { context, page, calls } = await openWorkspace(2);
   try {
     const card = page.getByTestId("customer-order-card");
     await card.getByText("577600000000000001").waitFor();
-    await card.getByRole("button", { name: "详情" }).click();
     await card.getByText("Carrier A").waitFor();
-    await card.getByText("付款时间").waitFor();
+    await card.getByText("买家实付金额").first().waitFor();
     await card.getByText("物流状态").waitFor();
+    await card.locator(".customer-info-line").filter({ hasText: "物流状态" }).getByText("运送中").waitFor();
+    await card.getByText("物流单号").waitFor();
+    await card.getByText("878696895644").waitFor();
+    await card.getByText("最新物流描述").waitFor();
+    await card.getByText("最新物流时间").waitFor();
     assert.equal(await card.getByText("Card").count(), 1);
     assert.equal(await card.getByText("Package dispatched").count(), 1);
     assert.equal(calls.orderDetails, 1);
@@ -316,17 +320,19 @@ test("customer order card reveals authorized payment and latest logistics detail
 });
 
 test("customer order states show their own fields and leave unavailable facts blank", async () => {
-  for (const [state, expected, missing] of [
-    ["UNPAID", "付款截止", "物流状态"],
-    ["AWAITING_SHIPMENT", "最晚发货", "物流状态"],
-    ["DELIVERED", "物流状态", "取消原因"],
-    ["CANCELLED", "取消原因", "物流状态"],
+  for (const [state, expected, missing, logisticsLabel] of [
+    ["UNPAID", "付款截止", "物流状态", null],
+    ["AWAITING_SHIPMENT", "最晚发货", "物流状态", null],
+    ["DELIVERED", "物流状态", "取消原因", "已送达"],
+    ["COMPLETED", "物流状态", "取消原因", "—"],
+    ["CANCELLED", "取消原因", "物流状态", null],
   ]) {
     const { context, page } = await openWorkspace(2, state);
     try {
       const card = page.getByTestId("customer-order-card");
       await card.getByText(expected).waitFor();
       assert.equal(await card.getByText(missing).count(), 0);
+      if (logisticsLabel) await card.locator(".customer-info-line").filter({ hasText: "物流状态" }).getByText(logisticsLabel).waitFor();
     } finally { await context.close(); }
   }
 });
