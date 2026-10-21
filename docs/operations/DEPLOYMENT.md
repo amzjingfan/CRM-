@@ -261,6 +261,10 @@ G4 诊断后端镜像 `sha256:bb38fa09…e7d80` 已发布并核对清单；预�
 
 按用户对 staging 的单独授权，main `401b0e5293517aed676ed243d9036506eaa5844c` 顺序运行六摘要预取 `38536657630`、validate `38538873665`、deploy `38539305810`，把后端从 `sha256:1c3a8e83…fc21f0` 切到 `sha256:61c00d69…95e1881`；前端 `sha256:c56443c8…d0248a`、检索 `sha256:feeee5a3…623059` 不变。预取约 17 分钟后通过，`service_mutation=false`；validate 通过且未执行迁移；deploy 通过迁移头、三健康 200、固定出口 `38.55.145.52` 和 Webhook 只读门禁。公网只读复核三健康均为 200，G4 prepare `38540054971` 从运行中容器核对后端摘要、36 条冻结样本、Provider 调用 0。旧后端仍为回滚目标；本机 SSH 身份被拒绝，运行摘要以 Runner 的只读 preflight 为独立核对。原始机器证据与 SHA-256 见 [R36 TR](../reports/tests/TR-MVP-005-20261014-R36.md)。部署与 prepare 不构成 G4 质量通过，最近 live 仍为 R33 机器失败；production No-Go。
 
+### 2026-10-21 工作台十条浏览器注释 staging 手动更新
+
+2026-10-21 工作台十条浏览器注释从合并主线 `5d5f532ce323f694412740377e3e74e478ffe58e` 手动发布：后端 `sha256:f6477007…44d2a73`、前端 `sha256:899c00ac…cfd782`，检索保留原摘要。干净持久源码 `CheckOnly`、私有数据库备份、六摘要预取、`ValidateOnly`、`Deploy`、11 服务、迁移头 `025_workspace_actions`、固定出口和三公网健康 200 通过；单店人工发送、Webhook 读取与工作台翻译保持，自动回复和高风险写入关闭。部署页面合成浏览器 18/18，真实登录态 UI 工具 `UI_UNAVAILABLE`；用户截图发现物流状态英文回退，修正版本待重新部署。见[低敏证据](../../release/evidence/staging/crm-staging-workspace-browser-comments-20261021.json)与[TR R02](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R02.md)。旧镜像及私有备份保留，production G8 No-Go。
+
 ### 2026-10-21 客户侧栏订单详情 staging 手动更新
 
 从合并主线 `3e01d7fc752e46c3105946ca3f3165b44c5c8aba` 手动发布后端 `sha256:fe2f0cf8…063c9b40` 与前端 `sha256:5e4d9c0d…3990eab`，检索镜像保持原摘要。六摘要预取、validate/deploy 均通过，迁移头仍为 `025_workspace_actions`，三公网健康 200，固定出口和原单店人工发送、Webhook 读取、工作台翻译范围保持。旧镜像及数据库备份留在 staging 私有恢复点；低敏证据见 [预取](../../release/evidence/staging/crm-staging-sidebar-detail-prefetch-20261021.json)、[预检](../../release/evidence/staging/crm-staging-sidebar-detail-validate-20261021.json)、[部署](../../release/evidence/staging/crm-staging-sidebar-detail-deploy-20261021.json)。官方只读订单详情及跨买家 404 已核对；真实登录态侧栏页面仍 `UI_UNAVAILABLE`，见 [TR R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001-20261021-R02.md)。production G8 No-Go。

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "evidence_type": "workspace_browser_comments_manual_staging_deploy",
+  "recorded_at_utc": "2026-10-21T09:00:19Z",
+  "environment": "staging",
+  "subject_sha": "975430475a03d04d91ccc6142eecfb8e0e70aaa7",
+  "merged_main_sha": "5d5f532ce323f694412740377e3e74e478ffe58e",
+  "source_tree_equal": true,
+  "github_actions_used_as_gate": false,
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:f647700734eb7c919d3a14d170be8ac822b4ffde80056d197dd1ce25144d2a73",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:899c00ac56714323c746566d7ca8a0ccdb3849c9f833dafc20eee72cd5cfd782",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "previous_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:317081dbb7a7c3734cbd2411e02973f9e42d91a99047f8cd0bf12ba0bc2a7cd0",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:7dbdd3acf88afb011609969e331ba84a8fd231690c5bfcdd9cce6fcf2d543934",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "private_postgresql_backup": {
+    "exists": true,
+    "mode": "0600",
+    "size_bytes": 1942986,
+    "sha256": "19cd5596bf5fc51193133d1db34db5054ec5a3d47de8d0c2139ddfb3f8817eec"
+  },
+  "manual_gates": {
+    "source_check": "passed_current_main_clean_checkout",
+    "prefetch": "passed_six_immutable_roles",
+    "prefetch_private_evidence_sha256": "649272610ae2ff7baa6277eb564a5beaa03fd0c47e83a220115df1e66718ceb1",
+    "validate": "validated",
+    "validate_private_evidence_sha256": "7ba7b3902c94d93b5aba07c1fca2b94af965cf4008615633df002a6d9559741a",
+    "deploy": "passed",
+    "deploy_private_evidence_sha256": "a276ce8b0e4712fd66119cbd4e241cf09ff13cc0108b1d0a0b2bfa0976eaf7a8"
+  },
+  "runtime": {
+    "crm_container_count": 11,
+    "migration_head": "025_workspace_actions",
+    "tiktok_webhook_read": true,
+    "tiktok_manual_send": true,
+    "workspace_translation": true,
+    "auto_reply": false,
+    "high_risk_write": false,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    }
+  },
+  "deployed_page_synthetic_browser": "18_passed_0_failed",
+  "authenticated_user_interface": "UI_UNAVAILABLE",
+  "user_screenshot_feedback": "order_card_visible_but_logistics_status_english",
+  "followup_subject_sha": "f951e294514bdfcd1eb79ab59228d9f953ba5d2b",
+  "external_message_sent": false,
+  "refund_or_coupon_write": false,
+  "production_release": false
+}

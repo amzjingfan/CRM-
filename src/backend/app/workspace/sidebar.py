@@ -81,6 +81,11 @@ class SidebarOrderDetail(BaseModel):
     latest_tracking_at: datetime | None
 
 
+class SidebarTrackingTranslation(BaseModel):
+    source_description: str
+    translated_text: str
+
+
 class SidebarSku(BaseModel):
     id: str
     seller_sku: str | None

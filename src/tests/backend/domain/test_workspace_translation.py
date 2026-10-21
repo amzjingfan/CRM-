@@ -126,3 +126,65 @@ async def test_translation_uses_stored_message_and_returns_chinese(monkeypatch: 
     assert session.add.call_args.args[0].after_data["input_tokens"] == 21
     assert "Is the black one available?" not in str(session.add.call_args.args[0].after_data)
     session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_tracking_translation_requires_verified_order_before_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = Mock(spec=AsyncSession)
+    monkeypatch.setattr(
+        workspace_service, "get_settings", lambda: SimpleNamespace(workspace_message_translation_enabled=True)
+    )
+    detail = AsyncMock(side_effect=AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在", 404))
+    provider = Mock()
+    monkeypatch.setattr(workspace_service, "get_sidebar_order_detail", detail)
+    monkeypatch.setattr(workspace_service, "build_provider", provider)
+
+    with pytest.raises(AppError) as denied:
+        await workspace_service.translate_sidebar_tracking(
+            session, SimpleNamespace(id=uuid.uuid4()), uuid.uuid4(), "600001", "trace"
+        )
+    assert denied.value.status_code == 404
+    provider.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_tracking_translation_reads_verified_description_without_sending(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = Mock(spec=AsyncSession)
+    user = SimpleNamespace(id=uuid.uuid4())
+    session_id, store_id = uuid.uuid4(), uuid.uuid4()
+    source = "Delivered"
+    monkeypatch.setattr(
+        workspace_service,
+        "get_settings",
+        lambda: SimpleNamespace(workspace_message_translation_enabled=True, llm_primary_model="deepseek-chat"),
+    )
+    detail = AsyncMock(return_value=SimpleNamespace(latest_tracking_description=source))
+    monkeypatch.setattr(workspace_service, "get_sidebar_order_detail", detail)
+    monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    monkeypatch.setattr(
+        workspace_service,
+        "find_conversation",
+        AsyncMock(return_value=SimpleNamespace(id=session_id, store_id=store_id, status="closed")),
+    )
+    monkeypatch.setattr(workspace_service, "build_provider", Mock(return_value=Mock()))
+    translate = AsyncMock(
+        return_value=SimpleNamespace(
+            message_translation="已送达",
+            provider="deepseek",
+            model="deepseek-chat",
+            input_tokens=12,
+            output_tokens=4,
+        )
+    )
+    monkeypatch.setattr(workspace_service.TranslationService, "translate_bundle", translate)
+
+    result = await workspace_service.translate_sidebar_tracking(session, user, session_id, "600001", "trace")
+
+    assert result.source_description == source
+    assert result.translated_text == "已送达"
+    detail.assert_awaited_once_with(session, user, session_id, "600001")
+    assert translate.await_args.kwargs["message"] == source
+    assert translate.await_args.kwargs["target_language"] == "zh-CN"
+    assert session.add.call_args.args[0].after_data["input_tokens"] == 12
+    assert source not in str(session.add.call_args.args[0].after_data)
+    session.commit.assert_awaited_once()

@@ -189,8 +189,13 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .customer-money summary strong { color: #df684f; }
 .customer-money-grid { background: var(--surface-soft); padding: 8px; }
 .customer-money-grid div, .customer-info-line { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; }
-.customer-money-grid div span:first-child, .customer-info-line span:first-child { color: var(--muted); }
-.customer-money-grid div span:last-child, .customer-info-line span:last-child { max-width: 57%; overflow-wrap: anywhere; text-align: right; }
+.customer-money-grid div > span:first-child, .customer-info-line > span:first-child { color: var(--muted); }
+.customer-money-grid div > span:last-child, .customer-info-line > span:last-child { max-width: 57%; overflow-wrap: anywhere; text-align: right; }
+.customer-tracking-detail { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; max-width: 57%; overflow-wrap: anywhere; text-align: right; }
+.customer-tracking-detail button { color: var(--primary); font-size: .68rem; text-decoration: underline; text-underline-offset: 2px; }
+.customer-tracking-detail button:disabled { cursor: wait; opacity: .6; }
+.customer-tracking-translation { color: var(--text); }
+.customer-tracking-error { color: #c63838; font-size: .68rem; }
 .customer-money-total { border-top: 1px solid var(--border); font-weight: 750; }
 .customer-money-grid small, .customer-side-muted { display: block; margin: 6px 0; color: var(--muted); font-size: .68rem; line-height: 1.45; }
 .customer-card-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 9px; }

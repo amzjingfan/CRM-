@@ -15,7 +15,7 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0) {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [] } },
@@ -23,7 +23,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0 };
+  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -55,7 +55,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/messages") && method === "GET") {
       const record = records.find((item) => path.includes(item.id));
       const page = Number(url.searchParams.get("page") ?? "1");
-      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: false, draft_translation_enabled: record.status !== "closed" };
+      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: translationEnabled, draft_translation_enabled: record.status !== "closed" };
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
@@ -73,6 +73,11 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
       if (orderDetailDelay) await new Promise((resolve) => setTimeout(resolve, orderDetailDelay));
       data = { payment_method_name: "Card", shipping_provider: "Carrier A", latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z" };
+    } else if (path.endsWith("/sidebar/orders/tracking-translation") && method === "POST") {
+      calls.trackingTranslations++;
+      assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
+      if (calls.trackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "translation unavailable", data: null }) });
+      data = { source_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), translated_text: "已送达" };
     } else if (path.endsWith("/sidebar/products/123") && method === "GET") {
       calls.productDetails++;
       data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: "https://example.invalid/product.png", skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
@@ -360,7 +365,7 @@ test("customer order states show their own fields and leave unavailable facts bl
     ["UNPAID", "付款截止", "物流状态", null],
     ["AWAITING_SHIPMENT", "最晚发货", "物流状态", null],
     ["DELIVERED", "物流状态", "取消原因", "已送达"],
-    ["COMPLETED", "物流状态", "取消原因", "Delivered"],
+    ["COMPLETED", "物流状态", "取消原因", "已送达"],
     ["CANCELLED", "取消原因", "物流状态", null],
   ]) {
     const { context, page } = await openWorkspace(2, state);
@@ -373,11 +378,55 @@ test("customer order states show their own fields and leave unavailable facts bl
   }
 });
 
-test("completed order shows the latest platform tracking text without inventing a stage", async () => {
+test("unknown carrier text does not become an untranslated logistics status", async () => {
   const { context, page } = await openWorkspace(2, "COMPLETED", 2, "Carrier custom event");
   try {
     const card = page.getByTestId("customer-order-card");
-    await card.locator(".customer-info-line").filter({ hasText: "物流状态" }).getByText("Carrier custom event").waitFor();
+    await card.locator(".customer-info-line").filter({ hasText: "物流状态" }).getByText("状态待更新").waitFor();
+    await card.locator(".customer-info-line").filter({ hasText: "最新物流描述" }).getByText("Carrier custom event").waitFor();
+  } finally { await context.close(); }
+});
+
+test("completed order maps common carrier stages to Chinese without treating completion as delivery", async () => {
+  for (const [description, expected] of [
+    ["Out for delivery", "派送中"],
+    ["In transit to destination", "运送中"],
+    ["Delivered, Individual Picked Up at Postal Facility", "已送达"],
+    ["Returned to sender", "已退回"],
+  ]) {
+    const { context, page } = await openWorkspace(2, "COMPLETED", 2, description);
+    try {
+      await page.getByTestId("customer-order-card").locator(".customer-info-line")
+        .filter({ hasText: "物流状态" }).getByText(expected).waitFor();
+    } finally { await context.close(); }
+  }
+});
+
+test("tracking description translates only after a click and leaves the carrier original visible", async () => {
+  const { context, page, calls } = await openWorkspace(2, "COMPLETED", 2, null, 0, true);
+  try {
+    const card = page.getByTestId("customer-order-card");
+    const description = card.locator(".customer-info-line").filter({ hasText: "最新物流描述" });
+    await description.getByText("Delivered").waitFor();
+    assert.equal(calls.trackingTranslations, 0);
+    await description.getByRole("button", { name: "译成中文" }).click();
+    await description.getByText("已送达").waitFor();
+    assert.equal(calls.trackingTranslations, 1);
+    assert.equal(calls.send, 0);
+    await description.getByText("Delivered").waitFor();
+  } finally { await context.close(); }
+});
+
+test("failed tracking translation keeps the original description and offers retry", async () => {
+  const { context, page, calls } = await openWorkspace(2, "COMPLETED", 2, null, 0, true);
+  try {
+    const description = page.getByTestId("customer-order-card").locator(".customer-info-line").filter({ hasText: "最新物流描述" });
+    await description.getByText("Delivered").waitFor();
+    calls.trackingFailure = true;
+    await description.getByRole("button", { name: "译成中文" }).click();
+    await description.getByRole("button", { name: "重试翻译" }).waitFor();
+    await description.getByText("Delivered").waitFor();
+    assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });
 

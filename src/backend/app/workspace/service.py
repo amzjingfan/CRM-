@@ -50,6 +50,7 @@ from app.workspace.schemas import (
     SessionSummary,
     TransferResult,
 )
+from app.workspace.sidebar import SidebarTrackingTranslation, get_sidebar_order_detail
 
 
 def _customer_view(customer: Customer) -> CustomerSummary:
@@ -365,6 +366,74 @@ async def translate_message(
         message_id=message.id,
         translated_text=result.message_translation if result else message.content,
     )
+
+
+async def translate_sidebar_tracking(
+    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str, trace_id: str
+) -> SidebarTrackingTranslation:
+    """只翻译经会话买家核对的最新物流原文，不写入订单或发送消息。"""
+    settings = get_settings()
+    if not settings.workspace_message_translation_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流描述翻译未启用", 503)
+    detail = await get_sidebar_order_detail(session, user, session_id, order_id)
+    source = detail.latest_tracking_description
+    if not source or not source.strip() or len(source) > 4000:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "暂无可翻译的物流描述", 422)
+    if sanitize_prompt_text(source) != source:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "物流描述含需脱敏内容，无法翻译", 422)
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    try:
+        provider = build_provider("deepseek", settings.llm_primary_model, settings)
+        translator = TranslationService(StructuredGenerationService(provider, None, max_attempts=1))
+        result = await translator.translate_bundle(
+            trigger_message_id=uuid.uuid5(uuid.NAMESPACE_URL, f"tiktok:tracking:{order_id}"),
+            message=source,
+            draft_reply=None,
+            target_language="zh-CN",
+            trace_id=trace_id,
+        )
+        translated = result.message_translation if result else source
+        if sanitize_prompt_text(translated) != translated:
+            raise ValueError("译文包含需脱敏内容")
+    except (LLMProviderError, ValueError) as error:
+        session.add(
+            AuditLog(
+                store_id=conversation.store_id,
+                actor_type="user",
+                actor_id=user.id,
+                action="sidebar.tracking.translate",
+                resource_type="conversation",
+                resource_id=conversation.id,
+                request_id=trace_id,
+                after_data={"target_language": "zh-CN"},
+                result="failed",
+            )
+        )
+        await session.commit()
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流描述翻译暂不可用，请稍后重试", 503) from error
+    session.add(
+        AuditLog(
+            store_id=conversation.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action="sidebar.tracking.translate",
+            resource_type="conversation",
+            resource_id=conversation.id,
+            request_id=trace_id,
+            after_data={
+                "target_language": "zh-CN",
+                "provider": result.provider if result else "none",
+                "model": result.model if result else "none",
+                "input_tokens": result.input_tokens if result else 0,
+                "output_tokens": result.output_tokens if result else 0,
+            },
+            result="succeeded" if result else "skipped",
+        )
+    )
+    await session.commit()
+    return SidebarTrackingTranslation(source_description=source, translated_text=translated)
 
 
 async def send_agent_message(

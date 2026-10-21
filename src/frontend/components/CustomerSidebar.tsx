@@ -6,6 +6,7 @@ import {
   getCustomerSidebarOrderDetail,
   getCustomerSidebarProduct,
   searchCustomerSidebar,
+  translateSidebarTracking,
   type SessionMessagesData,
   type SidebarCoupon,
   type SidebarCoupons,
@@ -57,6 +58,37 @@ const statusText: Record<string, { zh: string; en: string }> = {
   CANCELLED: { zh: "已取消", en: "Cancelled" },
   CANCELED: { zh: "已取消", en: "Cancelled" },
 };
+const logisticsStatusText: Record<string, { zh: string; en: string }> = {
+  AWAITING_COLLECTION: { zh: "待揽收", en: "Awaiting collection" },
+  PICKED_UP: { zh: "已揽收", en: "Picked up" },
+  SHIPPED: { zh: "已发货", en: "Shipped" },
+  IN_TRANSIT: { zh: "运送中", en: "In transit" },
+  OUT_FOR_DELIVERY: { zh: "派送中", en: "Out for delivery" },
+  DELIVERY_ATTEMPTED: { zh: "派送未成功", en: "Delivery attempted" },
+  DELIVERED: { zh: "已送达", en: "Delivered" },
+  RETURNED: { zh: "已退回", en: "Returned" },
+  EXCEPTION: { zh: "物流异常", en: "Shipping exception" },
+  LOST: { zh: "包裹丢失", en: "Lost" },
+  CANCELLED: { zh: "已取消", en: "Cancelled" },
+};
+const logisticsDescriptionStages: Array<[RegExp, string]> = [
+  [/^(?:delivered\b|signed for\b|已签收|已送达)/i, "DELIVERED"],
+  [/^(?:out for delivery\b|派送中|正在派送)/i, "OUT_FOR_DELIVERY"],
+  [/^(?:delivery attempted\b|failed delivery\b|派送失败)/i, "DELIVERY_ATTEMPTED"],
+  [/^(?:returned\b|return to sender\b|已退回)/i, "RETURNED"],
+  [/^(?:exception\b|delivery exception\b|物流异常)/i, "EXCEPTION"],
+  [/^(?:lost\b|包裹丢失)/i, "LOST"],
+  [/^(?:in transit\b|arrived at\b|departed\b|运送中|运输中)/i, "IN_TRANSIT"],
+  [/^(?:shipped\b|dispatched\b|package dispatched\b|已发货)/i, "SHIPPED"],
+  [/^(?:picked up\b|collected\b|已揽收)/i, "PICKED_UP"],
+  [/^(?:awaiting collection\b|label created\b|待揽收)/i, "AWAITING_COLLECTION"],
+];
+function logisticsStage(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const normalized = value.trim().replace(/[\s-]+/g, "_").toUpperCase();
+  if (logisticsStatusText[normalized]) return normalized;
+  return logisticsDescriptionStages.find(([pattern]) => pattern.test(value.trim()))?.[1] ?? null;
+}
 const productStatusText: Record<string, { zh: string; en: string }> = {
   ACTIVATE: { zh: "上架中", en: "Active" },
   INACTIVE: { zh: "未上架", en: "Inactive" },
@@ -105,23 +137,47 @@ function CopyableValue({ value, label, en }: { value: string | null | undefined;
   return <span className="customer-copy-value" title={value}><span>{value}</span><button aria-label={en ? `Copy ${label}` : `复制${label}`} className="customer-copy-button" onClick={() => { setCopyError(false); void navigator.clipboard.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => setCopyError(true)); }} title={copyError ? (en ? "Copy failed, retry" : "复制失败，请重试") : copied ? (en ? "Copied" : "已复制") : (en ? "Copy value" : "复制值")} type="button"><Copy size={12} /></button></span>;
 }
 
-function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; sessionId: string; en: boolean; fillDraft: (value: string) => void }) {
+function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillDraft }: { order: SidebarOrder; sessionId: string; en: boolean; trackingTranslationEnabled: boolean; fillDraft: (value: string) => void }) {
   const [detail, setDetail] = useState<SidebarOrderDetail | null>(null);
   const [detailError, setDetailError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
+  const [trackingTranslation, setTrackingTranslation] = useState("");
+  const [trackingTranslationError, setTrackingTranslationError] = useState("");
+  const [trackingTranslationLoading, setTrackingTranslationLoading] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const detailRequestInFlight = useRef(false);
+  const trackingRequestId = useRef(0);
   const loadDetail = useCallback(() => {
     if (detailRequestInFlight.current) return;
     detailRequestInFlight.current = true;
     setDetailLoading(true);
     setDetail(null);
     setDetailError("");
+    trackingRequestId.current += 1;
+    setTrackingTranslation("");
+    setTrackingTranslationError("");
     getCustomerSidebarOrderDetail(sessionId, order.external_order_id)
       .then(setDetail)
       .catch((cause) => setDetailError(cause instanceof Error ? cause.message : "订单详情加载失败"))
       .finally(() => { detailRequestInFlight.current = false; setDetailLoading(false); });
   }, [sessionId, order.external_order_id]);
+  async function requestTrackingTranslation() {
+    const source = detail?.latest_tracking_description;
+    if (!source || trackingTranslationLoading) return;
+    const requestId = ++trackingRequestId.current;
+    setTrackingTranslationLoading(true);
+    setTrackingTranslationError("");
+    try {
+      const result = await translateSidebarTracking(sessionId, order.external_order_id);
+      if (requestId !== trackingRequestId.current) return;
+      if (result.source_description !== source || !result.translated_text.trim()) throw new Error("物流描述已更新，请刷新详情后重试");
+      setTrackingTranslation(result.translated_text);
+    } catch (error) {
+      if (requestId === trackingRequestId.current) setTrackingTranslationError(error instanceof Error ? error.message : "翻译失败，请重试");
+    } finally {
+      if (requestId === trackingRequestId.current) setTrackingTranslationLoading(false);
+    }
+  }
   useEffect(() => {
     if (!order.live_detail_available || !cardRef.current) return;
     const observer = new IntersectionObserver(([entry]) => {
@@ -136,8 +192,9 @@ function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; s
   const isInTransit = ["IN_TRANSIT", "SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status);
   const isCancelled = ["CANCELLED", "CANCELED"].includes(order.status);
   const totalLabel = order.status === "UNPAID" ? (en ? "Order amount" : "订单金额") : order.live_detail_available ? (en ? "Buyer paid amount" : "买家实付金额") : (en ? "Order total" : "订单总额");
-  const logisticsOrderStage = ["IN_TRANSIT", "SHIPPED", "DELIVERED"].includes(order.status) ? order.status : "";
-  const logisticsStatus = statusText[order.tracking_status ?? ""]?.[en ? "en" : "zh"] ?? statusText[logisticsOrderStage]?.[en ? "en" : "zh"] ?? detail?.latest_tracking_description ?? "—";
+  const orderStage = ["IN_TRANSIT", "SHIPPED", "DELIVERED"].includes(order.status) ? order.status : null;
+  const stage = logisticsStage(order.tracking_status) ?? orderStage ?? logisticsStage(detail?.latest_tracking_description);
+  const logisticsStatus = stage ? logisticsStatusText[stage][en ? "en" : "zh"] : en ? "Status pending" : "状态待更新";
   const breakdown: Array<{ key: string; zh: string; en: string }> = [
     { key: "original_total_product_price", zh: "商品总价", en: "Original product total" },
     { key: "sub_total", zh: "商品小计", en: "Product subtotal" },
@@ -162,7 +219,7 @@ function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; s
     {isInTransit ? <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><span>{logisticsStatus}</span></div> : null}
     {isInTransit ? <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number ?? ""}>{order.tracking_number ?? "—"}</span></div> : null}
     {isInTransit || detail?.shipping_provider ? <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail?.shipping_provider ?? "—"}</span></div> : null}
-    {isInTransit || detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><span>{detail?.latest_tracking_description ?? "—"}</span></div> : null}
+    {isInTransit || detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><div className="customer-tracking-detail"><span>{detail?.latest_tracking_description ?? "—"}</span>{!en && trackingTranslationEnabled && detail?.latest_tracking_description && /[A-Za-z]/.test(detail.latest_tracking_description) ? <button disabled={trackingTranslationLoading} onClick={() => void requestTrackingTranslation()} type="button">{trackingTranslationLoading ? "翻译中…" : trackingTranslation ? "重新翻译" : trackingTranslationError ? "重试翻译" : "译成中文"}</button> : null}{trackingTranslation ? <span className="customer-tracking-translation">{trackingTranslation}</span> : null}{trackingTranslationError ? <span className="customer-tracking-error" role="alert">{trackingTranslationError}</span> : null}</div></div> : null}
     {isInTransit || detail?.latest_tracking_at ? <div className="customer-info-line"><span>{en ? "Latest tracking time" : "最新物流时间"}</span><span>{dateTime(detail?.latest_tracking_at ?? null, en)}</span></div> : null}
     {isCancelled ? <><div className="customer-info-line"><span>{en ? "Cancellation reason" : "取消原因"}</span><span>—</span></div><div className="customer-info-line"><span>{en ? "Refund status" : "退款状态"}</span><span>—</span></div></> : null}
     {detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}
@@ -266,7 +323,7 @@ export function CustomerSidebar({ detail, storeName, en, onClose, onDraft }: { d
     <form className="customer-side-search" onSubmit={(event) => { event.preventDefault(); submitSearch(); }}><select aria-label={en ? "Search field" : "搜索字段"} onChange={(event) => { setField(event.target.value); setInput(""); setQuery(""); setPage(1); setPageToken(null); requestedProductToken.current = null; }} value={field}>{fields[section].map((item) => <option key={item.value} value={item.value}>{item[en ? "en" : "zh"]}</option>)}</select><input aria-label={en ? "Customer information search" : "客户信息搜索"} onChange={(event) => setInput(event.target.value)} placeholder={en ? "Enter search text" : `输入${fields[section].find((item) => item.value === field)?.zh ?? "关键词"}搜索`} value={input} /><button aria-label={en ? "Search" : "搜索"} type="submit"><MagnifyingGlass size={16} /></button></form>
     {section === "products" ? <div className="customer-side-sort"><span>{en ? "Store products" : "店铺商品"}</span><select aria-label={en ? "Product sort" : "商品排序"} onChange={(event) => setSort(event.target.value as typeof sort)} value={sort}><option value="platform">{en ? "Platform order" : "平台顺序"}</option><option value="priceAsc">{en ? "Price ↑ (loaded)" : "价格 ↑（已加载）"}</option><option value="priceDesc">{en ? "Price ↓ (loaded)" : "价格 ↓（已加载）"}</option></select></div> : null}
     <div className="customer-side-body" onScroll={(event) => { const node = event.currentTarget; if (node.scrollHeight - node.scrollTop - node.clientHeight < 100) loadMoreProducts(); }} ref={sideBodyRef} role="tabpanel"><p className="customer-side-tip">{storeName ?? "TikTok"} · {section === "orders" ? (en ? "Synced customer orders" : "已同步客户订单") : section === "products" ? (en ? "Live shop catalog" : "实时店铺商品") : (en ? "Live shop coupons" : "实时店铺优惠券")}</p>{error ? <div className="customer-side-state" role="alert"><p>{error}</p><button onClick={() => setRetryCount((count) => count + 1)} type="button">{en ? "Retry" : "重试"}</button></div> : null}{loading && !orders && !products && !coupons ? <p className="customer-side-state">{en ? "Loading…" : "正在加载…"}</p> : null}
-      {!error && section === "orders" && orders ? <>{orders.items.length ? orders.items.map((item) => <OrderCard en={en} fillDraft={fillDraft} key={`${detail.session.id}:${item.id}`} order={item} sessionId={detail.session.id} />) : <p className="customer-side-state">{en ? "No orders match this view" : "当前搜索或状态下暂无订单"}</p>}{orders.pagination.total > orders.pagination.page * orders.pagination.page_size ? <button className="customer-side-more" disabled={loading} onClick={() => setPage((value) => value + 1)} type="button">{en ? "Next page" : "下一页"}</button> : null}{orders.pagination.page > 1 ? <button className="customer-side-more" disabled={loading} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">{en ? "Previous page" : "上一页"}</button> : null}</> : null}
+      {!error && section === "orders" && orders ? <>{orders.items.length ? orders.items.map((item) => <OrderCard en={en} fillDraft={fillDraft} key={`${detail.session.id}:${item.id}`} order={item} sessionId={detail.session.id} trackingTranslationEnabled={detail.translation_enabled === true} />) : <p className="customer-side-state">{en ? "No orders match this view" : "当前搜索或状态下暂无订单"}</p>}{orders.pagination.total > orders.pagination.page * orders.pagination.page_size ? <button className="customer-side-more" disabled={loading} onClick={() => setPage((value) => value + 1)} type="button">{en ? "Next page" : "下一页"}</button> : null}{orders.pagination.page > 1 ? <button className="customer-side-more" disabled={loading} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">{en ? "Previous page" : "上一页"}</button> : null}</> : null}
       {!error && section === "products" && products ? <>{sortedProducts.length ? sortedProducts.map((item) => <ProductCard en={en} fillDraft={fillDraft} key={item.id} product={item} sessionId={detail.session.id} />) : <p className="customer-side-state">{products.next_page_token ? (en ? "Searching more products…" : "正在继续搜索商品…") : (en ? "No products found" : "未找到商品")}</p>}{products.partial_search ? <p className="customer-side-tip">{en ? "Name search continues across pages; more results may exist." : "名称搜索按平台目录逐页继续，后续页面可能还有结果。"}</p> : null}{loading && pageToken ? <p className="customer-side-state" role="status">{en ? "Loading more products…" : "正在加载更多商品…"}</p> : null}</> : null}
       {!error && section === "coupons" && coupons ? <>{coupons.items.length ? coupons.items.map((item) => <CouponCard coupon={item} en={en} fillDraft={fillDraft} key={item.id} />) : <p className="customer-side-state">{coupons.next_page_token ? (en ? "No matches on this page. Search the next page." : "本页无匹配优惠券，可继续搜索下一页。") : (en ? "No coupons found" : "未找到优惠券")}</p>}{coupons.partial_search ? <p className="customer-side-tip">{en ? "Code search continues across pages." : "编码搜索按平台目录逐页继续。"}</p> : null}{coupons.next_page_token ? <button className="customer-side-more" disabled={loading} onClick={() => setPageToken(coupons.next_page_token)} type="button">{loading ? (en ? "Loading…" : "加载中…") : (en ? "Load more coupons" : "加载更多优惠券")}</button> : null}</> : null}
     </div>

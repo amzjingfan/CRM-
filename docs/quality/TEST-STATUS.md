@@ -4,6 +4,10 @@
 
 ## 模块状态
 
+2026-10-21 工作台物流状态中文修正[源码 TR R03](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R03.md)为 `PARTIAL`：最终源码 `f951e294` 上后端 2223 passed/29 skipped，前端契约 47/47、生产构建与浏览器 52/52，Ruff/格式/mypy/typecheck 通过。此前用户真实截图证实旧版状态英文回退；新版本尚未部署 staging，真实按需翻译未调用。无买家外发，production No-Go。
+
+2026-10-21 工作台十条浏览器注释的[staging R02 TR](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R02.md) 为 `PARTIAL`：最终源码完整后端 2221 passed/3 skipped，本地生产浏览器 49/49；手动发布合并主线 `5d5f532c` 后六摘要预取、validate/deploy、11 服务、迁移头与三公网健康 200 通过，已部署页面合成浏览器 18/18。真实已登录页面工具 `UI_UNAVAILABLE`；用户截图确认“物流状态”英文回退，任务返修中。修正源码 `f951e294` 上后端 2223 passed/29 skipped、前端契约 47/47 与生产浏览器 52/52；新版本尚未部署。无买家外发，production No-Go。
+
 2026-10-21 工作台十条浏览器注释的[源码 TR](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R01.md) 为 `PARTIAL`：最终源码 `97543047` 上后端定向 6/6、前端契约 47/47、生产构建及合成浏览器 49/49 通过；完整后端套件在最终提交前为 2222 passed/3 skipped。staging 手动发布和真实登录态核对尚待执行；无买家外发，production No-Go。
 
 2026-10-21 客户侧栏真实字段源码 [PR #488](https://github.com/CP11-gh/CRM/pull/488) 与物流卡片 [PR #489](https://github.com/CP11-gh/CRM/pull/489) 已合入主线并手动部署 staging。[部署 R03 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DEPLOY-001-20261021-R03.md) 为 `PASS`：R02 手动门禁、固定出口、11 服务及三公网健康通过；用户已登录截图显示真实订单字段、展开 SKU/库存及优惠券金额/状态/领取截止。浏览器自动化 `UI_UNAVAILABLE`，截图未入仓；未覆盖每一种物流状态，无外发或高风险写入，production No-Go。
