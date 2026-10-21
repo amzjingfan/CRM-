@@ -4,7 +4,9 @@
 
 ## 模块状态
 
-2026-10-21 工作台物流状态中文修正[源码 TR R03](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R03.md)为 `PARTIAL`：最终源码 `f951e294` 上后端 2223 passed/29 skipped，前端契约 47/47、生产构建与浏览器 52/52，Ruff/格式/mypy/typecheck 通过。此前用户真实截图证实旧版状态英文回退；新版本尚未部署 staging，真实按需翻译未调用。无买家外发，production No-Go。
+2026-10-21 工作台物流翻译显示的 [TR R04](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R04.md) 为 `PASS`：subject `ef0ec3aa` 的前端契约 47/47、类型、lint（0 error、4 个既有 warning）、生产构建与定向浏览器 2/2；合入 `main=f98dca4e` 手动 staging 发布、六摘要预取、11 服务和四个公网健康入口通过，已部署页面定向合成浏览器 2/2，用户确认译文原位替换及切回原文。GitHub Actions 两作业零步骤失败不计 CI 通过；production G8 No-Go。
+
+2026-10-21 工作台物流状态中文修正历史[源码 TR R03](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R03.md)为 `PARTIAL`：最终源码 `f951e294` 上后端 2223 passed/29 skipped，前端契约 47/47、生产构建与浏览器 52/52，Ruff/格式/mypy/typecheck 通过。此前用户真实截图证实旧版状态英文回退；新版本尚未部署 staging，真实按需翻译未调用。无买家外发，production No-Go。
 
 2026-10-21 工作台十条浏览器注释的[staging R02 TR](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R02.md) 为 `PARTIAL`：最终源码完整后端 2221 passed/3 skipped，本地生产浏览器 49/49；手动发布合并主线 `5d5f532c` 后六摘要预取、validate/deploy、11 服务、迁移头与三公网健康 200 通过，已部署页面合成浏览器 18/18。真实已登录页面工具 `UI_UNAVAILABLE`；用户截图确认“物流状态”英文回退，任务返修中。修正源码 `f951e294` 上后端 2223 passed/29 skipped、前端契约 47/47 与生产浏览器 52/52；新版本尚未部署。无买家外发，production No-Go。
 
