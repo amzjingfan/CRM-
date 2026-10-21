@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "evidence_type": "customer_sidebar_official_readonly_smoke",
+  "generated_at_utc": "2026-10-20T16:55:35Z",
+  "environment": "staging",
+  "source_revision": "433f340de451202e776c41ae1a59739f90dc385e",
+  "official_order_service": {
+    "authorized_session": true,
+    "order_count": 1,
+    "order_id_search_count": 1,
+    "has_line_items": true,
+    "has_amount": true,
+    "has_tracking": true,
+    "unauthorized_session_returns_404": true
+  },
+  "store_catalog": {
+    "products_page_count": 20,
+    "products_total": 27,
+    "coupons_page_count": 15,
+    "coupons_total": 19
+  },
+  "browser_ui": "UI_UNAVAILABLE",
+  "external_message_sent": false,
+  "refund_or_coupon_write": false,
+  "production_release": false
+}

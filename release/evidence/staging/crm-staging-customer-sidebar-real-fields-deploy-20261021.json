@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "evidence_type": "customer_sidebar_real_fields_manual_staging_deploy",
+  "generated_at_utc": "2026-10-21T02:38:19.2668769Z",
+  "environment": "staging",
+  "source_revision": "15ceabf8eac90f2fe8c7843e24af26381c3e0499",
+  "source_gate": "passed_current_main_clean_checkout",
+  "github_actions_used_as_gate": false,
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:317081dbb7a7c3734cbd2411e02973f9e42d91a99047f8cd0bf12ba0bc2a7cd0",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:c6a38d5fef69ad5d15df6123ee052726f599a380c6648ecf105eaa2cc05a6c8b",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "previous_images_retained": true,
+  "private_postgresql_backup": {
+    "exists": true,
+    "mode": "0600",
+    "size_bytes": 382089,
+    "sha256": "93f1d0a742604294ee0a44f6509a05ab113c24b0ba453c89bdfe7b39b50dffdd"
+  },
+  "prefetch": {
+    "status": "passed",
+    "image_roles": 6,
+    "private_evidence_sha256": "7e85bf8ee26d1afe0a0032c24ba1cb0573d5ffb284c8c6023af1f5b9c8ceefa3"
+  },
+  "validate": {
+    "status": "validated",
+    "private_evidence_sha256": "5f409b8c7f518e67a0b26c3752fa5258bae894cf800fc34ca63b73120b76877c"
+  },
+  "deploy": {
+    "status": "passed",
+    "private_evidence_sha256": "f459c743337da4544e039e6e1c708c3b0b586c13ec9261de36980d0e4fb5d290",
+    "database_migration": "heads_applied",
+    "tiktok_egress": "passed",
+    "rootless_service_count": 11,
+    "health_checks": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    }
+  },
+  "mode": {
+    "tiktok_webhook_read": true,
+    "tiktok_manual_send": true,
+    "manual_send_target": "one_authorized_store",
+    "workspace_translation": true,
+    "auto_reply": false,
+    "high_risk_write": false,
+    "general_llm": false
+  },
+  "authenticated_ui_after_deploy": "UI_UNAVAILABLE",
+  "external_message_sent": false,
+  "refund_or_coupon_write": false,
+  "production_release": false
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "evidence_type": "customer_sidebar_authenticated_ui_acceptance",
+  "generated_at_utc": "2026-10-21T03:58:00Z",
+  "environment": "staging",
+  "backend_revision": "15ceabf8eac90f2fe8c7843e24af26381c3e0499",
+  "frontend_revision": "4f32c04e2cc2f92170f30c91b8a2ca4d1bf75266",
+  "manual_deploy_record": "TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DEPLOY-001-20261021-R02",
+  "authenticated_user_screenshots": {
+    "order": {
+      "buyer_paid_amount": true,
+      "payment_time": true,
+      "payment_method": true,
+      "logistics_status": true,
+      "tracking_number": true,
+      "carrier": true,
+      "latest_tracking_description": true,
+      "latest_tracking_time": true
+    },
+    "product": {
+      "product_price": true,
+      "product_status": true,
+      "expanded_sku": true,
+      "seller_sku": true,
+      "stock_status": true,
+      "loading_indicator_persistence": "not_determined_from_single_frame"
+    },
+    "coupon": {
+      "status": true,
+      "readable_discount_amount": true,
+      "display_channel": true,
+      "claim_deadline": true,
+      "fill_draft_action": true
+    }
+  },
+  "ui_automation": "UI_UNAVAILABLE",
+  "screenshot_saved_in_repository": false,
+  "operator_outbound_messages_sent": 0,
+  "refund_or_coupon_writes": 0,
+  "production_release": false
+}
