@@ -95,6 +95,7 @@ class SessionListData(BaseModel):
 
     items: list[SessionSummary]
     pagination: PageMeta
+    unread_messages_total: int = Field(ge=0)
 
 
 class SessionSearchRequest(BaseModel):

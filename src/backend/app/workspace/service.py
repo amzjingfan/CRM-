@@ -34,6 +34,7 @@ from app.workspace.repository import (
     list_conversations,
     list_messages,
     recent_orders,
+    unread_message_total,
 )
 from app.workspace.schemas import (
     AssigneeView,
@@ -183,6 +184,7 @@ async def get_session_list(
     return SessionListData(
         items=[_session_view(conversation, customer, message) for conversation, customer, message in rows],
         pagination=PageMeta(page=page, page_size=page_size, total=total),
+        unread_messages_total=await unread_message_total(session, store_ids),
     )
 
 

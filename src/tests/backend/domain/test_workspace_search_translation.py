@@ -14,6 +14,7 @@ from app.agent.draft_translation import (
 )
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.workspace import service as workspace_service
+from app.workspace.repository import unread_message_total
 from app.workspace.schemas import DraftTranslationRequest, SessionSearchRequest
 
 
@@ -36,6 +37,22 @@ def test_search_request_rejects_unbounded_terms_and_invalid_scope() -> None:
 
 
 @pytest.mark.asyncio
+async def test_unread_total_is_scoped_to_accessible_open_stores() -> None:
+    session = SimpleNamespace(scalar=AsyncMock(return_value=7))
+    store_id = uuid.uuid4()
+    assert await unread_message_total(session, set()) == 0
+    session.scalar.assert_not_awaited()
+    assert await unread_message_total(session, {store_id}) == 7
+    query = session.scalar.await_args.args[0]
+    compiled = query.compile()
+    assert "conversations.store_id IN" in str(compiled)
+    assert "conversations.status !=" in str(compiled)
+    assert store_id in compiled.params.values() or any(
+        isinstance(value, list) and store_id in value for value in compiled.params.values()
+    )
+
+
+@pytest.mark.asyncio
 async def test_search_validates_batch_bounds_before_store_query(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -45,6 +62,8 @@ async def test_search_validates_batch_bounds_before_store_query(
     listing = AsyncMock(return_value=([], 0))
     monkeypatch.setattr(workspace_service, "allowed_store_ids", allowed)
     monkeypatch.setattr(workspace_service, "list_conversations", listing)
+    unread_total = AsyncMock(return_value=5)
+    monkeypatch.setattr(workspace_service, "unread_message_total", unread_total)
 
     with pytest.raises(AppError) as conflict:
         await workspace_service.get_session_list(
@@ -58,7 +77,7 @@ async def test_search_validates_batch_bounds_before_store_query(
     allowed.assert_not_awaited()
     listing.assert_not_awaited()
 
-    await workspace_service.get_session_list(
+    result = await workspace_service.get_session_list(
         session,
         actor,
         "all",
@@ -72,6 +91,8 @@ async def test_search_validates_batch_bounds_before_store_query(
         [" Alice ", "Alice", "O-7"],
     )
     assert listing.await_args.args[-2:] == ("all", ("Alice", "O-7"))
+    assert result.unread_messages_total == 5
+    unread_total.assert_awaited()
 
     await workspace_service.get_session_list(session, actor, "all", None, None, None, 1, 30, "buyer", "Test Buyer", [])
     assert listing.await_args.args[-2:] == ("buyer", ("Test Buyer",))

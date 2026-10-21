@@ -35,6 +35,12 @@ const filterLabels: Record<"zh" | "en", Record<Filter, string>> = {
   en: { all: "All", unread: "Unread", mine: "Mine", starred: "Starred", closed: "Closed" },
 };
 const newKey = () => typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+const searchTerms = (value: string) => [...new Set(value.split(/[\n,，;；]+/).map((term) => term.trim()).filter(Boolean))];
+const markReadInList = (current: SessionListData | null, sessionId: string) => current ? {
+  ...current,
+  unread_messages_total: Math.max(0, current.unread_messages_total - (current.items.find((item) => item.id === sessionId)?.unread_count ?? 0)),
+  items: current.items.map((item) => item.id === sessionId ? { ...item, unread_count: 0 } : item),
+} : current;
 const modeLabel = (mode: SessionMessagesData["send_mode"], en: boolean) => ({
   real: en ? "Real TikTok delivery" : "真实 TikTok 发送",
   mock: en ? "Simulated delivery" : "模拟发送",
@@ -50,10 +56,6 @@ export default function WorkspacePage() {
   const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [batchTerms, setBatchTerms] = useState<string[]>([]);
-  const [batchOpen, setBatchOpen] = useState(false);
-  const [batchDraft, setBatchDraft] = useState("");
-  const [batchError, setBatchError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [list, setList] = useState<SessionListData | null>(null);
   const [stores, setStores] = useState<StoreView[]>([]);
@@ -62,6 +64,7 @@ export default function WorkspacePage() {
   const [detailError, setDetailError] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -89,6 +92,8 @@ export default function WorkspacePage() {
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const suggestionController = useRef<AbortController | null>(null);
   const listRequestId = useRef(0);
+  const conversationScrollRef = useRef<HTMLDivElement | null>(null);
+  const loadingMoreRef = useRef(false);
   const messageScrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const pendingPrependRef = useRef<{ sessionId: string; height: number; top: number } | null>(null);
@@ -141,18 +146,15 @@ export default function WorkspacePage() {
     const query = new URLSearchParams({ filter, page: String(page), page_size: "30" });
     if (platform) query.set("platform", platform);
     if (storeId) query.set("store_id", storeId);
-    if (batchTerms.length) {
-      query.set("search_scope", "all");
-      batchTerms.forEach((term) => query.append("term", term));
-    } else if (search) {
-      query.set("search_scope", searchScope); query.set("q", search);
-    }
+    const terms = searchTerms(search);
+    if (terms.length > 1) { query.set("search_scope", searchScope); terms.forEach((term) => query.append("term", term)); }
+    else if (terms.length === 1) { query.set("search_scope", searchScope); query.set("q", terms[0]); }
     return query;
-  }, [batchTerms, filter, platform, search, searchScope, storeId]);
+  }, [filter, platform, search, searchScope, storeId]);
 
   const loadList = useCallback(async () => {
     const requestId = ++listRequestId.current;
-    setLoading(true); setLoadingMore(false); setError("");
+    setLoading(true); setLoadingMore(false); setLoadMoreError(""); setError("");
     const query = buildListQuery(1);
     try {
       const data = await listSessions(query);
@@ -163,11 +165,13 @@ export default function WorkspacePage() {
     finally { if (requestId === listRequestId.current) setLoading(false); }
   }, [buildListQuery, en]);
 
-  async function loadMoreConversations() {
-    if (!list || loading || loadingMore || list.items.length >= list.pagination.total) return;
+  const loadMoreConversations = useCallback(async () => {
+    if (!list || loading || loadingMoreRef.current || list.items.length >= list.pagination.total) return;
+    loadingMoreRef.current = true;
     const requestId = listRequestId.current;
     const page = list.pagination.page + 1;
     const query = buildListQuery(page);
+    setLoadMoreError("");
     setLoadingMore(true);
     try {
       const next = await listSessions(query);
@@ -177,11 +181,17 @@ export default function WorkspacePage() {
         items: [...current.items, ...next.items.filter((item) => !current.items.some((loaded) => loaded.id === item.id))],
       } : current);
     } catch (caught) {
-      if (requestId === listRequestId.current) setAnnouncement(caught instanceof Error ? caught.message : en ? "Failed to load more conversations" : "加载更多会话失败");
+      if (requestId === listRequestId.current) setLoadMoreError(caught instanceof Error ? caught.message : en ? "Failed to load more conversations" : "加载更多会话失败");
     } finally {
+      loadingMoreRef.current = false;
       if (requestId === listRequestId.current) setLoadingMore(false);
     }
-  }
+  }, [list, loading, buildListQuery, en]);
+
+  useEffect(() => {
+    const node = conversationScrollRef.current;
+    if (node && !loadingMore && !loadMoreError && list && list.items.length < list.pagination.total && node.scrollHeight - node.scrollTop - node.clientHeight < 100) void loadMoreConversations();
+  }, [list, loadingMore, loadMoreError, loadMoreConversations]);
 
   useEffect(() => { void loadList(); return () => { listRequestId.current += 1; }; }, [loadList]);
   useEffect(() => {
@@ -217,9 +227,7 @@ export default function WorkspacePage() {
             };
           });
           if (freshDetail.session.unread_count && stickToBottomRef.current && document.visibilityState === "visible") {
-            void markSessionRead(selectedId).then(() => setList((current) => current ? {
-              ...current, items: current.items.map((item) => item.id === selectedId ? { ...item, unread_count: 0 } : item),
-            } : current)).catch(() => {});
+            void markSessionRead(selectedId).then(() => setList((current) => markReadInList(current, selectedId))).catch(() => {});
           }
         }
       } catch {
@@ -248,7 +256,7 @@ export default function WorkspacePage() {
       if (!isCurrentRequest) return;
       setDetail(data);
       if (data.session.unread_count && document.visibilityState === "visible") {
-        void markSessionRead(selectedId).then(() => setList((current) => current ? { ...current, items: current.items.map((item) => item.id === selectedId ? { ...item, unread_count: 0 } : item) } : current));
+        void markSessionRead(selectedId).then(() => setList((current) => markReadInList(current, selectedId)));
       }
     }).catch((caught) => {
       if (!isCurrentRequest) return;
@@ -290,7 +298,7 @@ export default function WorkspacePage() {
     if (selectedId && detail?.session.unread_count) {
       const sessionId = selectedId;
       void markSessionRead(sessionId).then(() => {
-        setList((current) => current ? { ...current, items: current.items.map((item) => item.id === sessionId ? { ...item, unread_count: 0 } : item) } : current);
+        setList((current) => markReadInList(current, sessionId));
         setDetail((current) => current?.session.id === sessionId ? { ...current, session: { ...current.session, unread_count: 0 } } : current);
       }).catch((caught) => setAnnouncement(caught instanceof Error ? caught.message : en ? "Could not mark messages as read" : "标记已读失败"));
     }
@@ -362,15 +370,6 @@ export default function WorkspacePage() {
     setReview({ sessionId, source, language: choice === "direct" ? "original" : language, content, key: newKey() });
   }
 
-  function applyBatchSearch() {
-    const terms = [...new Set(batchDraft.split(/[\n,，;；]+/).map((item) => item.trim()).filter(Boolean))];
-    if (!terms.length || terms.length > 20 || terms.some((term) => term.length > 120)) {
-      setBatchError(en ? "Enter 1–20 keywords, each at most 120 characters" : "请输入 1～20 个关键词，每项不超过 120 字符");
-      return;
-    }
-    setBatchTerms(terms); setSearchInput(""); setSearch(""); setSearchScope("all"); setBatchError(""); setBatchOpen(false);
-  }
-
   async function loadOlder() {
     if (!selectedId || !detail || detail.pagination.page <= 1 || loadingOlder) return;
     const sessionId = selectedId;
@@ -403,9 +402,9 @@ export default function WorkspacePage() {
         if (event === "result") {
           const result = data as unknown as Suggestion;
           setSuggestionDraft(result.content ?? "");
-          // 只填入空草稿；已有人工输入必须保留。真实发送仍需人工确认。
+          // 用户主动点击生成后直接填入可编辑草稿；发送仍需人工审阅确认。
           const content = result.content;
-          if (selectedId && content) setDrafts((current) => current[selectedId] ? current : { ...current, [selectedId]: content });
+          if (selectedId && content) setDrafts((current) => ({ ...current, [selectedId]: content }));
         }
         if (event === "error") { streamErrorMessage = String(data.message ?? (en ? "Failed to generate AI suggestion" : "AI 建议生成失败")); setSuggestionStatus(streamErrorMessage); }
         if (event === "done") setSuggestionStatus(data.reason === "completed" ? (en ? "Suggestion generated" : "建议已生成") : streamErrorMessage || (en ? "Connection ended; retry is available" : "连接已结束，可重试"));
@@ -477,20 +476,19 @@ export default function WorkspacePage() {
 
   return <AppShell><main className={`workspace-grid ${selectedId ? "has-selection" : ""}`}>
     <section className="conversation-panel" aria-label={en ? "Conversation list" : "会话列表"}>
-      <div className="panel-heading"><div><p className="eyebrow">INBOX</p><h2 className="text-xl font-semibold">{en ? "Customer messages" : "客户消息"}</h2></div><span className="count-pill">{list?.pagination.total ?? 0}</span></div>
+      <div className="panel-heading"><div><p className="eyebrow">INBOX</p><h2 className="text-xl font-semibold">{en ? "Customer messages" : "客户消息"}</h2></div><span aria-label={en ? "Total unread messages" : "新消息总数"} className="count-pill">{list?.unread_messages_total ?? 0}</span></div>
       <div className="filter-row" aria-label={en ? "Conversation filters" : "会话筛选"}>{(["all", "unread", "mine", "starred", "closed"] as Filter[]).map((item) => <button aria-pressed={filter === item} className={filter === item ? "filter active" : "filter"} key={item} onClick={() => setFilter(item)} type="button">{filterLabels[language][item]}</button>)}</div>
       <div className="workspace-search">
         <div className="workspace-search-controls">
-          <select aria-label={en ? "Search scope" : "搜索范围"} className="compact-field" disabled={batchTerms.length > 0} onChange={(event) => setSearchScope(event.target.value as SearchScope)} value={searchScope}>
+          <select aria-label={en ? "Search scope" : "搜索范围"} className="compact-field" onChange={(event) => setSearchScope(event.target.value as SearchScope)} value={searchScope}>
             <option value="all">{en ? "All" : "全部"}</option><option value="buyer">{en ? "Buyer" : "买家"}</option><option value="order">{en ? "Order number" : "订单号"}</option><option value="tracking">{en ? "Tracking number" : "物流号"}</option><option value="product">{en ? "Product" : "商品"}</option>
           </select>
-          <label className="workspace-search-input"><MagnifyingGlass size={16} /><input aria-label={en ? "Search conversations" : "搜索会话"} maxLength={120} onChange={(event) => { setSearchInput(event.target.value); setBatchTerms([]); }} placeholder={en ? "Order / tracking / buyer / product" : "订单号 / 物流号 / 买家昵称 / 商品…"} value={searchInput} /></label>
-          <button aria-label={en ? "Batch search" : "批量搜索会话"} className="secondary-button" onClick={() => { setBatchDraft(batchTerms.join("\n")); setBatchError(""); setBatchOpen(true); }} type="button">{en ? "Batch" : "批量"}</button>
+          <label className="workspace-search-input"><MagnifyingGlass size={16} /><input aria-label={en ? "Search conversations" : "搜索会话"} maxLength={2420} onChange={(event) => setSearchInput(event.target.value)} placeholder={en ? "Order / tracking / buyer / product · separate with commas" : "订单号 / 物流号 / 买家昵称 / 商品，多个用逗号分隔"} value={searchInput} /></label>
         </div>
-        {batchTerms.length ? <div className="workspace-search-summary"><span>{en ? `${batchTerms.length} keywords · ${list?.pagination.total ?? 0} conversations` : `${batchTerms.length} 个关键词 · ${list?.pagination.total ?? 0} 个会话`}</span><button className="text-button" onClick={() => setBatchTerms([])} type="button">{en ? "Clear" : "清空"}</button></div> : search ? <p className="workspace-search-summary">{en ? `${list?.pagination.total ?? 0} matching conversations` : `找到 ${list?.pagination.total ?? 0} 个会话`}</p> : null}
+        {searchTerms(search).length > 1 ? <p className="workspace-search-summary">{en ? `${searchTerms(search).length} keywords · ${list?.pagination.total ?? 0} conversations` : `${searchTerms(search).length} 个关键词 · ${list?.pagination.total ?? 0} 个会话`}</p> : search ? <p className="workspace-search-summary">{en ? `${list?.pagination.total ?? 0} matching conversations` : `找到 ${list?.pagination.total ?? 0} 个会话`}</p> : null}
       </div>
       <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3"><select aria-label={en ? "Platform" : "平台"} className="compact-field" onChange={(event) => setPlatform(event.target.value)} value={platform}><option value="">{en ? "All platforms" : "全部平台"}</option><option value="tiktok">TikTok</option><option value="shopee">Shopee</option><option value="amazon">Amazon</option></select><select aria-label={en ? "Store" : "店铺"} className="compact-field" onChange={(event) => setStoreId(event.target.value)} value={storeId}><option value="">{en ? "All stores" : "全部店铺"}</option>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}{storeId && !stores.some((store) => store.id === storeId) ? <option value={storeId}>{en ? "Store name unavailable" : "店铺名称不可用"}</option> : null}</select>{storeError ? <p className="col-span-2 text-xs text-red-600" role="alert">{storeError}</p> : null}</div>
-      <div className="conversation-scroll">{loading ? <LoadingState label={en ? "Loading conversations…" : "正在加载会话…"} /> : error ? <ErrorState message={error} retry={() => void loadList()} /> : !list?.items.length ? <EmptyState label={search || batchTerms.length ? (en ? "No matching conversations" : "未找到匹配会话") : (en ? "Conversations will appear when platform messages arrive" : "暂无会话，平台消息到达后会显示在这里")} /> : <>{list.items.map((item) => {
+      <div className="conversation-scroll" onScroll={(event) => { const node = event.currentTarget; if (node.scrollHeight - node.scrollTop - node.clientHeight < 100) void loadMoreConversations(); }} ref={conversationScrollRef}>{loading ? <LoadingState label={en ? "Loading conversations…" : "正在加载会话…"} /> : error ? <ErrorState message={error} retry={() => void loadList()} /> : !list?.items.length ? <EmptyState label={search ? (en ? "No matching conversations" : "未找到匹配会话") : (en ? "Conversations will appear when platform messages arrive" : "暂无会话，平台消息到达后会显示在这里")} /> : <>{list.items.map((item) => {
         const lastMessageTime = formatConversationTime(item.last_message_at, en ? "en-US" : "zh-CN");
         return <button aria-pressed={selectedId === item.id} className={selectedId === item.id ? "conversation-card active" : "conversation-card"} key={item.id} onClick={() => setSelectedId(item.id)} type="button">
           <span className="avatar">{item.customer.name?.slice(0, 1) ?? "?"}</span>
@@ -499,7 +497,7 @@ export default function WorkspacePage() {
             <span className="mt-1 flex items-center justify-between gap-2"><span className="min-w-0 truncate text-sm text-[var(--muted)]">{item.last_message ?? (en ? "No messages" : "暂无消息")}</span><span className="conversation-indicators">{item.is_starred ? <Star aria-label={en ? "Review risk" : "差评风险"} size={14} weight="fill" /> : null}<small className={`platform-badge platform-${item.platform}`}>{item.platform}</small>{item.unread_count > 0 ? <span className="unread" aria-label={en ? `${item.unread_count} unread messages` : `${item.unread_count} 条未读消息`}>{item.unread_count > 99 ? "99+" : item.unread_count}</span> : null}</span></span>
           </span>
         </button>;
-      })}{list.items.length < list.pagination.total ? <button className="secondary-button mx-auto my-3 flex" disabled={loadingMore} onClick={() => void loadMoreConversations()} type="button">{loadingMore ? (en ? "Loading…" : "加载中…") : (en ? "Load more conversations" : "加载更多会话")}</button> : null}</>}</div>
+      })}{loadingMore ? <p className="workspace-search-summary" role="status">{en ? "Loading more conversations…" : "正在加载更多会话…"}</p> : null}{loadMoreError ? <div className="workspace-search-summary" role="alert">{loadMoreError} <button className="text-button" onClick={() => void loadMoreConversations()} type="button">{en ? "Retry" : "重试"}</button></div> : null}</>}</div>
     </section>
 
     <section className="chat-panel" aria-label={en ? "Chat window" : "聊天窗口"}>{!selectedId ? <EmptyState label={en ? "Select a conversation" : "请选择一个会话"} /> : detailError ? <ErrorState message={detailError} /> : !detail ? <LoadingState label={en ? "Loading messages…" : "正在加载消息…"} /> : <>
@@ -538,7 +536,6 @@ export default function WorkspacePage() {
 
     <aside className={`customer-panel ${customerOpen ? "open" : ""}`} aria-label={en ? "Customer and quick actions" : "客户与快捷操作"}><CustomerSidebar detail={detail} en={en} key={detail?.session.id ?? "none"} onClose={() => setCustomerOpen(false)} onDraft={(content) => { setDraft(content); setAnnouncement(en ? "Added to draft; review before sending" : "已填入草稿，请核对后发送"); }} storeName={stores.find((store) => store.id === detail?.session.store_id)?.name ?? null} /></aside>
     {customerOpen ? <button aria-label={en ? "Close drawer overlay" : "关闭抽屉遮罩"} className="drawer-backdrop" onClick={() => setCustomerOpen(false)} type="button" /> : null}
-    {batchOpen ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Batch search conversations" : "批量搜索会话"} aria-modal="true" className="action-dialog" role="dialog"><h2>{en ? "Batch search conversations" : "批量搜索会话"}</h2><p>{en ? "Enter buyer names, order numbers, tracking numbers or products. One keyword per line; any match is shown." : "可按买家昵称、订单号、物流号或商品名称一次输入多个关键词。每行一个，命中任一关键词即显示会话。"}</p><textarea aria-label={en ? "Batch keywords" : "批量搜索关键词"} className="batch-search-textarea" onChange={(event) => setBatchDraft(event.target.value)} placeholder={en ? "One keyword per line" : "每行输入一个关键词"} value={batchDraft} />{batchError ? <p className="workspace-translation-error" role="alert">{batchError}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setBatchOpen(false)} type="button">{en ? "Cancel" : "取消"}</button><button className="secondary-button" onClick={() => { setBatchTerms([]); setSearchInput(""); setSearch(""); setSearchScope("all"); setBatchOpen(false); }} type="button">{en ? "Clear filters" : "清空筛选"}</button><button className="primary-button" onClick={applyBatchSearch} type="button">{en ? "View results" : "查看结果"}</button></div></section></div> : null}
     {review && review.sessionId === selectedId ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Review outgoing message" : "审阅外发消息"} aria-modal="true" className="action-dialog workspace-review-dialog" role="dialog"><h2>{en ? "Review outgoing message" : "审阅外发消息"}</h2><p>{en ? "Recipient" : "收件人"}：{detail?.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} · {detail?.session.platform}</p><p>{en ? "Target language" : "目标语言"}：{replyLanguages.find((item) => item.value === review.language)?.[en ? "en" : "zh"]}</p><div className="workspace-review-content"><strong>{en ? "Exact message to send" : "即将发送的准确内容"}</strong><p>{review.content}</p></div>{review.language !== "original" ? <div className="workspace-review-source"><strong>{en ? "Original draft" : "原始草稿"}</strong><p>{review.source}</p></div> : null}<p>{detail?.send_mode === "real" ? (en ? "This sends a real TikTok message and is audited." : "确认后将向真实 TikTok 买家发送，操作会被审计。") : (en ? "This runs simulated delivery." : "确认后执行模拟发送。")}</p><div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setReview(null)} type="button">{en ? "Back to edit" : "返回修改"}</button><button className="primary-button" disabled={sending || detail?.send_mode === "disabled"} onClick={() => void submitMessage(review.content, review.key, review.sessionId)} type="button">{en ? "Confirm & send" : "确认并发送"}</button></div></section></div> : null}
     {transferOpen ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Transfer conversation" : "转交会话"} aria-modal="true" className="action-dialog" role="dialog"><h2>{en ? "Transfer conversation" : "转交会话"}</h2><p>{en ? "Choose an agent who can access this store." : "选择有当前店铺权限的坐席。"}</p><select aria-label={en ? "Target agent" : "目标坐席"} className="compact-field" onChange={(event) => setAssigneeId(event.target.value)} value={assigneeId}><option value="">{en ? "Select an agent" : "请选择坐席"}</option>{assignees.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select>{transferError ? <p role="alert">{transferError}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setTransferOpen(false)} type="button">{en ? "Cancel" : "取消"}</button><button className="primary-button" disabled={!assigneeId || actionBusy} onClick={() => void confirmTransfer()} type="button">{en ? "Confirm transfer" : "确认转交"}</button></div></section></div> : null}
   </main><div aria-live="polite" className="sr-only">{announcement}</div></AppShell>;

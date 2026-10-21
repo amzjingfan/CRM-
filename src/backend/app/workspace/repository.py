@@ -95,6 +95,20 @@ async def list_conversations(
     return [(conversation, customer, message) for conversation, customer, message in rows], int(total)
 
 
+async def unread_message_total(session: AsyncSession, store_ids: set[uuid.UUID]) -> int:
+    """汇总当前坐席可访问且未关闭会话的未读消息数，不受列表分页和搜索影响。"""
+    if not store_ids:
+        return 0
+    return int(
+        await session.scalar(
+            select(func.coalesce(func.sum(Conversation.unread_count), 0)).where(
+                Conversation.store_id.in_(store_ids), Conversation.status != "closed"
+            )
+        )
+        or 0
+    )
+
+
 def _search_term_condition(scope: str, term: str) -> ColumnElement[bool]:
     """把买家、订单、物流和商品匹配约束到同一店铺、平台及买家。"""
     escaped = term.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

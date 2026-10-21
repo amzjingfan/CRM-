@@ -15,12 +15,13 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT") {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [] } },
     { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [] } },
   ];
+  for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
   const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0 };
   await context.route("**/v1/**", async (route) => {
@@ -45,11 +46,12 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT") {
       const terms = payload?.terms?.length ? payload.terms : [payload?.q].filter(Boolean);
       const searchable = { [firstId]: { buyer: "Alice", order: "ORDER-ALICE", tracking: "TRACK-A", product: "Walking pad" }, [secondId]: { buyer: "Bob", order: "ORDER-BOB", tracking: "TRACK-B", product: "Treadmill" } };
       const matches = (item) => !terms.length || terms.some((term) => {
-        const fields = searchable[item.id];
+        const fields = searchable[item.id] ?? { buyer: item.customer.name, order: "", tracking: "", product: "" };
         return (scope === "all" ? Object.values(fields) : [fields[scope]]).some((value) => value.toLowerCase().includes(term.toLowerCase()));
       });
       const items = records.filter((item) => (filter === "closed" ? item.status === "closed" : item.status !== "closed" && (filter !== "starred" || item.is_starred)) && matches(item));
-      data = { items, pagination: { page: 1, page_size: 30, total: items.length } };
+      const pageNumber = Number(payload?.page ?? url.searchParams.get("page") ?? 1);
+      data = { items: items.slice((pageNumber - 1) * 30, pageNumber * 30), unread_messages_total: records.filter((item) => item.status !== "closed").reduce((sum, item) => sum + item.unread_count, 0), pagination: { page: pageNumber, page_size: 30, total: items.length } };
     } else if (path.endsWith("/messages") && method === "GET") {
       const record = records.find((item) => path.includes(item.id));
       const page = Number(url.searchParams.get("page") ?? "1");
@@ -69,10 +71,11 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT") {
     } else if (path.endsWith("/sidebar/orders/detail") && method === "POST") {
       calls.orderDetails++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
-      data = { payment_method_name: "Card", shipping_provider: "Carrier A", latest_tracking_description: "Package dispatched", latest_tracking_at: "2026-10-16T23:26:48Z" };
+      if (orderDetailDelay) await new Promise((resolve) => setTimeout(resolve, orderDetailDelay));
+      data = { payment_method_name: "Card", shipping_provider: "Carrier A", latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z" };
     } else if (path.endsWith("/sidebar/products/123") && method === "GET") {
       calls.productDetails++;
-      data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
+      data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: "https://example.invalid/product.png", skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
     } else if (path.endsWith("/draft/translation") && method === "POST") {
       calls.translation++;
       if (calls.translationDelay) await new Promise((resolve) => setTimeout(resolve, calls.translationDelay));
@@ -103,6 +106,7 @@ test("conversation opens at newest message and offers a return button while read
   try {
     const scroll = page.locator(".message-scroll");
     await page.getByText("Message 69").waitFor();
+    await page.waitForFunction(() => document.querySelector('[aria-label="新消息总数"]')?.textContent === "3");
     await page.waitForFunction(() => { const node = document.querySelector(".message-scroll"); return node && node.scrollHeight - node.scrollTop - node.clientHeight < 5; });
     await scroll.evaluate((node) => { node.scrollTop = 0; });
     await page.getByRole("button", { name: "到最新消息" }).waitFor({ state: "visible" });
@@ -114,6 +118,16 @@ test("conversation opens at newest message and offers a return button while read
     await page.locator(".conversation-card.active .unread").waitFor({ state: "hidden" });
     await page.waitForFunction(() => { const node = document.querySelector(".message-scroll"); return node && node.scrollHeight - node.scrollTop - node.clientHeight < 5; });
     assert.match(await page.getByRole("button", { name: /Bob/ }).textContent(), /3/);
+  } finally { await context.close(); }
+});
+
+test("scrolling to the end automatically loads the next conversation page", async () => {
+  const { context, page } = await openWorkspace(2, "IN_TRANSIT", 35);
+  try {
+    await page.waitForFunction(() => document.querySelectorAll(".conversation-card").length === 30);
+    await page.locator(".conversation-scroll").evaluate((node) => { node.scrollTop = node.scrollHeight; node.dispatchEvent(new Event("scroll", { bubbles: true })); });
+    await page.waitForFunction(() => document.querySelectorAll(".conversation-card").length === 35);
+    assert.equal(await page.getByRole("button", { name: "加载更多会话" }).count(), 0);
   } finally { await context.close(); }
 });
 
@@ -138,6 +152,9 @@ test("AI result fills editable draft without sending; star, transfer and close p
     const draft = page.getByRole("textbox", { name: "回复内容" });
     await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value === "AI draft ready");
     assert.equal(await draft.inputValue(), "AI draft ready");
+    await draft.fill("Earlier draft");
+    await page.getByRole("button", { name: "刷新", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value === "AI draft ready");
     assert.equal(calls.send, 0);
     await page.getByRole("button", { name: "标记差评风险" }).click();
     await page.getByRole("button", { name: "取消差评风险标记" }).waitFor();
@@ -157,7 +174,7 @@ test("AI result fills editable draft without sending; star, transfer and close p
   } finally { await context.close(); }
 });
 
-test("single and batch search send scoped terms to the server", async () => {
+test("single and multiple search terms share one input", async () => {
   const { context, page, calls } = await openWorkspace(2);
   try {
     await page.getByRole("combobox", { name: "搜索范围" }).selectOption("order");
@@ -165,9 +182,8 @@ test("single and batch search send scoped terms to the server", async () => {
     await page.waitForFunction(() => document.querySelectorAll(".conversation-card").length === 1);
     assert.equal(await page.locator(".conversation-card").count(), 1);
     assert.ok(calls.searchQueries.some((query) => query.search_scope === "order" && query.q === "ORDER-BOB"));
-    await page.getByRole("button", { name: "批量搜索会话" }).click();
-    await page.getByRole("textbox", { name: "批量搜索关键词" }).fill("Alice\nWalking pad\nBob");
-    await page.getByRole("button", { name: "查看结果" }).click();
+    assert.equal(await page.getByRole("button", { name: "批量搜索会话" }).count(), 0);
+    await page.getByRole("textbox", { name: "搜索会话" }).fill("Alice,Bob,Walking pad");
     await page.getByText("3 个关键词 · 2 个会话").waitFor();
     assert.equal(await page.locator(".conversation-card").count(), 2);
     assert.ok(calls.searchQueries.some((query) => query.terms.includes("Alice") && query.terms.includes("Bob")));
@@ -302,8 +318,15 @@ test("an interrupted send retry stays bound to its original conversation", async
 test("visible customer order card loads six real payment and logistics rows without a detail click", async () => {
   const { context, page, calls } = await openWorkspace(2);
   try {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     const card = page.getByTestId("customer-order-card");
     await card.getByText("577600000000000001").waitFor();
+    assert.equal(await card.getByRole("button", { name: "复制订单编号" }).count(), 1);
+    assert.equal(await card.getByRole("button", { name: "复制商品规格" }).count(), 1);
+    assert.equal(await card.getByRole("button", { name: "复制SKU", exact: true }).count(), 1);
+    await card.getByRole("button", { name: "复制订单编号" }).click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "577600000000000001");
+    await card.getByText("商品规格：").waitFor();
     await card.getByText("Carrier A").waitFor();
     await card.getByText("买家实付金额").first().waitFor();
     await card.getByText("物流状态").waitFor();
@@ -319,12 +342,25 @@ test("visible customer order card loads six real payment and logistics rows with
   } finally { await context.close(); }
 });
 
+test("order card reveals payment and logistics fields together after detail arrives", async () => {
+  const { context, page } = await openWorkspace(2, "IN_TRANSIT", 2, null, 400);
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByText("正在读取订单详情…").waitFor();
+    assert.equal(await card.getByText("付款时间").count(), 0);
+    assert.equal(await card.getByText("物流单号").count(), 0);
+    await card.getByText("付款时间").waitFor();
+    await card.getByText("物流单号").waitFor();
+    await card.getByText("Card").waitFor();
+  } finally { await context.close(); }
+});
+
 test("customer order states show their own fields and leave unavailable facts blank", async () => {
   for (const [state, expected, missing, logisticsLabel] of [
     ["UNPAID", "付款截止", "物流状态", null],
     ["AWAITING_SHIPMENT", "最晚发货", "物流状态", null],
     ["DELIVERED", "物流状态", "取消原因", "已送达"],
-    ["COMPLETED", "物流状态", "取消原因", "—"],
+    ["COMPLETED", "物流状态", "取消原因", "Delivered"],
     ["CANCELLED", "取消原因", "物流状态", null],
   ]) {
     const { context, page } = await openWorkspace(2, state);
@@ -335,6 +371,14 @@ test("customer order states show their own fields and leave unavailable facts bl
       if (logisticsLabel) await card.locator(".customer-info-line").filter({ hasText: "物流状态" }).getByText(logisticsLabel).waitFor();
     } finally { await context.close(); }
   }
+});
+
+test("completed order shows the latest platform tracking text without inventing a stage", async () => {
+  const { context, page } = await openWorkspace(2, "COMPLETED", 2, "Carrier custom event");
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.locator(".customer-info-line").filter({ hasText: "物流状态" }).getByText("Carrier custom event").waitFor();
+  } finally { await context.close(); }
 });
 
 test("customer sidebar filters real order projections and keeps amount rows tied to returned data", async () => {
@@ -364,6 +408,7 @@ test("product and coupon tabs load shop data, expand SKU, and only fill an edita
     const product = page.getByTestId("customer-product-card");
     await product.getByText("Walking pad").waitFor();
     await product.getByText("上架中").waitFor();
+    await product.locator("img.customer-product-image").waitFor();
     await page.getByLabel("搜索字段").selectOption("name");
     await page.getByLabel("客户信息搜索").fill("Walking");
     await page.getByRole("button", { name: "搜索", exact: true }).click();
@@ -371,7 +416,9 @@ test("product and coupon tabs load shop data, expand SKU, and only fill an edita
     await product.locator("summary").click();
     await product.getByText("Black with handrail").waitFor();
     if (process.env.CAPTURE_SIDEBAR) await page.screenshot({ path: `${process.env.CAPTURE_SIDEBAR}/products.png`, fullPage: true });
-    assert.equal(calls.productDetails, 1);
+    assert.equal(calls.productDetails, 2);
+    assert.equal(await product.getByRole("button", { name: "复制商品规格" }).count(), 1);
+    assert.equal(await product.getByRole("button", { name: "复制SKU 货号" }).count(), 1);
     await product.getByRole("button", { name: "填入回复草稿" }).click();
     assert.match(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), /Walking pad/);
     assert.equal(calls.send, 0);
@@ -390,5 +437,29 @@ test("product and coupon tabs load shop data, expand SKU, and only fill an edita
     await coupon.getByRole("button", { name: "填入回复草稿" }).click();
     assert.match(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), /SAVE5/);
     assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("scrolling the product catalog to the bottom loads its next page", async () => {
+  const { context, page } = await openWorkspace(2);
+  try {
+    const image = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+    const makeProduct = (id) => ({ id: String(id), title: `Product ${id}`, status: "ACTIVATE", image_url: image, skus: [] });
+    const productQueries = [];
+    await page.route("**/v1/workspace/sessions/*/sidebar/search", async (route) => {
+      const payload = JSON.parse(route.request().postData());
+      if (payload.section !== "products") return route.fallback();
+      productQueries.push(payload);
+      const data = payload.page_token
+        ? { items: [makeProduct(2000)], next_page_token: null, total_count: 13, partial_search: false }
+        : { items: Array.from({ length: 12 }, (_, index) => makeProduct(1000 + index)), next_page_token: "next-1", total_count: 13, partial_search: false };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+    await page.getByRole("tab", { name: "商品" }).click();
+    await page.waitForFunction(() => document.querySelectorAll(".customer-product-card").length === 12);
+    await page.locator(".customer-side-body").evaluate((node) => { node.scrollTop = node.scrollHeight; node.dispatchEvent(new Event("scroll", { bubbles: true })); });
+    await page.getByText("Product 2000").waitFor();
+    assert.equal(productQueries.filter((query) => query.page_token === "next-1").length, 1);
+    assert.equal(await page.getByRole("button", { name: "加载更多商品" }).count(), 0);
   } finally { await context.close(); }
 });
