@@ -402,7 +402,7 @@ test("completed order maps common carrier stages to Chinese without treating com
   }
 });
 
-test("tracking description translates only after a click and leaves the carrier original visible", async () => {
+test("tracking description replaces the original after translation and can show it again", async () => {
   const { context, page, calls } = await openWorkspace(2, "COMPLETED", 2, null, 0, true);
   try {
     const card = page.getByTestId("customer-order-card");
@@ -413,7 +413,13 @@ test("tracking description translates only after a click and leaves the carrier 
     await description.getByText("已送达").waitFor();
     assert.equal(calls.trackingTranslations, 1);
     assert.equal(calls.send, 0);
+    assert.equal(await description.getByText("Delivered").count(), 0);
+    await description.getByRole("button", { name: "查看原文" }).click();
     await description.getByText("Delivered").waitFor();
+    assert.equal(await description.getByText("已送达").count(), 0);
+    await description.getByRole("button", { name: "查看译文" }).click();
+    await description.getByText("已送达").waitFor();
+    assert.equal(calls.trackingTranslations, 1);
   } finally { await context.close(); }
 });
 

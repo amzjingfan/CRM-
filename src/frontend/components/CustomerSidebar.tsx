@@ -142,6 +142,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillDraft
   const [detailError, setDetailError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [trackingTranslation, setTrackingTranslation] = useState("");
+  const [showTrackingTranslation, setShowTrackingTranslation] = useState(false);
   const [trackingTranslationError, setTrackingTranslationError] = useState("");
   const [trackingTranslationLoading, setTrackingTranslationLoading] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
@@ -155,6 +156,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillDraft
     setDetailError("");
     trackingRequestId.current += 1;
     setTrackingTranslation("");
+    setShowTrackingTranslation(false);
     setTrackingTranslationError("");
     getCustomerSidebarOrderDetail(sessionId, order.external_order_id)
       .then(setDetail)
@@ -172,6 +174,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillDraft
       if (requestId !== trackingRequestId.current) return;
       if (result.source_description !== source || !result.translated_text.trim()) throw new Error("物流描述已更新，请刷新详情后重试");
       setTrackingTranslation(result.translated_text);
+      setShowTrackingTranslation(true);
     } catch (error) {
       if (requestId === trackingRequestId.current) setTrackingTranslationError(error instanceof Error ? error.message : "翻译失败，请重试");
     } finally {
@@ -219,7 +222,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillDraft
     {isInTransit ? <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><span>{logisticsStatus}</span></div> : null}
     {isInTransit ? <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number ?? ""}>{order.tracking_number ?? "—"}</span></div> : null}
     {isInTransit || detail?.shipping_provider ? <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail?.shipping_provider ?? "—"}</span></div> : null}
-    {isInTransit || detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><div className="customer-tracking-detail"><span>{detail?.latest_tracking_description ?? "—"}</span>{!en && trackingTranslationEnabled && detail?.latest_tracking_description && /[A-Za-z]/.test(detail.latest_tracking_description) ? <button disabled={trackingTranslationLoading} onClick={() => void requestTrackingTranslation()} type="button">{trackingTranslationLoading ? "翻译中…" : trackingTranslation ? "重新翻译" : trackingTranslationError ? "重试翻译" : "译成中文"}</button> : null}{trackingTranslation ? <span className="customer-tracking-translation">{trackingTranslation}</span> : null}{trackingTranslationError ? <span className="customer-tracking-error" role="alert">{trackingTranslationError}</span> : null}</div></div> : null}
+    {isInTransit || detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><div className="customer-tracking-detail"><span className={showTrackingTranslation ? "customer-tracking-translation" : undefined}>{showTrackingTranslation ? trackingTranslation : detail?.latest_tracking_description ?? "—"}</span>{!en && trackingTranslationEnabled && detail?.latest_tracking_description && /[A-Za-z]/.test(detail.latest_tracking_description) ? <button disabled={trackingTranslationLoading} onClick={() => { if (trackingTranslation) setShowTrackingTranslation((shown) => !shown); else void requestTrackingTranslation(); }} type="button">{trackingTranslationLoading ? "翻译中…" : trackingTranslation ? showTrackingTranslation ? "查看原文" : "查看译文" : trackingTranslationError ? "重试翻译" : "译成中文"}</button> : null}{trackingTranslationError ? <span className="customer-tracking-error" role="alert">{trackingTranslationError}</span> : null}</div></div> : null}
     {isInTransit || detail?.latest_tracking_at ? <div className="customer-info-line"><span>{en ? "Latest tracking time" : "最新物流时间"}</span><span>{dateTime(detail?.latest_tracking_at ?? null, en)}</span></div> : null}
     {isCancelled ? <><div className="customer-info-line"><span>{en ? "Cancellation reason" : "取消原因"}</span><span>—</span></div><div className="customer-info-line"><span>{en ? "Refund status" : "退款状态"}</span><span>—</span></div></> : null}
     {detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}
