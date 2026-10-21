@@ -6,6 +6,8 @@
 
 ## 当前状态
 
+2026-10-21 客户侧栏字段修正源码候选：`MVP-WORKSPACE-CUSTOMER-SIDEBAR-FIELDS-001 VERIFYING`，`CANDIDATE_SUBJECT_SHA=736c214ed457332ac9316301ea7a6b8976433fe3`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`，索引 `CANDIDATE_VIEW`。用户三张真实 staging 截图显示订单状态字段不完整、商品 `ACTIVATE` 和优惠券对象原样展示；源码已按真实数据投影修正。后端 2220 passed/3 skipped，前端契约 47/47、生产构建和合成浏览器通过；staging 尚未部署本次候选。Workspace hygiene: ATTENTION（其他活动工作树及未知文件保留）。下一步：①合并源码 PR；②从合并主线手动发布 staging；③只读核对真实订单、商品和优惠券。无外发，production G8 No-Go。
+
 2026-10-21 TikTok 零订单侧栏修复：`MVP-WORKSPACE-CUSTOMER-SIDEBAR-EMPTY-001 DONE`，`CANDIDATE_SUBJECT_SHA=7cd8e43e27544036027f2b2d8be2a5fc411d97ca`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。源码 [PR #485](https://github.com/CP11-gh/CRM/pull/485) 与低敏证据 [PR #486](https://github.com/CP11-gh/CRM/pull/486) 已合入主线 `0c5ab0f13ff61e37d065253fabbbf3ecaa7d1bba`；后端 2217 passed/29 skipped，RR `APPROVE`、R02 TR `PASS`。从合入源码手动部署 staging backend 摘要 `sha256:cd287496…c686d764`；frontend、检索摘要不变。预取/validate/deploy、迁移头、固定出口、三公网健康通过；同一会话只读复测从 502 变为 0 单，另一会话仍有 1 单，用户刷新确认页面显示“暂无订单”。浏览器自动化超时记 `UI_UNAVAILABLE`，无买家外发。三索引从权威主线的 209/219/203 份 IR/TR/RR 源记录核对并恢复 `CURRENT`。Workspace hygiene: ATTENTION（根 checkout 未知文件及其他活动工作树保留）。下一步：①观察 staging 健康；②继续客户侧栏其他验收任务；③production 保持 G8 No-Go。
 
 2026-10-21 客户侧栏真实订单详情源码候选：`MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001 VERIFYING`，`CANDIDATE_SUBJECT_SHA=26faf36d0570c4ce90f5875ce26618adb112558d`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。官方只读对账确认选中会话与订单的买家身份一致、物流轨迹 8 条；源码提交上的后端全量 2212 passed/29 skipped，前端契约 47/47、生产构建浏览器 44/44，RR 对源码 `APPROVE`。新接口尚未发布 staging，已登录页面仍待核对；TR 为 `PARTIAL`，无买家外发，production G8 No-Go。Workspace hygiene: ATTENTION（活动工作树及主 checkout 未知文件保留）。下一步：①合并本次受审源码；②按现有手动路径更新 staging；③核对真实订单卡片与跨买家失败关闭，定稿低敏证据。

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.integrations.tiktok_read import TikTokConversation, TikTokOrder, TikTokStandardTrackingEntry
+from app.integrations.tiktok_read import TikTokConversation, TikTokCoupon, TikTokOrder, TikTokStandardTrackingEntry
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.workspace import sidebar
 from app.workspace.sidebar import SidebarSearch
@@ -130,6 +130,37 @@ def test_live_order_invalid_amount_fails_closed() -> None:
     with pytest.raises(AppError) as raised:
         sidebar._live_order_view(order)
     assert raised.value.status_code == 502
+
+
+def test_live_order_keeps_actual_paid_time_without_inventing_payment_state() -> None:
+    order = live_order()
+    order.paid_time = 1_700_000_100
+    result = sidebar._live_order_view(order)
+    assert result.paid_at is not None
+    assert result.paid_at.isoformat() == "2023-11-14T22:15:00+00:00"
+    assert result.payment_status is None
+
+
+def test_coupon_money_discount_is_formatted_without_python_mapping_text() -> None:
+    coupon = TikTokCoupon.model_validate(
+        {
+            "id": "123",
+            "title": "Shop coupon",
+            "status": "EXPIRED",
+            "display_type": "REGULAR",
+            "discount": {"type": "AMOUNT_OFF", "reduction_amount": {"amount": "10", "currency": "$"}},
+        }
+    )
+    result = sidebar._coupon_view(coupon)
+    assert result.discount_type == "AMOUNT_OFF"
+    assert result.discount_value == "$10.00"
+
+
+def test_coupon_unknown_discount_shape_has_no_fabricated_value() -> None:
+    coupon = TikTokCoupon.model_validate(
+        {"id": "123", "title": "Shop coupon", "discount": {"type": "AMOUNT_OFF", "reduction_amount": {"wrong": "10"}}}
+    )
+    assert sidebar._coupon_view(coupon).discount_value is None
 
 
 @pytest.mark.asyncio

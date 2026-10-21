@@ -15,7 +15,7 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70) {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT") {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [] } },
@@ -57,10 +57,13 @@ async function openWorkspace(messageCount = 70) {
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
-      const order = { id: "order-1", external_order_id: "577600000000000001", status: "IN_TRANSIT", payment_status: "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", tracking_number: "878696895644", tracking_status: "IN_TRANSIT", live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: orderStatus, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
-      const coupon = { id: "789", title: "Shop coupon", status: "ONGOING", display_type: "CHAT", promo_code: "SAVE5", discount_type: "FIXED_AMOUNT", discount_value: "5", claim_end_time: null, chat_shareable: true };
-      if (payload.section === "orders") data = { items: (payload.status === "all" || payload.status === "transit") && (!payload.query || [order.external_order_id, order.tracking_number, order.items[0].name, order.items[0].sku, order.items[0].sku_id, order.items[0].product_id].some((value) => value?.toLowerCase().includes(payload.query.toLowerCase()))) ? [order] : [], pagination: { page: payload.page, page_size: 20, total: 1 } };
+      const coupon = { id: "789", title: "Shop coupon", status: "EXPIRED", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
+      if (payload.section === "orders") {
+        const category = { UNPAID: "unpaid", AWAITING_SHIPMENT: "ship", IN_TRANSIT: "transit", DELIVERED: "done", CANCELLED: "cancel" }[orderStatus];
+        data = { items: (payload.status === "all" || payload.status === category) && (!payload.query || [order.external_order_id, order.tracking_number, order.items[0].name, order.items[0].sku, order.items[0].sku_id, order.items[0].product_id].some((value) => value?.toLowerCase().includes(payload.query.toLowerCase()))) ? [order] : [], pagination: { page: payload.page, page_size: 20, total: 1 } };
+      }
       else if (payload.section === "products") data = { items: !payload.query || product.title.toLowerCase().includes(payload.query.toLowerCase()) ? [product] : [], next_page_token: null, total_count: 1, partial_search: false };
       else data = { items: !payload.query || coupon.title.toLowerCase().includes(payload.query.toLowerCase()) || coupon.promo_code.toLowerCase().includes(payload.query.toLowerCase()) ? [coupon] : [], next_page_token: null, total_count: 1, partial_search: false };
     } else if (path.endsWith("/sidebar/orders/detail") && method === "POST") {
@@ -303,11 +306,29 @@ test("customer order card reveals authorized payment and latest logistics detail
     await card.getByText("577600000000000001").waitFor();
     await card.getByRole("button", { name: "详情" }).click();
     await card.getByText("Carrier A").waitFor();
+    await card.getByText("付款时间").waitFor();
+    await card.getByText("物流状态").waitFor();
     assert.equal(await card.getByText("Card").count(), 1);
     assert.equal(await card.getByText("Package dispatched").count(), 1);
     assert.equal(calls.orderDetails, 1);
     assert.equal(calls.send, 0);
   } finally { await context.close(); }
+});
+
+test("customer order states show their own fields and leave unavailable facts blank", async () => {
+  for (const [state, expected, missing] of [
+    ["UNPAID", "付款截止", "物流状态"],
+    ["AWAITING_SHIPMENT", "最晚发货", "物流状态"],
+    ["DELIVERED", "物流状态", "取消原因"],
+    ["CANCELLED", "取消原因", "物流状态"],
+  ]) {
+    const { context, page } = await openWorkspace(2, state);
+    try {
+      const card = page.getByTestId("customer-order-card");
+      await card.getByText(expected).waitFor();
+      assert.equal(await card.getByText(missing).count(), 0);
+    } finally { await context.close(); }
+  }
 });
 
 test("customer sidebar filters real order projections and keeps amount rows tied to returned data", async () => {
@@ -336,6 +357,7 @@ test("product and coupon tabs load shop data, expand SKU, and only fill an edita
     await page.getByRole("tab", { name: "商品" }).click();
     const product = page.getByTestId("customer-product-card");
     await product.getByText("Walking pad").waitFor();
+    await product.getByText("上架中").waitFor();
     await page.getByLabel("搜索字段").selectOption("name");
     await page.getByLabel("客户信息搜索").fill("Walking");
     await page.getByRole("button", { name: "搜索", exact: true }).click();
@@ -351,6 +373,9 @@ test("product and coupon tabs load shop data, expand SKU, and only fill an edita
     await page.getByRole("tab", { name: "优惠券" }).click();
     const coupon = page.getByTestId("customer-coupon-card");
     await coupon.getByText("Shop coupon").waitFor();
+    await coupon.getByText("已过期").waitFor();
+    await coupon.getByText("立减 $5.00").waitFor();
+    await coupon.getByText("常规展示").waitFor();
     await page.getByLabel("搜索字段").selectOption("code");
     await page.getByLabel("客户信息搜索").fill("SAVE5");
     await page.getByRole("button", { name: "搜索", exact: true }).click();

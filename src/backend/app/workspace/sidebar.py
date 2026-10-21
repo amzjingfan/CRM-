@@ -58,6 +58,7 @@ class SidebarOrder(BaseModel):
     total_amount: Decimal | None
     payment_breakdown: dict[str, str]
     ordered_at: datetime | None
+    paid_at: datetime | None = None
     tracking_number: str | None
     tracking_status: str | None
     items: list[SidebarOrderItem]
@@ -220,6 +221,7 @@ def _live_order_view(order: TikTokOrder) -> SidebarOrder:
         total_amount=total_amount,
         payment_breakdown=breakdown,
         ordered_at=datetime.fromtimestamp(order.create_time, UTC) if order.create_time else None,
+        paid_at=datetime.fromtimestamp(order.paid_time, UTC) if order.paid_time else None,
         tracking_number=order.tracking_number
         or next((item.tracking_number for item in order.line_items if item.tracking_number), None),
         tracking_status=None,
@@ -423,6 +425,7 @@ async def search_sidebar_orders(
                 total_amount=order.total_amount,
                 payment_breakdown=breakdown(order),
                 ordered_at=order.ordered_at,
+                paid_at=order.paid_at,
                 tracking_number=order.tracking_number,
                 tracking_status=order.tracking_status,
                 items=items_by_order[order.id],
@@ -506,6 +509,32 @@ async def get_sidebar_product(
 def _coupon_view(coupon: TikTokCoupon) -> SidebarCoupon:
     discount_type = coupon.discount.get("type")
     discount_value = coupon.discount.get("reduction_amount") or coupon.discount.get("percentage")
+    if isinstance(discount_value, dict):
+        # 平台金额为对象，不能把 Python 字典转成面向客服的优惠文案。
+        raw_amount = discount_value.get("amount")
+        currency = discount_value.get("currency")
+        if isinstance(raw_amount, (str, int)) and not isinstance(raw_amount, bool) and isinstance(currency, str):
+            try:
+                amount = Decimal(str(raw_amount))
+            except InvalidOperation:
+                discount_value = None
+            else:
+                if amount.is_finite() and amount >= 0 and currency.strip():
+                    unit = currency.strip()
+                    discount_value = f"{unit}{amount:.2f}" if len(unit) == 1 else f"{unit} {amount:.2f}"
+                else:
+                    discount_value = None
+        else:
+            discount_value = None
+    elif isinstance(discount_value, (str, int, float)) and not isinstance(discount_value, bool):
+        try:
+            numeric_value = Decimal(str(discount_value))
+        except InvalidOperation:
+            discount_value = None
+        else:
+            discount_value = format(numeric_value, "f") if numeric_value.is_finite() and numeric_value >= 0 else None
+    else:
+        discount_value = None
     end_time = coupon.claim_duration.get("end_time")
     return SidebarCoupon(
         id=coupon.id,

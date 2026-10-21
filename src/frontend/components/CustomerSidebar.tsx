@@ -57,6 +57,35 @@ const statusText: Record<string, { zh: string; en: string }> = {
   CANCELLED: { zh: "已取消", en: "Cancelled" },
   CANCELED: { zh: "已取消", en: "Cancelled" },
 };
+const productStatusText: Record<string, { zh: string; en: string }> = {
+  ACTIVATE: { zh: "上架中", en: "Active" },
+  INACTIVE: { zh: "未上架", en: "Inactive" },
+  SELLER_DEACTIVATED: { zh: "已下架", en: "Deactivated" },
+  DELETED: { zh: "已删除", en: "Deleted" },
+};
+const couponStatusText: Record<string, { zh: string; en: string }> = {
+  NOT_START: { zh: "未开始", en: "Not started" },
+  ONGOING: { zh: "进行中", en: "Ongoing" },
+  EXPIRED: { zh: "已过期", en: "Expired" },
+  DEACTIVATED: { zh: "已停用", en: "Deactivated" },
+};
+const couponDisplayText: Record<string, { zh: string; en: string }> = {
+  REGULAR: { zh: "常规展示", en: "Regular" },
+  PROMO_CODE: { zh: "优惠码", en: "Promo code" },
+  CHAT: { zh: "聊天", en: "Chat" },
+};
+const paymentStatusText: Record<string, { zh: string; en: string }> = {
+  PAID: { zh: "已付款", en: "Paid" },
+  UNPAID: { zh: "未付款", en: "Unpaid" },
+  REFUNDED: { zh: "已退款", en: "Refunded" },
+};
+function couponDiscount(coupon: SidebarCoupon, en: boolean) {
+  const value = coupon.discount_value;
+  if (!value || value.startsWith("{")) return "—";
+  if (coupon.discount_type === "AMOUNT_OFF" || coupon.discount_type === "FIXED_AMOUNT") return `${en ? "Amount off" : "立减"} ${value}`;
+  if (coupon.discount_type === "PERCENTAGE_OFF") return `${en ? "Percentage off" : "折扣"} ${value}${value.endsWith("%") ? "" : "%"}`;
+  return value;
+}
 
 function money(currency: string, value: string | null) {
   if (value === null) return "—";
@@ -85,6 +114,10 @@ function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; s
   };
   const first = order.items[0];
   const label = statusText[order.status]?.[en ? "en" : "zh"] ?? order.status;
+  const isShipping = ["AWAITING_SHIPMENT", "AWAITING_COLLECTION"].includes(order.status);
+  const isInTransit = ["IN_TRANSIT", "SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status);
+  const isCancelled = ["CANCELLED", "CANCELED"].includes(order.status);
+  const totalLabel = order.status === "UNPAID" ? (en ? "Order amount" : "订单金额") : (en ? "Order total" : "订单总额");
   const breakdown: Array<{ key: string; zh: string; en: string }> = [
     { key: "original_total_product_price", zh: "商品总价", en: "Original product total" },
     { key: "sub_total", zh: "商品小计", en: "Product subtotal" },
@@ -98,14 +131,19 @@ function OrderCard({ order, sessionId, en, fillDraft }: { order: SidebarOrder; s
     <p className="customer-order-id" title={order.external_order_id}>{order.external_order_id}</p>
     {first ? <div className="customer-item-row">{first.image_url ? <img alt="" className="customer-product-image" src={first.image_url} /> : <div className="customer-item-thumb" aria-hidden="true">{first.name.slice(0, 1)}</div>}<div className="customer-item-copy"><strong title={first.name}>{first.name}</strong><small>{first.product_id ? `SPU ${first.product_id}` : en ? "Product ID unavailable" : "商品 ID 暂无"}</small><small>{first.sku_name ?? (en ? "Variant unavailable" : "规格暂无")}</small><small>{first.sku_id ? `SKU ${first.sku_id}` : first.sku ? `${en ? "Seller SKU" : "卖家 SKU"} ${first.sku}` : (en ? "SKU unavailable" : "SKU 暂无")}</small></div><div className="customer-item-price">{money(order.currency, first.total_amount)}<small>×{first.quantity}</small></div></div> : <p className="customer-side-muted">{en ? "Item details unavailable" : "暂无商品明细"}</p>}
     {order.items.length > 1 ? <p className="customer-side-muted">{en ? `${order.items.length} line items` : `共 ${order.items.length} 项商品`}</p> : null}
-    <details className="customer-money"><summary><span>{order.status === "UNPAID" ? (en ? "Order amount" : "订单金额") : (en ? "Recorded total" : "已记录金额")}</span><strong>{money(order.currency, order.total_amount)}</strong></summary><div className="customer-money-grid">{breakdown.filter((row) => order.payment_breakdown?.[row.key] !== undefined).map((row) => <div key={row.key}><span>{row[en ? "en" : "zh"]}</span><span>{money(order.currency, order.payment_breakdown[row.key])}</span></div>)}<div className="customer-money-total"><span>{en ? "Recorded total" : "已记录金额"}</span><span>{money(order.currency, order.total_amount)}</span></div>{!Object.keys(order.payment_breakdown ?? {}).length ? <small>{en ? "Discount, tax and shipping breakdown is unavailable from the synced order." : "当前同步订单未提供折扣、税费及运费拆分。"}</small> : null}</div></details>
-    {order.payment_status ? <div className="customer-info-line"><span>{en ? "Payment" : "支付状态"}</span><span>{order.payment_status}</span></div> : null}
+    <details className="customer-money"><summary><span>{totalLabel}</span><strong>{money(order.currency, order.total_amount)}</strong></summary><div className="customer-money-grid">{breakdown.filter((row) => order.payment_breakdown?.[row.key] !== undefined).map((row) => <div key={row.key}><span>{row[en ? "en" : "zh"]}</span><span>{money(order.currency, order.payment_breakdown[row.key])}</span></div>)}<div className="customer-money-total"><span>{totalLabel}</span><span>{money(order.currency, order.total_amount)}</span></div>{!Object.keys(order.payment_breakdown ?? {}).length ? <small>{en ? "Discount, tax and shipping breakdown is unavailable from the synced order." : "当前同步订单未提供折扣、税费及运费拆分。"}</small> : null}</div></details>
+    {order.status === "UNPAID" || order.payment_status ? <div className="customer-info-line"><span>{en ? "Payment" : "支付状态"}</span><span>{paymentStatusText[(order.payment_status ?? order.status).toUpperCase()]?.[en ? "en" : "zh"] ?? (en ? "Unknown" : "暂无")}</span></div> : null}
+    {order.status === "UNPAID" ? <div className="customer-info-line"><span>{en ? "Payment deadline" : "付款截止"}</span><span>—</span></div> : null}
+    {order.paid_at ? <div className="customer-info-line"><span>{en ? "Paid at" : "付款时间"}</span><span>{dateTime(order.paid_at, en)}</span></div> : null}
+    {isShipping ? <div className="customer-info-line"><span>{en ? "Fulfillment" : "出货状态"}</span><span>{label}</span></div> : null}
+    {isShipping ? <div className="customer-info-line"><span>{en ? "Ship by" : "最晚发货"}</span><span>—</span></div> : null}
     {detail?.payment_method_name ? <div className="customer-info-line"><span>{en ? "Payment method" : "支付方式"}</span><span>{detail.payment_method_name}</span></div> : null}
-    {order.tracking_number ? <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number}>{order.tracking_number}</span></div> : null}
-    {order.tracking_status && order.tracking_status !== order.status ? <div className="customer-info-line"><span>{en ? "Logistics" : "物流状态"}</span><span>{order.tracking_status}</span></div> : null}
+    {isInTransit ? <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><span>{statusText[order.tracking_status ?? ""]?.[en ? "en" : "zh"] ?? (order.tracking_status ?? "—")}</span></div> : null}
+    {isInTransit ? <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number ?? ""}>{order.tracking_number ?? "—"}</span></div> : null}
     {detail?.shipping_provider ? <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail.shipping_provider}</span></div> : null}
     {detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest update" : "最新物流"}</span><span>{detail.latest_tracking_description}</span></div> : null}
     {detail?.latest_tracking_at ? <div className="customer-info-line"><span>{en ? "Updated at" : "物流时间"}</span><span>{dateTime(detail.latest_tracking_at, en)}</span></div> : null}
+    {isCancelled ? <><div className="customer-info-line"><span>{en ? "Cancellation reason" : "取消原因"}</span><span>—</span></div><div className="customer-info-line"><span>{en ? "Refund status" : "退款状态"}</span><span>—</span></div></> : null}
     {detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}
     <div className="customer-card-actions">{order.live_detail_available ? <button disabled={detailLoading} onClick={loadDetail} type="button">{detailLoading ? (en ? "Loading…" : "加载中…") : detailError ? (en ? "Retry details" : "重试详情") : detail ? (en ? "Refresh details" : "刷新详情") : (en ? "Details" : "详情")}</button> : null}<button onClick={() => fillDraft(en ? `Could you please check order ${order.external_order_id}?` : `请核对订单 ${order.external_order_id}。`)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button><button disabled title={en ? "Refund is not available in this version" : "当前版本不支持真实退款"} type="button">{en ? "Refund" : "退款"}</button></div>
   </article>;
@@ -119,12 +157,12 @@ function ProductCard({ product, sessionId, en, fillDraft }: { product: SidebarPr
   const prices = shown.skus.filter((sku) => sku.sale_price !== null).map((sku) => Number(sku.sale_price)).filter(Number.isFinite);
   const currency = shown.skus.find((sku) => sku.currency)?.currency ?? "";
   const price = prices.length ? `${money(currency, String(Math.min(...prices)))}${Math.max(...prices) > Math.min(...prices) ? ` – ${money(currency, String(Math.max(...prices)))}` : ""}` : "—";
-  return <article className="customer-product-card" data-testid="customer-product-card"><div className="customer-product-head">{shown.image_url ? <img alt="" className="customer-product-image" src={shown.image_url} /> : <div className="customer-item-thumb" aria-hidden="true">{shown.title.slice(0, 1)}</div>}<div><strong title={shown.title}>{shown.title}</strong><small>{price}</small><small>{en ? "Product ID" : "商品 ID"} · {shown.id}</small></div></div><details className="customer-sku-box" onToggle={(event) => { if (event.currentTarget.open && !full && !detailLoading && !detailError) { setDetailLoading(true); getCustomerSidebarProduct(sessionId, product.id).then(setFull).catch((cause) => setDetailError(cause instanceof Error ? cause.message : "商品详情加载失败")).finally(() => setDetailLoading(false)); } }}><summary>{en ? "SKU details" : "SKU 信息"} ⌄</summary>{detailLoading ? <p className="customer-side-muted">{en ? "Loading SKU details…" : "正在加载 SKU 详情…"}</p> : null}{detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}<table><thead><tr><th>SKU</th><th>{en ? "Seller SKU" : "SKU 货号"}</th><th>{en ? "Stock" : "库存状态"}</th></tr></thead><tbody>{shown.skus.map((sku) => <tr key={sku.id}><td title={sku.name ?? sku.id}>{sku.name ?? sku.id}</td><td title={sku.seller_sku ?? ""}>{sku.seller_sku ?? "—"}</td><td>{sku.quantity === null ? "—" : sku.quantity > 0 ? (en ? "In stock" : "有货") : (en ? "Out of stock" : "缺货")}</td></tr>)}</tbody></table></details><div className="customer-product-foot"><span>{shown.status ?? "—"}</span><button onClick={() => fillDraft(en ? `Product: ${shown.title} (ID: ${shown.id})` : `商品：${shown.title}（ID：${shown.id}）`)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button></div></article>;
+  return <article className="customer-product-card" data-testid="customer-product-card"><div className="customer-product-head">{shown.image_url ? <img alt="" className="customer-product-image" src={shown.image_url} /> : <div className="customer-item-thumb" aria-hidden="true">{shown.title.slice(0, 1)}</div>}<div><strong title={shown.title}>{shown.title}</strong><small>{price}</small><small>{en ? "Product ID" : "商品 ID"} · {shown.id}</small></div></div><details className="customer-sku-box" onToggle={(event) => { if (event.currentTarget.open && !full && !detailLoading && !detailError) { setDetailLoading(true); getCustomerSidebarProduct(sessionId, product.id).then(setFull).catch((cause) => setDetailError(cause instanceof Error ? cause.message : "商品详情加载失败")).finally(() => setDetailLoading(false)); } }}><summary>{en ? "SKU details" : "SKU 信息"} ⌄</summary>{detailLoading ? <p className="customer-side-muted">{en ? "Loading SKU details…" : "正在加载 SKU 详情…"}</p> : null}{detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}<table><thead><tr><th>SKU</th><th>{en ? "Seller SKU" : "SKU 货号"}</th><th>{en ? "Stock" : "库存状态"}</th></tr></thead><tbody>{shown.skus.map((sku) => <tr key={sku.id}><td title={sku.name ?? sku.id}>{sku.name ?? sku.id}</td><td title={sku.seller_sku ?? ""}>{sku.seller_sku ?? "—"}</td><td>{sku.quantity === null ? "—" : sku.quantity > 0 ? (en ? "In stock" : "有货") : (en ? "Out of stock" : "缺货")}</td></tr>)}</tbody></table></details><div className="customer-product-foot"><span>{productStatusText[shown.status ?? ""]?.[en ? "en" : "zh"] ?? (en ? "Status unavailable" : "状态暂无")}</span><button onClick={() => fillDraft(en ? `Product: ${shown.title} (ID: ${shown.id})` : `商品：${shown.title}（ID：${shown.id}）`)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button></div></article>;
 }
 
 function CouponCard({ coupon, en, fillDraft }: { coupon: SidebarCoupon; en: boolean; fillDraft: (value: string) => void }) {
-  const discount = coupon.discount_value ? `${coupon.discount_type ?? ""} ${coupon.discount_value}`.trim() : "—";
-  return <article className="customer-side-card" data-testid="customer-coupon-card"><div className="customer-card-top"><strong>{coupon.title}</strong><span>{coupon.status ?? "—"}</span></div><div className="customer-info-line"><span>{en ? "Code" : "编码"}</span><span>{coupon.promo_code ?? coupon.id}</span></div><div className="customer-info-line"><span>{en ? "Discount" : "优惠"}</span><span>{discount}</span></div><div className="customer-info-line"><span>{en ? "Display" : "展示渠道"}</span><span>{coupon.display_type ?? "—"}</span></div>{coupon.claim_end_time ? <div className="customer-info-line"><span>{en ? "Claim until" : "领取截止"}</span><span>{dateTime(new Date(coupon.claim_end_time * 1000).toISOString(), en)}</span></div> : null}<p className="customer-side-muted">{coupon.chat_shareable ? (en ? "Chat sharing is subject to buyer eligibility." : "聊天分享仍需核对买家领取条件。") : (en ? "Chat sharing eligibility is unconfirmed." : "未确认此券可在聊天中分享。")}</p><div className="customer-card-actions"><button onClick={() => fillDraft(en ? `Coupon: ${coupon.title}${coupon.promo_code ? ` (${coupon.promo_code})` : ""}. Please check eligibility in TikTok.` : `优惠券：${coupon.title}${coupon.promo_code ? `（${coupon.promo_code}）` : ""}。请先核对 TikTok 领取条件。`)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button></div></article>;
+  const discount = couponDiscount(coupon, en);
+  return <article className="customer-side-card" data-testid="customer-coupon-card"><div className="customer-card-top"><strong>{coupon.title}</strong><span>{couponStatusText[coupon.status ?? ""]?.[en ? "en" : "zh"] ?? (en ? "Status unavailable" : "状态暂无")}</span></div><div className="customer-info-line"><span>{en ? "Code" : "编码"}</span><span>{coupon.promo_code ?? coupon.id}</span></div><div className="customer-info-line"><span>{en ? "Discount" : "优惠"}</span><span>{discount}</span></div><div className="customer-info-line"><span>{en ? "Display" : "展示渠道"}</span><span>{couponDisplayText[coupon.display_type ?? ""]?.[en ? "en" : "zh"] ?? (en ? "Unknown" : "暂无")}</span></div>{coupon.claim_end_time ? <div className="customer-info-line"><span>{en ? "Claim until" : "领取截止"}</span><span>{dateTime(new Date(coupon.claim_end_time * 1000).toISOString(), en)}</span></div> : null}<p className="customer-side-muted">{coupon.chat_shareable ? (en ? "Chat sharing is subject to buyer eligibility." : "聊天分享仍需核对买家领取条件。") : (en ? "Chat sharing eligibility is unconfirmed." : "未确认此券可在聊天中分享。")}</p><div className="customer-card-actions"><button onClick={() => fillDraft(en ? `Coupon: ${coupon.title}${coupon.promo_code ? ` (${coupon.promo_code})` : ""}. Please check eligibility in TikTok.` : `优惠券：${coupon.title}${coupon.promo_code ? `（${coupon.promo_code}）` : ""}。请先核对 TikTok 领取条件。`)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button></div></article>;
 }
 
 export function CustomerSidebar({ detail, storeName, en, onClose, onDraft }: { detail: SessionMessagesData | null; storeName: string | null; en: boolean; onClose: () => void; onDraft: (value: string) => void }) {
