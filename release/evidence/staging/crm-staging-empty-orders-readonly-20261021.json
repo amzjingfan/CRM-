@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_tiktok_empty_orders_readonly_regression",
+  "generated_at_utc": "2026-10-21T01:25:29Z",
+  "environment": "staging",
+  "status": "passed",
+  "source_main_sha": "f487ea1b6723e4fc1afbc2601e43ce64ac3db911",
+  "source_pr": 485,
+  "new_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:cd287496ab80ec4763319f9b761b98e2eb8d7af13d545ce542cdea00c686d764",
+  "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:fe2f0cf8ce2fe3ae6351226236efb9922c04909016cca0afbd8b4700063c9b40",
+  "unchanged_frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:5e4d9c0d2076c1c8346075cd0e32744288279c629dde0f498265343ca3990eab",
+  "unchanged_retrieval_image": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+  "private_predeploy_backup_sha256": "9b4daf1bf5169a04eb27e22ec1018410b94ba154ab37f1f4b810c0a539d7c225",
+  "before": {
+    "official_order_search_zero_total": true,
+    "official_order_search_no_next_page": true,
+    "official_order_search_omits_orders": true,
+    "sidebar_exact_error_reproduced": true
+  },
+  "after": {
+    "same_authorized_conversation_sidebar_result": "ok",
+    "same_authorized_conversation_order_count": 0,
+    "separate_nonempty_conversation_order_count": 1,
+    "separate_nonempty_conversation_product_page_count": 20,
+    "separate_nonempty_conversation_coupon_page_count": 15,
+    "user_confirmed_workspace_shows_empty_orders": true,
+    "user_confirmed_workspace_no_structure_error": true,
+    "backend_container_health": "healthy",
+    "public_health_status_codes": [200, 200, 200],
+    "tiktok_outbound_messages_sent": 0,
+    "refund_or_coupon_writes": 0
+  },
+  "deployment_evidence": {
+    "prefetch": "crm-staging-empty-orders-prefetch-20261021.json",
+    "validate": "crm-staging-empty-orders-validate-20261021.json",
+    "deploy": "crm-staging-empty-orders-deploy-20261021.json"
+  },
+  "ui_automation": "UI_UNAVAILABLE; logged-in UI result confirmed directly by user after refresh"
+}

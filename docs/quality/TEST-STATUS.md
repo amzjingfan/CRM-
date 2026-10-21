@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-21 TikTok 零订单侧栏修复[现场 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-EMPTY-001-20261021-R02.md)为 `PASS`：源码提交后端 2217 passed/29 skipped；staging 手动发布及三健康、固定出口通过，真实零订单会话返回空列表，另一会话仍返回一单，用户确认页面“暂无订单”且原 502 消失。内置浏览器自动化不可用，用户确认作为页面证据；无买家外发，production No-Go。
+
 2026-10-21 发送栏侧边语言菜单源码候选 `ac46e7a4461a3c41588f321f31eed6f0c59c52ff` 的[TR](../reports/tests/TR-MVP-WORKSPACE-COMPOSER-FLYOUT-001-20261021-R01.md)为本地 PASS：lint 0 错误/4 个既有 warning、类型通过、前端契约 47/47、webpack 生产构建及生产浏览器 43/43 通过；合成桌面截图与 375px 菜单边界核对通过。staging 页面仍待独立部署验收；无 TikTok 外发，production No-Go。
 
 2026-10-20 客户侧栏源码候选 [TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-001-20261020-R01.md) 为本地 `PASS`：隔离 PostgreSQL 2226 passed/3 skipped、前端契约 47/47、生产模式合成浏览器 42/42，Ruff/格式/mypy 和 webpack 生产构建通过。staging 当前唯一 TikTok 渠道只读核对为已连接且具备 Product Basic 与优惠券读取 Scope；新代码尚未手动部署，真实订单/商品/优惠券目录返回未验收。本次无买家外发，production No-Go；后续现场结论由独立部署 TR 记录。
