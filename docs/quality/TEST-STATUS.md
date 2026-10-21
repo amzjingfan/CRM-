@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-21 客户侧栏物流卡片 [R02 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-LOGISTICS-001-20261021-R02.md) 为 `PASS`：R01 前端契约 47/47、生产构建及最终受影响浏览器 2/2；从合并主线手动发布 staging 前端，六摘要预取、validate/deploy、迁移头、固定出口和三公网健康 200 通过。用户已登录真实订单截图显示买家实付金额、已送达状态、单号、USPS、最新描述与时间；内置浏览器自动化超时 `UI_UNAVAILABLE`，截图未入仓。其他物流状态的真实订单未逐一实测，生产 G8 No-Go。
+
 2026-10-21 客户侧栏字段修正[源码 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-FIELDS-001-20261021-R01.md)为本地 `PASS`：后端 2220 passed/3 skipped、Ruff/格式/mypy 通过，前端契约 47/47、生产构建及合成浏览器受影响交互通过。订单支付时间只取真实字段；商品与优惠券状态、金额已格式化。新版本 staging 真实页面仍待手动发布核对，不能把合成截图当现场证据；无买家外发，production No-Go。
 
 2026-10-21 TikTok 零订单侧栏修复[现场 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-EMPTY-001-20261021-R02.md)为 `PASS`：源码提交后端 2217 passed/29 skipped；staging 手动发布及三健康、固定出口通过，真实零订单会话返回空列表，另一会话仍返回一单，用户确认页面“暂无订单”且原 502 消失。内置浏览器自动化不可用，用户确认作为页面证据；无买家外发，production No-Go。
