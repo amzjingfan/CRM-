@@ -425,7 +425,16 @@ class TikTokReadClient:
             body["buyer_user_id"] = buyer_user_id
         envelope = await self._request("POST", "/order/202309/orders/search", query, body)
         data = envelope.data or {}
-        items = self._validated_list(data, "orders", TikTokOrder)
+        # TikTok 的零订单实测响应只含 total_count=0 和空翻页标记；其他缺失列表仍失败关闭。
+        if (
+            "orders" not in data
+            and type(data.get("total_count")) is int
+            and data["total_count"] == 0
+            and data.get("next_page_token") == ""
+        ):
+            items: list[TikTokModel] = []
+        else:
+            items = self._validated_list(data, "orders", TikTokOrder)
         next_token = data.get("next_page_token")
         return (
             [item for item in items if isinstance(item, TikTokOrder)],

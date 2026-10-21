@@ -271,6 +271,46 @@ async def test_search_orders_signs_exact_compact_json_body() -> None:
 
 
 @pytest.mark.asyncio
+async def test_search_orders_accepts_omitted_orders_only_for_confirmed_empty_page() -> None:
+    """TikTok 现场零订单响应可省略 orders，但非空或畸形分页必须失败关闭。"""
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"code": 0, "data": {"total_count": 0, "next_page_token": ""}},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        orders, next_token, _ = await TikTokReadClient(real_settings(), connected_channel(), http_client).search_orders(
+            buyer_user_id="900001"
+        )
+
+    assert orders == []
+    assert next_token is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"total_count": 1, "next_page_token": ""},
+        {"total_count": 0, "next_page_token": "more"},
+        {"total_count": 0, "next_page_token": "", "orders": None},
+        {"next_page_token": ""},
+    ],
+)
+async def test_search_orders_rejects_missing_orders_without_confirmed_empty_page(data: dict[str, object]) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"code": 0, "data": data})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(AppError, match="TikTok 返回数据结构异常"):
+            await TikTokReadClient(real_settings(), connected_channel(), http_client).search_orders(
+                buyer_user_id="900001"
+            )
+
+
+@pytest.mark.asyncio
 async def test_sidebar_order_link_uses_official_conversation_and_buyer_filter() -> None:
     """订单域 user_id 必须来自官方单会话买家，不接受 IM ID 直接查询。"""
     requests: list[httpx.Request] = []
