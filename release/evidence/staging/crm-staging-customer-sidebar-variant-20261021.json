@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "evidence_type": "customer_sidebar_variant_display_manual_staging_deploy",
+  "environment": "staging",
+  "subject_sha": "64aefa1206497c9bf2d003b9698a3e906e78e185",
+  "merged_main_sha": "5e11f7b6eb3381b57869db5daf6abcbdfbe193a9",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/498",
+  "source_tree_equal": true,
+  "github_actions": "two_jobs_failed_before_steps; not_counted_as_ci_pass",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:6db8e8f1dfbe9a428267169d233e93aff7c4d0d19a1310eddd087446b6ae0f98",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:ccebe9e5815fc42a93f3b34ddaf6a594ad0de9222b4fa4049ab1fc59299496ba",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "previous_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:d7e8de1676c80c757bdd082ccdde4218eaa8db0ff2915743f64555e434223ad2",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:62598743a5c9f88791082dd26c4ef0685c82233842cc718a2c1e793d5095ce61",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "private_postgresql_backup": {
+    "mode": "0600",
+    "size_bytes": 1945098,
+    "sha256": "89b063707304fc11a92d6a596143e681c411bee473b1edf5217e2b8330480a18"
+  },
+  "manual_gates": {
+    "source_check": "passed_clean_merged_main_checkout",
+    "prefetch": "passed_six_immutable_roles",
+    "prefetch_private_evidence_sha256": "5206ddc471ae6456e6110b405c15858ab55eb9acb532c5202553a55c8fdf7aef",
+    "validate": "passed",
+    "validate_private_evidence_sha256": "f7be3d89fc98f39d7126adb6cc320128cfc8a6c4b4ba86e587005b0bf8fde52b",
+    "deploy": "passed",
+    "deploy_private_evidence_sha256": "e3d5cadc4b3bd99bf9b3e8cd1dbd1c08003f1a9be3ff9fff1a85a4b4b38c5e4e"
+  },
+  "runtime": {
+    "crm_container_count": 11,
+    "migration_head": "025_workspace_actions",
+    "tiktok_webhook_read": true,
+    "tiktok_manual_send": true,
+    "workspace_translation": true,
+    "auto_reply": false,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/workspace": 200
+    }
+  },
+  "deployed_page_synthetic_browser": "2_passed_0_failed",
+  "authenticated_user_interface": "UI_UNAVAILABLE; user_refresh_requested",
+  "temporary_ghcr_auth_cleared_local_and_staging": true,
+  "external_message_sent": false,
+  "refund_or_coupon_write": false,
+  "production_release": false
+}
