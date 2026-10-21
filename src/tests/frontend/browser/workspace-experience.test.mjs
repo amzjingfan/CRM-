@@ -15,7 +15,7 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false) {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail") {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [] } },
@@ -59,7 +59,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
-      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: "Black with handrail", image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
       const coupon = { id: "789", title: "Shop coupon", status: "EXPIRED", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
       if (payload.section === "orders") {
@@ -344,6 +344,30 @@ test("visible customer order card loads six real payment and logistics rows with
     assert.equal(await card.getByText("Package dispatched").count(), 1);
     assert.equal(calls.orderDetails, 1);
     assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("long order variant remains readable in the customer sidebar", async () => {
+  const variant = "White with handrail and remote control, two-in-one treadmill with vibration function";
+  const { context, page } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, false, variant);
+  try {
+    await page.setViewportSize({ width: 1206, height: 892 });
+    const card = page.getByTestId("customer-order-card");
+    const value = card.locator(".customer-item-copy small").filter({ hasText: "商品规格：" }).locator(".customer-copy-value > span");
+    await card.getByText(variant).waitFor();
+    assert.equal(await value.evaluate((element) => element.scrollWidth <= element.clientWidth), true);
+    assert.equal(await value.textContent(), variant);
+  } finally { await context.close(); }
+});
+
+test("missing order variant stays unavailable instead of using its SKU identifiers", async () => {
+  const { context, page } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, false, null);
+  try {
+    const card = page.getByTestId("customer-order-card");
+    const variant = card.locator(".customer-item-variant");
+    await card.getByText("577600000000000001").waitFor();
+    assert.equal(await variant.textContent(), "商品规格：—");
+    assert.equal(await variant.getByRole("button", { name: "复制商品规格" }).count(), 0);
   } finally { await context.close(); }
 });
 
