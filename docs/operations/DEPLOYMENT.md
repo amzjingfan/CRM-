@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-10-21 订单详情视觉验收补记：在后续前端 `main=4f32c04e2cc2f92170f30c91b8a2ca4d1bf75266` 与后端 `15ceabf8eac90f2fe8c7843e24af26381c3e0499` 已发布的 staging，用户已登录截图确认真实订单卡付款方式、USPS 与最新物流描述/时间。原 3e01 发布的六摘要预取、validate/deploy、跨买家 404 记录仍见 [R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001-20261021-R02.md)，补充视觉证据见 [R03](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001-20261021-R03.md)。无外发、高风险写入或 production 发布。
+
 2026-10-21 客户侧栏物流卡片从合入 `main=4f32c04e2cc2f92170f30c91b8a2ca4d1bf75266` 手动更新 staging 前端至 `sha256:7dbdd3ac…d543934`；后端 `sha256:317081db…bc2a7cd0` 和检索 `sha256:feeee5a3…23059` 保持。私有 `0600` 备份、六摘要预取、validate/deploy、迁移头、固定出口及三公网健康 200 通过。用户在已登录真实订单卡片截图确认买家实付金额、已送达状态、物流单号、USPS、最新描述与时间；内置浏览器超时记 `UI_UNAVAILABLE`。原单店人工发送、Webhook 读取及翻译范围不扩大，本次未外发或高风险写入。见 [R02 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-LOGISTICS-001-20261021-R02.md) 与 [低敏证据](../../release/evidence/staging/crm-staging-customer-sidebar-logistics-20261021.json)。production G8 No-Go。
 
 2026-10-21 TikTok 零订单侧栏修复已从合入 `main=f487ea1b6723e4fc1afbc2601e43ce64ac3db911` 手动更新 staging backend 至 `sha256:cd287496…c686d764`；frontend `sha256:5e4d9c0d…90eab` 与检索 `sha256:feeee5a3…23059` 不变。私有备份、六摘要预取、validate/deploy、迁移头、固定出口和三公网健康 200 通过；同一真实买家会话从 502 变为零订单，用户刷新工作台后确认空态。原单店人工发送、Webhook 读取及翻译范围保持，没有向买家外发。旧 backend `sha256:fe2f0cf8…63c9b40` 与私有备份可供受审恢复，恢复旧版会重现本次缺陷。见[本次 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-EMPTY-001-20261021-R02.md)及[低敏对账](../../release/evidence/staging/crm-staging-empty-orders-readonly-20261021.json)。production G8 No-Go。
@@ -253,6 +255,10 @@ G4 诊断后端镜像 `sha256:bb38fa09…e7d80` 已发布并核对清单；预�
 ### 2026-10-14 G4 R36 后端单镜像 staging 更新
 
 按用户对 staging 的单独授权，main `401b0e5293517aed676ed243d9036506eaa5844c` 顺序运行六摘要预取 `38536657630`、validate `38538873665`、deploy `38539305810`，把后端从 `sha256:1c3a8e83…fc21f0` 切到 `sha256:61c00d69…95e1881`；前端 `sha256:c56443c8…d0248a`、检索 `sha256:feeee5a3…623059` 不变。预取约 17 分钟后通过，`service_mutation=false`；validate 通过且未执行迁移；deploy 通过迁移头、三健康 200、固定出口 `38.55.145.52` 和 Webhook 只读门禁。公网只读复核三健康均为 200，G4 prepare `38540054971` 从运行中容器核对后端摘要、36 条冻结样本、Provider 调用 0。旧后端仍为回滚目标；本机 SSH 身份被拒绝，运行摘要以 Runner 的只读 preflight 为独立核对。原始机器证据与 SHA-256 见 [R36 TR](../reports/tests/TR-MVP-005-20261014-R36.md)。部署与 prepare 不构成 G4 质量通过，最近 live 仍为 R33 机器失败；production No-Go。
+
+### 2026-10-21 客户侧栏订单详情 staging 手动更新
+
+从合并主线 `3e01d7fc752e46c3105946ca3f3165b44c5c8aba` 手动发布后端 `sha256:fe2f0cf8…063c9b40` 与前端 `sha256:5e4d9c0d…3990eab`，检索镜像保持原摘要。六摘要预取、validate/deploy 均通过，迁移头仍为 `025_workspace_actions`，三公网健康 200，固定出口和原单店人工发送、Webhook 读取、工作台翻译范围保持。旧镜像及数据库备份留在 staging 私有恢复点；低敏证据见 [预取](../../release/evidence/staging/crm-staging-sidebar-detail-prefetch-20261021.json)、[预检](../../release/evidence/staging/crm-staging-sidebar-detail-validate-20261021.json)、[部署](../../release/evidence/staging/crm-staging-sidebar-detail-deploy-20261021.json)。官方只读订单详情及跨买家 404 已核对；真实登录态侧栏页面仍 `UI_UNAVAILABLE`，见 [TR R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001-20261021-R02.md)。production G8 No-Go。
 
 ## 发布入口
 

@@ -4,11 +4,15 @@
 
 ## 模块状态
 
+2026-10-21 客户订单详情 [R03 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001-20261021-R03.md) 为 `PASS`：R02 官方同单字段和跨买家 404、手动 staging 门禁、合成浏览器 3/3 保留；用户在更新后已登录订单卡截图确认付款方式、承运商及最新物流描述和时间。当前 backend/frontend revision 分别为 `15ceabf8`、`4f32c04e`；浏览器自动化超时仍记 `UI_UNAVAILABLE`，截图不入仓。production G8 No-Go。
+
 2026-10-21 客户侧栏物流卡片 [R02 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-LOGISTICS-001-20261021-R02.md) 为 `PASS`：R01 前端契约 47/47、生产构建及最终受影响浏览器 2/2；从合并主线手动发布 staging 前端，六摘要预取、validate/deploy、迁移头、固定出口和三公网健康 200 通过。用户已登录真实订单截图显示买家实付金额、已送达状态、单号、USPS、最新描述与时间；内置浏览器自动化超时 `UI_UNAVAILABLE`，截图未入仓。其他物流状态的真实订单未逐一实测，生产 G8 No-Go。
 
 2026-10-21 客户侧栏字段修正[源码 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-FIELDS-001-20261021-R01.md)为本地 `PASS`：后端 2220 passed/3 skipped、Ruff/格式/mypy 通过，前端契约 47/47、生产构建及合成浏览器受影响交互通过。订单支付时间只取真实字段；商品与优惠券状态、金额已格式化。新版本 staging 真实页面仍待手动发布核对，不能把合成截图当现场证据；无买家外发，production No-Go。
 
 2026-10-21 TikTok 零订单侧栏修复[现场 TR](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-EMPTY-001-20261021-R02.md)为 `PASS`：源码提交后端 2217 passed/29 skipped；staging 手动发布及三健康、固定出口通过，真实零订单会话返回空列表，另一会话仍返回一单，用户确认页面“暂无订单”且原 502 消失。内置浏览器自动化不可用，用户确认作为页面证据；无买家外发，production No-Go。
+
+2026-10-21 客户侧栏订单详情 [TR R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-DETAILS-001-20261021-R02.md) 为 `PARTIAL`：源码已合入 main 并手动更新 staging，六摘要预取、validate/deploy、11 容器、三公网健康 200、固定出口通过；官方只读详情四类字段存在，跨买家请求 404，已部署页面合成浏览器订单/商品/优惠券 3/3。真实登录态侧栏仍 `UI_UNAVAILABLE`，因此未完成视觉验收；无买家外发或 production 放行。下方较早“尚未部署”段落仅为当时快照。
 
 2026-10-21 发送栏侧边语言菜单源码候选 `ac46e7a4461a3c41588f321f31eed6f0c59c52ff` 的[TR](../reports/tests/TR-MVP-WORKSPACE-COMPOSER-FLYOUT-001-20261021-R01.md)为本地 PASS：lint 0 错误/4 个既有 warning、类型通过、前端契约 47/47、webpack 生产构建及生产浏览器 43/43 通过；合成桌面截图与 375px 菜单边界核对通过。staging 页面仍待独立部署验收；无 TikTok 外发，production No-Go。
 

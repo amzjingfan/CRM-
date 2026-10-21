@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_sidebar_order_detail_user_visible_check",
+  "generated_at_utc": "2026-10-21T03:50:41Z",
+  "environment": "staging",
+  "status": "passed",
+  "source_main_sha": "3e01d7fc752e46c3105946ca3f3165b44c5c8aba",
+  "current_backend_revision": "15ceabf8eac90f2fe8c7843e24af26381c3e0499",
+  "current_frontend_revision": "4f32c04e2cc2f92170f30c91b8a2ca4d1bf75266",
+  "user_visible_real_order_fields": {
+    "buyer_paid_amount": true,
+    "payment_method": "ApplePay",
+    "logistics_status": "已送达",
+    "tracking_number_present": true,
+    "carrier": "USPS",
+    "latest_tracking_description_present": true,
+    "latest_tracking_time_present": true
+  },
+  "ui_automation": "UI_UNAVAILABLE; user supplied authenticated screenshot after refresh",
+  "screenshot_saved_in_repository": false,
+  "operator_outbound_messages_sent": 0,
+  "refund_or_coupon_writes": 0,
+  "production_release": false
+}
