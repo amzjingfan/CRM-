@@ -2,7 +2,7 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
-2026-10-22 员工账号与部门 [TR R02](../reports/tests/TR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R02.md) 为 `PARTIAL`：subject `257eafd3` 的隔离 PostgreSQL 2267 passed/3 skipped、迁移升降级、Ruff/mypy、前端 typecheck/build/47 契约和生产浏览器 60/60 通过，最后兼容调整后定向 10/10 通过。源码 PR #519 已合入；staging 手动门禁、受限备份、迁移 `026`、11 服务、五个公网入口及已部署页面合成浏览器 2/2 通过。真实管理员页面及账号／邮箱实际登录尚待受控现场验收；GitHub Actions 零步骤失败不计 CI 通过，production 未放行。
+2026-10-22 员工账号与部门 [TR R03](../reports/tests/TR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R03.md) 为 `PARTIAL`：subject `6bf4177d` 的新增角色兼容回归先红后绿，提交后后端 2244 passed/30 skipped、Ruff/mypy、前端 typecheck/build/47 契约通过。PR #522 合入 `main=c14847b1`；手动 staging 门禁、私有备份、迁移 `026`、11 服务与五公网入口通过；部署后同一真实数据读路径返回 51 个账号（含 50 个测试角色）、部门读取正常。GitHub Actions 再次零步骤失败不计 CI；真实管理员浏览器和账号／邮箱实际登录待验，production 未放行。
 
 ## 模块状态
 

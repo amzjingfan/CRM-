@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "evidence_type": "team_list_existing_role_staging_fix",
+  "environment": "staging",
+  "task_id": "MVP-SETTINGS-TEAM-ACCOUNTS-002",
+  "subject_sha": "6bf4177d4f3768eb4e238c4545e19a50691ef44b",
+  "merged_main_sha": "c14847b1a8b793942e114fecdc9d39d4bafc197e",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/522",
+  "github_actions": "backend_and_frontend_jobs_failed_before_any_steps; local_checks_used",
+  "reproduction_before_fix": "staging_team_list_ValidationError_role_literal; 50_existing_synthetic_role_accounts",
+  "source_bundle_sha256": "a29803f4153ee0f4276f0248d79d7860b7cabc80120768124f6f3d31bae1d1c2",
+  "backend_image_archive_sha256": "2b7ab3b69da991f380a58247658d26546783f82dabeafa8a9d2a638b88a72210",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:861237dd621e462c6c155d07028f762d0c56ce634c10f0db7118d3115a790244",
+    "frontend_unchanged": "ghcr.io/cp11-gh/crm-frontend@sha256:ff466d1b6cdbd0df5d765082ca630dd8dd90a6dd5cd85a293579e94602b97c25",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:e51fa364515e647baea079ebf51b374ed8ba98f0649d3d463760ffbeb2652c3d",
+  "private_postgresql_backup": {
+    "mode": "0600",
+    "size_bytes": 388748,
+    "pg_restore_list_readable": true,
+    "sha256": "0f57ea543db57a40fb6a7ce097335576eeb914e076b29bc22de684d6c2d0617d"
+  },
+  "manual_gates": {
+    "prefetch": "passed",
+    "prefetch_private_evidence_sha256": "054e0e6a5faa4d83807c20936808657ec58d8a6732a47f69fee313eecb29410b",
+    "validate": "validated",
+    "validate_private_evidence_sha256": "a0053aa5058721b6c4f57e2008a80bad6e1b0e9bd7a023162255da3460d6e3d6",
+    "deploy": "passed",
+    "deploy_private_evidence_sha256": "5005bddc9836b2266faf3a7849302b74863d649669ddd55d0912aee965b281d1"
+  },
+  "post_deploy": {
+    "database_migration": "026_team_accounts_departments_head",
+    "crm_container_count": 11,
+    "backend_digest_match": true,
+    "frontend_and_retrieval_digests_unchanged": true,
+    "manual_send_store_count_unchanged": 1,
+    "team_service_read": "passed_51_accounts_including_50_synthetic_roles",
+    "department_service_read": "passed_zero_departments",
+    "validation_error_log_count_since_deploy": 0,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/settings/team": 200,
+      "/settings/team/departments": 200
+    }
+  },
+  "authenticated_browser_user_interface": "pending_user_feedback",
+  "real_employee_account_created": false,
+  "external_message_sent": false,
+  "production_release": false
+}
