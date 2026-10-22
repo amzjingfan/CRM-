@@ -1,6 +1,6 @@
 # 部署与运行边界
 
-账号与部门功能候选新增迁移 `026_team_accounts_departments`。staging 部署前须按既有门禁保存受限数据库备份并核对运行主线镜像；迁移保留既有邮箱登录，新增组织表。若新账号或部门已有数据，Alembic 降级会失败关闭，应使用经验证的数据库备份及前向恢复方案，不能用旧备份直接覆盖部署后新增业务消息。该段仅描述候选部署契约，不代表 staging 或 production 已更新。
+2026-10-22 账号与部门功能已从合并 `main=e6322efd0deb51497e1b7b831d9417accad6a513` 手动部署 staging：后端 `sha256:e51fa364…2c3d`、前端 `sha256:ff466d1b…7c25`，检索摘要不变。六角色预取、配置校验、私有 `0600` 数据库备份、部署、迁移头 `026_team_accounts_departments`、11 服务与公网健康通过；已部署页面合成浏览器 2/2。原单店人工发送、Webhook 读取和翻译开关未改变；未创建真实员工账号或向 TikTok 外发消息，真实管理员页面仍待确认。若新账号或部门已有数据，Alembic 降级会失败关闭；恢复须保存部署后的业务增量，不能用旧备份直接覆盖新消息。见[TR R02](../reports/tests/TR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R02.md)和[低敏证据](../../release/evidence/staging/crm-staging-team-accounts-departments-20261022.json)。production G8 No-Go。
 
 2026-10-22 订单卡长 SKU 货号修复从合并 `main=ce70bbbaa735157c8cfa1417f3e21bc27f67c52e` 的干净源码手动部署 staging 前端 `sha256:ce4fe689…172aea`，后端与检索摘要不变。六角色预取、配置验证、私有 `0600` 数据库备份、Deploy、11 服务、固定出口和四个公网入口 HTTP 200 通过；已部署页面的长货号、长规格和缺失规格合成浏览器 3/3。用户刷新原真实订单卡后确认货号完整显示与复制“两项都正常”，旧前端摘要保留供回滚；未外发买家消息，production G8 No-Go。见[TR R03](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-SELLER-SKU-001-20261022-R03.md)与[低敏证据](../../release/evidence/staging/crm-staging-customer-sidebar-seller-sku-20261022.json)。
 
