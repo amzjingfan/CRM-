@@ -5,6 +5,7 @@ import "./knowledge-prototype.css";
 import {
   Folder,
   Stack,
+  Trash,
   Truck,
 } from "@phosphor-icons/react";
 import { FormEvent, Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -183,6 +184,8 @@ export default function KnowledgePage() {
   const [layersOpen, setLayersOpen] = useState(false);
   const [entryEditorOpen, setEntryEditorOpen] = useState(false);
   const [categorySubmitting, setCategorySubmitting] = useState(false);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [categoryReloadRevision, setCategoryReloadRevision] = useState(0);
   const [entrySubmitting, setEntrySubmitting] = useState(false);
   const loadRequestId = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -318,7 +321,7 @@ export default function KnowledgePage() {
     else if (selectedLayer) params.set("layer", selectedLayer);
     window.history.replaceState(null, "", `/knowledge?${params}`);
     void load();
-  }, [load, page, search, selectedCategoryId, selectedEmptyPreset, selectedLayer, status, storeId]);
+  }, [categoryReloadRevision, load, page, search, selectedCategoryId, selectedEmptyPreset, selectedLayer, status, storeId]);
 
   useEffect(() => {
     let active = true;
@@ -423,14 +426,25 @@ export default function KnowledgePage() {
   }
 
   async function removeCategory(category: KnowledgeCategory) {
-    if (!window.confirm(en ? "Delete this empty category?" : "删除这个空分类？")) return;
+    if (deletingCategoryId || category.store_id !== storeId || !customCategories.some((item) => item.id === category.id)) return;
+    if (demoDocuments.some((document) => document.storeId === storeId && document.categoryId === category.id)) {
+      setNotice(en ? "Clear this category's page demo files by refreshing before deleting it" : "该分类含页面演示文件，请刷新页面清空后再删除");
+      return;
+    }
+    if (!window.confirm(en ? `Delete custom category "${category.name}"? Only empty categories can be deleted.` : `确认删除自定义分类“${category.name}”？仅空分类可删除，分类下的知识或子分类需先移除。`)) return;
+    setDeletingCategoryId(category.id);
     try {
       await deleteKnowledgeCategory(category.id);
-      if (selectedCategoryId === category.id) setSelectedCategoryId("");
+      setCategories((current) => current.filter((item) => item.id !== category.id));
+      if (editingCategory?.id === category.id) setEditingCategory(null);
+      setSelectedCategoryId((current) => current === category.id ? "" : current);
+      setPage(1);
+      setCategoryReloadRevision((current) => current + 1);
       setNotice(en ? "Category deleted" : "分类已删除");
-      await load();
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : (en ? "Delete failed" : "删除失败"));
+    } finally {
+      setDeletingCategoryId(null);
     }
   }
 
@@ -643,7 +657,7 @@ export default function KnowledgePage() {
     <header className="topbar">
       <div className="title"><span className="title-icon" aria-hidden="true">▣</span><div><h1>知识库</h1><p>管理客服建议使用的内部知识</p></div></div>
       <div className="top-actions">
-        <label className="store">▣ 当前店铺：<select aria-label="当前店铺" disabled={!stores.length || categorySubmitting} onChange={(event) => { setStoreId(event.target.value); setSelectedCategoryId(""); setSelectedEmptyPreset(""); setSelectedLayer(""); setSearch(""); setFileTypeFilter(""); setVectorFilter(""); setReviewFilter(""); setPage(1); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{storeDetails.find((store) => store.id === id)?.name ?? id.slice(0, 8)}</option>)}</select></label>
+        <label className="store">▣ 当前店铺：<select aria-label="当前店铺" disabled={!stores.length || categorySubmitting || Boolean(deletingCategoryId)} onChange={(event) => { setStoreId(event.target.value); setSelectedCategoryId(""); setSelectedEmptyPreset(""); setSelectedLayer(""); setSearch(""); setFileTypeFilter(""); setVectorFilter(""); setReviewFilter(""); setPage(1); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{storeDetails.find((store) => store.id === id)?.name ?? id.slice(0, 8)}</option>)}</select></label>
         <button className="btn" onClick={() => { setParameterDraft({ ...parameters }); setParametersOpen(true); }} type="button">☷　流程参数</button>
         <button aria-label="新增知识" className="btn primary" disabled={!storeId} onClick={openAdd} type="button">＋　新增知识</button>
       </div>
@@ -656,7 +670,7 @@ export default function KnowledgePage() {
           const active = selectedEmptyPreset === preset.key || Boolean(category && selectedCategoryId === category.id);
           return <button aria-current={active} aria-label={preset.name} className={`cat${active ? " active" : ""}`} key={preset.key} onClick={() => { setSelectedCategoryId(category?.id ?? ""); setSelectedEmptyPreset(category ? "" : preset.key); setSelectedLayer(""); setPage(1); }} type="button">{preset.icon === "truck" ? <Truck size={18} /> : <Folder size={18} weight="fill" />}<span className="kb-category-name">{preset.name}</span><span className="count">{categoryCountLabel(category?.id)}</span></button>;
         })}</Fragment>)}
-        {customCategories.length ? <><div className="group-label">自定义分类</div>{customCategories.map((category) => <button aria-current={selectedCategoryId === category.id} aria-label={category.name} className={`cat${selectedCategoryId === category.id ? " active" : ""}`} key={category.id} onClick={() => { setSelectedCategoryId(category.id); setSelectedEmptyPreset(""); setSelectedLayer(""); setPage(1); }} style={{ paddingInlineStart: 10 + Math.min(category.depth, 3) * 14 }} type="button"><Folder size={18} weight="fill" /><span className="kb-category-name">{category.name}</span><span className="count">{categoryCountLabel(category.id)}</span></button>)}</> : null}
+        {customCategories.length ? <><div className="group-label">自定义分类</div>{customCategories.map((category) => <div className="kb-custom-category-row" key={category.id}><button aria-current={selectedCategoryId === category.id} aria-label={category.name} className={`cat${selectedCategoryId === category.id ? " active" : ""}`} onClick={() => { setSelectedCategoryId(category.id); setSelectedEmptyPreset(""); setSelectedLayer(""); setPage(1); }} style={{ paddingInlineStart: 10 + Math.min(category.depth, 3) * 14 }} type="button"><Folder size={18} weight="fill" /><span className="kb-category-name">{category.name}</span><span className="count">{categoryCountLabel(category.id)}</span></button><button aria-label={`删除分类：${category.name}`} className="kb-custom-category-delete" disabled={Boolean(deletingCategoryId)} onClick={() => void removeCategory(category)} title={`删除分类：${category.name}`} type="button"><Trash size={16} /></button></div>)}</> : null}
         <button aria-expanded={layersOpen} className="kb-layer-toggle" onClick={() => setLayersOpen((value) => !value)} type="button">{layersOpen ? "▾" : "▸"}　按知识层级查看</button>
         {layersOpen ? knowledgeLayers.map((layer) => <button aria-current={selectedLayer === layer.key} className={`cat${selectedLayer === layer.key ? " active" : ""}`} key={layer.key} onClick={() => { setSelectedCategoryId(""); setSelectedEmptyPreset(""); setSelectedLayer(layer.key); setPage(1); }} type="button"><Stack size={18} /><span>{en ? layer.en : layer.zh}</span></button>) : null}
       </aside>
@@ -692,7 +706,7 @@ export default function KnowledgePage() {
       <div className="detail-note"><span className="detail-note-icon">ⓘ</span><div><strong>使用说明</strong><span>本知识仅用于 AI 建议生成与坐席人工复核，不支持公开自动回复。请结合实际订单情况与平台最新政策进行判断。</span></div></div>
       {detailRow.entry ? <div className="kb-detail-actions"><button className="btn" onClick={() => { setEditingEntry(detailRow.entry!); setDetailRow(null); setEntryEditorOpen(true); }} type="button">编辑知识</button>{detailRow.entry.status !== "published" ? <button className="btn primary" disabled={detailRow.entry.statement_type === "unknown"} onClick={() => { void publishEntry(detailRow.entry!); setDetailRow(null); }} type="button">审批并发布</button> : null}{detailRow.entry.vectorization_status === "failed" ? <button className="btn" onClick={() => { void retryVectorization(detailRow.entry!); setDetailRow(null); }} type="button">重试向量化</button> : null}{detailRow.entry.status !== "archived" ? <button className="btn" onClick={() => { void archiveEntry(detailRow.entry!); setDetailRow(null); }} type="button">归档</button> : null}<button className="btn" onClick={() => { void removeEntry(detailRow.entry!); setDetailRow(null); }} type="button">删除</button></div> : null}
     </div></aside> : null}
-    {categoryEditorOpen ? <div aria-label={editingCategory ? "编辑分类" : "新增知识分类"} aria-modal="true" className="modal category-modal open" role="dialog"><div className="modal-head"><h2>{editingCategory ? "编辑分类" : "新增知识分类"}</h2><button aria-label="关闭新增分类" autoFocus className="close" onClick={() => setCategoryEditorOpen(false)} type="button">×</button></div>{categoryForm}{categoryTree.length ? <div className="kb-category-manager"><strong>已有分类</strong>{categoryTree.map((category) => <div className="kb-category-manager-row" key={category.id}><span>{`${"— ".repeat(category.depth)}${category.name}`}</span><button onClick={() => setEditingCategory(category)} type="button">编辑</button><button onClick={() => void removeCategory(category)} type="button">删除</button></div>)}</div> : null}</div> : null}
+    {categoryEditorOpen ? <div aria-label={editingCategory ? "编辑分类" : "新增知识分类"} aria-modal="true" className="modal category-modal open" role="dialog"><div className="modal-head"><h2>{editingCategory ? "编辑分类" : "新增知识分类"}</h2><button aria-label="关闭新增分类" autoFocus className="close" onClick={() => setCategoryEditorOpen(false)} type="button">×</button></div>{categoryForm}{categoryTree.length ? <div className="kb-category-manager"><strong>已有分类</strong>{categoryTree.map((category) => <div className="kb-category-manager-row" key={category.id}><span>{`${"— ".repeat(category.depth)}${category.name}`}</span><button aria-label={`编辑分类：${category.name}`} onClick={() => setEditingCategory(category)} type="button">编辑</button>{customCategories.some((item) => item.id === category.id) ? <button aria-label={`删除分类：${category.name}`} disabled={Boolean(deletingCategoryId)} onClick={() => void removeCategory(category)} type="button">删除</button> : null}</div>)}</div> : null}</div> : null}
     {entryEditorOpen ? <div aria-label={editingEntry ? "编辑知识" : "新增知识文档"} aria-modal="true" className="modal open" role="dialog"><div className="modal-head"><h2>{editingEntry ? "编辑知识" : addMode === "manual" ? "手动录入知识" : "新增知识文档"}</h2><button aria-label="关闭新增知识" autoFocus className="close" onClick={() => setEntryEditorOpen(false)} type="button">×</button></div>
       {editingEntry ? entryForm : <><div aria-label="新增知识方式" className="mode-tabs" role="tablist"><button aria-selected={addMode === "upload"} className={`mode-tab${addMode === "upload" ? " active" : ""}`} onClick={() => setAddMode("upload")} role="tab" type="button">上传文档</button><button aria-selected={addMode === "manual"} className={`mode-tab${addMode === "manual" ? " active" : ""}`} onClick={() => setAddMode("manual")} role="tab" type="button">手动录入</button></div>
         {addMode === "manual" ? <form className="kb-modal-form" onSubmit={addEntry}><div className="modal-content manual-fields"><label className="label">知识标题<input className="field" maxLength={120} name="question" placeholder="输入知识标题" required /></label><label className="label">知识内容<textarea className="field" maxLength={10000} name="answer" placeholder="输入供内部审核的知识正文" required rows={7} /></label><p className="parameter-hint">保存为当前店铺草稿；知识语义类型须在审批前补齐。</p><input defaultValue="unknown" name="statement_type" type="hidden" /><input defaultValue="none" name="customer_scope" type="hidden" /><input defaultValue="" name="tags" type="hidden" /><div className="form-row"><label className="label">归属分类<select className="field select" defaultValue={selectedCategoryId} name="category_id"><option value="">未分类</option>{categoryTree.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label></div></div><div className="modal-foot"><button className="btn" onClick={() => setEntryEditorOpen(false)} type="button">取消</button><button className="btn primary" disabled={entrySubmitting} type="submit">保存知识</button></div></form> : <><div className="modal-content"><div aria-label="选择或拖入知识文件" className="upload" onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }} role="button" tabIndex={0}><div className="upload-icon">☁</div><strong>{selectedFile ? `已选择：${selectedFile.name}` : "点击或拖拽文件到此处上传"}</strong><small>{selectedFile ? "CSV/XLSX 调用真实导入；其他格式只加入本页演示列表" : "支持 PDF、Word、Markdown、Excel、TXT（最大 50MB）"}</small></div><div className="form-row"><label className="label">归属分类<select className="field select" onChange={(event) => setSelectedUploadCategoryId(event.target.value)} value={selectedUploadCategoryId}><option value="">未分类</option>{categoryTree.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label className="label">分段策略 (Chunking)<select className="field select" onChange={(event) => setSegmentMode(event.target.value)} value={segmentMode}><option value="semantic">按语义自动分段 (推荐)</option><option value="fixed">按固定字符数分段</option></select></label></div><div className="engine-label">解析引擎 (Parser)</div><div className="engines"><button className={`engine${parserMode === "standard" ? " active" : ""}`} onClick={() => setParserMode("standard")} type="button"><strong>◉　通用解析</strong><small>自动提取文本，适合常规文档</small></button><button className={`engine${parserMode === "deep" ? " active" : ""}`} onClick={() => setParserMode("deep")} type="button"><strong>○　深度文档</strong><small>处理复杂表格、多栏排版</small></button></div><div className="switch-line"><span className="switch-copy"><strong>上传后立即进行向量化</strong><small>页面演示开关，不会改变真实服务配置</small></span><label className="switch"><input aria-label="进行向量化" checked={vectorizeAfterUpload} onChange={(event) => setVectorizeAfterUpload(event.target.checked)} type="checkbox" /><span className="slider" /></label></div><p className="prototype-note">CSV/XLSX 使用现有导入接口，分类取文件中的 category_code。其他格式与解析选项仅作页面演示，刷新后清空。</p></div><div className="modal-foot"><button className="btn" onClick={() => setEntryEditorOpen(false)} type="button">取消</button><button className="btn primary" onClick={() => void submitSelectedFile()} type="button">确认上传并解析</button></div></>}

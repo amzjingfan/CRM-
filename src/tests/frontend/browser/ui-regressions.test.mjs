@@ -288,19 +288,19 @@ test("knowledge category creation enters the custom group for its store and sele
     const dialog = page.getByRole("dialog", { name: "新增知识分类" });
     await dialog.getByRole("textbox", { name: "分类名称" }).fill("店铺专属");
     await dialog.getByRole("button", { name: "添加分类" }).click();
-    await categories.getByRole("button", { name: "店铺专属" }).waitFor();
+    await categories.getByRole("button", { name: "店铺专属", exact: true }).waitFor();
     assert.deepEqual(await categories.locator(".group-label").allTextContents(), ["核心业务线", "合规与政策", "自定义分类"]);
-    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).getAttribute("aria-current"), "true");
-    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).innerText(), "店铺专属\n0");
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).getAttribute("aria-current"), "true");
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).innerText(), "店铺专属\n0");
     await page.getByRole("heading", { name: "店铺专属" }).waitFor();
     assert.equal(createRequests[0].store_id, store.id);
 
     await page.reload();
-    await categories.getByRole("button", { name: "店铺专属" }).waitFor();
-    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).getAttribute("aria-current"), "true");
+    await categories.getByRole("button", { name: "店铺专属", exact: true }).waitFor();
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).getAttribute("aria-current"), "true");
     await page.getByRole("combobox", { name: "当前店铺" }).selectOption(otherStore.id);
     await page.getByRole("heading", { name: "全部知识" }).waitFor();
-    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).count(), 0);
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).count(), 0);
 
     await page.getByRole("button", { name: "管理分类" }).click();
     await dialog.getByRole("textbox", { name: "分类名称" }).fill("失败分类");
@@ -309,7 +309,7 @@ test("knowledge category creation enters the custom group for its store and sele
     assert.equal(await categories.getByRole("button", { name: "失败分类" }).count(), 0);
     await dialog.getByRole("button", { name: "取消" }).click();
     await page.getByRole("combobox", { name: "当前店铺" }).selectOption(store.id);
-    await categories.getByRole("button", { name: "店铺专属" }).waitFor();
+    await categories.getByRole("button", { name: "店铺专属", exact: true }).waitFor();
     await page.getByRole("button", { name: "管理分类" }).click();
     await dialog.getByRole("textbox", { name: "分类名称" }).fill(" 店铺专属 ");
     await dialog.getByRole("button", { name: "添加分类" }).click();
@@ -324,6 +324,95 @@ test("knowledge category creation enters the custom group for its store and sele
     await page.getByRole("heading", { name: "商品与目录" }).waitFor();
     assert.equal(await categories.getByRole("button", { name: "商品与目录" }).getAttribute("aria-current"), "true");
     assert.equal(createRequests.at(-1).code, "goods");
+  } finally {
+    await context.close();
+  }
+});
+
+test("knowledge custom category can be confirmed and deleted without touching presets", async () => {
+  const customId = "00000000-0000-4000-8000-0000000000c2";
+  const presetId = "00000000-0000-4000-8000-0000000000c3";
+  const otherStoreId = "00000000-0000-4000-8000-0000000000f2";
+  const category = (id, storeId, name, code) => ({ id, store_id: storeId, name, code, parent_id: null, layer: "C", sort_order: 0, status: "active" });
+  const savedCategories = [
+    category(customId, store.id, "店铺专属", "category_shop"),
+    category(presetId, store.id, "商品与目录", "goods"),
+    category("00000000-0000-4000-8000-0000000000c4", otherStoreId, "其他店铺分类", "category_other"),
+  ];
+  const deleteRequests = [];
+  let rejectDelete = true;
+  let releaseSuccessfulDelete;
+  let signalSuccessfulDelete;
+  const successfulDeleteStarted = new Promise((resolve) => { signalSuccessfulDelete = resolve; });
+  const { context, page } = await openPage(`/knowledge?store_id=${store.id}&category_id=${customId}`, {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+    "GET /v1/knowledge/entries": { items: [], page: 1, page_size: 20, total: 0 },
+    "GET /v1/knowledge/vectorization/status": {
+      store_id: store.id, worker_enabled: true, provider: "local_bge", model: "BAAI/bge-m3", dimensions: 1024,
+      counts: { pending: 0, processing: 0, ready: 0, failed: 0 },
+    },
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/knowledge/categories**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const headers = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" };
+      if (request.method() === "DELETE") {
+        assert.equal(url.pathname, `/v1/knowledge/categories/${customId}`);
+        deleteRequests.push({ path: url.pathname, key: request.headers()["idempotency-key"] });
+        if (rejectDelete) {
+          await route.fulfill({ status: 409, contentType: "application/json", headers, body: JSON.stringify({ code: 40901, message: "分类下仍有子分类或 FAQ" }) });
+          return;
+        }
+        signalSuccessfulDelete();
+        await new Promise((resolve) => { releaseSuccessfulDelete = resolve; });
+        savedCategories.splice(savedCategories.findIndex((item) => item.id === customId), 1);
+        await route.fulfill({ status: 204, headers });
+        return;
+      }
+      const storeId = url.searchParams.get("store_id");
+      await route.fulfill({ status: 200, contentType: "application/json", headers, body: JSON.stringify({ code: 0, message: "ok", data: savedCategories.filter((item) => item.store_id === storeId) }) });
+    });
+  });
+  try {
+    const categories = page.getByRole("complementary", { name: "知识分类" });
+    const deleteButton = categories.getByRole("button", { name: "删除分类：店铺专属" });
+    await deleteButton.waitFor();
+    assert.equal(await categories.getByRole("button", { name: "删除分类：商品与目录" }).count(), 0);
+    assert.equal(await categories.getByRole("button", { name: "删除分类：其他店铺分类" }).count(), 0);
+
+    let confirmation = "";
+    page.once("dialog", async (dialog) => { confirmation = dialog.message(); await dialog.dismiss(); });
+    await deleteButton.click();
+    assert.match(confirmation, /店铺专属/);
+    assert.equal(deleteRequests.length, 0);
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).getAttribute("aria-current"), "true");
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await deleteButton.click();
+    await page.getByText("分类下仍有子分类或 FAQ").waitFor();
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).count(), 1);
+    assert.equal(deleteRequests.length, 1);
+
+    rejectDelete = false;
+    await categories.getByRole("button", { name: "全部知识" }).click();
+    page.once("dialog", (dialog) => dialog.accept());
+    await deleteButton.click();
+    await successfulDeleteStarted;
+    await categories.getByRole("button", { name: "店铺专属", exact: true }).click();
+    await page.getByRole("heading", { name: "店铺专属" }).waitFor();
+    releaseSuccessfulDelete();
+    await page.getByRole("heading", { name: "全部知识" }).waitFor();
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).count(), 0);
+    assert.equal(new URL(page.url()).searchParams.has("category_id"), false);
+    assert.equal(deleteRequests.length, 2);
+    assert.deepEqual(deleteRequests.map((request) => request.path), Array(2).fill(`/v1/knowledge/categories/${customId}`));
+    assert.equal(deleteRequests.every((request) => Boolean(request.key)), true);
+
+    await page.reload();
+    await categories.getByRole("button", { name: "商品与目录" }).waitFor();
+    assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).count(), 0);
+    assert.equal(await categories.getByRole("button", { name: "商品与目录" }).count(), 1);
   } finally {
     await context.close();
   }
