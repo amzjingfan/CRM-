@@ -15,7 +15,7 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false) {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false, orderSellerSku = "PAD-BLK") {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [] } },
@@ -59,7 +59,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
-      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45", package_id: "123457", tracking_number: "OLD-2" }] };
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: orderSellerSku, sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45", package_id: "123457", tracking_number: "OLD-2" }] };
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
       const coupon = { id: "789", title: "Shop coupon", status: "EXPIRED", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
       if (payload.section === "orders") {
@@ -517,6 +517,24 @@ test("long order variant remains readable in the customer sidebar", async () => 
     await card.getByText(variant).waitFor();
     assert.equal(await value.evaluate((element) => element.scrollWidth <= element.clientWidth), true);
     assert.equal(await value.textContent(), variant);
+  } finally { await context.close(); }
+});
+
+test("long seller SKU remains readable and copyable in the customer sidebar", async () => {
+  const sellerSku = "TKW-WP-20260929-613A3EAC-WHITE-BLACK-REMOTE-CONTROL-UNIT-001";
+  const { context, page } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, false, "White", false, sellerSku);
+  try {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.setViewportSize({ width: 1206, height: 892 });
+    const card = page.getByTestId("customer-order-card");
+    const line = card.locator(".customer-item-copy small").filter({ hasText: "SKU 货号：" });
+    const value = line.locator(".customer-copy-value > span");
+    await card.getByText(sellerSku).waitFor();
+    assert.equal(await value.evaluate((element) => element.scrollWidth <= element.clientWidth), true);
+    assert.equal(await value.textContent(), sellerSku);
+    assert.equal(await line.evaluate((element) => element.querySelector("button").getBoundingClientRect().right <= element.getBoundingClientRect().right + 1), true);
+    await line.getByRole("button", { name: "复制SKU 货号" }).dispatchEvent("click");
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), sellerSku);
   } finally { await context.close(); }
 });
 
