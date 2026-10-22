@@ -2,7 +2,7 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
-2026-10-22 员工账号与部门 [TR R03](../reports/tests/TR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R03.md) 为 `PARTIAL`：subject `6bf4177d` 的新增角色兼容回归先红后绿，提交后后端 2244 passed/30 skipped、Ruff/mypy、前端 typecheck/build/47 契约通过。PR #522 合入 `main=c14847b1`；手动 staging 门禁、私有备份、迁移 `026`、11 服务与五公网入口通过；部署后同一真实数据读路径返回 51 个账号（含 50 个测试角色）、部门读取正常。GitHub Actions 再次零步骤失败不计 CI；真实管理员浏览器和账号／邮箱实际登录待验，production 未放行。
+2026-10-22 员工账号与部门 [TR R04](../reports/tests/TR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R04.md) 为 `PARTIAL`：subject `6bf4177d` 的角色兼容回归先红后绿，后端 2244 passed/30 skipped、Ruff/mypy、前端 typecheck/build/47 契约通过。PR #522 合入后手动 staging 门禁、真实数据读路径及健康检查通过；用户刷新真实登录态的“账号”和“部门”页后回复“两页都正常”，原“系统内部错误”已消失。GitHub Actions 零步骤失败不计 CI；账号／邮箱实际登录及账号写操作待验，production 未放行。
 
 ## 模块状态
 

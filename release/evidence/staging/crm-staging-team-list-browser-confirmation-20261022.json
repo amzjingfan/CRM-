@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "evidence_type": "team_account_department_browser_confirmation",
+  "environment": "staging",
+  "task_id": "MVP-SETTINGS-TEAM-ACCOUNTS-002",
+  "subject_sha": "6bf4177d4f3768eb4e238c4545e19a50691ef44b",
+  "deployment_evidence": "release/evidence/staging/crm-staging-team-list-legacy-role-fix-20261022.json",
+  "observed_at": "2026-10-22T09:21:18Z",
+  "observer": "user",
+  "method": "user refreshed authenticated staging account and department pages",
+  "account_page": "normal_no_internal_error",
+  "department_page": "normal_no_internal_error",
+  "user_reply": "两页都正常",
+  "account_or_email_login": "not_verified_in_this_confirmation",
+  "real_employee_account_created": false,
+  "external_message_sent": false,
+  "production_release": false
+}
