@@ -2,7 +2,7 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
-2026-10-22 知识库原型 UI [TR R01](../reports/tests/TR-MVP-KNOWLEDGE-PROTOTYPE-UI-001-20261022-R01.md) 记录 subject `64e41b62` 的前端契约 48/48、生产浏览器 64/64、typecheck/build 通过，lint 0 error、5 条既有 warning。PR #528 的 GitHub Actions 两作业均零步骤失败，不计作 CI 通过；本地合成浏览器数据不等于 staging 真实登录态验收。Agent 管理页源文件未修改，未部署 staging 或 production。
+2026-10-22 知识库原型 UI [TR R01](../reports/tests/TR-MVP-KNOWLEDGE-PROTOTYPE-UI-001-20261022-R01.md) 记录 subject `64e41b62` 的前端契约 48/48、生产浏览器 64/64、typecheck/build 通过，lint 0 error、5 条既有 warning。PR #528 已合入 `main=ddeb3018`；GitHub Actions 两作业均零步骤失败，不计作 CI 通过；本地合成浏览器数据不等于 staging 真实登录态验收。Agent 管理页源文件未修改，未部署 staging 或 production。
 
 2026-10-22 员工账号与部门 [TR R04](../reports/tests/TR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R04.md) 为 `PARTIAL`：subject `6bf4177d` 的角色兼容回归先红后绿，后端 2244 passed/30 skipped、Ruff/mypy、前端 typecheck/build/47 契约通过。PR #522 合入后手动 staging 门禁、真实数据读路径及健康检查通过；用户刷新真实登录态的“账号”和“部门”页后回复“两页都正常”，原“系统内部错误”已消失。GitHub Actions 零步骤失败不计 CI；账号／邮箱实际登录及账号写操作待验，production 未放行。
 
