@@ -23,7 +23,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0 };
+  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -88,7 +88,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       data = { source_text_sha256: "a".repeat(64), target_language: payload.target_language, translated_text: `Translated: ${payload.source_text}` };
     } else if (path.endsWith("/read")) { records.find((item) => path.includes(item.id)).unread_count = 0; data = { unread_count: 0 }; }
     else if (path.endsWith("/star")) { const record = records.find((item) => path.includes(item.id)); record.is_starred = JSON.parse(request.postData()).starred; data = { status: record.status, is_starred: record.is_starred, closed_at: record.closed_at }; }
-    else if (path.endsWith("/closed")) { const record = records.find((item) => path.includes(item.id)); record.status = JSON.parse(request.postData()).closed ? "closed" : "active"; data = { status: record.status, is_starred: record.is_starred, closed_at: record.status === "closed" ? "2026-10-20T11:00:00Z" : null }; }
+    else if (path.endsWith("/closed")) { if (calls.closeFailures-- > 0) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "close unavailable", data: null }) }); const record = records.find((item) => path.includes(item.id)); const closed = JSON.parse(request.postData()).closed; calls.closed.push({ sessionId: record.id, closed }); record.status = closed ? "closed" : "active"; data = { status: record.status, is_starred: record.is_starred, closed_at: record.status === "closed" ? "2026-10-20T11:00:00Z" : null }; }
     else if (path.endsWith("/assignees")) data = [{ id: assigneeId, name: "Agent A" }];
     else if (path.endsWith("/transfer")) { calls.transfer++; const record = records.find((item) => path.includes(item.id)); record.status = "transferred"; record.assigned_user_id = JSON.parse(request.postData()).assign_to; data = { status: "transferred", transfer_id: "00000000-0000-4000-8000-000000000501" }; }
     else if (path.endsWith("/messages") && method === "POST") {
@@ -150,6 +150,45 @@ test("loading older messages preserves the current reading position", async () =
   } finally { await context.close(); }
 });
 
+test("closing a conversation uses an in-app dialog and only writes after confirmation", async () => {
+  const { context, page, calls, records } = await openWorkspace();
+  const nativeDialogs = [];
+  page.on("dialog", (dialog) => { nativeDialogs.push(dialog.type()); void dialog.dismiss(); });
+  try {
+    const closeButton = page.getByRole("button", { name: "关闭会话" });
+    await closeButton.click();
+    const dialog = page.getByRole("dialog", { name: "关闭会话" });
+    await dialog.waitFor({ timeout: 3000 });
+    assert.match(await dialog.textContent(), /Alice/);
+    assert.equal(await dialog.evaluate((node) => node.contains(document.activeElement)), true);
+    assert.equal(calls.closed.length, 0);
+    await dialog.getByRole("button", { name: "取消" }).click();
+    assert.equal(calls.closed.length, 0);
+    await closeButton.click();
+    await dialog.waitFor();
+    await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(calls.closed.length, 0);
+    await closeButton.click();
+    await page.getByRole("button", { name: /Bob/ }).evaluate((node) => node.click());
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(calls.closed.length, 0);
+    await page.getByRole("button", { name: /Alice/ }).click();
+    await closeButton.click();
+    calls.closeFailures = 1;
+    await dialog.getByRole("button", { name: "确认关闭" }).click();
+    await dialog.getByRole("alert").waitFor();
+    assert.equal(calls.closed.length, 0);
+    assert.equal(records[0].status, "active");
+    await dialog.getByRole("button", { name: "确认关闭" }).click();
+    await page.getByRole("button", { name: "已关闭" }).click();
+    await page.getByRole("button", { name: "重新打开会话" }).waitFor();
+    assert.deepEqual(calls.closed, [{ sessionId: firstId, closed: true }]);
+    assert.equal(records[0].status, "closed");
+    assert.deepEqual(nativeDialogs, []);
+  } finally { await context.close(); }
+});
+
 test("AI result fills editable draft without sending; star, transfer and close persist in CRM", async () => {
   const { context, page, calls } = await openWorkspace();
   try {
@@ -167,8 +206,8 @@ test("AI result fills editable draft without sending; star, transfer and close p
     await page.getByRole("combobox", { name: "目标坐席" }).selectOption(assigneeId);
     await page.getByRole("button", { name: "确认转交" }).click();
     assert.equal(calls.transfer, 1);
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "关闭会话" }).click();
+    await page.getByRole("dialog", { name: "关闭会话" }).getByRole("button", { name: "确认关闭" }).click();
     await page.getByRole("button", { name: "已关闭" }).click();
     await page.getByRole("button", { name: "重新打开会话" }).waitFor();
     assert.equal(await draft.isDisabled(), true);

@@ -64,7 +64,8 @@ test("file import leaves multipart content type to the browser", () => {
 test("customer sidebar keeps high-risk actions unavailable and coupons draft-only", () => {
   const workspaceSource = readRequiredSource("workspace");
   const sidebarSource = readRequiredSource("customerSidebar");
-  assert.match(workspaceSource, /window\.confirm/);
+  assert.match(workspaceSource, /<dialog aria-label=\{en \? "Close conversation" : "关闭会话"\}/);
+  assert.doesNotMatch(workspaceSource, /window\.confirm/);
   assert.doesNotMatch(sidebarSource, /issueCoupon|updateShippingAddress|sendMessage/);
   assert.match(sidebarSource, /onDraft\(content\)/);
 });

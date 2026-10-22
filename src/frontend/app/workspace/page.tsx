@@ -103,6 +103,9 @@ export default function WorkspacePage() {
   const [assigneeId, setAssigneeId] = useState("");
   const [transferError, setTransferError] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
+  const [closeConfirmId, setCloseConfirmId] = useState<string | null>(null);
+  const [closeError, setCloseError] = useState("");
+  const closeDialogRef = useRef<HTMLDialogElement | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -119,6 +122,12 @@ export default function WorkspacePage() {
     previewRequestId.current += 1;
     setPreview(null); setPreviewError(""); setPreviewLoading(false); setReview(null);
   }, [draft, replyLanguage, selectedId]);
+  useEffect(() => {
+    const dialog = closeDialogRef.current;
+    if (!dialog || closeConfirmId !== detail?.session.id) return;
+    if (!dialog.open) dialog.showModal();
+    return () => { if (dialog.open) dialog.close(); };
+  }, [closeConfirmId, detail?.session.id]);
   useLayoutEffect(() => {
     currentComposeRef.current = { sessionId: selectedId, draft, language: replyLanguage, choice: sendChoice, translationEnabled: detail?.draft_translation_enabled === true };
   }, [selectedId, draft, replyLanguage, sendChoice, detail?.draft_translation_enabled]);
@@ -248,7 +257,7 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     suggestionController.current?.abort(); setSuggestionDraft(""); setSuggestionStatus(""); setSuggestionLoading(false);
-    setTransferOpen(false); stickToBottomRef.current = true; pendingPrependRef.current = null; setShowLatest(false);
+    setTransferOpen(false); setCloseConfirmId(null); setCloseError(""); stickToBottomRef.current = true; pendingPrependRef.current = null; setShowLatest(false);
     setDetail(null); setDetailError("");
     if (!selectedId) return;
     let isCurrentRequest = true;
@@ -432,14 +441,14 @@ export default function WorkspacePage() {
     finally { setActionBusy(false); }
   }
 
-  async function changeClosed() {
+  async function changeClosed(closed: boolean) {
     if (!detail || actionBusy) return;
     const sessionId = detail.session.id;
-    const closed = detail.session.status !== "closed";
-    if (closed && !window.confirm(en ? "Close this conversation in CRM?" : "确认在 CRM 中关闭该会话？")) return;
-    setActionBusy(true);
+    if (closed && (closeConfirmId !== sessionId || selectedId !== sessionId || detail.session.status === "closed")) return;
+    setActionBusy(true); setCloseError("");
     try {
       const result = await setSessionClosed(sessionId, closed);
+      if (closed) { closeDialogRef.current?.close(); setCloseConfirmId(null); }
       setDetail((current) => current?.session.id === sessionId ? { ...current, session: { ...current.session, ...result }, send_mode: closed ? "disabled" : current.send_mode } : current);
       setList((current) => current ? { ...current, items: current.items.map((item) => item.id === sessionId ? { ...item, ...result } : item) } : current);
       await loadList();
@@ -448,7 +457,11 @@ export default function WorkspacePage() {
         setDetail((current) => current?.session.id === sessionId ? fresh : current);
       }
       setAnnouncement(closed ? (en ? "Conversation closed" : "会话已关闭") : (en ? "Conversation reopened" : "会话已重新打开"));
-    } catch (caught) { setAnnouncement(caught instanceof Error ? caught.message : en ? "Could not change conversation status" : "变更会话状态失败"); }
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : en ? "Could not change conversation status" : "变更会话状态失败";
+      if (closed) setCloseError(message);
+      setAnnouncement(message);
+    }
     finally { setActionBusy(false); }
   }
 
@@ -501,7 +514,7 @@ export default function WorkspacePage() {
     </section>
 
     <section className="chat-panel" aria-label={en ? "Chat window" : "聊天窗口"}>{!selectedId ? <EmptyState label={en ? "Select a conversation" : "请选择一个会话"} /> : detailError ? <ErrorState message={detailError} /> : !detail ? <LoadingState label={en ? "Loading messages…" : "正在加载消息…"} /> : <>
-      <header className="chat-heading"><button className="mobile-back" onClick={() => setSelectedId(null)} type="button" aria-label={en ? "Back to conversation list" : "返回会话列表"}><ArrowLeft size={20} /></button><div className="min-w-0"><h2 className="truncate font-semibold">{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><p className="text-xs text-[var(--muted)]">{detail.session.platform} · {detail.session.status} · {modeLabel(detail.send_mode, en)}</p></div><div className="chat-actions"><button aria-label={detail.session.is_starred ? (en ? "Remove review risk mark" : "取消差评风险标记") : (en ? "Mark review risk" : "标记差评风险")} aria-pressed={detail.session.is_starred} className="icon-action" disabled={actionBusy} onClick={() => void changeStar()} title={en ? "Review risk" : "差评风险"} type="button"><Star size={19} weight={detail.session.is_starred ? "fill" : "regular"} /></button><button aria-label={en ? "Transfer conversation" : "转交会话"} className="icon-action" disabled={actionBusy || detail.session.status === "closed"} onClick={() => void openTransfer()} title={en ? "Transfer" : "转交会话"} type="button"><UserSwitch size={19} /></button><button aria-label={detail.session.status === "closed" ? (en ? "Reopen conversation" : "重新打开会话") : (en ? "Close conversation" : "关闭会话")} className="icon-action" disabled={actionBusy} onClick={() => void changeClosed()} title={detail.session.status === "closed" ? (en ? "Reopen" : "重新打开") : (en ? "Close" : "关闭会话")} type="button">{detail.session.status === "closed" ? <ArrowRight size={19} /> : <X size={19} />}</button><button className="secondary-button" onClick={() => setCustomerOpen(true)} type="button"><UserFocus size={17} />{en ? "Customer details" : "客户信息"}</button></div></header>
+      <header className="chat-heading"><button className="mobile-back" onClick={() => setSelectedId(null)} type="button" aria-label={en ? "Back to conversation list" : "返回会话列表"}><ArrowLeft size={20} /></button><div className="min-w-0"><h2 className="truncate font-semibold">{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><p className="text-xs text-[var(--muted)]">{detail.session.platform} · {detail.session.status} · {modeLabel(detail.send_mode, en)}</p></div><div className="chat-actions"><button aria-label={detail.session.is_starred ? (en ? "Remove review risk mark" : "取消差评风险标记") : (en ? "Mark review risk" : "标记差评风险")} aria-pressed={detail.session.is_starred} className="icon-action" disabled={actionBusy} onClick={() => void changeStar()} title={en ? "Review risk" : "差评风险"} type="button"><Star size={19} weight={detail.session.is_starred ? "fill" : "regular"} /></button><button aria-label={en ? "Transfer conversation" : "转交会话"} className="icon-action" disabled={actionBusy || detail.session.status === "closed"} onClick={() => void openTransfer()} title={en ? "Transfer" : "转交会话"} type="button"><UserSwitch size={19} /></button><button aria-label={detail.session.status === "closed" ? (en ? "Reopen conversation" : "重新打开会话") : (en ? "Close conversation" : "关闭会话")} className="icon-action" disabled={actionBusy} onClick={() => { if (detail.session.status === "closed") void changeClosed(false); else { setCloseError(""); setCloseConfirmId(detail.session.id); } }} title={detail.session.status === "closed" ? (en ? "Reopen" : "重新打开") : (en ? "Close" : "关闭会话")} type="button">{detail.session.status === "closed" ? <ArrowRight size={19} /> : <X size={19} />}</button><button className="secondary-button" onClick={() => setCustomerOpen(true)} type="button"><UserFocus size={17} />{en ? "Customer details" : "客户信息"}</button></div></header>
       <div className="message-area"><div className="message-scroll" onScroll={onMessageScroll} ref={messageScrollRef}>{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>{showLatest ? <button className="latest-button" onClick={scrollToLatest} type="button"><ArrowDown size={16} />{en ? "Latest message" : "到最新消息"}</button> : null}</div>
       <section className="ai-suggestion" aria-label={en ? "AI suggestion" : "AI 建议"}><div className="min-w-0 flex-1"><strong>{en ? "AI reply suggestion" : "AI 回复建议"}</strong><p aria-live="polite" className="truncate">{suggestionStatus || (suggestionDraft ? (en ? "Suggestion is ready in the draft" : "建议已填入草稿，可编辑后发送") : (en ? "Generate a draft on demand" : "按需生成草稿"))}</p></div><div className="flex gap-2">{suggestionLoading ? <button className="text-button" type="button" onClick={cancelSuggestion}><X size={16} />{en ? "Cancel" : "取消"}</button> : <button className="text-button" type="button" onClick={() => void requestSuggestion()}>{suggestionDraft ? (en ? "Refresh" : "刷新") : (en ? "Generate" : "生成")}</button>}{suggestionDraft && draft !== suggestionDraft ? <button className="secondary-button" type="button" onClick={() => { setDraft(suggestionDraft); setAnnouncement(en ? "Suggestion inserted; review it before sending" : "建议已填入输入框，确认后再发送"); }}>{en ? "Use" : "使用"}</button> : null}</div></section>
       <div className="composer">
@@ -536,6 +549,7 @@ export default function WorkspacePage() {
 
     <aside className={`customer-panel ${customerOpen ? "open" : ""}`} aria-label={en ? "Customer and quick actions" : "客户与快捷操作"}><CustomerSidebar detail={detail} en={en} key={detail?.session.id ?? "none"} onClose={() => setCustomerOpen(false)} onDraft={(content) => { setDraft(content); setAnnouncement(en ? "Added to draft; review before sending" : "已填入草稿，请核对后发送"); }} storeName={stores.find((store) => store.id === detail?.session.store_id)?.name ?? null} /></aside>
     {customerOpen ? <button aria-label={en ? "Close drawer overlay" : "关闭抽屉遮罩"} className="drawer-backdrop" onClick={() => setCustomerOpen(false)} type="button" /> : null}
+    {closeConfirmId === selectedId && detail?.session.id === closeConfirmId ? <dialog aria-label={en ? "Close conversation" : "关闭会话"} aria-modal="true" className="action-dialog workspace-close-dialog" onCancel={(event) => { if (actionBusy) event.preventDefault(); else setCloseConfirmId(null); }} ref={closeDialogRef}><h2>{en ? "Close conversation" : "关闭会话"}</h2><p>{en ? `Close the conversation with ${detail.customer.name ?? "this customer"}? It will move to Closed and can be reopened.` : `确定关闭与${detail.customer.name ?? "当前客户"}的会话？关闭后会移至“已关闭”，仍可重新打开。`}</p>{closeError ? <p className="workspace-close-error" role="alert">{closeError}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" disabled={actionBusy} onClick={() => { closeDialogRef.current?.close(); setCloseConfirmId(null); }} type="button">{en ? "Cancel" : "取消"}</button><button className="danger-button" disabled={actionBusy} onClick={() => void changeClosed(true)} type="button">{actionBusy ? (en ? "Closing…" : "正在关闭…") : (en ? "Confirm close" : "确认关闭")}</button></div></dialog> : null}
     {review && review.sessionId === selectedId ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Review outgoing message" : "审阅外发消息"} aria-modal="true" className="action-dialog workspace-review-dialog" role="dialog"><h2>{en ? "Review outgoing message" : "审阅外发消息"}</h2><p>{en ? "Recipient" : "收件人"}：{detail?.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} · {detail?.session.platform}</p><p>{en ? "Target language" : "目标语言"}：{replyLanguages.find((item) => item.value === review.language)?.[en ? "en" : "zh"]}</p><div className="workspace-review-content"><strong>{en ? "Exact message to send" : "即将发送的准确内容"}</strong><p>{review.content}</p></div>{review.language !== "original" ? <div className="workspace-review-source"><strong>{en ? "Original draft" : "原始草稿"}</strong><p>{review.source}</p></div> : null}<p>{detail?.send_mode === "real" ? (en ? "This sends a real TikTok message and is audited." : "确认后将向真实 TikTok 买家发送，操作会被审计。") : (en ? "This runs simulated delivery." : "确认后执行模拟发送。")}</p><div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setReview(null)} type="button">{en ? "Back to edit" : "返回修改"}</button><button className="primary-button" disabled={sending || detail?.send_mode === "disabled"} onClick={() => void submitMessage(review.content, review.key, review.sessionId)} type="button">{en ? "Confirm & send" : "确认并发送"}</button></div></section></div> : null}
     {transferOpen ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Transfer conversation" : "转交会话"} aria-modal="true" className="action-dialog" role="dialog"><h2>{en ? "Transfer conversation" : "转交会话"}</h2><p>{en ? "Choose an agent who can access this store." : "选择有当前店铺权限的坐席。"}</p><select aria-label={en ? "Target agent" : "目标坐席"} className="compact-field" onChange={(event) => setAssigneeId(event.target.value)} value={assigneeId}><option value="">{en ? "Select an agent" : "请选择坐席"}</option>{assignees.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select>{transferError ? <p role="alert">{transferError}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setTransferOpen(false)} type="button">{en ? "Cancel" : "取消"}</button><button className="primary-button" disabled={!assigneeId || actionBusy} onClick={() => void confirmTransfer()} type="button">{en ? "Confirm transfer" : "确认转交"}</button></div></section></div> : null}
   </main><div aria-live="polite" className="sr-only">{announcement}</div></AppShell>;
