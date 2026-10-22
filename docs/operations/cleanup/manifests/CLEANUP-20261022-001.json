@@ -13,6 +13,8 @@
   "filesystem_net_freed_bytes": 8166408192,
   "running_container_ids_sha256_before_after": "fd4d0637870b4f351d8955a98a30b30a1cf90ca1981d0c10f685c23feab41ccd",
   "post_delete_loopback_and_public_health": {"healthz": 200, "v1_health": 200, "v1_health_ready": 200},
+  "documentation_pr": "https://github.com/CP11-gh/CRM/pull/511",
+  "documentation_merge_status": "BLOCKED; CI run 39724037692 failed twice with zero job steps and GitHub billing/spending-limit annotations",
   "scope": "Three unreferenced Rootless Docker images created on 2026-09-19; no system Docker, volumes, or active images",
   "recovery_archive": {
     "path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261022-001/rootless-images.tar.zst",
