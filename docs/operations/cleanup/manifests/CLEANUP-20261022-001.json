@@ -4,8 +4,15 @@
   "base_sha": "218befe0113291d14fd3bde98a4f95a1e9ac8718",
   "server": "192.168.110.210",
   "docker_host": "unix:///run/user/1004/docker.sock",
-  "state": "CANDIDATE",
+  "state": "DELETED",
   "discovered_at": "2026-10-22",
+  "deletion_authorization": "User approved permanent deletion of the three exact image IDs in this batch and retention of the recovery archive in this chat",
+  "deleted_at": "2026-10-22T12:39:21+08:00",
+  "filesystem_free_before_bytes": 198572609536,
+  "filesystem_free_after_bytes": 206739017728,
+  "filesystem_net_freed_bytes": 8166408192,
+  "running_container_ids_sha256_before_after": "fd4d0637870b4f351d8955a98a30b30a1cf90ca1981d0c10f685c23feab41ccd",
+  "post_delete_loopback_and_public_health": {"healthz": 200, "v1_health": 200, "v1_health_ready": 200},
   "scope": "Three unreferenced Rootless Docker images created on 2026-09-19; no system Docker, volumes, or active images",
   "recovery_archive": {
     "path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261022-001/rootless-images.tar.zst",
@@ -31,10 +38,10 @@
       "reason": "Historical frontend image older than 30 days and not referenced by any container",
       "reference_checks": ["docker image ls -a: containers=0", "docker system df -v: containers=0", "not current image or stated rollback target"],
       "related_tasks_or_worktrees": ["MVP-STAGING-001"],
-      "action": "candidate",
+      "action": "deleted",
       "quarantine_path": "N/A Docker-managed image",
       "restore_method": "Load the verified recovery_archive through crmdeploy Rootless Docker or pull the exact repo_digest; verify image ID",
-      "verification": ["Read-only image and disk inventory on 2026-10-22; recheck before deletion"]
+      "verification": ["Pre-delete image ID, age, archive digest/index and zero container references confirmed", "Post-delete docker image inspect confirms ID absent", "Running containers, volumes and three loopback health endpoints unchanged"]
     },
     {
       "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:bc99dfa3ce36bc3332480b456da5d82a0d1495a2f9bbfd1b2bb56d4df2f02112",
@@ -52,10 +59,10 @@
       "reason": "Oldest retrieval image older than 30 days; current and previous rollback retrieval images are excluded",
       "reference_checks": ["docker image ls -a: containers=0", "docker system df -v: containers=0", "current feeee5a3 and rollback 4c2dfe3d explicitly retained"],
       "related_tasks_or_worktrees": ["MVP-STAGING-001", "MVP-008"],
-      "action": "candidate",
+      "action": "deleted",
       "quarantine_path": "N/A Docker-managed image",
       "restore_method": "Load the verified recovery_archive through crmdeploy Rootless Docker or pull the exact repo_digest; verify image ID",
-      "verification": ["Read-only image and disk inventory on 2026-10-22; recheck before deletion"]
+      "verification": ["Pre-delete image ID, age, archive digest/index and zero container references confirmed", "Post-delete docker image inspect confirms ID absent", "Running containers, volumes and three loopback health endpoints unchanged"]
     },
     {
       "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:e2ca31c150b874b143f9ab4ff60ff0cc56f1814dec0661dfd78baa87164f37d2",
@@ -73,10 +80,10 @@
       "reason": "Historical backend image older than 30 days and not referenced by any container",
       "reference_checks": ["docker image ls -a: containers=0", "docker system df -v: containers=0", "not current image or stated rollback target"],
       "related_tasks_or_worktrees": ["MVP-STAGING-001"],
-      "action": "candidate",
+      "action": "deleted",
       "quarantine_path": "N/A Docker-managed image",
       "restore_method": "Load the verified recovery_archive through crmdeploy Rootless Docker or pull the exact repo_digest; verify image ID",
-      "verification": ["Read-only image and disk inventory on 2026-10-22; recheck before deletion"]
+      "verification": ["Pre-delete image ID, age, archive digest/index and zero container references confirmed", "Post-delete docker image inspect confirms ID absent", "Running containers, volumes and three loopback health endpoints unchanged"]
     }
   ]
 }
