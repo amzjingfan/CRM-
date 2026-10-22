@@ -1,5 +1,7 @@
 # 项目状态与恢复入口
 
+2026-10-22 知识分类原型对齐：`MVP-KNOWLEDGE-CATEGORY-UI-002 VERIFYING`，`CANDIDATE_SUBJECT_SHA=4244ad8cd36f3924897e558342d9e8b89eb457f1`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。五个预置业务分类、真实分类数量和“自定义分类”已实现；新增分类保存到当前店铺并自动选中，跨店铺 URL 分类校验已补。前端契约 48/48、生产浏览器 66/66、typecheck/build 通过，lint 0 error 与 5 条既有 warning；[IR](../records/implementation/IR-MVP-KNOWLEDGE-CATEGORY-UI-002-20261022-R01.md)、[TR](../reports/tests/TR-MVP-KNOWLEDGE-CATEGORY-UI-002-20261022-R01.md)绑定最终 subject。三个记录索引为 `CANDIDATE_VIEW`，Workspace hygiene: ATTENTION（活动 worktree 与未知生成文件保留）。未部署 staging/production。下一步：①审阅并合并知识分类修复；②如需上线，按独立发布门禁核对真实店铺分类。
+
 本文件是跨 Codex 会话恢复项目所需的精简摘要，不复制 `../tasks/TASKS.md` 的任务状态、`../quality/TEST-STATUS.md` 的测试结论或 `../operations/RELEASE-GATES.md` 的门禁正文。恢复工作时先读本文件，再按链接读取事实源。
 
 2026-09-28 目录卫生补记：`MAINT-CLEANUP-20260928-001` 已移除 PR #53 合并后的 OAuth 代码本地工作树与分支，清理记录由 PR #57 合入 `main`；`MAINT-CLEANUP-20260928-002` 已按用户精确授权移除 PR #52 合并后的 HTML 缓存工作树、两份重复 SSH 私钥副本与本地诊断资料，原始密钥不变，清理记录由 PR #59 合入 `main`。另三个截图工作树因开放 PR 或未完成现场验收而保留。批次见 [`../operations/cleanup/CLEANUP-20260928-001.md`](../operations/cleanup/CLEANUP-20260928-001.md)、[`../operations/cleanup/CLEANUP-20260928-002.md`](../operations/cleanup/CLEANUP-20260928-002.md)。下方历史部署快照不是当日运行状态，以当前任务表与发布证据为准。

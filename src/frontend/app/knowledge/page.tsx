@@ -4,11 +4,10 @@ import Link from "next/link";
 import "./knowledge-prototype.css";
 import {
   Folder,
-  FolderOpen,
   Stack,
   Truck,
 } from "@phosphor-icons/react";
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import {
@@ -40,12 +39,22 @@ import {
 import { useLanguage } from "../../lib/i18n";
 
 type CategoryTreeItem = KnowledgeCategory & { depth: number };
+type PresetCategoryKey = "goods" | "logistics" | "payment" | "aftersales" | "customs";
+type PresetCategory = { key: PresetCategoryKey; name: string; group: "核心业务线" | "合规与政策"; description: string; icon: "folder" | "truck" };
 type KnowledgeLayer = "A" | "B" | "C" | "D";
 type KnowledgeParameters = { chunk: number; overlap: number; model: string; topK: number; score: number; rerank: boolean; rerankModel: "BAAI/bge-reranker-large" };
 type DemoDocument = { id: string; storeId: string; categoryId: string | null; file: File; createdAt: string; vectorizationStatus: "pending" | "disabled" };
 type KnowledgeRow = { id: string; categoryId: string | null; title: string; type: "pdf" | "xlsx" | "txt"; updated: string; version: number; vector: string; review: "approved" | "pending" | "draft"; entry?: KnowledgeEntry; demo?: DemoDocument };
 
 const defaultParameters: KnowledgeParameters = { chunk: 500, overlap: 50, model: "BAAI/bge-m3", topK: 20, score: 0.52, rerank: true, rerankModel: "BAAI/bge-reranker-large" };
+const presetCategories: PresetCategory[] = [
+  { key: "goods", name: "商品与目录", group: "核心业务线", icon: "folder", description: "商品资料、目录与常见说明。" },
+  { key: "logistics", name: "物流与仓储", group: "核心业务线", icon: "truck", description: "包含物流时效、运费规则、仓储管理、发货与配送等相关知识，供客服参考使用。" },
+  { key: "payment", name: "支付与结算", group: "核心业务线", icon: "folder", description: "支付与结算业务相关知识。" },
+  { key: "aftersales", name: "售后与退换", group: "核心业务线", icon: "folder", description: "售后、退款及退换货相关知识。" },
+  { key: "customs", name: "关务与合规", group: "合规与政策", icon: "folder", description: "关务与合规政策相关知识。" },
+];
+const presetGroups: PresetCategory["group"][] = ["核心业务线", "合规与政策"];
 
 function knowledgeFileType(name: string | null): KnowledgeRow["type"] {
   const extension = name?.split(".").pop()?.toLowerCase();
@@ -141,6 +150,10 @@ export default function KnowledgePage() {
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedEmptyPreset, setSelectedEmptyPreset] = useState<PresetCategoryKey | "">("");
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number | null>>({});
+  const [allCategoryCount, setAllCategoryCount] = useState<number | null>(null);
+  const [countRevision, setCountRevision] = useState(0);
   const [selectedLayer, setSelectedLayer] = useState<KnowledgeLayer | "">("");
   const [vectorizationStatus, setVectorizationStatus] = useState<KnowledgeVectorizationStatus | null>(null);
   const [retryingEntryId, setRetryingEntryId] = useState<string | null>(null);
@@ -174,15 +187,34 @@ export default function KnowledgePage() {
   const loadRequestId = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const categoryTree = useMemo(() => flattenCategoryTree(categories), [categories]);
-  const selectedCategory = categories.find((category) => category.id === selectedCategoryId) ?? null;
+  const categoryTree = useMemo(() => flattenCategoryTree(categories.filter((category) => category.store_id === storeId)), [categories, storeId]);
+  // 原型的五个业务分类是展示模板；只有当前店铺已有同名服务端分类时才绑定真实 ID。
+  const presetBindings = useMemo(() => {
+    const bindings = new Map<PresetCategoryKey, CategoryTreeItem>();
+    const used = new Set<string>();
+    for (const preset of presetCategories) {
+      const matches = categoryTree.filter((category) => category.depth === 0 && !used.has(category.id) && category.name.trim() === preset.name);
+      const match = matches.find((category) => category.code.toLowerCase() === preset.key) ?? matches[0];
+      if (match) { bindings.set(preset.key, match); used.add(match.id); }
+    }
+    return bindings;
+  }, [categoryTree]);
+  const customCategories = useMemo(() => {
+    const presetIds = new Set([...presetBindings.values()].map((category) => category.id));
+    return categoryTree.filter((category) => !presetIds.has(category.id));
+  }, [categoryTree, presetBindings]);
+  const selectedPreset = presetCategories.find((preset) => selectedEmptyPreset === preset.key || presetBindings.get(preset.key)?.id === selectedCategoryId) ?? null;
+  const effectiveCategoryId = selectedCategoryId || (selectedEmptyPreset ? presetBindings.get(selectedEmptyPreset)?.id ?? "" : "");
+  const isEmptyPreset = Boolean(selectedEmptyPreset && !effectiveCategoryId);
+  const selectedCategory = categoryTree.find((category) => category.id === effectiveCategoryId) ?? null;
   const selectedLayerLabel = knowledgeLayers.find((layer) => layer.key === selectedLayer);
-  const selectedScopeLabel = selectedCategory?.name ?? (selectedLayerLabel ? (en ? selectedLayerLabel.en : selectedLayerLabel.zh) : (en ? "All knowledge" : "全部知识"));
+  const selectedScopeLabel = selectedPreset?.name ?? selectedCategory?.name ?? (selectedLayerLabel ? (en ? selectedLayerLabel.en : selectedLayerLabel.zh) : (en ? "All knowledge" : "全部知识"));
+  const categoryIdSignature = categoryTree.map((category) => category.id).sort().join("|");
   const blockedParentIds = useMemo(() => editingCategory ? collectDescendantIds(categories, editingCategory.id) : new Set<string>(), [categories, editingCategory]);
   const configuredModel = vectorizationStatus?.model ?? defaultParameters.model;
   const storeName = storeDetails.find((store) => store.id === storeId)?.name ?? storeId.slice(0, 8);
   const rows = useMemo<KnowledgeRow[]>(() => {
-    const realRows = entries.map((entry): KnowledgeRow => ({
+    const realRows = entries.filter((entry) => !isEmptyPreset && entry.store_id === storeId && (!effectiveCategoryId || entry.category_id === effectiveCategoryId)).map((entry): KnowledgeRow => ({
       id: entry.id,
       categoryId: entry.category_id,
       title: entry.question,
@@ -193,7 +225,7 @@ export default function KnowledgePage() {
       review: entry.publication_approval !== "draft" ? "approved" : entry.status === "draft" ? "pending" : "draft",
       entry,
     }));
-    const localRows = demoDocuments.filter((document) => document.storeId === storeId && (!selectedCategoryId || document.categoryId === selectedCategoryId) && (!selectedLayer || Boolean(document.categoryId && layerKey(categories.find((category) => category.id === document.categoryId)?.layer ?? "") === selectedLayer))).map((document): KnowledgeRow => ({
+    const localRows = demoDocuments.filter((document) => !isEmptyPreset && document.storeId === storeId && (!effectiveCategoryId || document.categoryId === effectiveCategoryId) && (!selectedLayer || Boolean(document.categoryId && layerKey(categories.find((category) => category.id === document.categoryId)?.layer ?? "") === selectedLayer))).map((document): KnowledgeRow => ({
       id: document.id,
       categoryId: document.categoryId,
       title: document.file.name,
@@ -208,7 +240,7 @@ export default function KnowledgePage() {
       if (row.demo && search && !row.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) return false;
       return (!fileTypeFilter || row.type === fileTypeFilter) && (!vectorFilter || row.vector === vectorFilter) && (!reviewFilter || row.review === reviewFilter);
     });
-  }, [categories, demoDocuments, entries, fileTypeFilter, reviewFilter, search, selectedCategoryId, selectedLayer, storeId, vectorFilter]);
+  }, [categories, demoDocuments, effectiveCategoryId, entries, fileTypeFilter, isEmptyPreset, reviewFilter, search, selectedLayer, storeId, vectorFilter]);
 
   const load = useCallback(async () => {
     if (!storeId) return;
@@ -219,16 +251,21 @@ export default function KnowledgePage() {
       const query = new URLSearchParams({ page: String(page), page_size: "20", store_id: storeId });
       if (search) query.set("search", search);
       if (status) query.set("status", status);
-      if (selectedCategoryId) query.set("category_id", selectedCategoryId);
+      if (effectiveCategoryId) query.set("category_id", effectiveCategoryId);
       else if (selectedLayer) query.set("layer", selectedLayer);
       const [categoryData, entryData, vectorData] = await Promise.all([
         listKnowledgeCategories(storeId),
-        listKnowledgeEntries(query),
+        isEmptyPreset ? Promise.resolve({ items: [] as KnowledgeEntry[], page, page_size: 20, total: 0 }) : listKnowledgeEntries(query),
         getKnowledgeVectorizationStatus(storeId),
       ]);
       // 快速切换层级或分类时，只允许最后一次请求更新列表，避免旧响应覆盖当前选择。
       if (requestId !== loadRequestId.current) return;
       setCategories(categoryData);
+      // URL 可能保留其他店铺的分类；按当前店铺的真实分类重新校验，避免显示空列表和错误高亮。
+      if (selectedCategoryId && !categoryData.some((category) => category.id === selectedCategoryId && category.store_id === storeId)) {
+        setSelectedCategoryId("");
+        setPage(1);
+      }
       setEntries(entryData.items);
       setTotal(entryData.total);
       setVectorizationStatus(vectorData);
@@ -239,7 +276,7 @@ export default function KnowledgePage() {
     } finally {
       if (requestId === loadRequestId.current) setLoading(false);
     }
-  }, [en, page, search, selectedCategoryId, selectedLayer, status, storeId]);
+  }, [effectiveCategoryId, en, isEmptyPreset, page, search, selectedCategoryId, selectedLayer, status, storeId]);
 
   useEffect(() => {
     void currentUser().then((user) => {
@@ -253,7 +290,10 @@ export default function KnowledgePage() {
       setStatus(params.get("status") ?? "");
       const categoryId = params.get("category_id") ?? "";
       setSelectedCategoryId(categoryId);
-      setSelectedLayer(categoryId ? "" : parseKnowledgeLayer(params.get("layer")));
+      const presetKey = params.get("category_preset");
+      const validPresetKey = !categoryId && presetCategories.some((preset) => preset.key === presetKey) ? presetKey as PresetCategoryKey : "";
+      setSelectedEmptyPreset(validPresetKey);
+      setSelectedLayer(categoryId || validPresetKey ? "" : parseKnowledgeLayer(params.get("layer")));
       setPage(Number(params.get("page") || 1));
     }).catch((caught: unknown) => {
       if (!isAuthenticationError(caught)) {
@@ -274,16 +314,47 @@ export default function KnowledgePage() {
     if (search) params.set("search", search);
     if (status) params.set("status", status);
     if (selectedCategoryId) params.set("category_id", selectedCategoryId);
+    else if (selectedEmptyPreset) params.set("category_preset", selectedEmptyPreset);
     else if (selectedLayer) params.set("layer", selectedLayer);
     window.history.replaceState(null, "", `/knowledge?${params}`);
     void load();
-  }, [load, page, search, selectedCategoryId, selectedLayer, status, storeId]);
+  }, [load, page, search, selectedCategoryId, selectedEmptyPreset, selectedLayer, status, storeId]);
+
+  useEffect(() => {
+    let active = true;
+    const ids = categoryIdSignature ? categoryIdSignature.split("|") : [];
+    setCategoryCounts({});
+    setAllCategoryCount(null);
+    if (!storeId) return () => { active = false; };
+    // 列表总数受当前搜索和筛选影响；角标单独查询当前店铺各分类的完整总数。
+    void (async () => {
+      const targets = ["", ...ids];
+      for (let offset = 0; offset < targets.length; offset += 4) {
+        const batch = targets.slice(offset, offset + 4);
+        const results = await Promise.all(batch.map(async (id) => {
+          const query = new URLSearchParams({ page: "1", page_size: "1", store_id: storeId });
+          if (id) query.set("category_id", id);
+          try { return { id, total: (await listKnowledgeEntries(query)).total }; }
+          catch { return { id, total: null }; }
+        }));
+        if (!active) return;
+        for (const result of results) {
+          if (result.id) setCategoryCounts((current) => ({ ...current, [result.id]: result.total }));
+          else setAllCategoryCount(result.total);
+        }
+      }
+    })();
+    return () => { active = false; };
+  }, [categoryIdSignature, countRevision, storeId]);
 
   useEffect(() => {
     if (!job || ["succeeded", "partially_succeeded", "failed"].includes(job.status)) return;
     const timer = window.setInterval(() => getImportJob(job.id).then((next) => {
       setJob(next);
-      if (["succeeded", "partially_succeeded", "failed"].includes(next.status)) void load();
+      if (["succeeded", "partially_succeeded", "failed"].includes(next.status)) {
+        if (next.status !== "failed") setCountRevision((value) => value + 1);
+        void load();
+      }
     }).catch(() => setNotice(en ? "Import progress unavailable" : "导入进度暂时不可用")), 1500);
     return () => window.clearInterval(timer);
   }, [en, job, load]);
@@ -311,13 +382,24 @@ export default function KnowledgePage() {
     if (categorySubmitting) return;
     const submittedForm = event.currentTarget;
     const form = new FormData(submittedForm);
+    const name = String(form.get("name") ?? "").trim();
+    if (!name) { setNotice("请输入分类名称"); return; }
+    if (categoryTree.some((category) => category.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      setNotice("当前店铺已有同名分类");
+      return;
+    }
+    const preset = presetCategories.find((item) => item.name === name);
     setCategorySubmitting(true);
     try {
-      await createKnowledgeCategory({ store_id: storeId, parent_id: String(form.get("parent_id") || "") || null, name: String(form.get("name")), code: String(form.get("code") || `category_${crypto.randomUUID().slice(0, 8)}`) });
+      const created = await createKnowledgeCategory({ store_id: storeId, parent_id: null, name, code: preset?.key ?? `category_${crypto.randomUUID().slice(0, 8)}` });
       submittedForm.reset();
       setCategoryEditorOpen(false);
+      setCategories((current) => [...current, created]);
+      setSelectedEmptyPreset("");
+      setSelectedCategoryId(created.id);
+      setSelectedLayer("");
+      setPage(1);
       setNotice(en ? "Category created" : "分类已创建");
-      await load();
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : (en ? "Category creation failed" : "分类创建失败"));
     } finally {
@@ -364,6 +446,7 @@ export default function KnowledgePage() {
       setEntryEditorOpen(false);
       setNotice(en ? "FAQ draft created" : "FAQ 草稿已创建");
       await load();
+      setCountRevision((value) => value + 1);
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : (en ? "Create failed" : "创建失败"));
     } finally {
@@ -381,6 +464,7 @@ export default function KnowledgePage() {
       setEntryEditorOpen(false);
       setNotice(en ? "FAQ updated" : "FAQ 已更新");
       await load();
+      setCountRevision((value) => value + 1);
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : (en ? "Update failed" : "更新失败"));
     }
@@ -392,6 +476,7 @@ export default function KnowledgePage() {
       await deleteKnowledgeEntry(entry.id);
       setNotice(en ? "FAQ deleted" : "FAQ 已删除");
       await load();
+      setCountRevision((value) => value + 1);
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : (en ? "Delete failed" : "删除失败"));
     }
@@ -490,6 +575,12 @@ export default function KnowledgePage() {
   }
 
   function openAdd() {
+    if (isEmptyPreset && selectedPreset) {
+      setEditingCategory(null);
+      setCategoryEditorOpen(true);
+      setNotice(`请先将“${selectedPreset.name}”保存到当前店铺，再添加知识`);
+      return;
+    }
     setEditingEntry(null);
     setSelectedFile(null);
     setSelectedUploadCategoryId(selectedCategoryId);
@@ -513,9 +604,9 @@ export default function KnowledgePage() {
   const categoryForm = <form className="kb-modal-form" key={editingCategory?.id ?? "new-category"} onSubmit={editingCategory ? saveCategory : addCategory}>
     <div className="modal-content">
       <label className="label" htmlFor="newCategoryName">分类名称</label>
-      <input className="field" defaultValue={editingCategory?.name} id="newCategoryName" maxLength={30} name="name" placeholder="例如：品牌服务政策" required />
+      <input className="field" defaultValue={editingCategory?.name ?? (isEmptyPreset ? selectedPreset?.name : "")} id="newCategoryName" maxLength={30} name="name" placeholder="例如：品牌服务政策" required />
       {editingCategory ? <label className="label kb-extra-field">父分类<select className="field" defaultValue={editingCategory.parent_id ?? ""} name="parent_id"><option value="">作为根分类</option>{categoryTree.filter((category) => !blockedParentIds.has(category.id)).map((category) => <option key={category.id} value={category.id}>{`${"— ".repeat(category.depth)}${category.name}`}</option>)}</select></label> : <input defaultValue="" name="parent_id" type="hidden" />}
-      <p className="parameter-hint">分类保存到当前店铺，并按服务端权限与店铺范围校验。</p>
+      <p className="parameter-hint">{editingCategory ? "分类保存到当前店铺，并按服务端权限与店铺范围校验。" : isEmptyPreset ? "保存同名预置分类后，即可在当前店铺归属知识。" : "分类只添加到当前店铺，归入“自定义分类”。保存后会保留在当前店铺。"}</p>
     </div>
     <div className="modal-foot"><button className="btn" onClick={() => setCategoryEditorOpen(false)} type="button">取消</button><button className="btn primary" disabled={!storeId || categorySubmitting} type="submit">{categorySubmitting ? "正在保存…" : editingCategory ? "保存分类" : "添加分类"}</button></div>
   </form>;
@@ -533,8 +624,16 @@ export default function KnowledgePage() {
 
   const closeDialogs = () => { setParametersOpen(false); setDetailRow(null); setCategoryEditorOpen(false); setEntryEditorOpen(false); };
   const anyDialogOpen = parametersOpen || Boolean(detailRow) || categoryEditorOpen || entryEditorOpen;
-  const localCount = demoDocuments.filter((document) => document.storeId === storeId && (!selectedCategoryId || document.categoryId === selectedCategoryId) && (!selectedLayer || Boolean(document.categoryId && layerKey(categories.find((category) => category.id === document.categoryId)?.layer ?? "") === selectedLayer))).length;
-  const scopeDescription = selectedCategory ? `查看当前店铺“${selectedCategory.name}”分类中的知识，供客服建议与人工复核使用。` : "查看当前店铺的全部知识文档，供客服参考使用。";
+  const localCount = demoDocuments.filter((document) => !isEmptyPreset && document.storeId === storeId && (!effectiveCategoryId || document.categoryId === effectiveCategoryId) && (!selectedLayer || Boolean(document.categoryId && layerKey(categories.find((category) => category.id === document.categoryId)?.layer ?? "") === selectedLayer))).length;
+  const scopeDescription = selectedPreset?.description ?? (selectedCategory ? "当前店铺新增的自定义知识分类。" : "查看当前店铺的全部知识文档，供客服参考使用。");
+  const scopeServerCount = isEmptyPreset ? 0 : effectiveCategoryId ? categoryCounts[effectiveCategoryId] ?? total : selectedLayer ? total : allCategoryCount ?? total;
+  const categoryCountLabel = (categoryId: string | undefined): string => {
+    if (!categoryId) return "0";
+    const count = categoryCounts[categoryId];
+    if (count === undefined) return "…";
+    if (count === null) return "—";
+    return String(count + demoDocuments.filter((document) => document.storeId === storeId && document.categoryId === categoryId).length);
+  };
   const detailCategory = detailRow ? categories.find((category) => category.id === detailRow.categoryId)?.name ?? "未分类" : "";
   const detailApproval = detailRow?.review === "approved" ? "已通过" : detailRow?.review === "pending" ? "待审批" : "草稿";
   const detailSemantic = detailRow?.entry ? statementTypes.find((item) => item.value === detailRow.entry?.statement_type)?.[en ? "en" : "zh"] ?? "未分类" : "知识文档 · 页面演示";
@@ -544,21 +643,25 @@ export default function KnowledgePage() {
     <header className="topbar">
       <div className="title"><span className="title-icon" aria-hidden="true">▣</span><div><h1>知识库</h1><p>管理客服建议使用的内部知识</p></div></div>
       <div className="top-actions">
-        <label className="store">▣ 当前店铺：<select aria-label="当前店铺" disabled={!stores.length} onChange={(event) => { setStoreId(event.target.value); setSelectedCategoryId(""); setSelectedLayer(""); setSearch(""); setFileTypeFilter(""); setVectorFilter(""); setReviewFilter(""); setPage(1); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{storeDetails.find((store) => store.id === id)?.name ?? id.slice(0, 8)}</option>)}</select></label>
+        <label className="store">▣ 当前店铺：<select aria-label="当前店铺" disabled={!stores.length || categorySubmitting} onChange={(event) => { setStoreId(event.target.value); setSelectedCategoryId(""); setSelectedEmptyPreset(""); setSelectedLayer(""); setSearch(""); setFileTypeFilter(""); setVectorFilter(""); setReviewFilter(""); setPage(1); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{storeDetails.find((store) => store.id === id)?.name ?? id.slice(0, 8)}</option>)}</select></label>
         <button className="btn" onClick={() => { setParameterDraft({ ...parameters }); setParametersOpen(true); }} type="button">☷　流程参数</button>
         <button aria-label="新增知识" className="btn primary" disabled={!storeId} onClick={openAdd} type="button">＋　新增知识</button>
       </div>
     </header>
     <div className="workspace">
       <aside className="categories" aria-label="知识分类"><div className="category-head"><h2>知识分类</h2><button aria-label="管理分类" className="icon-btn" disabled={!storeId} onClick={() => { setEditingCategory(null); setCategoryEditorOpen(true); }} title="新增分类" type="button">＋</button></div>
-        <button aria-current={!selectedCategoryId && !selectedLayer} className={`cat${!selectedCategoryId && !selectedLayer ? " active" : ""}`} onClick={() => { setSelectedCategoryId(""); setSelectedLayer(""); setPage(1); }} type="button"><FolderOpen size={18} /><span>全部知识</span></button>
-        {categoryTree.length ? <div className="group-label">当前店铺分类</div> : null}
-        {categoryTree.map((category) => <button aria-current={selectedCategoryId === category.id} className={`cat${selectedCategoryId === category.id ? " active" : ""}`} key={category.id} onClick={() => { setSelectedCategoryId(category.id); setSelectedLayer(""); setPage(1); }} style={{ paddingInlineStart: 10 + Math.min(category.depth, 3) * 14 }} type="button">{category.name.includes("物流") ? <Truck size={18} /> : <Folder size={18} />}<span className="kb-category-name">{category.name}</span>{selectedCategoryId === category.id ? <span className="count">{total + localCount}</span> : null}</button>)}
+        <button aria-current={!selectedCategoryId && !selectedEmptyPreset && !selectedLayer} className={`cat${!selectedCategoryId && !selectedEmptyPreset && !selectedLayer ? " active" : ""}`} onClick={() => { setSelectedCategoryId(""); setSelectedEmptyPreset(""); setSelectedLayer(""); setPage(1); }} type="button"><Folder size={18} weight="fill" /><span>全部知识</span></button>
+        {presetGroups.map((group) => <Fragment key={group}><div className="group-label">{group}</div>{presetCategories.filter((preset) => preset.group === group).map((preset) => {
+          const category = presetBindings.get(preset.key);
+          const active = selectedEmptyPreset === preset.key || Boolean(category && selectedCategoryId === category.id);
+          return <button aria-current={active} aria-label={preset.name} className={`cat${active ? " active" : ""}`} key={preset.key} onClick={() => { setSelectedCategoryId(category?.id ?? ""); setSelectedEmptyPreset(category ? "" : preset.key); setSelectedLayer(""); setPage(1); }} type="button">{preset.icon === "truck" ? <Truck size={18} /> : <Folder size={18} weight="fill" />}<span className="kb-category-name">{preset.name}</span><span className="count">{categoryCountLabel(category?.id)}</span></button>;
+        })}</Fragment>)}
+        {customCategories.length ? <><div className="group-label">自定义分类</div>{customCategories.map((category) => <button aria-current={selectedCategoryId === category.id} aria-label={category.name} className={`cat${selectedCategoryId === category.id ? " active" : ""}`} key={category.id} onClick={() => { setSelectedCategoryId(category.id); setSelectedEmptyPreset(""); setSelectedLayer(""); setPage(1); }} style={{ paddingInlineStart: 10 + Math.min(category.depth, 3) * 14 }} type="button"><Folder size={18} weight="fill" /><span className="kb-category-name">{category.name}</span><span className="count">{categoryCountLabel(category.id)}</span></button>)}</> : null}
         <button aria-expanded={layersOpen} className="kb-layer-toggle" onClick={() => setLayersOpen((value) => !value)} type="button">{layersOpen ? "▾" : "▸"}　按知识层级查看</button>
-        {layersOpen ? knowledgeLayers.map((layer) => <button aria-current={selectedLayer === layer.key} className={`cat${selectedLayer === layer.key ? " active" : ""}`} key={layer.key} onClick={() => { setSelectedCategoryId(""); setSelectedLayer(layer.key); setPage(1); }} type="button"><Stack size={18} /><span>{en ? layer.en : layer.zh}</span></button>) : null}
+        {layersOpen ? knowledgeLayers.map((layer) => <button aria-current={selectedLayer === layer.key} className={`cat${selectedLayer === layer.key ? " active" : ""}`} key={layer.key} onClick={() => { setSelectedCategoryId(""); setSelectedEmptyPreset(""); setSelectedLayer(layer.key); setPage(1); }} type="button"><Stack size={18} /><span>{en ? layer.en : layer.zh}</span></button>) : null}
       </aside>
       <main className="main">
-        <section className="scope"><div className="scope-copy"><span className="scope-icon" aria-hidden="true">▣</span><div><h2>{selectedScopeLabel}</h2><p>{scopeDescription}</p></div></div><span className="total">{total + localCount} 篇知识</span></section>
+        <section className="scope"><div className="scope-copy"><span className="scope-icon" aria-hidden="true">▣</span><div><h2>{selectedScopeLabel}</h2><p>{scopeDescription}</p></div></div><span className="total">{scopeServerCount + localCount} 篇知识</span></section>
         <div className="safety">ⓘ　仅供内部客服辅助使用 · 坐席确认后发送</div>
         <div className="config-summary">分块：{parameters.chunk}　·　重叠：{parameters.overlap}　·　召回：{parameters.topK}　·　阈值：{parameters.score.toFixed(2)}　·　模型：{parameters.model}{parameters !== defaultParameters ? " · 本页演示" : ""}</div>
         <div className="toolbar"><label className="search"><span aria-hidden="true">⌕</span><input aria-label="搜索知识" className="field" maxLength={200} onChange={(event) => { setPage(1); setSearch(event.target.value); }} placeholder="搜索知识名称或关键词" value={search} /></label>

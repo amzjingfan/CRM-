@@ -204,8 +204,21 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
       counts: { pending: 0, processing: 0, ready: 1, failed: 0 },
     },
   });
+  const entryRequests = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/v1/knowledge/entries") entryRequests.push(request.url());
+  });
   try {
     await page.getByText("CRM 智能聊天系统").waitFor();
+    const categories = page.getByRole("complementary", { name: "知识分类" });
+    await categories.getByRole("button", { name: "关务与合规" }).waitFor();
+    assert.deepEqual(await categories.locator(".group-label").allTextContents(), ["核心业务线", "合规与政策"]);
+    assert.deepEqual(await categories.locator(".cat").allTextContents(), ["全部知识", "商品与目录0", "物流与仓储1", "支付与结算0", "售后与退换0", "关务与合规0"]);
+    await categories.getByRole("button", { name: "商品与目录" }).click();
+    await page.getByRole("heading", { name: "商品与目录" }).waitFor();
+    await page.getByText("当前条件下没有知识文档").waitFor();
+    assert.equal(entryRequests.some((url) => new URL(url).searchParams.get("category_id") === "goods"), false);
+    assert.equal(new URL(page.url()).searchParams.get("category_preset"), "goods");
     await page.getByRole("button", { name: /流程参数/ }).click();
     const parameters = page.getByRole("dialog", { name: /知识库参数配置/ });
     await parameters.waitFor();
@@ -219,6 +232,7 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     await page.getByRole("heading", { name: "物流与仓储" }).waitFor();
     await page.getByRole("combobox", { name: "文件类型" }).selectOption("pdf");
     await page.getByText("当前条件下没有知识文档").waitFor();
+    assert.equal(await categories.getByRole("button", { name: "物流与仓储" }).innerText(), "物流与仓储\n1");
     await page.getByRole("combobox", { name: "文件类型" }).selectOption("");
 
     await page.getByRole("button", { name: "查看", exact: true }).click();
@@ -232,6 +246,106 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     await page.getByText(/分块：500.*召回：20/).waitFor();
     await page.setViewportSize({ width: 760, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("knowledge category creation enters the custom group for its store and selects the new category", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "UK Demo Store", code: "uk_demo" };
+  const createdId = "00000000-0000-4000-8000-0000000000c2";
+  const savedCategories = [];
+  const createRequests = [];
+  const { context, page } = await openPage("/knowledge", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id, otherStore.id] },
+    "GET /v1/settings/stores": [store, otherStore],
+    "GET /v1/knowledge/entries": { items: [], page: 1, page_size: 20, total: 0 },
+    "GET /v1/knowledge/vectorization/status": {
+      store_id: store.id, worker_enabled: true, provider: "local_bge", model: "BAAI/bge-m3", dimensions: 1024,
+      counts: { pending: 0, processing: 0, ready: 0, failed: 0 },
+    },
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/knowledge/categories**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const category = method === "POST" ? request.postDataJSON() : null;
+      if (category) createRequests.push(category);
+      if (category && category.name === "失败分类") {
+        await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ code: 1, message: "创建失败" }) });
+        return;
+      }
+      if (category) savedCategories.push({ ...category, id: category.name === "商品与目录" ? "00000000-0000-4000-8000-0000000000c3" : createdId, layer: "C", sort_order: 0, status: "active" });
+      const storeId = new URL(request.url()).searchParams.get("store_id");
+      const data = category ? savedCategories.at(-1) : savedCategories.filter((item) => item.store_id === storeId);
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    const categories = page.getByRole("complementary", { name: "知识分类" });
+    await categories.getByRole("button", { name: "关务与合规" }).waitFor();
+    assert.deepEqual(await categories.locator(".group-label").allTextContents(), ["核心业务线", "合规与政策"]);
+    await page.getByRole("button", { name: "管理分类" }).click();
+    const dialog = page.getByRole("dialog", { name: "新增知识分类" });
+    await dialog.getByRole("textbox", { name: "分类名称" }).fill("店铺专属");
+    await dialog.getByRole("button", { name: "添加分类" }).click();
+    await categories.getByRole("button", { name: "店铺专属" }).waitFor();
+    assert.deepEqual(await categories.locator(".group-label").allTextContents(), ["核心业务线", "合规与政策", "自定义分类"]);
+    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).getAttribute("aria-current"), "true");
+    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).innerText(), "店铺专属\n0");
+    await page.getByRole("heading", { name: "店铺专属" }).waitFor();
+    assert.equal(createRequests[0].store_id, store.id);
+
+    await page.reload();
+    await categories.getByRole("button", { name: "店铺专属" }).waitFor();
+    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).getAttribute("aria-current"), "true");
+    await page.getByRole("combobox", { name: "当前店铺" }).selectOption(otherStore.id);
+    await page.getByRole("heading", { name: "全部知识" }).waitFor();
+    assert.equal(await categories.getByRole("button", { name: "店铺专属" }).count(), 0);
+
+    await page.getByRole("button", { name: "管理分类" }).click();
+    await dialog.getByRole("textbox", { name: "分类名称" }).fill("失败分类");
+    await dialog.getByRole("button", { name: "添加分类" }).click();
+    await page.getByText("创建失败").waitFor();
+    assert.equal(await categories.getByRole("button", { name: "失败分类" }).count(), 0);
+    await dialog.getByRole("button", { name: "取消" }).click();
+    await page.getByRole("combobox", { name: "当前店铺" }).selectOption(store.id);
+    await categories.getByRole("button", { name: "店铺专属" }).waitFor();
+    await page.getByRole("button", { name: "管理分类" }).click();
+    await dialog.getByRole("textbox", { name: "分类名称" }).fill(" 店铺专属 ");
+    await dialog.getByRole("button", { name: "添加分类" }).click();
+    await page.getByText("当前店铺已有同名分类").waitFor();
+    assert.equal(createRequests.length, 2);
+    await dialog.getByRole("button", { name: "取消" }).click();
+    await categories.getByRole("button", { name: "商品与目录" }).click();
+    await page.getByRole("button", { name: "新增知识" }).click();
+    await dialog.getByRole("textbox", { name: "分类名称" }).waitFor();
+    assert.equal(await dialog.getByRole("textbox", { name: "分类名称" }).inputValue(), "商品与目录");
+    await dialog.getByRole("button", { name: "添加分类" }).click();
+    await page.getByRole("heading", { name: "商品与目录" }).waitFor();
+    assert.equal(await categories.getByRole("button", { name: "商品与目录" }).getAttribute("aria-current"), "true");
+    assert.equal(createRequests.at(-1).code, "goods");
+  } finally {
+    await context.close();
+  }
+});
+
+test("knowledge ignores a category URL that does not belong to the selected store", async () => {
+  const foreignCategoryId = "00000000-0000-4000-8000-0000000000ff";
+  const { context, page } = await openPage(`/knowledge?store_id=${store.id}&category_id=${foreignCategoryId}`, {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+    "GET /v1/knowledge/categories": [],
+    "GET /v1/knowledge/entries": { items: [], page: 1, page_size: 20, total: 0 },
+    "GET /v1/knowledge/vectorization/status": {
+      store_id: store.id, worker_enabled: true, provider: "local_bge", model: "BAAI/bge-m3", dimensions: 1024,
+      counts: { pending: 0, processing: 0, ready: 0, failed: 0 },
+    },
+  });
+  try {
+    await page.getByRole("heading", { name: "全部知识" }).waitFor();
+    await page.getByRole("button", { name: "全部知识" }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "全部知识" }).getAttribute("aria-current"), "true");
+    assert.equal(new URL(page.url()).searchParams.has("category_id"), false);
   } finally {
     await context.close();
   }
