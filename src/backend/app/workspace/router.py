@@ -37,6 +37,7 @@ from app.workspace.schemas import (
     OrderSummary,
     ReadResult,
     ReconcileMessageRequest,
+    SendLogisticsCardRequest,
     SendMessageRequest,
     SessionActionResult,
     SessionListData,
@@ -55,6 +56,7 @@ from app.workspace.service import (
     list_session_assignees,
     mark_read,
     reconcile_unknown_message,
+    send_agent_logistics_card,
     send_agent_message,
     set_conversation_closed,
     set_conversation_star,
@@ -359,6 +361,31 @@ async def send_message(
         user,
         session_id,
         payload.content,
+        idempotency_key,
+        confirmed=payload.confirmed,
+    )
+    return ApiResponse(data=message)
+
+
+@router.post(
+    "/sessions/{session_id}/messages/logistics-card",
+    response_model=ApiResponse[MessageView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.reply"))],
+)
+async def send_logistics_card(
+    session_id: uuid.UUID,
+    payload: SendLogisticsCardRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[MessageView]:
+    """坐席二次确认后发送当前买家订单的 TikTok 原生物流卡片。"""
+    message = await send_agent_logistics_card(
+        session,
+        user,
+        session_id,
+        payload.order_id,
+        payload.package_id,
         idempotency_key,
         confirmed=payload.confirmed,
     )

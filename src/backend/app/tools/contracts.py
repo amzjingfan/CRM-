@@ -86,6 +86,9 @@ class SendPlatformMessageArguments(StrictToolArguments):
 
     conversation_id: uuid.UUID
     content: str = Field(min_length=1, max_length=4000)
+    message_type: Literal["text", "logistics_card"] = "text"
+    card_order_id: str | None = Field(default=None, pattern=r"^\d+$", max_length=200)
+    card_package_id: str | None = Field(default=None, pattern=r"^\d+$", max_length=200)
 
 
 class StrictToolOutput(BaseModel):
@@ -219,7 +222,8 @@ def validate_tool_arguments(tool_name: str, arguments: dict[str, object]) -> dic
     schema = TOOL_ARGUMENT_SCHEMAS.get(tool_name)
     if schema is None:
         raise ValueError("工具不在允许的白名单中")
-    return schema.model_validate(arguments).model_dump(mode="json")
+    # 旧文本发送的幂等哈希不可因新增可选卡片字段而改变。
+    return schema.model_validate(arguments).model_dump(mode="json", exclude_unset=tool_name == "send_platform_message")
 
 
 def validate_tool_output(tool_name: str, data: dict[str, object]) -> dict[str, object]:

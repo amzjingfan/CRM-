@@ -23,7 +23,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
+  const calls = { send: 0, cardSend: 0, cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -59,7 +59,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
-      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45" }] };
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: "PAD-BLK", sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45", package_id: "123457", tracking_number: "OLD-2" }] };
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
       const coupon = { id: "789", title: "Shop coupon", status: "EXPIRED", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
       if (payload.section === "orders") {
@@ -77,8 +77,8 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       calls.enhancedTracking++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
       data = { packages: [
-        { tracking_number: "NEW-1", carrier_name: "Carrier B", events: [{ description: "Delivered", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "NEW-1", action_code: 2, action_code_name: "signed_personally" }] },
-        { tracking_number: "OLD-2", carrier_name: "Carrier C", events: [{ description: "Picked up", occurred_at: "2026-10-15T19:20:00Z", tracking_number: "OLD-2", action_code: 1, action_code_name: "pickup_success" }] },
+        { package_id: "123456", tracking_number: "NEW-1", carrier_name: "Carrier B", events: [{ description: "Delivered", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "NEW-1", action_code: 2, action_code_name: "signed_personally" }] },
+        { package_id: "123457", tracking_number: "OLD-2", carrier_name: "Carrier C", events: [{ description: "Picked up", occurred_at: "2026-10-15T19:20:00Z", tracking_number: "OLD-2", action_code: 1, action_code_name: "pickup_success" }] },
       ] };
     } else if (path.endsWith("/sidebar/orders/tracking-translation") && method === "POST") {
       calls.trackingTranslations++;
@@ -107,6 +107,12 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     else if (path.endsWith("/closed")) { if (calls.closeFailures-- > 0) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "close unavailable", data: null }) }); const record = records.find((item) => path.includes(item.id)); const closed = JSON.parse(request.postData()).closed; calls.closed.push({ sessionId: record.id, closed }); record.status = closed ? "closed" : "active"; data = { status: record.status, is_starred: record.is_starred, closed_at: record.status === "closed" ? "2026-10-20T11:00:00Z" : null }; }
     else if (path.endsWith("/assignees")) data = [{ id: assigneeId, name: "Agent A" }];
     else if (path.endsWith("/transfer")) { calls.transfer++; const record = records.find((item) => path.includes(item.id)); record.status = "transferred"; record.assigned_user_id = JSON.parse(request.postData()).assign_to; data = { status: "transferred", transfer_id: "00000000-0000-4000-8000-000000000501" }; }
+    else if (path.endsWith("/messages/logistics-card") && method === "POST") {
+      calls.cardSend++;
+      const payload = JSON.parse(request.postData());
+      calls.cardPayloads.push(payload);
+      data = { id: `card-${calls.cardSend}`, role: "agent", content: `物流卡片 · 订单 ${payload.order_id}`, message_type: "logistics_card", logistics_card: { order_id: payload.order_id, package_id: payload.package_id, product_name: "Walking pad", image_url: null, sku_name: orderVariant, quantity: 1, unit_price: "90.45", currency: "USD", tracking_number: "OLD-2", carrier_name: "Carrier C", latest_description: "Picked up", latest_at: "2026-10-15T19:20:00Z" }, status: "sent", created_at: new Date().toISOString(), error_code: null, delivery_mode: "real" };
+    }
     else if (path.endsWith("/messages") && method === "POST") {
       calls.send++;
       calls.sentContent.push(JSON.parse(request.postData()).content);
@@ -429,7 +435,7 @@ test("tracking popover shows every returned event, copies all, and downloads a P
   } finally { await context.close(); }
 });
 
-test("cross border tracking translates all parcels in one click and only fills the message draft", async () => {
+test("cross border tracking translates all parcels and stages a native logistics card", async () => {
   const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, true, "Black", true);
   try {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -454,9 +460,29 @@ test("cross border tracking translates all parcels in one click and only fills t
     await dialog.getByText("已揽收").waitFor();
     assert.equal(calls.trackingTranslations, 2);
     await dialog.getByRole("button", { name: "发送物流卡片" }).click();
-    const draft = await page.getByRole("textbox", { name: "回复内容" }).inputValue();
-    assert.match(draft, /OLD-2/);
-    assert.match(draft, /Picked up/);
+    const cardDraft = page.locator(".workspace-card-draft");
+    await cardDraft.getByLabel("物流卡片").waitFor();
+    assert.match(await cardDraft.textContent(), /OLD-2/);
+    assert.equal(await page.getByRole("textbox", { name: "回复内容" }).count(), 0);
+    await cardDraft.getByRole("button", { name: "查看详情" }).click();
+    await page.getByRole("dialog", { name: "物流完整信息" }).getByText("Picked up", { exact: true }).waitFor();
+    await page.keyboard.press("Escape");
+    assert.equal(calls.send, 0);
+    assert.equal(calls.cardSend, 0);
+    await page.getByRole("button", { name: "发送物流卡片" }).last().click();
+    const review = page.getByRole("dialog", { name: "审阅物流卡片" });
+    await review.getByText("Walking pad").waitFor();
+    assert.equal(calls.cardSend, 0);
+    await review.getByRole("button", { name: "确认发送卡片" }).click();
+    const sentCard = page.locator(".message.outgoing .tracking-message-card").last();
+    await sentCard.waitFor();
+    await sentCard.getByRole("button", { name: "查看详情" }).click();
+    const sentDetails = page.getByRole("dialog", { name: "物流完整信息" });
+    await sentDetails.getByRole("tab", { name: "包裹 2" }).waitFor();
+    await sentDetails.getByText("OLD-2").waitFor();
+    await sentDetails.getByRole("button", { name: "复制全部" }).waitFor();
+    assert.equal(calls.cardSend, 1);
+    assert.deepEqual(calls.cardPayloads[0], { order_id: "577600000000000001", package_id: "123457", confirmed: true });
     assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });

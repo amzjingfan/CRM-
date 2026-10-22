@@ -571,6 +571,18 @@ class SqlAlchemyToolExecutor:
             )
             if unresolved is not None:
                 raise ToolDispatchError("TOOL_RECONCILIATION_REQUIRED")
+        if arguments.message_type == "logistics_card" and (
+            conversation.platform != "tiktok"
+            or invocation.context.actor_type != "user"
+            or not invocation.context.human_confirmed
+            or not arguments.card_order_id
+        ):
+            raise ToolDispatchError("TOOL_HUMAN_CONFIRMATION_REQUIRED")
+        card_payload = (
+            {"order_id": arguments.card_order_id, "package_id": arguments.card_package_id}
+            if arguments.message_type == "logistics_card"
+            else None
+        )
         message = Message(
             store_id=conversation.store_id,
             conversation_id=conversation.id,
@@ -581,9 +593,10 @@ class SqlAlchemyToolExecutor:
             role="agent" if invocation.context.actor_type == "user" else "assistant",
             direction="outbound",
             content=arguments.content,
+            message_type=arguments.message_type,
             status="processing",
             agent_run_id=invocation.context.agent_run_id,
-            raw_payload={"delivery_mode": "unknown"},
+            raw_payload={"delivery_mode": "unknown", **({"logistics_card": card_payload} if card_payload else {})},
         )
         self.session.add(message)
         await self.session.commit()
@@ -592,6 +605,9 @@ class SqlAlchemyToolExecutor:
             SendMessageCommand(
                 external_conversation_id=conversation.external_conversation_id,
                 content=arguments.content,
+                message_type=arguments.message_type,
+                card_order_id=arguments.card_order_id,
+                card_package_id=arguments.card_package_id,
                 idempotency_key=invocation.idempotency_key,
                 human_confirmed=invocation.context.human_confirmed,
             ),
@@ -601,7 +617,10 @@ class SqlAlchemyToolExecutor:
         message.status = result.status
         message.error_code = result.error_code
         message.sent_at = datetime.now(UTC) if result.status == "sent" else None
-        message.raw_payload = {"delivery_mode": "mock" if result.mock else "real"}
+        message.raw_payload = {
+            "delivery_mode": "mock" if result.mock else "real",
+            **({"logistics_card": card_payload} if card_payload else {}),
+        }
         conversation.last_message_id = message.id
         conversation.last_message_at = datetime.now(UTC)
         audit_action = {
@@ -664,7 +683,7 @@ class SqlAlchemyToolExecutor:
             if isinstance(message, Message):
                 message.status = status
                 message.error_code = error_code
-                message.raw_payload = {"delivery_mode": "unknown"}
+                message.raw_payload = {**message.raw_payload, "delivery_mode": "unknown"}
                 self.session.add(
                     self._audit_log(
                         invocation,
@@ -703,6 +722,7 @@ class SqlAlchemyToolExecutor:
         if tool_name == "send_platform_message":
             content = arguments.get("content")
             summary["content_length"] = len(content) if isinstance(content, str) else 0
+            summary["message_type"] = arguments.get("message_type", "text")
         return summary
 
     @staticmethod

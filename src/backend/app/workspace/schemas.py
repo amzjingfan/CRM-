@@ -46,6 +46,25 @@ class MessageView(BaseModel):
     created_at: datetime
     error_code: str | None
     delivery_mode: Literal["inbound", "mock", "real", "unknown"]
+    message_type: str = "text"
+    logistics_card: "LogisticsCardView | None" = None
+
+
+class LogisticsCardView(BaseModel):
+    """已核对订单的物流卡片展示快照；轨迹详情仍按需读取。"""
+
+    order_id: str
+    package_id: str | None = None
+    product_name: str | None = None
+    image_url: str | None = None
+    sku_name: str | None = None
+    quantity: int | None = None
+    unit_price: str | None = None
+    currency: str | None = None
+    tracking_number: str | None = None
+    carrier_name: str | None = None
+    latest_description: str | None = None
+    latest_at: datetime | None = None
 
 
 class MessageTranslationView(BaseModel):
@@ -137,6 +156,21 @@ class SendMessageRequest(BaseModel):
     @classmethod
     def validate_literal_confirmation(cls, value: object) -> object:
         """只接受 JSON 布尔 true，拒绝 Pydantic 默认允许的数字或字符串转换。"""
+        if value is not True:
+            raise ValueError("发送前必须显式提交布尔值 true")
+        return value
+
+
+class SendLogisticsCardRequest(BaseModel):
+    """只允许发送当前买家已核对订单的 TikTok 原生物流卡片。"""
+
+    order_id: str = Field(min_length=1, max_length=200, pattern=r"^\d+$")
+    package_id: str | None = Field(default=None, min_length=1, max_length=200, pattern=r"^\d+$")
+    confirmed: Literal[True]
+
+    @field_validator("confirmed", mode="before")
+    @classmethod
+    def validate_literal_confirmation(cls, value: object) -> object:
         if value is not True:
             raise ValueError("发送前必须显式提交布尔值 true")
         return value

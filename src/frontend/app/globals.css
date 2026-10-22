@@ -89,6 +89,25 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .message-stack { min-width: 0; }
 .message-bubble { border: 1px solid var(--border); border-radius: 12px 12px 12px 4px; background: var(--surface); padding: 11px 14px; box-shadow: 0 2px 6px rgb(30 50 85 / 5%); }
 .message.outgoing .message-bubble { border-color: transparent; border-radius: 12px 12px 4px 12px; background: var(--primary); color: white; }
+.message:has(.tracking-message-card) .message-bubble { border: 0; background: transparent; box-shadow: none; padding: 0; }
+.tracking-message-card { width: min(320px, 100%); min-width: min(260px, 100%); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 10px 12px 7px; box-shadow: 0 2px 8px rgb(30 50 85 / 9%); font-size: .75rem; }
+.tracking-message-title { display: block; margin-bottom: 8px; font-size: .82rem; }
+.tracking-message-product { display: flex; gap: 8px; min-width: 0; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+.tracking-message-product > img, .tracking-message-image { width: 43px; height: 43px; flex: 0 0 43px; border-radius: 4px; object-fit: cover; }
+.tracking-message-image { display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.tracking-message-product > div { display: grid; min-width: 0; align-content: center; }
+.tracking-message-product strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tracking-message-product small, .tracking-message-logistics small, .tracking-message-latest > span, .tracking-message-latest time { color: var(--muted); font-size: .68rem; }
+.tracking-message-product small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tracking-message-logistics, .tracking-message-latest { display: grid; gap: 3px; margin-top: 8px; overflow-wrap: anywhere; }
+.tracking-card-copy { display: inline-flex; vertical-align: middle; color: var(--primary); }
+.tracking-card-copy:hover { opacity: .75; }
+.tracking-message-latest p { margin: 0; }
+.tracking-message-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.tracking-card-details { color: var(--primary); font-size: .7rem; }
+.workspace-card-draft { display: flex; min-height: 96px; align-items: flex-start; justify-content: space-between; gap: 8px; padding-bottom: 8px; }
+.workspace-card-draft > .text-button { flex: none; font-size: .72rem; }
+.workspace-review-dialog .tracking-message-card { width: 100%; }
 .message-original, .message-translation { white-space: pre-wrap; overflow-wrap: anywhere; }
 .message-translation { margin-top: 8px; border-top: 1px dashed color-mix(in srgb, var(--muted) 40%, transparent); padding-top: 8px; }
 .message.outgoing .message-translation { border-color: rgb(255 255 255 / 45%); }

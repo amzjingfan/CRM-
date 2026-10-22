@@ -57,6 +57,8 @@ def live_order(user_id: str = "900001") -> TikTokOrder:
                     "product_name": "Walking pad",
                     "sku_name": "Black",
                     "sale_price": "97.90",
+                    "package_id": "123456",
+                    "tracking_number": "TRACK-1",
                 }
             ],
         }
@@ -85,6 +87,8 @@ async def test_live_orders_show_official_buyer_order_and_search(monkeypatch: pyt
     assert result.items[0].external_order_id == "600001"
     assert result.items[0].total_amount == Decimal("97.90")
     assert result.items[0].items[0].sku_id == "200001"
+    assert result.items[0].items[0].package_id == "123456"
+    assert result.items[0].items[0].tracking_number == "TRACK-1"
     assert result.items[0].tracking_number == "TRACK-1"
     assert result.items[0].live_detail_available is True
     client.search_orders.assert_awaited_once_with(page_size=100, page_token=None, buyer_user_id="900001")

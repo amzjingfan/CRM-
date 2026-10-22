@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { translateMessage, type MessageView } from "../lib/api";
+import { TrackingCard } from "./TrackingCard";
 import { messageSide, senderLabel } from "../lib/message-display";
 
 const statusLabel = (status: MessageView["status"], en: boolean) => ({
@@ -19,7 +20,7 @@ export function MessageBubble({ message, sessionId, en, translationEnabled }: { 
   const [translationError, setTranslationError] = useState(false);
   const side = messageSide(message.role);
   const sender = senderLabel(message.role, en);
-  const canTranslate = translationEnabled && side !== "system" && /[A-Za-z]/.test(message.content);
+  const canTranslate = message.message_type !== "logistics_card" && translationEnabled && side !== "system" && /[A-Za-z]/.test(message.content);
 
   async function requestTranslation() {
     if (translating || translation) return;
@@ -39,7 +40,7 @@ export function MessageBubble({ message, sessionId, en, translationEnabled }: { 
     {side !== "system" ? <span aria-hidden="true" className="message-avatar">{message.role === "user" ? (en ? "B" : "买") : (en ? "S" : "卖")}</span> : null}
     <div className="message-stack">
       <div className="message-bubble">
-        <p className="message-original">{message.content}</p>
+        {message.message_type === "logistics_card" && message.logistics_card ? <TrackingCard card={message.logistics_card} en={en} sessionId={sessionId} translationEnabled={translationEnabled} /> : <p className="message-original">{message.content}</p>}
         {translation && translation !== message.content ? <p className="message-translation"><span className="sr-only">{en ? "Chinese translation: " : "中文译文："}</span>{translation}</p> : null}
       </div>
       <div className="message-meta">

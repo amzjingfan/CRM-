@@ -14,6 +14,7 @@ from app.integrations.tiktok_oauth import generate_api_signature
 from app.integrations.tiktok_write import SEND_MESSAGE_PATH_TEMPLATE, TikTokMessageClient
 from app.shared.config.settings import Settings
 from app.stores.models import ChannelAccount
+from app.tools.contracts import validate_tool_arguments
 
 
 def real_write_settings(**overrides: Any) -> Settings:
@@ -72,6 +73,16 @@ def command(**overrides: object) -> SendMessageCommand:
     return SendMessageCommand.model_validate(values)
 
 
+def test_text_send_arguments_keep_existing_idempotency_shape() -> None:
+    assert validate_tool_arguments(
+        "send_platform_message",
+        {
+            "conversation_id": str(uuid.uuid4()),
+            "content": "hello",
+        },
+    ).keys() == {"conversation_id", "content"}
+
+
 @pytest.mark.asyncio
 async def test_send_message_uses_official_202606_body_signature_and_token_header() -> None:
     """真实发送必须使用官方路径、双层 JSON 正文和实时签名。"""
@@ -109,6 +120,26 @@ async def test_send_message_uses_official_202606_body_signature_and_token_header
     assert result.status == "sent"
     assert result.external_message_id == "722323407926368819"
     assert result.mock is False
+
+
+@pytest.mark.asyncio
+async def test_send_logistics_card_uses_official_message_type_and_identifiers() -> None:
+    """物流卡片必须由平台原生类型发送，不能退化为长文本。"""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body == {
+            "type": "LOGISTICS_CARD",
+            "content": '{"order_id":"580874485811283206","package_id":"123456"}',
+            "sender_role": "CUSTOMER_SERVICE",
+        }
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        result = await TikTokMessageClient(real_write_settings(), connected_channel(), http_client).send_text_message(
+            command(message_type="logistics_card", card_order_id="580874485811283206", card_package_id="123456")
+        )
+    assert result.status == "sent"
 
 
 @pytest.mark.asyncio

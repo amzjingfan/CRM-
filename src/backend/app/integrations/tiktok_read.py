@@ -77,6 +77,7 @@ class TikTokOrderLineItem(TikTokModel):
     currency: str | None = Field(default=None, max_length=10)
     sale_price: str | None = Field(default=None, max_length=50)
     tracking_number: str | None = Field(default=None, max_length=200)
+    package_id: str | None = Field(default=None, max_length=200, pattern=r"^\d+$")
 
 
 class TikTokOrder(TikTokModel):
@@ -157,6 +158,7 @@ class TikTokLogisticsDetail(TikTokModel):
     """订单中的单个包裹；重发后最新单号与历史节点单号可以不同。"""
 
     newest_tracking_no: str | None = Field(default=None, max_length=200)
+    package_id: str | None = Field(default=None, max_length=200, pattern=r"^\d+$")
     carrier_name: str | None = Field(default=None, max_length=200)
     track_list: list[TikTokTrackingEntry] = Field(max_length=1000)
 

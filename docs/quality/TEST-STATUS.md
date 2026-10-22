@@ -4,6 +4,8 @@
 
 ## 模块状态
 
+2026-10-22 原生物流卡片源码 [TR R04](../reports/tests/TR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R04.md) 为 `PARTIAL`：subject `97c5d6bb` 的后端 2233 passed/29 skipped，Ruff/格式/mypy 通过；前端契约 47 passed、生产构建与合成浏览器 27 passed，lint 0 error/5 warning。卡片仅在人工审阅确认后走官方 `LOGISTICS_CARD`，未向真实买家发送；staging 新版与 TikTok 实际接收仍待验证，production G8 No-Go。
+
 2026-10-21 客户侧栏长商品规格修复的[TR R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-VARIANT-001-20261021-R02.md) 为 `PASS`：subject `64aefa12` 的前端契约 47/47、生产浏览器 54/54、类型与构建通过，lint 0 error/4 条既有 warning；旧 staging 上长规格回归先失败，合入 `main=5e11f7b6` 手动发布后已部署页面定向合成浏览器 2/2、六摘要与四个公网健康通过。真实登录态浏览器工具超时，但用户刷新原订单卡后回复“修复好了”，确认规格在原位置不再只剩省略号；GitHub Actions 零步骤失败不计 CI 通过，production G8 No-Go。
 
 2026-10-21 工作台物流翻译显示的 [TR R04](../reports/tests/TR-MVP-WORKSPACE-BROWSER-COMMENTS-001-20261021-R04.md) 为 `PASS`：subject `ef0ec3aa` 的前端契约 47/47、类型、lint（0 error、4 个既有 warning）、生产构建与定向浏览器 2/2；合入 `main=f98dca4e` 手动 staging 发布、六摘要预取、11 服务和四个公网健康入口通过，已部署页面定向合成浏览器 2/2，用户确认译文原位替换及切回原文。GitHub Actions 两作业零步骤失败不计 CI 通过；production G8 No-Go。

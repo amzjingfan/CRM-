@@ -49,6 +49,8 @@ class SidebarOrderItem(BaseModel):
     quantity: int
     unit_price: Decimal | None
     total_amount: Decimal | None
+    package_id: str | None = None
+    tracking_number: str | None = None
 
 
 class SidebarOrder(BaseModel):
@@ -105,6 +107,7 @@ class SidebarTrackingEvent(BaseModel):
 
 
 class SidebarTrackingPackage(BaseModel):
+    package_id: str | None = None
     tracking_number: str | None
     carrier_name: str | None
     events: list[SidebarTrackingEvent]
@@ -112,6 +115,14 @@ class SidebarTrackingPackage(BaseModel):
 
 class SidebarTrackingTimeline(BaseModel):
     packages: list[SidebarTrackingPackage]
+
+
+def _matching_package_id(order: TikTokOrder, tracking_number: str | None) -> str | None:
+    """只有订单行能把单号唯一映射到包裹时才选择包裹 ID。"""
+    matches = {
+        item.package_id for item in order.line_items if item.package_id and item.tracking_number == tracking_number
+    }
+    return next(iter(matches)) if len(matches) == 1 else None
 
 
 class SidebarTrackingTranslation(BaseModel):
@@ -284,6 +295,8 @@ def _live_order_view(order: TikTokOrder) -> SidebarOrder:
                 quantity=1,
                 unit_price=amount(item.sale_price),
                 total_amount=amount(item.sale_price),
+                package_id=item.package_id,
+                tracking_number=item.tracking_number,
             )
             for item in order.line_items
         ],
@@ -385,6 +398,9 @@ async def get_sidebar_order_detail(
             item_numbers = {item.tracking_number for item in order.line_items if item.tracking_number}
             tracking_packages = [
                 SidebarTrackingPackage(
+                    package_id=next(iter({item.package_id for item in order.line_items if item.package_id}), None)
+                    if len({item.package_id for item in order.line_items if item.package_id}) == 1
+                    else None,
                     tracking_number=order.tracking_number
                     or (next(iter(item_numbers)) if len(item_numbers) == 1 else None),
                     carrier_name=order.shipping_provider,
@@ -413,7 +429,7 @@ async def get_sidebar_order_detail(
 async def get_sidebar_enhanced_tracking(
     session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
 ) -> SidebarTrackingTimeline:
-    conversation, client, _order = await _verified_sidebar_order(session, user, session_id, order_id)
+    conversation, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
     if client.channel.metadata_json.get("seller_type") != "CROSS_BORDER":
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "当前店铺没有增强物流轨迹", 404)
     # 官方要求每单至少间隔八小时；先占位再请求，跨实例也不会并发触发同单查询。
@@ -434,6 +450,7 @@ async def get_sidebar_enhanced_tracking(
         timeline = SidebarTrackingTimeline(
             packages=[
                 SidebarTrackingPackage(
+                    package_id=parcel.package_id or _matching_package_id(order, parcel.newest_tracking_no),
                     tracking_number=parcel.newest_tracking_no,
                     carrier_name=parcel.carrier_name,
                     events=[

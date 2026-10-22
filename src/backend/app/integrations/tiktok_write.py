@@ -82,22 +82,31 @@ class TikTokMessageClient:
         self.access_token = decrypt_tiktok_access_token(channel, settings)
 
     async def send_text_message(self, command: SendMessageCommand) -> SendMessageResult:
-        """按官方 202606 契约发送一次人工文本消息，不执行任何自动重试。"""
+        """按官方 202606 契约发送一次人工文本或物流卡片，不自动重试。"""
         if not command.human_confirmed:
             return self._failed("REAL_WRITE_REQUIRES_HUMAN_CONFIRMATION")
         if not command.external_conversation_id.isdigit():
             return self._failed("TIKTOK_CONVERSATION_ID_INVALID")
         if not is_tiktok_send_target_allowed(self.settings, self.channel.store_id, command.external_conversation_id):
             return self._failed("TIKTOK_CONVERSATION_NOT_ALLOWED")
-        if len(command.content) > TIKTOK_TEXT_MAX_LENGTH:
+        if command.message_type == "text" and len(command.content) > TIKTOK_TEXT_MAX_LENGTH:
             return self._failed("TIKTOK_MESSAGE_TOO_LONG")
+        if command.message_type == "logistics_card" and not command.card_order_id:
+            return self._failed("TIKTOK_LOGISTICS_CARD_ORDER_REQUIRED")
 
         path = SEND_MESSAGE_PATH_TEMPLATE.format(conversation_id=command.external_conversation_id)
         # 官方 content 字段本身是序列化后的 JSON 字符串；紧凑序列化保证
         # 签名正文与实际发送字节完全一致。
+        card_content = {"order_id": command.card_order_id}
+        if command.card_package_id:
+            card_content["package_id"] = command.card_package_id
         body = {
-            "type": "TEXT",
-            "content": json.dumps({"content": command.content}, ensure_ascii=False, separators=(",", ":")),
+            "type": "LOGISTICS_CARD" if command.message_type == "logistics_card" else "TEXT",
+            "content": json.dumps(
+                card_content if command.message_type == "logistics_card" else {"content": command.content},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
             "sender_role": "CUSTOMER_SERVICE",
         }
         body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")

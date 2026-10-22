@@ -41,6 +41,7 @@ from app.workspace.schemas import (
     AssigneeView,
     CustomerSummary,
     DraftTranslationView,
+    LogisticsCardView,
     MessageTranslationView,
     MessageView,
     OrderSummary,
@@ -55,6 +56,7 @@ from app.workspace.sidebar import (
     SidebarTrackingEventTranslation,
     SidebarTrackingTimelineTranslation,
     SidebarTrackingTranslation,
+    _verified_sidebar_order,
     get_sidebar_enhanced_tracking,
     get_sidebar_order_detail,
 )
@@ -97,6 +99,12 @@ def _message_view(message: Message) -> MessageView:
             delivery_mode = "real"
         else:
             delivery_mode = "unknown"
+    card_data = message.raw_payload.get("logistics_card")
+    card = (
+        LogisticsCardView.model_validate(card_data)
+        if message.message_type == "logistics_card" and isinstance(card_data, dict)
+        else None
+    )
     return MessageView(
         id=message.id,
         role=message.role,
@@ -105,6 +113,8 @@ def _message_view(message: Message) -> MessageView:
         created_at=message.created_at,
         error_code=message.error_code,
         delivery_mode=delivery_mode,
+        message_type=message.message_type or "text",
+        logistics_card=card,
     )
 
 
@@ -504,7 +514,7 @@ async def translate_sidebar_tracking_timeline(
     translator = TranslationService(StructuredGenerationService(provider, None, max_attempts=1))
     semaphore = asyncio.Semaphore(3)
 
-    async def translate(source: str):
+    async def translate(source: str) -> TranslationBundleResult | None:
         async with semaphore:
             return await translator.translate_bundle(
                 trigger_message_id=uuid.uuid5(uuid.NAMESPACE_URL, f"tiktok:tracking:{order_id}"),
@@ -583,6 +593,9 @@ async def send_agent_message(
     idempotency_key: str,
     *,
     confirmed: bool,
+    message_type: Literal["text", "logistics_card"] = "text",
+    card_order_id: str | None = None,
+    card_package_id: str | None = None,
 ) -> MessageView:
     """把已人工确认的消息交给统一工具执行层并返回持久化终态。"""
     if not confirmed:
@@ -595,13 +608,18 @@ async def send_agent_message(
     send_mode = _message_send_mode(conversation, await _connected_send_channel(session, conversation))
     if conversation.platform == "tiktok" and get_settings().real_tiktok_message_write_enabled and send_mode != "real":
         raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不在真实消息发送范围内", 403)
-    if send_mode == "real" and len(content) > TIKTOK_TEXT_MAX_LENGTH:
+    if send_mode == "real" and message_type == "text" and len(content) > TIKTOK_TEXT_MAX_LENGTH:
         raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 普通文本不能超过 2000 字符", 422)
+    arguments: dict[str, object] = {"conversation_id": str(conversation.id), "content": content}
+    if message_type == "logistics_card":
+        arguments.update(
+            {"message_type": message_type, "card_order_id": card_order_id, "card_package_id": card_package_id}
+        )
     result = await SqlAlchemyToolExecutor(session).execute(
         ToolInvocation(
             tool_name="send_platform_message",
             idempotency_key=idempotency_key,
-            arguments={"conversation_id": str(conversation.id), "content": content},
+            arguments=arguments,
             context=ToolExecutionContext(
                 store_id=conversation.store_id,
                 actor_type="user",
@@ -628,6 +646,91 @@ async def send_agent_message(
     if result.error_code == "TOOL_RESOURCE_NOT_FOUND":
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
     raise AppError(ErrorCode.THIRD_PARTY_ERROR, "消息发送未创建可追踪记录", 503)
+
+
+async def send_agent_logistics_card(
+    session: AsyncSession,
+    user: User,
+    session_id: uuid.UUID,
+    order_id: str,
+    package_id: str | None,
+    idempotency_key: str,
+    *,
+    confirmed: bool,
+) -> MessageView:
+    """核对买家和包裹后，经原人工确认工具链发送 TikTok 原生卡片。"""
+    if not confirmed:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
+    conversation, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
+    known_package_ids = {item.package_id for item in order.line_items if item.package_id}
+    enhanced_package = None
+    if package_id and client.channel.metadata_json.get("seller_type") == "CROSS_BORDER":
+        # 当前包裹的节点和 ID 都从已核对订单的官方增强轨迹读取。
+        try:
+            enhanced = await get_sidebar_enhanced_tracking(session, user, session_id, order_id)
+            enhanced_package = next((item for item in enhanced.packages if item.package_id == package_id), None)
+        except AppError:
+            if package_id not in known_package_ids:
+                raise
+    if package_id and package_id not in known_package_ids and enhanced_package is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "包裹不属于当前订单", 404)
+    if len(known_package_ids) > 1 and not package_id:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "多包裹订单需明确选择包裹", 422)
+    if _message_send_mode(conversation, await _connected_send_channel(session, conversation)) == "disabled":
+        raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不能发送消息", 403)
+    latest_description = None
+    latest_at = None
+    if enhanced_package and enhanced_package.events:
+        latest_description = enhanced_package.events[0].description
+        latest_at = enhanced_package.events[0].occurred_at
+    elif len(known_package_ids) <= 1:
+        events, _ = await client.get_standard_tracking(order_id)
+        if events:
+            latest = max(events, key=lambda event: event.update_time_millis)
+            latest_description = latest.description
+            latest_at = datetime.fromtimestamp(latest.update_time_millis / 1000, UTC)
+    package_items = [
+        item
+        for item in order.line_items
+        if not package_id
+        or item.package_id == package_id
+        or (enhanced_package and item.tracking_number == enhanced_package.tracking_number)
+    ]
+    first_item = package_items[0] if package_items else None
+    card = LogisticsCardView(
+        order_id=order_id,
+        package_id=package_id,
+        product_name=first_item.product_name if first_item else None,
+        image_url=first_item.sku_image
+        if first_item and first_item.sku_image and first_item.sku_image.startswith("https://")
+        else None,
+        sku_name=first_item.sku_name if first_item else None,
+        quantity=(sum(1 for item in package_items if item.sku_id == first_item.sku_id) if first_item else None),
+        unit_price=first_item.sale_price if first_item else None,
+        currency=first_item.currency if first_item else None,
+        tracking_number=(enhanced_package.tracking_number if enhanced_package else None)
+        or (first_item.tracking_number or order.tracking_number if first_item else order.tracking_number),
+        carrier_name=(enhanced_package.carrier_name if enhanced_package else None) or order.shipping_provider,
+        latest_description=latest_description,
+        latest_at=latest_at,
+    )
+    result = await send_agent_message(
+        session,
+        user,
+        session_id,
+        f"物流卡片 · 订单 {order_id}",
+        idempotency_key,
+        confirmed=True,
+        message_type="logistics_card",
+        card_order_id=order_id,
+        card_package_id=package_id,
+    )
+    message = await session.get(Message, result.id)
+    if message is None:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流卡片发送记录丢失", 503)
+    message.raw_payload = {**message.raw_payload, "logistics_card": card.model_dump(mode="json")}
+    await session.commit()
+    return _message_view(message)
 
 
 async def reconcile_unknown_message(
@@ -675,7 +778,7 @@ async def reconcile_unknown_message(
     message.status = resolution
     message.error_code = None if resolution == "sent" else "MANUALLY_CONFIRMED_FAILED"
     message.sent_at = datetime.now(UTC) if resolution == "sent" else None
-    message.raw_payload = {"delivery_mode": "real", "reconciled": True}
+    message.raw_payload = {**message.raw_payload, "delivery_mode": "real", "reconciled": True}
     if external_message_id is not None:
         message.external_message_id = external_message_id
     tool_call.status = "succeeded" if resolution == "sent" else "failed"

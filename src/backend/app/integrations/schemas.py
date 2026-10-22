@@ -90,6 +90,9 @@ class SendMessageCommand(BaseModel):
 
     external_conversation_id: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=4000)
+    message_type: Literal["text", "logistics_card"] = "text"
+    card_order_id: str | None = Field(default=None, pattern=r"^\d+$", max_length=200)
+    card_package_id: str | None = Field(default=None, pattern=r"^\d+$", max_length=200)
     idempotency_key: str = Field(min_length=1, max_length=200)
     human_confirmed: bool = False
 

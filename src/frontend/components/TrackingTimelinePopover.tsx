@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Camera, Copy, ListBullets, X } from "@phosphor-icons/react";
-import { getCustomerSidebarEnhancedTracking, translateSidebarTrackingTimeline, type SidebarTrackingEvent, type SidebarTrackingPackage } from "../lib/api";
+import { getCustomerSidebarEnhancedTracking, getCustomerSidebarOrderDetail, translateSidebarTrackingTimeline, type LogisticsCardDraft, type SidebarOrder, type SidebarTrackingEvent, type SidebarTrackingPackage } from "../lib/api";
 
 function formattedTime(value: string, en: boolean) {
   const date = new Date(value);
@@ -74,13 +74,17 @@ async function downloadTimelineImage(
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, enhancedAvailable, translationEnabled, fillDraft, en }: {
+export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, enhancedAvailable, translationEnabled, order, onCardDraft, initialSelected = 0, selectedPackageId, triggerLabel, en }: {
   sessionId: string;
   orderId: string;
   initialPackages: SidebarTrackingPackage[];
   enhancedAvailable: boolean;
   translationEnabled: boolean;
-  fillDraft: (value: string) => void;
+  order?: SidebarOrder;
+  onCardDraft?: (value: LogisticsCardDraft) => void;
+  initialSelected?: number;
+  selectedPackageId?: string | null;
+  triggerLabel?: string;
   en: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -88,7 +92,10 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
   const [enhanced, setEnhanced] = useState(false);
   const [enhancedTried, setEnhancedTried] = useState(false);
   const [enhancedLoading, setEnhancedLoading] = useState(false);
-  const [selected, setSelected] = useState(0);
+  const [selected, setSelected] = useState(initialSelected);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailTried, setDetailTried] = useState(false);
+  const [canEnhance, setCanEnhance] = useState(enhancedAvailable);
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
   const [translations, setTranslations] = useState<Record<string, string>>({});
@@ -106,15 +113,33 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
     setEnhanced(false);
     setEnhancedTried(false);
     setEnhancedLoading(false);
-    setSelected(0);
+    setSelected(initialSelected);
+    setCanEnhance(enhancedAvailable);
+    setDetailTried(false);
+    setDetailLoading(false);
     setTranslations({});
     setShowOriginal(false);
     setTranslating(false);
     setNotice("");
-  }, [initialPackages]);
+  }, [initialPackages, initialSelected, enhancedAvailable]);
 
   useEffect(() => {
-    if (!open || !enhancedAvailable || enhancedTried) return;
+    if (!open || !triggerLabel || packages.length || detailTried) return;
+    const version = detailVersion.current;
+    setDetailTried(true);
+    setDetailLoading(true);
+    getCustomerSidebarOrderDetail(sessionId, orderId).then((detail) => {
+      if (version !== detailVersion.current) return;
+      setPackages(detail.tracking_packages);
+      setCanEnhance(detail.enhanced_tracking_available);
+      setSelected(Math.max(0, detail.tracking_packages.findIndex((item) => item.package_id === selectedPackageId)));
+    }).catch((error) => {
+      if (version === detailVersion.current) setNotice(error instanceof Error ? error.message : en ? "Tracking unavailable" : "物流轨迹暂不可用");
+    }).finally(() => { if (version === detailVersion.current) setDetailLoading(false); });
+  }, [open, triggerLabel, packages.length, detailTried, sessionId, orderId, selectedPackageId, en]);
+
+  useEffect(() => {
+    if (!open || !canEnhance || enhancedTried || detailLoading) return;
     const requestedVersion = detailVersion.current;
     setEnhancedTried(true);
     setEnhancedLoading(true);
@@ -125,7 +150,7 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
         detailVersion.current += 1;
         setPackages(result.packages);
         setEnhanced(true);
-        setSelected(0);
+        setSelected(Math.max(0, result.packages.findIndex((item) => item.package_id === selectedPackageId)));
         setTranslations({});
         setShowOriginal(false);
       } else setNotice(en ? "TikTok returned no enhanced events; showing standard history." : "TikTok 暂无增强轨迹，已显示通用轨迹。 ");
@@ -135,7 +160,7 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
         setNotice(error instanceof Error ? error.message : en ? "Enhanced history unavailable" : "增强轨迹暂不可用");
       }
     });
-  }, [open, enhancedAvailable, enhancedTried, sessionId, orderId, en]);
+  }, [open, canEnhance, enhancedTried, detailLoading, sessionId, orderId, selectedPackageId, en]);
 
   const placePopover = useCallback(() => {
     if (!open || !triggerRef.current || !popoverRef.current) return;
@@ -207,25 +232,35 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
   }
 
   function fillTrackingDraft() {
-    if (!current) return;
-    const draft = [
-      `物流单号：${current.tracking_number ?? "—"}`,
-      `物流商：${current.carrier_name ?? "—"}`,
-      ...current.events.map((event) => `${formattedTime(event.occurred_at, en)}  ${event.description}`),
-    ].join("\n");
-    if (draft.length > 2000) { setNotice("物流内容超过消息长度限制，请复制后选取需要的节点。"); return; }
-    fillDraft(draft);
+    if (!current || !order || !onCardDraft) return;
+    if (packages.length > 1 && !current.package_id) { setNotice(en ? "Package ID unavailable; cannot select this package safely" : "无法确认当前包裹 ID，暂不能发送此包裹卡片"); return; }
+    const first = order.items.find((item) => current.package_id
+      ? item.package_id === current.package_id
+      : item.tracking_number && item.tracking_number === current.tracking_number)
+      ?? (packages.length === 1 && order.items.length === 1 ? order.items[0] : null);
+    onCardDraft({
+      card: {
+        order_id: orderId, package_id: current.package_id ?? null,
+        product_name: first?.name ?? null, image_url: first?.image_url ?? null,
+        sku_name: first?.sku_name ?? null, quantity: first?.quantity ?? null,
+        unit_price: first?.unit_price ?? null, currency: order.currency,
+        tracking_number: current.tracking_number, carrier_name: current.carrier_name,
+        latest_description: current.events[0]?.description ?? null,
+        latest_at: current.events[0]?.occurred_at ?? null,
+      },
+      packages, enhancedAvailable: canEnhance, selected,
+    });
     setOpen(false);
   }
 
   return <>
-    <button aria-expanded={open} aria-label={en ? "View full tracking history" : "查看完整物流"} className="customer-tracking-open" onClick={() => setOpen((value) => !value)} ref={triggerRef} title={en ? "Full tracking history" : "完整物流信息"} type="button"><ListBullets size={14} /></button>
+    <button aria-expanded={open} aria-label={triggerLabel ?? (en ? "View full tracking history" : "查看完整物流")} className={triggerLabel ? "tracking-card-details" : "customer-tracking-open"} onClick={() => setOpen((value) => !value)} ref={triggerRef} title={en ? "Full tracking history" : "完整物流信息"} type="button">{triggerLabel ?? <ListBullets size={14} />}</button>
     {open ? createPortal(<div aria-label={en ? "Full tracking history" : "物流完整信息"} className="customer-timeline-popover" ref={popoverRef} role="dialog" style={position}>
       <div className="customer-timeline-header"><strong>{en ? "Tracking history" : "物流完整信息"}</strong><button aria-label={en ? "Close" : "关闭"} onClick={() => { setOpen(false); triggerRef.current?.focus(); }} type="button"><X size={15} /></button></div>
       <div className="customer-timeline-actions"><button disabled={!packages.length} onClick={() => void copyAll()} type="button"><Copy size={13} />{copied ? en ? "Copied" : "已复制" : en ? "Copy all" : "复制全部"}</button><button disabled={!current} onClick={() => { if (current) void downloadTimelineImage(current, en, translations, showOriginal).catch((error) => setNotice(error instanceof Error ? error.message : "截图失败")); }} title={en ? "Screenshot of selected package" : "生成当前包裹截图"} type="button"><Camera size={13} />{en ? "Screenshot" : "生成截图"}</button>{Object.keys(translations).length ? <button onClick={() => setShowOriginal((value) => !value)} type="button">{showOriginal ? "查看译文" : "查看原文"}</button> : null}{!en && translationEnabled && packages.some((item) => item.events.some((event) => /[A-Za-z]/.test(event.description))) ? <button disabled={translating || enhancedLoading} onClick={() => void translateAll()} type="button">{translating ? "翻译中…" : Object.keys(translations).length ? "重新翻译" : "翻译全部"}</button> : null}</div>
       {notice ? <p className="customer-timeline-notice" role="status">{notice}</p> : null}
       {packages.length > 1 ? <div aria-label={en ? "Packages" : "包裹"} className="customer-timeline-tabs" role="tablist">{packages.map((_, index) => <button aria-selected={selected === index} key={index} onClick={() => setSelected(index)} role="tab" type="button">{en ? "Package" : "包裹"} {index + 1}</button>)}</div> : null}
-      {current ? <div className="customer-timeline-content" role="tabpanel"><div className="customer-timeline-meta"><div className="customer-timeline-meta-top"><span>{en ? "Tracking number" : "物流单号"}：{current.tracking_number ?? "—"}{current.tracking_number ? <button aria-label={en ? "Copy tracking number" : "复制物流单号"} className="customer-copy-button" onClick={() => void navigator.clipboard.writeText(current.tracking_number ?? "").catch(() => setNotice(en ? "Copy failed" : "复制失败，请重试"))} title={en ? "Copy tracking number" : "复制物流单号"} type="button"><Copy size={12} /></button> : null}</span><button className="customer-timeline-draft" onClick={fillTrackingDraft} type="button">{en ? "Use in draft" : "发送物流卡片"}</button></div><span>{en ? "Carrier" : "物流商"}：{current.carrier_name ?? "—"}</span></div>{current.events.length ? <ol className="customer-timeline-events">{current.events.map((event, index) => <li key={`${eventKey(event)}-${index}`}><span className="customer-timeline-event-text">{!showOriginal ? translations[eventKey(event)] ?? event.description : event.description}</span><time>{formattedTime(event.occurred_at, en)}</time>{event.tracking_number && event.tracking_number !== current.tracking_number ? <small>{en ? "Tracking" : "节点单号"}：{event.tracking_number}</small> : null}</li>)}</ol> : <p className="customer-side-muted">{en ? "No tracking events returned by TikTok" : "TikTok 暂无物流节点"}</p>}</div> : <p className="customer-side-muted">{en ? "No tracking history returned by TikTok" : "TikTok 暂无物流轨迹"}</p>}
+      {current ? <div className="customer-timeline-content" role="tabpanel"><div className="customer-timeline-meta"><div className="customer-timeline-meta-top"><span>{en ? "Tracking number" : "物流单号"}：{current.tracking_number ?? "—"}{current.tracking_number ? <button aria-label={en ? "Copy tracking number" : "复制物流单号"} className="customer-copy-button" onClick={() => void navigator.clipboard.writeText(current.tracking_number ?? "").catch(() => setNotice(en ? "Copy failed" : "复制失败，请重试"))} title={en ? "Copy tracking number" : "复制物流单号"} type="button"><Copy size={12} /></button> : null}</span>{onCardDraft ? <button className="customer-timeline-draft" onClick={fillTrackingDraft} type="button">{en ? "Use logistics card" : "发送物流卡片"}</button> : null}</div><span>{en ? "Carrier" : "物流商"}：{current.carrier_name ?? "—"}</span></div>{current.events.length ? <ol className="customer-timeline-events">{current.events.map((event, index) => <li key={`${eventKey(event)}-${index}`}><span className="customer-timeline-event-text">{!showOriginal ? translations[eventKey(event)] ?? event.description : event.description}</span><time>{formattedTime(event.occurred_at, en)}</time>{event.tracking_number && event.tracking_number !== current.tracking_number ? <small>{en ? "Tracking" : "节点单号"}：{event.tracking_number}</small> : null}</li>)}</ol> : <p className="customer-side-muted">{en ? "No tracking events returned by TikTok" : "TikTok 暂无物流节点"}</p>}</div> : <p className="customer-side-muted">{detailLoading ? (en ? "Loading tracking…" : "正在加载物流轨迹…") : en ? "No tracking history returned by TikTok" : "TikTok 暂无物流轨迹"}</p>}
     </div>, document.body) : null}
   </>;
 }
