@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "evidence_type": "workspace_tracking_timeline_manual_staging_deploy",
+  "environment": "staging",
+  "task_id": "MVP-WORKSPACE-TRACKING-TIMELINE-001",
+  "subject_sha": "475f585c10fa543b0d3550a4426f97f935cf6786",
+  "merged_main_sha": "1f74077a56136cbd705d35251a3afd76849f82b6",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/506",
+  "source_build_inputs_equal": true,
+  "github_actions": "two_pr_jobs_failed_before_steps; local_checks_and_manual_gate_used",
+  "reviewed_source_bundle_sha256": "2177e0cf3e527596ae31ddc9eebd2b948c2318fd4a92b318b4ada3ddacdc27de",
+  "backend_frontend_oci_archive_sha256": "e82edf0d7cea5ef89d8891026aa0084f2c8ce1355615eb25c5188ad2933291ab",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:d92c20ba04c76d67e6ce25acd059ad9850b2fb4ce16af985aba733c5a302f341",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:c15e6a2787e56336fe7914c47713a59747c20dda4f077c563ae5b7e419eccf71",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "previous_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:6db8e8f1dfbe9a428267169d233e93aff7c4d0d19a1310eddd087446b6ae0f98",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:0f541c755a72a0304a6e8698f13e87043dcaaa70387063fb05f21f2bbc111385",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "private_postgresql_backup": {
+    "mode": "0600",
+    "size_bytes": 382615,
+    "pg_restore_list_readable": true,
+    "sha256": "73c54085fc64012ad92bbbdbd15e496ce4fbc89ba89c1af84b0cb70d09be088f"
+  },
+  "manual_gates": {
+    "prefetch": "passed_six_immutable_roles",
+    "prefetch_private_evidence_sha256": "51952db1afe6fa65396f391168795965bdfa403c7924413f1f1e6692dd8fb6c9",
+    "validate": "validated",
+    "validate_private_evidence_sha256": "6ca72c858adc68b7026e3b6ffceafb861e866e9dd8e91a44f03f6cd007362b6a",
+    "deploy": "passed",
+    "deploy_private_evidence_sha256": "58211ed3dffbc5c0bd2789d83c0744e99b2b7507308fc80eedd35ad7f1bf72c9"
+  },
+  "runtime": {
+    "crm_container_count": 11,
+    "backend_frontend_running_digests_match": true,
+    "retrieval_digest_unchanged": true,
+    "database_migration": "heads_applied",
+    "tiktok_egress": "fixed_ip_verified",
+    "tiktok_webhook_read": true,
+    "tiktok_manual_send": true,
+    "tiktok_manual_send_target": "one_store",
+    "workspace_translation": true,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/workspace": 200
+    }
+  },
+  "deployed_page_synthetic_browser": "2_passed_0_failed",
+  "authenticated_user_interface": "UI_UNAVAILABLE; user confirmation pending",
+  "real_cross_border_tracking": "NO_CONFIRMED_SAMPLE",
+  "external_message_sent": false,
+  "production_release": false
+}
