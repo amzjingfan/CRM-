@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R01 | MVP-SETTINGS-TEAM-ACCOUNTS-002 | R01 | APPROVE | `257eafd3c0bcfe0c7ada3dae6433abaea9bc5482` | authentication, authorization, store-isolation, csrf, audit, migration, compatibility, rollback | 2026-10-22T06:55:51Z | [`RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R01.md`](RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R01.md) |
 | RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R05 | MVP-WORKSPACE-TRACKING-TIMELINE-001 | R05 | APPROVE | `97c5d6bb6f7734e27eaafcf779df8f8a0ff74541` | source-identity, immutable-images, rollback, send-scope, public-health, no-test-message | 2026-10-22T04:24:00Z | [`RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R05.md`](RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R05.md) |
 | RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R04 | MVP-WORKSPACE-TRACKING-TIMELINE-001 | R04 | APPROVE | `97c5d6bb6f7734e27eaafcf779df8f8a0ff74541` | buyer-isolation, package-membership, human-confirmation, idempotency, unknown-reconciliation, platform-write | 2026-10-22T04:08:00Z | [`RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R04.md`](RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R04.md) |
 | RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R03 | MVP-WORKSPACE-TRACKING-TIMELINE-001 | R03 | APPROVE | `39244eb15b6c11db9b7463656304de1a92153c9d` | source-identity, immutable-images, rollback, public-health, no-platform-write | 2026-10-22T03:25:07Z | [`RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R03.md`](RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R03.md) |

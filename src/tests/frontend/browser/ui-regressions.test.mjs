@@ -512,7 +512,7 @@ test("team form without a store disables employee creation and points to setup",
   try {
     await page.getByRole("button", { name: "新建账号" }).click();
     await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
-    assert.equal(await page.getByRole("button", { name: "创建员工" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "保存" }).isDisabled(), true);
   } finally {
     await context.close();
   }
@@ -541,18 +541,51 @@ test("team form permits system admin without store and resets to disabled agent 
   try {
     await page.getByRole("button", { name: "新建账号" }).click();
     await page.locator('select[name="role"]').selectOption("admin");
-    assert.equal(await page.getByRole("button", { name: "创建员工" }).isEnabled(), true);
+    assert.equal(await page.getByRole("button", { name: "保存" }).isEnabled(), true);
+    await page.locator('input[name="login_name"]').fill("admin_two");
     await page.locator('input[name="name"]').fill("Admin Two");
     await page.locator('input[name="email"]').fill("admin2@example.invalid");
     await page.locator('input[name="temporary_password"]').fill("ExamplePass123!");
-    await page.getByRole("button", { name: "创建员工" }).click();
-    await page.getByRole("status").getByText(/员工已创建/).waitFor();
+    await page.getByRole("button", { name: "保存" }).click();
+    await page.getByRole("status").getByText(/账号已创建/).waitFor();
     await page.getByRole("button", { name: "新建账号" }).click();
     assert.equal(await page.locator('select[name="role"]').inputValue(), "agent");
-    assert.equal(await page.getByRole("button", { name: "创建员工" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "保存" }).isDisabled(), true);
   } finally {
     await context.close();
   }
+});
+
+test("department members show deferred permission controls and removal uses only membership API", async () => {
+  const departmentId = "00000000-0000-4000-8000-0000000000d1";
+  const memberId = "00000000-0000-4000-8000-0000000000c1";
+  const member = {
+    id: memberId, login_name: "agent_one", name: "Agent One", email: null, phone: "13800000000",
+    timezone: "Asia/Shanghai", max_concurrent_sessions: 50, status: "active",
+    assignments: [{ role: "agent", store_id: store.id }], department_ids: [departmentId],
+    last_login_at: null, created_at: "2026-10-22T00:00:00Z",
+  };
+  let removalPath = "";
+  const { context, page } = await openPage("/settings/team/departments", {
+    "GET /v1/settings/departments": [{ id: departmentId, name: "客服一部", store_ids: [store.id], created_at: "2026-10-22T00:00:00Z" }],
+    "GET /v1/settings/stores": [store],
+    "GET /v1/settings/team": [member],
+    [`GET /v1/settings/departments/${departmentId}/members`]: [member],
+  }, async (context) => {
+    await context.route(`**/v1/settings/departments/${departmentId}/members/${memberId}`, async (route) => {
+      removalPath = new URL(route.request().url()).pathname;
+      await route.fulfill({ status: 204, headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" } });
+    });
+  });
+  try {
+    await page.getByRole("cell", { name: "agent_one" }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "切换角色" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "修改权限" }).isDisabled(), true);
+    await page.getByRole("button", { name: "移出部门" }).click();
+    await page.getByRole("button", { name: "确认移出" }).click();
+    await page.getByRole("status").getByText(/账号角色和店铺权限保持不变/).waitFor();
+    assert.equal(removalPath, `/v1/settings/departments/${departmentId}/members/${memberId}`);
+  } finally { await context.close(); }
 });
 
 test("conversation filter replaces a detail that is no longer in the list", async () => {

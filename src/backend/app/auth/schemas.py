@@ -2,13 +2,13 @@
 
 import uuid
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
     """登录请求。"""
 
-    email: EmailStr
+    identifier: str = Field(min_length=1, max_length=255, validation_alias=AliasChoices("identifier", "email"))
     password: str = Field(min_length=8, max_length=128)
 
 
@@ -19,7 +19,8 @@ class UserView(BaseModel):
 
     id: uuid.UUID
     name: str
-    email: EmailStr
+    email: EmailStr | None
+    login_name: str | None = None
     role: str
     avatar: str | None = None
     permissions: list[str] = Field(default_factory=list)

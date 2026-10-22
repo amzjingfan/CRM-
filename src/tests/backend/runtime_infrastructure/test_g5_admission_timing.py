@@ -65,7 +65,7 @@ async def test_g5_auth_logs_only_numeric_duration(
 async def test_g5_auth_splits_connection_wait_from_user_query(monkeypatch: pytest.MonkeyPatch) -> None:
     order: list[str] = []
     user_id = uuid.uuid4()
-    user = SimpleNamespace(status="active")
+    user = SimpleNamespace(status="active", auth_version=0)
 
     class Session:
         async def connection(self) -> object:

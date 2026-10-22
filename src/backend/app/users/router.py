@@ -9,8 +9,15 @@ from app.auth.dependencies import get_current_user, require_csrf, require_permis
 from app.shared.database.base import User
 from app.shared.database.session import DbSession
 from app.shared.schemas.responses import ApiResponse
-from app.users.schemas import TeamMemberCreate, TeamMemberUpdate, TeamMemberView
-from app.users.service import create_member, delete_member_permanently, disable_member, list_team, update_member
+from app.users.schemas import TeamMemberCreate, TeamMemberPasswordChange, TeamMemberUpdate, TeamMemberView
+from app.users.service import (
+    change_member_password,
+    create_member,
+    delete_member_permanently,
+    disable_member,
+    list_team,
+    update_member,
+)
 
 router = APIRouter(prefix="/settings/team", tags=["团队管理"])
 READ_DESCRIPTION = "权限：settings.team；普通用户只能查看其店铺范围内的团队成员。"
@@ -73,6 +80,22 @@ async def edit_member(
     user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[TeamMemberView]:
     return ApiResponse(data=await update_member(session, user, member_id, payload))
+
+
+@router.patch(
+    "/{member_id}/password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_csrf), Depends(require_role("admin"))],
+    description="权限：系统级 admin；需 CSRF。修改密码后所有旧令牌失效。",
+)
+async def reset_member_password(
+    member_id: uuid.UUID,
+    payload: TeamMemberPasswordChange,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> Response:
+    await change_member_password(session, user, member_id, payload.password)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.delete(

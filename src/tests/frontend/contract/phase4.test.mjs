@@ -29,9 +29,10 @@ test("settings pages cover stores channels and team", async () => {
   assert.match(sources[1], /契约级 Mock/);
   assert.match(sources[1], /Store authorizations/);
   assert.match(sources[2], /disableTeamMember/);
-  assert.match(sources[2], /deleteTeamMember/);
+  assert.match(sources[2], /changeTeamMemberPassword/);
+  assert.match(sources[2], /login_name/);
   assert.match(sources[2], /status-badge/);
-  assert.match(sources[2], /永久删除/);
+  assert.match(sources[2], /停用/);
   assert.match(sources[2], /Account management/);
 });
 

@@ -1,6 +1,6 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/v1";
 
-export type UserView = { id: string; name: string; email: string; role: string; avatar: string | null; permissions: string[]; store_ids: string[] };
+export type UserView = { id: string; name: string; email: string | null; login_name: string | null; role: string; avatar: string | null; permissions: string[]; store_ids: string[] };
 export type ApiResponse<T> = { code: number; message: string; data: T };
 export type CustomerSummary = { id: string; name: string | null; email: string | null; avatar: string | null; tags: string[] };
 export type SessionSummary = { id: string; store_id: string; platform: string; status: string; is_starred: boolean; closed_at: string | null; unread_count: number; assigned_user_id: string | null; last_message_at: string | null; last_message: string | null; customer: CustomerSummary };
@@ -57,7 +57,9 @@ export type AgentConfig = { id: string; store_id: string; name: string; code: st
 export type AgentRunLog = { id: string; status: string; action: string; intent: string | null; final_confidence: number | null; model_provider: string; model_name: string; prompt_version: string | null; latency_ms: number | null; input_tokens: number | null; output_tokens: number | null; error_code: string | null; trace_id: string | null; tool_calls: Array<{ id: string; tool_name: string; status: string; error_code: string | null; latency_ms: number | null; mocked: boolean }>; created_at: string };
 export type AgentRunLogPage = { items: AgentRunLog[]; page: number; page_size: number; total: number };
 export type TeamAssignment = { role: "admin" | "supervisor" | "agent"; store_id: string | null };
-export type TeamMember = { id: string; name: string; email: string; status: "active" | "disabled"; assignments: TeamAssignment[]; last_login_at: string | null; created_at: string };
+export type TeamMember = { id: string; login_name: string | null; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; status: "active" | "disabled"; assignments: TeamAssignment[]; department_ids: string[]; last_login_at: string | null; created_at: string };
+export type Department = { id: string; name: string; store_ids: string[]; created_at: string };
+export type TeamMemberCreate = { login_name: string; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; temporary_password: string; assignments: TeamAssignment[]; department_id: string | null };
 export type Suggestion = { agent_run_id: string; content: string | null; intent: string | null; confidence: number; action: string; terminal_state: string; requires_human: boolean; transfer_performed: boolean; send_performed: false; citations: Array<{ document_id: string; chunk_id: string; score: number; source_label: string }>; trace_id: string; demo_mode: boolean; demo_scenario: string | null };
 export type ChatEvent = { event: "accepted" | "status" | "delta" | "result" | "error" | "done"; data: Record<string, unknown> };
 
@@ -124,7 +126,7 @@ export async function requestApi<T>(path: string, init: RequestInit = {}, retry 
   return body.data;
 }
 
-export const browserLogin = (email: string, password: string) => requestApi<{ expires_in: number; user: UserView }>("/auth/browser/login", { method: "POST", body: JSON.stringify({ email, password }) }, false);
+export const browserLogin = (identifier: string, password: string) => requestApi<{ expires_in: number; user: UserView }>("/auth/browser/login", { method: "POST", body: JSON.stringify({ identifier, password }) }, false);
 export const currentUser = () => requestApi<UserView>("/auth/me");
 export const logout = () => requestApi<{ logged_out: boolean }>("/auth/browser/logout", { method: "POST" }, false);
 export const listSessions = (query: URLSearchParams) => {
@@ -209,8 +211,15 @@ export const updateAgent = (agentId: string, payload: Partial<{ name: string; de
 export const setAgentEnabled = (agentId: string, enabled: boolean) => requestApi<AgentConfig>(`/agents/${agentId}/${enabled ? "enable" : "disable"}`, { method: "POST" });
 export const getAgentLogs = (agentId: string) => requestApi<AgentRunLogPage>(`/agents/${agentId}/logs?page=1&page_size=20`);
 export const listTeam = () => requestApi<TeamMember[]>("/settings/team");
-export const createTeamMember = (payload: { name: string; email: string; temporary_password: string; assignments: TeamAssignment[] }) => requestApi<TeamMember>("/settings/team", { method: "POST", body: JSON.stringify(payload) });
-export const updateTeamMember = (userId: string, payload: Partial<{ name: string; assignments: TeamAssignment[] }>) => requestApi<TeamMember>(`/settings/team/${userId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const createTeamMember = (payload: TeamMemberCreate) => requestApi<TeamMember>("/settings/team", { method: "POST", body: JSON.stringify(payload) });
+export const updateTeamMember = (userId: string, payload: Partial<Pick<TeamMember, "name" | "email" | "phone" | "timezone" | "max_concurrent_sessions" | "assignments">>) => requestApi<TeamMember>(`/settings/team/${userId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const changeTeamMemberPassword = (userId: string, password: string) => requestApi<void>(`/settings/team/${userId}/password`, { method: "PATCH", body: JSON.stringify({ password }) });
+export const listDepartments = () => requestApi<Department[]>("/settings/departments");
+export const createDepartment = (payload: { name: string; store_ids: string[] }) => requestApi<Department>("/settings/departments", { method: "POST", body: JSON.stringify(payload) });
+export const updateDepartment = (id: string, payload: { name?: string; store_ids?: string[] }) => requestApi<Department>(`/settings/departments/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const listDepartmentMembers = (id: string) => requestApi<TeamMember[]>(`/settings/departments/${id}/members`);
+export const addDepartmentMember = (id: string, userId: string) => requestApi<void>(`/settings/departments/${id}/members`, { method: "POST", body: JSON.stringify({ user_id: userId }) });
+export const removeDepartmentMember = (id: string, userId: string) => requestApi<void>(`/settings/departments/${id}/members/${userId}`, { method: "DELETE" });
 export const disableTeamMember = (userId: string) => requestApi<void>(`/settings/team/${userId}`, { method: "DELETE" });
 export const deleteTeamMember = (userId: string) => requestApi<void>(`/settings/team/${userId}/permanent`, { method: "DELETE" });
 export const getSuggestion = (sessionId: string, triggerMessageId?: string) => requestApi<Suggestion>(`/workspace/sessions/${sessionId}/suggest`, { method: "POST", body: JSON.stringify({ trigger_message_id: triggerMessageId ?? null }) });

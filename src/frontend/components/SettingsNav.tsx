@@ -12,6 +12,7 @@ const groups = [
   ] },
   { zh: "员工", en: "Employees", icon: UsersThree, links: [
     { href: "/settings/team", zh: "账号", en: "Accounts" },
+    { href: "/settings/team/departments", zh: "部门", en: "Departments" },
   ] },
 ];
 

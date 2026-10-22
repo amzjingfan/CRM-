@@ -15,6 +15,7 @@ from app.marketing.router import router as marketing_router
 # 在任一模块首次 flush 前都能由 SQLAlchemy 正确解析。
 from app.shared.database import models as _models  # noqa: F401
 from app.stores.router import router as stores_router
+from app.users.department_router import router as departments_router
 from app.users.router import router as users_router
 from app.workspace.alias_router import router as sessions_alias_router
 from app.workspace.router import router as workspace_router
@@ -25,6 +26,7 @@ router.include_router(chat_router)
 router.include_router(dashboard_router)
 router.include_router(agent_management_router)
 router.include_router(users_router)
+router.include_router(departments_router)
 router.include_router(stores_router)
 router.include_router(integrations_router)
 router.include_router(oauth_router)

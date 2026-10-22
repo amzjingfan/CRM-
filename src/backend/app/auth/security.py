@@ -23,7 +23,7 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bool(password_context.verify(password, password_hash))
 
 
-def create_token(user_id: uuid.UUID, token_type: str, expires_delta: timedelta) -> str:
+def create_token(user_id: uuid.UUID, token_type: str, expires_delta: timedelta, auth_version: int = 0) -> str:
     """创建只包含身份、类型和过期时间的 JWT。"""
     settings = get_settings()
     now = datetime.now(UTC)
@@ -33,20 +33,21 @@ def create_token(user_id: uuid.UUID, token_type: str, expires_delta: timedelta) 
         "iat": now,
         "exp": now + expires_delta,
         "jti": str(uuid.uuid4()),
+        "ver": auth_version,
     }
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
-def create_access_token(user_id: uuid.UUID) -> str:
+def create_access_token(user_id: uuid.UUID, auth_version: int = 0) -> str:
     """创建短时 Access Token。"""
     settings = get_settings()
-    return create_token(user_id, "access", timedelta(minutes=settings.access_token_expire_minutes))
+    return create_token(user_id, "access", timedelta(minutes=settings.access_token_expire_minutes), auth_version)
 
 
-def create_refresh_token(user_id: uuid.UUID) -> str:
+def create_refresh_token(user_id: uuid.UUID, auth_version: int = 0) -> str:
     """创建长时 Refresh Token。"""
     settings = get_settings()
-    return create_token(user_id, "refresh", timedelta(days=settings.refresh_token_expire_days))
+    return create_token(user_id, "refresh", timedelta(days=settings.refresh_token_expire_days), auth_version)
 
 
 def decode_token(token: str, expected_type: str) -> dict[str, object]:

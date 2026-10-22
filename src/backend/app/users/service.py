@@ -13,6 +13,7 @@ from app.auth.security import hash_password
 from app.auth.store_access import allowed_store_ids, ensure_store_access
 from app.shared.database.base import Role, User, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
+from app.users.models import department_members, department_stores
 from app.users.schemas import TeamMemberCreate, TeamMemberUpdate, TeamMemberView, TeamRoleAssignment
 
 
@@ -37,13 +38,29 @@ async def _assignment_rows(
 
 async def _views(session: AsyncSession, users: list[User]) -> list[TeamMemberView]:
     assignments = await _assignment_rows(session, [item.id for item in users])
+    departments: dict[uuid.UUID, list[uuid.UUID]] = defaultdict(list)
+    if users:
+        rows = (
+            await session.execute(
+                select(department_members.c.user_id, department_members.c.department_id).where(
+                    department_members.c.user_id.in_([item.id for item in users])
+                )
+            )
+        ).all()
+        for user_id, department_id in rows:
+            departments[user_id].append(department_id)
     return [
         TeamMemberView(
             id=item.id,
+            login_name=item.login_name,
             name=item.name,
             email=item.email,
+            phone=item.phone,
+            timezone=item.timezone,
+            max_concurrent_sessions=item.max_concurrent_sessions,
             status=item.status,  # type: ignore[arg-type]
             assignments=assignments.get(item.id, []),
+            department_ids=departments.get(item.id, []),
             last_login_at=item.last_login_at,
             created_at=item.created_at,
         )
@@ -65,7 +82,19 @@ async def list_team(session: AsyncSession, actor: User) -> list[TeamMemberView]:
         ).all()
     )
     users = list((await session.scalars(select(User).where(User.id.in_(user_ids)).order_by(User.created_at))).all())
-    return await _views(session, users)
+    views = await _views(session, users)
+    visible_departments = set(
+        (
+            await session.scalars(
+                select(department_stores.c.department_id).where(department_stores.c.store_id.in_(store_ids))
+            )
+        ).all()
+    )
+    for item in views:
+        item.department_ids = [
+            department_id for department_id in item.department_ids if department_id in visible_departments
+        ]
+    return views
 
 
 async def _validate_assignments(
@@ -123,19 +152,34 @@ async def create_member(
     payload: TeamMemberCreate,
 ) -> TeamMemberView:
     assignments = await _validate_assignments(session, actor, payload.assignments)
+    if payload.department_id is not None:
+        from app.users.department_service import _visible_department
+
+        _, department_store_ids = await _visible_department(session, actor, payload.department_id)
+        if not any(store_id is None or store_id in department_store_ids for _, store_id in assignments):
+            raise AppError(ErrorCode.VALIDATION_ERROR, "账号店铺范围与部门不匹配", 422)
     member = User(
-        email=str(payload.email).lower(),
+        login_name=payload.login_name,
+        email=str(payload.email).lower() if payload.email else None,
         password_hash=hash_password(payload.temporary_password),
         name=payload.name,
+        phone=payload.phone,
+        timezone=payload.timezone,
+        max_concurrent_sessions=payload.max_concurrent_sessions,
+        auth_version=0,
         status="active",
     )
     session.add(member)
     try:
         await session.flush()
         await _replace_assignments(session, member, assignments)
+        if payload.department_id is not None:
+            await session.execute(
+                department_members.insert().values(department_id=payload.department_id, user_id=member.id)
+            )
     except IntegrityError as exc:
         await session.rollback()
-        raise AppError(ErrorCode.RESOURCE_CONFLICT, "员工邮箱已存在", 409) from exc
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "登录账号或邮箱已存在", 409) from exc
     session.add(
         AuditLog(
             actor_type="user",
@@ -143,7 +187,7 @@ async def create_member(
             action="team.member.create",
             resource_type="user",
             resource_id=member.id,
-            after_data={"email": member.email, "assignment_count": len(assignments)},
+            after_data={"login_name": member.login_name, "assignment_count": len(assignments)},
             result="succeeded",
         )
     )
@@ -163,6 +207,16 @@ async def update_member(
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "员工不存在", 404)
     if payload.name is not None:
         member.name = payload.name
+    if "email" in payload.model_fields_set:
+        if payload.email is None and member.login_name is None:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "旧账号必须保留登录邮箱", 422)
+        member.email = str(payload.email).lower() if payload.email else None
+    if "phone" in payload.model_fields_set:
+        member.phone = payload.phone
+    if payload.timezone is not None:
+        member.timezone = payload.timezone
+    if payload.max_concurrent_sessions is not None:
+        member.max_concurrent_sessions = payload.max_concurrent_sessions
     if payload.assignments is not None:
         assignments = await _validate_assignments(session, actor, payload.assignments)
         existing_admin = await session.scalar(
@@ -181,12 +235,37 @@ async def update_member(
             action="team.member.update",
             resource_type="user",
             resource_id=member.id,
-            after_data={"name": member.name},
+            after_data={"name": member.name, "email_present": member.email is not None},
+            result="succeeded",
+        )
+    )
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "登录邮箱已存在", 409) from exc
+    return (await _views(session, [member]))[0]
+
+
+async def change_member_password(session: AsyncSession, actor: User, member_id: uuid.UUID, password: str) -> None:
+    """重置员工密码并使此前全部 Access/Refresh Token 失效。"""
+    member = await session.get(User, member_id)
+    if member is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "员工不存在", 404)
+    member.password_hash = hash_password(password)
+    member.auth_version = (member.auth_version or 0) + 1
+    session.add(
+        AuditLog(
+            actor_type="user",
+            actor_id=actor.id,
+            action="team.member.password_change",
+            resource_type="user",
+            resource_id=member.id,
+            after_data={"password_changed": True},
             result="succeeded",
         )
     )
     await session.commit()
-    return (await _views(session, [member]))[0]
 
 
 async def disable_member(session: AsyncSession, actor: User, member_id: uuid.UUID) -> None:

@@ -13,6 +13,7 @@ from app.orders.models import Order, OrderItem
 from app.shared.database.base import Permission, Role, User
 from app.stores.models import ChannelAccount, Store
 from app.tools.models import CouponIssuance, ToolCall
+from app.users.models import Department
 
 __all__ = [
     "AuditLog",
@@ -23,6 +24,7 @@ __all__ = [
     "Conversation",
     "Customer",
     "CustomerReview",
+    "Department",
     "CouponIssuance",
     "KnowledgeCategory",
     "KnowledgeChunk",

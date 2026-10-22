@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.repository import find_user_by_email, find_user_by_id
+from app.auth.repository import find_user_by_email, find_user_by_id, find_user_by_login_name
 from app.auth.schemas import TokenData, UserView
 from app.auth.security import create_access_token, create_refresh_token, decode_token, verify_password
 from app.auth.store_access import allowed_store_ids
@@ -24,6 +24,7 @@ def build_user_view(user: User) -> UserView:
         id=user.id,
         name=user.name,
         email=user.email,
+        login_name=user.login_name,
         role=role,
         avatar=user.avatar,
         permissions=permissions,
@@ -37,11 +38,12 @@ async def build_scoped_user_view(session: AsyncSession, user: User) -> UserView:
     return view.model_copy(update={"store_ids": sorted(await allowed_store_ids(session, user), key=str)})
 
 
-async def authenticate_user(session: AsyncSession, email: str, password: str) -> User:
+async def authenticate_user(session: AsyncSession, identifier: str, password: str) -> User:
     """校验登录信息，并拒绝不存在或禁用用户。"""
-    user = await find_user_by_email(session, email)
+    value = identifier.strip().lower()
+    user = await (find_user_by_email(session, value) if "@" in value else find_user_by_login_name(session, value))
     if user is None or not verify_password(password, user.password_hash):
-        raise AppError(ErrorCode.INVALID_CREDENTIALS, "邮箱或密码错误", 401)
+        raise AppError(ErrorCode.INVALID_CREDENTIALS, "账号、邮箱或密码错误", 401)
     if user.status != "active":
         raise AppError(ErrorCode.USER_DISABLED, "用户已被禁用", 403)
     # 只记录成功登录时间；失败尝试由 Redis 限流统计，不写入用户记录或日志正文。
@@ -54,8 +56,8 @@ def issue_token_data(user: User, user_view: UserView | None = None) -> TokenData
     """为登录用户签发 Access Token 和 Refresh Token。"""
     settings = get_settings()
     return TokenData(
-        access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
+        access_token=create_access_token(user.id, user.auth_version or 0),
+        refresh_token=create_refresh_token(user.id, user.auth_version or 0),
         expires_in=settings.access_token_expire_minutes * 60,
         user=user_view or build_user_view(user),
     )
@@ -80,6 +82,8 @@ async def resolve_access_user(session: AsyncSession, token: str, timing_ms: dict
         raise AppError(ErrorCode.AUTHENTICATION_REQUIRED, "用户不存在", 401)
     if user.status != "active":
         raise AppError(ErrorCode.USER_DISABLED, "用户已被禁用", 403)
+    if payload.get("ver", 0) != (user.auth_version or 0):
+        raise AppError(ErrorCode.TOKEN_INVALID, "密码已修改，请重新登录", 401)
     return user
 
 
@@ -93,6 +97,8 @@ async def resolve_refresh_user(session: AsyncSession, refresh_token: str) -> Use
         raise AppError(ErrorCode.AUTHENTICATION_REQUIRED, "用户不存在", 401)
     if user.status != "active":
         raise AppError(ErrorCode.USER_DISABLED, "用户已被禁用", 403)
+    if payload.get("ver", 0) != (user.auth_version or 0):
+        raise AppError(ErrorCode.TOKEN_INVALID, "密码已修改，请重新登录", 401)
     return user
 
 

@@ -80,9 +80,9 @@ async def enforce_login_limit(request: Request) -> None:
 
 @router.post("/login", response_model=ApiResponse[TokenData])
 async def login(payload: LoginRequest, session: DbSession, request: Request) -> ApiResponse[TokenData]:
-    """使用邮箱和密码登录。"""
+    """使用登录账号或邮箱及密码登录。"""
     await enforce_login_limit(request)
-    user = await authenticate_user(session, str(payload.email), payload.password)
+    user = await authenticate_user(session, payload.identifier, payload.password)
     return ApiResponse(data=issue_token_data(user, await build_scoped_user_view(session, user)))
 
 
@@ -126,7 +126,7 @@ async def browser_login(
 
         raise AppError(ErrorCode.PERMISSION_DENIED, "请求来源不受信任", 403)
     await enforce_login_limit(request)
-    user = await authenticate_user(session, str(payload.email), payload.password)
+    user = await authenticate_user(session, payload.identifier, payload.password)
     token_data = issue_token_data(user, await build_scoped_user_view(session, user))
     set_browser_cookies(response, token_data, secrets.token_urlsafe(32))
     return ApiResponse(data=BrowserSessionData(expires_in=token_data.expires_in, user=token_data.user))

@@ -14,6 +14,12 @@ async def find_user_by_email(session: AsyncSession, email: str) -> User | None:
     return result.scalar_one_or_none()
 
 
+async def find_user_by_login_name(session: AsyncSession, login_name: str) -> User | None:
+    """按不可变登录账号查找用户。"""
+    result = await session.execute(select(User).where(User.login_name == login_name.lower()))
+    return result.scalar_one_or_none()
+
+
 async def find_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> User | None:
     """按内部 ID 查询用户。"""
     result = await session.execute(select(User).where(User.id == user_id))

@@ -2,6 +2,8 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
+2026-10-22 员工账号与部门候选 [TR R01](../reports/tests/TR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R01.md) 为 `PARTIAL`：subject `257eafd3` 的隔离 PostgreSQL 完整套件 2267 passed/3 skipped，新账号真实数据库路径与迁移升降级通过；Ruff、mypy、前端 typecheck/build/47 契约及生产模式浏览器 60/60 通过，lint 0 error/5 既有 warning。最后邮箱创建兼容调整后，相关定向 10/10 通过。staging 尚未部署，也未验证真实员工登录；生产未放行。
+
 ## 模块状态
 
 2026-10-22 订单卡长 SKU 货号 [TR R03](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-SELLER-SKU-001-20261022-R03.md) 为 `PASS`：subject `f512fb8a` 的合成浏览器用例先复现 `false !== true`，改为换行后本地生产浏览器 59/59、前端契约 47/47、typecheck/build 通过，lint 0 error/5 warning。源码 PR #512 合入后，前端通过手动门禁部署 staging，运行摘要、11 服务、四公网健康入口与部署页合成浏览器 3/3 通过；用户刷新真实订单卡后回复“两项都正常”，确认完整换行显示与复制。无买家外发，production G8 No-Go。

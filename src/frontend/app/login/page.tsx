@@ -5,24 +5,24 @@ import { FormEvent, useState } from "react";
 import { browserLogin } from "../../lib/api";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!email || !password) {
-      setMessage("请输入邮箱和密码");
+    if (!identifier || !password) {
+      setMessage("请输入登录账号或邮箱及密码");
       return;
     }
     setIsSubmitting(true);
     setMessage("");
     try {
-      await browserLogin(email, password);
+      await browserLogin(identifier, password);
       window.location.href = "/workspace";
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "登录失败，请检查邮箱和密码");
+      setMessage(error instanceof Error ? error.message : "登录失败，请检查账号或邮箱及密码");
     } finally {
       setIsSubmitting(false);
     }
@@ -38,7 +38,7 @@ export default function LoginPage() {
         </div>
         <form aria-busy={isSubmitting} className="login-form" onSubmit={handleSubmit}>
           <div className="login-form-heading"><p className="eyebrow">WELCOME BACK</p><h2>登录管理端</h2><p>使用团队账号进入客服工作台</p></div>
-          <label className="field-label" htmlFor="email">邮箱<input autoComplete="email" autoFocus className="field" id="email" onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" type="email" value={email} /></label>
+          <label className="field-label" htmlFor="identifier">登录账号或邮箱<input autoComplete="username" autoFocus className="field" id="identifier" onChange={(event) => setIdentifier(event.target.value)} placeholder="登录账号 / name@company.com" type="text" value={identifier} /></label>
           <label className="field-label" htmlFor="password">密码<input autoComplete="current-password" className="field" id="password" onChange={(event) => setPassword(event.target.value)} placeholder="请输入密码" type="password" value={password} /></label>
           <button className="primary-button w-full" disabled={isSubmitting} type="submit">{isSubmitting ? "正在验证…" : "登录管理端"}</button>
           {message ? <p className="form-message" role="alert">{message}</p> : null}
