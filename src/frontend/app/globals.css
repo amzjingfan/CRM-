@@ -203,10 +203,10 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .customer-item-copy { min-width: 0; flex: 1; }
 .customer-item-copy strong, .customer-item-copy small, .customer-product-head strong, .customer-product-head small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .customer-item-copy small, .customer-product-head small { margin-top: 3px; color: var(--muted); font-size: .66rem; }
-.customer-item-copy .customer-item-variant { display: flex; gap: 2px; overflow: visible; white-space: normal; }
-.customer-item-variant > span:first-child { flex: none; }
-.customer-item-variant .customer-copy-value { flex: 1; align-items: flex-start; }
-.customer-item-variant .customer-copy-value > span { overflow: visible; overflow-wrap: anywhere; white-space: normal; }
+.customer-item-copy .customer-item-variant, .customer-item-copy .customer-item-seller-sku { display: flex; gap: 2px; overflow: visible; white-space: normal; }
+.customer-item-variant > span:first-child, .customer-item-seller-sku > span:first-child { flex: none; }
+.customer-item-variant .customer-copy-value, .customer-item-seller-sku .customer-copy-value { flex: 1; align-items: flex-start; }
+.customer-item-variant .customer-copy-value > span, .customer-item-seller-sku .customer-copy-value > span { overflow: visible; overflow-wrap: anywhere; white-space: normal; }
 .customer-item-price { flex: none; white-space: nowrap; text-align: right; font-size: .69rem; }
 .customer-item-price small { display: block; margin-top: 3px; color: var(--muted); }
 .customer-money { border-block: 1px solid var(--border); margin: 3px 0 8px; }

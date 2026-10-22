@@ -4,7 +4,9 @@
 
 ## 模块状态
 
-2026-10-22 原生物流卡片 [TR R05](../reports/tests/TR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R05.md) 为 `PARTIAL`：subject `97c5d6bb` 的后端 2233 passed/29 skipped，Ruff/格式/mypy 通过；前端契约 47 passed、生产构建与合成浏览器 27 passed，lint 0 error/5 warning。合并主线的前后端已通过手动门禁部署 staging，运行摘要、11 服务与四个公网健康入口通过，部署页合成浏览器 3 passed。真实登录态的发送栏卡片与详情弹窗仍待用户确认，Codex 浏览器读取超时记 `UI_UNAVAILABLE`。未向真实买家发送卡片，TikTok 实际接收未测试；production G8 No-Go。
+2026-10-22 订单卡长 SKU 货号 [TR R03](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-SELLER-SKU-001-20261022-R03.md) 为 `PASS`：subject `f512fb8a` 的合成浏览器用例先复现 `false !== true`，改为换行后本地生产浏览器 59/59、前端契约 47/47、typecheck/build 通过，lint 0 error/5 warning。源码 PR #512 合入后，前端通过手动门禁部署 staging，运行摘要、11 服务、四公网健康入口与部署页合成浏览器 3/3 通过；用户刷新真实订单卡后回复“两项都正常”，确认完整换行显示与复制。无买家外发，production G8 No-Go。
+
+2026-10-22 原生物流卡片 [TR R06](../reports/tests/TR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R06.md) 为 `PASS`：subject `97c5d6bb` 的后端 2233 passed/29 skipped，前端契约 47 passed、生产合成浏览器 27 passed，Ruff/格式/mypy/typecheck/build 通过；合并主线的前后端经手动门禁部署 staging，运行摘要、11 服务与四公网健康入口通过。用户刷新真实登录态会话后回复“两项都正常”，确认发送栏卡片和同一物流详情弹窗；后续前端更新的部署页面卡片定向合成浏览器 2/2。Codex 页面读取仍 `UI_UNAVAILABLE`；未向真实买家发送卡片，TikTok 实际接收未测试，production G8 No-Go。
 
 2026-10-21 客户侧栏长商品规格修复的[TR R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-VARIANT-001-20261021-R02.md) 为 `PASS`：subject `64aefa12` 的前端契约 47/47、生产浏览器 54/54、类型与构建通过，lint 0 error/4 条既有 warning；旧 staging 上长规格回归先失败，合入 `main=5e11f7b6` 手动发布后已部署页面定向合成浏览器 2/2、六摘要与四个公网健康通过。真实登录态浏览器工具超时，但用户刷新原订单卡后回复“修复好了”，确认规格在原位置不再只剩省略号；GitHub Actions 零步骤失败不计 CI 通过，production G8 No-Go。
 
