@@ -7,7 +7,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.integrations.tiktok_read import TikTokConversation, TikTokCoupon, TikTokOrder, TikTokStandardTrackingEntry
+from app.integrations.tiktok_read import (
+    TikTokConversation,
+    TikTokCoupon,
+    TikTokLogisticsDetail,
+    TikTokOrder,
+    TikTokStandardTrackingEntry,
+)
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.workspace import sidebar
 from app.workspace.sidebar import SidebarSearch
@@ -201,8 +207,138 @@ async def test_order_detail_shows_official_fields_and_newest_tracking(monkeypatc
     assert result.shipping_provider == "Carrier A"
     assert result.latest_tracking_description == "Delivered"
     assert result.latest_tracking_at.isoformat() == "2023-11-14T22:13:22+00:00"
+    assert [event.description for event in result.tracking_packages[0].events] == ["Delivered", "Dispatched"]
+    assert result.tracking_packages[0].tracking_number == "TRACK-1"
+    assert result.enhanced_tracking_available is False
     client.get_order_details.assert_awaited_once_with(["600001"])
     client.get_standard_tracking.assert_awaited_once_with("600001")
+
+
+@pytest.mark.asyncio
+async def test_enhanced_tracking_returns_only_verified_buyer_parcels_and_reuses_eight_hour_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    selected = conversation()
+    monkeypatch.setattr(sidebar, "get_settings", lambda: SimpleNamespace(real_tiktok_read_enabled=True))
+    parcels = [
+        TikTokLogisticsDetail.model_validate(
+            {
+                "newest_tracking_no": "NEW-1",
+                "carrier_name": "Carrier B",
+                "track_list": [
+                    {
+                        "description": "Delivered",
+                        "tracking_no": "NEW-1",
+                        "update_time_millis": 1700000002000,
+                        "action_code": 2,
+                        "action_code_name": "signed_personally",
+                    },
+                    {
+                        "description": "Picked up",
+                        "tracking_no": "OLD-1",
+                        "update_time_millis": 1700000001000,
+                        "action_code": 1,
+                        "action_code_name": "pickup_success",
+                    },
+                ],
+            }
+        )
+    ]
+    client = SimpleNamespace(
+        shop_cipher="shop-cipher",
+        channel=SimpleNamespace(metadata_json={"seller_type": "CROSS_BORDER"}),
+        get_conversation=AsyncMock(return_value=remote_conversation()),
+        get_order_details=AsyncMock(return_value=([live_order()], None)),
+        get_tracking=AsyncMock(return_value=(parcels, None)),
+    )
+    cache: dict[str, str] = {}
+
+    async def cache_get(key: str) -> str | None:
+        return cache.get(key)
+
+    async def cache_set(key: str, value: str, *, nx: bool = False, ex: int) -> bool:
+        if nx and key in cache:
+            return False
+        assert ex == 8 * 60 * 60
+        cache[key] = value
+        return True
+
+    monkeypatch.setattr(sidebar, "_conversation", AsyncMock(return_value=selected))
+    monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
+    monkeypatch.setattr(sidebar, "redis_client", SimpleNamespace(get=cache_get, set=cache_set))
+    session = SimpleNamespace(
+        get=AsyncMock(
+            return_value=SimpleNamespace(store_id=selected.store_id, platform="tiktok", external_customer_id="800001")
+        )
+    )
+
+    first = await sidebar.get_sidebar_enhanced_tracking(session, SimpleNamespace(), selected.id, "600001")
+    second = await sidebar.get_sidebar_enhanced_tracking(session, SimpleNamespace(), selected.id, "600001")
+    assert first == second
+    assert first.packages[0].tracking_number == "NEW-1"
+    assert [event.tracking_number for event in first.packages[0].events] == ["NEW-1", "OLD-1"]
+    client.get_tracking.assert_awaited_once_with("600001")
+    cache[next(iter(cache))] = "pending"
+    with pytest.raises(AppError) as pending:
+        await sidebar.get_sidebar_enhanced_tracking(session, SimpleNamespace(), selected.id, "600001")
+    assert pending.value.status_code == 503
+    client.get_tracking.assert_awaited_once_with("600001")
+
+
+@pytest.mark.asyncio
+async def test_enhanced_tracking_rejects_other_buyer_before_cache_or_platform(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    selected = conversation()
+    monkeypatch.setattr(sidebar, "get_settings", lambda: SimpleNamespace(real_tiktok_read_enabled=True))
+    client = SimpleNamespace(
+        channel=SimpleNamespace(metadata_json={"seller_type": "CROSS_BORDER"}),
+        get_conversation=AsyncMock(return_value=remote_conversation()),
+        get_order_details=AsyncMock(return_value=([live_order(user_id="900002")], None)),
+        get_tracking=AsyncMock(),
+    )
+    cache_get = AsyncMock()
+    monkeypatch.setattr(sidebar, "_conversation", AsyncMock(return_value=selected))
+    monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
+    monkeypatch.setattr(sidebar, "redis_client", SimpleNamespace(get=cache_get))
+    session = SimpleNamespace(
+        get=AsyncMock(
+            return_value=SimpleNamespace(store_id=selected.store_id, platform="tiktok", external_customer_id="800001")
+        )
+    )
+
+    with pytest.raises(AppError) as raised:
+        await sidebar.get_sidebar_enhanced_tracking(session, SimpleNamespace(), selected.id, "600001")
+    assert raised.value.status_code == 404
+    cache_get.assert_not_awaited()
+    client.get_tracking.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_enhanced_tracking_skips_non_cross_border_shop(monkeypatch: pytest.MonkeyPatch) -> None:
+    selected = conversation()
+    monkeypatch.setattr(sidebar, "get_settings", lambda: SimpleNamespace(real_tiktok_read_enabled=True))
+    client = SimpleNamespace(
+        channel=SimpleNamespace(metadata_json={"seller_type": "LOCAL"}),
+        get_conversation=AsyncMock(return_value=remote_conversation()),
+        get_order_details=AsyncMock(return_value=([live_order()], None)),
+        get_tracking=AsyncMock(),
+    )
+    cache_get = AsyncMock()
+    monkeypatch.setattr(sidebar, "_conversation", AsyncMock(return_value=selected))
+    monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
+    monkeypatch.setattr(sidebar, "redis_client", SimpleNamespace(get=cache_get))
+    session = SimpleNamespace(
+        get=AsyncMock(
+            return_value=SimpleNamespace(store_id=selected.store_id, platform="tiktok", external_customer_id="800001")
+        )
+    )
+
+    with pytest.raises(AppError) as raised:
+        await sidebar.get_sidebar_enhanced_tracking(session, SimpleNamespace(), selected.id, "600001")
+    assert raised.value.status_code == 404
+    cache_get.assert_not_awaited()
+    client.get_tracking.assert_not_awaited()
 
 
 @pytest.mark.asyncio

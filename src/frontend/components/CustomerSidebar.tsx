@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { TrackingTimelinePopover } from "./TrackingTimelinePopover";
 import {
   getCustomerSidebarOrderDetail,
   getCustomerSidebarProduct,
@@ -219,7 +220,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillDraft
     {isShipping ? <div className="customer-info-line"><span>{en ? "Fulfillment" : "出货状态"}</span><span>{label}</span></div> : null}
     {isShipping ? <div className="customer-info-line"><span>{en ? "Ship by" : "最晚发货"}</span><span>—</span></div> : null}
     {detail?.payment_method_name ? <div className="customer-info-line"><span>{en ? "Payment method" : "支付方式"}</span><span>{detail.payment_method_name}</span></div> : null}
-    {isInTransit ? <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><span>{logisticsStatus}</span></div> : null}
+    {isInTransit ? <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><div className="customer-logistics-status"><span>{logisticsStatus}</span>{detail ? <TrackingTimelinePopover en={en} enhancedAvailable={detail.enhanced_tracking_available} initialPackages={detail.tracking_packages ?? []} orderId={order.external_order_id} sessionId={sessionId} /> : null}</div></div> : null}
     {isInTransit ? <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number ?? ""}>{order.tracking_number ?? "—"}</span></div> : null}
     {isInTransit || detail?.shipping_provider ? <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail?.shipping_provider ?? "—"}</span></div> : null}
     {isInTransit || detail?.latest_tracking_description ? <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><div className="customer-tracking-detail"><span className={showTrackingTranslation ? "customer-tracking-translation" : undefined}>{showTrackingTranslation ? trackingTranslation : detail?.latest_tracking_description ?? "—"}</span>{!en && trackingTranslationEnabled && detail?.latest_tracking_description && /[A-Za-z]/.test(detail.latest_tracking_description) ? <button disabled={trackingTranslationLoading} onClick={() => { if (trackingTranslation) setShowTrackingTranslation((shown) => !shown); else void requestTrackingTranslation(); }} type="button">{trackingTranslationLoading ? "翻译中…" : trackingTranslation ? showTrackingTranslation ? "查看原文" : "查看译文" : trackingTranslationError ? "重试翻译" : "译成中文"}</button> : null}{trackingTranslationError ? <span className="customer-tracking-error" role="alert">{trackingTranslationError}</span> : null}</div></div> : null}

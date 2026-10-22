@@ -1,11 +1,12 @@
 """客户侧栏只读投影。平台目录按当前会话的店铺授权读取。"""
 
+import hashlib
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
@@ -17,6 +18,7 @@ from app.integrations.tiktok_read import TikTokCoupon, TikTokOrder, TikTokProduc
 from app.orders.models import Order, OrderItem
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
+from app.shared.database.redis import redis_client
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount, Store
 from app.workspace.repository import find_conversation
@@ -74,11 +76,38 @@ class SidebarOrderDetailRequest(BaseModel):
     order_id: str = Field(min_length=1, max_length=200, pattern=r"^[0-9]+$")
 
 
+class SidebarTrackingTranslationRequest(SidebarOrderDetailRequest):
+    event_description: str | None = Field(default=None, min_length=1, max_length=1000)
+    event_at: datetime | None = None
+    event_tracking_number: str | None = Field(default=None, max_length=200)
+    enhanced: bool = False
+
+
 class SidebarOrderDetail(BaseModel):
     payment_method_name: str | None
     shipping_provider: str | None
     latest_tracking_description: str | None
     latest_tracking_at: datetime | None
+    tracking_packages: list["SidebarTrackingPackage"] = Field(default_factory=list)
+    enhanced_tracking_available: bool = False
+
+
+class SidebarTrackingEvent(BaseModel):
+    description: str
+    occurred_at: datetime
+    tracking_number: str | None = None
+    action_code: int
+    action_code_name: str | None = None
+
+
+class SidebarTrackingPackage(BaseModel):
+    tracking_number: str | None
+    carrier_name: str | None
+    events: list[SidebarTrackingEvent]
+
+
+class SidebarTrackingTimeline(BaseModel):
+    packages: list[SidebarTrackingPackage]
 
 
 class SidebarTrackingTranslation(BaseModel):
@@ -303,9 +332,9 @@ async def _verified_buyer_user_id(session: AsyncSession, conversation: Conversat
     return buyers[0].user_id
 
 
-async def get_sidebar_order_detail(
+async def _verified_sidebar_order(
     session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
-) -> SidebarOrderDetail:
+) -> tuple[Conversation, TikTokReadClient, TikTokOrder]:
     conversation = await _conversation(session, user, session_id)
     if conversation.platform != "tiktok" or not get_settings().real_tiktok_read_enabled:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单详情不可用", 404)
@@ -316,24 +345,103 @@ async def get_sidebar_order_detail(
     orders, _ = await client.get_order_details([order_id])
     if len(orders) != 1 or orders[0].id != order_id or orders[0].user_id != buyer_user_id:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在", 404)
-    order = orders[0]
+    return conversation, client, orders[0]
+
+
+def _tracking_time(millis: int) -> datetime:
+    try:
+        return datetime.fromtimestamp(millis / 1000, UTC)
+    except (OverflowError, OSError, ValueError) as exc:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 物流时间异常", 502) from exc
+
+
+async def get_sidebar_order_detail(
+    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
+) -> SidebarOrderDetail:
+    _conversation_view, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
     latest_description: str | None = None
     latest_at: datetime | None = None
+    tracking_packages: list[SidebarTrackingPackage] = []
     if order.tracking_number or any(item.tracking_number for item in order.line_items):
         events, _ = await client.get_standard_tracking(order_id)
         if events:
-            latest = max(events, key=lambda event: event.update_time_millis)
-            try:
-                latest_at = datetime.fromtimestamp(latest.update_time_millis / 1000, UTC)
-            except (OverflowError, OSError, ValueError) as exc:
-                raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 物流时间异常", 502) from exc
+            events.sort(key=lambda event: event.update_time_millis, reverse=True)
+            latest = events[0]
+            latest_at = _tracking_time(latest.update_time_millis)
             latest_description = latest.description
+            item_numbers = {item.tracking_number for item in order.line_items if item.tracking_number}
+            tracking_packages = [
+                SidebarTrackingPackage(
+                    tracking_number=order.tracking_number
+                    or (next(iter(item_numbers)) if len(item_numbers) == 1 else None),
+                    carrier_name=order.shipping_provider,
+                    events=[
+                        SidebarTrackingEvent(
+                            description=event.description,
+                            occurred_at=_tracking_time(event.update_time_millis),
+                            action_code=event.action_code,
+                        )
+                        for event in events
+                    ],
+                )
+            ]
     return SidebarOrderDetail(
         payment_method_name=order.payment_method_name,
         shipping_provider=order.shipping_provider,
         latest_tracking_description=latest_description,
         latest_tracking_at=latest_at,
+        tracking_packages=tracking_packages,
+        enhanced_tracking_available=(
+            getattr(getattr(client, "channel", None), "metadata_json", {}).get("seller_type") == "CROSS_BORDER"
+        ),
     )
+
+
+async def get_sidebar_enhanced_tracking(
+    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
+) -> SidebarTrackingTimeline:
+    conversation, client, _order = await _verified_sidebar_order(session, user, session_id, order_id)
+    if client.channel.metadata_json.get("seller_type") != "CROSS_BORDER":
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "当前店铺没有增强物流轨迹", 404)
+    # 官方要求每单至少间隔八小时；先占位再请求，跨实例也不会并发触发同单查询。
+    shop_hash = hashlib.sha256(client.shop_cipher.encode()).hexdigest()[:16]
+    cache_key = f"workspace:tracking:202604:{conversation.store_id}:{shop_hash}:{order_id}"
+    cached = await redis_client.get(cache_key)
+    if cached and cached not in {"pending", "unavailable"}:
+        try:
+            return SidebarTrackingTimeline.model_validate_json(cached)
+        except ValidationError as exc:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "增强物流缓存异常，请查看通用轨迹", 503) from exc
+    if cached:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "增强物流暂不可用，请查看通用轨迹", 503)
+    if not await redis_client.set(cache_key, "pending", nx=True, ex=8 * 60 * 60):
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "增强物流正在读取，请稍后重试", 503)
+    try:
+        parcels, _ = await client.get_tracking(order_id)
+        timeline = SidebarTrackingTimeline(
+            packages=[
+                SidebarTrackingPackage(
+                    tracking_number=parcel.newest_tracking_no,
+                    carrier_name=parcel.carrier_name,
+                    events=[
+                        SidebarTrackingEvent(
+                            description=event.description,
+                            occurred_at=_tracking_time(event.update_time_millis),
+                            tracking_number=event.tracking_no,
+                            action_code=event.action_code,
+                            action_code_name=event.action_code_name,
+                        )
+                        for event in sorted(parcel.track_list, key=lambda item: item.update_time_millis, reverse=True)
+                    ],
+                )
+                for parcel in parcels
+            ]
+        )
+    except (AppError, ValueError):
+        await redis_client.set(cache_key, "unavailable", ex=8 * 60 * 60)
+        raise
+    await redis_client.set(cache_key, timeline.model_dump_json(), ex=8 * 60 * 60)
+    return timeline
 
 
 async def search_sidebar_orders(

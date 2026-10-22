@@ -71,7 +71,10 @@ from app.workspace.sidebar import (
     SidebarProduct,
     SidebarProducts,
     SidebarSearch,
+    SidebarTrackingTimeline,
     SidebarTrackingTranslation,
+    SidebarTrackingTranslationRequest,
+    get_sidebar_enhanced_tracking,
     get_sidebar_order_detail,
     get_sidebar_product,
     search_sidebar_coupons,
@@ -120,13 +123,28 @@ async def sidebar_order_detail(
 
 
 @router.post(
+    "/sessions/{session_id}/sidebar/orders/enhanced-tracking",
+    response_model=ApiResponse[SidebarTrackingTimeline],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
+)
+async def sidebar_enhanced_tracking(
+    session_id: uuid.UUID,
+    payload: SidebarOrderDetailRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[SidebarTrackingTimeline]:
+    """仅对已核对买家订单按需读取跨境多包裹轨迹。"""
+    return ApiResponse(data=await get_sidebar_enhanced_tracking(session, user, session_id, payload.order_id))
+
+
+@router.post(
     "/sessions/{session_id}/sidebar/orders/tracking-translation",
     response_model=ApiResponse[SidebarTrackingTranslation],
     dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
 )
 async def sidebar_tracking_translation(
     session_id: uuid.UUID,
-    payload: SidebarOrderDetailRequest,
+    payload: SidebarTrackingTranslationRequest,
     request: Request,
     session: DbSession,
     user: Annotated[User, Depends(get_current_user)],
@@ -139,7 +157,19 @@ async def sidebar_tracking_translation(
     if not await consume_chat_query(user.id, client_ip, settings.chat_query_limit, settings.chat_query_window_seconds):
         raise AppError(ErrorCode.RATE_LIMITED, "翻译请求过于频繁", 429)
     trace_id = str(getattr(request.state, "trace_id", uuid.uuid4()))
-    return ApiResponse(data=await translate_sidebar_tracking(session, user, session_id, payload.order_id, trace_id))
+    return ApiResponse(
+        data=await translate_sidebar_tracking(
+            session,
+            user,
+            session_id,
+            payload.order_id,
+            trace_id,
+            payload.event_description,
+            payload.event_at,
+            payload.event_tracking_number,
+            payload.enhanced,
+        )
+    )
 
 
 @router.get(

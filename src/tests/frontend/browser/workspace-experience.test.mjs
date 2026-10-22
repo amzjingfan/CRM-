@@ -15,7 +15,7 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail") {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [] } },
@@ -23,7 +23,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0 };
+  const calls = { send: 0, sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -72,12 +72,20 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       calls.orderDetails++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
       if (orderDetailDelay) await new Promise((resolve) => setTimeout(resolve, orderDetailDelay));
-      data = { payment_method_name: "Card", shipping_provider: "Carrier A", latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z" };
+      data = { payment_method_name: "Card", shipping_provider: "Carrier A", latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", tracking_packages: [{ tracking_number: "878696895644", carrier_name: "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }] }], enhanced_tracking_available: enhancedTracking };
+    } else if (path.endsWith("/sidebar/orders/enhanced-tracking") && method === "POST") {
+      calls.enhancedTracking++;
+      assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
+      data = { packages: [
+        { tracking_number: "NEW-1", carrier_name: "Carrier B", events: [{ description: "Delivered", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "NEW-1", action_code: 2, action_code_name: "signed_personally" }] },
+        { tracking_number: "OLD-2", carrier_name: "Carrier C", events: [{ description: "Picked up", occurred_at: "2026-10-15T19:20:00Z", tracking_number: "OLD-2", action_code: 1, action_code_name: "pickup_success" }] },
+      ] };
     } else if (path.endsWith("/sidebar/orders/tracking-translation") && method === "POST") {
       calls.trackingTranslations++;
-      assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
+      const payload = JSON.parse(request.postData());
+      assert.equal(payload.order_id, "577600000000000001");
       if (calls.trackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "translation unavailable", data: null }) });
-      data = { source_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), translated_text: "已送达" };
+      data = { source_description: payload.event_description ?? latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), translated_text: "已送达" };
     } else if (path.endsWith("/sidebar/products/123") && method === "GET") {
       calls.productDetails++;
       data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: "https://example.invalid/product.png", skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
@@ -382,6 +390,51 @@ test("visible customer order card loads six real payment and logistics rows with
     assert.equal(await card.getByText("Card").count(), 1);
     assert.equal(await card.getByText("Package dispatched").count(), 1);
     assert.equal(calls.orderDetails, 1);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("tracking popover shows every returned event, copies all, and downloads a PNG", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    const card = page.getByTestId("customer-order-card");
+    await card.getByRole("button", { name: "查看完整物流" }).click();
+    const dialog = page.getByRole("dialog", { name: "物流完整信息" });
+    await dialog.getByText("Picked up by carrier").waitFor();
+    await dialog.getByRole("button", { name: "复制全部" }).click();
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    assert.match(copied, /Package dispatched/);
+    assert.match(copied, /Picked up by carrier/);
+    const downloadPromise = page.waitForEvent("download");
+    await dialog.getByRole("button", { name: "生成截图" }).click();
+    const download = await downloadPromise;
+    assert.match(download.suggestedFilename(), /\.png$/);
+    const stream = await download.createReadStream();
+    const chunks = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    assert.equal(Buffer.concat(chunks).subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    await page.keyboard.press("Escape");
+    assert.equal(await dialog.count(), 0);
+    assert.equal(calls.send, 0);
+    assert.equal(calls.enhancedTracking, 0);
+  } finally { await context.close(); }
+});
+
+test("cross border tracking switches between official parcels and translates a selected event", async () => {
+  const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, true, "Black", true);
+  try {
+    await page.getByTestId("customer-order-card").getByRole("button", { name: "查看完整物流" }).click();
+    const dialog = page.getByRole("dialog", { name: "物流完整信息" });
+    await dialog.getByRole("tab", { name: "包裹 2" }).click();
+    await dialog.getByText("OLD-2").waitFor();
+    assert.equal(calls.enhancedTracking, 1);
+    await dialog.getByRole("button", { name: "译成中文" }).click();
+    await dialog.getByText("已送达").waitFor();
+    assert.equal(await dialog.getByText("Picked up", { exact: true }).count(), 0);
+    await dialog.getByRole("button", { name: "查看原文" }).click();
+    await dialog.getByText("Picked up", { exact: true }).waitFor();
+    assert.equal(calls.trackingTranslations, 1);
     assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });

@@ -1,6 +1,7 @@
 """工作台单条译文必须保持店铺隔离，并且只在显式开关下调用模型。"""
 
 import uuid
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -142,6 +143,34 @@ async def test_tracking_translation_requires_verified_order_before_model(monkeyp
     with pytest.raises(AppError) as denied:
         await workspace_service.translate_sidebar_tracking(
             session, SimpleNamespace(id=uuid.uuid4()), uuid.uuid4(), "600001", "trace"
+        )
+    assert denied.value.status_code == 404
+    provider.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_tracking_translation_rejects_forged_timeline_event_before_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = Mock(spec=AsyncSession)
+    monkeypatch.setattr(
+        workspace_service, "get_settings", lambda: SimpleNamespace(workspace_message_translation_enabled=True)
+    )
+    monkeypatch.setattr(
+        workspace_service,
+        "get_sidebar_order_detail",
+        AsyncMock(return_value=SimpleNamespace(latest_tracking_description="Delivered", tracking_packages=[])),
+    )
+    provider = Mock()
+    monkeypatch.setattr(workspace_service, "build_provider", provider)
+
+    with pytest.raises(AppError) as denied:
+        await workspace_service.translate_sidebar_tracking(
+            session,
+            SimpleNamespace(id=uuid.uuid4()),
+            uuid.uuid4(),
+            "600001",
+            "trace",
+            event_description="Customer phone: 123456789",
+            event_at=datetime.now(UTC),
         )
     assert denied.value.status_code == 404
     provider.assert_not_called()

@@ -50,7 +50,7 @@ from app.workspace.schemas import (
     SessionSummary,
     TransferResult,
 )
-from app.workspace.sidebar import SidebarTrackingTranslation, get_sidebar_order_detail
+from app.workspace.sidebar import SidebarTrackingTranslation, get_sidebar_enhanced_tracking, get_sidebar_order_detail
 
 
 def _customer_view(customer: Customer) -> CustomerSummary:
@@ -369,14 +369,39 @@ async def translate_message(
 
 
 async def translate_sidebar_tracking(
-    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str, trace_id: str
+    session: AsyncSession,
+    user: User,
+    session_id: uuid.UUID,
+    order_id: str,
+    trace_id: str,
+    event_description: str | None = None,
+    event_at: datetime | None = None,
+    event_tracking_number: str | None = None,
+    enhanced: bool = False,
 ) -> SidebarTrackingTranslation:
-    """只翻译经会话买家核对的最新物流原文，不写入订单或发送消息。"""
+    """只翻译经会话买家核对的物流节点原文，不写入订单或发送消息。"""
     settings = get_settings()
     if not settings.workspace_message_translation_enabled:
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流描述翻译未启用", 503)
     detail = await get_sidebar_order_detail(session, user, session_id, order_id)
     source = detail.latest_tracking_description
+    if event_description is not None:
+        if event_at is None:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "物流节点时间缺失", 422)
+        packages = (
+            (await get_sidebar_enhanced_tracking(session, user, session_id, order_id)).packages
+            if enhanced
+            else detail.tracking_packages
+        )
+        if not any(
+            event.description == event_description
+            and event.occurred_at == event_at
+            and event.tracking_number == event_tracking_number
+            for package in packages
+            for event in package.events
+        ):
+            raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "物流节点不存在", 404)
+        source = event_description
     if not source or not source.strip() or len(source) > 4000:
         raise AppError(ErrorCode.VALIDATION_ERROR, "暂无可翻译的物流描述", 422)
     if sanitize_prompt_text(source) != source:
