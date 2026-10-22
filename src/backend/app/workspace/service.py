@@ -1,5 +1,6 @@
 """工作台会话、人工发送和状态流转服务。"""
 
+import asyncio
 import uuid
 from datetime import UTC, datetime
 from typing import Literal
@@ -13,7 +14,7 @@ from app.agent.errors import LLMProviderError
 from app.agent.generation import StructuredGenerationService
 from app.agent.providers.factory import build_provider
 from app.agent.security import sanitize_prompt_text
-from app.agent.translation import TranslationService
+from app.agent.translation import TranslationBundleResult, TranslationService
 from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
 from app.conversations.models import Conversation, Message
@@ -50,7 +51,13 @@ from app.workspace.schemas import (
     SessionSummary,
     TransferResult,
 )
-from app.workspace.sidebar import SidebarTrackingTranslation, get_sidebar_enhanced_tracking, get_sidebar_order_detail
+from app.workspace.sidebar import (
+    SidebarTrackingEventTranslation,
+    SidebarTrackingTimelineTranslation,
+    SidebarTrackingTranslation,
+    get_sidebar_enhanced_tracking,
+    get_sidebar_order_detail,
+)
 
 
 def _customer_view(customer: Customer) -> CustomerSummary:
@@ -459,6 +466,113 @@ async def translate_sidebar_tracking(
     )
     await session.commit()
     return SidebarTrackingTranslation(source_description=source, translated_text=translated)
+
+
+async def translate_sidebar_tracking_timeline(
+    session: AsyncSession,
+    user: User,
+    session_id: uuid.UUID,
+    order_id: str,
+    trace_id: str,
+    *,
+    enhanced: bool = False,
+) -> SidebarTrackingTimelineTranslation:
+    """一次坐席操作翻译核对后的全部物流节点；模型并发有界且结果不持久化。"""
+    settings = get_settings()
+    if not settings.workspace_message_translation_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流描述翻译未启用", 503)
+    packages = (
+        (await get_sidebar_enhanced_tracking(session, user, session_id, order_id)).packages
+        if enhanced
+        else (await get_sidebar_order_detail(session, user, session_id, order_id)).tracking_packages
+    )
+    events = [event for package in packages for event in package.events]
+    if not events or len(events) > 40:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "暂无可批量翻译的物流节点或节点超过 40 条", 422)
+    # 全量检查通过后才调用模型，避免把第三方物流文本中的敏感片段送出边界。
+    if any(
+        not event.description.strip()
+        or len(event.description) > 1000
+        or sanitize_prompt_text(event.description) != event.description
+        for event in events
+    ):
+        raise AppError(ErrorCode.VALIDATION_ERROR, "物流描述含需脱敏内容，无法翻译", 422)
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    provider = build_provider("deepseek", settings.llm_primary_model, settings)
+    translator = TranslationService(StructuredGenerationService(provider, None, max_attempts=1))
+    semaphore = asyncio.Semaphore(3)
+
+    async def translate(source: str):
+        async with semaphore:
+            return await translator.translate_bundle(
+                trigger_message_id=uuid.uuid5(uuid.NAMESPACE_URL, f"tiktok:tracking:{order_id}"),
+                message=source,
+                draft_reply=None,
+                target_language="zh-CN",
+                trace_id=trace_id,
+            )
+
+    try:
+        gathered = await asyncio.gather(*(translate(event.description) for event in events), return_exceptions=True)
+        results: list[TranslationBundleResult | None] = []
+        for result in gathered:
+            if isinstance(result, BaseException):
+                raise ValueError("物流节点翻译失败") from result
+            results.append(result)
+        translations = [
+            result.message_translation if result else event.description
+            for event, result in zip(events, results, strict=True)
+        ]
+        if any(not value.strip() or sanitize_prompt_text(value) != value for value in translations):
+            raise ValueError("译文包含需脱敏内容")
+    except (LLMProviderError, ValueError) as error:
+        session.add(
+            AuditLog(
+                store_id=conversation.store_id,
+                actor_type="user",
+                actor_id=user.id,
+                action="sidebar.tracking.translate_all",
+                resource_type="conversation",
+                resource_id=conversation.id,
+                request_id=trace_id,
+                after_data={"target_language": "zh-CN", "event_count": len(events)},
+                result="failed",
+            )
+        )
+        await session.commit()
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流轨迹翻译暂不可用，请稍后重试", 503) from error
+    session.add(
+        AuditLog(
+            store_id=conversation.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action="sidebar.tracking.translate_all",
+            resource_type="conversation",
+            resource_id=conversation.id,
+            request_id=trace_id,
+            after_data={
+                "target_language": "zh-CN",
+                "event_count": len(events),
+                "input_tokens": sum(result.input_tokens for result in results if result),
+                "output_tokens": sum(result.output_tokens for result in results if result),
+            },
+            result="succeeded",
+        )
+    )
+    await session.commit()
+    return SidebarTrackingTimelineTranslation(
+        events=[
+            SidebarTrackingEventTranslation(
+                source_description=event.description,
+                translated_text=translated,
+                occurred_at=event.occurred_at,
+                tracking_number=event.tracking_number,
+            )
+            for event, translated in zip(events, translations, strict=True)
+        ]
+    )
 
 
 async def send_agent_message(

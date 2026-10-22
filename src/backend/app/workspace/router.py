@@ -62,6 +62,7 @@ from app.workspace.service import (
     translate_draft,
     translate_message,
     translate_sidebar_tracking,
+    translate_sidebar_tracking_timeline,
 )
 from app.workspace.sidebar import (
     SidebarCoupons,
@@ -72,6 +73,8 @@ from app.workspace.sidebar import (
     SidebarProducts,
     SidebarSearch,
     SidebarTrackingTimeline,
+    SidebarTrackingTimelineTranslation,
+    SidebarTrackingTimelineTranslationRequest,
     SidebarTrackingTranslation,
     SidebarTrackingTranslationRequest,
     get_sidebar_enhanced_tracking,
@@ -168,6 +171,38 @@ async def sidebar_tracking_translation(
             payload.event_at,
             payload.event_tracking_number,
             payload.enhanced,
+        )
+    )
+
+
+@router.post(
+    "/sessions/{session_id}/sidebar/orders/tracking-timeline-translation",
+    response_model=ApiResponse[SidebarTrackingTimelineTranslation],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
+)
+async def sidebar_tracking_timeline_translation(
+    session_id: uuid.UUID,
+    payload: SidebarTrackingTimelineTranslationRequest,
+    request: Request,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[SidebarTrackingTimelineTranslation]:
+    """一次点击翻译已核对订单的全部物流节点，保留原文可切换。"""
+    settings = get_settings()
+    if not settings.workspace_message_translation_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流描述翻译未启用", 503)
+    client_ip = request.client.host if request.client else "unknown"
+    if not await consume_chat_query(user.id, client_ip, settings.chat_query_limit, settings.chat_query_window_seconds):
+        raise AppError(ErrorCode.RATE_LIMITED, "翻译请求过于频繁", 429)
+    trace_id = str(getattr(request.state, "trace_id", uuid.uuid4()))
+    return ApiResponse(
+        data=await translate_sidebar_tracking_timeline(
+            session,
+            user,
+            session_id,
+            payload.order_id,
+            trace_id,
+            enhanced=payload.enhanced,
         )
     )
 

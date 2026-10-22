@@ -16,6 +16,7 @@ export type SidebarOrder = { id: string; external_order_id: string; status: stri
 export type SidebarTrackingEvent = { description: string; occurred_at: string; tracking_number: string | null; action_code: number; action_code_name: string | null };
 export type SidebarTrackingPackage = { tracking_number: string | null; carrier_name: string | null; events: SidebarTrackingEvent[] };
 export type SidebarTrackingTimeline = { packages: SidebarTrackingPackage[] };
+export type SidebarTrackingTimelineTranslation = { events: Array<{ source_description: string; translated_text: string; occurred_at: string; tracking_number: string | null }> };
 export type SidebarOrderDetail = { payment_method_name: string | null; shipping_provider: string | null; latest_tracking_description: string | null; latest_tracking_at: string | null; tracking_packages: SidebarTrackingPackage[]; enhanced_tracking_available: boolean };
 export type SidebarTrackingTranslation = { source_description: string; translated_text: string };
 export type SidebarOrders = { items: SidebarOrder[]; pagination: { page: number; page_size: number; total: number } };
@@ -157,6 +158,7 @@ export const sendMessage = (sessionId: string, content: string, idempotencyKey: 
 export const translateMessage = (sessionId: string, messageId: string) => requestApi<MessageTranslationView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}/translation`, { method: "POST" });
 export const translateDraft = (sessionId: string, sourceText: string, targetLanguage: DraftTargetLanguage) => requestApi<DraftTranslationView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/draft/translation`, { method: "POST", body: JSON.stringify({ source_text: sourceText, target_language: targetLanguage }) });
 export const translateSidebarTracking = (sessionId: string, orderId: string, event?: SidebarTrackingEvent & { enhanced: boolean }) => requestApi<SidebarTrackingTranslation>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/tracking-translation`, { method: "POST", body: JSON.stringify({ order_id: orderId, ...(event ? { event_description: event.description, event_at: event.occurred_at, event_tracking_number: event.tracking_number, enhanced: event.enhanced } : {}) }) });
+export const translateSidebarTrackingTimeline = (sessionId: string, orderId: string, enhanced: boolean) => requestApi<SidebarTrackingTimelineTranslation>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/tracking-timeline-translation`, { method: "POST", body: JSON.stringify({ order_id: orderId, enhanced }) });
 export const markSessionRead = (sessionId: string) => requestApi<{ unread_count: number }>(`/workspace/sessions/${sessionId}/read`, { method: "POST" });
 export const setSessionStar = (sessionId: string, starred: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/star`, { method: "PATCH", body: JSON.stringify({ starred }) });
 export const setSessionClosed = (sessionId: string, closed: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/closed`, { method: "PATCH", body: JSON.stringify({ closed }) });

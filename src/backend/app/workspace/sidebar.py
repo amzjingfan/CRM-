@@ -83,6 +83,10 @@ class SidebarTrackingTranslationRequest(SidebarOrderDetailRequest):
     enhanced: bool = False
 
 
+class SidebarTrackingTimelineTranslationRequest(SidebarOrderDetailRequest):
+    enhanced: bool = False
+
+
 class SidebarOrderDetail(BaseModel):
     payment_method_name: str | None
     shipping_provider: str | None
@@ -113,6 +117,15 @@ class SidebarTrackingTimeline(BaseModel):
 class SidebarTrackingTranslation(BaseModel):
     source_description: str
     translated_text: str
+
+
+class SidebarTrackingEventTranslation(SidebarTrackingTranslation):
+    occurred_at: datetime
+    tracking_number: str | None
+
+
+class SidebarTrackingTimelineTranslation(BaseModel):
+    events: list[SidebarTrackingEventTranslation]
 
 
 class SidebarSku(BaseModel):

@@ -219,6 +219,10 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .customer-timeline-notice { margin: 0; padding: 6px 11px; color: var(--muted); font-size: .69rem; line-height: 1.4; }
 .customer-timeline-content { min-height: 0; overflow-y: auto; padding: 9px 12px 12px; }
 .customer-timeline-meta { display: grid; gap: 5px; border-bottom: 1px solid var(--border); padding-bottom: 9px; overflow-wrap: anywhere; }
+.customer-timeline-meta-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.customer-timeline-meta-top > span { min-width: 0; overflow-wrap: anywhere; }
+.customer-timeline-meta-top .customer-copy-button { margin-left: 3px; vertical-align: middle; }
+.customer-timeline-draft { flex: none; color: var(--primary); font-size: .69rem; }
 .customer-timeline-events { margin: 8px 0 0 7px; border-left: 1px solid var(--border); padding: 0 0 0 16px; list-style: none; }
 .customer-timeline-events li { position: relative; padding: 0 0 14px; overflow-wrap: anywhere; }
 .customer-timeline-events li::before { position: absolute; top: 5px; left: -21px; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); content: ""; }

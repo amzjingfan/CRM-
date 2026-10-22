@@ -217,3 +217,101 @@ async def test_tracking_translation_reads_verified_description_without_sending(m
     assert session.add.call_args.args[0].after_data["input_tokens"] == 12
     assert source not in str(session.add.call_args.args[0].after_data)
     session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_tracking_timeline_translation_verifies_order_and_translates_all_events_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = Mock(spec=AsyncSession)
+    user = SimpleNamespace(id=uuid.uuid4())
+    session_id, store_id = uuid.uuid4(), uuid.uuid4()
+    occurred_at = datetime.now(UTC)
+    events = [
+        SimpleNamespace(description="Delivered", occurred_at=occurred_at, tracking_number="TRACK-1"),
+        SimpleNamespace(description="Picked up", occurred_at=occurred_at, tracking_number="TRACK-2"),
+    ]
+    packages = [
+        SimpleNamespace(events=[events[0]]),
+        SimpleNamespace(events=[events[1]]),
+    ]
+    monkeypatch.setattr(
+        workspace_service,
+        "get_settings",
+        lambda: SimpleNamespace(
+            workspace_message_translation_enabled=True,
+            llm_primary_model="deepseek-chat",
+        ),
+    )
+    detail = AsyncMock(return_value=SimpleNamespace(tracking_packages=packages))
+    monkeypatch.setattr(workspace_service, "get_sidebar_order_detail", detail)
+    monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    monkeypatch.setattr(
+        workspace_service,
+        "find_conversation",
+        AsyncMock(return_value=SimpleNamespace(id=session_id, store_id=store_id)),
+    )
+    monkeypatch.setattr(workspace_service, "build_provider", Mock(return_value=Mock()))
+    translate = AsyncMock(
+        side_effect=[
+            SimpleNamespace(
+                message_translation="已送达",
+                provider="deepseek",
+                model="deepseek-chat",
+                input_tokens=10,
+                output_tokens=3,
+            ),
+            SimpleNamespace(
+                message_translation="已揽收",
+                provider="deepseek",
+                model="deepseek-chat",
+                input_tokens=8,
+                output_tokens=3,
+            ),
+        ]
+    )
+    monkeypatch.setattr(workspace_service.TranslationService, "translate_bundle", translate)
+
+    result = await workspace_service.translate_sidebar_tracking_timeline(session, user, session_id, "600001", "trace")
+
+    assert [item.translated_text for item in result.events] == ["已送达", "已揽收"]
+    assert [call.kwargs["message"] for call in translate.await_args_list] == [
+        "Delivered",
+        "Picked up",
+    ]
+    detail.assert_awaited_once_with(session, user, session_id, "600001")
+    assert session.add.call_args.args[0].after_data["input_tokens"] == 18
+    assert "Delivered" not in str(session.add.call_args.args[0].after_data)
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_tracking_timeline_translation_rejects_sensitive_event_before_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = Mock(spec=AsyncSession)
+    monkeypatch.setattr(
+        workspace_service,
+        "get_settings",
+        lambda: SimpleNamespace(workspace_message_translation_enabled=True),
+    )
+    event = SimpleNamespace(
+        description="Customer phone: 123456789",
+        occurred_at=datetime.now(UTC),
+        tracking_number=None,
+    )
+    monkeypatch.setattr(
+        workspace_service,
+        "get_sidebar_order_detail",
+        AsyncMock(return_value=SimpleNamespace(tracking_packages=[SimpleNamespace(events=[event])])),
+    )
+    provider = Mock()
+    monkeypatch.setattr(workspace_service, "build_provider", provider)
+
+    with pytest.raises(AppError) as denied:
+        await workspace_service.translate_sidebar_tracking_timeline(
+            session, SimpleNamespace(id=uuid.uuid4()), uuid.uuid4(), "600001", "trace"
+        )
+
+    assert denied.value.status_code == 422
+    provider.assert_not_called()

@@ -86,6 +86,14 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       assert.equal(payload.order_id, "577600000000000001");
       if (calls.trackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "translation unavailable", data: null }) });
       data = { source_description: payload.event_description ?? latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), translated_text: "已送达" };
+    } else if (path.endsWith("/sidebar/orders/tracking-timeline-translation") && method === "POST") {
+      calls.trackingTranslations++;
+      const payload = JSON.parse(request.postData());
+      assert.deepEqual(payload, { order_id: "577600000000000001", enhanced: enhancedTracking });
+      if (calls.trackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "translation unavailable", data: null }) });
+      const descriptions = enhancedTracking ? ["Delivered", "Picked up"] : [latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), "Picked up by carrier"];
+      const trackingNumbers = enhancedTracking ? ["NEW-1", "OLD-2"] : [null, null];
+      data = { events: descriptions.map((source_description, index) => ({ source_description, translated_text: index ? "已揽收" : "已送达", occurred_at: index ? "2026-10-15T19:20:00Z" : "2026-10-16T23:26:48Z", tracking_number: trackingNumbers[index] })) };
     } else if (path.endsWith("/sidebar/products/123") && method === "GET") {
       calls.productDetails++;
       data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: "https://example.invalid/product.png", skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
@@ -421,20 +429,54 @@ test("tracking popover shows every returned event, copies all, and downloads a P
   } finally { await context.close(); }
 });
 
-test("cross border tracking switches between official parcels and translates a selected event", async () => {
+test("cross border tracking translates all parcels in one click and only fills the message draft", async () => {
   const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, true, "Black", true);
   try {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.getByTestId("customer-order-card").getByRole("button", { name: "查看完整物流" }).click();
     const dialog = page.getByRole("dialog", { name: "物流完整信息" });
     await dialog.getByRole("tab", { name: "包裹 2" }).click();
     await dialog.getByText("OLD-2").waitFor();
     assert.equal(calls.enhancedTracking, 1);
-    await dialog.getByRole("button", { name: "译成中文" }).click();
-    await dialog.getByText("已送达").waitFor();
+    assert.equal(await dialog.getByRole("button", { name: "译成中文" }).count(), 0);
+    await dialog.getByRole("button", { name: "翻译全部" }).click();
+    await dialog.getByText("已揽收").waitFor();
     assert.equal(await dialog.getByText("Picked up", { exact: true }).count(), 0);
+    await dialog.getByRole("tab", { name: "包裹 1" }).click();
+    await dialog.getByText("已送达").waitFor();
     await dialog.getByRole("button", { name: "查看原文" }).click();
+    await dialog.getByText("Delivered", { exact: true }).waitFor();
+    await dialog.getByRole("tab", { name: "包裹 2" }).click();
     await dialog.getByText("Picked up", { exact: true }).waitFor();
-    assert.equal(calls.trackingTranslations, 1);
+    await dialog.getByRole("button", { name: "复制物流单号" }).click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "OLD-2");
+    await dialog.getByRole("button", { name: "重新翻译" }).click();
+    await dialog.getByText("已揽收").waitFor();
+    assert.equal(calls.trackingTranslations, 2);
+    await dialog.getByRole("button", { name: "发送物流卡片" }).click();
+    const draft = await page.getByRole("textbox", { name: "回复内容" }).inputValue();
+    assert.match(draft, /OLD-2/);
+    assert.match(draft, /Picked up/);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("bulk tracking translation failure keeps every original event and allows retry", async () => {
+  const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, true);
+  try {
+    await page.getByTestId("customer-order-card").getByRole("button", { name: "查看完整物流" }).click();
+    const dialog = page.getByRole("dialog", { name: "物流完整信息" });
+    calls.trackingFailure = true;
+    await dialog.getByRole("button", { name: "翻译全部" }).click();
+    await dialog.getByRole("status").waitFor();
+    await dialog.getByText("Package dispatched", { exact: true }).waitFor();
+    await dialog.getByText("Picked up by carrier", { exact: true }).waitFor();
+    assert.equal(await dialog.getByText("已送达").count(), 0);
+    calls.trackingFailure = false;
+    await dialog.getByRole("button", { name: "翻译全部" }).click();
+    await dialog.getByText("已送达").waitFor();
+    await dialog.getByText("已揽收").waitFor();
+    assert.equal(calls.trackingTranslations, 2);
     assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });

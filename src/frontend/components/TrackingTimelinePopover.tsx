@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Camera, Copy, ListBullets, X } from "@phosphor-icons/react";
-import { getCustomerSidebarEnhancedTracking, translateSidebarTracking, type SidebarTrackingEvent, type SidebarTrackingPackage } from "../lib/api";
+import { getCustomerSidebarEnhancedTracking, translateSidebarTrackingTimeline, type SidebarTrackingEvent, type SidebarTrackingPackage } from "../lib/api";
 
 function formattedTime(value: string, en: boolean) {
   const date = new Date(value);
@@ -74,23 +74,26 @@ async function downloadTimelineImage(
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, enhancedAvailable, en }: {
+export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, enhancedAvailable, translationEnabled, fillDraft, en }: {
   sessionId: string;
   orderId: string;
   initialPackages: SidebarTrackingPackage[];
   enhancedAvailable: boolean;
+  translationEnabled: boolean;
+  fillDraft: (value: string) => void;
   en: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [packages, setPackages] = useState(initialPackages);
   const [enhanced, setEnhanced] = useState(false);
   const [enhancedTried, setEnhancedTried] = useState(false);
+  const [enhancedLoading, setEnhancedLoading] = useState(false);
   const [selected, setSelected] = useState(0);
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [showOriginal, setShowOriginal] = useState(false);
-  const [translating, setTranslating] = useState("");
+  const [translating, setTranslating] = useState(false);
   const [position, setPosition] = useState({ left: 8, top: 8, width: 380 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -102,8 +105,11 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
     setPackages(initialPackages);
     setEnhanced(false);
     setEnhancedTried(false);
+    setEnhancedLoading(false);
     setSelected(0);
     setTranslations({});
+    setShowOriginal(false);
+    setTranslating(false);
     setNotice("");
   }, [initialPackages]);
 
@@ -111,15 +117,23 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
     if (!open || !enhancedAvailable || enhancedTried) return;
     const requestedVersion = detailVersion.current;
     setEnhancedTried(true);
+    setEnhancedLoading(true);
     getCustomerSidebarEnhancedTracking(sessionId, orderId).then((result) => {
       if (requestedVersion !== detailVersion.current) return;
+      setEnhancedLoading(false);
       if (result.packages.length) {
+        detailVersion.current += 1;
         setPackages(result.packages);
         setEnhanced(true);
         setSelected(0);
+        setTranslations({});
+        setShowOriginal(false);
       } else setNotice(en ? "TikTok returned no enhanced events; showing standard history." : "TikTok 暂无增强轨迹，已显示通用轨迹。 ");
     }).catch((error) => {
-      if (requestedVersion === detailVersion.current) setNotice(error instanceof Error ? error.message : en ? "Enhanced history unavailable" : "增强轨迹暂不可用");
+      if (requestedVersion === detailVersion.current) {
+        setEnhancedLoading(false);
+        setNotice(error instanceof Error ? error.message : en ? "Enhanced history unavailable" : "增强轨迹暂不可用");
+      }
     });
   }, [open, enhancedAvailable, enhancedTried, sessionId, orderId, en]);
 
@@ -171,28 +185,47 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
     } catch { setNotice(en ? "Copy failed, please retry" : "复制失败，请重试"); }
   }
 
-  async function translateEvent(event: SidebarTrackingEvent) {
-    const key = eventKey(event);
+  async function translateAll() {
     if (translating) return;
-    setTranslating(key);
+    const version = detailVersion.current;
+    const events = packages.flatMap((item) => item.events);
+    setTranslating(true);
     setNotice("");
     try {
-      const result = await translateSidebarTracking(sessionId, orderId, { ...event, enhanced });
-      if (result.source_description !== event.description || !result.translated_text.trim()) throw new Error(en ? "History changed; refresh and retry" : "物流轨迹已变化，请刷新后重试");
-      setTranslations((current) => ({ ...current, [key]: result.translated_text }));
+      const result = await translateSidebarTrackingTimeline(sessionId, orderId, enhanced);
+      if (version !== detailVersion.current) return;
+      if (result.events.length !== events.length || result.events.some((translated, index) =>
+        translated.source_description !== events[index].description ||
+        translated.tracking_number !== events[index].tracking_number ||
+        new Date(translated.occurred_at).getTime() !== new Date(events[index].occurred_at).getTime() ||
+        !translated.translated_text.trim()
+      )) throw new Error(en ? "History changed; refresh and retry" : "物流轨迹已变化，请刷新后重试");
+      setTranslations(Object.fromEntries(result.events.map((translated, index) => [eventKey(events[index]), translated.translated_text])));
       setShowOriginal(false);
-    } catch (error) { setNotice(error instanceof Error ? error.message : en ? "Translation failed" : "翻译失败，请重试"); }
-    finally { setTranslating(""); }
+    } catch (error) { if (version === detailVersion.current) setNotice(error instanceof Error ? error.message : en ? "Translation failed" : "翻译失败，请重试"); }
+    finally { if (version === detailVersion.current) setTranslating(false); }
+  }
+
+  function fillTrackingDraft() {
+    if (!current) return;
+    const draft = [
+      `物流单号：${current.tracking_number ?? "—"}`,
+      `物流商：${current.carrier_name ?? "—"}`,
+      ...current.events.map((event) => `${formattedTime(event.occurred_at, en)}  ${event.description}`),
+    ].join("\n");
+    if (draft.length > 2000) { setNotice("物流内容超过消息长度限制，请复制后选取需要的节点。"); return; }
+    fillDraft(draft);
+    setOpen(false);
   }
 
   return <>
     <button aria-expanded={open} aria-label={en ? "View full tracking history" : "查看完整物流"} className="customer-tracking-open" onClick={() => setOpen((value) => !value)} ref={triggerRef} title={en ? "Full tracking history" : "完整物流信息"} type="button"><ListBullets size={14} /></button>
     {open ? createPortal(<div aria-label={en ? "Full tracking history" : "物流完整信息"} className="customer-timeline-popover" ref={popoverRef} role="dialog" style={position}>
       <div className="customer-timeline-header"><strong>{en ? "Tracking history" : "物流完整信息"}</strong><button aria-label={en ? "Close" : "关闭"} onClick={() => { setOpen(false); triggerRef.current?.focus(); }} type="button"><X size={15} /></button></div>
-      <div className="customer-timeline-actions"><button disabled={!packages.length} onClick={() => void copyAll()} type="button"><Copy size={13} />{copied ? en ? "Copied" : "已复制" : en ? "Copy all" : "复制全部"}</button><button disabled={!current} onClick={() => { if (current) void downloadTimelineImage(current, en, translations, showOriginal).catch((error) => setNotice(error instanceof Error ? error.message : "截图失败")); }} title={en ? "Screenshot of selected package" : "生成当前包裹截图"} type="button"><Camera size={13} />{en ? "Screenshot" : "生成截图"}</button>{Object.keys(translations).length ? <button onClick={() => setShowOriginal((value) => !value)} type="button">{showOriginal ? en ? "Show translations" : "查看译文" : en ? "Show original" : "查看原文"}</button> : null}</div>
+      <div className="customer-timeline-actions"><button disabled={!packages.length} onClick={() => void copyAll()} type="button"><Copy size={13} />{copied ? en ? "Copied" : "已复制" : en ? "Copy all" : "复制全部"}</button><button disabled={!current} onClick={() => { if (current) void downloadTimelineImage(current, en, translations, showOriginal).catch((error) => setNotice(error instanceof Error ? error.message : "截图失败")); }} title={en ? "Screenshot of selected package" : "生成当前包裹截图"} type="button"><Camera size={13} />{en ? "Screenshot" : "生成截图"}</button>{Object.keys(translations).length ? <button onClick={() => setShowOriginal((value) => !value)} type="button">{showOriginal ? "查看译文" : "查看原文"}</button> : null}{!en && translationEnabled && packages.some((item) => item.events.some((event) => /[A-Za-z]/.test(event.description))) ? <button disabled={translating || enhancedLoading} onClick={() => void translateAll()} type="button">{translating ? "翻译中…" : Object.keys(translations).length ? "重新翻译" : "翻译全部"}</button> : null}</div>
       {notice ? <p className="customer-timeline-notice" role="status">{notice}</p> : null}
       {packages.length > 1 ? <div aria-label={en ? "Packages" : "包裹"} className="customer-timeline-tabs" role="tablist">{packages.map((_, index) => <button aria-selected={selected === index} key={index} onClick={() => setSelected(index)} role="tab" type="button">{en ? "Package" : "包裹"} {index + 1}</button>)}</div> : null}
-      {current ? <div className="customer-timeline-content" role="tabpanel"><div className="customer-timeline-meta"><span>{en ? "Tracking number" : "物流单号"}：{current.tracking_number ?? "—"}</span><span>{en ? "Carrier" : "物流商"}：{current.carrier_name ?? "—"}</span></div>{current.events.length ? <ol className="customer-timeline-events">{current.events.map((event, index) => <li key={`${eventKey(event)}-${index}`}><span className="customer-timeline-event-text">{!showOriginal ? translations[eventKey(event)] ?? event.description : event.description}</span><time>{formattedTime(event.occurred_at, en)}</time>{event.tracking_number && event.tracking_number !== current.tracking_number ? <small>{en ? "Tracking" : "节点单号"}：{event.tracking_number}</small> : null}{!en && /[A-Za-z]/.test(event.description) ? <button disabled={Boolean(translating)} onClick={() => void translateEvent(event)} type="button">{translating === eventKey(event) ? "翻译中…" : translations[eventKey(event)] ? "重新翻译" : "译成中文"}</button> : null}</li>)}</ol> : <p className="customer-side-muted">{en ? "No tracking events returned by TikTok" : "TikTok 暂无物流节点"}</p>}</div> : <p className="customer-side-muted">{en ? "No tracking history returned by TikTok" : "TikTok 暂无物流轨迹"}</p>}
+      {current ? <div className="customer-timeline-content" role="tabpanel"><div className="customer-timeline-meta"><div className="customer-timeline-meta-top"><span>{en ? "Tracking number" : "物流单号"}：{current.tracking_number ?? "—"}{current.tracking_number ? <button aria-label={en ? "Copy tracking number" : "复制物流单号"} className="customer-copy-button" onClick={() => void navigator.clipboard.writeText(current.tracking_number ?? "").catch(() => setNotice(en ? "Copy failed" : "复制失败，请重试"))} title={en ? "Copy tracking number" : "复制物流单号"} type="button"><Copy size={12} /></button> : null}</span><button className="customer-timeline-draft" onClick={fillTrackingDraft} type="button">{en ? "Use in draft" : "发送物流卡片"}</button></div><span>{en ? "Carrier" : "物流商"}：{current.carrier_name ?? "—"}</span></div>{current.events.length ? <ol className="customer-timeline-events">{current.events.map((event, index) => <li key={`${eventKey(event)}-${index}`}><span className="customer-timeline-event-text">{!showOriginal ? translations[eventKey(event)] ?? event.description : event.description}</span><time>{formattedTime(event.occurred_at, en)}</time>{event.tracking_number && event.tracking_number !== current.tracking_number ? <small>{en ? "Tracking" : "节点单号"}：{event.tracking_number}</small> : null}</li>)}</ol> : <p className="customer-side-muted">{en ? "No tracking events returned by TikTok" : "TikTok 暂无物流节点"}</p>}</div> : <p className="customer-side-muted">{en ? "No tracking history returned by TikTok" : "TikTok 暂无物流轨迹"}</p>}
     </div>, document.body) : null}
   </>;
 }
