@@ -156,6 +156,125 @@ test("knowledge creation controls stay disabled until a store is available", asy
   }
 });
 
+test("knowledge prototype keeps navigation, parameter drawer, and detail interaction coherent", async () => {
+  const category = {
+    id: "00000000-0000-4000-8000-0000000000c1",
+    store_id: store.id,
+    parent_id: null,
+    name: "物流与仓储",
+    code: "logistics",
+    layer: "C",
+    sort_order: 1,
+    status: "active",
+  };
+  const entry = {
+    id: "00000000-0000-4000-8000-0000000000e1",
+    store_id: store.id,
+    category_id: category.id,
+    question: "美国订单物流时效说明",
+    answer: "标准配送预计三到五个工作日。",
+    source: null,
+    tags: ["物流"],
+    status: "published",
+    vectorization_status: "ready",
+    document_version: 3,
+    usage_count: 2,
+    satisfaction_rate: null,
+    statement_type: "policy",
+    customer_scope: "generic",
+    publication_approval: "approved_for_internal_review",
+    semantic_schema_version: 1,
+    approved_by: null,
+    approved_at: null,
+    published_at: null,
+    created_at: "2026-10-20T00:00:00Z",
+    updated_at: "2026-10-21T00:00:00Z",
+  };
+  const { context, page } = await openPage("/knowledge", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+    "GET /v1/knowledge/categories": [category],
+    "GET /v1/knowledge/entries": { items: [entry], page: 1, page_size: 20, total: 1 },
+    "GET /v1/knowledge/vectorization/status": {
+      store_id: store.id,
+      worker_enabled: true,
+      provider: "local_bge",
+      model: "BAAI/bge-m3",
+      dimensions: 1024,
+      counts: { pending: 0, processing: 0, ready: 1, failed: 0 },
+    },
+  });
+  try {
+    await page.getByText("CRM 智能聊天系统").waitFor();
+    await page.getByRole("button", { name: /流程参数/ }).click();
+    const parameters = page.getByRole("dialog", { name: /知识库参数配置/ });
+    await parameters.waitFor();
+    await parameters.getByRole("spinbutton", { name: "分块大小" }).fill("700");
+    await parameters.getByRole("slider", { name: /单次召回数量/ }).fill("12");
+    await parameters.getByRole("button", { name: /保存并应用/ }).click();
+    await page.getByText(/分块：700.*召回：12/).waitFor();
+    assert.equal(await parameters.isVisible(), false);
+
+    await page.getByRole("button", { name: "物流与仓储" }).click();
+    await page.getByRole("heading", { name: "物流与仓储" }).waitFor();
+    await page.getByRole("combobox", { name: "文件类型" }).selectOption("pdf");
+    await page.getByText("当前条件下没有知识文档").waitFor();
+    await page.getByRole("combobox", { name: "文件类型" }).selectOption("");
+
+    await page.getByRole("button", { name: "查看", exact: true }).click();
+    const detail = page.getByRole("dialog", { name: "知识详情" });
+    await detail.getByText("美国订单物流时效说明").waitFor();
+    await detail.getByText("标准配送预计三到五个工作日。").waitFor();
+    await page.keyboard.press("Escape");
+    assert.equal(await detail.isVisible(), false);
+    assert.equal(await page.getByRole("link", { name: "Agent 管理" }).count(), 1);
+    await page.reload();
+    await page.getByText(/分块：500.*召回：20/).waitFor();
+    await page.setViewportSize({ width: 760, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("knowledge demo upload stays in the page while CSV uses the existing import API", async () => {
+  const importJob = { id: "demo-job", status: "succeeded", total_rows: 1, succeeded_rows: 1, failed_rows: 0 };
+  const { context, page } = await openPage("/knowledge", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+    "GET /v1/knowledge/categories": [],
+    "GET /v1/knowledge/entries": { items: [], page: 1, page_size: 20, total: 0 },
+    "GET /v1/knowledge/vectorization/status": {
+      store_id: store.id, worker_enabled: true, provider: "local_bge", model: "BAAI/bge-m3", dimensions: 1024,
+      counts: { pending: 0, processing: 0, ready: 0, failed: 0 },
+    },
+    "POST /v1/knowledge/imports": { job_id: importJob.id, status: "pending" },
+    "GET /v1/knowledge/imports/demo-job": importJob,
+  });
+  const importRequests = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/v1/knowledge/imports") importRequests.push(request);
+  });
+  try {
+    await page.getByRole("button", { name: "新增知识" }).click();
+    await page.locator('input[type="file"]').setInputFiles({ name: "manual.pdf", mimeType: "application/pdf", buffer: Buffer.from("sample") });
+    await page.getByRole("button", { name: "确认上传并解析" }).click();
+    await page.getByText("manual.pdf").first().waitFor();
+    assert.equal(importRequests.length, 0);
+    await page.reload();
+    await page.getByRole("button", { name: "新增知识" }).waitFor();
+    assert.equal(await page.getByText("manual.pdf").count(), 0);
+
+    await page.getByRole("button", { name: "新增知识" }).click();
+    await page.locator('input[type="file"]').setInputFiles({ name: "facts.csv", mimeType: "text/csv", buffer: Buffer.from("question,answer\nQ,A\n") });
+    await page.getByRole("button", { name: "确认上传并解析" }).click();
+    await page.getByText(/CSV\/XLSX 已提交真实导入/).waitFor();
+    assert.equal(importRequests.length, 1);
+  } finally {
+    await context.close();
+  }
+});
+
 test("marketing workflow creation stays disabled until a store is available", async () => {
   const { context, page } = await openPage("/marketing");
   try {
@@ -584,7 +703,9 @@ test("knowledge archive failure is visibly announced", async () => {
     });
   });
   try {
-    await page.getByRole("button", { name: "归档" }).click();
+    await page.getByRole("button", { name: "查看", exact: true }).click();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("dialog", { name: "知识详情" }).getByRole("button", { name: "归档" }).click();
     await page.getByRole("status").getByText("归档服务不可用").waitFor({ state: "visible", timeout: 5000 });
   } finally {
     await context.close();

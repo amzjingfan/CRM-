@@ -111,9 +111,11 @@ test("knowledge and marketing pages implement the prototype while keeping live A
     read("app/knowledge/page.tsx"),
     read("app/marketing/page.tsx"),
   ]);
-  assert.match(knowledge, /knowledge-layout/);
+  assert.match(knowledge, /className="knowledge-page"/);
   assert.match(knowledge, /category_id/);
-  assert.match(knowledge, /editor-modal/);
+  assert.match(knowledge, /className="modal category-modal open"/);
+  assert.match(knowledge, /importKnowledge\(storeId, file\)/);
+  assert.match(knowledge, /listKnowledgeEntries\(query\)/);
   assert.match(marketing, /campaign-grid/);
   assert.match(marketing, /marketing-report/);
   assert.match(marketing, /getDashboardMetrics/);
@@ -122,12 +124,12 @@ test("knowledge and marketing pages implement the prototype while keeping live A
 test("knowledge layers are interactive, URL-backed, and protected from stale responses", async () => {
   const [knowledge, css] = await Promise.all([
     read("app/knowledge/page.tsx"),
-    read("app/globals.css"),
+    read("app/knowledge/knowledge-prototype.css"),
   ]);
   assert.match(knowledge, /selectedLayer/);
   assert.match(knowledge, /query\.set\("layer", selectedLayer\)/);
   assert.match(knowledge, /setSelectedLayer\(layer\.key\)/);
   assert.match(knowledge, /loadRequestId/);
-  assert.match(css, /\.tree-layer-title\.active/);
-  assert.match(css, /@media \(max-width: 1399px\)[\s\S]*\.prototype-page-header > \.prototype-title[^}]*flex: 1 0 100%/);
+  assert.match(css, /\.knowledge-page \.kb-layer-toggle/);
+  assert.match(css, /@media\(max-width:780px\)[\s\S]*\.knowledge-page \.categories\{width:170px\}/);
 });
