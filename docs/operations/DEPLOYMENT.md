@@ -1,6 +1,6 @@
 # 部署与运行边界
 
-2026-10-22 订单卡长 SKU 货号修复从合并 `main=ce70bbbaa735157c8cfa1417f3e21bc27f67c52e` 的干净源码手动部署 staging 前端 `sha256:ce4fe689…172aea`，后端与检索摘要不变。六角色预取、配置验证、私有 `0600` 数据库备份、Deploy、11 服务、固定出口和四个公网入口 HTTP 200 通过；已部署页面的长货号、长规格和缺失规格合成浏览器 3/3。原真实订单的现场显示与复制待用户确认，旧前端摘要保留供回滚；未外发买家消息，production G8 No-Go。见[TR R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-SELLER-SKU-001-20261022-R02.md)与[低敏证据](../../release/evidence/staging/crm-staging-customer-sidebar-seller-sku-20261022.json)。
+2026-10-22 订单卡长 SKU 货号修复从合并 `main=ce70bbbaa735157c8cfa1417f3e21bc27f67c52e` 的干净源码手动部署 staging 前端 `sha256:ce4fe689…172aea`，后端与检索摘要不变。六角色预取、配置验证、私有 `0600` 数据库备份、Deploy、11 服务、固定出口和四个公网入口 HTTP 200 通过；已部署页面的长货号、长规格和缺失规格合成浏览器 3/3。用户刷新原真实订单卡后确认货号完整显示与复制“两项都正常”，旧前端摘要保留供回滚；未外发买家消息，production G8 No-Go。见[TR R03](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-SELLER-SKU-001-20261022-R03.md)与[低敏证据](../../release/evidence/staging/crm-staging-customer-sidebar-seller-sku-20261022.json)。
 
 2026-10-22 工作台关闭会话站内弹窗修复已从合入 `main=56ea8d4e5d95951c9052220b26b3b54d051992b4` 手动发布到 staging：前端 `sha256:0f541c75…111385`，后端与检索摘要不变。现场私有恢复快照、`0600` 数据库备份、六角色镜像预取、`ValidateOnly`、`Deploy`、迁移头 `025_workspace_actions`、11 服务和四个公网入口 HTTP 200 均核对通过；已部署页面合成弹窗用例 1/1，用户刷新真实会话后确认“修复好了”。旧前端摘要保留供回滚；GitHub Actions 在零步骤失败，不计 CI；未关闭真实会话或外发买家消息，production G8 No-Go。见[TR](../reports/tests/TR-MVP-WORKSPACE-CLOSE-DIALOG-001-20261022-R01.md)与[低敏证据](../../release/evidence/staging/crm-staging-workspace-close-dialog-20261022.json)。
 

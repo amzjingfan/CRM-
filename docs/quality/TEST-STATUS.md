@@ -4,7 +4,7 @@
 
 ## 模块状态
 
-2026-10-22 订单卡长 SKU 货号 [TR R02](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-SELLER-SKU-001-20261022-R02.md) 为 `PARTIAL`：subject `f512fb8a` 的合成浏览器用例先复现 `false !== true`，改为换行后本地生产浏览器 59/59、前端契约 47/47、typecheck/build 通过，lint 0 error/5 warning。源码 PR #512 合入后，前端通过手动门禁部署 staging，运行摘要、11 服务、四公网健康入口与部署页合成浏览器 3/3 通过；真实订单显示和复制仍待用户核对。无买家外发，production G8 No-Go。
+2026-10-22 订单卡长 SKU 货号 [TR R03](../reports/tests/TR-MVP-WORKSPACE-CUSTOMER-SIDEBAR-SELLER-SKU-001-20261022-R03.md) 为 `PASS`：subject `f512fb8a` 的合成浏览器用例先复现 `false !== true`，改为换行后本地生产浏览器 59/59、前端契约 47/47、typecheck/build 通过，lint 0 error/5 warning。源码 PR #512 合入后，前端通过手动门禁部署 staging，运行摘要、11 服务、四公网健康入口与部署页合成浏览器 3/3 通过；用户刷新真实订单卡后回复“两项都正常”，确认完整换行显示与复制。无买家外发，production G8 No-Go。
 
 2026-10-22 原生物流卡片 [TR R06](../reports/tests/TR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R06.md) 为 `PASS`：subject `97c5d6bb` 的后端 2233 passed/29 skipped，前端契约 47 passed、生产合成浏览器 27 passed，Ruff/格式/mypy/typecheck/build 通过；合并主线的前后端经手动门禁部署 staging，运行摘要、11 服务与四公网健康入口通过。用户刷新真实登录态会话后回复“两项都正常”，确认发送栏卡片和同一物流详情弹窗；后续前端更新的部署页面卡片定向合成浏览器 2/2。Codex 页面读取仍 `UI_UNAVAILABLE`；未向真实买家发送卡片，TikTok 实际接收未测试，production G8 No-Go。
 
