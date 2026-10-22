@@ -1053,6 +1053,182 @@ async def test_seller_deauthorization_destroys_local_token_and_writes_lifecycle_
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("action", ["deauthorized", "expiring"])
+async def test_authorization_event_does_not_restore_manually_removed_shop(action: str) -> None:
+    """手动删除后的平台生命周期通知不能让店铺重新出现在授权列表。"""
+    channel = connected_channel()
+    channel.status = "disconnected"
+    channel.metadata_json = {**channel.metadata_json, "oauth_status": "revoked"}
+    event = WebhookEvent(
+        id=uuid.uuid4(),
+        platform="tiktok",
+        channel_account_id=channel.id,
+        external_event_id="late-auth-event",
+        event_type="SELLER_DEAUTHORIZATION",
+        signature_valid=True,
+        payload_hash="a" * 64,
+        raw_payload={},
+        status="processing",
+        received_at=datetime.now(UTC),
+    )
+    added: list[object] = []
+    session = SimpleNamespace(add=added.append)
+
+    await integration_service._process_tiktok_authorization(
+        session,  # type: ignore[arg-type]
+        event,
+        channel,
+        TikTokAuthorizationLifecycleEvent(
+            action=action,  # type: ignore[arg-type]
+            event_id="late-auth-event",
+            external_store_id=channel.external_store_id,
+        ),
+    )
+
+    assert channel.status == "disconnected"
+    assert channel.metadata_json["oauth_status"] == "revoked"
+    assert any(isinstance(value, AuditLog) for value in added)
+
+
+@pytest.mark.asyncio
+async def test_disconnected_shop_rejects_new_message_webhook_without_storing_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """本地删除授权后不再接收入站买家数据。"""
+    channel = connected_channel()
+    channel.status = "disconnected"
+    inserted: list[object] = []
+
+    class FakeSession:
+        async def scalar(self, statement: object) -> object:
+            entity = statement.column_descriptions[0]["entity"]  # type: ignore[attr-defined]
+            return channel if entity is ChannelAccount else None
+
+        def add(self, item: object) -> None:
+            inserted.append(item)
+
+        async def commit(self) -> None:
+            raise AssertionError("disconnected webhook must not persist")
+
+    class SignedAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return True
+
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: SignedAdapter())
+    with pytest.raises(AppError) as caught:
+        await integration_service.receive_webhook(
+            FakeSession(),  # type: ignore[arg-type]
+            "tiktok",
+            b"pending buyer text",
+            {"type": 14, "tts_notification_id": "msg-after-delete", "shop_id": channel.external_store_id},
+            {"authorization": "signed"},
+        )
+
+    assert caught.value.code == ErrorCode.RESOURCE_NOT_FOUND
+    assert inserted == []
+
+
+@pytest.mark.asyncio
+async def test_disconnected_shop_still_accepts_authorization_webhook(monkeypatch: pytest.MonkeyPatch) -> None:
+    """断连渠道仍可接收平台撤销通知并留下生命周期审计。"""
+    channel = connected_channel()
+    channel.status = "disconnected"
+    saved: list[object] = []
+
+    class FakeSession:
+        async def scalar(self, statement: object) -> object:
+            entity = statement.column_descriptions[0]["entity"]  # type: ignore[attr-defined]
+            return channel if entity is ChannelAccount else None
+
+        def add(self, item: object) -> None:
+            saved.append(item)
+
+        async def commit(self) -> None:
+            for item in saved:
+                if isinstance(item, WebhookEvent) and item.id is None:
+                    item.id = uuid.uuid4()
+
+    class SignedAdapter:
+        def verify_webhook(self, _raw_body: bytes, _headers: dict[str, str]) -> bool:
+            return True
+
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: SignedAdapter())
+    result = await integration_service.receive_webhook(
+        FakeSession(),  # type: ignore[arg-type]
+        "tiktok",
+        b"authorization lifecycle event",
+        {"type": 6, "tts_notification_id": "auth-after-delete", "shop_id": channel.external_store_id},
+        {"authorization": "signed"},
+    )
+
+    assert result.accepted is True
+    assert len([item for item in saved if isinstance(item, WebhookEvent)]) == 1
+
+
+@pytest.mark.asyncio
+async def test_queued_message_is_ignored_when_shop_was_disconnected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """删除前已经入队的买家消息在 Worker 执行时不得写入业务数据。"""
+    channel = connected_channel()
+    channel.status = "disconnected"
+    event = WebhookEvent(
+        id=uuid.uuid4(),
+        platform="tiktok",
+        channel_account_id=channel.id,
+        external_event_id="queued-before-delete",
+        event_type="NEW_MESSAGE",
+        signature_valid=True,
+        payload_hash="a" * 64,
+        raw_payload={"private_content": "buyer message"},
+        status="received",
+        retry_count=0,
+        received_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
+    )
+
+    class FakeSession:
+        async def scalar(self, _statement: object) -> object:
+            return event
+
+        async def get(self, model: type[object], _key: object, **_kwargs: object) -> object:
+            if model is ChannelAccount:
+                assert _kwargs.get("with_for_update") is True
+                return channel
+            return event
+
+        async def flush(self) -> None:
+            return None
+
+        async def commit(self) -> None:
+            return None
+
+        async def rollback(self) -> None:
+            return None
+
+    class MessageAdapter:
+        async def resolve_webhook_event(self, _channel: ChannelAccount, _payload: object) -> MessageCreatedEvent:
+            return MessageCreatedEvent(
+                event_type="message.created",
+                event_id="queued-before-delete",
+                external_store_id=channel.external_store_id,
+                external_conversation_id="conversation",
+                external_message_id="message",
+                customer={"external_id": "buyer"},
+                content="buyer message",
+                created_at=datetime.now(UTC),
+            )
+
+    monkeypatch.setattr(integration_service, "get_platform_adapter", lambda _platform: MessageAdapter())
+    processed = await integration_service.claim_and_process_one(FakeSession(), 3)  # type: ignore[arg-type]
+
+    assert processed is True
+    assert event.status == "ignored"
+    assert event.error_code == "CHANNEL_DISCONNECTED"
+    assert event.raw_payload == {}
+
+
+@pytest.mark.asyncio
 async def test_duplicate_event_id_never_bypasses_signature_verification(monkeypatch: pytest.MonkeyPatch) -> None:
     """攻击者复用已落库通知 ID 时仍需提供与当前原始正文匹配的签名。"""
     existing = SimpleNamespace(signature_valid=True, channel_account_id=uuid.uuid4())
@@ -1269,7 +1445,7 @@ async def test_concurrent_duplicate_rechecks_saved_body_after_unique_conflict(
 
         async def scalar(self, _statement: object) -> object:
             self.lookups += 1
-            return {1: None, 2: SimpleNamespace(id=uuid.uuid4()), 3: existing}[self.lookups]
+            return {1: None, 2: SimpleNamespace(id=uuid.uuid4(), status="connected"), 3: existing}[self.lookups]
 
         def add(self, _event: object) -> None:
             pass

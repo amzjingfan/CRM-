@@ -27,3 +27,17 @@ test("TikTok channel page displays only low-sensitive authorization state", asyn
   assert.equal(page.includes("window.history.replaceState"), true);
   assert.equal(page.includes("localStorage"), false);
 });
+
+test("TikTok store list starts direct OAuth and keeps deletion as revocation", async () => {
+  const page = await readFile(new URL("app/settings/stores/page.tsx", frontendRoot), "utf8");
+  const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
+
+  assert.match(api, /\/settings\/stores\/tiktok\/oauth\/start/);
+  assert.match(page, /startNewTikTokStoreOAuth\(\)/);
+  assert.match(page, /startTikTokOAuth\(storeId, "\/settings\/stores"\)/);
+  assert.match(page, /deleteChannel\(deleteRow\.channel\.id\)/);
+  assert.match(page, /updateStoreAlias\(storeId, aliasDraft\.trim\(\) \|\| null\)/);
+  assert.match(page, /authorization_expires_at/);
+  assert.match(page, /external_store_id/);
+  assert.doesNotMatch(page, /createStore/);
+});

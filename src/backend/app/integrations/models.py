@@ -40,7 +40,10 @@ class TikTokOAuthJob(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    store_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("stores.id", ondelete="CASCADE"), index=True)
+    store_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("stores.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    return_to: Mapped[str] = mapped_column(String(200), default="/settings/channels")
     state_cipher: Mapped[str | None] = mapped_column(String(1200), nullable=True)
     code_cipher: Mapped[str | None] = mapped_column(String(1200), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)

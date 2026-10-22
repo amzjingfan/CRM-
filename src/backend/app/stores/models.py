@@ -24,6 +24,11 @@ class Store(TimestampMixin, Base):
     metadata_json: Mapped[dict[str, object]] = mapped_column("metadata", JSONB, default=dict)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    @property
+    def alias(self) -> str | None:
+        value = (self.metadata_json or {}).get("alias")
+        return value if isinstance(value, str) and value else None
+
 
 class ChannelAccount(TimestampMixin, Base):
     """店铺在外部平台上的授权账号；只保存密钥引用，不保存明文密钥。"""
@@ -51,3 +56,41 @@ class ChannelAccount(TimestampMixin, Base):
     scopes: Mapped[list[str]] = mapped_column(JSONB, default=list)
     last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     metadata_json: Mapped[dict[str, object]] = mapped_column("metadata", JSONB, default=dict)
+
+    @property
+    def site(self) -> str | None:
+        value = (self.metadata_json or {}).get("region")
+        return value if isinstance(value, str) and value else None
+
+    @staticmethod
+    def _metadata_time(value: object) -> datetime | None:
+        if not isinstance(value, str):
+            return None
+        try:
+            parsed = datetime.fromisoformat(value)
+            return parsed if parsed.tzinfo is not None else None
+        except ValueError:
+            return None
+
+    @property
+    def authorization_expires_at(self) -> datetime | None:
+        metadata = self.metadata_json or {}
+        dates = [
+            self._metadata_time(metadata.get("refresh_token_expires_at")),
+            self._metadata_time(metadata.get("authorization_expires_at")),
+        ]
+        valid = [value for value in dates if value is not None]
+        return min(valid) if valid else None
+
+    @property
+    def authorization_status(self) -> str | None:
+        value = (self.metadata_json or {}).get("oauth_status")
+        return (
+            value
+            if isinstance(value, str) and value in {"revoked", "deauthorized", "reauthorization_required", "refreshed"}
+            else None
+        )
+
+    @property
+    def last_authorized_at(self) -> datetime | None:
+        return self._metadata_time((self.metadata_json or {}).get("last_authorized_at")) or self.created_at

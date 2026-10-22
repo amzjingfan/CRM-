@@ -9,8 +9,15 @@ from app.auth.dependencies import get_current_user, require_csrf, require_permis
 from app.shared.database.base import User
 from app.shared.database.session import DbSession
 from app.shared.schemas.responses import ApiResponse
-from app.stores.schemas import ChannelCreate, ChannelView, StoreCreate, StoreView
-from app.stores.service import create_channel, create_store, delete_channel, get_channels, get_stores
+from app.stores.schemas import ChannelCreate, ChannelView, StoreAliasUpdate, StoreCreate, StoreView
+from app.stores.service import (
+    create_channel,
+    create_store,
+    delete_channel,
+    get_channels,
+    get_stores,
+    update_store_alias,
+)
 
 router = APIRouter(prefix="/settings", tags=["店铺与渠道"])
 
@@ -31,6 +38,21 @@ async def add_store(
 ) -> ApiResponse[StoreView]:
     """创建店铺。"""
     return ApiResponse(data=StoreView.model_validate(await create_store(session, user, payload)))
+
+
+@router.patch(
+    "/stores/{store_id}/alias",
+    response_model=ApiResponse[StoreView],
+    dependencies=[Depends(require_csrf), Depends(require_role("admin"))],
+)
+async def set_store_alias(
+    store_id: uuid.UUID,
+    payload: StoreAliasUpdate,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[StoreView]:
+    """管理员编辑当前授权范围内的店铺别名。"""
+    return ApiResponse(data=StoreView.model_validate(await update_store_alias(session, user, store_id, payload)))
 
 
 @router.get(

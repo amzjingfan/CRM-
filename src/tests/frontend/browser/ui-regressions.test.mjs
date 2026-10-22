@@ -29,6 +29,21 @@ const store = {
   currency: "USD",
   created_at: "2026-09-01T00:00:00Z",
 };
+const storeChannel = {
+  id: "00000000-0000-4000-8000-0000000000c1",
+  store_id: store.id,
+  platform: "tiktok",
+  external_store_id: "7494319122518476618",
+  display_name: store.name,
+  status: "connected",
+  scopes: [],
+  last_sync_at: null,
+  created_at: "2026-09-01T00:00:00Z",
+  site: "US",
+  authorization_expires_at: "2125-01-21T14:12:11Z",
+  authorization_status: null,
+  last_authorized_at: "2026-10-22T00:00:00Z",
+};
 const agent = {
   id: "00000000-0000-4000-8000-0000000000a1",
   store_id: store.id,
@@ -151,50 +166,63 @@ test("marketing workflow creation stays disabled until a store is available", as
   }
 });
 
-test("store code with punctuation is rejected by browser validation", async () => {
+test("add store starts direct TikTok OAuth without a manual store form", async () => {
   const { context, page } = await openPage("/settings/stores");
   try {
-    await page.getByRole("button", { name: "添加店铺" }).click();
-    const code = page.locator('input[name="code"]');
-    await code.fill("c's");
-    assert.equal(await code.evaluate((input) => input.validity.valid), false);
-  } finally {
-    await context.close();
-  }
-});
-
-test("store creation error is visibly announced", async () => {
-  const { context, page } = await openPage("/settings/stores");
-  try {
-    await page.getByRole("button", { name: "添加店铺" }).click();
-    await context.route("**/v1/settings/stores", async (route) => {
-      if (route.request().method() !== "POST") return route.fallback();
-      await route.fulfill({
-        status: 422,
-        contentType: "application/json",
-        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
-        body: JSON.stringify({ code: 422, message: "编码格式不正确", data: null }),
-      });
+    let starts = 0;
+    await context.route("**/v1/settings/stores/tiktok/oauth/start", async (route) => {
+      starts += 1;
+      assert.equal(route.request().method(), "POST");
+      await route.fulfill({ status: 503, contentType: "application/json", headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      }, body: JSON.stringify({ code: 503, message: "授权暂不可用", data: null }) });
     });
-    await page.locator('input[name="name"]').fill("Test Store");
-    await page.locator('input[name="code"]').fill("test_store");
-    await page.getByRole("button", { name: "创建店铺" }).click();
-    await page.getByRole("status").getByText("编码格式不正确").waitFor({ state: "visible", timeout: 5000 });
+    await page.getByRole("button", { name: "添加店铺" }).click();
+    await page.getByRole("status").getByText("授权暂不可用").waitFor();
+    assert.equal(starts, 1);
+    assert.equal(await page.locator('input[name="code"]').count(), 0);
   } finally {
     await context.close();
   }
 });
 
-test("store settings filter real rows without inventing authorization fields", async () => {
+test("store alias can be edited without changing its platform identity", async () => {
+  const { context, page } = await openPage("/settings/stores", {
+    "GET /v1/settings/stores": [store], "GET /v1/settings/channels": [storeChannel],
+  });
+  try {
+    let alias = "";
+    await context.route("**/v1/settings/stores/*/alias", async (route) => {
+      alias = JSON.parse(route.request().postData()).alias;
+      await route.fulfill({ status: 200, contentType: "application/json", headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      }, body: JSON.stringify({ code: 0, message: "ok", data: { ...store, alias } }) });
+    });
+    await page.getByRole("button", { name: "编辑US Demo Store的别名" }).click();
+    await page.getByRole("textbox", { name: "店铺别名" }).fill("美国客服店");
+    await page.getByRole("button", { name: "保存" }).click();
+    await page.getByRole("status").getByText("别名已保存。").waitFor();
+    assert.equal(alias, "美国客服店");
+  } finally {
+    await context.close();
+  }
+});
+
+test("store settings filter actual authorization status and search aliases", async () => {
   const pausedStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Paused Store", code: "paused", status: "disabled" };
-  const { context, page } = await openPage("/settings/stores", { "GET /v1/settings/stores": [store, pausedStore] });
+  const expiredChannel = { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c2", store_id: pausedStore.id,
+    display_name: pausedStore.name, authorization_expires_at: "2020-01-01T00:00:00Z" };
+  const { context, page } = await openPage("/settings/stores", {
+    "GET /v1/settings/stores": [{ ...store, alias: "客服店" }, pausedStore],
+    "GET /v1/settings/channels": [storeChannel, expiredChannel],
+  });
   try {
     await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
-    await page.getByRole("button", { name: "其他 (1)" }).click();
+    await page.getByRole("button", { name: "已失效 (1)" }).click();
     assert.equal(await page.getByRole("row", { name: /US Demo Store/ }).count(), 0);
     await page.getByRole("row", { name: /Paused Store/ }).waitFor();
     await page.getByRole("button", { name: "全部 (2)" }).click();
-    await page.getByRole("textbox", { name: "搜索店铺" }).fill("US Demo");
+    await page.getByRole("textbox", { name: "搜索店铺" }).fill("客服店");
     assert.equal(await page.getByRole("row", { name: /Paused Store/ }).count(), 0);
     assert.equal(await page.getByRole("row", { name: /US Demo Store/ }).count(), 1);
   } finally {
@@ -202,22 +230,88 @@ test("store settings filter real rows without inventing authorization fields", a
   }
 });
 
+test("store list hides local deletions but retains platform deauthorizations for re-add", async () => {
+  const platformStore = { ...store, id: "00000000-0000-4000-8000-0000000000f3", name: "Platform revoked" };
+  const deletedStore = { ...store, id: "00000000-0000-4000-8000-0000000000f4", name: "Locally deleted" };
+  const mockStore = { ...store, id: "00000000-0000-4000-8000-0000000000f5", name: "Mock only" };
+  const { context, page } = await openPage("/settings/stores", {
+    "GET /v1/settings/stores": [store, platformStore, deletedStore, mockStore],
+    "GET /v1/settings/channels": [storeChannel,
+      { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c3", store_id: platformStore.id,
+        display_name: platformStore.name, status: "disconnected", authorization_status: "deauthorized" },
+      { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c4", store_id: deletedStore.id,
+        display_name: deletedStore.name, status: "disconnected", authorization_status: "revoked" }],
+  });
+  try {
+    await page.getByRole("row", { name: /Platform revoked/ }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "全部 (2)" }).count(), 1);
+    assert.equal(await page.getByRole("row", { name: /Locally deleted/ }).count(), 0);
+    assert.equal(await page.getByRole("row", { name: /Mock only/ }).count(), 0);
+    await page.getByRole("button", { name: "异常 (1)" }).click();
+    assert.equal(await page.getByRole("row", { name: /Platform revoked/ }).count(), 1);
+  } finally {
+    await context.close();
+  }
+});
+
 test("store settings keep readable columns in a narrow desktop window", async () => {
-  const { context, page } = await openPage("/settings/stores", { "GET /v1/settings/stores": [store] });
+  const { context, page } = await openPage("/settings/stores", {
+    "GET /v1/settings/stores": [store], "GET /v1/settings/channels": [storeChannel],
+  });
   try {
     await page.setViewportSize({ width: 820, height: 900 });
     await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
     const dimensions = await page.locator(".settings-table-wrap").evaluate((wrapper) => ({
       viewportWidth: wrapper.clientWidth,
       contentWidth: wrapper.scrollWidth,
-      statusWidth: wrapper.querySelector("tbody tr td:nth-child(3)")?.getBoundingClientRect().width ?? 0,
-      statusText: wrapper.querySelector("tbody tr td:nth-child(3) .status-badge")?.textContent ?? "",
-      statusHeight: wrapper.querySelector("tbody tr td:nth-child(3) .status-badge")?.getBoundingClientRect().height ?? 0,
+      statusWidth: wrapper.querySelector("tbody tr td:nth-child(6)")?.getBoundingClientRect().width ?? 0,
+      statusText: wrapper.querySelector("tbody tr td:nth-child(6) .store-status")?.textContent ?? "",
+      statusHeight: wrapper.querySelector("tbody tr td:nth-child(6) .store-status")?.getBoundingClientRect().height ?? 0,
     }));
     assert.ok(dimensions.contentWidth > dimensions.viewportWidth);
     assert.ok(dimensions.statusWidth >= 60);
-    assert.equal(dimensions.statusText, "正常");
+    assert.equal(dimensions.statusText, "生效中");
     assert.ok(dimensions.statusHeight <= 32);
+  } finally {
+    await context.close();
+  }
+});
+
+test("re-add uses the same store and deletion needs a second confirmation", async () => {
+  const { context, page } = await openPage("/settings/stores", {
+    "GET /v1/settings/stores": [store], "GET /v1/settings/channels": [storeChannel],
+  });
+  try {
+    let oauthStoreId = "";
+    let returnTo = "";
+    let deletions = 0;
+    await context.route("**/v1/settings/channels/tiktok/oauth/start?*", async (route) => {
+      const params = new URL(route.request().url()).searchParams;
+      oauthStoreId = params.get("store_id");
+      returnTo = params.get("return_to");
+      await route.fulfill({ status: 503, contentType: "application/json", headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      }, body: JSON.stringify({ code: 503, message: "重新授权暂不可用", data: null }) });
+    });
+    await context.route(`**/v1/settings/channels/${storeChannel.id}`, async (route) => {
+      deletions += 1;
+      await route.fulfill({ status: 204, headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      } });
+    });
+    await page.getByRole("button", { name: "重新添加" }).click();
+    await page.getByRole("status").getByText("重新授权暂不可用").waitFor();
+    assert.equal(oauthStoreId, store.id);
+    assert.equal(returnTo, "/settings/stores");
+    await page.getByRole("button", { name: "删除", exact: true }).click();
+    await page.getByRole("dialog").getByText(/系统 ID 和历史数据保留/).waitFor();
+    assert.equal(deletions, 0);
+    await page.getByRole("button", { name: "取消" }).click();
+    assert.equal(deletions, 0);
+    await page.getByRole("button", { name: "删除", exact: true }).click();
+    await page.getByRole("button", { name: "确认删除" }).click();
+    await page.getByRole("status").getByText(/历史数据已保留/).waitFor();
+    assert.equal(deletions, 1);
   } finally {
     await context.close();
   }

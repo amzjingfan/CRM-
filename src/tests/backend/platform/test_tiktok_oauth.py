@@ -5,6 +5,7 @@ import hmac
 import json
 import time
 import uuid
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -35,8 +36,8 @@ from app.shared.config.settings import (
     Settings,
 )
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.stores.models import ChannelAccount
-from app.stores.schemas import ChannelCreate
+from app.stores.models import ChannelAccount, Store
+from app.stores.schemas import ChannelCreate, ChannelView, StoreAliasUpdate, StoreView
 
 
 def oauth_settings(**overrides: Any) -> Settings:
@@ -315,6 +316,50 @@ def test_oauth_runtime_and_return_url_fail_closed() -> None:
         oauth_service.validate_return_to("/settings/channels?unexpected=1")
     with pytest.raises(AppError, match="回跳地址无效"):
         oauth_service.validate_return_to("/settings/channels#fragment")
+    assert oauth_service.validate_return_to("/settings/stores") == "/settings/stores"
+
+
+@pytest.mark.asyncio
+async def test_direct_add_starts_oauth_without_creating_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    """新店按钮只发一次性授权链接，卖家授权前不写内部店铺。"""
+    saved: list[dict[str, str]] = []
+
+    async def global_admin(*_: object) -> None:
+        return None
+
+    async def save(_: str, payload: dict[str, str], __: int) -> bool:
+        saved.append(payload)
+        return True
+
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", global_admin)
+    monkeypatch.setattr(oauth_service, "save_tiktok_oauth_state", save)
+    user_id = uuid.uuid4()
+    session = FakeSession()
+    result = await oauth_service.start_new_tiktok_store_oauth(  # type: ignore[arg-type]
+        session, SimpleNamespace(id=user_id), oauth_settings()
+    )
+    assert result.authorization_url.startswith("https://services.tiktokshop.com/open/authorize?")
+    assert saved == [{"user_id": str(user_id), "return_to": "/settings/stores"}]
+    assert session.added == [] and session.commits == 0
+
+
+@pytest.mark.asyncio
+async def test_direct_add_requires_system_admin_before_state_creation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """店铺级角色即使可读已有店铺，也不能开辟新租户。"""
+
+    async def denied(*_: object) -> None:
+        raise AppError(ErrorCode.PERMISSION_DENIED, "没有添加店铺的权限", 403)
+
+    async def unexpected_save(*_: object) -> bool:
+        raise AssertionError("不得写入 OAuth state")
+
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", denied)
+    monkeypatch.setattr(oauth_service, "save_tiktok_oauth_state", unexpected_save)
+    with pytest.raises(AppError) as error:
+        await oauth_service.start_new_tiktok_store_oauth(  # type: ignore[arg-type]
+            FakeSession(), SimpleNamespace(id=uuid.uuid4()), oauth_settings()
+        )
+    assert error.value.code == ErrorCode.PERMISSION_DENIED
 
 
 @pytest.mark.parametrize(
@@ -438,6 +483,7 @@ async def test_complete_oauth_encrypts_tokens_only_after_store_validation(monkey
         _async_result(SimpleNamespace(id=user_id, status="active")),
     )
     monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", _async_result(None))
     monkeypatch.setattr(oauth_service, "get_active_store", _async_result(SimpleNamespace(id=store_id)))
     monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(None))
     monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(None))
@@ -463,6 +509,256 @@ async def test_complete_oauth_encrypts_tokens_only_after_store_validation(monkey
     assert channel.metadata_json["open_id_hash"] != "seller-open-id"
     assert audit.action == "channel.authorize"
     assert audit.result == "succeeded"
+    assert session.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_direct_add_creates_store_only_after_verified_shop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """平台返回唯一卖家店铺且 Scope 完整后，才原子建立系统 ID 和渠道。"""
+    user_id = uuid.uuid4()
+    session = FakeSession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(None))
+    monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(None))
+
+    result = await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+        session, "valid-state", "unit-test-auth-code", None, oauth_settings(), FakeOAuthClient()
+    )
+
+    store = next(value for value in session.added if isinstance(value, Store))
+    channel = next(value for value in session.added if isinstance(value, ChannelAccount))
+    assert result.status == "connected" and result.return_to == "/settings/stores"
+    assert result.store_id == store.id == channel.store_id
+    assert store.name == "TikTok Shop One" and store.currency == "GBP"
+    assert store.code == f"tiktok-{store.id.hex}"
+    assert channel.metadata_json["region"] == "GB"
+    assert isinstance(channel.metadata_json["last_authorized_at"], str)
+    assert session.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_direct_add_denial_leaves_no_empty_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    """卖家取消授权时只记低敏失败审计，不留占位店铺。"""
+    user_id = uuid.uuid4()
+    session = FakeSession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    result = await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+        session, "valid-state", None, "seller_denied", oauth_settings()
+    )
+    assert result.status == "denied"
+    assert not any(isinstance(value, Store) for value in session.added)
+    assert any(isinstance(value, AuditLog) and value.result == "failed" for value in session.added)
+
+
+@pytest.mark.asyncio
+async def test_direct_add_reuses_disconnected_store_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """删除授权后重新添加同一平台店铺，复用旧租户和业务历史。"""
+    user_id, store_id = uuid.uuid4(), uuid.uuid4()
+    channel = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=store_id,
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Old shop",
+        access_token_ref="revoked://old",
+        status="disconnected",
+        metadata_json={},
+    )
+    session = FakeSession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", _async_result(None))
+    monkeypatch.setattr(oauth_service, "get_active_store", _async_result(SimpleNamespace(id=store_id)))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(channel))
+    monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(channel))
+    result = await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+        session, "valid-state", "unit-test-auth-code", None, oauth_settings(), FakeOAuthClient()
+    )
+    assert result.store_id == store_id and channel.status == "connected"
+    assert not any(isinstance(value, Store) for value in session.added)
+
+
+@pytest.mark.asyncio
+async def test_direct_add_rejects_existing_connected_shop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """添加按钮不能重绑已连接的店铺，必须使用对应行的重新添加。"""
+    user_id = uuid.uuid4()
+    existing = SimpleNamespace(store_id=uuid.uuid4(), status="connected")
+    session = FakeSession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(existing))
+
+    with pytest.raises(AppError) as error:
+        await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+            session, "valid-state", "unit-test-auth-code", None, oauth_settings(), FakeOAuthClient()
+        )
+    assert error.value.code == ErrorCode.RESOURCE_CONFLICT
+    assert not any(isinstance(value, Store) for value in session.added)
+
+
+def test_store_list_views_expose_shop_fields_without_credentials() -> None:
+    """店铺列表仅返回站点和授权时间等低敏摘要，不泄露 Token 或密文。"""
+    now = datetime.now(UTC)
+    store = Store(
+        id=uuid.uuid4(),
+        name="Shop One",
+        code="shop-one",
+        status="active",
+        timezone="UTC",
+        currency="GBP",
+        metadata_json={"alias": "客服店"},
+        created_at=now,
+    )
+    channel = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=store.id,
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Shop One",
+        access_token_ref="encrypted:v1:secret",
+        status="connected",
+        scopes=[],
+        last_sync_at=None,
+        created_at=now,
+        metadata_json={"region": "GB", "refresh_token_expires_at": now.isoformat()},
+    )
+    store_view = StoreView.model_validate(store)
+    channel_view = ChannelView.model_validate(channel)
+    assert store_view.alias == "客服店" and store_view.id == store.id
+    assert channel_view.site == "GB" and channel_view.authorization_expires_at == now
+    assert channel_view.last_authorized_at == now
+    assert "access_token_ref" not in channel_view.model_dump()
+
+    # 平台到期通知可能早于 Refresh Token 到期；列表必须显示更早的真实期限。
+    earlier = now - timedelta(days=1)
+    channel.metadata_json = {
+        **channel.metadata_json,
+        "authorization_expires_at": earlier.isoformat(),
+        "oauth_status": "reauthorization_required",
+    }
+    warned = ChannelView.model_validate(channel)
+    assert warned.authorization_expires_at == earlier
+    assert warned.authorization_status == "reauthorization_required"
+
+
+@pytest.mark.asyncio
+async def test_store_admin_check_is_bound_to_target_store() -> None:
+    """其他店铺的管理员身份不能用于修改目标店铺的别名或撤销授权。"""
+    store_id, user_id = uuid.uuid4(), uuid.uuid4()
+
+    class RoleSession:
+        statement = None
+
+        async def scalar(self, statement: object) -> None:
+            self.statement = statement
+            return None
+
+    session = RoleSession()
+    with pytest.raises(AppError) as denied:
+        await stores_service.ensure_store_admin(  # type: ignore[arg-type]
+            session, SimpleNamespace(id=user_id), store_id
+        )
+    assert denied.value.code == ErrorCode.PERMISSION_DENIED
+    sql = str(session.statement.compile(compile_kwargs={"literal_binds": True}))
+    assert store_id.hex in sql
+    assert "user_roles.store_id IS NULL" in sql
+
+
+@pytest.mark.asyncio
+async def test_oauth_channel_manager_permission_is_bound_to_target_store() -> None:
+    """其他店铺的渠道权限不能启动或完成目标店铺的重新授权。"""
+    store_id, user_id = uuid.uuid4(), uuid.uuid4()
+
+    class RoleSession:
+        statement = None
+
+        async def scalar(self, statement: object) -> None:
+            self.statement = statement
+            return None
+
+    session = RoleSession()
+    with pytest.raises(AppError) as denied:
+        await oauth_service.ensure_store_channel_manager(  # type: ignore[arg-type]
+            session, SimpleNamespace(id=user_id), store_id
+        )
+    assert denied.value.code == ErrorCode.PERMISSION_DENIED
+    sql = str(session.statement.compile(compile_kwargs={"literal_binds": True}))
+    assert store_id.hex in sql
+    assert "user_roles.store_id IS NULL" in sql
+    assert "settings.channels" in sql
+
+
+@pytest.mark.asyncio
+async def test_alias_edit_changes_only_display_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    """编辑别名不更改店铺编码、平台 ID 或租户授权。"""
+    store_id, user_id = uuid.uuid4(), uuid.uuid4()
+    store = Store(
+        id=store_id,
+        name="Shop One",
+        code="shop-one",
+        status="active",
+        timezone="UTC",
+        currency="GBP",
+        metadata_json={"alias": "旧别名"},
+    )
+
+    class AliasSession(FakeSession):
+        async def refresh(self, _: object) -> None:
+            return None
+
+    session = AliasSession()
+    monkeypatch.setattr(stores_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(stores_service, "ensure_store_admin", _async_result(None))
+    monkeypatch.setattr(stores_service, "get_active_store", _async_result(store))
+    updated = await stores_service.update_store_alias(  # type: ignore[arg-type]
+        session, SimpleNamespace(id=user_id), store_id, StoreAliasUpdate(alias=" 新别名 ")
+    )
+    assert updated.alias == "新别名"
+    assert updated.code == "shop-one"
+    assert any(isinstance(value, AuditLog) and value.action == "store.alias.update" for value in session.added)
     assert session.commits == 1
 
 
@@ -516,6 +812,7 @@ async def test_complete_oauth_rejects_cross_store_binding_without_partial_channe
         _async_result(SimpleNamespace(id=user_id, status="active")),
     )
     monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", _async_result(None))
     monkeypatch.setattr(oauth_service, "get_active_store", _async_result(SimpleNamespace(id=store_id)))
     monkeypatch.setattr(
         oauth_service,
@@ -684,6 +981,7 @@ async def test_revoke_destroys_local_tokens_and_keeps_lifecycle_audit(monkeypatc
     )
     session = FakeChannelSession(channel)
     monkeypatch.setattr(stores_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(stores_service, "ensure_store_admin", _async_result(None))
 
     await stores_service.delete_channel(
         session,  # type: ignore[arg-type]

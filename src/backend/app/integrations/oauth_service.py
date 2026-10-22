@@ -5,7 +5,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,10 +17,10 @@ from app.integrations.models import TikTokOAuthJob
 from app.integrations.oauth_schemas import TikTokOAuthCompletion, TikTokOAuthStart, TikTokOAuthState, TikTokTokenData
 from app.integrations.tiktok_oauth import TikTokOAuthClient, build_authorization_url
 from app.shared.config.settings import Settings, get_settings
-from app.shared.database.base import User
+from app.shared.database.base import Permission, Role, User, user_roles
 from app.shared.database.redis import consume_tiktok_oauth_state, peek_tiktok_oauth_state, save_tiktok_oauth_state
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.stores.models import ChannelAccount
+from app.stores.models import ChannelAccount, Store
 from app.stores.repository import (
     claim_tiktok_channel_for_refresh,
     find_channel_by_external_store,
@@ -30,14 +30,62 @@ from app.stores.repository import (
 
 SELLER_USER_TYPES = {0, 4, 5}
 DEFAULT_RETURN_TO = "/settings/channels"
+STORES_RETURN_TO = "/settings/stores"
 OAUTH_JOB_RETENTION_SECONDS = 86400
+SHOP_CURRENCIES = {
+    "US": "USD",
+    "GB": "GBP",
+    "UK": "GBP",
+    "CA": "CAD",
+    "MX": "MXN",
+    "BR": "BRL",
+    "DE": "EUR",
+    "FR": "EUR",
+    "IT": "EUR",
+    "ES": "EUR",
+    "IE": "EUR",
+    "JP": "JPY",
+    "AU": "AUD",
+    "SG": "SGD",
+    "MY": "MYR",
+    "TH": "THB",
+    "VN": "VND",
+    "ID": "IDR",
+    "PH": "PHP",
+}
 
 
 def validate_return_to(value: str) -> str:
-    """限制 OAuth 回跳到站内渠道页，禁止利用 return_to 开放重定向。"""
-    if value != DEFAULT_RETURN_TO:
+    """只允许两个固定设置页，禁止利用 return_to 开放重定向。"""
+    if value not in {DEFAULT_RETURN_TO, STORES_RETURN_TO}:
         raise AppError(ErrorCode.VALIDATION_ERROR, "OAuth 回跳地址无效", 400)
     return value
+
+
+async def ensure_system_store_admin(session: AsyncSession, user: User) -> None:
+    """新店铺只能由系统级管理员发起，店铺级角色不能扩大租户范围。"""
+    assignment = await session.scalar(
+        select(user_roles.c.user_id)
+        .join(Role, user_roles.c.role_id == Role.id)
+        .where(user_roles.c.user_id == user.id, user_roles.c.store_id.is_(None), Role.code == "admin")
+    )
+    if assignment is None:
+        raise AppError(ErrorCode.PERMISSION_DENIED, "没有添加店铺的权限", 403)
+
+
+async def ensure_store_channel_manager(session: AsyncSession, user: User, store_id: uuid.UUID) -> None:
+    """渠道管理权限须来自系统级或目标店铺角色，不能借用其他店铺授权。"""
+    assignment = await session.scalar(
+        select(user_roles.c.user_id)
+        .join(Role, user_roles.c.role_id == Role.id)
+        .where(
+            user_roles.c.user_id == user.id,
+            or_(user_roles.c.store_id.is_(None), user_roles.c.store_id == store_id),
+            or_(Role.code == "admin", Role.permissions.any(Permission.code == "settings.channels")),
+        )
+    )
+    if assignment is None:
+        raise AppError(ErrorCode.PERMISSION_DENIED, "没有管理该店铺渠道的权限", 403)
 
 
 def validate_oauth_runtime(settings: Settings) -> None:
@@ -122,15 +170,34 @@ async def start_tiktok_oauth(
     runtime = settings or get_settings()
     validate_oauth_runtime(runtime)
     await ensure_store_access(session, user, store_id)
+    await ensure_store_channel_manager(session, user, store_id)
     if await get_active_store(session, store_id) is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     safe_return_to = validate_return_to(return_to)
+    return await _create_oauth_start(user.id, store_id, safe_return_to, runtime)
+
+
+async def start_new_tiktok_store_oauth(
+    session: AsyncSession,
+    user: User,
+    settings: Settings | None = None,
+) -> TikTokOAuthStart:
+    """点击添加店铺时先取得一次性授权链接，成功回调后再创建内部店铺。"""
+    runtime = settings or get_settings()
+    validate_oauth_runtime(runtime)
+    await ensure_system_store_admin(session, user)
+    return await _create_oauth_start(user.id, None, STORES_RETURN_TO, runtime)
+
+
+async def _create_oauth_start(
+    user_id: uuid.UUID, store_id: uuid.UUID | None, return_to: str, runtime: Settings
+) -> TikTokOAuthStart:
     state = secrets.token_urlsafe(32)
-    payload = TikTokOAuthState(user_id=user.id, store_id=store_id, return_to=safe_return_to)
+    payload = TikTokOAuthState(user_id=user_id, store_id=store_id, return_to=return_to)
     try:
         stored = await save_tiktok_oauth_state(
             state,
-            {key: str(value) for key, value in payload.model_dump().items()},
+            {key: str(value) for key, value in payload.model_dump(exclude_none=True).items()},
             runtime.tiktok_oauth_state_ttl_seconds,
         )
     except Exception as exc:
@@ -146,7 +213,7 @@ async def start_tiktok_oauth(
 async def _record_failed_oauth(
     session: AsyncSession,
     user: User,
-    store_id: uuid.UUID,
+    store_id: uuid.UUID | None,
     error_code: str,
 ) -> None:
     """只记录稳定错误码，不保存 code、state、Token 或平台原始错误。"""
@@ -192,9 +259,13 @@ async def queue_tiktok_oauth(
     user = await find_user_by_id(session, bound.user_id)
     if user is None or user.status != "active":
         raise AppError(ErrorCode.PERMISSION_DENIED, "OAuth 发起用户不可用", 403)
-    await ensure_store_access(session, user, bound.store_id)
-    if await get_active_store(session, bound.store_id) is None:
-        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
+    if bound.store_id is None:
+        await ensure_system_store_admin(session, user)
+    else:
+        await ensure_store_access(session, user, bound.store_id)
+        await ensure_store_channel_manager(session, user, bound.store_id)
+        if await get_active_store(session, bound.store_id) is None:
+            raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     key = _credential_key(runtime)
     state_cipher = encrypt_credential(state, key, f"tiktok:oauth-job:{job_id}:state")
     code_cipher = encrypt_credential(auth_code, key, f"tiktok:oauth-job:{job_id}:code")
@@ -204,6 +275,7 @@ async def queue_tiktok_oauth(
         id=job_id,
         user_id=bound.user_id,
         store_id=bound.store_id,
+        return_to=bound.return_to,
         state_cipher=state_cipher,
         code_cipher=code_cipher,
         status="pending",
@@ -225,7 +297,11 @@ async def get_tiktok_oauth_job_status(session: AsyncSession, user: User, job_id:
     job = await session.get(TikTokOAuthJob, job_id)
     if job is None or job.user_id != user.id:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
-    await ensure_store_access(session, user, job.store_id)
+    if job.store_id is None:
+        await ensure_system_store_admin(session, user)
+    else:
+        await ensure_store_access(session, user, job.store_id)
+        await ensure_store_channel_manager(session, user, job.store_id)
     return job.status
 
 
@@ -249,14 +325,19 @@ async def complete_tiktok_oauth(
         raise AppError(ErrorCode.VALIDATION_ERROR, "OAuth state 无效或已过期", 400) from exc
     if bound is None:
         raise AppError(ErrorCode.VALIDATION_ERROR, "OAuth state 无效或已过期", 400)
+    validate_return_to(bound.return_to)
     # TikTok 卖家可能在独立的店铺浏览器中授权，回调不能依赖 CRM Cookie；
     # 一次性 state 已绑定发起用户和店铺，因此只需恢复并重新校验该用户。
     user = await find_user_by_id(session, bound.user_id)
     if user is None or user.status != "active":
         raise AppError(ErrorCode.PERMISSION_DENIED, "OAuth 发起用户不可用", 403)
-    await ensure_store_access(session, user, bound.store_id)
-    if await get_active_store(session, bound.store_id) is None:
-        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
+    if bound.store_id is None:
+        await ensure_system_store_admin(session, user)
+    else:
+        await ensure_store_access(session, user, bound.store_id)
+        await ensure_store_channel_manager(session, user, bound.store_id)
+        if await get_active_store(session, bound.store_id) is None:
+            raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     if provider_error or not auth_code or auth_code == "null":
         await _record_failed_oauth(session, user, bound.store_id, "AUTH_DENIED")
         return TikTokOAuthCompletion(status="denied", return_to=bound.return_to)
@@ -270,14 +351,40 @@ async def complete_tiktok_oauth(
             raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前授权必须唯一对应一个 TikTok 店铺", 409)
         shop = shops[0]
         external_binding = await find_channel_by_external_store(session, "tiktok", shop.id)
-        if external_binding is not None and external_binding.store_id != bound.store_id:
+        store_id = bound.store_id
+        if store_id is None:
+            if external_binding is not None:
+                # 删除授权仅撤销凭证；再次添加同一店铺复用原系统 ID 与历史数据。
+                if external_binding.status != "disconnected":
+                    raise AppError(ErrorCode.RESOURCE_CONFLICT, "店铺已添加，请使用重新添加", 409)
+                store_id = external_binding.store_id
+                await ensure_store_access(session, user, store_id)
+                if await get_active_store(session, store_id) is None:
+                    raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
+            else:
+                currency = SHOP_CURRENCIES.get(shop.region.upper())
+                if currency is None:
+                    raise AppError(ErrorCode.VALIDATION_ERROR, "暂不支持该站点自动建店", 422)
+                store_id = uuid.uuid4()
+                session.add(
+                    Store(
+                        id=store_id,
+                        name=shop.name,
+                        code=f"tiktok-{store_id.hex}",
+                        timezone="UTC",
+                        currency=currency,
+                        status="active",
+                    )
+                )
+                await session.flush()
+        elif external_binding is not None and external_binding.store_id != store_id:
             raise AppError(ErrorCode.RESOURCE_CONFLICT, "TikTok 店铺已绑定其他租户", 409)
-        channel = await find_channel_by_store_platform(session, bound.store_id, "tiktok")
+        channel = await find_channel_by_store_platform(session, store_id, "tiktok")
         if channel is not None and channel.external_store_id != shop.id:
             raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前店铺已绑定其他 TikTok 账号", 409)
         if channel is None:
             channel = ChannelAccount(
-                store_id=bound.store_id,
+                store_id=store_id,
                 platform="tiktok",
                 external_store_id=shop.id,
                 display_name=shop.name,
@@ -289,12 +396,12 @@ async def complete_tiktok_oauth(
         channel.access_token_ref = encrypt_credential(
             token.access_token,
             key,
-            _oauth_context(bound.store_id, shop.id, "access"),
+            _oauth_context(store_id, shop.id, "access"),
         )
         channel.refresh_token_ref = encrypt_credential(
             token.refresh_token,
             key,
-            _oauth_context(bound.store_id, shop.id, "refresh"),
+            _oauth_context(store_id, shop.id, "refresh"),
         )
         if len(channel.access_token_ref) > 500 or len(channel.refresh_token_ref) > 500:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 加密凭证超出存储上限", 502)
@@ -311,12 +418,13 @@ async def complete_tiktok_oauth(
             "user_type": token.user_type,
             "open_id_hash": hashlib.sha256(token.open_id.encode()).hexdigest(),
             "refresh_token_expires_at": _expiration(token.refresh_token_expire_in).isoformat(),
+            "last_authorized_at": datetime.now(UTC).isoformat(),
             "credential_format": "encrypted:v1",
         }
         await session.flush()
         session.add(
             AuditLog(
-                store_id=bound.store_id,
+                store_id=store_id,
                 actor_type="user",
                 actor_id=user.id,
                 action="channel.authorize",
@@ -329,7 +437,7 @@ async def complete_tiktok_oauth(
         )
         if commit:
             await session.commit()
-        return TikTokOAuthCompletion(status="connected", return_to=bound.return_to)
+        return TikTokOAuthCompletion(status="connected", return_to=bound.return_to, store_id=store_id)
     except IntegrityError as exc:
         if commit:
             await session.rollback()
@@ -405,6 +513,9 @@ async def process_tiktok_oauth_job(
     except (ValueError, UnicodeError):
         await _finish_tiktok_oauth_job(session, job.id, "failed", "INVALID_JOB_CREDENTIAL")
     else:
+        completed_store_id = getattr(completion, "store_id", None)
+        if completion.status == "connected" and completed_store_id is not None:
+            job.store_id = completed_store_id
         await _finish_tiktok_oauth_job(session, job.id, completion.status)
     return True
 

@@ -7,13 +7,15 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
 
-from app.auth.dependencies import get_current_user, require_permission
+from app.auth.dependencies import get_current_user, require_csrf, require_permission, require_role
 from app.integrations.oauth_schemas import TikTokOAuthJobStatus, TikTokOAuthStart
 from app.integrations.oauth_service import (
     complete_tiktok_oauth,
     get_tiktok_oauth_job_status,
     queue_tiktok_oauth,
+    start_new_tiktok_store_oauth,
     start_tiktok_oauth,
+    validate_return_to,
 )
 from app.shared.config.settings import TIKTOK_OAUTH_CALLBACK_ROUTE
 from app.shared.database.base import User
@@ -21,6 +23,18 @@ from app.shared.database.session import DbSession
 from app.shared.schemas.responses import ApiResponse
 
 router = APIRouter(tags=["TikTok OAuth"])
+
+
+@router.post(
+    "/settings/stores/tiktok/oauth/start",
+    response_model=ApiResponse[TikTokOAuthStart],
+    dependencies=[Depends(require_csrf), Depends(require_role("admin"))],
+)
+async def begin_new_tiktok_store_oauth(
+    session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[TikTokOAuthStart]:
+    """从店铺列表直接开始授权；内部店铺仅在平台校验成功后创建。"""
+    return ApiResponse(data=await start_new_tiktok_store_oauth(session, user))
 
 
 @router.get(
@@ -68,4 +82,5 @@ async def tiktok_oauth_callback(
     job = await queue_tiktok_oauth(session, state, code)
     status = job.status if job.status in {"connected", "denied", "failed"} else "processing"
     query = urlencode({"oauth": "tiktok", "status": status, "job": str(job.id)})
-    return RedirectResponse(f"/settings/channels?{query}", status_code=303)
+    return_to = validate_return_to(getattr(job, "return_to", "/settings/channels"))
+    return RedirectResponse(f"{return_to}?{query}", status_code=303)

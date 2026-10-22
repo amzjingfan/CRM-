@@ -23,7 +23,7 @@ class TikTokOAuthState(BaseModel):
     """Redis 一次性 state 绑定内容。"""
 
     user_id: uuid.UUID
-    store_id: uuid.UUID
+    store_id: uuid.UUID | None = None
     return_to: str
 
 
@@ -81,3 +81,4 @@ class TikTokOAuthCompletion(BaseModel):
 
     status: Literal["connected", "denied"]
     return_to: str
+    store_id: uuid.UUID | None = None

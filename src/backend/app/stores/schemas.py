@@ -35,6 +35,7 @@ class StoreView(BaseModel):
 
     id: uuid.UUID
     name: str
+    alias: str | None = None
     code: str
     status: str
     timezone: str
@@ -42,6 +43,12 @@ class StoreView(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class StoreAliasUpdate(BaseModel):
+    """店铺别名仅作展示和搜索，不改变平台身份或租户编码。"""
+
+    alias: str | None = Field(default=None, max_length=100)
 
 
 class ChannelCreate(BaseModel):
@@ -67,5 +74,9 @@ class ChannelView(BaseModel):
     scopes: list[str]
     last_sync_at: datetime | None
     created_at: datetime
+    site: str | None = None
+    authorization_expires_at: datetime | None = None
+    authorization_status: str | None = None
+    last_authorized_at: datetime | None = None
 
     model_config = {"from_attributes": True}

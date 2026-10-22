@@ -641,6 +641,29 @@ button, a, label.file-button { cursor: pointer; }
 .settings-table .status-badge { white-space: nowrap; }
 .settings-table td .compact-field { min-width: 100px; min-height: 34px; padding: 5px 7px; }
 .settings-table td .text-button { min-height: 32px; padding: 4px 6px; font-size: 12px; }
+.store-list-card { padding-top: 15px; }
+.store-list-table { min-width: 1360px; }
+.store-list-table td { white-space: nowrap; }
+.store-list-table td:first-child { min-width: 160px; }
+.store-list-table td:nth-child(2) { min-width: 175px; }
+.store-list-table td:nth-child(4) { min-width: 240px; }
+.store-system-id { display: inline-block; max-width: 210px; overflow-wrap: anywhere; white-space: normal; vertical-align: middle; }
+.store-alias-value, .store-alias-edit, .store-row-actions { display: inline-flex; align-items: center; gap: 5px; }
+.store-small-action { display: inline-grid; width: 22px; height: 22px; place-items: center; color: var(--muted); vertical-align: middle; }
+.store-small-action:hover { color: var(--primary); }
+.store-alias-edit input { width: 100px; min-height: 28px; border: 1px solid var(--border); padding: 3px 6px; }
+.store-alias-edit button[type="submit"] { color: var(--primary); }
+.store-status { display: inline-flex; align-items: center; gap: 7px; }
+.store-status::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+.store-status-active { color: #07985c; }
+.store-status-abnormal, .store-status-expiring { color: #c98400; }
+.store-status-expired { color: #d74b4b; }
+.store-row-actions { white-space: nowrap; }
+.store-confirm-backdrop { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; background: rgb(17 24 39 / 38%); padding: 16px; }
+.store-confirm-dialog { width: min(420px, 100%); border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); padding: 22px; }
+.store-confirm-dialog h2 { font-size: 17px; font-weight: 700; }
+.store-confirm-dialog p { margin: 12px 0 22px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.store-confirm-dialog > div { display: flex; justify-content: flex-end; gap: 8px; }
 .settings-create-form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 0 0 16px; padding: 16px 0; }
 .settings-create-form .field-label { min-width: 155px; flex: 1 1 180px; }
 .account-table { min-width: 960px; }

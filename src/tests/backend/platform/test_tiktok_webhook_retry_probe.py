@@ -55,7 +55,7 @@ class FakeSession:
 
 def setup_probe(monkeypatch: pytest.MonkeyPatch, mode: str) -> tuple[FakeSession, FakeRedis, dict[str, object], bytes]:
     store_id = uuid.uuid4()
-    channel = SimpleNamespace(id=uuid.uuid4(), store_id=store_id)
+    channel = SimpleNamespace(id=uuid.uuid4(), store_id=store_id, status="connected")
     session = FakeSession(channel)
     redis = FakeRedis()
     monkeypatch.setattr(service, "redis_client", redis, raising=False)

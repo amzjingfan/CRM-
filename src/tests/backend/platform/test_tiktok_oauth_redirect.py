@@ -76,6 +76,23 @@ async def test_callback_redirects_to_processing_without_waiting_for_platform(mon
 
 
 @pytest.mark.asyncio
+async def test_new_store_callback_returns_to_store_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    """新店回调仅带低敏任务号回店铺列表，而非旧渠道页。"""
+    job_id = uuid.uuid4()
+
+    async def queued(*_: object) -> SimpleNamespace:
+        return SimpleNamespace(id=job_id, status="pending", return_to="/settings/stores")
+
+    monkeypatch.setattr(oauth_router, "queue_tiktok_oauth", queued)
+    response = await oauth_router.tiktok_oauth_callback(  # type: ignore[arg-type]
+        MemorySession(), "unit-test-state-with-enough-length", "unit-test-code", None
+    )
+    parsed = urlparse(response.headers["location"])
+    assert parsed.path == "/settings/stores"
+    assert parse_qs(parsed.query) == {"oauth": ["tiktok"], "status": ["processing"], "job": [str(job_id)]}
+
+
+@pytest.mark.asyncio
 async def test_queue_is_one_time_encrypted_and_duplicate_safe(monkeypatch: pytest.MonkeyPatch) -> None:
     """重复 callback 复用同一任务，不保存明文或二次交换 code。"""
     user_id, store_id = uuid.uuid4(), uuid.uuid4()
@@ -97,6 +114,7 @@ async def test_queue_is_one_time_encrypted_and_duplicate_safe(monkeypatch: pytes
     monkeypatch.setattr(oauth_service, "peek_tiktok_oauth_state", state_payload, raising=False)
     monkeypatch.setattr(oauth_service, "find_user_by_id", user)
     monkeypatch.setattr(oauth_service, "ensure_store_access", store_access)
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", store_access)
     monkeypatch.setattr(oauth_service, "get_active_store", store)
     settings = Settings(
         _env_file=None,
@@ -186,6 +204,7 @@ async def test_queue_rejects_oversize_encrypted_code_as_client_error(monkeypatch
     monkeypatch.setattr(oauth_service, "find_user_by_id", user)
     monkeypatch.setattr(oauth_service, "get_active_store", store)
     monkeypatch.setattr(oauth_service, "ensure_store_access", access)
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", access)
     monkeypatch.setattr(oauth_service, "validate_oauth_runtime", lambda _: None)
     session = MemorySession()
     settings = Settings(

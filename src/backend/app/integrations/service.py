@@ -32,6 +32,8 @@ from app.shared.database.redis import redis_client
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount
 
+AUTHORIZATION_LIFECYCLE_EVENTS = {"SELLER_DEAUTHORIZATION", "UPCOMING_AUTHORIZATION_EXPIRATION"}
+
 
 def stable_event_id(payload: dict[str, object], raw_body: bytes) -> str:
     """优先外部事件 ID，否则使用请求体哈希形成稳定幂等键。"""
@@ -207,6 +209,9 @@ async def receive_webhook(
     )
     if channel is None:
         # 未绑定店铺的通知不得留下客户载荷或占用 ID，稍后授权后可正常重投。
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "平台店铺未授权", 404)
+    if channel.status == "disconnected" and webhook_event_type(platform, payload) not in AUTHORIZATION_LIFECYCLE_EVENTS:
+        # 本地撤销后平台仍可能重投消息；不要保存新的买家载荷。
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "平台店铺未授权", 404)
     await _maybe_force_probe_503(
         session,
@@ -476,7 +481,12 @@ async def _process_tiktok_authorization(
     normalized: TikTokAuthorizationLifecycleEvent,
 ) -> None:
     """处理卖家撤销和到期提醒，确保失效凭证不会继续被 Worker 使用。"""
-    if normalized.action == "deauthorized":
+    if channel.metadata_json.get("oauth_status") == "revoked":
+        # 平台晚到通知仍入审计，但不得撤销操作后重新显示该店铺。
+        audit_action = (
+            "channel.deauthorized" if normalized.action == "deauthorized" else "channel.authorization_expiring"
+        )
+    elif normalized.action == "deauthorized":
         channel.status = "disconnected"
         channel.access_token_ref = f"revoked://{channel.id}"
         channel.refresh_token_ref = None
@@ -525,9 +535,19 @@ async def claim_and_process_one(session: AsyncSession, max_retries: int) -> bool
     try:
         if event.channel_account_id is None:
             raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "渠道账号不存在", 404)
-        channel = await session.get(ChannelAccount, event.channel_account_id)
+        channel = await session.get(
+            ChannelAccount, event.channel_account_id, with_for_update=True, populate_existing=True
+        )
         if channel is None:
             raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "渠道账号不存在", 404)
+        if channel.status == "disconnected" and event.event_type not in AUTHORIZATION_LIFECYCLE_EVENTS:
+            # 认领后再次核验渠道状态，覆盖删除前已排队的通知；行锁与撤销写入串行。
+            event.status = "ignored"
+            event.error_code = "CHANNEL_DISCONNECTED"
+            event.raw_payload = {}
+            event.processed_at = datetime.now(UTC)
+            await session.commit()
+            return True
         normalized = await get_platform_adapter(event.platform).resolve_webhook_event(channel, event.raw_payload)
         if normalized is None:
             # 未订阅或尚未实现的官方主题只保留原始事件和摘要，不猜测字段含义。

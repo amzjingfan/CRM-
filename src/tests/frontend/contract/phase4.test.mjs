@@ -24,7 +24,8 @@ test("settings pages cover stores channels and team", async () => {
     read("app/settings/channels/page.tsx"),
     read("app/settings/team/page.tsx"),
   ]);
-  assert.match(sources[0], /createStore/);
+  assert.match(sources[0], /startNewTikTokStoreOAuth/);
+  assert.match(sources[0], /startTikTokOAuth\(storeId, "\/settings\/stores"\)/);
   assert.match(sources[0], /Store list/);
   assert.match(sources[1], /契约级 Mock/);
   assert.match(sources[1], /Store authorizations/);
