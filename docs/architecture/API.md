@@ -69,6 +69,7 @@
 ### 团队与渠道
 
 - `GET/POST /settings/team`、`GET/PATCH/DELETE /settings/team/{user_id}`；普通删除表示禁用。
+- 员工读取响应中的 `assignments[].role` 保留数据库已有角色编码（包括受控测试角色），避免历史账号使整个列表失败；新建和修改账号的角色写入仍只接受 `admin`、`supervisor`、`agent`，且继续校验系统级／店铺级范围。
 - `POST /auth/login` 与 `/auth/browser/login` 接受 `identifier`（登录账号或邮箱），旧 `email` 请求字段继续兼容；新界面登录名 6–16 位且创建后不可修改，旧 API 调用仍可仅用邮箱创建。`POST /settings/team` 可保存可选邮箱、手机号码、工作时区、账号并发数、初始部门；`PATCH /settings/team/{user_id}/password` 修改密码并使旧 Access/Refresh Token 失效。账号并发数不施加运行限制。
 - `GET/POST /settings/departments`、`GET/PATCH/DELETE /settings/departments/{department_id}`、`GET/POST /settings/departments/{department_id}/members` 和 `DELETE /settings/departments/{department_id}/members/{member_id}` 管理部门与组织成员。读取需 `settings.team` 并按店铺范围过滤；写入需系统级 `admin` 与 CSRF，写入审计。部门成员增删不更改 `user_roles`；空部门才可删除。角色切换和权限修改暂无写入接口。
 - `DELETE /settings/team/{user_id}/permanent` 仅能删除已禁用且无受保护业务引用的用户。

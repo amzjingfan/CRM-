@@ -21,6 +21,11 @@ class TeamRoleAssignment(BaseModel):
         return self
 
 
+class TeamRoleView(BaseModel):
+    role: str
+    store_id: uuid.UUID | None
+
+
 class TeamMemberCreate(BaseModel):
     login_name: str | None = Field(default=None, pattern=r"^[A-Za-z][A-Za-z0-9_-]{5,15}$")
     name: str = Field(min_length=1, max_length=100)
@@ -76,7 +81,7 @@ class TeamMemberView(BaseModel):
     timezone: str
     max_concurrent_sessions: int
     status: Literal["active", "disabled"]
-    assignments: list[TeamRoleAssignment]
+    assignments: list[TeamRoleView]
     department_ids: list[uuid.UUID] = Field(default_factory=list)
     last_login_at: datetime | None
     created_at: datetime

@@ -1,6 +1,7 @@
 """员工账号标识与登录凭据的边界测试。"""
 
 import uuid
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -11,7 +12,8 @@ from app.auth.schemas import LoginRequest
 from app.auth.security import decode_token, hash_password
 from app.shared.database.base import User
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.users.schemas import TeamMemberCreate
+from app.users import service as team_service
+from app.users.schemas import TeamMemberCreate, TeamRoleAssignment
 
 
 def test_login_accepts_account_or_legacy_email_field() -> None:
@@ -60,6 +62,36 @@ def test_legacy_email_only_creation_remains_valid() -> None:
                 "assignments": [{"role": "agent", "store_id": str(uuid.uuid4())}],
             }
         )
+
+
+@pytest.mark.asyncio
+async def test_team_list_reads_existing_nonassignable_role_without_allowing_new_assignment() -> None:
+    """历史或测试角色可以查看，但不能经员工写入接口授予。"""
+    user_id = uuid.uuid4()
+    user = User(
+        id=user_id,
+        name="合成测试账号",
+        email=None,
+        status="active",
+        timezone="UTC",
+        max_concurrent_sessions=50,
+        created_at=datetime.now(UTC),
+    )
+    session = SimpleNamespace(
+        execute=AsyncMock(
+            side_effect=[
+                SimpleNamespace(all=lambda: [(user_id, "g5-synthetic-role", None)]),
+                SimpleNamespace(all=lambda: []),
+            ]
+        )
+    )
+
+    views = await team_service._views(session, [user])  # type: ignore[arg-type]
+
+    assert views[0].assignments[0].role == "g5-synthetic-role"
+    assert views[0].model_dump(mode="json")["assignments"][0]["role"] == "g5-synthetic-role"
+    with pytest.raises(ValueError):
+        TeamRoleAssignment(role="g5-synthetic-role", store_id=None)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

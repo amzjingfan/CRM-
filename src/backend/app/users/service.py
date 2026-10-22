@@ -14,13 +14,11 @@ from app.auth.store_access import allowed_store_ids, ensure_store_access
 from app.shared.database.base import Role, User, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.users.models import department_members, department_stores
-from app.users.schemas import TeamMemberCreate, TeamMemberUpdate, TeamMemberView, TeamRoleAssignment
+from app.users.schemas import TeamMemberCreate, TeamMemberUpdate, TeamMemberView, TeamRoleAssignment, TeamRoleView
 
 
-async def _assignment_rows(
-    session: AsyncSession, user_ids: list[uuid.UUID]
-) -> dict[uuid.UUID, list[TeamRoleAssignment]]:
-    grouped: dict[uuid.UUID, list[TeamRoleAssignment]] = defaultdict(list)
+async def _assignment_rows(session: AsyncSession, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[TeamRoleView]]:
+    grouped: dict[uuid.UUID, list[TeamRoleView]] = defaultdict(list)
     if not user_ids:
         return grouped
     rows = (
@@ -32,7 +30,7 @@ async def _assignment_rows(
         )
     ).all()
     for user_id, role, store_id in rows:
-        grouped[user_id].append(TeamRoleAssignment(role=role, store_id=store_id))
+        grouped[user_id].append(TeamRoleView(role=role, store_id=store_id))
     return grouped
 
 
