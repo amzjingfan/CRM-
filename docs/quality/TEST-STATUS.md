@@ -2,7 +2,7 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
-2026-10-23 知识库分类 UI staging 部署 [TR R01](../reports/tests/TR-MVP-KNOWLEDGE-CATEGORY-DELETE-DEPLOY-001-20261023-R01.md) 为限定范围 `PASS`：主线 `2ccc93b2` 前端契约 48/48、typecheck、Docker 生产构建通过，lint 0 error/5 既有 warning；现场六镜像角色预取、`ValidateOnly`、私有可读备份及 `Deploy` 通过，运行精确摘要、11 容器、迁移头与四公网入口均核对。已部署页面的新增自定义分类及确认删除 2/2 合成浏览器通过，所有 `/v1/` 请求被本地代理阻断并在浏览器内模拟，未修改真实分类；真实授权店铺页面尚未直接验收。镜像发布工作流 `39881715896` 与证据 PR 的 CI `39884114716` 均零步骤失败，不计 CI 通过；production No-Go。
+2026-10-23 知识库分类 UI staging 部署 [TR R01](../reports/tests/TR-MVP-KNOWLEDGE-CATEGORY-DELETE-DEPLOY-001-20261023-R01.md) 为限定范围 `PASS`：主线 `2ccc93b2` 前端契约 48/48、typecheck、Docker 生产构建通过，lint 0 error/5 既有 warning；现场六镜像角色预取、`ValidateOnly`、私有可读备份及 `Deploy` 通过，运行精确摘要、11 容器、迁移头与四公网入口均核对。已部署页面的新增自定义分类及确认删除 2/2 合成浏览器通过，所有 `/v1/` 请求被本地代理阻断并在浏览器内模拟，未修改真实分类；真实授权店铺页面尚未直接验收。镜像发布工作流 `39881715896` 与证据 PR 的 CI `39884114716`、`39884553653` 均零步骤失败，不计 CI 通过；production No-Go。
 
 2026-10-22 知识库原型 UI [TR R01](../reports/tests/TR-MVP-KNOWLEDGE-PROTOTYPE-UI-001-20261022-R01.md) 记录 subject `64e41b62` 的前端契约 48/48、生产浏览器 64/64、typecheck/build 通过，lint 0 error、5 条既有 warning。PR #528 已合入 `main=ddeb3018`；GitHub Actions 两作业均零步骤失败，不计作 CI 通过；本地合成浏览器数据不等于 staging 真实登录态验收。Agent 管理页源文件未修改，未部署 staging 或 production。
 
