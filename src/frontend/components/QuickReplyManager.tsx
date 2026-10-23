@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowClockwise, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AppShell } from "./AppShell";
+import { ReceptionTabs } from "./ReceptionTabs";
 import { EmptyState, ErrorState, LoadingState } from "./States";
 import { currentUser, listStores, type StoreView } from "../lib/api";
 import {
@@ -65,6 +66,10 @@ export function QuickReplyManager() {
   }, []);
 
   useEffect(() => { void loadIdentity(); }, [loadIdentity]);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("scope");
+    if (requested === "team" || requested === "personal") setScope(requested);
+  }, []);
 
   const canRead = scope === "personal" ? permissions.includes("workspace.reply") : permissions.includes("workspace.view");
   const canEdit = scope === "personal" ? permissions.includes("workspace.reply") : permissions.includes("marketing.manage");
@@ -198,6 +203,7 @@ export function QuickReplyManager() {
   return <AppShell><main className="reception-page">
     <div className="reception-crumb"><Link href="/marketing">智能营销</Link><span>/</span><span>基础接待</span><span>/</span><strong>快捷回复</strong></div>
     <header className="reception-head"><div><span className="reception-eyebrow">BASIC RECEPTION</span><h1>快捷回复</h1><p>管理个人与团队常用话术，坐席选用后仍需人工审阅。</p></div></header>
+    <ReceptionTabs active="quick-replies" />
     {notice ? <p className="reception-notice" role="status">{notice}</p> : null}
     <section className="reception-card reception-quick-card">
       <div className="reception-quick-scopebar"><div aria-label="回复归属" className="reception-quick-scope"><button aria-pressed={scope === "personal"} className={scope === "personal" ? "active" : ""} onClick={() => changeScope("personal")} type="button">个人</button><button aria-pressed={scope === "team"} className={scope === "team" ? "active" : ""} onClick={() => changeScope("team")} type="button">团队</button></div><div className="reception-filter-row"><label className="reception-select-label">店铺<select aria-label="店铺" disabled={!stores.length} onChange={(event) => { setStoreId(event.target.value); setGroupId(""); setPage(1); }} value={storeId}>{stores.map((store) => <option key={store.id} value={store.id}>{store.alias || store.name}</option>)}</select></label><form className="reception-search" onSubmit={(event) => { event.preventDefault(); setQuery(search); setPage(1); }}><MagnifyingGlass size={17} /><input aria-label="搜索快捷回复" onChange={(event) => setSearch(event.target.value)} placeholder="快捷键 / 标签 / 回复内容" value={search} /><button type="submit">搜索</button></form><button aria-label="刷新快捷回复" className="reception-icon-button" onClick={() => setRefreshKey((key) => key + 1)} type="button"><ArrowClockwise size={18} /></button></div></div>

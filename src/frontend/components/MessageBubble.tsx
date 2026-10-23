@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Headset, Robot } from "@phosphor-icons/react";
 import { translateMessage, type MessageView } from "../lib/api";
 import { TrackingCard } from "./TrackingCard";
-import { messageSide, senderLabel } from "../lib/message-display";
+import { buyerAvatarText, messageSide, senderLabel } from "../lib/message-display";
 
 const statusLabel = (status: MessageView["status"], en: boolean) => ({
   received: en ? "Received" : "已接收",
@@ -14,7 +15,7 @@ const statusLabel = (status: MessageView["status"], en: boolean) => ({
   unknown: en ? "Unknown · reconcile manually" : "结果未知 · 请人工对账",
 }[status]);
 
-export function MessageBubble({ message, sessionId, en, translationEnabled }: { message: MessageView; sessionId: string; en: boolean; translationEnabled: boolean }) {
+export function MessageBubble({ message, sessionId, customerName, en, translationEnabled }: { message: MessageView; sessionId: string; customerName: string | null; en: boolean; translationEnabled: boolean }) {
   const [translation, setTranslation] = useState("");
   const [translating, setTranslating] = useState(false);
   const [translationError, setTranslationError] = useState(false);
@@ -37,7 +38,7 @@ export function MessageBubble({ message, sessionId, en, translationEnabled }: { 
   }
 
   return <article aria-label={sender} className={`message ${side}`}>
-    {side !== "system" ? <span aria-hidden="true" className="message-avatar">{message.role === "user" ? (en ? "B" : "买") : (en ? "S" : "卖")}</span> : null}
+    {side !== "system" ? <span aria-hidden="true" className={`message-avatar ${message.role === "assistant" ? "robot" : ""}`}>{message.role === "user" ? buyerAvatarText(customerName) : message.role === "assistant" ? <Robot size={15} weight="fill" /> : <Headset size={15} weight="fill" />}</span> : null}
     <div className="message-stack">
       <div className="message-bubble">
         {message.message_type === "logistics_card" && message.logistics_card ? <TrackingCard card={message.logistics_card} en={en} sessionId={sessionId} translationEnabled={translationEnabled} /> : <p className="message-original">{message.content}</p>}

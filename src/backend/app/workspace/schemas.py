@@ -18,6 +18,13 @@ class CustomerSummary(BaseModel):
     email: str | None
     avatar: str | None
     tags: list[str]
+    buyer_stage_override: Literal["pre", "during", "after"] | None = None
+
+
+class BuyerStageRequest(BaseModel):
+    """人工覆盖买家阶段；null 恢复依据订单状态自动判断。"""
+
+    stage: Literal["pre", "during", "after"] | None
 
 
 class SessionSummary(BaseModel):

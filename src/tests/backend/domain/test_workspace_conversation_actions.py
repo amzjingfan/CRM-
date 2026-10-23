@@ -16,6 +16,49 @@ from app.workspace import service as workspace_service
 
 
 @pytest.mark.asyncio
+async def test_buyer_stage_override_is_scoped_audited_and_can_return_to_auto(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock()
+    session.commit = AsyncMock()
+    actor = SimpleNamespace(id=uuid.uuid4())
+    store_id, conversation_id, customer_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    conversation = SimpleNamespace(id=conversation_id, store_id=store_id, customer_id=customer_id)
+    customer = SimpleNamespace(
+        id=customer_id,
+        store_id=store_id,
+        name="buyer",
+        email=None,
+        avatar=None,
+        tags=[],
+        metadata_json={"source": "tiktok"},
+    )
+    session.scalar.return_value = customer
+    monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    lookup = AsyncMock(return_value=conversation)
+    monkeypatch.setattr(workspace_service, "find_conversation", lookup)
+
+    saved = await workspace_service.set_buyer_stage_override(session, actor, conversation_id, "after")
+    assert saved.buyer_stage_override == "after"
+    assert customer.metadata_json == {"source": "tiktok", "buyer_stage_override": "after"}
+    assert lookup.await_args.args[2] == {store_id}
+    audit = session.add.call_args.args[0]
+    assert audit.action == "customer.buyer_stage_override"
+    assert audit.store_id == store_id
+    assert audit.after_data == {"stage": "after"}
+
+    await workspace_service.set_buyer_stage_override(session, actor, conversation_id, "after")
+    assert session.commit.await_count == 1
+    restored = await workspace_service.set_buyer_stage_override(session, actor, conversation_id, None)
+    assert restored.buyer_stage_override is None
+    assert customer.metadata_json == {"source": "tiktok"}
+
+    lookup.return_value = None
+    with pytest.raises(AppError) as denied:
+        await workspace_service.set_buyer_stage_override(session, actor, conversation_id, "pre")
+    assert denied.value.code == ErrorCode.RESOURCE_NOT_FOUND
+
+
+@pytest.mark.asyncio
 async def test_star_change_is_scoped_audited_and_idempotent(monkeypatch: pytest.MonkeyPatch) -> None:
     session = Mock(spec=AsyncSession)
     session.commit = AsyncMock()

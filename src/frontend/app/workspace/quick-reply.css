@@ -6,7 +6,7 @@
 .workspace-composer-tools button[aria-disabled="true"] { opacity: .7; }
 .workspace-composer-tool-spacer { flex: 1; }
 .workspace-composer-notice { margin-bottom: 6px; color: var(--muted); font-size: .75rem; }
-.workspace-emoji-picker { position: absolute; z-index: 35; bottom: calc(100% - 34px); left: 10px; display: flex; gap: 3px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 5px; box-shadow: 0 8px 20px rgb(0 0 0 / 14%); }
+.workspace-emoji-picker { position: absolute; z-index: 35; bottom: calc(100% - 34px); left: 10px; display: grid; width: min(302px, calc(100% - 20px)); max-height: 230px; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 6px; box-shadow: 0 8px 20px rgb(0 0 0 / 14%); }
 .workspace-emoji-picker button { width: 30px; height: 30px; border-radius: 5px; }
 .workspace-emoji-picker button:hover { background: var(--primary-soft); }
 .quick-reply-picker { position: absolute; right: 10px; bottom: calc(100% + 4px); z-index: 34; display: flex; width: min(570px, calc(100% - 20px)); max-height: min(430px, 62vh); flex-direction: column; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 14px 36px rgb(20 30 50 / 20%); color: var(--text); }
@@ -21,6 +21,8 @@
 .quick-reply-scope button { min-height: 37px; border-bottom: 2px solid transparent; color: var(--muted); font-size: .78rem; }
 .quick-reply-scope button[aria-selected="true"] { border-bottom-color: var(--primary); color: var(--primary); }
 .quick-reply-scope span { margin-left: auto; color: var(--muted); font-size: .69rem; }
+.quick-reply-scope a { color: var(--primary); font-size: .72rem; text-decoration: none; }
+.quick-reply-scope a:hover { text-decoration: underline; }
 .quick-reply-groups { display: flex; flex: none; gap: 12px; overflow-x: auto; border-bottom: 1px solid var(--border); padding: 7px 12px; }
 .quick-reply-groups button { flex: none; color: var(--muted); font-size: .74rem; white-space: nowrap; }
 .quick-reply-groups button[aria-pressed="true"] { color: var(--primary); font-weight: 700; }

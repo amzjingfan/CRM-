@@ -11,3 +11,6 @@ export const senderLabel = (role: Role, en: boolean): string => ({
 
 export const messageSide = (role: Role): "incoming" | "outgoing" | "system" =>
   role === "user" ? "incoming" : role === "system" ? "system" : "outgoing";
+
+export const buyerAvatarText = (name: string | null): string =>
+  Array.from(name?.trim() ?? "").slice(0, 3).join("").toUpperCase() || "?";

@@ -5,11 +5,13 @@ import { ArrowDown, ArrowLeft, ArrowRight, CaretDown, CaretRight, Heart, ImageSq
 import { AppShell } from "../../components/AppShell";
 import { CustomerSidebar } from "../../components/CustomerSidebar";
 import { MessageBubble } from "../../components/MessageBubble";
+import { buyerAvatarText } from "../../lib/message-display";
+import { stageFromOrders, stageLabel } from "../../lib/buyer-stage";
 import { QuickReplyPicker } from "../../components/QuickReplyPicker";
 import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, setSessionClosed, setSessionStar, streamChatQuery, transferSession, translateDraft, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
+import { getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, setBuyerStage, setSessionClosed, setSessionStar, streamChatQuery, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
 import "./quick-reply.css";
@@ -40,6 +42,7 @@ const filterLabels: Record<"zh" | "en", Record<Filter, string>> = {
 };
 const newKey = () => typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 const searchTerms = (value: string) => [...new Set(value.split(/[\n,，;；]+/).map((term) => term.trim()).filter(Boolean))];
+const replyEmojis = ["😀", "😃", "😄", "😁", "😊", "🙂", "😉", "😍", "🥰", "😘", "😂", "😅", "🥲", "😢", "😮", "🤔", "😎", "👍", "👎", "👏", "🙌", "🙏", "💪", "👋", "❤️", "💙", "✨", "🎉", "🎁", "🌹", "🔥", "✅", "💯", "📦", "🚚", "🛍️"];
 const markReadInList = (current: SessionListData | null, sessionId: string) => current ? {
   ...current,
   unread_messages_total: Math.max(0, current.unread_messages_total - (current.items.find((item) => item.id === sessionId)?.unread_count ?? 0)),
@@ -99,6 +102,8 @@ export default function WorkspacePage() {
   const [quickReplyFavoritesOnly, setQuickReplyFavoritesOnly] = useState(false);
   const [quickReplyQuery, setQuickReplyQuery] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const emojiButtonRef = useRef<HTMLButtonElement | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const [composerNotice, setComposerNotice] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [suggestionDraft, setSuggestionDraft] = useState("");
@@ -120,8 +125,24 @@ export default function WorkspacePage() {
   const [closeConfirmId, setCloseConfirmId] = useState<string | null>(null);
   const [closeError, setCloseError] = useState("");
   const closeDialogRef = useRef<HTMLDialogElement | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ sessionId: string; x: number; y: number } | null>(null);
+  const [pendingContextAction, setPendingContextAction] = useState<{ sessionId: string; action: "transfer" | "close" } | null>(null);
+  const [stageMenuOpen, setStageMenuOpen] = useState(false);
+  const [stageBusy, setStageBusy] = useState(false);
+  const [stageError, setStageError] = useState("");
+  const stageMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { setQuickReplyOpen(false); setEmojiOpen(false); setComposerNotice(""); }, [selectedId]);
+  useEffect(() => { setStageMenuOpen(false); setStageError(""); }, [selectedId]);
+  useEffect(() => {
+    if (!stageMenuOpen) return;
+    const closeOnOutside = (event: PointerEvent) => { if (!stageMenuRef.current?.contains(event.target as Node)) setStageMenuOpen(false); };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => { if (event.key === "Escape") setStageMenuOpen(false); };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOnOutside); document.removeEventListener("keydown", closeOnEscape); };
+  }, [stageMenuOpen]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -161,6 +182,25 @@ export default function WorkspacePage() {
     document.addEventListener("keydown", closeOnEscape);
     return () => { document.removeEventListener("pointerdown", closeMenus); document.removeEventListener("keydown", closeOnEscape); };
   }, []);
+  useEffect(() => {
+    if (!emojiOpen) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!emojiButtonRef.current?.contains(target) && !emojiPickerRef.current?.contains(target)) setEmojiOpen(false);
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => { if (event.key === "Escape") setEmojiOpen(false); };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOnOutside); document.removeEventListener("keydown", closeOnEscape); };
+  }, [emojiOpen]);
+  useEffect(() => {
+    if (!contextMenu) return;
+    const closeOnOutside = (event: PointerEvent) => { if (!contextMenuRef.current?.contains(event.target as Node)) setContextMenu(null); };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => { if (event.key === "Escape") setContextMenu(null); };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOnOutside); document.removeEventListener("keydown", closeOnEscape); };
+  }, [contextMenu]);
   useEffect(() => {
     let active = true;
     listStores().then((items) => { if (active) { setStores(items); setStoreError(""); } })
@@ -498,10 +538,28 @@ export default function WorkspacePage() {
 
   async function changeStar() {
     if (!detail || actionBusy) return;
+    await changeStarForSession(detail.session.id, detail.session.is_starred);
+  }
+
+  async function changeBuyerStage(stage: BuyerStage | null) {
+    if (!detail || stageBusy) return;
     const sessionId = detail.session.id;
+    setStageBusy(true); setStageError("");
+    try {
+      const customer = await setBuyerStage(sessionId, stage);
+      setDetail((current) => current?.session.id === sessionId ? { ...current, customer, session: { ...current.session, customer } } : current);
+      setList((current) => current ? { ...current, items: current.items.map((item) => item.customer.id === customer.id ? { ...item, customer } : item) } : current);
+      setStageMenuOpen(false);
+      setAnnouncement(stage ? (en ? "Buyer stage saved" : "买家阶段已保存") : (en ? "Automatic stage restored" : "已恢复按订单状态判断"));
+    } catch (caught) { setStageError(caught instanceof Error ? caught.message : en ? "Could not save stage" : "阶段保存失败"); }
+    finally { setStageBusy(false); }
+  }
+
+  async function changeStarForSession(sessionId: string, starred: boolean) {
+    if (actionBusy) return;
     setActionBusy(true);
     try {
-      const result = await setSessionStar(sessionId, !detail.session.is_starred);
+      const result = await setSessionStar(sessionId, !starred);
       setDetail((current) => current?.session.id === sessionId ? { ...current, session: { ...current.session, ...result } } : current);
       setList((current) => current ? { ...current, items: current.items.map((item) => item.id === sessionId ? { ...item, ...result } : item) } : current);
       setAnnouncement(result.is_starred ? (en ? "Marked as review risk" : "已标记差评风险") : (en ? "Review risk mark removed" : "已取消差评风险标记"));
@@ -533,12 +591,19 @@ export default function WorkspacePage() {
     finally { setActionBusy(false); }
   }
 
-  async function openTransfer() {
+  const openTransfer = useCallback(async () => {
     if (!detail || actionBusy || detail.session.status === "closed") return;
     setTransferError(""); setAssignees([]); setAssigneeId(""); setTransferOpen(true);
     try { setAssignees(await listSessionAssignees(detail.session.id)); }
     catch (caught) { setTransferError(caught instanceof Error ? caught.message : en ? "Could not load agents" : "坐席加载失败"); }
-  }
+  }, [detail, actionBusy, en]);
+
+  useEffect(() => {
+    if (!pendingContextAction || detail?.session.id !== pendingContextAction.sessionId) return;
+    if (pendingContextAction.action === "transfer") void openTransfer();
+    else if (detail.session.status !== "closed") { setCloseError(""); setCloseConfirmId(detail.session.id); }
+    setPendingContextAction(null);
+  }, [pendingContextAction, detail, openTransfer]);
 
   async function confirmTransfer() {
     if (!detail || !assigneeId || actionBusy) return;
@@ -571,30 +636,38 @@ export default function WorkspacePage() {
       <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3"><select aria-label={en ? "Platform" : "平台"} className="compact-field" onChange={(event) => setPlatform(event.target.value)} value={platform}><option value="">{en ? "All platforms" : "全部平台"}</option><option value="tiktok">TikTok</option><option value="shopee">Shopee</option><option value="amazon">Amazon</option></select><select aria-label={en ? "Store" : "店铺"} className="compact-field" onChange={(event) => setStoreId(event.target.value)} value={storeId}><option value="">{en ? "All stores" : "全部店铺"}</option>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}{storeId && !stores.some((store) => store.id === storeId) ? <option value={storeId}>{en ? "Store name unavailable" : "店铺名称不可用"}</option> : null}</select>{storeError ? <p className="col-span-2 text-xs text-red-600" role="alert">{storeError}</p> : null}</div>
       <div className="conversation-scroll" onScroll={(event) => { const node = event.currentTarget; if (node.scrollHeight - node.scrollTop - node.clientHeight < 100) void loadMoreConversations(); }} ref={conversationScrollRef}>{loading ? <LoadingState label={en ? "Loading conversations…" : "正在加载会话…"} /> : error ? <ErrorState message={error} retry={() => void loadList()} /> : !list?.items.length ? <EmptyState label={search ? (en ? "No matching conversations" : "未找到匹配会话") : (en ? "Conversations will appear when platform messages arrive" : "暂无会话，平台消息到达后会显示在这里")} /> : <>{list.items.map((item) => {
         const lastMessageTime = formatConversationTime(item.last_message_at, en ? "en-US" : "zh-CN");
-        return <button aria-pressed={selectedId === item.id} className={selectedId === item.id ? "conversation-card active" : "conversation-card"} key={item.id} onClick={() => setSelectedId(item.id)} type="button">
-          <span className="avatar">{item.customer.name?.slice(0, 1) ?? "?"}</span>
+        return <button aria-pressed={selectedId === item.id} className={selectedId === item.id ? "conversation-card active" : "conversation-card"} key={item.id} onClick={() => setSelectedId(item.id)} onContextMenu={(event) => { event.preventDefault(); setContextMenu({ sessionId: item.id, x: Math.min(event.clientX, window.innerWidth - 174), y: Math.min(event.clientY, window.innerHeight - 150) }); }} onKeyDown={(event) => { if (event.key === "F10" && event.shiftKey) { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); setContextMenu({ sessionId: item.id, x: Math.min(bounds.right, window.innerWidth - 174), y: Math.min(bounds.top, window.innerHeight - 150) }); } }} type="button">
+          <span className="avatar">{buyerAvatarText(item.customer.name)}</span>
           <span className="min-w-0 flex-1 text-left">
             <span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{item.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</strong>{lastMessageTime ? <time className="conversation-time" dateTime={item.last_message_at ?? undefined}>{lastMessageTime}</time> : null}</span>
             <span className="mt-1 flex items-center justify-between gap-2"><span className="min-w-0 truncate text-sm text-[var(--muted)]">{item.last_message ?? (en ? "No messages" : "暂无消息")}</span><span className="conversation-indicators">{item.is_starred ? <Star aria-label={en ? "Review risk" : "差评风险"} size={14} weight="fill" /> : null}<small className={`platform-badge platform-${item.platform}`}>{item.platform}</small>{item.unread_count > 0 ? <span className="unread" aria-label={en ? `${item.unread_count} unread messages` : `${item.unread_count} 条未读消息`}>{item.unread_count > 99 ? "99+" : item.unread_count}</span> : null}</span></span>
           </span>
         </button>;
       })}{loadingMore ? <p className="workspace-search-summary" role="status">{en ? "Loading more conversations…" : "正在加载更多会话…"}</p> : null}{loadMoreError ? <div className="workspace-search-summary" role="alert">{loadMoreError} <button className="text-button" onClick={() => void loadMoreConversations()} type="button">{en ? "Retry" : "重试"}</button></div> : null}</>}</div>
+      {contextMenu && list?.items.find((item) => item.id === contextMenu.sessionId) ? <div aria-label={en ? "Conversation actions" : "会话操作"} className="workspace-conversation-context" ref={contextMenuRef} role="menu" style={{ left: contextMenu.x, top: contextMenu.y }}><button disabled={actionBusy} onClick={() => { const item = list.items.find((entry) => entry.id === contextMenu.sessionId); setContextMenu(null); if (item) void changeStarForSession(item.id, item.is_starred); }} role="menuitem" type="button">{list.items.find((item) => item.id === contextMenu.sessionId)?.is_starred ? (en ? "Remove star" : "取消星标") : (en ? "Star" : "星标")}</button><button disabled={actionBusy || list.items.find((item) => item.id === contextMenu.sessionId)?.status === "closed"} onClick={() => { setPendingContextAction({ sessionId: contextMenu.sessionId, action: "transfer" }); setSelectedId(contextMenu.sessionId); setContextMenu(null); }} role="menuitem" type="button">{en ? "Transfer" : "转交"}</button><button disabled={actionBusy || list.items.find((item) => item.id === contextMenu.sessionId)?.status === "closed"} onClick={() => { setPendingContextAction({ sessionId: contextMenu.sessionId, action: "close" }); setSelectedId(contextMenu.sessionId); setContextMenu(null); }} role="menuitem" type="button">{en ? "Close conversation" : "关闭会话"}</button></div> : null}
     </section>
 
     <section className="chat-panel" aria-label={en ? "Chat window" : "聊天窗口"}>{!selectedId ? <EmptyState label={en ? "Select a conversation" : "请选择一个会话"} /> : detailError ? <ErrorState message={detailError} /> : !detail ? <LoadingState label={en ? "Loading messages…" : "正在加载消息…"} /> : <>
-      <header className="chat-heading"><button className="mobile-back" onClick={() => setSelectedId(null)} type="button" aria-label={en ? "Back to conversation list" : "返回会话列表"}><ArrowLeft size={20} /></button><div className="min-w-0"><h2 className="truncate font-semibold">{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><p className="text-xs text-[var(--muted)]">{detail.session.platform} · {detail.session.status} · {modeLabel(detail.send_mode, en)}</p></div><div className="chat-actions"><button aria-label={detail.session.is_starred ? (en ? "Remove review risk mark" : "取消差评风险标记") : (en ? "Mark review risk" : "标记差评风险")} aria-pressed={detail.session.is_starred} className="icon-action" disabled={actionBusy} onClick={() => void changeStar()} title={en ? "Review risk" : "差评风险"} type="button"><Star size={19} weight={detail.session.is_starred ? "fill" : "regular"} /></button><button aria-label={en ? "Transfer conversation" : "转交会话"} className="icon-action" disabled={actionBusy || detail.session.status === "closed"} onClick={() => void openTransfer()} title={en ? "Transfer" : "转交会话"} type="button"><UserSwitch size={19} /></button><button aria-label={detail.session.status === "closed" ? (en ? "Reopen conversation" : "重新打开会话") : (en ? "Close conversation" : "关闭会话")} className="icon-action" disabled={actionBusy} onClick={() => { if (detail.session.status === "closed") void changeClosed(false); else { setCloseError(""); setCloseConfirmId(detail.session.id); } }} title={detail.session.status === "closed" ? (en ? "Reopen" : "重新打开") : (en ? "Close" : "关闭会话")} type="button">{detail.session.status === "closed" ? <ArrowRight size={19} /> : <X size={19} />}</button><button className="secondary-button" onClick={() => setCustomerOpen(true)} type="button"><UserFocus size={17} />{en ? "Customer details" : "客户信息"}</button></div></header>
-      <div className="message-area"><div className="message-scroll" onScroll={onMessageScroll} ref={messageScrollRef}>{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>{showLatest ? <button className="latest-button" onClick={scrollToLatest} type="button"><ArrowDown size={16} />{en ? "Latest message" : "到最新消息"}</button> : null}</div>
+      <header className="chat-heading">
+        <button className="mobile-back" onClick={() => setSelectedId(null)} type="button" aria-label={en ? "Back to conversation list" : "返回会话列表"}><ArrowLeft size={20} /></button>
+        <div className="min-w-0">
+          <div className="workspace-chat-identity"><h2 className="truncate font-semibold">{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><div className="workspace-buyer-stage" ref={stageMenuRef}><button aria-expanded={stageMenuOpen} aria-label={en ? "Buyer stage" : "买家阶段"} className="workspace-buyer-stage-button" disabled={stageBusy} onClick={() => setStageMenuOpen(!stageMenuOpen)} title={detail.customer.buyer_stage_override ? (en ? "Manually selected" : "人工选择") : (en ? "Inferred from latest order" : "根据最近订单判断")} type="button">{stageLabel(detail.customer.buyer_stage_override ?? stageFromOrders(detail.recent_orders), en)}<CaretDown size={12} /></button>{stageMenuOpen ? <div aria-label={en ? "Choose buyer stage" : "选择买家阶段"} className="workspace-buyer-stage-menu" role="menu"><button onClick={() => void changeBuyerStage(null)} role="menuitem" type="button">{en ? "Automatic from orders" : "根据订单自动判断"}</button>{(["pre", "during", "after"] as BuyerStage[]).map((stage) => <button key={stage} onClick={() => void changeBuyerStage(stage)} role="menuitem" type="button">{stageLabel(stage, en)}</button>)}</div> : null}</div></div>
+          <p className="text-xs text-[var(--muted)]">{detail.session.platform} · {detail.session.status} · {modeLabel(detail.send_mode, en)}</p>{stageError ? <p className="workspace-stage-error" role="alert">{stageError}</p> : null}
+        </div>
+        <div className="chat-actions"><button aria-label={detail.session.is_starred ? (en ? "Remove review risk mark" : "取消差评风险标记") : (en ? "Mark review risk" : "标记差评风险")} aria-pressed={detail.session.is_starred} className="icon-action" disabled={actionBusy} onClick={() => void changeStar()} title={en ? "Review risk" : "差评风险"} type="button"><Star size={19} weight={detail.session.is_starred ? "fill" : "regular"} /></button><button aria-label={en ? "Transfer conversation" : "转交会话"} className="icon-action" disabled={actionBusy || detail.session.status === "closed"} onClick={() => void openTransfer()} title={en ? "Transfer" : "转交会话"} type="button"><UserSwitch size={19} /></button><button aria-label={detail.session.status === "closed" ? (en ? "Reopen conversation" : "重新打开会话") : (en ? "Close conversation" : "关闭会话")} className="icon-action" disabled={actionBusy} onClick={() => { if (detail.session.status === "closed") void changeClosed(false); else { setCloseError(""); setCloseConfirmId(detail.session.id); } }} title={detail.session.status === "closed" ? (en ? "Reopen" : "重新打开") : (en ? "Close" : "关闭会话")} type="button">{detail.session.status === "closed" ? <ArrowRight size={19} /> : <X size={19} />}</button><button className="secondary-button" onClick={() => setCustomerOpen(true)} type="button"><UserFocus size={17} />{en ? "Customer details" : "客户信息"}</button></div>
+      </header>
+      <div className="message-area"><div className="message-scroll" onScroll={onMessageScroll} ref={messageScrollRef}>{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble customerName={detail.customer.name} en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>{showLatest ? <button className="latest-button" onClick={scrollToLatest} type="button"><ArrowDown size={16} />{en ? "Latest message" : "到最新消息"}</button> : null}</div>
       <section className="ai-suggestion" aria-label={en ? "AI suggestion" : "AI 建议"}><div className="min-w-0 flex-1"><strong>{en ? "AI reply suggestion" : "AI 回复建议"}</strong><p aria-live="polite" className="truncate">{suggestionStatus || (suggestionDraft ? (en ? "Suggestion is ready in the draft" : "建议已填入草稿，可编辑后发送") : (en ? "Generate a draft on demand" : "按需生成草稿"))}</p></div><div className="flex gap-2">{suggestionLoading ? <button className="text-button" type="button" onClick={cancelSuggestion}><X size={16} />{en ? "Cancel" : "取消"}</button> : <button className="text-button" type="button" onClick={() => void requestSuggestion()}>{suggestionDraft ? (en ? "Refresh" : "刷新") : (en ? "Generate" : "生成")}</button>}{suggestionDraft && draft !== suggestionDraft ? <button className="secondary-button" type="button" onClick={() => { setDraft(suggestionDraft); setAnnouncement(en ? "Suggestion inserted; review it before sending" : "建议已填入输入框，确认后再发送"); }}>{en ? "Use" : "使用"}</button> : null}</div></section>
       <div className="composer">
         <div className="workspace-composer-tools">
-          <button aria-expanded={emojiOpen} aria-label={en ? "Emoji" : "表情"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setEmojiOpen(!emojiOpen); setQuickReplyOpen(false); }} title={en ? "Emoji" : "表情"} type="button"><Smiley size={19} /></button>
+          <button aria-expanded={emojiOpen} aria-label={en ? "Emoji" : "表情"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setEmojiOpen(!emojiOpen); setQuickReplyOpen(false); }} ref={emojiButtonRef} title={en ? "Emoji" : "表情"} type="button"><Smiley size={19} /></button>
           <button aria-label={en ? "Image" : "图片"} onClick={() => setComposerNotice(en ? "Image sending is not available yet" : "图片发送暂不可用")} title={en ? "Image sending is not available" : "图片发送暂不可用"} type="button"><ImageSquare size={19} /></button>
           <button aria-label={en ? "Video" : "视频"} onClick={() => setComposerNotice(en ? "Video sending is not available yet" : "视频发送暂不可用")} title={en ? "Video sending is not available" : "视频发送暂不可用"} type="button"><Video size={19} /></button>
           <button aria-label={en ? "Favorite replies" : "收藏的快捷回复"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setQuickReplyFavoritesOnly(true); setQuickReplyQuery(""); setQuickReplyOpen(true); setEmojiOpen(false); }} title={en ? "Favorite replies" : "收藏的快捷回复"} type="button"><Heart size={19} /></button>
           <span className="workspace-composer-tool-spacer" />
           <button aria-expanded={quickReplyOpen} aria-label={en ? "Quick replies" : "快捷回复"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setQuickReplyFavoritesOnly(false); setQuickReplyQuery(""); setQuickReplyOpen(!quickReplyOpen); setEmojiOpen(false); }} title={en ? "Quick replies" : "快捷回复"} type="button"><NotePencil size={19} /></button>
         </div>
-        {emojiOpen ? <div aria-label={en ? "Choose emoji" : "选择表情"} className="workspace-emoji-picker" role="menu">{["😊", "👍", "❤️", "🙏", "🎉"].map((emoji) => <button aria-label={emoji} key={emoji} onClick={() => { setDraft(`${draft}${emoji}`); setEmojiOpen(false); }} role="menuitem" type="button">{emoji}</button>)}</div> : null}
+        {emojiOpen ? <div aria-label={en ? "Choose emoji" : "选择表情"} className="workspace-emoji-picker" ref={emojiPickerRef} role="menu">{replyEmojis.map((emoji) => <button aria-label={emoji} key={emoji} onClick={() => { setDraft(`${draft}${emoji}`); setEmojiOpen(false); }} role="menuitem" type="button">{emoji}</button>)}</div> : null}
         {composerNotice ? <p className="workspace-composer-notice" role="status">{composerNotice}</p> : null}
         {quickReplyOpen ? <QuickReplyPicker en={en} favoritesOnly={quickReplyFavoritesOnly} initialQuery={quickReplyQuery} onClose={() => setQuickReplyOpen(false)} onDraft={(text) => applyQuickReply(text, false)} onReview={(text) => applyQuickReply(text, true)} storeId={detail.session.store_id} /> : null}
         {cardDraft ? <div className="workspace-card-draft"><TrackingCard card={cardDraft.card} en={en} enhancedAvailable={cardDraft.enhancedAvailable} packages={cardDraft.packages} selected={cardDraft.selected} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} /><button className="text-button" onClick={() => { setCardDrafts((current) => ({ ...current, [detail.session.id]: undefined })); setCardReview(null); }} type="button">{en ? "Remove card" : "移除卡片"}</button></div> : <textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} maxLength={messageLimit} onChange={(event) => updateComposerDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a message, Enter to review, Shift+Enter for a new line" : "请输入消息，Enter 进入发送审阅 / Shift+Enter 换行")} value={draft} />}

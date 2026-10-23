@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Heart, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { listAllQuickReplyGroups, listQuickReplies, type QuickReply, type QuickReplyGroup } from "../lib/reception";
@@ -94,7 +95,7 @@ export function QuickReplyPicker({ storeId, en, initialQuery = "", favoritesOnly
 
   return <section aria-label={en ? "Quick replies" : "快捷回复"} className="quick-reply-picker" role="dialog">
     <header className="quick-reply-picker-head"><strong>{en ? "Quick replies" : "快捷回复"}</strong><label className="quick-reply-search"><MagnifyingGlass size={15} /><input aria-label={en ? "Search quick replies" : "搜索快捷回复"} onChange={(event) => setQuery(event.target.value)} placeholder={en ? "Shortcut, tag or content" : "快捷键、标签或内容"} value={query} /></label><button aria-label={en ? "Close quick replies" : "关闭快捷回复"} onClick={onClose} type="button"><X size={16} /></button></header>
-    <div aria-label={en ? "Reply scope" : "回复归属"} className="quick-reply-scope" role="tablist"><button aria-selected={scope === "personal"} onClick={() => { setScope("personal"); setGroupId(""); }} role="tab" type="button">{en ? "Personal" : "个人"}</button><button aria-selected={scope === "team"} onClick={() => { setScope("team"); setGroupId(""); }} role="tab" type="button">{en ? "Team" : "团队"}</button><span>{en ? "Select a reply to draft or review" : "选择后可编辑或审阅发送"}</span></div>
+    <div aria-label={en ? "Reply scope" : "回复归属"} className="quick-reply-scope" role="tablist"><button aria-selected={scope === "personal"} onClick={() => { setScope("personal"); setGroupId(""); }} role="tab" type="button">{en ? "Personal" : "个人"}</button><button aria-selected={scope === "team"} onClick={() => { setScope("team"); setGroupId(""); }} role="tab" type="button">{en ? "Team" : "团队"}</button><span>{en ? "Select a reply to draft or review" : "选择后可编辑或审阅发送"}</span><Link aria-label={en ? "Manage quick replies" : "管理快捷回复"} href={`/marketing/reception/quick-replies?store_id=${encodeURIComponent(storeId)}&scope=${scope}`}>{en ? "Edit" : "编辑"}</Link></div>
     <div aria-label={en ? "Reply groups" : "快捷回复分组"} className="quick-reply-groups"><button aria-pressed={!groupId} onClick={() => setGroupId("")} type="button">{en ? "All" : "全部"}</button>{groups.map((group) => <button aria-pressed={groupId === group.id} key={group.id} onClick={() => setGroupId(group.id)} type="button">{group.name}</button>)}</div>
     <div className="quick-reply-items">{loading ? <p role="status">{en ? "Loading…" : "正在加载…"}</p> : error ? <p role="alert">{error} <button onClick={() => setRefresh((value) => value + 1)} type="button">{en ? "Retry" : "重试"}</button></p> : filtered.length ? filtered.map((reply) => {
       const text = replyText(reply);

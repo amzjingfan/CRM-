@@ -56,6 +56,8 @@ TikTok OAuth Token 加密保存，state 哈希绑定并由现有 jobs worker 原
 
 基础接待配置独立于会被营销 Worker 扫描的活动表：个人/团队快捷回复按店铺和用户隔离，分组 `enabled` 只决定工作台能否选用该组话术，管理页保留停用分组及内容。超时回复与进店欢迎语只保存策略、店铺关联和按店铺时区解释的日期/每日时段；策略列表只返回对全部关联店铺都有查看权限的记录，多店策略去重分页。旧版 UTC `valid_from/valid_to` 记录保留原语义，新建配置写入独立 `schedule` JSONB。配置开关不接入 Webhook、Worker 或 TikTok 写适配器；工作台仅把文本快捷回复放入当前会话草稿或现有审阅框，实际外发仍须坐席二次确认并走原消息幂等、审计与对账路径。
 
+买家阶段的人工覆盖值保存在同店 `customers.metadata`，只允许 `pre|during|after`；清除该值恢复前端依据最近已同步订单状态的自动判断。写入通过会话店铺鉴权、CSRF、权限检查、客户行锁与低敏审计，不触发 TikTok 写接口。
+
 `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 是当前安全基线。Shopee/Amazon 真实适配、公开自动回复、自动营销和高风险写入不属于 v0.1。
 
 ## 可观测与恢复

@@ -29,7 +29,9 @@ from app.tools.service import issue_coupon, query_logistics, request_address_upd
 from app.workspace.schemas import (
     AssigneeView,
     AssignRequest,
+    BuyerStageRequest,
     ClosedRequest,
+    CustomerSummary,
     DraftTranslationRequest,
     DraftTranslationView,
     MessageTranslationView,
@@ -58,6 +60,7 @@ from app.workspace.service import (
     reconcile_unknown_message,
     send_agent_logistics_card,
     send_agent_message,
+    set_buyer_stage_override,
     set_conversation_closed,
     set_conversation_star,
     transfer_session,
@@ -441,6 +444,21 @@ async def star_session(
 ) -> ApiResponse[SessionActionResult]:
     """标记或取消 CRM 内部差评风险星标。"""
     return ApiResponse(data=await set_conversation_star(session, user, session_id, payload.starred))
+
+
+@router.patch(
+    "/sessions/{session_id}/buyer-stage",
+    response_model=ApiResponse[CustomerSummary],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.reply"))],
+)
+async def update_buyer_stage(
+    session_id: uuid.UUID,
+    payload: BuyerStageRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[CustomerSummary]:
+    """显式设置买家阶段或恢复按订单自动判断，不发送平台消息。"""
+    return ApiResponse(data=await set_buyer_stage_override(session, user, session_id, payload.stage))
 
 
 @router.patch(

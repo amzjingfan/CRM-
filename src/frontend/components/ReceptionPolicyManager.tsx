@@ -3,6 +3,7 @@
 import { CaretDown, DotsThree, Info, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import { FormEvent, MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "./AppShell";
+import { ReceptionTabs } from "./ReceptionTabs";
 import { EmptyState, ErrorState, LoadingState } from "./States";
 import { currentUser, listStores, type StoreView } from "../lib/api";
 import {
@@ -287,6 +288,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
   }
 
   return <AppShell><main className="reception-page reception-policy-page">
+    <ReceptionTabs active={kind} />
     <header className="reception-policy-heading"><div><h1>{title}</h1><p>仅保存配置，不自动向买家发送</p></div>
       <label className="reception-policy-search"><input aria-label="按店铺名称或别名搜索" onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="输入店铺名称/别名" value={search} /><MagnifyingGlass aria-hidden="true" size={17} /></label>
     </header>

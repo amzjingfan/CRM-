@@ -70,7 +70,7 @@ async function open(path, initial = {}) {
   return { context, tab, writes };
 }
 
-test("basic reception navigation preserves marketing and opens all three pages", async () => {
+test("marketing sidebar has two entries and reception pages use in-page tabs", async () => {
   const { context, tab } = await open("/marketing/reception/quick-replies");
   try {
     const sideNav = tab.getByRole("complementary", { name: "主导航" });
@@ -79,16 +79,13 @@ test("basic reception navigation preserves marketing and opens all three pages",
     assert.equal(await sideNav.getByRole("link", { name: "营销流程", exact: true }).isVisible(), false);
     await marketing.click();
     assert.equal(await marketing.getAttribute("aria-expanded"), "true");
-    const reception = sideNav.getByRole("button", { name: "基础接待" });
-    assert.equal(await reception.getAttribute("aria-expanded"), "false");
-    await reception.click();
-    for (const [name, href] of [["营销流程", "/marketing"], ["快捷回复", "/marketing/reception/quick-replies"], ["超时自动回复", "/marketing/reception/timeout"], ["进店欢迎语", "/marketing/reception/welcome"]]) {
-      assert.equal(await sideNav.getByRole("link", { name, exact: true }).getAttribute("href"), href);
-    }
+    assert.equal(await sideNav.getByRole("link", { name: "营销流程" }).getAttribute("href"), "/marketing");
+    assert.equal(await sideNav.getByRole("link", { name: "基础接待" }).getAttribute("href"), "/marketing/reception");
+    for (const name of ["快捷回复", "超时自动回复", "进店欢迎语"]) assert.equal(await sideNav.getByRole("link", { name }).count(), 0);
     for (const [name, href] of [["超时自动回复", "/marketing/reception/timeout"], ["进店欢迎语", "/marketing/reception/welcome"], ["快捷回复", "/marketing/reception/quick-replies"]]) {
-      await sideNav.getByRole("link", { name, exact: true }).click();
+      await tab.locator(".reception-page-tabs").getByRole("link", { name, exact: true }).click();
       await tab.waitForURL(`${baseUrl}${href}`);
-      assert.equal(await sideNav.getByRole("link", { name, exact: true }).getAttribute("aria-current"), "page");
+      assert.equal(await sideNav.getByRole("link", { name: "基础接待" }).getAttribute("aria-current"), "page");
     }
     await marketing.click();
     assert.equal(await marketing.getAttribute("aria-expanded"), "false");

@@ -2,7 +2,8 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://loca
 
 export type UserView = { id: string; name: string; email: string | null; login_name: string | null; role: string; avatar: string | null; permissions: string[]; store_ids: string[] };
 export type ApiResponse<T> = { code: number; message: string; data: T };
-export type CustomerSummary = { id: string; name: string | null; email: string | null; avatar: string | null; tags: string[] };
+export type BuyerStage = "pre" | "during" | "after";
+export type CustomerSummary = { id: string; name: string | null; email: string | null; avatar: string | null; tags: string[]; buyer_stage_override?: BuyerStage | null };
 export type SessionSummary = { id: string; store_id: string; platform: string; status: string; is_starred: boolean; closed_at: string | null; unread_count: number; assigned_user_id: string | null; last_message_at: string | null; last_message: string | null; customer: CustomerSummary };
 export type SessionActionResult = Pick<SessionSummary, "status" | "is_starred" | "closed_at">;
 export type SessionAssignee = { id: string; name: string };
@@ -177,6 +178,7 @@ export const translateSidebarTrackingTimeline = (sessionId: string, orderId: str
 export const markSessionRead = (sessionId: string) => requestApi<{ unread_count: number }>(`/workspace/sessions/${sessionId}/read`, { method: "POST" });
 export const setSessionStar = (sessionId: string, starred: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/star`, { method: "PATCH", body: JSON.stringify({ starred }) });
 export const setSessionClosed = (sessionId: string, closed: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/closed`, { method: "PATCH", body: JSON.stringify({ closed }) });
+export const setBuyerStage = (sessionId: string, stage: BuyerStage | null) => requestApi<CustomerSummary>(`/workspace/sessions/${sessionId}/buyer-stage`, { method: "PATCH", body: JSON.stringify({ stage }) });
 export const listSessionAssignees = (sessionId: string) => requestApi<SessionAssignee[]>(`/workspace/sessions/${sessionId}/assignees`);
 export const transferSession = (sessionId: string, reason: string, idempotencyKey: string, assignTo?: string) => requestApi<{ transfer_id: string; status: "transferred" }>(`/workspace/sessions/${sessionId}/transfer`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ reason, assign_to: assignTo ?? null }) });
 export const listKnowledgeCategories = (storeId = "") => requestApi<KnowledgeCategory[]>(`/knowledge/categories${storeId ? `?store_id=${encodeURIComponent(storeId)}` : ""}`);

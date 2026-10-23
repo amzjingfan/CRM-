@@ -63,7 +63,49 @@ from app.workspace.sidebar import (
 
 
 def _customer_view(customer: Customer) -> CustomerSummary:
-    return CustomerSummary.model_validate(customer, from_attributes=True)
+    data = CustomerSummary.model_validate(customer, from_attributes=True)
+    override = (customer.metadata_json or {}).get("buyer_stage_override")
+    return data.model_copy(
+        update={"buyer_stage_override": override if override in ("pre", "during", "after") else None}
+    )
+
+
+async def set_buyer_stage_override(
+    session: AsyncSession, actor: User, session_id: uuid.UUID, stage: Literal["pre", "during", "after"] | None
+) -> CustomerSummary:
+    """会话鉴权后更新同店买家画像，只记录阶段，不保存订单内容。"""
+    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    customer = await session.scalar(
+        select(Customer)
+        .where(Customer.id == conversation.customer_id, Customer.store_id == conversation.store_id)
+        .with_for_update()
+    )
+    if customer is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "客户不存在", 404)
+    before = (customer.metadata_json or {}).get("buyer_stage_override")
+    metadata = dict(customer.metadata_json or {})
+    if stage is None:
+        metadata.pop("buyer_stage_override", None)
+    else:
+        metadata["buyer_stage_override"] = stage
+    if before != stage:
+        customer.metadata_json = metadata
+        session.add(
+            AuditLog(
+                store_id=conversation.store_id,
+                actor_type="user",
+                actor_id=actor.id,
+                action="customer.buyer_stage_override",
+                resource_type="customer",
+                resource_id=customer.id,
+                after_data={"stage": stage},
+                result="succeeded",
+            )
+        )
+        await session.commit()
+    return _customer_view(customer)
 
 
 def _session_view(conversation: Conversation, customer: Customer, last: Message | None) -> SessionSummary:

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { TrackingTimelinePopover } from "./TrackingTimelinePopover";
 import type { LogisticsCardDraft } from "../lib/api";
+import { buyerAvatarText } from "../lib/message-display";
 import {
   getCustomerSidebarOrderDetail,
   getCustomerSidebarProduct,
@@ -136,7 +137,7 @@ function CopyableValue({ value, label, en }: { value: string | null | undefined;
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   if (!value) return <span>—</span>;
-  return <span className="customer-copy-value" title={value}><span>{value}</span><button aria-label={en ? `Copy ${label}` : `复制${label}`} className="customer-copy-button" onClick={() => { setCopyError(false); void navigator.clipboard.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => setCopyError(true)); }} title={copyError ? (en ? "Copy failed, retry" : "复制失败，请重试") : copied ? (en ? "Copied" : "已复制") : (en ? "Copy value" : "复制值")} type="button"><Copy size={12} /></button></span>;
+  return <span className="customer-copy-value" title={value}><span>{value}</span><button aria-label={en ? `Copy ${label}` : `复制${label}`} className="customer-copy-button" onClick={() => { setCopyError(false); setCopied(false); void navigator.clipboard.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => setCopyError(true)); }} title={copyError ? (en ? "Copy failed, retry" : "复制失败，请重试") : copied ? (en ? "Copied" : "已复制") : (en ? "Copy value" : "复制值")} type="button"><Copy size={12} /></button>{copied || copyError ? <span className="customer-copy-feedback" role="status">{copyError ? (en ? "Copy failed" : "复制失败") : (en ? "Copied" : "已复制")}</span> : null}</span>;
 }
 
 function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillDraft, onCardDraft }: { order: SidebarOrder; sessionId: string; en: boolean; trackingTranslationEnabled: boolean; fillDraft: (value: string) => void; onCardDraft: (value: LogisticsCardDraft) => void }) {
@@ -323,7 +324,7 @@ export function CustomerSidebar({ detail, storeName, en, onClose, onDraft, onCar
   const fillDraft = (content: string) => { onDraft(content); onClose(); };
   const fillCardDraft = (card: LogisticsCardDraft) => { onCardDraft(card); onClose(); };
   return <><button aria-label={en ? "Close customer details" : "关闭客户信息"} className="drawer-close" onClick={onClose} type="button"><X size={21} /></button>{!detail ? <p className="customer-side-empty">{en ? "Select a conversation to view customer details" : "选择会话后查看客户信息"}</p> : <>
-    <header className="customer-side-profile"><span className="avatar large">{detail.customer.name?.slice(0, 1) ?? "?"}</span><div><h2>{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><p>{storeName ?? (en ? "Store name unavailable" : "店铺名称不可用")}</p></div></header>
+    <header className="customer-side-profile"><span className="avatar large">{buyerAvatarText(detail.customer.name)}</span><div><h2>{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><p>{storeName ?? (en ? "Store name unavailable" : "店铺名称不可用")}</p></div></header>
     <div className="customer-side-tabs" role="tablist" aria-label={en ? "Customer information" : "客户信息"}>{(["orders", "products", "coupons"] as const).map((value) => <button aria-selected={section === value} className={section === value ? "active" : ""} key={value} onClick={() => chooseSection(value)} role="tab" type="button">{({ orders: en ? "Orders" : "订单", products: en ? "Products" : "商品", coupons: en ? "Coupons" : "优惠券" })[value]}</button>)}</div>
     {section === "orders" ? <div className="customer-side-status" aria-label={en ? "Order status" : "订单状态"}>{statuses.map((item) => <button aria-pressed={status === item.value} className={status === item.value ? "active" : ""} key={item.value} onClick={() => { setStatus(item.value); setPage(1); }} type="button">{item[en ? "en" : "zh"]}</button>)}</div> : null}
     <form className="customer-side-search" onSubmit={(event) => { event.preventDefault(); submitSearch(); }}><select aria-label={en ? "Search field" : "搜索字段"} onChange={(event) => { setField(event.target.value); setInput(""); setQuery(""); setPage(1); setPageToken(null); requestedProductToken.current = null; }} value={field}>{fields[section].map((item) => <option key={item.value} value={item.value}>{item[en ? "en" : "zh"]}</option>)}</select><input aria-label={en ? "Customer information search" : "客户信息搜索"} onChange={(event) => setInput(event.target.value)} placeholder={en ? "Enter search text" : `输入${fields[section].find((item) => item.value === field)?.zh ?? "关键词"}搜索`} value={input} /><button aria-label={en ? "Search" : "搜索"} type="submit"><MagnifyingGlass size={16} /></button></form>

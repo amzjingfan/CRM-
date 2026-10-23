@@ -23,12 +23,12 @@ after(async () => { await browser?.close(); });
 async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false, orderSellerSku = "PAD-BLK") {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
-    { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [] } },
-    { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [] } },
+    { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } },
+    { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [], buyer_stage_override: null } },
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, cardSend: 0, cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
+  const calls = { send: 0, cardSend: 0, cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -70,7 +70,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/messages") && method === "GET") {
       const record = records.find((item) => path.includes(item.id));
       const page = Number(url.searchParams.get("page") ?? "1");
-      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: translationEnabled, draft_translation_enabled: record.status !== "closed" };
+      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [{ id: "order-1", external_order_id: "577600000000000001", platform: "tiktok", status: orderStatus, currency: "USD", total_amount: "97.90", tracking_number: null, tracking_status: null }], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: translationEnabled, draft_translation_enabled: record.status !== "closed" };
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
@@ -119,6 +119,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       data = { source_text_sha256: "a".repeat(64), target_language: payload.target_language, translated_text: `Translated: ${payload.source_text}` };
     } else if (path.endsWith("/read")) { records.find((item) => path.includes(item.id)).unread_count = 0; data = { unread_count: 0 }; }
     else if (path.endsWith("/star")) { const record = records.find((item) => path.includes(item.id)); record.is_starred = JSON.parse(request.postData()).starred; data = { status: record.status, is_starred: record.is_starred, closed_at: record.closed_at }; }
+    else if (path.endsWith("/buyer-stage")) { const record = records.find((item) => path.includes(item.id)); const stage = JSON.parse(request.postData()).stage; record.customer.buyer_stage_override = stage; calls.stage.push({ sessionId: record.id, stage }); data = record.customer; }
     else if (path.endsWith("/closed")) { if (calls.closeFailures-- > 0) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "close unavailable", data: null }) }); const record = records.find((item) => path.includes(item.id)); const closed = JSON.parse(request.postData()).closed; calls.closed.push({ sessionId: record.id, closed }); record.status = closed ? "closed" : "active"; data = { status: record.status, is_starred: record.is_starred, closed_at: record.status === "closed" ? "2026-10-20T11:00:00Z" : null }; }
     else if (path.endsWith("/assignees")) data = [{ id: assigneeId, name: "Agent A" }];
     else if (path.endsWith("/transfer")) { calls.transfer++; const record = records.find((item) => path.includes(item.id)); record.status = "transferred"; record.assigned_user_id = JSON.parse(request.postData()).assign_to; data = { status: "transferred", transfer_id: "00000000-0000-4000-8000-000000000501" }; }
@@ -158,6 +159,72 @@ test("quick reply stays in the draft or existing manual review until confirmatio
     await page.getByRole("button", { name: "返回修改" }).click();
     await page.getByRole("button", { name: "图片" }).click();
     await page.getByText("图片发送暂不可用").waitFor();
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("quick reply management link and emoji panel remain manual draft tools", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await page.getByRole("button", { name: "快捷回复", exact: true }).click();
+    const manage = page.getByRole("link", { name: "管理快捷回复" });
+    assert.match(await manage.getAttribute("href"), /\/marketing\/reception\/quick-replies\?store_id=.*&scope=personal/);
+    await page.getByRole("button", { name: "关闭快捷回复" }).click();
+    await page.getByRole("button", { name: "表情" }).click();
+    assert.ok(await page.getByRole("menu", { name: "选择表情" }).getByRole("menuitem").count() > 20);
+    await page.getByRole("textbox", { name: "回复内容" }).click();
+    assert.equal(await page.getByRole("menu", { name: "选择表情" }).count(), 0);
+    await page.getByRole("button", { name: "表情" }).click();
+    await page.getByRole("menuitem", { name: "📦" }).click();
+    assert.equal(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), "📦");
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("buyer stage uses order status by default and saves a reversible manual override", async () => {
+  const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT");
+  try {
+    const stage = page.getByRole("button", { name: "买家阶段" });
+    assert.match(await stage.textContent(), /售中买家/);
+    await stage.click();
+    await page.getByRole("menuitem", { name: "售后买家" }).click();
+    await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售后买家"));
+    assert.match(await stage.textContent(), /售后买家/);
+    await page.reload();
+    assert.match(await page.getByRole("button", { name: "买家阶段" }).textContent(), /售后买家/);
+    await page.getByRole("button", { name: "买家阶段" }).click();
+    await page.getByRole("menuitem", { name: "根据订单自动判断" }).click();
+    await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售中买家"));
+    assert.match(await stage.textContent(), /售中买家/);
+    assert.deepEqual(calls.stage.map((entry) => entry.stage), ["after", null]);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("conversation right-click acts on the targeted card and still confirms closure", async () => {
+  const { context, page, calls, records } = await openWorkspace(2);
+  try {
+    const second = page.locator(".conversation-card").nth(1);
+    await second.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "星标", exact: true }).click();
+    assert.equal(records[1].is_starred, true);
+    assert.equal(records[0].is_starred, false);
+    await second.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "转交" }).click();
+    const transfer = page.getByRole("dialog", { name: "转交会话" });
+    await transfer.waitFor();
+    await transfer.getByRole("combobox", { name: "目标坐席" }).selectOption(assigneeId);
+    await transfer.getByRole("button", { name: "确认转交" }).click();
+    await transfer.waitFor({ state: "hidden" });
+    assert.equal(calls.transfer, 1);
+    assert.equal(records[1].status, "transferred");
+    await second.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "关闭会话" }).click();
+    const dialog = page.getByRole("dialog", { name: "关闭会话" });
+    await dialog.waitFor();
+    assert.equal(calls.closed.length, 0);
+    await dialog.getByRole("button", { name: "确认关闭" }).click();
+    assert.deepEqual(calls.closed, [{ sessionId: secondId, closed: true }]);
     assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });
@@ -659,7 +726,7 @@ test("long order variant remains readable in the customer sidebar", async () => 
   try {
     await page.setViewportSize({ width: 1206, height: 892 });
     const card = page.getByTestId("customer-order-card");
-    const value = card.locator(".customer-item-copy small").filter({ hasText: "商品规格：" }).locator(".customer-copy-value > span");
+    const value = card.locator(".customer-item-copy small").filter({ hasText: "商品规格：" }).locator(".customer-copy-value > span:first-child");
     await card.getByText(variant).waitFor();
     assert.equal(await value.evaluate((element) => element.scrollWidth <= element.clientWidth), true);
     assert.equal(await value.textContent(), variant);
@@ -674,13 +741,14 @@ test("long seller SKU remains readable and copyable in the customer sidebar", as
     await page.setViewportSize({ width: 1206, height: 892 });
     const card = page.getByTestId("customer-order-card");
     const line = card.locator(".customer-item-copy small").filter({ hasText: "SKU 货号：" });
-    const value = line.locator(".customer-copy-value > span");
+    const value = line.locator(".customer-copy-value > span:first-child");
     await card.getByText(sellerSku).waitFor();
     assert.equal(await value.evaluate((element) => element.scrollWidth <= element.clientWidth), true);
     assert.equal(await value.textContent(), sellerSku);
     assert.equal(await line.evaluate((element) => element.querySelector("button").getBoundingClientRect().right <= element.getBoundingClientRect().right + 1), true);
     await line.getByRole("button", { name: "复制SKU 货号" }).dispatchEvent("click");
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), sellerSku);
+    await line.getByRole("status").getByText("已复制").waitFor();
   } finally { await context.close(); }
 });
 
