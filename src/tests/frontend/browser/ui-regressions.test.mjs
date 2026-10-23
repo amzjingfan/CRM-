@@ -190,7 +190,7 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     created_at: "2026-10-20T00:00:00Z",
     updated_at: "2026-10-21T00:00:00Z",
   };
-  const { context, page } = await openPage("/knowledge", {
+  const { context, page } = await openPage("/knowledge?layer=A", {
     "GET /v1/auth/me": { ...user, store_ids: [store.id] },
     "GET /v1/settings/stores": [store],
     "GET /v1/knowledge/categories": [category],
@@ -212,8 +212,11 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     await page.getByText("CRM 智能聊天系统").waitFor();
     const categories = page.getByRole("complementary", { name: "知识分类" });
     await categories.getByRole("button", { name: "关务与合规" }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.has("layer"), false);
     assert.deepEqual(await categories.locator(".group-label").allTextContents(), ["核心业务线", "合规与政策"]);
     assert.deepEqual(await categories.locator(".cat").allTextContents(), ["全部知识", "商品与目录0", "物流与仓储1", "支付与结算0", "售后与退换0", "关务与合规0"]);
+    assert.equal(await categories.getByRole("button", { name: "按知识层级查看" }).count(), 0);
+    assert.equal(await categories.getByText(/A层|B层|C层|D层/).count(), 0);
     await categories.getByRole("button", { name: "商品与目录" }).click();
     await page.getByRole("heading", { name: "商品与目录" }).waitFor();
     await page.getByText("当前条件下没有知识文档").waitFor();
@@ -381,28 +384,38 @@ test("knowledge custom category can be confirmed and deleted without touching pr
     assert.equal(await categories.getByRole("button", { name: "删除分类：商品与目录" }).count(), 0);
     assert.equal(await categories.getByRole("button", { name: "删除分类：其他店铺分类" }).count(), 0);
 
-    let confirmation = "";
-    page.once("dialog", async (dialog) => { confirmation = dialog.message(); await dialog.dismiss(); });
+    let nativeDialogShown = false;
+    page.on("dialog", async (dialog) => { nativeDialogShown = true; await dialog.dismiss(); });
     await deleteButton.click();
-    assert.match(confirmation, /店铺专属/);
+    const confirmDialog = page.getByRole("dialog", { name: "删除自定义分类" });
+    await confirmDialog.getByText("店铺专属", { exact: true }).waitFor();
+    assert.equal(nativeDialogShown, false);
+    assert.equal(deleteRequests.length, 0);
+    await confirmDialog.getByRole("button", { name: "取消" }).click();
+    assert.equal(await confirmDialog.count(), 0);
+    await deleteButton.click();
+    await page.keyboard.press("Escape");
+    assert.equal(await confirmDialog.count(), 0);
     assert.equal(deleteRequests.length, 0);
     assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).getAttribute("aria-current"), "true");
 
-    page.once("dialog", (dialog) => dialog.accept());
     await deleteButton.click();
+    await confirmDialog.getByRole("button", { name: "删除分类" }).click();
     await page.getByText("分类下仍有子分类或 FAQ").waitFor();
     assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).count(), 1);
     assert.equal(deleteRequests.length, 1);
 
     rejectDelete = false;
+    await confirmDialog.getByRole("button", { name: "取消" }).click();
     await categories.getByRole("button", { name: "全部知识" }).click();
-    page.once("dialog", (dialog) => dialog.accept());
     await deleteButton.click();
+    await confirmDialog.getByRole("button", { name: "删除分类" }).click();
     await successfulDeleteStarted;
-    await categories.getByRole("button", { name: "店铺专属", exact: true }).click();
-    await page.getByRole("heading", { name: "店铺专属" }).waitFor();
+    assert.equal(await confirmDialog.getByRole("button", { name: "正在删除…" }).isDisabled(), true);
     releaseSuccessfulDelete();
+    await confirmDialog.waitFor({ state: "detached" });
     await page.getByRole("heading", { name: "全部知识" }).waitFor();
+    assert.equal(await confirmDialog.count(), 0);
     assert.equal(await categories.getByRole("button", { name: "店铺专属", exact: true }).count(), 0);
     assert.equal(new URL(page.url()).searchParams.has("category_id"), false);
     assert.equal(deleteRequests.length, 2);

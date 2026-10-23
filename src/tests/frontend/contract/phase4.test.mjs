@@ -121,15 +121,13 @@ test("knowledge and marketing pages implement the prototype while keeping live A
   assert.match(marketing, /getDashboardMetrics/);
 });
 
-test("knowledge layers are interactive, URL-backed, and protected from stale responses", async () => {
+test("knowledge sidebar uses categories without a hidden layer filter and protects stale responses", async () => {
   const [knowledge, css] = await Promise.all([
     read("app/knowledge/page.tsx"),
     read("app/knowledge/knowledge-prototype.css"),
   ]);
-  assert.match(knowledge, /selectedLayer/);
-  assert.match(knowledge, /query\.set\("layer", selectedLayer\)/);
-  assert.match(knowledge, /setSelectedLayer\(layer\.key\)/);
+  assert.doesNotMatch(knowledge, /selectedLayer|query\.set\("layer"|setSelectedLayer/);
   assert.match(knowledge, /loadRequestId/);
-  assert.match(css, /\.knowledge-page \.kb-layer-toggle/);
+  assert.doesNotMatch(css, /\.knowledge-page \.kb-layer-toggle/);
   assert.match(css, /@media\(max-width:780px\)[\s\S]*\.knowledge-page \.categories\{width:170px\}/);
 });
