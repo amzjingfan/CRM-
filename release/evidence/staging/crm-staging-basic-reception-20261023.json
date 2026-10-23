@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "evidence_type": "basic_reception_manual_staging_deploy",
+  "record_status": "DEPLOYED_STAGING_LOW_SENSITIVITY_EVIDENCE",
+  "environment": "staging",
+  "task_id": "MVP-MARKETING-BASIC-RECEPTION-001",
+  "subject_sha": "439c50c926240e34e85d543629dab9cd03bdaea4",
+  "merged_main_sha": "d19f683558c1d186478fb4f4a0682d8af95f5a15",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/539",
+  "clean_merged_source_verified": true,
+  "images": {
+    "backend_target_digest": "sha256:2049c745befffe969d01313e4b557190f596dea72909be9d8fc648f578cd1f94",
+    "frontend_target_digest": "sha256:0b34a7182eb09741ccd32afa8618515bb88df2218017e2d0a18f8eee34edf311",
+    "retrieval_target_digest": "sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "backend_previous_digest": "sha256:b3598ebf39c1982937528d1b834008764add6886c4f7347733b849f7aabeebf0",
+    "frontend_previous_digest": "sha256:a867f62455c02a3d918cc9526d326ae92e003db8d50d28cad88ec101b3defa39",
+    "retrieval_previous_digest": "sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "oci_architecture_amd64_verified": true,
+    "oci_revision_matches_merged_main": true,
+    "remote_manifest_and_pull_verified": true
+  },
+  "private_postgresql_backup": {
+    "size_bytes": 389366,
+    "mode_0600": true,
+    "pg_restore_list_readable": true,
+    "sha256_prefix": "625d792b42bf",
+    "sha256_match": true
+  },
+  "manual_gates": {
+    "six_immutable_roles_prefetched": "PASS",
+    "validate_only": "PASS",
+    "deploy_exact_digest": "PASS"
+  },
+  "runtime": {
+    "migration_head": "028_basic_reception_config",
+    "crm_container_count": 11,
+    "running_digests_match_targets": true,
+    "manual_send_scope_unchanged": true,
+    "tiktok_webhook_read_scope_unchanged": true,
+    "workspace_translation_scope_unchanged": true,
+    "one_store_scope_unchanged": true,
+    "conversation_filter_enabled": false,
+    "automatic_reply_enabled": false,
+    "high_risk_write_enabled": false,
+    "ai_marketing_enabled": false,
+    "llm_enabled": false,
+    "sse_enabled": false,
+    "query_limit": 10,
+    "fixed_egress_checked": true,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/marketing/reception/quick-replies": 200,
+      "/marketing/reception/timeout": 200,
+      "/marketing/reception/welcome": 200
+    }
+  },
+  "deployed_page_synthetic_browser": "NOT_RUN; authenticated browser was used",
+  "authenticated_real_store_user_interface": {
+    "basic_reception_sidebar_and_three_links_visible": true,
+    "quick_replies_page_loaded": true,
+    "quick_replies_personal_team_group_search_empty_state_visible": true,
+    "timeout_page_loaded_and_auto_send_disabled_notice_visible": true,
+    "welcome_page_loaded_and_auto_send_disabled_notice_visible": true,
+    "configuration_write_exercised": false
+  },
+  "external_message_sent": false,
+  "production_release": false
+}
