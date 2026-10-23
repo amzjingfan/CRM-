@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "evidence_type": "knowledge_sidebar_dialog_manual_staging_deploy",
+  "environment": "staging",
+  "task_id": "MVP-KNOWLEDGE-SIDEBAR-DIALOG-001",
+  "subject_sha": "f7950619487a853fa2c6afb27ff6a0ca1bd76fdc",
+  "merged_main_sha": "0a4f6739533218a57d77ce8423fd7fbfe203da03",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/536",
+  "reviewed_source_bundle_sha256": "01acc457b656febab54c39cd880b1271c7b56d24552979463885f467199eb0e1",
+  "frontend_image_tar_sha256": "3e4864173b15df4d75d0d3d12984446113db01892d906742ae3af72372c0469f",
+  "image_publication": {
+    "platform": "linux/amd64",
+    "oci_revision_matches_merged_main_sha": true,
+    "remote_manifest_and_pull_verified": true,
+    "manifest_digest": "sha256:a867f62455c02a3d918cc9526d326ae92e003db8d50d28cad88ec101b3defa39",
+    "amd64_child_digest": "sha256:76c5b7d427b103e651470e504a1a625dc68f03dc6984e4afb70ada6cb81ae3f5",
+    "publish_helper_exit": "nonzero_after_push_due_to_unavailable_buildx_inside_pwsh; independent_remote_manifest_and_pull_passed"
+  },
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:b3598ebf39c1982937528d1b834008764add6886c4f7347733b849f7aabeebf0",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:a867f62455c02a3d918cc9526d326ae92e003db8d50d28cad88ec101b3defa39",
+    "retrieval_model_service": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+  },
+  "previous_frontend_digest": "sha256:4290e793e40ebf250e622a8733f9420bf0f64f143f5740959e4acf2962c99a30",
+  "private_postgresql_backup": {
+    "mode": "0600",
+    "size_bytes": 389368,
+    "pg_restore_list_readable": true,
+    "sha256": "72545c4b9d214d1126d9b620c5fd2f0e633eaded4d7d2511bccd821e760e7de2"
+  },
+  "manual_gates": {
+    "prefetch": "passed_six_immutable_roles",
+    "prefetch_private_evidence_sha256": "3d07ff72b1bf117e9a9793fd37c2e21b057e618d695668a284ad932e7f4ddd94",
+    "validate": "validated",
+    "validate_private_evidence_sha256": "02d6dc5ce1f489630c5bc137a457b2ae6c3c8e6c6fcaeaf52d80a2f7b528cb24",
+    "deploy": "passed_exact_digest",
+    "deploy_private_evidence_sha256": "860a4c283fa8d711122822edc250fbb19763d9ed3a532962f903a3110b9f92b7"
+  },
+  "runtime": {
+    "crm_container_count": 11,
+    "frontend_running_digest_matches": true,
+    "backend_and_retrieval_digests_unchanged": true,
+    "tiktok_manual_send_target": "one_store_unchanged",
+    "tiktok_webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "automatic_reply_enabled": false,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/knowledge": 200
+    },
+    "knowledge_cache_control": "no-store, must-revalidate, no-cache, max-age=0, private",
+    "knowledge_fingerprint_assets": "10_js_css_responses_http_200_immutable"
+  },
+  "deployed_page_synthetic_browser": "layer_sidebar_absent; styled_delete_dialog_visible; cancel_closed_dialog_with_zero_DELETE; all_v1_requests_intercepted",
+  "authenticated_real_store_user_interface": "not_directly_checked",
+  "real_category_deleted": false,
+  "external_message_sent": false,
+  "production_release": false
+}
