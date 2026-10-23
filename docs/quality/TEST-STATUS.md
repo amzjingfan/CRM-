@@ -2,6 +2,8 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
+2026-10-23 基础接待交互跟进 [TR R01](../reports/tests/TR-MVP-MARKETING-BASIC-RECEPTION-UI-002-20261023-R01.md) 为源码候选 `PARTIAL`：subject `c7843608` 的隔离 PostgreSQL 迁移 029 升/降/升、后端 2294 passed/3 skipped、前端契约 48/48、生产浏览器 83/83、Ruff/format/mypy/typecheck/build 通过；lint 0 error/5 条既有 warning。停用分组在默认回复查询中不可选，管理查询仍可查看编辑。尚未合并或部署 staging，真实店铺页面未写入，未向买家发送消息；production No-Go。
+
 2026-10-23 基础接待 [TR R02](../reports/tests/TR-MVP-MARKETING-BASIC-RECEPTION-001-20261023-R02.md) 为限定范围 `PASS`：subject `439c50c` 的隔离 PostgreSQL 全量 2294 passed/3 skipped、前端契约 48/48、生产浏览器 81/81、Ruff/format/mypy/lint/typecheck/build 与迁移 028 升降级通过；lint 0 error/5 条既有 warning。源码 PR #539 已合入主线；直接 staging 的六角色预取、私有备份、`ValidateOnly`、精确摘要 `Deploy`、迁移头 028、11 容器、固定出口与六个公网路径均通过。已登录浏览器核对智能营销侧栏三入口和相应页面，超时及欢迎页明确提示自动发送关闭。未创建真实策略配置或向买家发送消息；production No-Go。详见[低敏现场证据](../../release/evidence/staging/crm-staging-basic-reception-20261023.json)。
 
 2026-10-23 知识库侧栏和删除确认弹窗 [TR R02](../reports/tests/TR-MVP-KNOWLEDGE-SIDEBAR-DIALOG-001-20261023-R02.md) 为限定范围 `PASS`：subject `f7950619` 本地生产构建、48/48 合同、66 passed/1 skipped 浏览器，lint 0 error/5 既有 warning；staging 六角色预取、私有备份、ValidateOnly、精确摘要 Deploy、11 容器及四公网健康通过。已部署页面合成浏览器确认整块层级侧栏消失、站内删除弹窗与取消零 DELETE；10 个指纹资源 200 immutable。真实登录态和真实删除未测，Agent/后端/检索不变；Actions 零步骤失败不计 CI，production No-Go。详见[低敏部署证据](../../release/evidence/staging/crm-staging-knowledge-sidebar-dialog-20261023.json)。

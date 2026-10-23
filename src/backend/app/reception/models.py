@@ -37,6 +37,7 @@ class ReceptionGroup(TimestampMixin, Base):
     scope: Mapped[str] = mapped_column(String(10), nullable=False)
     owner_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 

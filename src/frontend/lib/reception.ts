@@ -10,6 +10,8 @@ export type QuickReplyGroup = {
   scope: ReceptionScope;
   owner_user_id: string | null;
   name: string;
+  enabled: boolean;
+  reply_count: number;
   sort_order: number;
 };
 
@@ -65,7 +67,7 @@ export function createQuickReplyGroup(payload: NewQuickReplyGroup) {
   return requestApi<QuickReplyGroup>(`${base}/groups`, { method: "POST", body: JSON.stringify(payload) });
 }
 
-export function updateQuickReplyGroup(id: string, payload: Partial<Pick<QuickReplyGroup, "name" | "sort_order">>) {
+export function updateQuickReplyGroup(id: string, payload: Partial<Pick<QuickReplyGroup, "name" | "enabled" | "sort_order">>) {
   return requestApi<QuickReplyGroup>(itemPath("groups", id), { method: "PATCH", body: JSON.stringify(payload) });
 }
 
@@ -73,11 +75,12 @@ export function deleteQuickReplyGroup(id: string) {
   return requestApi<void>(itemPath("groups", id), { method: "DELETE" });
 }
 
-export function listQuickReplies(storeId: string, scope: ReceptionScope, options: { groupId?: string; q?: string; shortcut?: string; page?: number; pageSize?: number } = {}) {
+export function listQuickReplies(storeId: string, scope: ReceptionScope, options: { groupId?: string; q?: string; shortcut?: string; page?: number; pageSize?: number; includeDisabled?: boolean } = {}) {
   const params = new URLSearchParams({ store_id: storeId, scope, page: String(options.page ?? 1), page_size: String(options.pageSize ?? 100) });
   if (options.groupId) params.set("group_id", options.groupId);
   if (options.q?.trim()) params.set("q", options.q.trim());
   if (options.shortcut) params.set("shortcut", options.shortcut);
+  if (options.includeDisabled) params.set("include_disabled", "true");
   return requestApi<ReceptionPage<QuickReply>>(listPath("replies", params));
 }
 

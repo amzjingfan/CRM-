@@ -54,7 +54,7 @@ export function QuickReplyPicker({ storeId, en, initialQuery = "", favoritesOnly
     let active = true;
     setLoading(true); setLoadingMore(false); setError(""); setMoreError(""); setPage(1);
     Promise.all([listAllQuickReplyGroups(storeId, scope), listQuickReplies(storeId, scope, { groupId, q: query, pageSize: 100 })])
-      .then(([groupItems, replyPage]) => { if (active) { setGroups(groupItems); setReplies(replyPage.items); setTotal(replyPage.total); } })
+      .then(([groupItems, replyPage]) => { if (active) { setGroups(groupItems.filter((group) => group.enabled)); setReplies(replyPage.items); setTotal(replyPage.total); } })
       .catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : en ? "Could not load quick replies" : "快捷回复加载失败"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

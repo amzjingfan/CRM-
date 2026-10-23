@@ -25,6 +25,7 @@ from app.reception.repository import (
     find_policy,
     find_reply,
     group_has_replies,
+    group_reply_counts,
     shortcut_exists,
 )
 from app.reception.repository import (
@@ -142,7 +143,13 @@ async def list_groups(
     rows, total = await query_groups(
         session, store_id, scope, user.id if scope == "personal" else None, page, page_size
     )
-    return GroupPage(items=[GroupView.model_validate(row) for row in rows], total=total, page=page, page_size=page_size)
+    counts = await group_reply_counts(session, [row.id for row in rows])
+    return GroupPage(
+        items=[GroupView.model_validate(row).model_copy(update={"reply_count": counts.get(row.id, 0)}) for row in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 async def list_replies(
@@ -155,6 +162,7 @@ async def list_replies(
     page: int,
     page_size: int,
     shortcut: str | None = None,
+    include_disabled: bool = False,
 ) -> ReplyPage:
     await _ensure_stores(session, user, [store_id])
     await _ensure_permission(session, user, [store_id], _group_permission(scope, False))
@@ -172,6 +180,7 @@ async def list_replies(
         page,
         page_size,
         shortcut=shortcut.lower() if shortcut else None,
+        include_disabled=include_disabled,
     )
     return ReplyPage(items=[ReplyView.model_validate(row) for row in rows], total=total, page=page, page_size=page_size)
 

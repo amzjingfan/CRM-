@@ -56,6 +56,19 @@ async def group_has_replies(session: AsyncSession, group_id: uuid.UUID) -> bool:
     return bool(await session.scalar(select(ReceptionReply.id).where(ReceptionReply.group_id == group_id).limit(1)))
 
 
+async def group_reply_counts(session: AsyncSession, group_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    if not group_ids:
+        return {}
+    rows = (
+        await session.execute(
+            select(ReceptionReply.group_id, func.count(ReceptionReply.id))
+            .where(ReceptionReply.group_id.in_(group_ids))
+            .group_by(ReceptionReply.group_id)
+        )
+    ).all()
+    return {group_id: count for group_id, count in rows}
+
+
 async def find_reply(session: AsyncSession, item_id: uuid.UUID, store_ids: set[uuid.UUID]) -> ReceptionReply | None:
     if not store_ids:
         return None
@@ -75,12 +88,15 @@ async def list_replies(
     page: int,
     page_size: int,
     shortcut: str | None = None,
+    include_disabled: bool = False,
 ) -> tuple[list[ReceptionReply], int]:
     filters = [ReceptionReply.store_id == store_id, ReceptionReply.scope == scope]
     if scope == "personal":
         filters.append(ReceptionReply.owner_user_id == owner_id)
     if group_id:
         filters.append(ReceptionReply.group_id == group_id)
+    if not include_disabled:
+        filters.append(ReceptionGroup.enabled.is_(True))
     if shortcut:
         filters.append(ReceptionReply.shortcut == shortcut)
     if q:
@@ -93,11 +109,13 @@ async def list_replies(
                 cast(ReceptionReply.messages, Text).ilike(pattern, escape="\\"),
             )
         )
-    total = await session.scalar(select(func.count()).select_from(ReceptionReply).where(*filters)) or 0
+    query = select(ReceptionReply).join(ReceptionGroup, ReceptionReply.group_id == ReceptionGroup.id)
+    total = (
+        await session.scalar(select(func.count()).select_from(ReceptionReply).join(ReceptionGroup).where(*filters)) or 0
+    )
     items = (
         await session.scalars(
-            select(ReceptionReply)
-            .where(*filters)
+            query.where(*filters)
             .order_by(ReceptionReply.sort_order, ReceptionReply.id)
             .offset((page - 1) * page_size)
             .limit(page_size)

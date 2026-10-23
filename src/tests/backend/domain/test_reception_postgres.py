@@ -155,6 +155,20 @@ async def test_reception_scope_idempotency_and_config_only() -> None:
             )
             assert personal_match.total == 1 and personal_match.items[0].id == reply.id
             assert team_match.total == 1 and team_match.items[0].id == team_reply.id
+            group_page = await service.list_groups(session, agent, first_store, "personal", 1, 20)
+            assert group_page.items[0].reply_count == 2
+            disabled = await service.update_group(
+                session, agent, personal_group.id, GroupUpdate(enabled=False), "group-disable"
+            )
+            assert disabled.enabled is False
+            assert (await service.list_replies(session, agent, first_store, "personal", None, None, 1, 20)).total == 0
+            assert (
+                await service.list_replies(
+                    session, agent, first_store, "personal", None, None, 1, 20, include_disabled=True
+                )
+            ).total == 2
+            assert (await service.list_groups(session, agent, first_store, "personal", 1, 20)).items[0].enabled is False
+            await service.update_group(session, agent, personal_group.id, GroupUpdate(enabled=True), "group-enable")
             assert (
                 await service.list_replies(session, agent, first_store, "team", None, None, 1, 1, shortcut="missing")
             ).total == 0

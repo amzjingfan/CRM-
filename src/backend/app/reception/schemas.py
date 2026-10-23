@@ -23,6 +23,7 @@ class GroupCreate(BaseModel):
     store_id: uuid.UUID
     scope: Scope
     name: str = Field(min_length=1, max_length=100)
+    enabled: bool = True
     sort_order: int = Field(default=0, ge=0, le=100_000)
 
     @field_validator("name")
@@ -35,6 +36,7 @@ class GroupUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
+    enabled: bool | None = None
     sort_order: int | None = Field(default=None, ge=0, le=100_000)
 
     @field_validator("name")
@@ -51,6 +53,8 @@ class GroupView(BaseModel):
     scope: Scope
     owner_user_id: uuid.UUID | None
     name: str
+    enabled: bool = True
+    reply_count: int = 0
     sort_order: int
 
 

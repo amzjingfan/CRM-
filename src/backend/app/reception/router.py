@@ -77,11 +77,23 @@ async def get_replies(
     group_id: uuid.UUID | None = None,
     q: Annotated[str | None, Query(max_length=100)] = None,
     shortcut: Annotated[str | None, Query(pattern=r"^[A-Za-z0-9]{1,8}$")] = None,
+    include_disabled: bool = False,
     page: Page = 1,
     page_size: PageSize = 20,
 ) -> ApiResponse[ReplyPage]:
     return ApiResponse(
-        data=await service.list_replies(session, user, store_id, scope, group_id, q, page, page_size, shortcut=shortcut)
+        data=await service.list_replies(
+            session,
+            user,
+            store_id,
+            scope,
+            group_id,
+            q,
+            page,
+            page_size,
+            shortcut=shortcut,
+            include_disabled=include_disabled,
+        )
     )
 
 
