@@ -42,6 +42,7 @@ from app.workspace.schemas import (
     CustomerSummary,
     DraftTranslationView,
     LogisticsCardView,
+    MediaMessageView,
     MessageTranslationView,
     MessageView,
     OrderSummary,
@@ -147,6 +148,12 @@ def _message_view(message: Message) -> MessageView:
         if message.message_type == "logistics_card" and isinstance(card_data, dict)
         else None
     )
+    media_data = message.raw_payload.get("media")
+    media = (
+        MediaMessageView.model_validate(media_data)
+        if message.message_type in {"image", "video"} and isinstance(media_data, dict)
+        else None
+    )
     return MessageView(
         id=message.id,
         role=message.role,
@@ -157,6 +164,7 @@ def _message_view(message: Message) -> MessageView:
         delivery_mode=delivery_mode,
         message_type=message.message_type or "text",
         logistics_card=card,
+        media=media,
     )
 
 
@@ -635,9 +643,10 @@ async def send_agent_message(
     idempotency_key: str,
     *,
     confirmed: bool,
-    message_type: Literal["text", "logistics_card"] = "text",
+    message_type: Literal["text", "logistics_card", "image", "video"] = "text",
     card_order_id: str | None = None,
     card_package_id: str | None = None,
+    media_token: str | None = None,
 ) -> MessageView:
     """把已人工确认的消息交给统一工具执行层并返回持久化终态。"""
     if not confirmed:
@@ -652,11 +661,16 @@ async def send_agent_message(
         raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不在真实消息发送范围内", 403)
     if send_mode == "real" and message_type == "text" and len(content) > TIKTOK_TEXT_MAX_LENGTH:
         raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 普通文本不能超过 2000 字符", 422)
+    if message_type in {"image", "video"}:
+        if send_mode != "real" or not media_token:
+            raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话未开放真实媒体发送", 403)
     arguments: dict[str, object] = {"conversation_id": str(conversation.id), "content": content}
     if message_type == "logistics_card":
         arguments.update(
             {"message_type": message_type, "card_order_id": card_order_id, "card_package_id": card_package_id}
         )
+    elif message_type in {"image", "video"}:
+        arguments.update({"message_type": message_type, "media_token": media_token})
     result = await SqlAlchemyToolExecutor(session).execute(
         ToolInvocation(
             tool_name="send_platform_message",
@@ -675,6 +689,8 @@ async def send_agent_message(
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于不同请求或仍在执行", 409)
     if result.error_code == "TOOL_RECONCILIATION_REQUIRED":
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前店铺存在发送结果未知的消息，请先完成人工对账", 409)
+    if result.error_code == "TOOL_MEDIA_PROOF_INVALID":
+        raise AppError(ErrorCode.VALIDATION_ERROR, "媒体上传凭据无效、过期或不属于当前会话", 422)
     existing = await session.scalar(
         select(Message).where(
             Message.store_id == conversation.store_id,

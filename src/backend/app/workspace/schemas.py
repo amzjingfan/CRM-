@@ -55,6 +55,16 @@ class MessageView(BaseModel):
     delivery_mode: Literal["inbound", "mock", "real", "unknown"]
     message_type: str = "text"
     logistics_card: "LogisticsCardView | None" = None
+    media: "MediaMessageView | None" = None
+
+
+class MediaMessageView(BaseModel):
+    """仅展示平台已上传资源；视频 ID 不构造未经核实的播放地址。"""
+
+    url: str | None = None
+    vid: str | None = None
+    width: int | None = None
+    height: int | None = None
 
 
 class LogisticsCardView(BaseModel):
@@ -173,6 +183,21 @@ class SendLogisticsCardRequest(BaseModel):
 
     order_id: str = Field(min_length=1, max_length=200, pattern=r"^\d+$")
     package_id: str | None = Field(default=None, min_length=1, max_length=200, pattern=r"^\d+$")
+    confirmed: Literal[True]
+
+    @field_validator("confirmed", mode="before")
+    @classmethod
+    def validate_literal_confirmation(cls, value: object) -> object:
+        if value is not True:
+            raise ValueError("发送前必须显式提交布尔值 true")
+        return value
+
+
+class SendMediaRequest(BaseModel):
+    """先上传后显式确认发送；上传凭据由本服务签发。"""
+
+    kind: Literal["image", "video"]
+    upload_token: str = Field(min_length=1, max_length=8192)
     confirmed: Literal[True]
 
     @field_validator("confirmed", mode="before")

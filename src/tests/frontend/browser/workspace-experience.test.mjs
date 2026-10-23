@@ -28,7 +28,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, cardSend: 0, cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
+  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -123,6 +123,18 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     else if (path.endsWith("/closed")) { if (calls.closeFailures-- > 0) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "close unavailable", data: null }) }); const record = records.find((item) => path.includes(item.id)); const closed = JSON.parse(request.postData()).closed; calls.closed.push({ sessionId: record.id, closed }); record.status = closed ? "closed" : "active"; data = { status: record.status, is_starred: record.is_starred, closed_at: record.status === "closed" ? "2026-10-20T11:00:00Z" : null }; }
     else if (path.endsWith("/assignees")) data = [{ id: assigneeId, name: "Agent A" }];
     else if (path.endsWith("/transfer")) { calls.transfer++; const record = records.find((item) => path.includes(item.id)); record.status = "transferred"; record.assigned_user_id = JSON.parse(request.postData()).assign_to; data = { status: "transferred", transfer_id: "00000000-0000-4000-8000-000000000501" }; }
+    else if (path.endsWith("/messages/media/upload") && method === "POST") {
+      calls.mediaUpload++;
+      calls.mediaKeys.push(request.headers()["idempotency-key"]);
+      data = { kind: "image", file_name: "test.png", upload_token: "signed-test-upload" };
+    }
+    else if (path.endsWith("/messages/media") && method === "POST") {
+      calls.mediaSend++;
+      calls.mediaKeys.push(request.headers()["idempotency-key"]);
+      const payload = JSON.parse(request.postData());
+      calls.mediaPayloads.push(payload);
+      data = { id: `media-${calls.mediaSend}`, role: "agent", content: "[图片]", message_type: "image", media: { url: "https://example.invalid/test.png", width: 1, height: 1 }, status: "sent", created_at: new Date().toISOString(), error_code: null, delivery_mode: "real" };
+    }
     else if (path.endsWith("/messages/logistics-card") && method === "POST") {
       calls.cardSend++;
       const payload = JSON.parse(request.postData());
@@ -144,6 +156,33 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   return { context, page, messages, records, calls };
 }
 
+test("image is reviewed before upload and manual TikTok send", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await page.getByRole("button", { name: "图片", exact: true }).click();
+    await page.getByLabel("选择媒体文件").setInputFiles({ name: "test.png", mimeType: "image/png", buffer: Buffer.from("89504e470d0a1a0a", "hex") });
+    await page.getByRole("dialog", { name: "审阅媒体消息" }).waitFor();
+    assert.equal(calls.mediaUpload, 0);
+    assert.equal(calls.mediaSend, 0);
+    await page.getByRole("dialog", { name: "审阅媒体消息" }).getByRole("button", { name: "确认发送" }).click();
+    await page.getByText("媒体已发送至 TikTok 买家").waitFor();
+    assert.equal(calls.mediaUpload, 1);
+    assert.equal(calls.mediaSend, 1);
+    assert.equal(calls.mediaKeys.length, 2);
+    assert.equal(calls.mediaKeys[0], calls.mediaKeys[1]);
+    assert.deepEqual(calls.mediaPayloads[0], { kind: "image", upload_token: "signed-test-upload", confirmed: true });
+    await page.getByRole("button", { name: "图片", exact: true }).click();
+    await page.getByLabel("选择媒体文件").setInputFiles({ name: "second.png", mimeType: "image/png", buffer: Buffer.from("89504e470d0a1a0a", "hex") });
+    await page.getByRole("dialog", { name: "审阅媒体消息" }).getByRole("button", { name: "取消" }).click();
+    assert.equal(calls.mediaUpload, 1);
+    assert.equal(calls.mediaSend, 1);
+    await page.getByRole("button", { name: "视频", exact: true }).click();
+    await page.getByLabel("选择媒体文件").setInputFiles({ name: "too-small.mp4", mimeType: "video/mp4", buffer: Buffer.alloc(1024) });
+    await page.getByText(/10–100 MB/).waitFor();
+    assert.equal(calls.mediaUpload, 1);
+  } finally { await context.close(); }
+});
+
 test("quick reply stays in the draft or existing manual review until confirmation", async () => {
   const { context, page, calls } = await openWorkspace(2);
   try {
@@ -157,8 +196,73 @@ test("quick reply stays in the draft or existing manual review until confirmatio
     await page.getByRole("dialog", { name: "审阅外发消息" }).waitFor();
     assert.equal(calls.send, 0);
     await page.getByRole("button", { name: "返回修改" }).click();
-    await page.getByRole("button", { name: "图片" }).click();
-    await page.getByText("图片发送暂不可用").waitFor();
+    assert.equal(await page.getByRole("button", { name: "图片", exact: true }).isEnabled(), true);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("quick reply management link and emoji panel remain manual draft tools", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await page.getByRole("button", { name: "快捷回复", exact: true }).click();
+    const manage = page.getByRole("link", { name: "管理快捷回复" });
+    assert.match(await manage.getAttribute("href"), /\/marketing\/reception\/quick-replies\?store_id=.*&scope=personal/);
+    await page.getByRole("button", { name: "关闭快捷回复" }).click();
+    await page.getByRole("button", { name: "表情" }).click();
+    assert.ok(await page.getByRole("menu", { name: "选择表情" }).getByRole("menuitem").count() > 20);
+    await page.getByRole("textbox", { name: "回复内容" }).click();
+    assert.equal(await page.getByRole("menu", { name: "选择表情" }).count(), 0);
+    await page.getByRole("button", { name: "表情" }).click();
+    await page.getByRole("menuitem", { name: "📦" }).click();
+    assert.equal(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), "📦");
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("buyer stage uses order status by default and saves a reversible manual override", async () => {
+  const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT");
+  try {
+    const stage = page.getByRole("button", { name: "买家阶段" });
+    assert.match(await stage.textContent(), /售中买家/);
+    await stage.click();
+    await page.getByRole("menuitem", { name: "售后买家" }).click();
+    await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售后买家"));
+    assert.match(await stage.textContent(), /售后买家/);
+    await page.reload();
+    assert.match(await page.getByRole("button", { name: "买家阶段" }).textContent(), /售后买家/);
+    await page.getByRole("button", { name: "买家阶段" }).click();
+    await page.getByRole("menuitem", { name: "根据订单自动判断" }).click();
+    await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售中买家"));
+    assert.match(await stage.textContent(), /售中买家/);
+    assert.deepEqual(calls.stage.map((entry) => entry.stage), ["after", null]);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("conversation right-click acts on the targeted card and still confirms closure", async () => {
+  const { context, page, calls, records } = await openWorkspace(2);
+  try {
+    const second = page.locator(".conversation-card").nth(1);
+    await second.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "星标", exact: true }).click();
+    assert.equal(records[1].is_starred, true);
+    assert.equal(records[0].is_starred, false);
+    await second.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "转交" }).click();
+    const transfer = page.getByRole("dialog", { name: "转交会话" });
+    await transfer.waitFor();
+    await transfer.getByRole("combobox", { name: "目标坐席" }).selectOption(assigneeId);
+    await transfer.getByRole("button", { name: "确认转交" }).click();
+    await transfer.waitFor({ state: "hidden" });
+    assert.equal(calls.transfer, 1);
+    assert.equal(records[1].status, "transferred");
+    await second.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "关闭会话" }).click();
+    const dialog = page.getByRole("dialog", { name: "关闭会话" });
+    await dialog.waitFor();
+    assert.equal(calls.closed.length, 0);
+    await dialog.getByRole("button", { name: "确认关闭" }).click();
+    assert.deepEqual(calls.closed, [{ sessionId: secondId, closed: true }]);
     assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });

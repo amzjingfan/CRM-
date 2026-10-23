@@ -41,4 +41,7 @@
 .quick-reply-item-bottom button:last-child { background: var(--primary); color: white; }
 .quick-reply-item-bottom button:disabled { opacity: .45; cursor: not-allowed; }
 .quick-reply-more { display: block; width: 100%; margin-top: 3px; border: 1px solid var(--border); border-radius: 4px; padding: 7px; color: var(--primary); font-size: .72rem; text-align: center; }
+.workspace-media-preview { display: grid; max-height: 260px; min-height: 120px; place-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); }
+.workspace-media-preview img, .workspace-media-preview video { max-width: 100%; max-height: 258px; object-fit: contain; }
+.workspace-message-image { display: block; max-width: min(360px, 60vw); max-height: 300px; border-radius: 6px; object-fit: contain; }
 @media (max-width: 680px) { .quick-reply-picker { right: 6px; width: calc(100% - 12px); max-height: 56vh; } .quick-reply-scope span { display: none; } }

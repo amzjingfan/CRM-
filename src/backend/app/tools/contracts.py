@@ -86,9 +86,10 @@ class SendPlatformMessageArguments(StrictToolArguments):
 
     conversation_id: uuid.UUID
     content: str = Field(min_length=1, max_length=4000)
-    message_type: Literal["text", "logistics_card"] = "text"
+    message_type: Literal["text", "logistics_card", "image", "video"] = "text"
     card_order_id: str | None = Field(default=None, pattern=r"^\d+$", max_length=200)
     card_package_id: str | None = Field(default=None, pattern=r"^\d+$", max_length=200)
+    media_token: str | None = Field(default=None, min_length=1, max_length=8192)
 
 
 class StrictToolOutput(BaseModel):

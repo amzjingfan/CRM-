@@ -21,7 +21,7 @@ export function MessageBubble({ message, sessionId, customerName, en, translatio
   const [translationError, setTranslationError] = useState(false);
   const side = messageSide(message.role);
   const sender = senderLabel(message.role, en);
-  const canTranslate = message.message_type !== "logistics_card" && translationEnabled && side !== "system" && /[A-Za-z]/.test(message.content);
+  const canTranslate = !["logistics_card", "image", "video"].includes(message.message_type ?? "text") && translationEnabled && side !== "system" && /[A-Za-z]/.test(message.content);
 
   async function requestTranslation() {
     if (translating || translation) return;
@@ -41,7 +41,7 @@ export function MessageBubble({ message, sessionId, customerName, en, translatio
     {side !== "system" ? <span aria-hidden="true" className={`message-avatar ${message.role === "assistant" ? "robot" : ""}`}>{message.role === "user" ? buyerAvatarText(customerName) : message.role === "assistant" ? <Robot size={15} weight="fill" /> : <Headset size={15} weight="fill" />}</span> : null}
     <div className="message-stack">
       <div className="message-bubble">
-        {message.message_type === "logistics_card" && message.logistics_card ? <TrackingCard card={message.logistics_card} en={en} sessionId={sessionId} translationEnabled={translationEnabled} /> : <p className="message-original">{message.content}</p>}
+        {message.message_type === "logistics_card" && message.logistics_card ? <TrackingCard card={message.logistics_card} en={en} sessionId={sessionId} translationEnabled={translationEnabled} /> : message.message_type === "image" && message.media?.url ? <a href={message.media.url} rel="noopener noreferrer" target="_blank"><img alt={en ? "Sent image" : "已发送图片"} className="workspace-message-image" src={message.media.url} /></a> : message.message_type === "video" ? <p className="message-original">{en ? "Video sent through TikTok" : "视频已通过 TikTok 发送"}</p> : <p className="message-original">{message.content}</p>}
         {translation && translation !== message.content ? <p className="message-translation"><span className="sr-only">{en ? "Chinese translation: " : "中文译文："}</span>{translation}</p> : null}
       </div>
       <div className="message-meta">

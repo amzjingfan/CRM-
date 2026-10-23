@@ -4,6 +4,8 @@ import json
 import logging
 import time
 import uuid
+from typing import BinaryIO
+from urllib.parse import urlsplit
 
 import httpx
 from pydantic import ValidationError
@@ -25,6 +27,10 @@ from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount
 
 SEND_MESSAGE_PATH_TEMPLATE = "/customer_service/202606/conversations/{conversation_id}/messages"
+UPLOAD_IMAGE_PATH = "/customer_service/202309/images/upload"
+UPLOAD_FILE_INIT_PATH = "/open/202512/file/init"
+VIDEO_CHUNK_BYTES = 20 * 1024 * 1024
+VIDEO_MIN_CHUNK_BYTES = 5 * 1024 * 1024
 CUSTOMER_SERVICE_SCOPE = "seller.customer_service"
 TIKTOK_TEXT_MAX_LENGTH = 2_000
 # 写请求的内部错误不能证明平台没有产生副作用。该集合独立于只读重试
@@ -81,8 +87,163 @@ class TikTokMessageClient:
         self.app_secret = secret.get_secret_value()
         self.access_token = decrypt_tiktok_access_token(channel, settings)
 
+    def _signed_params(self, path: str, body: bytes = b"") -> dict[str, str | int]:
+        params: dict[str, str | int] = {
+            "app_key": self.settings.tiktok_app_key,
+            "shop_cipher": self.shop_cipher,
+            "timestamp": int(time.time()),
+        }
+        params["sign"] = generate_api_signature(path, params, self.app_secret, body)
+        return params
+
+    @staticmethod
+    def _upload_data(response: httpx.Response) -> dict[str, object]:
+        if response.status_code >= 300:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 媒体上传失败", 503)
+        try:
+            envelope = TikTokApiEnvelope.model_validate(response.json())
+        except (ValueError, ValidationError) as error:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 媒体上传响应无效", 503) from error
+        if envelope.code != 0 or not isinstance(envelope.data, dict):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 媒体上传失败", 503)
+        return envelope.data
+
+    async def upload_image(self, file: BinaryIO, mime: str) -> tuple[str, int, int]:
+        """按官方客服图片接口上传，不把本地文件保存在业务库。"""
+        path = UPLOAD_IMAGE_PATH
+        extension = {"image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp"}[mime]
+        try:
+            if self.client is not None:
+                response = await self.client.post(
+                    f"{API_BASE_URL}{path}",
+                    params=self._signed_params(path),
+                    headers={"x-tts-access-token": self.access_token},
+                    files={"data": (f"message-image.{extension}", file, mime)},
+                    timeout=120,
+                )
+            else:
+                async with create_tiktok_http_client(self.settings) as client:
+                    response = await client.post(
+                        f"{API_BASE_URL}{path}",
+                        params=self._signed_params(path),
+                        headers={"x-tts-access-token": self.access_token},
+                        files={"data": (f"message-image.{extension}", file, mime)},
+                        timeout=120,
+                    )
+        except httpx.TransportError as error:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 图片上传未确认，请重新选择文件", 503) from error
+        data = self._upload_data(response)
+        url, width, height = data.get("url"), data.get("width"), data.get("height")
+        try:
+            image_url = urlsplit(url) if isinstance(url, str) else None
+        except ValueError as error:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 图片上传响应缺少有效图片信息", 503) from error
+        if (
+            not isinstance(url, str)
+            or image_url is None
+            or image_url.scheme != "https"
+            or not image_url.hostname
+            or image_url.username
+            or image_url.password
+            or not isinstance(width, int)
+            or not isinstance(height, int)
+            or isinstance(width, bool)
+            or isinstance(height, bool)
+            or width <= 0
+            or height <= 0
+        ):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 图片上传响应缺少有效图片信息", 503)
+        return url, width, height
+
+    async def upload_video(self, file: BinaryIO, size: int, mime: str, conversation_id: str) -> str:
+        """大视频按 20 MB 分片顺序上传；平台最后一片返回资源 ID。"""
+        if not conversation_id.isdigit():
+            raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 会话 ID 无效", 422)
+        chunks: list[int] = []
+        remaining = size
+        while remaining:
+            chunk_size = min(remaining, VIDEO_CHUNK_BYTES)
+            chunks.append(chunk_size)
+            remaining -= chunk_size
+        if len(chunks) > 1 and chunks[-1] < VIDEO_MIN_CHUNK_BYTES:
+            chunks[-2] += chunks.pop()
+        path = UPLOAD_FILE_INIT_PATH
+        target_path = f"[POST]{SEND_MESSAGE_PATH_TEMPLATE.format(conversation_id=conversation_id)}"
+        extension = {"video/webm": ".webm", "video/quicktime": ".mov"}.get(mime, ".mp4")
+        body = json.dumps(
+            {
+                "file_size": size,
+                "file_name": f"message-{uuid.uuid4().hex}{extension}",
+                "total_chunk_count": len(chunks),
+                "file_type": "video",
+                "target_path": target_path,
+            },
+            separators=(",", ":"),
+        ).encode()
+        try:
+            if self.client is not None:
+                return await self._upload_video_with_client(self.client, file, chunks, mime, path, body)
+            async with create_tiktok_http_client(self.settings) as client:
+                return await self._upload_video_with_client(client, file, chunks, mime, path, body)
+        except httpx.TransportError as error:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 视频上传未确认，请重新选择文件", 503) from error
+
+    async def _upload_video_with_client(
+        self, client: httpx.AsyncClient, file: BinaryIO, chunks: list[int], mime: str, path: str, body: bytes
+    ) -> str:
+        response = await client.post(
+            f"{API_BASE_URL}{path}",
+            params=self._signed_params(path, body),
+            headers={"content-type": "application/json", "x-tts-access-token": self.access_token},
+            content=body,
+            timeout=120,
+        )
+        data = self._upload_data(response)
+        upload_url, upload_token = data.get("upload_url"), data.get("upload_token")
+        if not isinstance(upload_url, str) or not isinstance(upload_token, str) or not upload_token:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 视频上传初始化响应无效", 503)
+        try:
+            parsed = urlsplit(upload_url)
+            port = parsed.port
+        except ValueError as error:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 视频上传地址无效", 503) from error
+        # 平台返回 URL 仍是外部输入；仅允许官方固定出口域，禁止重定向到内网。
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "open-api.tiktokglobalshop.com"
+            or parsed.username
+            or parsed.password
+            or port
+            or parsed.fragment
+            or not parsed.path.startswith("/file/")
+        ):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 视频上传地址无效", 503)
+        for number, chunk_size in enumerate(chunks, 1):
+            chunk = file.read(chunk_size)
+            if len(chunk) != chunk_size:
+                raise AppError(ErrorCode.VALIDATION_ERROR, "视频文件读取不完整", 422)
+            response = await client.put(
+                upload_url,
+                params={
+                    "upload_token": upload_token,
+                    "chunk_num": number,
+                    "app_key": self.settings.tiktok_app_key,
+                    "shop_cipher": self.shop_cipher,
+                },
+                headers={"content-type": mime, "x-tts-access-token": self.access_token},
+                content=chunk,
+                timeout=120,
+            )
+            data = self._upload_data(response)
+            if number < len(chunks) and not isinstance(data.get("part_id"), str):
+                raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 视频分片响应无效", 503)
+        resource_id = data.get("resource_id")
+        if not isinstance(resource_id, str) or not resource_id or len(resource_id) > 200:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 视频资源 ID 缺失", 503)
+        return resource_id
+
     async def send_text_message(self, command: SendMessageCommand) -> SendMessageResult:
-        """按官方 202606 契约发送一次人工文本或物流卡片，不自动重试。"""
+        """按官方 202606 契约发送一次人工消息，不自动重试。"""
         if not command.human_confirmed:
             return self._failed("REAL_WRITE_REQUIRES_HUMAN_CONFIRMATION")
         if not command.external_conversation_id.isdigit():
@@ -93,20 +254,29 @@ class TikTokMessageClient:
             return self._failed("TIKTOK_MESSAGE_TOO_LONG")
         if command.message_type == "logistics_card" and not command.card_order_id:
             return self._failed("TIKTOK_LOGISTICS_CARD_ORDER_REQUIRED")
+        if command.message_type in {"image", "video"} and not command.media_value:
+            return self._failed("TIKTOK_MEDIA_RESOURCE_REQUIRED")
+        if command.message_type == "image" and (not command.media_width or not command.media_height):
+            return self._failed("TIKTOK_IMAGE_SIZE_REQUIRED")
 
         path = SEND_MESSAGE_PATH_TEMPLATE.format(conversation_id=command.external_conversation_id)
         # 官方 content 字段本身是序列化后的 JSON 字符串；紧凑序列化保证
         # 签名正文与实际发送字节完全一致。
-        card_content = {"order_id": command.card_order_id}
+        card_content: dict[str, object] = {"order_id": command.card_order_id}
         if command.card_package_id:
             card_content["package_id"] = command.card_package_id
+        content: dict[str, object]
+        if command.message_type == "logistics_card":
+            content = card_content
+        elif command.message_type == "image":
+            content = {"url": command.media_value, "width": command.media_width, "height": command.media_height}
+        elif command.message_type == "video":
+            content = {"vid": command.media_value}
+        else:
+            content = {"content": command.content}
         body = {
-            "type": "LOGISTICS_CARD" if command.message_type == "logistics_card" else "TEXT",
-            "content": json.dumps(
-                card_content if command.message_type == "logistics_card" else {"content": command.content},
-                ensure_ascii=False,
-                separators=(",", ":"),
-            ),
+            "type": command.message_type.upper(),
+            "content": json.dumps(content, ensure_ascii=False, separators=(",", ":")),
             "sender_role": "CUSTOMER_SERVICE",
         }
         body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")

@@ -1,5 +1,6 @@
 """TikTok Shop 人工确认普通消息写契约测试。"""
 
+import io
 import json
 import uuid
 from typing import Any
@@ -140,6 +141,123 @@ async def test_send_logistics_card_uses_official_message_type_and_identifiers() 
             command(message_type="logistics_card", card_order_id="580874485811283206", card_package_id="123456")
         )
     assert result.status == "sent"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("message_type", "media_value", "width", "height", "expected"),
+    [
+        (
+            "image",
+            "https://p16-oec-va.ibyteimg.com/example.png",
+            1280,
+            720,
+            {"url": "https://p16-oec-va.ibyteimg.com/example.png", "width": 1280, "height": 720},
+        ),
+        ("video", "v10394g5000cd499vc7og65mqn3r3dg0", None, None, {"vid": "v10394g5000cd499vc7og65mqn3r3dg0"}),
+    ],
+)
+async def test_send_media_uses_official_message_type_and_platform_resource(
+    message_type: str, media_value: str, width: int | None, height: int | None, expected: dict[str, object]
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body["type"] == message_type.upper()
+        assert json.loads(body["content"]) == expected
+        assert body["sender_role"] == "CUSTOMER_SERVICE"
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        result = await TikTokMessageClient(real_write_settings(), connected_channel(), http_client).send_text_message(
+            command(message_type=message_type, media_value=media_value, media_width=width, media_height=height)
+        )
+    assert result.status == "sent"
+
+
+@pytest.mark.asyncio
+async def test_image_upload_uses_customer_service_multipart_and_returns_dimensions() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/customer_service/202309/images/upload"
+        assert request.headers["x-tts-access-token"] == "unit-test-access-token"
+        assert "multipart/form-data" in request.headers["content-type"]
+        assert b"image/png" in request.content
+        assert b"message-image.png" in request.content
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "data": {"url": "https://p16-oec-va.ibyteimg.com/example.png", "width": 640, "height": 480},
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        result = await TikTokMessageClient(real_write_settings(), connected_channel(), http_client).upload_image(
+            io.BytesIO(b"\x89PNG\r\n\x1a\n"), "image/png"
+        )
+    assert result == ("https://p16-oec-va.ibyteimg.com/example.png", 640, 480)
+
+
+@pytest.mark.asyncio
+async def test_video_upload_uses_official_init_and_sequential_chunks() -> None:
+    size = 26 * 1024 * 1024
+    chunks: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            assert request.url.path == "/open/202512/file/init"
+            body = json.loads(request.content)
+            assert body["total_chunk_count"] == 2
+            assert body["file_size"] == size
+            assert body["target_path"] == "[POST]/customer_service/202606/conversations/710688832392260838/messages"
+            return httpx.Response(
+                200,
+                json={
+                    "code": 0,
+                    "data": {
+                        "upload_url": "https://open-api.tiktokglobalshop.com/file/v1/upload",
+                        "upload_token": "secret-upload-token",
+                    },
+                },
+            )
+        assert request.method == "PUT"
+        assert request.url.host == "open-api.tiktokglobalshop.com"
+        assert request.url.params["upload_token"] == "secret-upload-token"
+        assert request.url.params["chunk_num"] == str(len(chunks) + 1)
+        chunks.append(len(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "data": {"resource_id": "video-resource"} if len(chunks) == 2 else {"part_id": "part-one"},
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = TikTokMessageClient(real_write_settings(), connected_channel(), http_client)
+        resource_id = await client.upload_video(io.BytesIO(b"0" * size), size, "video/mp4", "710688832392260838")
+    assert resource_id == "video-resource"
+    assert chunks == [20 * 1024 * 1024, 6 * 1024 * 1024]
+
+
+@pytest.mark.asyncio
+async def test_video_upload_rejects_non_platform_upload_url_before_put() -> None:
+    calls = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200, json={"code": 0, "data": {"upload_url": "https://127.0.0.1/file/upload", "upload_token": "secret"}}
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = TikTokMessageClient(real_write_settings(), connected_channel(), http_client)
+        with pytest.raises(Exception, match="上传地址无效"):
+            await client.upload_video(
+                io.BytesIO(b"0" * (10 * 1024 * 1024)), 10 * 1024 * 1024, "video/mp4", "710688832392260838"
+            )
+    assert calls == 1
 
 
 @pytest.mark.asyncio

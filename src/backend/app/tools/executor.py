@@ -41,6 +41,7 @@ from app.tools.contracts import (
 )
 from app.tools.models import CouponIssuance, ToolCall
 from app.tools.repository import begin_tool_call, finish_tool_call
+from app.workspace.media import verify_media_claim
 
 logger = logging.getLogger(__name__)
 
@@ -578,9 +579,38 @@ class SqlAlchemyToolExecutor:
             or not arguments.card_order_id
         ):
             raise ToolDispatchError("TOOL_HUMAN_CONFIRMATION_REQUIRED")
+        media_claim = None
+        if arguments.message_type in {"image", "video"}:
+            if (
+                conversation.platform != "tiktok"
+                or invocation.context.actor_type != "user"
+                or invocation.context.actor_id is None
+                or not invocation.context.human_confirmed
+                or not arguments.media_token
+            ):
+                raise ToolDispatchError("TOOL_HUMAN_CONFIRMATION_REQUIRED")
+            try:
+                media_claim = verify_media_claim(
+                    arguments.media_token,
+                    store_id=conversation.store_id,
+                    conversation_id=conversation.id,
+                    actor_id=invocation.context.actor_id,
+                    idempotency_key=invocation.idempotency_key,
+                )
+            except AppError as error:
+                raise ToolDispatchError("TOOL_MEDIA_PROOF_INVALID") from error
+            if media_claim.kind != arguments.message_type:
+                raise ToolDispatchError("TOOL_MEDIA_PROOF_INVALID")
         card_payload = (
             {"order_id": arguments.card_order_id, "package_id": arguments.card_package_id}
             if arguments.message_type == "logistics_card"
+            else None
+        )
+        media_payload = (
+            {"url": media_claim.value, "width": media_claim.width, "height": media_claim.height}
+            if media_claim and media_claim.kind == "image"
+            else {"vid": media_claim.value}
+            if media_claim
             else None
         )
         message = Message(
@@ -596,7 +626,11 @@ class SqlAlchemyToolExecutor:
             message_type=arguments.message_type,
             status="processing",
             agent_run_id=invocation.context.agent_run_id,
-            raw_payload={"delivery_mode": "unknown", **({"logistics_card": card_payload} if card_payload else {})},
+            raw_payload={
+                "delivery_mode": "unknown",
+                **({"logistics_card": card_payload} if card_payload else {}),
+                **({"media": media_payload} if media_payload else {}),
+            },
         )
         self.session.add(message)
         await self.session.commit()
@@ -608,6 +642,9 @@ class SqlAlchemyToolExecutor:
                 message_type=arguments.message_type,
                 card_order_id=arguments.card_order_id,
                 card_package_id=arguments.card_package_id,
+                media_value=media_claim.value if media_claim else None,
+                media_width=media_claim.width if media_claim else None,
+                media_height=media_claim.height if media_claim else None,
                 idempotency_key=invocation.idempotency_key,
                 human_confirmed=invocation.context.human_confirmed,
             ),
@@ -620,6 +657,7 @@ class SqlAlchemyToolExecutor:
         message.raw_payload = {
             "delivery_mode": "mock" if result.mock else "real",
             **({"logistics_card": card_payload} if card_payload else {}),
+            **({"media": media_payload} if media_payload else {}),
         }
         conversation.last_message_id = message.id
         conversation.last_message_at = datetime.now(UTC)

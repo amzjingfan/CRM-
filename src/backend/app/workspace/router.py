@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, File, Header, Query, Request, UploadFile
 
 from app.auth.dependencies import (
     get_current_user,
@@ -26,6 +26,7 @@ from app.tools.schemas import (
     ShippingAddressUpdate,
 )
 from app.tools.service import issue_coupon, query_logistics, request_address_update
+from app.workspace.media import MediaUploadView, upload_media
 from app.workspace.schemas import (
     AssigneeView,
     AssignRequest,
@@ -40,6 +41,7 @@ from app.workspace.schemas import (
     ReadResult,
     ReconcileMessageRequest,
     SendLogisticsCardRequest,
+    SendMediaRequest,
     SendMessageRequest,
     SessionActionResult,
     SessionListData,
@@ -366,6 +368,48 @@ async def send_message(
         payload.content,
         idempotency_key,
         confirmed=payload.confirmed,
+    )
+    return ApiResponse(data=message)
+
+
+@router.post(
+    "/sessions/{session_id}/messages/media/upload",
+    response_model=ApiResponse[MediaUploadView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.reply"))],
+)
+async def upload_message_media(
+    session_id: uuid.UUID,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    file: Annotated[UploadFile, File()],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[MediaUploadView]:
+    """仅把校验后的文件上传 TikTok，并返回绑定当前坐席的短时凭据。"""
+    return ApiResponse(data=await upload_media(session, user, session_id, file, idempotency_key))
+
+
+@router.post(
+    "/sessions/{session_id}/messages/media",
+    response_model=ApiResponse[MessageView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.reply"))],
+)
+async def send_message_media(
+    session_id: uuid.UUID,
+    payload: SendMediaRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[MessageView]:
+    """坐席二次确认后，由工具层完成目标复核、幂等、审计和唯一一次外发。"""
+    message = await send_agent_message(
+        session,
+        user,
+        session_id,
+        "[图片]" if payload.kind == "image" else "[视频]",
+        idempotency_key,
+        confirmed=payload.confirmed,
+        message_type=payload.kind,
+        media_token=payload.upload_token,
     )
     return ApiResponse(data=message)
 

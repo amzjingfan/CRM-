@@ -11,7 +11,7 @@ import { QuickReplyPicker } from "../../components/QuickReplyPicker";
 import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, setBuyerStage, setSessionClosed, setSessionStar, streamChatQuery, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
+import { getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, sendMessageMedia, uploadMessageMedia, setBuyerStage, setSessionClosed, setSessionStar, streamChatQuery, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
 import "./quick-reply.css";
@@ -83,7 +83,12 @@ export default function WorkspacePage() {
   const [failedDraft, setFailedDraft] = useState<{ sessionId: string; content: string; key: string } | null>(null);
   const [failedCard, setFailedCard] = useState<{ sessionId: string; draft: LogisticsCardDraft; key: string } | null>(null);
   const [cardReview, setCardReview] = useState<{ sessionId: string; draft: LogisticsCardDraft; key: string } | null>(null);
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const mediaPickerKind = useRef<"image" | "video">("image");
+  const [mediaReview, setMediaReview] = useState<{ sessionId: string; file: File; kind: "image" | "video"; previewUrl: string; key: string; uploadToken?: string; error?: string } | null>(null);
   useEffect(() => { setCardReview(null); }, [selectedId]);
+  useEffect(() => { setMediaReview(null); }, [selectedId]);
+  useEffect(() => () => { if (mediaReview?.previewUrl) URL.revokeObjectURL(mediaReview.previewUrl); }, [mediaReview?.previewUrl]);
   const [replyLanguage, setReplyLanguage] = useState<DraftTargetLanguage>("en");
   const [sendChoice, setSendChoice] = useState<SendChoice>("translated");
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
@@ -392,6 +397,33 @@ export default function WorkspacePage() {
     finally { setSending(false); }
   }
 
+  function chooseMedia(file: File | undefined) {
+    if (!file || !selectedId || !detail || detail.send_mode !== "real") return;
+    const kind = mediaPickerKind.current;
+    const imageOk = kind === "image" && ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(file.type) && file.size > 0 && file.size <= 10 * 1024 * 1024;
+    const videoOk = kind === "video" && ["video/mp4", "video/quicktime", "video/webm"].includes(file.type) && file.size >= 10 * 1024 * 1024 && file.size <= 100 * 1024 * 1024;
+    if (!imageOk && !videoOk) { setComposerNotice(en ? "Choose a JPG/PNG/GIF/WebP image up to 10 MB or an MP4/MOV/WebM video from 10 to 100 MB" : "仅支持不超过 10 MB 的 JPG/PNG/GIF/WebP 图片，或 10–100 MB 的 MP4/MOV/WebM 视频"); return; }
+    setMediaReview({ sessionId: selectedId, file, kind, previewUrl: URL.createObjectURL(file), key: newKey() });
+    setComposerNotice("");
+  }
+
+  async function submitMedia() {
+    const pending = mediaReview;
+    if (!pending || pending.sessionId !== selectedId || sending || detail?.send_mode !== "real") return;
+    setSending(true);
+    setMediaReview((current) => current ? { ...current, error: undefined } : null);
+    try {
+      const token = pending.uploadToken ?? (await uploadMessageMedia(pending.sessionId, pending.file, pending.key)).upload_token;
+      setMediaReview((current) => current?.key === pending.key ? { ...current, uploadToken: token } : current);
+      const message = await sendMessageMedia(pending.sessionId, pending.kind, token, pending.key);
+      setDetail((current) => current?.session.id === pending.sessionId ? { ...current, messages: current.messages.some((item) => item.id === message.id) ? current.messages.map((item) => item.id === message.id ? message : item) : [...current.messages, message] } : current);
+      setMediaReview(null);
+      setAnnouncement(message.status === "sent" ? (en ? "Media sent to the TikTok buyer" : "媒体已发送至 TikTok 买家") : message.status === "unknown" ? (en ? "Delivery result unknown; reconcile in TikTok, do not retry" : "发送结果未知，请在 TikTok 对账，勿重试") : (en ? "TikTok rejected this media message" : "TikTok 拒绝本次媒体消息"));
+    } catch (caught) {
+      setMediaReview((current) => current?.key === pending.key ? { ...current, error: caught instanceof Error ? caught.message : en ? "Media send failed" : "媒体发送失败" } : current);
+    } finally { setSending(false); }
+  }
+
   async function submitCard(toSend: LogisticsCardDraft, key: string, sessionId: string) {
     if (!selectedId || selectedId !== sessionId || cardDrafts[sessionId] !== toSend || sending || !detail || detail.send_mode === "disabled") return;
     setCardReview(null);
@@ -661,8 +693,9 @@ export default function WorkspacePage() {
       <div className="composer">
         <div className="workspace-composer-tools">
           <button aria-expanded={emojiOpen} aria-label={en ? "Emoji" : "表情"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setEmojiOpen(!emojiOpen); setQuickReplyOpen(false); }} ref={emojiButtonRef} title={en ? "Emoji" : "表情"} type="button"><Smiley size={19} /></button>
-          <button aria-label={en ? "Image" : "图片"} onClick={() => setComposerNotice(en ? "Image sending is not available yet" : "图片发送暂不可用")} title={en ? "Image sending is not available" : "图片发送暂不可用"} type="button"><ImageSquare size={19} /></button>
-          <button aria-label={en ? "Video" : "视频"} onClick={() => setComposerNotice(en ? "Video sending is not available yet" : "视频发送暂不可用")} title={en ? "Video sending is not available" : "视频发送暂不可用"} type="button"><Video size={19} /></button>
+          <input aria-label={en ? "Select media file" : "选择媒体文件"} className="sr-only" onChange={(event) => { chooseMedia(event.target.files?.[0]); event.target.value = ""; }} ref={mediaInputRef} type="file" />
+          <button aria-label={en ? "Image" : "图片"} disabled={detail.send_mode !== "real" || sending} onClick={() => { mediaPickerKind.current = "image"; if (mediaInputRef.current) { mediaInputRef.current.accept = "image/jpeg,image/png,image/gif,image/webp"; mediaInputRef.current.click(); } }} title={en ? "Send image (up to 10 MB)" : "发送图片（不超过 10 MB）"} type="button"><ImageSquare size={19} /></button>
+          <button aria-label={en ? "Video" : "视频"} disabled={detail.send_mode !== "real" || sending} onClick={() => { mediaPickerKind.current = "video"; if (mediaInputRef.current) { mediaInputRef.current.accept = "video/mp4,video/quicktime,video/webm"; mediaInputRef.current.click(); } }} title={en ? "Send video (10–100 MB)" : "发送视频（10–100 MB）"} type="button"><Video size={19} /></button>
           <button aria-label={en ? "Favorite replies" : "收藏的快捷回复"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setQuickReplyFavoritesOnly(true); setQuickReplyQuery(""); setQuickReplyOpen(true); setEmojiOpen(false); }} title={en ? "Favorite replies" : "收藏的快捷回复"} type="button"><Heart size={19} /></button>
           <span className="workspace-composer-tool-spacer" />
           <button aria-expanded={quickReplyOpen} aria-label={en ? "Quick replies" : "快捷回复"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setQuickReplyFavoritesOnly(false); setQuickReplyQuery(""); setQuickReplyOpen(!quickReplyOpen); setEmojiOpen(false); }} title={en ? "Quick replies" : "快捷回复"} type="button"><NotePencil size={19} /></button>
@@ -704,6 +737,7 @@ export default function WorkspacePage() {
     {customerOpen ? <button aria-label={en ? "Close drawer overlay" : "关闭抽屉遮罩"} className="drawer-backdrop" onClick={() => setCustomerOpen(false)} type="button" /> : null}
     {closeConfirmId === selectedId && detail?.session.id === closeConfirmId ? <dialog aria-label={en ? "Close conversation" : "关闭会话"} aria-modal="true" className="action-dialog workspace-close-dialog" onCancel={(event) => { if (actionBusy) event.preventDefault(); else setCloseConfirmId(null); }} ref={closeDialogRef}><h2>{en ? "Close conversation" : "关闭会话"}</h2><p>{en ? `Close the conversation with ${detail.customer.name ?? "this customer"}? It will move to Closed and can be reopened.` : `确定关闭与${detail.customer.name ?? "当前客户"}的会话？关闭后会移至“已关闭”，仍可重新打开。`}</p>{closeError ? <p className="workspace-close-error" role="alert">{closeError}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" disabled={actionBusy} onClick={() => { closeDialogRef.current?.close(); setCloseConfirmId(null); }} type="button">{en ? "Cancel" : "取消"}</button><button className="danger-button" disabled={actionBusy} onClick={() => void changeClosed(true)} type="button">{actionBusy ? (en ? "Closing…" : "正在关闭…") : (en ? "Confirm close" : "确认关闭")}</button></div></dialog> : null}
     {review && review.sessionId === selectedId ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Review outgoing message" : "审阅外发消息"} aria-modal="true" className="action-dialog workspace-review-dialog" role="dialog"><h2>{en ? "Review outgoing message" : "审阅外发消息"}</h2><p>{en ? "Recipient" : "收件人"}：{detail?.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} · {detail?.session.platform}</p><p>{en ? "Target language" : "目标语言"}：{replyLanguages.find((item) => item.value === review.language)?.[en ? "en" : "zh"]}</p><div className="workspace-review-content"><strong>{en ? "Exact message to send" : "即将发送的准确内容"}</strong><p>{review.content}</p></div>{review.language !== "original" ? <div className="workspace-review-source"><strong>{en ? "Original draft" : "原始草稿"}</strong><p>{review.source}</p></div> : null}<p>{detail?.send_mode === "real" ? (en ? "This sends a real TikTok message and is audited." : "确认后将向真实 TikTok 买家发送，操作会被审计。") : (en ? "This runs simulated delivery." : "确认后执行模拟发送。")}</p><div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setReview(null)} type="button">{en ? "Back to edit" : "返回修改"}</button><button className="primary-button" disabled={sending || detail?.send_mode === "disabled"} onClick={() => void submitMessage(review.content, review.key, review.sessionId)} type="button">{en ? "Confirm & send" : "确认并发送"}</button></div></section></div> : null}
+    {mediaReview && mediaReview.sessionId === selectedId ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Review media message" : "审阅媒体消息"} aria-modal="true" className="action-dialog workspace-review-dialog" role="dialog"><h2>{en ? "Review media message" : "审阅媒体消息"}</h2><p>{en ? "Recipient" : "收件人"}：{detail?.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} · TikTok</p><p>{mediaReview.file.name} · {(mediaReview.file.size / 1024 / 1024).toFixed(1)} MB</p><div className="workspace-media-preview">{mediaReview.kind === "image" ? <img alt={en ? "Image preview" : "图片预览"} src={mediaReview.previewUrl} /> : <video controls preload="metadata" src={mediaReview.previewUrl} />}</div><p>{en ? "Confirming uploads this file and sends one real TikTok message." : "确认后上传文件并向该买家发送一条真实 TikTok 消息。"}</p>{mediaReview.error ? <p role="alert">{mediaReview.error}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" disabled={sending} onClick={() => setMediaReview(null)} type="button">{en ? "Cancel" : "取消"}</button><button className="primary-button" disabled={sending || detail?.send_mode !== "real"} onClick={() => void submitMedia()} type="button">{sending ? (en ? "Uploading and sending…" : "上传并发送中…") : (en ? "Confirm & send" : "确认发送")}</button></div></section></div> : null}
     {cardReview && cardReview.sessionId === selectedId ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Review logistics card" : "审阅物流卡片"} aria-modal="true" className="action-dialog workspace-review-dialog" role="dialog"><h2>{en ? "Review logistics card" : "审阅物流卡片"}</h2><p>{en ? "Recipient" : "收件人"}：{detail?.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} · {detail?.session.platform}</p><TrackingCard card={cardReview.draft.card} en={en} enhancedAvailable={cardReview.draft.enhancedAvailable} packages={cardReview.draft.packages} selected={cardReview.draft.selected} sessionId={cardReview.sessionId} translationEnabled={detail?.translation_enabled === true} /><p>{detail?.send_mode === "real" ? (en ? "Confirming sends this TikTok logistics card to the buyer." : "确认后将向该 TikTok 买家发送原生物流卡片。") : (en ? "Confirming simulates sending this card." : "确认后模拟发送这张卡片。")}</p><div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setCardReview(null)} type="button">{en ? "Back to edit" : "返回修改"}</button><button className="primary-button" disabled={sending || detail?.send_mode === "disabled"} onClick={() => void submitCard(cardReview.draft, cardReview.key, cardReview.sessionId)} type="button">{en ? "Confirm & send card" : "确认发送卡片"}</button></div></section></div> : null}
     {transferOpen ? <div className="action-dialog-backdrop" role="presentation"><section aria-label={en ? "Transfer conversation" : "转交会话"} aria-modal="true" className="action-dialog" role="dialog"><h2>{en ? "Transfer conversation" : "转交会话"}</h2><p>{en ? "Choose an agent who can access this store." : "选择有当前店铺权限的坐席。"}</p><select aria-label={en ? "Target agent" : "目标坐席"} className="compact-field" onChange={(event) => setAssigneeId(event.target.value)} value={assigneeId}><option value="">{en ? "Select an agent" : "请选择坐席"}</option>{assignees.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select>{transferError ? <p role="alert">{transferError}</p> : null}<div className="action-dialog-buttons"><button className="secondary-button" onClick={() => setTransferOpen(false)} type="button">{en ? "Cancel" : "取消"}</button><button className="primary-button" disabled={!assigneeId || actionBusy} onClick={() => void confirmTransfer()} type="button">{en ? "Confirm transfer" : "确认转交"}</button></div></section></div> : null}
   </main><div aria-live="polite" className="sr-only">{announcement}</div></AppShell>;
