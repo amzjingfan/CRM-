@@ -53,6 +53,9 @@
 - 分类与条目的查询、新建、更新、删除、批量导入和发布位于 `/knowledge`。
 - `POST /knowledge/entries` 和 `PATCH /knowledge/entries/{entry_id}` 支持语义类型、客户范围和文档版本。
 - `POST /knowledge/entries/{entry_id}/publish` 只批准精确版本供内部复核；正文、语义类型或客户范围变化会递增版本并撤销审批。
+- 通用文件使用 `/v1/knowledge/files` 列表、详情、版本和原文件下载；`POST /v1/knowledge/files/imports` 接收 `multipart` 的文件、店铺、可选分类、配置 JSON 和显式 `replace_file_id`，返回 202 与新版本状态。
+- `POST /v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review` 对单元提交人工修订与确认；`.../retry` 只重试可恢复版本。`GET/PUT /v1/knowledge/file-settings` 读取和保存店铺级导入配置；每次上传冻结配置快照。写接口均要求店铺范围、`knowledge.manage`、CSRF 与幂等键，读接口要求 `knowledge.view`；跨店铺文件返回 404。
+- 通用文件状态包括排队、处理中、待复核、失败和就绪；待复核版本没有任何新向量，旧有效版本保持可用。该接口不改变现有 FAQ 审批与 Agent 检索接口。
 - 当前不开放 `approved_for_public_reply`，发布 FAQ 不等于允许自动发送。
 
 ### 营销

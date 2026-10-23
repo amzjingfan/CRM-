@@ -81,9 +81,13 @@ after(async () => {
 
 async function openPage(path, responses = {}, setup = async () => {}) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  let documentSettings = { strategy: "recursive", chunk_size: 500, overlap: 50, parser_mode: "auto", embedding_model: "BAAI/bge-m3" };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
+    if (pathname === "/v1/knowledge/file-settings" && request.method() === "PUT") {
+      documentSettings = JSON.parse(request.postData() ?? "{}");
+    }
     const headers = {
       "access-control-allow-origin": origin,
       "access-control-allow-credentials": "true",
@@ -95,7 +99,11 @@ async function openPage(path, responses = {}, setup = async () => {}) {
       return;
     }
     const response = responses[`${request.method()} ${pathname}`] ??
-      (pathname.endsWith("/sidebar/search")
+      (pathname === "/v1/knowledge/files"
+        ? { items: [], page: 1, page_size: 20, total: 0 }
+        : pathname === "/v1/knowledge/file-settings"
+          ? documentSettings
+        : pathname.endsWith("/sidebar/search")
         ? { items: [], pagination: { page: 1, page_size: 20, total: 0 } }
         : pathname === "/v1/auth/me" ? user : []);
     await route.fulfill({
@@ -228,7 +236,7 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     await parameters.getByRole("spinbutton", { name: "分块大小" }).fill("700");
     await parameters.getByRole("slider", { name: /单次召回数量/ }).fill("12");
     await parameters.getByRole("button", { name: /保存并应用/ }).click();
-    await page.getByText(/分块：700.*召回：12/).waitFor();
+    await page.getByText(/分块：700.*文档检索本期未接入/).waitFor();
     assert.equal(await parameters.isVisible(), false);
 
     await page.getByRole("button", { name: "物流与仓储" }).click();
@@ -246,7 +254,7 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     assert.equal(await detail.isVisible(), false);
     assert.equal(await page.getByRole("link", { name: "Agent 管理" }).count(), 1);
     await page.reload();
-    await page.getByText(/分块：500.*召回：20/).waitFor();
+    await page.getByText(/分块：700.*文档检索本期未接入/).waitFor();
     await page.setViewportSize({ width: 760, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   } finally {
@@ -453,7 +461,7 @@ test("knowledge ignores a category URL that does not belong to the selected stor
   }
 });
 
-test("knowledge demo upload stays in the page while CSV uses the existing import API", async () => {
+test("knowledge document upload uses the file API while FAQ CSV keeps the existing import API", async () => {
   const importJob = { id: "demo-job", status: "succeeded", total_rows: 1, succeeded_rows: 1, failed_rows: 0 };
   const { context, page } = await openPage("/knowledge", {
     "GET /v1/auth/me": { ...user, store_ids: [store.id] },
@@ -466,26 +474,31 @@ test("knowledge demo upload stays in the page while CSV uses the existing import
     },
     "POST /v1/knowledge/imports": { job_id: importJob.id, status: "pending" },
     "GET /v1/knowledge/imports/demo-job": importJob,
+    "POST /v1/knowledge/files/imports": { file_id: "00000000-0000-4000-8000-0000000000f2", version_id: "00000000-0000-4000-8000-0000000000f3", version_number: 1, status: "queued" },
   });
   const importRequests = [];
+  const documentRequests = [];
   page.on("request", (request) => {
     if (request.method() === "POST" && new URL(request.url()).pathname === "/v1/knowledge/imports") importRequests.push(request);
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/v1/knowledge/files/imports") documentRequests.push(request);
   });
   try {
     await page.getByRole("button", { name: "新增知识" }).click();
     await page.locator('input[type="file"]').setInputFiles({ name: "manual.pdf", mimeType: "application/pdf", buffer: Buffer.from("sample") });
     await page.getByRole("button", { name: "确认上传并解析" }).click();
-    await page.getByText("manual.pdf").first().waitFor();
+    await page.getByText(/文件 v1 已进入解析队列/).waitFor();
+    assert.equal(documentRequests.length, 1);
     assert.equal(importRequests.length, 0);
     await page.reload();
     await page.getByRole("button", { name: "新增知识" }).waitFor();
-    assert.equal(await page.getByText("manual.pdf").count(), 0);
 
     await page.getByRole("button", { name: "新增知识" }).click();
     await page.locator('input[type="file"]').setInputFiles({ name: "facts.csv", mimeType: "text/csv", buffer: Buffer.from("question,answer\nQ,A\n") });
+    await page.getByRole("combobox", { name: "表格导入方式" }).selectOption("faq");
     await page.getByRole("button", { name: "确认上传并解析" }).click();
-    await page.getByText(/CSV\/XLSX 已提交真实导入/).waitFor();
+    await page.getByText(/FAQ 表格已提交现有导入队列/).waitFor();
     assert.equal(importRequests.length, 1);
+    assert.equal(documentRequests.length, 1);
   } finally {
     await context.close();
   }
@@ -1068,7 +1081,7 @@ test("conversation filter replaces a detail that is no longer in the list", asyn
   try {
     await page.getByLabel("聊天窗口").getByRole("heading", { name: "Alice" }).waitFor();
     await page.getByRole("button", { name: "未读", exact: true }).click();
-    await page.locator(".conversation-card").filter({ hasText: "Bob" }).waitFor();
+    await page.locator('.conversation-card[aria-pressed="true"]').filter({ hasText: "Bob" }).waitFor();
     assert.equal(await page.locator(".conversation-card").filter({ hasText: "Bob" }).getAttribute("aria-pressed"), "true");
     await page.getByLabel("聊天窗口").getByRole("heading", { name: "Bob" }).waitFor();
   } finally {

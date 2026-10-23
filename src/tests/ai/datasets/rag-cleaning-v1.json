@@ -1,0 +1,15 @@
+{
+  "version": "clean-v1",
+  "cases": [
+    {
+      "name": "policy_facts",
+      "source": "退货政策  SKU-123  售价 ¥199.00\r\n\r\n无凭证不得退款，须在 2026-10-31 前申请。",
+      "must_keep": ["SKU-123", "¥199.00", "无凭证不得退款", "2026-10-31"]
+    },
+    {
+      "name": "table_headers",
+      "source": "<table><tr><th>SKU</th><th>金额</th></tr><tr><td>A-1</td><td>¥20.00</td></tr></table>",
+      "must_keep": ["SKU", "金额", "A-1", "¥20.00"]
+    }
+  ]
+}

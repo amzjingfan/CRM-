@@ -43,12 +43,21 @@ COMPOSE_PROJECT_NAME=crm-staging
 CRM_STAGING_ENV_FILE=/home/crmdeploy/config/crm-staging.env
 CRM_STAGING_BASE_URL=https://staging.overselfx.com
 RETRIEVAL_MODEL_ASSET_DIR=/home/crmdeploy/assets/models
+MINERU_ASSET_DIR=/home/crmdeploy/assets/mineru
 TIKTOK_EGRESS_IP=38.55.145.52
 TIKTOK_EGRESS_PROXY_URL=socks5h://tiktok-egress:1080
 TIKTOK_EGRESS_SECRET_DIR=/home/crmdeploy/secrets/tiktok-egress
 BUSINESS_PROXY=127.0.0.1:18081
 PUBLIC_TUNNEL_LISTENER=127.0.0.1:18080
 ```
+
+### 通用文档导入的手动 staging 模式
+
+`MVP-RAG-DOCUMENT-INGEST-001` 在既有 Rootless 服务之外增加 `document-parser` 可选服务；普通 staging 和 production 默认不启动它。只在精确的 staging 候选镜像、备份与当前运行模式完成只读快照后，在 `Test-StagingProductionGates.ps1` 的原参数基础上追加 `-EnableDocumentIngestion -DocumentParserImage ghcr.io/cp11-gh/crm-document-parser@sha256:<完整摘要>`。门禁增加 `document` Compose profile，验证仓库外 `MINERU_ASSET_DIR`、只读模型挂载、无公网端口、内部令牌一致、本地离线开关和 Worker 运行镜像；镜像在主机外构建并推送，主机上仅按不可变摘要拉取。必须保留当前已开启的 Webhook 只读、人工发送受控店铺和翻译参数；不要用默认模式覆盖当前业务窗口。
+
+先用固定 `MinerU 4.0.12` 镜像在私有资产目录下载 Basic ONNX 模型：`mineru-kit models download --tier basic --small-backend onnx --source modelscope`，再以同一镜像 `mineru-kit models verify --tier basic --small-backend onnx` 核对；下载过程只允许为准备资产联网，常驻 Worker 的 `MINERU_MODEL_SOURCE=local`、`HF_HUB_OFFLINE=1`，并只读挂载到 `/opt/mineru`。MinerU 仍需要取得模型仓库文件锁，Compose 只在 `/opt/mineru/models/.locks` 挂 1 MiB 临时内存目录，权重目录继续只读。BGE-M3 tokenizer 和权重继续来自现有 `/home/crmdeploy/assets/models`，Worker 只持有数据库、MinIO 与内部模型令牌，不挂 TikTok 出站 SSH 密钥或外部 Provider Key。内存/CPU 上限分别为 8 GiB/2 核、单 Worker；资源不足时保持排队或失败状态，不降低质量门禁。
+
+`ValidateOnly` 只验证输入和合并配置，不切换容器。`Deploy` 在取得共享 staging 锁后先拉取文档镜像并用完全离线的 `models verify` 验证资产，然后依照原顺序执行数据库迁移、服务切换和公网健康；成功后核对新第 12 个容器、`030_merge_rag_reception` 合流迁移头（两条独立 `029` 都已应用）以及授权测试店铺的上传→解析→清洗→分块→BGE-M3→pgvector。扫描页或关键内容不可靠的样本应整版本 `review_required` 且新版本零向量；同名替换时旧有效版本继续保留。回滚要先保存新版本和业务增量，恢复原 11 服务与原镜像摘要；新表不参与旧 FAQ 检索，可暂留到单独的数据迁移回滚。发布证据不得把配置验证当作真实导入通过。Agent 检索仍不使用通用文档向量，production 不放行。
 
 TikTok 出站密钥与入口隧道密钥完全分离。`/home/crmdeploy/secrets/tiktok-egress` 必须归 UID/GID 1004、模式 `0700`，其中 `id_ed25519` 和 `known_hosts` 为 `0600`；目录位于 Git checkout 外，只以只读方式挂载到 `tiktok-egress` helper。helper 在 Rootless Docker 内显式使用容器 `0:0`，只映射为宿主机 `crmdeploy` 以读取该私钥，不取得宿主机 root；应用服务继续使用镜像默认非 root 用户。私钥不得出现在环境文件、应用容器、日志或证据中。
 

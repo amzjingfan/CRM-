@@ -17,18 +17,32 @@ import {
   currentUser,
   deleteKnowledgeCategory,
   deleteKnowledgeEntry,
+  downloadDocumentSource,
+  getDocumentFile,
+  getDocumentSettings,
+  getDocumentVersion,
   getImportJob,
   getKnowledgeVectorizationStatus,
   importKnowledge,
+  importDocumentFile,
   isAuthenticationError,
   listKnowledgeCategories,
   listKnowledgeEntries,
+  listDocumentFiles,
   listStores,
   publishKnowledgeEntry,
   retryKnowledgeVectorization,
+  retryDocumentVersion,
+  reviewDocumentUnit,
+  saveDocumentSettings,
   updateKnowledgeCategory,
   updateKnowledgeEntry,
   type ImportJob,
+  type DocumentFileDetail,
+  type DocumentFileSummary,
+  type DocumentIndexConfig,
+  type DocumentStrategy,
+  type DocumentVersionDetail,
   type KnowledgeCategory,
   type KnowledgeCustomerScope,
   type KnowledgeEntry,
@@ -41,11 +55,36 @@ import { useLanguage } from "../../lib/i18n";
 type CategoryTreeItem = KnowledgeCategory & { depth: number };
 type PresetCategoryKey = "goods" | "logistics" | "payment" | "aftersales" | "customs";
 type PresetCategory = { key: PresetCategoryKey; name: string; group: "核心业务线" | "合规与政策"; description: string; icon: "folder" | "truck" };
-type KnowledgeParameters = { chunk: number; overlap: number; model: string; topK: number; score: number; rerank: boolean; rerankModel: "BAAI/bge-reranker-large" };
-type DemoDocument = { id: string; storeId: string; categoryId: string | null; file: File; createdAt: string; vectorizationStatus: "pending" | "disabled" };
-type KnowledgeRow = { id: string; categoryId: string | null; title: string; type: "pdf" | "xlsx" | "txt"; updated: string; version: number; vector: string; review: "approved" | "pending" | "draft"; entry?: KnowledgeEntry; demo?: DemoDocument };
+type KnowledgeParameters = { strategy: DocumentStrategy; chunk: number; overlap: number; parserMode: DocumentIndexConfig["parser_mode"]; model: DocumentIndexConfig["embedding_model"]; topK: number; score: number; rerank: boolean; rerankModel: "BAAI/bge-reranker-large" };
+type KnowledgeRow = { id: string; categoryId: string | null; title: string; type: "pdf" | "xlsx" | "txt"; updated: string; version: number; vector: string; review: "approved" | "pending" | "draft" | "review_required"; entry?: KnowledgeEntry; file?: DocumentFileSummary };
 
-const defaultParameters: KnowledgeParameters = { chunk: 500, overlap: 50, model: "BAAI/bge-m3", topK: 20, score: 0.52, rerank: true, rerankModel: "BAAI/bge-reranker-large" };
+const defaultParameters: KnowledgeParameters = { strategy: "recursive", chunk: 500, overlap: 50, parserMode: "auto", model: "BAAI/bge-m3", topK: 20, score: 0.52, rerank: true, rerankModel: "BAAI/bge-reranker-large" };
+const chunkStrategies: Array<{ value: DocumentStrategy; label: string; extensions?: string[] }> = [
+  { value: "recursive", label: "按语义结构递归分段（推荐）" },
+  { value: "heading_paragraph", label: "按标题与段落分段", extensions: ["pdf", "doc", "docx", "ppt", "pptx", "txt", "md"] },
+  { value: "sentence", label: "按句子分段", extensions: ["pdf", "doc", "docx", "ppt", "pptx", "txt", "md", "png", "jpg", "jpeg"] },
+  { value: "fixed_token", label: "按固定 Token 数分段" },
+  { value: "fixed_char", label: "按固定字符数分段" },
+  { value: "semantic_similarity", label: "按语义相似度分段", extensions: ["pdf", "doc", "docx", "ppt", "pptx", "txt", "md", "png", "jpg", "jpeg"] },
+  { value: "page_slide", label: "按页或幻灯片分段", extensions: ["pdf", "ppt", "pptx"] },
+  { value: "ocr_layout", label: "按 OCR 版面分段", extensions: ["pdf", "png", "jpg", "jpeg"] },
+  { value: "table_rows", label: "按表格行分段", extensions: ["xls", "xlsx", "csv", "tsv", "pdf", "doc", "docx", "ppt", "pptx"] },
+];
+const documentExtensions = ["csv", "tsv", "xlsx", "xls", "pdf", "doc", "docx", "ppt", "pptx", "md", "txt", "png", "jpg", "jpeg"];
+
+function documentConfig(parameters: KnowledgeParameters, strategy = parameters.strategy, parserMode = parameters.parserMode): DocumentIndexConfig {
+  return { strategy, chunk_size: parameters.chunk, overlap: strategy === "table_rows" ? 0 : parameters.overlap, parser_mode: parserMode, embedding_model: parameters.model };
+}
+
+function strategySupportsFile(strategy: DocumentStrategy, filename: string): boolean {
+  const rule = chunkStrategies.find((item) => item.value === strategy);
+  const extension = filename.split(".").pop()?.toLowerCase() ?? "";
+  return Boolean(rule && (!rule.extensions || rule.extensions.includes(extension)));
+}
+
+function documentStatusText(status: string): string {
+  return ({ queued: "排队中", parsing: "解析中", review_required: "待复核", indexing: "向量化中", ready: "索引完成", failed_retryable: "可重试失败", failed_final: "处理失败" } as Record<string, string>)[status] ?? status;
+}
 const presetCategories: PresetCategory[] = [
   { key: "goods", name: "商品与目录", group: "核心业务线", icon: "folder", description: "商品资料、目录与常见说明。" },
   { key: "logistics", name: "物流与仓储", group: "核心业务线", icon: "truck", description: "包含物流时效、运费规则、仓储管理、发货与配送等相关知识，供客服参考使用。" },
@@ -129,6 +168,8 @@ export default function KnowledgePage() {
   const [storeDetails, setStoreDetails] = useState<StoreView[]>([]);
   const [categories, setCategories] = useState<KnowledgeCategory[]>([]);
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
+  const [documentFiles, setDocumentFiles] = useState<DocumentFileSummary[]>([]);
+  const [documentTotal, setDocumentTotal] = useState(0);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [selectedEmptyPreset, setSelectedEmptyPreset] = useState<PresetCategoryKey | "">("");
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number | null>>({});
@@ -145,6 +186,11 @@ export default function KnowledgePage() {
   const [editingCategory, setEditingCategory] = useState<KnowledgeCategory | null>(null);
   const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | null>(null);
   const [detailRow, setDetailRow] = useState<KnowledgeRow | null>(null);
+  const [fileDetail, setFileDetail] = useState<DocumentFileDetail | null>(null);
+  const [versionDetail, setVersionDetail] = useState<DocumentVersionDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [reviewDrafts, setReviewDrafts] = useState<Record<number, string>>({});
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [parametersOpen, setParametersOpen] = useState(false);
   const [parameters, setParameters] = useState<KnowledgeParameters>(defaultParameters);
   const [parameterDraft, setParameterDraft] = useState<KnowledgeParameters>(defaultParameters);
@@ -154,10 +200,11 @@ export default function KnowledgePage() {
   const [addMode, setAddMode] = useState<"upload" | "manual">("upload");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedUploadCategoryId, setSelectedUploadCategoryId] = useState("");
-  const [segmentMode, setSegmentMode] = useState("semantic");
-  const [parserMode, setParserMode] = useState<"standard" | "deep">("standard");
-  const [vectorizeAfterUpload, setVectorizeAfterUpload] = useState(true);
-  const [demoDocuments, setDemoDocuments] = useState<DemoDocument[]>([]);
+  const [segmentMode, setSegmentMode] = useState<DocumentStrategy>("recursive");
+  const [parserMode, setParserMode] = useState<DocumentIndexConfig["parser_mode"]>("auto");
+  const [uploadKind, setUploadKind] = useState<"document" | "faq">("document");
+  const [uploadSubmitting, setUploadSubmitting] = useState(false);
+  const [pendingReplacement, setPendingReplacement] = useState<DocumentFileSummary | null>(null);
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [entryEditorOpen, setEntryEditorOpen] = useState(false);
   const [categorySubmitting, setCategorySubmitting] = useState(false);
@@ -166,6 +213,7 @@ export default function KnowledgePage() {
   const [categoryReloadRevision, setCategoryReloadRevision] = useState(0);
   const [entrySubmitting, setEntrySubmitting] = useState(false);
   const loadRequestId = useRef(0);
+  const detailRequestId = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categoryTree = useMemo(() => flattenCategoryTree(categories.filter((category) => category.store_id === storeId)), [categories, storeId]);
@@ -191,7 +239,6 @@ export default function KnowledgePage() {
   const selectedScopeLabel = selectedPreset?.name ?? selectedCategory?.name ?? (en ? "All knowledge" : "全部知识");
   const categoryIdSignature = categoryTree.map((category) => category.id).sort().join("|");
   const blockedParentIds = useMemo(() => editingCategory ? collectDescendantIds(categories, editingCategory.id) : new Set<string>(), [categories, editingCategory]);
-  const configuredModel = vectorizationStatus?.model ?? defaultParameters.model;
   const storeName = storeDetails.find((store) => store.id === storeId)?.name ?? storeId.slice(0, 8);
   const rows = useMemo<KnowledgeRow[]>(() => {
     const realRows = entries.filter((entry) => !isEmptyPreset && entry.store_id === storeId && (!effectiveCategoryId || entry.category_id === effectiveCategoryId)).map((entry): KnowledgeRow => ({
@@ -205,37 +252,36 @@ export default function KnowledgePage() {
       review: entry.publication_approval !== "draft" ? "approved" : entry.status === "draft" ? "pending" : "draft",
       entry,
     }));
-    const localRows = demoDocuments.filter((document) => !isEmptyPreset && document.storeId === storeId && (!effectiveCategoryId || document.categoryId === effectiveCategoryId)).map((document): KnowledgeRow => ({
-      id: document.id,
-      categoryId: document.categoryId,
-      title: document.file.name,
-      type: knowledgeFileType(document.file.name),
-      updated: document.createdAt,
-      version: 1,
-      vector: document.vectorizationStatus,
-      review: "pending",
-      demo: document,
+    const fileRows = documentFiles.filter((file) => !isEmptyPreset && file.store_id === storeId && (!effectiveCategoryId || file.category_id === effectiveCategoryId)).map((file): KnowledgeRow => ({
+      id: file.id,
+      categoryId: file.category_id,
+      title: file.filename,
+      type: knowledgeFileType(file.filename),
+      updated: file.latest_version.created_at,
+      version: file.latest_version.version_number,
+      vector: file.latest_version.status === "ready" ? "ready" : file.latest_version.status === "review_required" ? "review_required" : file.latest_version.status.startsWith("failed") ? "failed" : "pending",
+      review: file.latest_version.status === "review_required" ? "review_required" : file.latest_version.status === "ready" ? "approved" : "pending",
+      file,
     }));
-    return [...localRows, ...realRows].filter((row) => {
-      if (row.demo && search && !row.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) return false;
+    return [...fileRows, ...realRows].filter((row) => {
       return (!fileTypeFilter || row.type === fileTypeFilter) && (!vectorFilter || row.vector === vectorFilter) && (!reviewFilter || row.review === reviewFilter);
     });
-  }, [demoDocuments, effectiveCategoryId, entries, fileTypeFilter, isEmptyPreset, reviewFilter, search, storeId, vectorFilter]);
+  }, [documentFiles, effectiveCategoryId, entries, fileTypeFilter, isEmptyPreset, reviewFilter, storeId, vectorFilter]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!storeId) return;
     const requestId = ++loadRequestId.current;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError("");
     try {
       const query = new URLSearchParams({ page: String(page), page_size: "20", store_id: storeId });
       if (search) query.set("search", search);
       if (status) query.set("status", status);
       if (effectiveCategoryId) query.set("category_id", effectiveCategoryId);
-      const [categoryData, entryData, vectorData] = await Promise.all([
+      const [categoryData, entryData, fileData] = await Promise.all([
         listKnowledgeCategories(storeId),
         isEmptyPreset ? Promise.resolve({ items: [] as KnowledgeEntry[], page, page_size: 20, total: 0 }) : listKnowledgeEntries(query),
-        getKnowledgeVectorizationStatus(storeId),
+        isEmptyPreset ? Promise.resolve({ items: [] as DocumentFileSummary[], page, page_size: 20, total: 0 }) : listDocumentFiles(new URLSearchParams(query)),
       ]);
       // 快速切换分类时，只允许最后一次请求更新列表，避免旧响应覆盖当前选择。
       if (requestId !== loadRequestId.current) return;
@@ -247,8 +293,8 @@ export default function KnowledgePage() {
       }
       setEntries(entryData.items);
       setTotal(entryData.total);
-      setVectorizationStatus(vectorData);
-      setParameters((current) => current.model === vectorData.model ? current : { ...current, model: vectorData.model });
+      setDocumentFiles(fileData.items);
+      setDocumentTotal(fileData.total);
     } catch (caught) {
       if (requestId !== loadRequestId.current) return;
       setError(caught instanceof Error ? caught.message : (en ? "Knowledge loading failed" : "知识库加载失败"));
@@ -288,6 +334,25 @@ export default function KnowledgePage() {
 
   useEffect(() => {
     if (!storeId) return;
+    let active = true;
+    void getDocumentSettings(storeId).then((config) => {
+      if (!active) return;
+      setParameters((current) => ({ ...current, strategy: config.strategy, chunk: config.chunk_size, overlap: config.overlap, parserMode: config.parser_mode, model: config.embedding_model }));
+    }).catch((caught: unknown) => {
+      if (active) setNotice(caught instanceof Error ? caught.message : "导入参数加载失败");
+    });
+    return () => { active = false; };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (!storeId) return;
+    let active = true;
+    void getKnowledgeVectorizationStatus(storeId).then((value) => { if (active) setVectorizationStatus(value); }).catch(() => { if (active) setVectorizationStatus(null); });
+    return () => { active = false; };
+  }, [storeId, countRevision]);
+
+  useEffect(() => {
+    if (!storeId) return;
     const params = new URLSearchParams({ store_id: storeId, page: String(page) });
     if (search) params.set("search", search);
     if (status) params.set("status", status);
@@ -311,7 +376,10 @@ export default function KnowledgePage() {
         const results = await Promise.all(batch.map(async (id) => {
           const query = new URLSearchParams({ page: "1", page_size: "1", store_id: storeId });
           if (id) query.set("category_id", id);
-          try { return { id, total: (await listKnowledgeEntries(query)).total }; }
+          try {
+            const [faq, files] = await Promise.all([listKnowledgeEntries(query), listDocumentFiles(new URLSearchParams(query))]);
+            return { id, total: faq.total + files.total };
+          }
           catch { return { id, total: null }; }
         }));
         if (!active) return;
@@ -337,10 +405,32 @@ export default function KnowledgePage() {
   }, [en, job, load]);
 
   useEffect(() => {
+    if (!documentFiles.some((file) => ["queued", "parsing", "indexing"].includes(file.latest_version.status))) return;
+    const timer = window.setInterval(() => { void load(true); }, 2500);
+    return () => window.clearInterval(timer);
+  }, [documentFiles, load]);
+
+  useEffect(() => {
+    const fileId = detailRow?.file?.id;
+    const versionNumber = versionDetail?.version_number;
+    if (!fileId || !versionNumber || !versionDetail || !["queued", "parsing", "indexing"].includes(versionDetail.status)) return;
+    const requestId = detailRequestId.current;
+    const timer = window.setInterval(() => {
+      void Promise.all([getDocumentFile(fileId), getDocumentVersion(fileId, versionNumber)]).then(([file, version]) => {
+        if (requestId !== detailRequestId.current) return;
+        setFileDetail(file);
+        setVersionDetail(version);
+      }).catch(() => setNotice("文件状态暂时无法刷新"));
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [detailRow, versionDetail]);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || deletingCategoryId) return;
       setParametersOpen(false);
       setDetailRow(null);
+      setPendingReplacement(null);
       setCategoryEditorOpen(false);
       setEntryEditorOpen(false);
       setPendingCategoryDelete(null);
@@ -401,10 +491,6 @@ export default function KnowledgePage() {
 
   function requestCategoryDelete(category: KnowledgeCategory) {
     if (deletingCategoryId || category.store_id !== storeId || !customCategories.some((item) => item.id === category.id)) return;
-    if (demoDocuments.some((document) => document.storeId === storeId && document.categoryId === category.id)) {
-      setNotice(en ? "Clear this category's page demo files by refreshing before deleting it" : "该分类含页面演示文件，请刷新页面清空后再删除");
-      return;
-    }
     setCategoryEditorOpen(false);
     setPendingCategoryDelete(category);
   }
@@ -413,11 +499,6 @@ export default function KnowledgePage() {
     const category = pendingCategoryDelete;
     if (!category || deletingCategoryId) return;
     if (category.store_id !== storeId || !customCategories.some((item) => item.id === category.id)) {
-      setPendingCategoryDelete(null);
-      return;
-    }
-    if (demoDocuments.some((document) => document.storeId === storeId && document.categoryId === category.id)) {
-      setNotice(en ? "Clear this category's page demo files by refreshing before deleting it" : "该分类含页面演示文件，请刷新页面清空后再删除");
       setPendingCategoryDelete(null);
       return;
     }
@@ -529,6 +610,92 @@ export default function KnowledgePage() {
     }
   }
 
+  async function openKnowledgeRow(row: KnowledgeRow) {
+    const requestId = ++detailRequestId.current;
+    setDetailRow(row);
+    setFileDetail(null);
+    setVersionDetail(null);
+    if (!row.file) return;
+    setDetailLoading(true);
+    try {
+      const [file, version] = await Promise.all([
+        getDocumentFile(row.file.id),
+        getDocumentVersion(row.file.id, row.file.latest_version.version_number),
+      ]);
+      if (requestId !== detailRequestId.current) return;
+      setFileDetail(file);
+      setVersionDetail(version);
+      setReviewDrafts(Object.fromEntries(version.units.map((unit) => [unit.unit_index, unit.cleaned_text])));
+    } catch (caught) {
+      if (requestId === detailRequestId.current) setNotice(caught instanceof Error ? caught.message : "文件详情加载失败");
+    } finally {
+      if (requestId === detailRequestId.current) setDetailLoading(false);
+    }
+  }
+
+  async function selectDocumentVersion(versionNumber: number) {
+    if (!fileDetail) return;
+    const requestId = ++detailRequestId.current;
+    setDetailLoading(true);
+    try {
+      const version = await getDocumentVersion(fileDetail.id, versionNumber);
+      if (requestId !== detailRequestId.current) return;
+      setVersionDetail(version);
+      setReviewDrafts(Object.fromEntries(version.units.map((unit) => [unit.unit_index, unit.cleaned_text])));
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "版本详情加载失败");
+    } finally {
+      if (requestId === detailRequestId.current) setDetailLoading(false);
+    }
+  }
+
+  async function submitReview(unitIndex: number) {
+    if (!versionDetail || reviewSubmitting) return;
+    const corrected = reviewDrafts[unitIndex]?.trim();
+    if (!corrected) { setNotice("请补全修订内容再确认"); return; }
+    setReviewSubmitting(true);
+    try {
+      const updated = await reviewDocumentUnit(versionDetail.file_id, versionDetail.version_number, unitIndex, corrected);
+      setVersionDetail(updated);
+      setNotice(updated.status === "queued" ? "全部问题单元已确认，整版重新进入索引队列" : "该单元已确认，整版仍待复核");
+      await load(true);
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "复核提交失败");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
+
+  async function retryFileVersion() {
+    if (!versionDetail || reviewSubmitting) return;
+    setReviewSubmitting(true);
+    try {
+      const updated = await retryDocumentVersion(versionDetail.file_id, versionDetail.version_number);
+      setVersionDetail(updated);
+      setNotice("文件版本已重新进入处理队列");
+      await load(true);
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "重试失败");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
+
+  async function downloadOriginal() {
+    if (!versionDetail) return;
+    try {
+      const blob = await downloadDocumentSource(versionDetail.file_id, versionDetail.version_number);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = versionDetail.filename;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "原文件下载失败");
+    }
+  }
+
   async function upload(file: File | undefined): Promise<boolean> {
     if (!file || !storeId) return false;
     try {
@@ -545,15 +712,41 @@ export default function KnowledgePage() {
   function chooseFile(file: File | undefined) {
     if (!file) return;
     const extension = file.name.split(".").pop()?.toLowerCase();
-    if (!extension || !["csv", "xlsx", "pdf", "doc", "docx", "md", "xls", "txt"].includes(extension)) {
+    if (!extension || !documentExtensions.includes(extension)) {
       setNotice("请选择支持的文件格式");
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-      setNotice("单个文件不能超过 50 MB");
+    if (file.size > 20 * 1024 * 1024) {
+      setNotice("单个通用文档不能超过 20 MiB");
       return;
     }
     setSelectedFile(file);
+    if (!["csv", "xlsx"].includes(extension)) setUploadKind("document");
+    if (!strategySupportsFile(segmentMode, file.name)) setSegmentMode("recursive");
+    if (parserMode === "basic" && !["pdf", "png", "jpg", "jpeg"].includes(extension)) setParserMode("auto");
+  }
+
+  async function performDocumentUpload(replaceFileId: string | null) {
+    if (!selectedFile || !storeId || uploadSubmitting) return;
+    setUploadSubmitting(true);
+    try {
+      const accepted = await importDocumentFile(storeId, selectedFile, documentConfig(parameters, segmentMode, parserMode), selectedUploadCategoryId || null, replaceFileId);
+      setNotice(`文件 v${accepted.version_number} 已进入解析队列；处理状态会自动更新`);
+      setPendingReplacement(null);
+      setEntryEditorOpen(false);
+      setSelectedFile(null);
+      setSearch("");
+      setFileTypeFilter("");
+      setVectorFilter("");
+      setReviewFilter("");
+      setPage(1);
+      setCountRevision((value) => value + 1);
+      await load(true);
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "文件上传失败");
+    } finally {
+      setUploadSubmitting(false);
+    }
   }
 
   async function submitSelectedFile() {
@@ -562,15 +755,37 @@ export default function KnowledgePage() {
       return;
     }
     const extension = selectedFile.name.split(".").pop()?.toLowerCase();
-    if (extension === "csv" || extension === "xlsx") {
+    if (uploadKind === "faq") {
+      if (extension !== "csv" && extension !== "xlsx") { setNotice("FAQ 批量导入仅支持 CSV/XLSX"); return; }
+      if (selectedFile.size > 10 * 1024 * 1024) { setNotice("FAQ 表格不能超过 10 MiB"); return; }
       if (!await upload(selectedFile)) return;
-      setNotice("CSV/XLSX 已提交真实导入；分类以文件中的 category_code 为准");
+      setNotice("FAQ 表格已提交现有导入队列；分类取文件中的 category_code");
+      setEntryEditorOpen(false);
+      setSelectedFile(null);
     } else {
-      setDemoDocuments((current) => [{ id: crypto.randomUUID(), storeId, categoryId: selectedUploadCategoryId || null, file: selectedFile, createdAt: new Date().toISOString(), vectorizationStatus: vectorizeAfterUpload ? "pending" : "disabled" }, ...current]);
-      setNotice("文件已加入本页演示列表，刷新后清空；未上传到服务端");
+      if (!strategySupportsFile(segmentMode, selectedFile.name)) { setNotice("该文件格式不适用当前分块策略"); return; }
+      if (parserMode === "basic" && !["pdf", "png", "jpg", "jpeg"].includes(extension ?? "")) { setNotice("Basic OCR 仅适用于 PDF 和图片"); return; }
+      try {
+        const query = new URLSearchParams({ store_id: storeId, search: selectedFile.name, page: "1", page_size: "100" });
+        let existing: DocumentFileSummary | undefined;
+        do {
+          const result = await listDocumentFiles(query);
+          existing = result.items.find((file) => file.filename.toLocaleLowerCase() === selectedFile.name.toLocaleLowerCase());
+          if (existing || result.page * result.page_size >= result.total) break;
+          query.set("page", String(result.page + 1));
+        } while (true);
+        if (existing) {
+          setSelectedUploadCategoryId(existing.category_id ?? "");
+          setPendingReplacement(existing);
+          setEntryEditorOpen(false);
+          return;
+        }
+        await performDocumentUpload(null);
+      } catch (caught) {
+        setNotice(caught instanceof Error ? caught.message : "检查同名文件失败");
+      }
+      return;
     }
-    setEntryEditorOpen(false);
-    setSelectedFile(null);
     setSearch("");
     setFileTypeFilter("");
     setVectorFilter("");
@@ -588,21 +803,26 @@ export default function KnowledgePage() {
     setEditingEntry(null);
     setSelectedFile(null);
     setSelectedUploadCategoryId(selectedCategoryId);
-    setSegmentMode("semantic");
-    setParserMode("standard");
-    setVectorizeAfterUpload(true);
+    setSegmentMode(parameters.strategy);
+    setParserMode(parameters.parserMode);
+    setUploadKind("document");
     setAddMode("upload");
     setEntryEditorOpen(true);
   }
 
-  function saveParameters() {
-    if (!Number.isInteger(parameterDraft.chunk) || parameterDraft.chunk < 1 || parameterDraft.chunk > 10000 || !Number.isInteger(parameterDraft.overlap) || parameterDraft.overlap < 0 || parameterDraft.overlap >= parameterDraft.chunk) {
+  async function saveParameters() {
+    if (!Number.isInteger(parameterDraft.chunk) || parameterDraft.chunk < 32 || parameterDraft.chunk > 10000 || !Number.isInteger(parameterDraft.overlap) || parameterDraft.overlap < 0 || parameterDraft.overlap >= parameterDraft.chunk || (parameterDraft.strategy === "table_rows" && parameterDraft.overlap !== 0)) {
       setNotice("请检查分块大小与重叠大小");
       return;
     }
-    setParameters(parameterDraft);
-    setParametersOpen(false);
-    setNotice("参数已保存到本页演示状态；项目实际检索配置未修改");
+    try {
+      await saveDocumentSettings(storeId, documentConfig(parameterDraft));
+      setParameters(parameterDraft);
+      setParametersOpen(false);
+      setNotice("文档导入参数已保存到当前店铺；检索参数仅作页面演示");
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : "保存参数失败");
+    }
   }
 
   const categoryForm = <form className="kb-modal-form" key={editingCategory?.id ?? "new-category"} onSubmit={editingCategory ? saveCategory : addCategory}>
@@ -626,24 +846,23 @@ export default function KnowledgePage() {
     <div className="modal-foot"><button className="btn" onClick={() => setEntryEditorOpen(false)} type="button">取消</button><button className="btn primary" disabled={!storeId || entrySubmitting} type="submit">{entrySubmitting ? "正在保存…" : editingEntry ? "保存修改" : "保存知识"}</button></div>
   </form>;
 
-  const closeDialogs = () => { if (deletingCategoryId) return; setParametersOpen(false); setDetailRow(null); setCategoryEditorOpen(false); setEntryEditorOpen(false); setPendingCategoryDelete(null); };
-  const anyDialogOpen = parametersOpen || Boolean(detailRow) || categoryEditorOpen || entryEditorOpen || Boolean(pendingCategoryDelete);
-  const localCount = demoDocuments.filter((document) => !isEmptyPreset && document.storeId === storeId && (!effectiveCategoryId || document.categoryId === effectiveCategoryId)).length;
+  const closeDialogs = () => { if (deletingCategoryId) return; detailRequestId.current += 1; setParametersOpen(false); setDetailRow(null); setFileDetail(null); setVersionDetail(null); setCategoryEditorOpen(false); setEntryEditorOpen(false); setPendingCategoryDelete(null); setPendingReplacement(null); };
+  const anyDialogOpen = parametersOpen || Boolean(detailRow) || categoryEditorOpen || entryEditorOpen || Boolean(pendingCategoryDelete) || Boolean(pendingReplacement);
   const scopeDescription = selectedPreset?.description ?? (selectedCategory ? "当前店铺新增的自定义知识分类。" : "查看当前店铺的全部知识文档，供客服参考使用。");
-  const scopeServerCount = isEmptyPreset ? 0 : effectiveCategoryId ? categoryCounts[effectiveCategoryId] ?? total : allCategoryCount ?? total;
+  const scopeServerCount = isEmptyPreset ? 0 : effectiveCategoryId ? categoryCounts[effectiveCategoryId] ?? total + documentTotal : allCategoryCount ?? total + documentTotal;
   const categoryCountLabel = (categoryId: string | undefined): string => {
     if (!categoryId) return "0";
     const count = categoryCounts[categoryId];
     if (count === undefined) return "…";
     if (count === null) return "—";
-    return String(count + demoDocuments.filter((document) => document.storeId === storeId && document.categoryId === categoryId).length);
+    return String(count);
   };
   const detailCategory = detailRow ? categories.find((category) => category.id === detailRow.categoryId)?.name ?? "未分类" : "";
-  const detailApproval = detailRow?.review === "approved" ? "已通过" : detailRow?.review === "pending" ? "待审批" : "草稿";
-  const detailSemantic = detailRow?.entry ? statementTypes.find((item) => item.value === detailRow.entry?.statement_type)?.[en ? "en" : "zh"] ?? "未分类" : "知识文档 · 页面演示";
+  const detailApproval = detailRow?.file ? versionDetail?.status === "ready" ? "索引完成" : versionDetail?.status === "review_required" ? "待复核" : "处理中" : detailRow?.review === "approved" ? "已通过" : detailRow?.review === "pending" ? "待审批" : "草稿";
+  const detailSemantic = detailRow?.entry ? statementTypes.find((item) => item.value === detailRow.entry?.statement_type)?.[en ? "en" : "zh"] ?? "未分类" : "文档索引 · 本期尚未接入检索";
 
   return <AppShell><div className="knowledge-page">
-    <input accept=".csv,.xlsx,.pdf,.doc,.docx,.md,.xls,.txt" aria-label="选择知识文件" disabled={!storeId} hidden onChange={(event) => chooseFile(event.target.files?.[0])} ref={fileInputRef} type="file" />
+    <input accept=".csv,.tsv,.xlsx,.xls,.pdf,.doc,.docx,.ppt,.pptx,.md,.txt,.png,.jpg,.jpeg" aria-label="选择知识文件" disabled={!storeId} hidden onChange={(event) => { chooseFile(event.target.files?.[0]); event.target.value = ""; }} ref={fileInputRef} type="file" />
     <header className="topbar">
       <div className="title"><span className="title-icon" aria-hidden="true">▣</span><div><h1>知识库</h1><p>管理客服建议使用的内部知识</p></div></div>
       <div className="top-actions">
@@ -663,44 +882,57 @@ export default function KnowledgePage() {
         {customCategories.length ? <><div className="group-label">自定义分类</div>{customCategories.map((category) => <div className="kb-custom-category-row" key={category.id}><button aria-current={selectedCategoryId === category.id} aria-label={category.name} className={`cat${selectedCategoryId === category.id ? " active" : ""}`} onClick={() => { setSelectedCategoryId(category.id); setSelectedEmptyPreset(""); setPage(1); }} style={{ paddingInlineStart: 10 + Math.min(category.depth, 3) * 14 }} type="button"><Folder size={18} weight="fill" /><span className="kb-category-name">{category.name}</span><span className="count">{categoryCountLabel(category.id)}</span></button><button aria-label={`删除分类：${category.name}`} className="kb-custom-category-delete" disabled={Boolean(deletingCategoryId)} onClick={() => requestCategoryDelete(category)} title={`删除分类：${category.name}`} type="button"><Trash size={16} /></button></div>)}</> : null}
       </aside>
       <main className="main">
-        <section className="scope"><div className="scope-copy"><span className="scope-icon" aria-hidden="true">▣</span><div><h2>{selectedScopeLabel}</h2><p>{scopeDescription}</p></div></div><span className="total">{scopeServerCount + localCount} 篇知识</span></section>
+        <section className="scope"><div className="scope-copy"><span className="scope-icon" aria-hidden="true">▣</span><div><h2>{selectedScopeLabel}</h2><p>{scopeDescription}</p></div></div><span className="total">{scopeServerCount} 篇知识</span></section>
         <div className="safety">ⓘ　仅供内部客服辅助使用 · 坐席确认后发送</div>
-        <div className="config-summary">分块：{parameters.chunk}　·　重叠：{parameters.overlap}　·　召回：{parameters.topK}　·　阈值：{parameters.score.toFixed(2)}　·　模型：{parameters.model}{parameters !== defaultParameters ? " · 本页演示" : ""}</div>
+        <div className="config-summary">导入策略：{chunkStrategies.find((item) => item.value === parameters.strategy)?.label}　·　分块：{parameters.chunk}　·　重叠：{parameters.overlap}　·　模型：{parameters.model}　·　FAQ 待向量化：{vectorizationStatus?.counts.pending ?? "—"}　·　文档检索本期未接入</div>
         <div className="toolbar"><label className="search"><span aria-hidden="true">⌕</span><input aria-label="搜索知识" className="field" maxLength={200} onChange={(event) => { setPage(1); setSearch(event.target.value); }} placeholder="搜索知识名称或关键词" value={search} /></label>
           <select aria-label="文件类型" className="field filter" onChange={(event) => setFileTypeFilter(event.target.value)} value={fileTypeFilter}><option value="">全部类型</option><option value="pdf">PDF</option><option value="xlsx">Excel</option><option value="txt">文本知识</option></select>
-          <select aria-label="向量状态" className="field filter" onChange={(event) => setVectorFilter(event.target.value)} value={vectorFilter}><option value="">向量状态</option><option value="ready">已就绪</option><option value="pending">待处理</option><option value="disabled">未启用</option><option value="failed">失败</option></select>
-          <select aria-label="内部审批状态" className="field filter" onChange={(event) => setReviewFilter(event.target.value)} value={reviewFilter}><option value="">审批状态</option><option value="approved">已通过</option><option value="pending">待审批</option><option value="draft">草稿</option></select>
+          <select aria-label="向量状态" className="field filter" onChange={(event) => setVectorFilter(event.target.value)} value={vectorFilter}><option value="">向量状态</option><option value="ready">已就绪</option><option value="pending">待处理</option><option value="review_required">待复核</option><option value="disabled">未启用</option><option value="failed">失败</option></select>
+          <select aria-label="处理或审批状态" className="field filter" onChange={(event) => setReviewFilter(event.target.value)} value={reviewFilter}><option value="">处理/审批状态</option><option value="approved">已完成</option><option value="review_required">待复核</option><option value="pending">待处理</option><option value="draft">草稿</option></select>
         </div>
-        <section aria-label="知识文档列表" className="table"><div className="table-head"><span>文件名称</span><span>更新时间</span><span>向量状态</span><span>内部审批状态</span><span>操作</span></div>
-          {loading ? <div className="empty"><LoadingState /></div> : error ? <div className="empty"><ErrorState message={error} retry={() => void load()} /></div> : !storeId ? <div className="empty" role="status">请先创建店铺，再管理知识。<br /><Link className="btn" href="/settings/stores">创建店铺</Link></div> : !rows.length ? <div className="empty"><EmptyState label="当前条件下没有知识文档" /></div> : rows.map((row) => <div className="row" key={row.id}><div className="file"><span className={`file-icon ${row.type}`}>{row.type === "pdf" ? "PDF" : row.type === "xlsx" ? "X" : "TXT"}</span><div className="kb-file-copy"><strong title={row.title}>{row.title}</strong><small>{row.demo ? <span className="demo-label">页面演示 · 刷新后清空</span> : `v${row.version} · ${row.entry?.source ?? "内部知识"}`}</small></div></div><span className="kb-updated">{knowledgeDate(row.updated)}</span><span className="state"><i className={`dot${row.vector === "ready" ? "" : " wait"}`} />{row.vector === "ready" ? "已就绪" : row.vector === "pending" || row.vector === "processing" ? "待处理" : row.vector === "failed" ? "失败" : "未启用"}</span><span><span className={`badge ${row.review === "approved" ? "ok" : row.review === "pending" ? "wait" : "draft"}`}>{row.review === "approved" ? "已通过" : row.review === "pending" ? "待审批" : "草稿"}</span></span><button className="row-action" onClick={() => setDetailRow(row)} type="button">查看</button></div>)}
+        <section aria-label="知识文档列表" className="table"><div className="table-head"><span>文件名称</span><span>更新时间</span><span>向量状态</span><span>处理/审批状态</span><span>操作</span></div>
+          {loading ? <div className="empty"><LoadingState /></div> : error ? <div className="empty"><ErrorState message={error} retry={() => void load()} /></div> : !storeId ? <div className="empty" role="status">请先创建店铺，再管理知识。<br /><Link className="btn" href="/settings/stores">创建店铺</Link></div> : !rows.length ? <div className="empty"><EmptyState label="当前条件下没有知识文档" /></div> : rows.map((row) => <div className="row" key={`${row.file ? "file" : "faq"}-${row.id}`}><div className="file"><span className={`file-icon ${row.type}`}>{row.type === "pdf" ? "PDF" : row.type === "xlsx" ? "X" : "TXT"}</span><div className="kb-file-copy"><strong title={row.title}>{row.title}</strong><small>{row.file ? `文档索引 · v${row.version} · ${row.file.latest_version.chunk_count} 块` : `FAQ · v${row.version} · ${row.entry?.source ?? "内部知识"}`}</small></div></div><span className="kb-updated">{knowledgeDate(row.updated)}</span><span className="state"><i className={`dot${row.vector === "ready" ? "" : " wait"}`} />{row.vector === "ready" ? "已就绪" : row.vector === "review_required" ? "待复核 · 0 新向量" : row.vector === "pending" || row.vector === "processing" ? "待处理" : row.vector === "failed" ? "失败" : "未启用"}</span><span><span className={`badge ${row.review === "approved" ? "ok" : row.review === "pending" || row.review === "review_required" ? "wait" : "draft"}`}>{row.file ? row.review === "approved" ? "索引完成" : row.review === "review_required" ? "待复核" : row.vector === "failed" ? "失败" : "处理中" : row.review === "approved" ? "已通过" : row.review === "pending" ? "待审批" : "草稿"}</span></span><button className="row-action" onClick={() => void openKnowledgeRow(row)} type="button">查看</button></div>)}
         </section>
-        <div className="kb-list-footer"><span className="foot">知识与审批数据来自当前店铺；演示文件和检索参数刷新后清空</span><div className="kb-pagination"><button className="btn" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} type="button">上一页</button><span>第 {page} 页</span><button className="btn" disabled={page * 20 >= total} onClick={() => setPage((value) => value + 1)} type="button">下一页</button></div></div>
+        <div className="kb-list-footer"><span className="foot">FAQ 与文档数据来自当前店铺；文档向量本期尚未接入检索</span><div className="kb-pagination"><button className="btn" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} type="button">上一页</button><span>第 {page} 页</span><button className="btn" disabled={page * 20 >= Math.max(total, documentTotal)} onClick={() => setPage((value) => value + 1)} type="button">下一页</button></div></div>
         {job ? <div aria-live="polite" className="kb-import-status" role="status">导入任务：{job.status} · {job.succeeded_rows}/{job.total_rows} 成功，{job.failed_rows} 失败</div> : null}
       </main>
     </div>
     {anyDialogOpen ? <div className="backdrop open" onClick={closeDialogs} role="presentation" /> : null}
     {parametersOpen ? <aside aria-label="知识库参数配置" aria-modal="true" className="drawer open" role="dialog"><div className="drawer-head"><h2>☷　知识库参数配置</h2><button aria-label="关闭流程参数" autoFocus className="close" onClick={() => setParametersOpen(false)} type="button">×</button></div><div className="drawer-body">
-      <section className="parameter-section"><h3>1. 文档分块 (CHUNKING)</h3><div className="parameter-grid"><label>分块大小<input className="field" max={10000} min={1} onChange={(event) => setParameterDraft((current) => ({ ...current, chunk: Number(event.target.value) }))} type="number" value={parameterDraft.chunk} /></label><label>重叠大小<input className="field" max={9999} min={0} onChange={(event) => setParameterDraft((current) => ({ ...current, overlap: Number(event.target.value) }))} type="number" value={parameterDraft.overlap} /></label></div><p className="parameter-hint">分块大小和重叠可在此调整；重叠必须小于分块大小。保存仅作用于本页演示。</p></section>
-      <section className="parameter-section"><h3>2. 索引模型 (EMBEDDING)</h3><select aria-label="索引模型" className="field" onChange={(event) => setParameterDraft((current) => ({ ...current, model: event.target.value }))} value={parameterDraft.model}><option value={configuredModel}>{configuredModel} · 当前项目配置</option></select><p className="parameter-hint">下拉仅列出当前项目已配置的索引模型。</p></section>
-      <section className="parameter-section"><h3>3. 检索策略 (RETRIEVAL)</h3><div className="range-head"><label htmlFor="kbTopK">单次召回数量 (Top-K)</label><output>{parameterDraft.topK}</output></div><input id="kbTopK" max={50} min={1} onChange={(event) => setParameterDraft((current) => ({ ...current, topK: Number(event.target.value) }))} type="range" value={parameterDraft.topK} /><div className="range-head"><label htmlFor="kbScore">相似度阈值 (Score Threshold)</label><output>{parameterDraft.score.toFixed(2)}</output></div><input id="kbScore" max={1} min={0} onChange={(event) => setParameterDraft((current) => ({ ...current, score: Number(event.target.value) }))} step={0.01} type="range" value={parameterDraft.score} /></section>
-      <section className="parameter-section"><h3>4. 高级策略 (ADVANCED)</h3><div className="rerank-row"><label htmlFor="kbRerank">启用 Rerank 重排</label><label className="switch"><input aria-label="启用 Rerank 重排" checked={parameterDraft.rerank} id="kbRerank" onChange={(event) => setParameterDraft((current) => ({ ...current, rerank: event.target.checked }))} type="checkbox" /><span className="slider" /></label></div><select aria-label="Rerank 模型" className="field" defaultValue={parameterDraft.rerankModel} disabled={!parameterDraft.rerank}><option value="BAAI/bge-reranker-large">BAAI/bge-reranker-large</option></select></section>
-      <div className="math-preview"><strong>当前检索逻辑：</strong><p>Dense 相似度 ≥ <b>{parameterDraft.score.toFixed(2)}</b><br />召回前 <b>{parameterDraft.topK}</b> 条候选；启用重排后展示前 5 条。</p></div><p className="prototype-note">仅在当前页面模拟参数保存，不会修改项目实际检索策略。</p>
-    </div><div className="drawer-foot"><button className="btn" onClick={() => setParametersOpen(false)} type="button">取消</button><button className="btn primary" onClick={saveParameters} type="button">保存并应用</button></div></aside> : null}
-    {detailRow ? <aside aria-label="知识详情" aria-modal="true" className="drawer detail-drawer open" role="dialog"><div className="drawer-head"><h2>知识详情</h2><button aria-label="关闭知识详情" autoFocus className="close" onClick={() => setDetailRow(null)} type="button">×</button></div><div className="drawer-body">
+      <section className="parameter-section"><h3>1. 文档解析与分块 (CHUNKING)</h3><label className="label">分段策略<select aria-label="默认分段策略" className="field" onChange={(event) => { const strategy = event.target.value as DocumentStrategy; setParameterDraft((current) => ({ ...current, strategy, chunk: strategy === "fixed_char" ? 1000 : 500, overlap: strategy === "table_rows" ? 0 : strategy === "fixed_char" ? 100 : 50 })); }} value={parameterDraft.strategy}>{chunkStrategies.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><div className="parameter-grid"><label>分块大小<input className="field" max={10000} min={32} onChange={(event) => setParameterDraft((current) => ({ ...current, chunk: Number(event.target.value) }))} type="number" value={parameterDraft.chunk} /></label><label>重叠大小<input className="field" disabled={parameterDraft.strategy === "table_rows"} max={9999} min={0} onChange={(event) => setParameterDraft((current) => ({ ...current, overlap: Number(event.target.value) }))} type="number" value={parameterDraft.overlap} /></label></div><p className="parameter-hint">这些值会保存为当前店铺未来导入的默认值；每个文件上传时冻结快照。表格行分段重叠固定为 0。</p><label className="label kb-extra-field">解析档位<select aria-label="默认解析档位" className="field" onChange={(event) => setParameterDraft((current) => ({ ...current, parserMode: event.target.value as DocumentIndexConfig["parser_mode"] }))} value={parameterDraft.parserMode}><option value="auto">自动：文本优先，必要时 OCR</option><option value="flash">Flash：常规文本解析</option><option value="basic">Basic OCR：仅 PDF/图片</option></select></label></section>
+      <section className="parameter-section"><h3>2. 索引模型 (EMBEDDING)</h3><select aria-label="索引模型" className="field" value={parameterDraft.model} disabled><option value="BAAI/bge-m3">BAAI/bge-m3 · 当前项目配置</option></select><p className="parameter-hint">文件完成清洗与分块后实际调用当前项目配置的 BGE-M3。</p></section>
+      <section className="parameter-section"><h3>3. 检索策略 (RETRIEVAL) · 本期未接入</h3><div className="range-head"><label htmlFor="kbTopK">单次召回数量 (Top-K)</label><output>{parameterDraft.topK}</output></div><input id="kbTopK" max={50} min={1} onChange={(event) => setParameterDraft((current) => ({ ...current, topK: Number(event.target.value) }))} type="range" value={parameterDraft.topK} /><div className="range-head"><label htmlFor="kbScore">相似度阈值 (Score Threshold)</label><output>{parameterDraft.score.toFixed(2)}</output></div><input id="kbScore" max={1} min={0} onChange={(event) => setParameterDraft((current) => ({ ...current, score: Number(event.target.value) }))} step={0.01} type="range" value={parameterDraft.score} /><p className="parameter-hint">召回数量和阈值仅在页面中预览，本期不写入服务端。</p></section>
+      <section className="parameter-section"><h3>4. 高级策略 (ADVANCED) · 本期未接入</h3><div className="rerank-row"><label htmlFor="kbRerank">启用 Rerank 重排</label><label className="switch"><input aria-label="启用 Rerank 重排" checked={parameterDraft.rerank} id="kbRerank" onChange={(event) => setParameterDraft((current) => ({ ...current, rerank: event.target.checked }))} type="checkbox" /><span className="slider" /></label></div><select aria-label="Rerank 模型" className="field" defaultValue={parameterDraft.rerankModel} disabled><option value="BAAI/bge-reranker-large">BAAI/bge-reranker-large</option></select></section>
+      <div className="math-preview"><strong>导入配置预览</strong><p>{chunkStrategies.find((item) => item.value === parameterDraft.strategy)?.label} · 大小 {parameterDraft.chunk} · 重叠 {parameterDraft.overlap}<br />模型 {parameterDraft.model}；检索仍未启用。</p></div>
+    </div><div className="drawer-foot"><button className="btn" onClick={() => setParametersOpen(false)} type="button">取消</button><button className="btn primary" onClick={() => void saveParameters()} type="button">保存并应用</button></div></aside> : null}
+    {detailRow ? <aside aria-label="知识详情" aria-modal="true" className={`drawer detail-drawer open${detailRow.file ? " kb-file-detail-drawer" : ""}`} role="dialog"><div className="drawer-head"><h2>知识详情</h2><button aria-label="关闭知识详情" autoFocus className="close" onClick={() => { detailRequestId.current += 1; setDetailRow(null); }} type="button">×</button></div><div className="drawer-body">
       <div className="detail-heading"><span className={`file-icon ${detailRow.type}`}>{detailRow.type === "pdf" ? "PDF" : detailRow.type === "xlsx" ? "X" : "TXT"}</span><strong>{detailRow.title}</strong><span className={`badge ${detailRow.review === "approved" ? "ok" : "wait"}`}>{detailApproval}</span></div>
-      <div className="detail-meta"><div className="detail-meta-row"><span>所属分类</span><strong>{detailCategory}</strong></div><div className="detail-meta-row"><span>当前版本</span><strong>v{detailRow.version}<small>{knowledgeDate(detailRow.updated)} 更新</small></strong></div><div className="detail-meta-row"><span>适用范围</span><strong>{storeName}</strong></div><div className="detail-meta-row"><span>语义类型</span><strong>{detailSemantic}</strong></div><div className="detail-meta-row"><span>文件来源</span><strong>{detailRow.demo ? detailRow.demo.file.name : detailRow.entry?.source ?? "未记录"}</strong></div><div className="detail-meta-row"><span>创建人</span><strong>—</strong></div><div className="detail-meta-row"><span>最后更新</span><strong>{knowledgeDate(detailRow.updated)}</strong></div></div>
-      <section className="detail-section detail-summary"><h3>内容摘要</h3><p>{detailRow.entry?.answer ?? "页面演示文件未经过服务端解析，暂无可展示的内容摘要。"}</p></section>
-      {detailRow.demo ? <section className="detail-section detail-file-section"><h3>关联文件 · 页面演示</h3><div className="detail-file"><span className={`file-icon ${detailRow.type}`}>{detailRow.type === "pdf" ? "PDF" : detailRow.type === "xlsx" ? "X" : "TXT"}</span><div className="detail-file-info"><strong>{detailRow.demo.file.name}</strong><small>{(detailRow.demo.file.size / 1024).toFixed(1)} KB</small></div><button aria-label="下载关联文件" className="detail-download" onClick={() => { const url = URL.createObjectURL(detailRow.demo!.file); const anchor = document.createElement("a"); anchor.href = url; anchor.download = detailRow.demo!.file.name; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 60000); }} title="下载关联文件" type="button">⇩</button></div></section> : null}
-      <div className="detail-note"><span className="detail-note-icon">ⓘ</span><div><strong>使用说明</strong><span>本知识仅用于 AI 建议生成与坐席人工复核，不支持公开自动回复。请结合实际订单情况与平台最新政策进行判断。</span></div></div>
-      {detailRow.entry ? <div className="kb-detail-actions"><button className="btn" onClick={() => { setEditingEntry(detailRow.entry!); setDetailRow(null); setEntryEditorOpen(true); }} type="button">编辑知识</button>{detailRow.entry.status !== "published" ? <button className="btn primary" disabled={detailRow.entry.statement_type === "unknown"} onClick={() => { void publishEntry(detailRow.entry!); setDetailRow(null); }} type="button">审批并发布</button> : null}{detailRow.entry.vectorization_status === "failed" ? <button className="btn" onClick={() => { void retryVectorization(detailRow.entry!); setDetailRow(null); }} type="button">重试向量化</button> : null}{detailRow.entry.status !== "archived" ? <button className="btn" onClick={() => { void archiveEntry(detailRow.entry!); setDetailRow(null); }} type="button">归档</button> : null}<button className="btn" onClick={() => { void removeEntry(detailRow.entry!); setDetailRow(null); }} type="button">删除</button></div> : null}
+      {detailRow.file ? detailLoading ? <LoadingState /> : versionDetail ? <>
+        <div className="detail-meta"><div className="detail-meta-row"><span>所属分类</span><strong>{detailCategory}</strong></div><div className="detail-meta-row"><span>当前有效</span><strong>{fileDetail?.active_version_number ? `v${fileDetail.active_version_number}` : "暂无"}</strong></div><div className="detail-meta-row"><span>本版状态</span><strong>{documentStatusText(versionDetail.status)} · {versionDetail.chunk_count} 块</strong></div><div className="detail-meta-row"><span>分块策略</span><strong>{chunkStrategies.find((item) => item.value === versionDetail.config.strategy)?.label}</strong></div><div className="detail-meta-row"><span>分块参数</span><strong>{versionDetail.config.chunk_size} / 重叠 {versionDetail.config.overlap}</strong></div><div className="detail-meta-row"><span>适用范围</span><strong>{storeName}</strong></div></div>
+        <label className="label kb-extra-field">查看版本<select aria-label="查看文件版本" className="field" onChange={(event) => void selectDocumentVersion(Number(event.target.value))} value={versionDetail.version_number}>{fileDetail?.versions.map((version) => <option key={version.id} value={version.version_number}>v{version.version_number} · {documentStatusText(version.status)}{version.is_active ? " · 当前有效" : ""}</option>)}</select></label>
+        <div className="kb-detail-actions"><button className="btn" onClick={() => void downloadOriginal()} type="button">下载原文件</button>{versionDetail.status.startsWith("failed") ? <button className="btn" disabled={reviewSubmitting} onClick={() => void retryFileVersion()} type="button">重试处理</button> : null}</div>
+        {versionDetail.status === "review_required" ? <div className="kb-review-warning" role="status">只要有关键内容无法可靠识别，整个新版本保持待复核，本版 0 向量；旧有效版本继续保留。请对照原文件确认每个问题单元。</div> : null}
+        {versionDetail.error_code ? <p className="kb-file-error">处理错误码：{versionDetail.error_code}</p> : null}
+        <section className="detail-section"><h3>解析单元</h3>{versionDetail.units.map((unit) => <div className="kb-review-unit" key={unit.unit_index}><strong>{unit.source_locator.page ? `第 ${unit.source_locator.page} 页` : unit.unit_kind === "image" ? "图片" : `单元 ${unit.unit_index + 1}`} · {unit.needs_review ? "待复核" : "已确认"}</strong>{unit.issue_codes.length ? <small>问题码：{unit.issue_codes.join("、")}</small> : null}<p>原始解析：{unit.raw_text || "未识别到文本，请下载原文件核对"}</p>{unit.needs_review && versionDetail.status === "review_required" ? <><label className="label">修订并确认<textarea aria-label={`修订单元 ${unit.unit_index + 1}`} className="field kb-review-text" onChange={(event) => setReviewDrafts((current) => ({ ...current, [unit.unit_index]: event.target.value }))} value={reviewDrafts[unit.unit_index] ?? ""} /></label><button className="btn primary" disabled={reviewSubmitting} onClick={() => void submitReview(unit.unit_index)} type="button">确认此单元</button></> : <p>清洗内容：{unit.cleaned_text}</p>}</div>)}</section>
+        <div className="detail-note"><span className="detail-note-icon">ⓘ</span><div><strong>使用说明</strong><span>文档只完成导入和索引，当前版本尚未接入 Agent 检索或自动回复。</span></div></div>
+      </> : <ErrorState message="文件详情加载失败" retry={() => void openKnowledgeRow(detailRow)} /> : <>
+        <div className="detail-meta"><div className="detail-meta-row"><span>所属分类</span><strong>{detailCategory}</strong></div><div className="detail-meta-row"><span>当前版本</span><strong>v{detailRow.version}<small>{knowledgeDate(detailRow.updated)} 更新</small></strong></div><div className="detail-meta-row"><span>适用范围</span><strong>{storeName}</strong></div><div className="detail-meta-row"><span>语义类型</span><strong>{detailSemantic}</strong></div><div className="detail-meta-row"><span>文件来源</span><strong>{detailRow.entry?.source ?? "未记录"}</strong></div><div className="detail-meta-row"><span>创建人</span><strong>—</strong></div><div className="detail-meta-row"><span>最后更新</span><strong>{knowledgeDate(detailRow.updated)}</strong></div></div>
+        <section className="detail-section detail-summary"><h3>内容摘要</h3><p>{detailRow.entry?.answer}</p></section>
+        <div className="detail-note"><span className="detail-note-icon">ⓘ</span><div><strong>使用说明</strong><span>本知识仅用于 AI 建议生成与坐席人工复核，不支持公开自动回复。请结合实际订单情况与平台最新政策进行判断。</span></div></div>
+        {detailRow.entry ? <div className="kb-detail-actions"><button className="btn" onClick={() => { setEditingEntry(detailRow.entry!); setDetailRow(null); setEntryEditorOpen(true); }} type="button">编辑知识</button>{detailRow.entry.status !== "published" ? <button className="btn primary" disabled={detailRow.entry.statement_type === "unknown"} onClick={() => { void publishEntry(detailRow.entry!); setDetailRow(null); }} type="button">审批并发布</button> : null}{detailRow.entry.vectorization_status === "failed" ? <button className="btn" onClick={() => { void retryVectorization(detailRow.entry!); setDetailRow(null); }} type="button">重试向量化</button> : null}{detailRow.entry.status !== "archived" ? <button className="btn" onClick={() => { void archiveEntry(detailRow.entry!); setDetailRow(null); }} type="button">归档</button> : null}<button className="btn" onClick={() => { void removeEntry(detailRow.entry!); setDetailRow(null); }} type="button">删除</button></div> : null}
+      </>}
     </div></aside> : null}
     {categoryEditorOpen ? <div aria-label={editingCategory ? "编辑分类" : "新增知识分类"} aria-modal="true" className="modal category-modal open" role="dialog"><div className="modal-head"><h2>{editingCategory ? "编辑分类" : "新增知识分类"}</h2><button aria-label="关闭新增分类" autoFocus className="close" onClick={() => setCategoryEditorOpen(false)} type="button">×</button></div>{categoryForm}{categoryTree.length ? <div className="kb-category-manager"><strong>已有分类</strong>{categoryTree.map((category) => <div className="kb-category-manager-row" key={category.id}><span>{`${"— ".repeat(category.depth)}${category.name}`}</span><button aria-label={`编辑分类：${category.name}`} onClick={() => setEditingCategory(category)} type="button">编辑</button>{customCategories.some((item) => item.id === category.id) ? <button aria-label={`删除分类：${category.name}`} disabled={Boolean(deletingCategoryId)} onClick={() => requestCategoryDelete(category)} type="button">删除</button> : null}</div>)}</div> : null}</div> : null}
     {pendingCategoryDelete ? <div aria-label="删除自定义分类" aria-modal="true" aria-describedby="kb-delete-category-warning" className="modal category-modal open" role="dialog"><div className="modal-head"><h2>删除自定义分类</h2><button aria-label="关闭删除确认" className="close" disabled={Boolean(deletingCategoryId)} onClick={() => setPendingCategoryDelete(null)} type="button">×</button></div><div className="modal-content"><p className="kb-delete-category-copy">确定删除分类 <strong>{pendingCategoryDelete.name}</strong> 吗？</p><p className="kb-delete-category-warning" id="kb-delete-category-warning">仅空分类可以删除。分类下的知识或子分类需先移除；删除后无法恢复。</p></div><div className="modal-foot"><button autoFocus className="btn" disabled={Boolean(deletingCategoryId)} onClick={() => setPendingCategoryDelete(null)} type="button">取消</button><button className="btn danger" disabled={Boolean(deletingCategoryId)} onClick={() => void removeCategory()} type="button">{deletingCategoryId ? "正在删除…" : "删除分类"}</button></div></div> : null}
     {entryEditorOpen ? <div aria-label={editingEntry ? "编辑知识" : "新增知识文档"} aria-modal="true" className="modal open" role="dialog"><div className="modal-head"><h2>{editingEntry ? "编辑知识" : addMode === "manual" ? "手动录入知识" : "新增知识文档"}</h2><button aria-label="关闭新增知识" autoFocus className="close" onClick={() => setEntryEditorOpen(false)} type="button">×</button></div>
       {editingEntry ? entryForm : <><div aria-label="新增知识方式" className="mode-tabs" role="tablist"><button aria-selected={addMode === "upload"} className={`mode-tab${addMode === "upload" ? " active" : ""}`} onClick={() => setAddMode("upload")} role="tab" type="button">上传文档</button><button aria-selected={addMode === "manual"} className={`mode-tab${addMode === "manual" ? " active" : ""}`} onClick={() => setAddMode("manual")} role="tab" type="button">手动录入</button></div>
-        {addMode === "manual" ? <form className="kb-modal-form" onSubmit={addEntry}><div className="modal-content manual-fields"><label className="label">知识标题<input className="field" maxLength={120} name="question" placeholder="输入知识标题" required /></label><label className="label">知识内容<textarea className="field" maxLength={10000} name="answer" placeholder="输入供内部审核的知识正文" required rows={7} /></label><p className="parameter-hint">保存为当前店铺草稿；知识语义类型须在审批前补齐。</p><input defaultValue="unknown" name="statement_type" type="hidden" /><input defaultValue="none" name="customer_scope" type="hidden" /><input defaultValue="" name="tags" type="hidden" /><div className="form-row"><label className="label">归属分类<select className="field select" defaultValue={selectedCategoryId} name="category_id"><option value="">未分类</option>{categoryTree.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label></div></div><div className="modal-foot"><button className="btn" onClick={() => setEntryEditorOpen(false)} type="button">取消</button><button className="btn primary" disabled={entrySubmitting} type="submit">保存知识</button></div></form> : <><div className="modal-content"><div aria-label="选择或拖入知识文件" className="upload" onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }} role="button" tabIndex={0}><div className="upload-icon">☁</div><strong>{selectedFile ? `已选择：${selectedFile.name}` : "点击或拖拽文件到此处上传"}</strong><small>{selectedFile ? "CSV/XLSX 调用真实导入；其他格式只加入本页演示列表" : "支持 PDF、Word、Markdown、Excel、TXT（最大 50MB）"}</small></div><div className="form-row"><label className="label">归属分类<select className="field select" onChange={(event) => setSelectedUploadCategoryId(event.target.value)} value={selectedUploadCategoryId}><option value="">未分类</option>{categoryTree.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label className="label">分段策略 (Chunking)<select className="field select" onChange={(event) => setSegmentMode(event.target.value)} value={segmentMode}><option value="semantic">按语义自动分段 (推荐)</option><option value="fixed">按固定字符数分段</option></select></label></div><div className="engine-label">解析引擎 (Parser)</div><div className="engines"><button className={`engine${parserMode === "standard" ? " active" : ""}`} onClick={() => setParserMode("standard")} type="button"><strong>◉　通用解析</strong><small>自动提取文本，适合常规文档</small></button><button className={`engine${parserMode === "deep" ? " active" : ""}`} onClick={() => setParserMode("deep")} type="button"><strong>○　深度文档</strong><small>处理复杂表格、多栏排版</small></button></div><div className="switch-line"><span className="switch-copy"><strong>上传后立即进行向量化</strong><small>页面演示开关，不会改变真实服务配置</small></span><label className="switch"><input aria-label="进行向量化" checked={vectorizeAfterUpload} onChange={(event) => setVectorizeAfterUpload(event.target.checked)} type="checkbox" /><span className="slider" /></label></div><p className="prototype-note">CSV/XLSX 使用现有导入接口，分类取文件中的 category_code。其他格式与解析选项仅作页面演示，刷新后清空。</p></div><div className="modal-foot"><button className="btn" onClick={() => setEntryEditorOpen(false)} type="button">取消</button><button className="btn primary" onClick={() => void submitSelectedFile()} type="button">确认上传并解析</button></div></>}
+        {addMode === "manual" ? <form className="kb-modal-form" onSubmit={addEntry}><div className="modal-content manual-fields"><label className="label">知识标题<input className="field" maxLength={120} name="question" placeholder="输入知识标题" required /></label><label className="label">知识内容<textarea className="field" maxLength={10000} name="answer" placeholder="输入供内部审核的知识正文" required rows={7} /></label><p className="parameter-hint">保存为当前店铺草稿；知识语义类型须在审批前补齐。</p><input defaultValue="unknown" name="statement_type" type="hidden" /><input defaultValue="none" name="customer_scope" type="hidden" /><input defaultValue="" name="tags" type="hidden" /><div className="form-row"><label className="label">归属分类<select className="field select" defaultValue={selectedCategoryId} name="category_id"><option value="">未分类</option>{categoryTree.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label></div></div><div className="modal-foot"><button className="btn" onClick={() => setEntryEditorOpen(false)} type="button">取消</button><button className="btn primary" disabled={entrySubmitting} type="submit">保存知识</button></div></form> : <><div className="modal-content"><div aria-label="选择或拖入知识文件" className="upload" onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }} role="button" tabIndex={0}><div className="upload-icon">☁</div><strong>{selectedFile ? `已选择：${selectedFile.name}` : "点击或拖拽文件到此处上传"}</strong><small>{selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB · 上传后由服务端解析并保存状态` : "支持 PDF、Word、图片、Markdown、Excel、CSV、TXT（最大 20 MiB）"}</small></div>
+          {selectedFile && ["csv", "xlsx"].includes(selectedFile.name.split(".").pop()?.toLowerCase() ?? "") ? <label className="label kb-extra-field">导入方式<select aria-label="表格导入方式" className="field" onChange={(event) => setUploadKind(event.target.value as "document" | "faq")} value={uploadKind}><option value="document">通用文档 → MinerU / 清洗 / 分块 / 向量</option><option value="faq">旧版 FAQ 表格导入</option></select></label> : null}
+          {uploadKind === "document" ? <><div className="form-row"><label className="label">归属分类<select className="field select" onChange={(event) => setSelectedUploadCategoryId(event.target.value)} value={selectedUploadCategoryId}><option value="">未分类</option>{categoryTree.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label className="label">分段策略 (Chunking)<select aria-label="上传分段策略" className="field select" onChange={(event) => setSegmentMode(event.target.value as DocumentStrategy)} value={segmentMode}>{chunkStrategies.map((item) => <option disabled={selectedFile ? !strategySupportsFile(item.value, selectedFile.name) : false} key={item.value} value={item.value}>{item.label}</option>)}</select></label></div><label className="label kb-extra-field">解析档位<select aria-label="上传解析档位" className="field" onChange={(event) => setParserMode(event.target.value as DocumentIndexConfig["parser_mode"])} value={parserMode}><option value="auto">自动：文本优先，必要时 OCR</option><option value="flash">Flash：常规文本解析</option><option value="basic">Basic OCR：仅 PDF/图片</option></select></label><div className="kb-config-snapshot">本文件将使用：{chunkStrategies.find((item) => item.value === segmentMode)?.label} · 大小 {parameters.chunk} · 重叠 {segmentMode === "table_rows" ? 0 : parameters.overlap} · {parameters.model}。上传后配置冻结；有关键内容不可靠时整版待复核、0 新向量。</div></> : <p className="parameter-hint kb-extra-field">FAQ CSV/XLSX 使用现有导入队列，分类取文件中的 category_code；不使用当前通用文档分块配置。</p>}
+        </div><div className="modal-foot"><button className="btn" onClick={() => setEntryEditorOpen(false)} type="button">取消</button><button className="btn primary" disabled={!selectedFile || uploadSubmitting} onClick={() => void submitSelectedFile()} type="button">{uploadSubmitting ? "正在提交…" : "确认上传并解析"}</button></div></>}
       </>}
     </div> : null}
+    {pendingReplacement ? <div aria-label="替换同名文件" aria-modal="true" className="modal category-modal open" role="dialog"><div className="modal-head"><h2>替换同名文件</h2><button aria-label="关闭替换确认" className="close" onClick={() => { setPendingReplacement(null); setEntryEditorOpen(true); }} type="button">×</button></div><div className="modal-content"><p>当前店铺已有 <strong>{pendingReplacement.filename}</strong>。内容或配置有变化时会创建新版本；完全相同则复用已有版本。旧有效版本在新版本全部完成前继续保留。文件沿用现有分类。</p><p className="kb-review-warning">如果新版本有关键内容无法可靠识别，整版停在待复核，0 新向量。</p></div><div className="modal-foot"><button className="btn" onClick={() => { setPendingReplacement(null); setEntryEditorOpen(true); }} type="button">取消</button><button className="btn primary" disabled={uploadSubmitting} onClick={() => void performDocumentUpload(pendingReplacement.id)} type="button">{uploadSubmitting ? "正在提交…" : "替换旧文件"}</button></div></div> : null}
     {notice ? <div aria-live="polite" className="toast show" role="status">{notice}</div> : null}
   </div></AppShell>;
 }

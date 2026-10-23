@@ -32,12 +32,15 @@ async def put_import_file(object_key: str, content: bytes, content_type: str) ->
     await asyncio.to_thread(_put, object_key, content, content_type)
 
 
-def get_import_file(object_key: str) -> bytes:
+def get_import_file(object_key: str, *, max_bytes: int | None = None) -> bytes:
     """由独立任务进程读取对象，并确保连接及时释放。"""
     settings = get_settings()
     response = _client().get_object(settings.minio_bucket, object_key)
     try:
-        return response.read()
+        content = response.read(max_bytes + 1) if max_bytes is not None else response.read()
+        if max_bytes is not None and len(content) > max_bytes:
+            raise ValueError("FILE_SIZE_INVALID")
+        return content
     finally:
         response.close()
         response.release_conn()

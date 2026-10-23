@@ -250,6 +250,46 @@ services:
       retries: 20
       start_period: 180s
 
+  document-parser:
+    profiles: ["document"]
+    image: ${DOCUMENT_PARSER_IMAGE:-crm-document-parser:local}
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.document-parser
+    env_file:
+      - path: ../config/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crm:crm@postgres:5432/crm
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-change-me-minio-password}
+      EMBEDDING_ENABLED: "true"
+      EMBEDDING_PROVIDER: local_bge
+      EMBEDDING_MODEL: BAAI/bge-m3
+      EMBEDDING_DIMENSIONS: "1024"
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:-}
+      RETRIEVAL_MODEL_SERVICE_URL: http://retrieval-model-service:8010
+      BGE_M3_MODEL_PATH: /models/bge-m3
+      MINERU_MODEL_SOURCE: local
+      MINERU_MODEL_SMALL_BACKEND: onnx
+      MINERU_TABLE_DEVICE: cpu
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      LLM_LIVE_EVAL: "false"
+    volumes:
+      - ../deploy/models:/models:ro
+      - ../deploy/mineru:/opt/mineru:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      retrieval-model-service:
+        condition: service_healthy
+    command: ["python", "-m", "app.knowledge_base.document_parser_worker"]
+
   frontend:
     build:
       context: ../frontend

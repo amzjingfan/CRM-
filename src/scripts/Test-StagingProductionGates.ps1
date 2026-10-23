@@ -17,6 +17,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$RetrievalModelImage,
 
+    [string]$DocumentParserImage,
+
     [Parameter(Mandatory = $true)]
     [string]$BaseUrl,
 
@@ -38,6 +40,7 @@ param(
     [string]$AllowedTikTokStoreIds,
     [switch]$EnableWorkspaceTranslation,
     [switch]$EnableG5SSELoadTest,
+    [switch]$EnableDocumentIngestion,
     [switch]$EnableG2WebhookProbe,
     [string]$G2ProbeMode,
     [string]$G2ProbeRunId,
@@ -285,6 +288,30 @@ function Assert-ExternalModelAssets {
     return $resolvedPath
 }
 
+function Assert-ExternalMinerUAssets {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$GitCheckoutRoot
+    )
+    if (-not [System.IO.Path]::IsPathRooted($Path) -or
+        -not (Test-Path -LiteralPath $Path -PathType Container)) {
+        throw "MINERU_ASSET_DIR must be an existing absolute server directory."
+    }
+    Assert-NoReparsePointInPath -Path $Path
+    $resolved = (Resolve-Path -LiteralPath $Path).Path
+    $checkout = (Resolve-Path -LiteralPath $GitCheckoutRoot).Path
+    $prefix = $checkout.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) +
+        [IO.Path]::DirectorySeparatorChar
+    if ($resolved.Equals($checkout, [StringComparison]::OrdinalIgnoreCase) -or
+        $resolved.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "MINERU_ASSET_DIR must be outside the Git checkout."
+    }
+    if (-not (Get-ChildItem -LiteralPath $resolved -Force | Select-Object -First 1)) {
+        throw "MINERU_ASSET_DIR is empty."
+    }
+    return $resolved
+}
+
 function Assert-ExternalEgressSecretDirectory {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -372,6 +399,8 @@ function Assert-ProductionComposeContract {
         [Parameter(Mandatory = $true)][hashtable]$ExpectedImages,
         [Parameter(Mandatory = $true)][string]$ExpectedModelAssetDir,
         [Parameter(Mandatory = $true)][string]$ExpectedEgressSecretDir,
+        [string]$ExpectedMinerUAssetDir,
+        [switch]$EnableDocumentIngestion,
         [switch]$EnableTikTokWebhookRead,
         [switch]$EnableTikTokManualSend,
         [string]$AllowedTikTokConversationId,
@@ -412,6 +441,32 @@ function Assert-ProductionComposeContract {
         $retrievalToken = if ($null -eq $retrievalTokenProperty) { "" } else { [string]$retrievalTokenProperty.Value }
         if ($backendToken.Length -lt 32 -or $backendToken -cne $retrievalToken) {
             throw "G5 backend and retrieval model service must share a valid internal model token."
+        }
+    }
+    if ($EnableDocumentIngestion) {
+        $documentService = $Config.services.PSObject.Properties["document-parser"].Value
+        $documentMounts = @($documentService.volumes)
+        foreach ($mount in @(@{ target = "/models"; source = $ExpectedModelAssetDir },
+                @{ target = "/opt/mineru"; source = $ExpectedMinerUAssetDir })) {
+            $matches = @($documentMounts | Where-Object {
+                [string]$_.target -ceq $mount.target -and [string]$_.source -ceq $mount.source -and
+                [string]$_.type -ceq "bind" -and $_.read_only -eq $true
+            })
+            if ($matches.Count -ne 1) { throw "Document worker must use reviewed read-only model assets." }
+        }
+        $documentToken = [string]$documentService.environment.RETRIEVAL_MODEL_SERVICE_TOKEN
+        $retrievalToken = [string]$retrievalService.environment.RETRIEVAL_MODEL_SERVICE_TOKEN
+        if ($documentToken.Length -lt 32 -or $documentToken -cne $retrievalToken) {
+            throw "Document worker and retrieval model service must share a valid internal token."
+        }
+        if ([string]$documentService.environment.MINERU_MODEL_SOURCE -cne "local" -or
+            [string]$documentService.environment.HF_HUB_OFFLINE -cne "1" -or
+            [string]$documentService.environment.EMBEDDING_ENABLED -cne "true" -or
+            [string]$documentService.environment.APP_ENV -cne "staging" -or
+            $documentService.read_only -ne $true -or
+            ($null -ne $documentService.PSObject.Properties["ports"] -and
+             @($documentService.ports).Count -ne 0)) {
+            throw "Document worker offline and private runtime contract failed."
         }
     }
 
@@ -668,6 +723,42 @@ function Assert-RunningStagingMode {
     }
 }
 
+function Assert-RunningDocumentWorker {
+    param(
+        [Parameter(Mandatory = $true)]$Command,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$ExpectedImage,
+        [Parameter(Mandatory = $true)][string]$ExpectedToken
+    )
+    $lines = & $Command.Executable @($Command.Prefix + $Arguments + @("ps", "-q", "document-parser")) 2>$null
+    $containerId = ($lines -join "").Trim()
+    if ($LASTEXITCODE -ne 0 -or $containerId -cnotmatch '^[A-Za-z0-9][A-Za-z0-9_.-]{3,127}$') {
+        throw "Staging document worker container lookup failed."
+    }
+    $lines = & $Command.Executable inspect --format '{{json .}}' $containerId 2>$null
+    if ($LASTEXITCODE -ne 0) { throw "Staging document worker inspect failed." }
+    try {
+        $container = ($lines -join "") | ConvertFrom-Json -ErrorAction Stop
+        $runtimeEnvironment = @{}
+        foreach ($assignment in @($container.Config.Env)) {
+            $entry = [string]$assignment
+            $separator = $entry.IndexOf("=")
+            if ($separator -le 0) { throw "invalid assignment" }
+            $runtimeEnvironment[$entry.Substring(0, $separator)] = $entry.Substring($separator + 1)
+        }
+    }
+    catch { throw "Staging document worker inspect result is invalid." }
+    if ($container.Config.Image -cne $ExpectedImage -or $container.State.Running -ne $true -or
+        $container.HostConfig.ReadonlyRootfs -ne $true -or
+        $runtimeEnvironment["APP_ENV"] -cne "staging" -or
+        $runtimeEnvironment["EMBEDDING_ENABLED"] -cne "true" -or
+        $runtimeEnvironment["MINERU_MODEL_SOURCE"] -cne "local" -or
+        $runtimeEnvironment["HF_HUB_OFFLINE"] -cne "1" -or
+        $runtimeEnvironment["RETRIEVAL_MODEL_SERVICE_TOKEN"] -cne $ExpectedToken) {
+        throw "Staging document worker runtime differs from the reviewed digest or offline mode."
+    }
+}
+
 function Invoke-TikTokEgressVerification {
     param(
         [Parameter(Mandatory = $true)]$Command,
@@ -774,6 +865,9 @@ function Write-Evidence {
         backend_image = $BackendImage
         frontend_image = $FrontendImage
         retrieval_model_image = $RetrievalModelImage
+        document_ingestion_enabled = [bool]$EnableDocumentIngestion
+        document_parser_image = if ($EnableDocumentIngestion) { $DocumentParserImage } else { $null }
+        mineru_assets_validated = [bool]$EnableDocumentIngestion
         external_model_assets_validated = $true
         compose_project = "crm-staging"
         docker_transport = "rootless_unix_socket"
@@ -879,6 +973,13 @@ $BackendImage = Assert-ImmutableImage -Name "BackendImage" -Reference $BackendIm
 $FrontendImage = Assert-ImmutableImage -Name "FrontendImage" -Reference $FrontendImage -Repository "ghcr.io/cp11-gh/crm-frontend"
 $RetrievalModelImage = Assert-ImmutableImage -Name "RetrievalModelImage" -Reference $RetrievalModelImage `
     -Repository "ghcr.io/cp11-gh/crm-retrieval-model-service"
+if ($EnableDocumentIngestion) {
+    $DocumentParserImage = Assert-ImmutableImage -Name "DocumentParserImage" -Reference $DocumentParserImage `
+        -Repository "ghcr.io/cp11-gh/crm-document-parser"
+}
+elseif ($DocumentParserImage) {
+    throw "DocumentParserImage requires EnableDocumentIngestion."
+}
 
 $baseUri = $null
 if (-not [Uri]::TryCreate($BaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or $baseUri.Scheme -ne "https") {
@@ -891,6 +992,18 @@ $sourceRoot = Split-Path -Parent $PSScriptRoot
 $gitCheckoutRoot = Resolve-GitCheckoutRoot -ProjectRoot $sourceRoot
 $modelAssetDir = Assert-ExternalModelAssets -Path $environmentValues["RETRIEVAL_MODEL_ASSET_DIR"] `
     -GitCheckoutRoot $gitCheckoutRoot
+$mineruAssetDir = ""
+if ($EnableDocumentIngestion) {
+    if (-not $environmentValues.ContainsKey("MINERU_ASSET_DIR")) {
+        throw "MINERU_ASSET_DIR is required for document ingestion."
+    }
+    $mineruAssetDir = Assert-ExternalMinerUAssets -Path $environmentValues["MINERU_ASSET_DIR"] `
+        -GitCheckoutRoot $gitCheckoutRoot
+    if (-not $environmentValues.ContainsKey("RETRIEVAL_MODEL_SERVICE_TOKEN") -or
+        $environmentValues["RETRIEVAL_MODEL_SERVICE_TOKEN"].Length -lt 32) {
+        throw "Document ingestion requires a valid internal model token."
+    }
+}
 $egressSecretDir = Assert-ExternalEgressSecretDirectory -Path $environmentValues["TIKTOK_EGRESS_SECRET_DIR"] `
     -GitCheckoutRoot $gitCheckoutRoot
 $externalImageRepositories = @{
@@ -947,6 +1060,9 @@ foreach ($name in @($DisabledCapabilityVariables + $G2ProbeVariables + @(
     "FRONTEND_IMAGE",
     "RETRIEVAL_MODEL_ASSET_DIR",
     "RETRIEVAL_MODEL_SERVICE_IMAGE",
+    "DOCUMENT_PARSER_IMAGE",
+    "MINERU_ASSET_DIR",
+    "COMPOSE_PROFILES",
     "TIKTOK_EGRESS_IMAGE",
     "TIKTOK_EGRESS_SECRET_DIR",
     "TLS_CERT_DIR",
@@ -961,6 +1077,7 @@ try {
     # DOCKER_CONTEXT 的优先级高于 DOCKER_HOST，必须在所有 Docker 调用前清空。
     $env:DOCKER_HOST = $DockerHost
     [Environment]::SetEnvironmentVariable("DOCKER_CONTEXT", $null, "Process")
+    [Environment]::SetEnvironmentVariable("COMPOSE_PROFILES", $null, "Process")
     $compose = Resolve-ComposeCommand
     $composeArguments = @(
         "--project-name", "crm-staging",
@@ -971,6 +1088,9 @@ try {
         "-f", (Resolve-Path -LiteralPath $egressOverlay).Path,
         "-f", (Resolve-Path -LiteralPath $rootlessOverlay).Path
     )
+    if ($EnableDocumentIngestion) {
+        $composeArguments += @("--profile", "document")
+    }
     if ($EnableTikTokWebhookRead) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $webhookReadOverlay).Path)
     }
@@ -996,6 +1116,10 @@ try {
     $env:FRONTEND_IMAGE = $FrontendImage
     $env:RETRIEVAL_MODEL_ASSET_DIR = $modelAssetDir
     $env:RETRIEVAL_MODEL_SERVICE_IMAGE = $configuredRetrievalModelImage
+    if ($EnableDocumentIngestion) {
+        $env:DOCUMENT_PARSER_IMAGE = $DocumentParserImage
+        $env:MINERU_ASSET_DIR = $mineruAssetDir
+    }
     $env:TIKTOK_EGRESS_IMAGE = $BackendImage
     $env:TIKTOK_EGRESS_SECRET_DIR = $egressSecretDir
     # Compose 会在合并 rootless override 前先展开 production 文件；此值只用于通过必填展开，最终配置不得挂载它。
@@ -1015,8 +1139,10 @@ try {
         "frontend" = $FrontendImage
         "proxy" = $validatedExternalImages["NGINX_IMAGE"]
     }
+    if ($EnableDocumentIngestion) { $expectedImages["document-parser"] = $DocumentParserImage }
     Assert-ProductionComposeContract -Config $config -ExpectedImages $expectedImages `
         -ExpectedModelAssetDir $modelAssetDir -ExpectedEgressSecretDir $egressSecretDir `
+        -ExpectedMinerUAssetDir $mineruAssetDir -EnableDocumentIngestion:$EnableDocumentIngestion `
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
@@ -1091,9 +1217,15 @@ try {
         if (-not $?) { throw 'The staging runtime changed before the locked G5 operation.' }
     }
     # 同一 backend 摘要被多个服务共享，只拉取一次；逐镜像限次重试避免慢链路并发传输放大临时断连。
-    Invoke-ComposePullsWithRetry -Command $compose -Arguments $composeArguments -Services @(
-        "tiktok-egress", "frontend", "retrieval-model-service"
-    )
+    $pullServices = @("tiktok-egress", "frontend", "retrieval-model-service")
+    if ($EnableDocumentIngestion) { $pullServices += "document-parser" }
+    Invoke-ComposePullsWithRetry -Command $compose -Arguments $composeArguments -Services $pullServices
+    if ($EnableDocumentIngestion) {
+        & $compose.Executable run --rm --network none --read-only `
+            --mount "type=bind,src=$mineruAssetDir,dst=/opt/mineru,readonly" `
+            --entrypoint mineru-kit $DocumentParserImage models verify --tier basic --small-backend onnx
+        if ($LASTEXITCODE -ne 0) { throw "MinerU Basic ONNX local model verification failed." }
+    }
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "postgres", "redis", "minio"
     ))
@@ -1108,10 +1240,12 @@ try {
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
         "run", "--rm", "--no-deps", "backend", "alembic", "current", "--check-heads"
     ))
+    $applicationServices = @("backend", "worker", "jobs", "agent-worker", "frontend", "proxy",
+        "retrieval-model-service")
+    if ($EnableDocumentIngestion) { $applicationServices += "document-parser" }
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
-        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600", "backend", "worker", "jobs", "agent-worker",
-        "frontend", "proxy", "retrieval-model-service"
-    ))
+        "up", "-d", "--no-build", "--wait", "--wait-timeout", "600"
+    ) + $applicationServices)
     # backend 重建会更换容器 IP；重启内层 Nginx，避免继续连接旧上游并等待其恢复健康。
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @("restart", "proxy"))
     Invoke-Compose -Command $compose -Arguments ($composeArguments + @(
@@ -1123,6 +1257,10 @@ try {
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -G2ProbeExpected $g2ProbeExpected
+    if ($EnableDocumentIngestion) {
+        Assert-RunningDocumentWorker -Command $compose -Arguments $composeArguments `
+            -ExpectedImage $DocumentParserImage -ExpectedToken $environmentValues["RETRIEVAL_MODEL_SERVICE_TOKEN"]
+    }
 
     $healthChecks = @(
         [ordered]@{ path = "/healthz"; status_code = Test-HealthEndpoint -Uri ($BaseUrl.TrimEnd("/") + "/healthz") },

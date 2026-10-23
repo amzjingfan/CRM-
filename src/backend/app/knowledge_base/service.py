@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
+from app.knowledge_base.document_models import KnowledgeFile
 from app.knowledge_base.models import KnowledgeCategory, KnowledgeDocument, KnowledgeImportJob
 from app.knowledge_base.repository import (
     count_vectorization_statuses,
@@ -114,7 +115,7 @@ async def update_category(
 
 
 async def delete_category(session: AsyncSession, user: User, category_id: uuid.UUID) -> None:
-    """仅允许删除空分类，避免 FAQ 被意外脱离运营分类。"""
+    """仅允许删除空分类，避免 FAQ 或文件被意外脱离运营分类。"""
     category = await find_category(session, category_id, await allowed_store_ids(session, user))
     if category is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "分类不存在", 404)
@@ -123,11 +124,16 @@ async def delete_category(session: AsyncSession, user: User, category_id: uuid.U
         .select_from(KnowledgeDocument)
         .where(KnowledgeDocument.category_id == category.id, KnowledgeDocument.deleted_at.is_(None))
     )
+    file_usage = await session.scalar(
+        select(func.count())
+        .select_from(KnowledgeFile)
+        .where(KnowledgeFile.category_id == category.id, KnowledgeFile.deleted_at.is_(None))
+    )
     children = await session.scalar(
         select(func.count()).select_from(KnowledgeCategory).where(KnowledgeCategory.parent_id == category.id)
     )
-    if usage or children:
-        raise AppError(ErrorCode.RESOURCE_CONFLICT, "分类下仍有子分类或 FAQ", 409)
+    if usage or file_usage or children:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "分类下仍有子分类或知识", 409)
     await session.delete(category)
     await session.commit()
 

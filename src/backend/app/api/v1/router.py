@@ -8,6 +8,7 @@ from app.chat.router import router as chat_router
 from app.dashboard.router import router as dashboard_router
 from app.integrations.oauth_router import router as oauth_router
 from app.integrations.router import router as integrations_router
+from app.knowledge_base.document_router import router as knowledge_document_router
 from app.knowledge_base.router import router as knowledge_router
 from app.marketing.router import router as marketing_router
 from app.reception.router import router as reception_router
@@ -32,6 +33,7 @@ router.include_router(stores_router)
 router.include_router(integrations_router)
 router.include_router(oauth_router)
 router.include_router(knowledge_router)
+router.include_router(knowledge_document_router)
 router.include_router(marketing_router)
 router.include_router(reception_router)
 router.include_router(workspace_router)

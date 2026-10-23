@@ -37,6 +37,9 @@ retrieval-model = [
     "torch>=2.13,<2.14",
     "transformers>=5.10.4,<5.11",
 ]
+document-parser = [
+    "mineru==4.0.12",
+]
 
 [dependency-groups]
 dev = [

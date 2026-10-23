@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "generator": "src/tests/backend/knowledge_base/generate_document_ingestion_samples.py",
+  "purpose": "Only synthetic document-ingestion acceptance; no customer content",
+  "samples": [
+    {"file": "native-policy.pdf", "format": "PDF/native text", "expected": "ready", "critical_fact": "Do not promise a refund before order verification"},
+    {"file": "warehouse-policy.docx", "format": "DOCX/Office", "expected": "ready", "critical_fact": "SKU-AX1 ships only after payment confirmation"},
+    {"file": "scanned-policy.png", "format": "PNG/OCR", "expected": "review_required", "required_new_vectors": 0},
+    {"file": "mixed-native-scan.pdf", "format": "PDF/native plus scan", "expected": "review_required", "required_new_vectors": 0}
+  ]
+}

@@ -604,7 +604,7 @@ def test_production_compose_resets_dev_env_and_separates_secret_domains() -> Non
     """生产服务必须重置开发环境文件并按职责拆分平台与模型密钥。"""
     compose_text = (SOURCE_ROOT / "compose" / "docker-compose.prod.yml").read_text(encoding="utf-8")
 
-    assert compose_text.count("env_file: !reset []") == 5
+    assert compose_text.count("env_file: !reset []") == 6
     assert "x-production-platform: &production-platform" in compose_text
     assert "x-production-model: &production-model" in compose_text
     expected_merges = {

@@ -38,6 +38,15 @@ export type KnowledgeEntry = { id: string; store_id: string; category_id: string
 export type KnowledgePage = { items: KnowledgeEntry[]; page: number; page_size: number; total: number };
 export type KnowledgeVectorizationStatus = { store_id: string; worker_enabled: boolean; provider: "local_bge"; model: string; dimensions: 1024; counts: { pending: number; processing: number; ready: number; failed: number } };
 export type ImportJob = { id: string; store_id: string; original_filename: string; status: string; total_rows: number; succeeded_rows: number; failed_rows: number; error_summary: Array<Record<string, unknown>>; created_at: string; completed_at: string | null };
+export type DocumentStrategy = "recursive" | "heading_paragraph" | "sentence" | "fixed_token" | "fixed_char" | "semantic_similarity" | "page_slide" | "ocr_layout" | "table_rows";
+export type DocumentIndexConfig = { strategy: DocumentStrategy; chunk_size: number; overlap: number; parser_mode: "auto" | "flash" | "basic"; embedding_model: "BAAI/bge-m3" };
+export type DocumentVersionSummary = { id: string; version_number: number; status: "queued" | "parsing" | "review_required" | "indexing" | "ready" | "failed_retryable" | "failed_final"; error_code: string | null; retry_count: number; created_at: string; completed_at: string | null; is_active: boolean; chunk_count: number };
+export type DocumentFileSummary = { id: string; store_id: string; category_id: string | null; filename: string; active_version_number: number | null; latest_version: DocumentVersionSummary };
+export type DocumentFilePage = { items: DocumentFileSummary[]; total: number; page: number; page_size: number };
+export type DocumentFileDetail = DocumentFileSummary & { versions: DocumentVersionSummary[] };
+export type DocumentUnit = { unit_index: number; unit_kind: string; source_locator: Record<string, number>; raw_text: string; cleaned_text: string; issue_codes: string[]; needs_review: boolean; parse_mode: string; reviewed_by: string | null; reviewed_at: string | null };
+export type DocumentVersionDetail = DocumentVersionSummary & { file_id: string; filename: string; file_sha256: string; config: DocumentIndexConfig; parser_version: string | null; cleaning_version: string; units: DocumentUnit[] };
+export type DocumentImportAccepted = { file_id: string; version_id: string; version_number: number; status: string };
 export type Campaign = { id: string; store_id: string; name: string; trigger_type: string; action_type: string; content_mode: string; template_content: string | null; coupon_code: string | null; trigger_delay_minutes: number; cooldown_hours: number; max_contacts_30d: number; status: string; created_at: string; updated_at: string };
 export type CampaignPage = { items: Campaign[]; page: number; page_size: number; total: number };
 export type MarketingEvent = { id: string; store_id: string; campaign_id: string; customer_id: string | null; source_type: string; source_id: string; status: string; attempt_count: number; error_code: string | null; ai_draft_content: string | null; ai_draft_agent_run_id: string | null; ai_review_status: "pending" | "approved" | "rejected" | null; ai_reviewed_by: string | null; ai_reviewed_at: string | null; triggered_at: string; completed_at: string | null; converted_at: string | null };
@@ -184,6 +193,35 @@ export const getKnowledgeVectorizationStatus = (storeId: string) => requestApi<K
 export const retryKnowledgeVectorization = (entryId: string) => requestApi<KnowledgeEntry>(`/knowledge/entries/${entryId}/vectorization/retry`, { method: "POST" });
 export const importKnowledge = (storeId: string, file: File) => { const body = new FormData(); body.set("store_id", storeId); body.set("file", file); return requestApi<{ job_id: string; status: "pending" }>("/knowledge/imports", { method: "POST", body }); };
 export const getImportJob = (jobId: string) => requestApi<ImportJob>(`/knowledge/imports/${jobId}`);
+export const listDocumentFiles = (query: URLSearchParams) => requestApi<DocumentFilePage>(`/knowledge/files?${query.toString()}`);
+export const getDocumentFile = (fileId: string) => requestApi<DocumentFileDetail>(`/knowledge/files/${encodeURIComponent(fileId)}`);
+export const getDocumentVersion = (fileId: string, versionNumber: number) => requestApi<DocumentVersionDetail>(`/knowledge/files/${encodeURIComponent(fileId)}/versions/${versionNumber}`);
+export const getDocumentSettings = (storeId: string) => requestApi<DocumentIndexConfig>(`/knowledge/file-settings?store_id=${encodeURIComponent(storeId)}`);
+export const saveDocumentSettings = (storeId: string, config: DocumentIndexConfig) => requestApi<DocumentIndexConfig>(`/knowledge/file-settings?store_id=${encodeURIComponent(storeId)}`, { method: "PUT", body: JSON.stringify(config) });
+export const importDocumentFile = (storeId: string, file: File, config: DocumentIndexConfig, categoryId: string | null, replaceFileId: string | null) => {
+  const body = new FormData();
+  body.set("store_id", storeId);
+  body.set("file", file);
+  body.set("config_json", JSON.stringify(config));
+  if (categoryId) body.set("category_id", categoryId);
+  if (replaceFileId) body.set("replace_file_id", replaceFileId);
+  return requestApi<DocumentImportAccepted>("/knowledge/files/imports", { method: "POST", body });
+};
+export const reviewDocumentUnit = (fileId: string, versionNumber: number, unitIndex: number, correctedText: string) => requestApi<DocumentVersionDetail>(`/knowledge/files/${encodeURIComponent(fileId)}/versions/${versionNumber}/units/${unitIndex}/review`, { method: "POST", body: JSON.stringify({ corrected_text: correctedText, confirmed: true }) });
+export const retryDocumentVersion = (fileId: string, versionNumber: number) => requestApi<DocumentVersionDetail>(`/knowledge/files/${encodeURIComponent(fileId)}/versions/${versionNumber}/retry`, { method: "POST" });
+export async function downloadDocumentSource(fileId: string, versionNumber: number): Promise<Blob> {
+  const path = `/knowledge/files/${encodeURIComponent(fileId)}/versions/${versionNumber}/source`;
+  let response = await rawRequest(path);
+  if (response.status === 401) {
+    const refreshed = await rawRequest("/auth/browser/refresh", { method: "POST" });
+    if (refreshed.ok) response = await rawRequest(path);
+  }
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as ApiResponse<unknown> | null;
+    throw new ApiError(body?.message ?? "原文件下载失败", response.status, body?.code);
+  }
+  return response.blob();
+}
 export const listCampaigns = (storeId = "", page = 1) => requestApi<CampaignPage>(`/marketing/campaigns?page=${page}&page_size=20${storeId ? `&store_id=${encodeURIComponent(storeId)}` : ""}`);
 export const createCampaign = (payload: Record<string, unknown>) => requestApi<Campaign>("/marketing/campaigns", { method: "POST", body: JSON.stringify(payload) });
 export const updateCampaign = (campaignId: string, payload: Record<string, unknown>) => requestApi<Campaign>(`/marketing/campaigns/${campaignId}`, { method: "PATCH", body: JSON.stringify(payload) });

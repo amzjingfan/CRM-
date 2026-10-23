@@ -7,6 +7,14 @@ from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.dashboard.models import MetricDaily
 from app.integrations.models import TikTokOAuthJob, WebhookEvent
+from app.knowledge_base.document_models import (
+    KnowledgeFile,
+    KnowledgeFileChunk,
+    KnowledgeFileImportReceipt,
+    KnowledgeFileSettings,
+    KnowledgeFileUnit,
+    KnowledgeFileVersion,
+)
 from app.knowledge_base.models import KnowledgeCategory, KnowledgeChunk, KnowledgeDocument, KnowledgeImportJob
 from app.marketing.models import CustomerReview, MarketingCampaign, MarketingEvent
 from app.orders.models import Order, OrderItem
@@ -36,6 +44,12 @@ __all__ = [
     "KnowledgeCategory",
     "KnowledgeChunk",
     "KnowledgeDocument",
+    "KnowledgeFile",
+    "KnowledgeFileChunk",
+    "KnowledgeFileImportReceipt",
+    "KnowledgeFileSettings",
+    "KnowledgeFileUnit",
+    "KnowledgeFileVersion",
     "KnowledgeImportJob",
     "MarketingCampaign",
     "MarketingEvent",

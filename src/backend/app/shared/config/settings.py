@@ -71,6 +71,9 @@ class Settings(BaseSettings):
     minio_bucket: str = Field(default="crm-files", validation_alias="MINIO_BUCKET")
     minio_secure: bool = Field(default=False, validation_alias="MINIO_SECURE")
     knowledge_import_max_bytes: int = Field(default=10_485_760, validation_alias="KNOWLEDGE_IMPORT_MAX_BYTES")
+    knowledge_file_import_max_bytes: int = Field(
+        default=20_971_520, ge=1, le=20_971_520, validation_alias="KNOWLEDGE_FILE_IMPORT_MAX_BYTES"
+    )
     knowledge_import_max_rows: int = Field(default=5000, validation_alias="KNOWLEDGE_IMPORT_MAX_ROWS")
     jobs_poll_seconds: float = Field(default=1.0, gt=0, le=60, validation_alias="JOBS_POLL_SECONDS")
     marketing_poll_seconds: float = Field(default=60.0, gt=0, le=300, validation_alias="MARKETING_POLL_SECONDS")

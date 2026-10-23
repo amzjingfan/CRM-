@@ -63,8 +63,8 @@ test("BGE jobs wait for the single model service and model container is non-root
 });
 
 test("frontend uses the supported Next.js security release", () => {
-  assert.equal(packageJson.dependencies.next, "16.3.8");
-  assert.equal(packageJson.devDependencies["eslint-config-next"], "16.3.8");
+  assert.equal(packageJson.dependencies.next, "16.4.2");
+  assert.equal(packageJson.devDependencies["eslint-config-next"], "16.4.2");
 });
 
 test("production frontend build pins the Node image manifest digest", () => {

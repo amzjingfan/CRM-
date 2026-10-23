@@ -123,3 +123,14 @@
 .knowledge-page #addModal.manual-mode .form-row{grid-template-columns:1fr}
 @media(max-width:780px){.knowledge-page .store select{max-width:120px}.knowledge-page .topbar{flex-wrap:wrap}.knowledge-page .top-actions{width:100%;justify-content:flex-end}}
 @media(max-width:1100px){.knowledge-page .store{display:flex}}
+
+.knowledge-page .kb-file-detail-drawer{width:min(500px,100vw)}
+.knowledge-page .kb-file-detail-drawer .drawer-body{padding:14px 20px 28px}
+.knowledge-page .kb-review-warning{margin:16px 0;padding:12px 14px;border:1px solid #f0d39b;border-radius:8px;background:#fff8e9;color:#815b1c;font-size:12px;line-height:1.6}
+.knowledge-page .kb-file-error{font-size:12px;color:#a33f37;overflow-wrap:anywhere}
+.knowledge-page .kb-review-unit{border:1px solid #e3e8f0;border-radius:9px;padding:13px;margin:10px 0;background:#fff}
+.knowledge-page .kb-review-unit>strong,.knowledge-page .kb-review-unit>small{display:block;line-height:1.5}
+.knowledge-page .kb-review-unit>small{color:#a86a0b;margin-top:4px}
+.knowledge-page .kb-review-unit p{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;color:#52627b;font-size:12px;line-height:1.55}
+.knowledge-page .kb-review-text{height:auto;min-height:120px;padding:10px;resize:vertical;line-height:1.55;margin:7px 0 10px}
+.knowledge-page .kb-config-snapshot{margin-top:16px;padding:12px 14px;border-radius:8px;background:#eef4ff;color:#36598d;font-size:12px;line-height:1.55}

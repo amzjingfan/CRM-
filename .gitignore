@@ -71,6 +71,7 @@ logs/
 **/deploy/models/**/.cache/
 /src/deploy/models/bge-m3/
 /src/deploy/models/bge-reranker-large/
+/src/deploy/mineru/models/
 
 # Editors and operating-system metadata.
 .idea/

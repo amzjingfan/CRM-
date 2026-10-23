@@ -161,6 +161,48 @@ services:
         target: /models
         read_only: true
 
+  document-parser:
+    image: ${DOCUMENT_PARSER_IMAGE:-crm-document-parser:local}
+    build: !reset null
+    env_file: !reset []
+    volumes: !override
+      - type: bind
+        source: ${RETRIEVAL_MODEL_ASSET_DIR:-/invalid-document-model-assets}
+        target: /models
+        read_only: true
+      - type: bind
+        source: ${MINERU_ASSET_DIR:-/invalid-mineru-assets}
+        target: /opt/mineru
+        read_only: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=2147483648,mode=1777
+      # MinerU 即使模型齐全也会先取得仓库锁；仅该锁目录可写，权重仍为只读 bind。
+      - /opt/mineru/models/.locks:size=1048576,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 8g
+    cpus: 2
+    environment:
+      <<: *production-runtime
+      # Settings validates the public callback URL for every staging process; this is not a platform credential.
+      TIKTOK_OAUTH_REDIRECT_URI: ${TIKTOK_OAUTH_REDIRECT_URI:?TIKTOK_OAUTH_REDIRECT_URI is required}
+      EMBEDDING_ENABLED: "true"
+      EMBEDDING_PROVIDER: local_bge
+      EMBEDDING_MODEL: BAAI/bge-m3
+      EMBEDDING_DIMENSIONS: "1024"
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:-}
+      RETRIEVAL_MODEL_SERVICE_URL: http://retrieval-model-service:8010
+      BGE_M3_MODEL_PATH: /models/bge-m3
+      MINERU_MODEL_SOURCE: local
+      MINERU_MODEL_SMALL_BACKEND: onnx
+      MINERU_TABLE_DEVICE: cpu
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      LLM_LIVE_EVAL: "false"
+
   frontend:
     image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE must use an immutable repository@sha256 digest}
     build: !reset null

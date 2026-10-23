@@ -29,6 +29,10 @@ services:
   agent-worker:
     environment:
       <<: *rootless-staging-runtime
+  document-parser:
+    environment:
+      <<: *rootless-staging-runtime
+      EMBEDDING_ENABLED: "true"
   proxy:
     ports: !override
       - "127.0.0.1:18081:80"

@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "evidence_type": "rag_document_ingestion_manual_staging_deploy",
+  "record_status": "DEPLOYED_STAGING_LOW_SENSITIVITY_EVIDENCE",
+  "environment": "staging",
+  "task_id": "MVP-RAG-DOCUMENT-INGEST-001",
+  "subject_sha": "5ae37c54ec4abfe49a65b11525f08214bb182f65",
+  "reviewed_source_checkout_clean": true,
+  "github_actions_used": false,
+  "images": {
+    "backend_target_digest": "sha256:07b2b4554b3d2ae3adebfec9ea89bf742d1c6b0123c3e81d52265e1ac0ded662",
+    "document_parser_target_digest": "sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "frontend_target_digest": "sha256:c33392d6011e909063f43938d3932f7c9c26c467d8af7040bf3c578afa44af52",
+    "retrieval_model_unchanged_digest": "sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "backend_previous_digest": "sha256:b5e2b7b4718752dfd665ed373d57623208ea5ef3e39f5b23311bb7c499e7fa68",
+    "document_parser_previous_digest": "sha256:af1abbd14bf82921a28edafcc6d01be6b30b80f9620f75fb4b457ce1fd40d098",
+    "frontend_previous_digest": "sha256:3003c48d9d1f4213e41368935e7400bce12ab518fffe1ec3a2fb015dd477990a",
+    "backend_parser_source_equivalent_to_subject": true,
+    "frontend_oci_revision_matches_subject": true,
+    "remote_repo_digests_verified": true
+  },
+  "private_backup_before_final_deploy": {
+    "postgresql_size_bytes": 551482,
+    "postgresql_sha256_prefix": "ca1a24daf733",
+    "postgresql_pg_restore_list_readable": true,
+    "minio_size_bytes": 256000,
+    "minio_sha256_prefix": "e95e6a8b9c04",
+    "mode_0600": true
+  },
+  "manual_gates": {
+    "validate_only": "PASS",
+    "deploy_exact_digest": "PASS",
+    "production_release": false
+  },
+  "synthetic_sample_sha256": {
+    "native_pdf": "91d739454a28cc22701fc2d5e577fb69123a06e3275af57ef3b7d7a8f37e9d6c",
+    "native_pdf_replacement": "9afd552127eb18d29807bb63978c2b7e84b97b65a8fb27a6a7dc62a9c8957672",
+    "office_docx": "95b6aad086a2f86c37376b89500859a4e3edd836b1cd33a7ae277844075d8ef8",
+    "scanned_png": "3e59954458e322b602f43fef8010c87ece5e9e75a89a9a14ed3fa57aaedbe770",
+    "mixed_pdf": "2b1e97f2e977e9b161e16f67bc48c3ba21d9eeb980247510ba76ece60d979b57",
+    "long_pdf": "212a61786b9856da79da949b9e59b1d3c1977c6fa97e6c644c8c3dd59b372a02"
+  },
+  "runtime": {
+    "migration_head": "030_merge_rag_reception",
+    "crm_container_count": 12,
+    "running_image_digests_match_targets": true,
+    "parser_restart_count": 0,
+    "parser_readonly_root_filesystem": true,
+    "parser_gpu_devices_assigned": false,
+    "parser_onnx_cpu_provider_available": true,
+    "embedding_torch_cuda_available": false,
+    "frontend_next_version": "16.4.2",
+    "manual_send_and_existing_capability_scope_preserved": true,
+    "public_http_status": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/knowledge": 200,
+      "/login": 200
+    }
+  },
+  "synthetic_authenticated_api_and_database": {
+    "cross_store_read_denied_status": 404,
+    "store_scoped_chunk_settings_persisted": true,
+    "native_pdf": {"status": "ready", "chunks": 1, "strategy": "fixed_token"},
+    "office_document": {"status": "ready", "chunks": 1, "strategy": "heading_paragraph"},
+    "image_before_review": {"status": "review_required", "chunks": 0, "strategy": "ocr_layout"},
+    "mixed_pdf": {"status": "review_required", "chunks": 0, "strategy": "recursive"},
+    "same_name_changed_content_without_replace_status": 409,
+    "explicit_replacement": {"new_active_version": 2, "old_version_chunks_retained": 1, "new_version_chunks": 1},
+    "image_after_human_review": {"status": "ready", "chunks": 1},
+    "vector_dimensions": 1024,
+    "chunk_strategy_and_metadata_verified_in_postgresql": true,
+    "mixed_pdf_vectors_in_postgresql": 0,
+    "fixed_token_long_pdf": {"configured_size": 32, "configured_overlap": 4, "actual_chunks": 19, "maximum_token_count": 32}
+  },
+  "production_dependency_audit_vulnerabilities": 0,
+  "agent_retrieval_connected": false,
+  "external_message_sent": false,
+  "production_release": false
+}
