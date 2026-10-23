@@ -188,13 +188,14 @@ async def list_replies(
 async def list_policies(
     session: AsyncSession,
     user: User,
-    store_id: uuid.UUID,
+    store_id: uuid.UUID | None,
     kind: str,
     page: int,
     page_size: int,
 ) -> PolicyPage:
-    await _ensure_stores(session, user, [store_id])
-    await _ensure_permission(session, user, [store_id], "marketing.view")
+    if store_id is not None:
+        await _ensure_stores(session, user, [store_id])
+        await _ensure_permission(session, user, [store_id], "marketing.view")
     permitted = await _permission_store_ids(session, user, "marketing.view")
     rows, total = await query_policies(session, store_id, kind, permitted, page, page_size)
     return PolicyPage(
@@ -480,10 +481,13 @@ async def create_policy(session: AsyncSession, user: User, payload: PolicyCreate
         return PolicyView.model_validate(replay)
     await _ensure_stores(session, user, payload.store_ids)
     await _ensure_permission(session, user, payload.store_ids, "marketing.manage")
+    await _ensure_permission(session, user, payload.store_ids, "marketing.view")
+    attributes = payload.model_dump(exclude={"store_ids"})
+    attributes["schedule"] = payload.schedule.model_dump(mode="json") if payload.schedule else None
     policy = ReceptionPolicy(
         id=uuid.uuid4(),
         created_by=user.id,
-        **payload.model_dump(exclude={"store_ids"}),
+        **attributes,
         stores=[ReceptionPolicyStore(store_id=value) for value in payload.store_ids],
     )
     session.add(policy)
@@ -526,6 +530,7 @@ async def update_policy(
         "timeout_minutes": policy.timeout_minutes,
         "valid_from": policy.valid_from,
         "valid_to": policy.valid_to,
+        "schedule": policy.schedule,
         "enabled": policy.enabled,
         "sort_order": policy.sort_order,
         "store_ids": policy.store_ids,
@@ -536,9 +541,12 @@ async def update_policy(
         raise AppError(ErrorCode.VALIDATION_ERROR, "策略配置无效", 422) from error
     await _ensure_stores(session, user, validated.store_ids)
     await _ensure_permission(session, user, validated.store_ids, "marketing.manage")
+    await _ensure_permission(session, user, validated.store_ids, "marketing.view")
     for field, value in changes.items():
         if field == "store_ids":
             policy.stores = [ReceptionPolicyStore(store_id=store_id) for store_id in validated.store_ids]
+        elif field == "schedule":
+            policy.schedule = validated.schedule.model_dump(mode="json") if validated.schedule else None
         else:
             setattr(policy, field, value)
     body = PolicyView.model_validate(policy).model_dump(mode="json")

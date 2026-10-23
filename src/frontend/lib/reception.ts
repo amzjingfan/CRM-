@@ -2,6 +2,7 @@ import { requestApi } from "./api";
 
 export type ReceptionScope = "personal" | "team";
 export type ReceptionKind = "timeout" | "welcome";
+export type PolicySchedule = { mode: "long_term" | "date_range" | "fixed_hours"; start_date: string | null; end_date: string | null; daily_start_time: string | null; daily_end_time: string | null };
 export type ReceptionPage<T> = { items: T[]; total: number; page: number; page_size: number };
 
 export type QuickReplyGroup = {
@@ -36,6 +37,7 @@ export type ReceptionPolicy = {
   timeout_minutes: number | null;
   valid_from: string | null;
   valid_to: string | null;
+  schedule: PolicySchedule | null;
   enabled: boolean;
   sort_order: number;
   store_ids: string[];
@@ -44,7 +46,7 @@ export type ReceptionPolicy = {
 
 export type NewQuickReplyGroup = Pick<QuickReplyGroup, "store_id" | "scope" | "name"> & { sort_order?: number };
 export type NewQuickReply = Pick<QuickReply, "store_id" | "scope" | "group_id" | "shortcut" | "tags" | "site_code" | "messages"> & { sort_order?: number };
-export type NewReceptionPolicy = Pick<ReceptionPolicy, "kind" | "name" | "content" | "timeout_minutes" | "valid_from" | "valid_to" | "enabled" | "store_ids"> & { sort_order?: number };
+export type NewReceptionPolicy = Pick<ReceptionPolicy, "kind" | "name" | "content" | "timeout_minutes" | "valid_from" | "valid_to" | "schedule" | "enabled" | "store_ids"> & { sort_order?: number };
 
 const base = "/marketing/reception";
 const itemPath = (collection: string, id: string) => `${base}/${collection}/${encodeURIComponent(id)}`;
@@ -106,8 +108,10 @@ export function deleteQuickReply(id: string) {
   return requestApi<void>(itemPath("replies", id), { method: "DELETE" });
 }
 
-export function listReceptionPolicies(storeId: string, kind: ReceptionKind, page = 1) {
-  return requestApi<ReceptionPage<ReceptionPolicy>>(listPath("policies", new URLSearchParams({ store_id: storeId, kind, page: String(page), page_size: "100" })));
+export function listReceptionPolicies(storeId: string | null, kind: ReceptionKind, page = 1) {
+  const params = new URLSearchParams({ kind, page: String(page), page_size: "100" });
+  if (storeId) params.set("store_id", storeId);
+  return requestApi<ReceptionPage<ReceptionPolicy>>(listPath("policies", params));
 }
 
 export function createReceptionPolicy(payload: NewReceptionPolicy) {

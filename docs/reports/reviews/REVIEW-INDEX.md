@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-MARKETING-BASIC-RECEPTION-POLICY-003-20261023-R01 | MVP-MARKETING-BASIC-RECEPTION-POLICY-003 | R01 | APPROVE | `77c1086ca3059a2d4483eb49014fec59a298ebb5` | authorization, store-isolation, csrf, idempotency, audit, migration, schedule-validation, no-auto-send | 2026-10-23T08:41:10Z | [`RR-MVP-MARKETING-BASIC-RECEPTION-POLICY-003-20261023-R01.md`](RR-MVP-MARKETING-BASIC-RECEPTION-POLICY-003-20261023-R01.md) |
 | RR-MVP-KNOWLEDGE-ALL-CONSISTENCY-001-20261023-R01 | MVP-KNOWLEDGE-ALL-CONSISTENCY-001 | R01 | APPROVE | `662da11e4bad0785c7b1338bc7de0c8f22dd47d5` | correctness, tenant-isolation, public-api-compatibility, pagination, historical-data, staging-boundary | 2026-10-23T09:38:00Z | [`RR-MVP-KNOWLEDGE-ALL-CONSISTENCY-001-20261023-R01.md`](RR-MVP-KNOWLEDGE-ALL-CONSISTENCY-001-20261023-R01.md) |
 | RR-MVP-RAG-DOCUMENT-INGEST-001-20261023-R01 | MVP-RAG-DOCUMENT-INGEST-001 | R01 | APPROVE | `5ae37c54ec4abfe49a65b11525f08214bb182f65` | tenant-isolation, csrf, idempotency, whole-version-review, atomic-version-swap, migration, cpu-fallback, dependency-security, staging-boundary | 2026-10-23T08:05:00Z | [`RR-MVP-RAG-DOCUMENT-INGEST-001-20261023-R01.md`](RR-MVP-RAG-DOCUMENT-INGEST-001-20261023-R01.md) |
 | RR-MVP-MARKETING-BASIC-RECEPTION-UI-002-20261023-R01 | MVP-MARKETING-BASIC-RECEPTION-UI-002 | R01 | APPROVE | `c7843608be82af404b938634c2e08350ed37e14f` | authorization, store-isolation, csrf, idempotency, migration, disabled-replies, no-auto-send | 2026-10-23T06:42:19Z | [`RR-MVP-MARKETING-BASIC-RECEPTION-UI-002-20261023-R01.md`](RR-MVP-MARKETING-BASIC-RECEPTION-UI-002-20261023-R01.md) |

@@ -158,7 +158,7 @@ async def find_policy(session: AsyncSession, item_id: uuid.UUID, store_ids: set[
 
 async def list_policies(
     session: AsyncSession,
-    store_id: uuid.UUID,
+    store_id: uuid.UUID | None,
     kind: str,
     allowed_store_ids: set[uuid.UUID],
     page: int,
@@ -166,13 +166,18 @@ async def list_policies(
 ) -> tuple[list[ReceptionPolicy], int]:
     unauthorized = select(ReceptionPolicyStore.policy_id).where(ReceptionPolicyStore.store_id.not_in(allowed_store_ids))
     filters = [
-        ReceptionPolicyStore.store_id == store_id,
+        ReceptionPolicyStore.store_id.in_(allowed_store_ids),
         ReceptionPolicy.kind == kind,
         ReceptionPolicy.id.not_in(unauthorized),
     ]
+    if store_id is not None:
+        filters.append(ReceptionPolicyStore.store_id == store_id)
     total = (
         await session.scalar(
-            select(func.count()).select_from(ReceptionPolicy).join(ReceptionPolicyStore).where(*filters)
+            select(func.count(func.distinct(ReceptionPolicy.id)))
+            .select_from(ReceptionPolicy)
+            .join(ReceptionPolicyStore)
+            .where(*filters)
         )
         or 0
     )
@@ -181,6 +186,7 @@ async def list_policies(
             select(ReceptionPolicy)
             .join(ReceptionPolicyStore)
             .where(*filters)
+            .distinct()
             .options(selectinload(ReceptionPolicy.stores))
             .order_by(ReceptionPolicy.sort_order, ReceptionPolicy.id)
             .offset((page - 1) * page_size)

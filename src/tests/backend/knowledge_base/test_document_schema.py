@@ -3,6 +3,8 @@
 from pathlib import Path
 
 from alembic.script import ScriptDirectory
+from sqlalchemy import CheckConstraint, UniqueConstraint
+
 from app.knowledge_base.document_models import (
     KnowledgeFile,
     KnowledgeFileChunk,
@@ -12,16 +14,14 @@ from app.knowledge_base.document_models import (
     KnowledgeFileVersion,
 )
 from app.knowledge_base.models import KnowledgeChunk
-from sqlalchemy import CheckConstraint, UniqueConstraint
 
 
-def test_independently_deployed_reception_and_document_migrations_join_one_head() -> (
-    None
-):
+def test_independently_deployed_reception_and_document_migrations_join_one_head() -> None:
     """两条 029 已分别在环境落地，合流必须保留两个历史 revision。"""
     migration_path = Path(__file__).resolve().parents[3] / "backend" / "migrations"
     scripts = ScriptDirectory(str(migration_path))
-    assert scripts.get_heads() == ["030_merge_rag_reception"]
+    assert scripts.get_heads() == ["031_reception_policy_schedule"]
+    assert scripts.get_revision("031_reception_policy_schedule").down_revision == "030_merge_rag_reception"
     assert set(scripts.get_revision("030_merge_rag_reception").down_revision) == {
         "029_knowledge_file_ingestion",
         "029_reception_group_enabled",
@@ -56,9 +56,7 @@ def test_version_status_and_active_pointer_support_whole_version_review() -> Non
         for constraint in KnowledgeFileVersion.__table__.constraints
         if isinstance(constraint, UniqueConstraint)
     )
-    assert {"unit_index", "issue_codes", "reviewed_by", "reviewed_at"} <= set(
-        KnowledgeFileUnit.__table__.c.keys()
-    )
+    assert {"unit_index", "issue_codes", "reviewed_by", "reviewed_at"} <= set(KnowledgeFileUnit.__table__.c.keys())
     assert KnowledgeFileSettings.__table__.c.store_id.primary_key
 
 

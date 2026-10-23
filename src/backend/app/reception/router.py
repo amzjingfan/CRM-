@@ -123,8 +123,8 @@ async def remove_reply(item_id: uuid.UUID, session: DbSession, user: Actor, key:
 async def get_policies(
     session: DbSession,
     user: Actor,
-    store_id: uuid.UUID,
     kind: PolicyKind,
+    store_id: uuid.UUID | None = None,
     page: Page = 1,
     page_size: PageSize = 20,
 ) -> ApiResponse[PolicyPage]:

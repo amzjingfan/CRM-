@@ -62,7 +62,7 @@
 ### 营销
 
 - `/marketing` 提供活动/任务的列表、新建、详情、受控更新、启停、预览/执行和报表能力。
-- `GET/POST /marketing/reception/groups|replies|policies` 及 `PATCH/DELETE /marketing/reception/{groups|replies|policies}/{id}` 管理基础接待配置，统一使用 `/v1` 前缀。列表返回 `items,total,page,page_size`；分组与回复必须按 `store_id`、`scope=personal|team` 查询。分组返回 `enabled` 和 `reply_count`，`PATCH /groups/{id}` 可切换 `enabled`；回复还可按 `group_id`、`q` 模糊查找或 `shortcut` 精确查找。回复列表默认排除停用分组，管理页可传 `include_disabled=true` 查看和编辑，仍按原权限与店铺隔离；工作台及快捷键查询不传该参数。策略按 `store_id` 和 `kind=timeout|welcome` 查询。回复只接受文本 `messages`、快捷键、最多三个标签及站点展示码；策略包含文本、适用店铺、有效期、配置开关和顺序，响应固定 `delivery_enabled=false`。写入要求 Cookie CSRF、幂等键及审计；个人回复绑定当前用户，团队写入与策略写入要求 `marketing.manage`，所有资源先核对服务端店铺范围。该组接口没有执行或平台发送操作。
+- `GET/POST /marketing/reception/groups|replies|policies` 及 `PATCH/DELETE /marketing/reception/{groups|replies|policies}/{id}` 管理基础接待配置，统一使用 `/v1` 前缀。列表返回 `items,total,page,page_size`；分组与回复必须按 `store_id`、`scope=personal|team` 查询。分组返回 `enabled` 和 `reply_count`，`PATCH /groups/{id}` 可切换 `enabled`；回复还可按 `group_id`、`q` 模糊查找或 `shortcut` 精确查找。回复列表默认排除停用分组，管理页可传 `include_disabled=true` 查看和编辑，仍按原权限与店铺隔离；工作台及快捷键查询不传该参数。策略按必填 `kind=timeout|welcome` 查询，可选 `store_id` 限定单店；省略时只返回当前账号对所有关联店铺均有 `marketing.view` 权限的策略，按策略去重后分页。新建和更新策略还需对全部关联店铺同时具备 `marketing.manage` 与 `marketing.view`。回复只接受文本 `messages`、快捷键、最多三个标签及站点展示码；策略包含文本、适用店铺、有效期、配置开关和顺序；`schedule` 可为空以兼容旧版 `valid_from/valid_to` UTC 时间，新增配置用 `schedule.mode=long_term|date_range|fixed_hours`，后两种要求本地起止日期，固定时段还要求同一天内的每日起止时间，均按各店铺时区解释；响应固定 `delivery_enabled=false`。写入要求 Cookie CSRF、幂等键及审计；个人回复绑定当前用户，团队写入与策略写入要求 `marketing.manage`，所有资源先核对服务端店铺范围。该组接口没有执行或平台发送操作。
 - 当前能力用于内部管理和验证；自动营销与真实高风险写入未放行。
 
 ### Agent 运营

@@ -17,7 +17,15 @@ from app.reception.models import (
     ReceptionPolicyStore,
     ReceptionReply,
 )
-from app.reception.schemas import GroupCreate, GroupUpdate, PolicyCreate, PolicyUpdate, ReplyCreate, ReplyUpdate
+from app.reception.schemas import (
+    GroupCreate,
+    GroupUpdate,
+    PolicyCreate,
+    PolicySchedule,
+    PolicyUpdate,
+    ReplyCreate,
+    ReplyUpdate,
+)
 from app.shared.database import models as _models  # noqa: F401
 from app.shared.database.base import Role, User, user_roles
 from app.shared.exceptions.errors import AppError
@@ -213,7 +221,10 @@ async def test_reception_scope_idempotency_and_config_only() -> None:
                 "policy-multi-store",
             )
             assert policy.delivery_enabled is False and policy.enabled is True
+            all_visible = await service.list_policies(session, admin, None, "welcome", 1, 20)
+            assert all_visible.total == 1 and [item.id for item in all_visible.items] == [policy.id]
             assert (await service.list_policies(session, manager, first_store, "welcome", 1, 20)).total == 0
+            assert (await service.list_policies(session, manager, None, "welcome", 1, 20)).total == 0
             with pytest.raises(AppError) as hidden_policy:
                 await service.visible_policy(session, manager, policy.id, write=True)
             assert hidden_policy.value.status_code == 404
@@ -221,10 +232,27 @@ async def test_reception_scope_idempotency_and_config_only() -> None:
                 session,
                 manager,
                 PolicyCreate(
-                    kind="timeout", name="Delay", content="Later", timeout_minutes=30, store_ids=[first_store]
+                    kind="timeout",
+                    name="Delay",
+                    content="Later",
+                    timeout_minutes=30,
+                    store_ids=[first_store],
+                    schedule=PolicySchedule.model_validate(
+                        {
+                            "mode": "fixed_hours",
+                            "start_date": "2026-10-23",
+                            "end_date": "2026-10-25",
+                            "daily_start_time": "09:00",
+                            "daily_end_time": "18:00",
+                        }
+                    ),
                 ),
                 "policy-one-store",
             )
+            assert (await service.list_policies(session, manager, None, "timeout", 1, 20)).items[
+                0
+            ].id == single_store.id
+            assert single_store.schedule is not None and single_store.schedule.mode == "fixed_hours"
             with pytest.raises(AppError) as unauthorized_edit:
                 await service.update_policy(
                     session,

@@ -27,6 +27,7 @@ def test_tracked_test_assets_use_centralized_layout() -> None:
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     ).stdout
     tracked_paths = tuple(PurePosixPath(path) for path in tracked_output.split("\0") if path)
     exempt_roots = (

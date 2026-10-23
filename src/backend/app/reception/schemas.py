@@ -1,13 +1,14 @@
 """基础接待的文本配置边界模型。"""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime, time
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Scope = Literal["personal", "team"]
 PolicyKind = Literal["timeout", "welcome"]
+ValidityMode = Literal["long_term", "date_range", "fixed_hours"]
 
 
 def _nonblank(value: str) -> str:
@@ -132,6 +133,40 @@ class ReplyView(BaseModel):
     sort_order: int
 
 
+class PolicySchedule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: ValidityMode
+    start_date: date | None = None
+    end_date: date | None = None
+    daily_start_time: time | None = None
+    daily_end_time: time | None = None
+
+    @model_validator(mode="after")
+    def validate_schedule(self) -> "PolicySchedule":
+        if self.mode == "long_term":
+            if any(
+                value is not None
+                for value in (self.start_date, self.end_date, self.daily_start_time, self.daily_end_time)
+            ):
+                raise ValueError("长期策略不能设置起止日期或每日时段")
+            return self
+        if self.start_date is None or self.end_date is None or self.start_date > self.end_date:
+            raise ValueError("有效期必须包含正确的起止日期")
+        if any(
+            value is not None and value.tzinfo is not None for value in (self.daily_start_time, self.daily_end_time)
+        ):
+            raise ValueError("每日时间必须是站点本地时间，不得附带时区")
+        if self.mode == "date_range":
+            if self.daily_start_time is not None or self.daily_end_time is not None:
+                raise ValueError("起止策略不能设置每日时段")
+        elif (
+            self.daily_start_time is None or self.daily_end_time is None or self.daily_start_time >= self.daily_end_time
+        ):
+            raise ValueError("固定时段必须包含同一天内正确的起止时间")
+        return self
+
+
 class PolicyCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -141,6 +176,7 @@ class PolicyCreate(BaseModel):
     timeout_minutes: int | None = Field(default=None, ge=1, le=43_200)
     valid_from: datetime | None = None
     valid_to: datetime | None = None
+    schedule: PolicySchedule | None = None
     enabled: bool = False
     sort_order: int = Field(default=0, ge=0, le=100_000)
     store_ids: list[uuid.UUID] = Field(min_length=1, max_length=100)
@@ -158,6 +194,8 @@ class PolicyCreate(BaseModel):
             raise ValueError("欢迎语不能设置超时分钟数")
         if self.valid_from and self.valid_to and self.valid_from >= self.valid_to:
             raise ValueError("结束时间必须晚于开始时间")
+        if self.schedule is not None and (self.valid_from is not None or self.valid_to is not None):
+            raise ValueError("新有效期不能与旧时间字段同时设置")
         if any(value is not None and value.tzinfo is None for value in (self.valid_from, self.valid_to)):
             raise ValueError("有效期时间必须带时区")
         if len(set(self.store_ids)) != len(self.store_ids):
@@ -173,6 +211,7 @@ class PolicyUpdate(BaseModel):
     timeout_minutes: int | None = Field(default=None, ge=1, le=43_200)
     valid_from: datetime | None = None
     valid_to: datetime | None = None
+    schedule: PolicySchedule | None = None
     enabled: bool | None = None
     sort_order: int | None = Field(default=None, ge=0, le=100_000)
     store_ids: list[uuid.UUID] | None = Field(default=None, min_length=1, max_length=100)
@@ -188,6 +227,7 @@ class PolicyView(BaseModel):
     timeout_minutes: int | None
     valid_from: datetime | None
     valid_to: datetime | None
+    schedule: PolicySchedule | None = None
     enabled: bool
     sort_order: int
     store_ids: list[uuid.UUID]

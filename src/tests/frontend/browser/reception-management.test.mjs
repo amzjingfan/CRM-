@@ -9,6 +9,7 @@ const origin = new URL(baseUrl).origin;
 if (!["127.0.0.1", "localhost", "::1"].includes(new URL(baseUrl).hostname)) throw new Error("UI tests require a local server");
 
 const store = { id: "00000000-0000-4000-8000-0000000000f1", name: "演示店铺", alias: null, code: "demo", status: "active", timezone: "Asia/Shanghai", currency: "CNY", created_at: "2026-10-01T00:00:00Z" };
+const secondStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "第二店铺", code: "second" };
 const user = { id: "00000000-0000-4000-8000-000000000001", name: "测试坐席", email: null, login_name: "test_agent", role: "admin", avatar: null, permissions: ["workspace.reply", "workspace.view", "marketing.manage", "marketing.view"], store_ids: [store.id] };
 const group = { id: "00000000-0000-4000-8000-0000000000a1", store_id: store.id, scope: "personal", owner_user_id: user.id, name: "常用话术", enabled: true, reply_count: 1, sort_order: 0 };
 const reply = { id: "00000000-0000-4000-8000-0000000000b1", store_id: store.id, scope: "personal", owner_user_id: user.id, group_id: group.id, shortcut: "hello", tags: ["欢迎"], site_code: "US", messages: ["您好，欢迎咨询。"], sort_order: 0 };
@@ -23,6 +24,8 @@ async function open(path, initial = {}) {
   let groups = [...(initial.groups ?? [group])];
   let replies = [...(initial.replies ?? [reply])];
   let policies = [...(initial.policies ?? [policy])];
+  const availableStores = initial.stores ?? [store];
+  const signedInUser = { ...user, store_ids: availableStores.map((item) => item.id) };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -52,12 +55,12 @@ async function open(path, initial = {}) {
       const pageSize = Number(url.searchParams.get("page_size") ?? "100");
       return { items: items.slice((pageNumber - 1) * pageSize, pageNumber * pageSize), total: items.length, page: pageNumber, page_size: pageSize };
     };
-    const data = path === "/v1/auth/me" ? user
-      : path === "/v1/settings/stores" ? [store]
+    const data = path === "/v1/auth/me" ? signedInUser
+      : path === "/v1/settings/stores" ? availableStores
       : changed ? changed
       : path.endsWith("/groups") ? list(groups.filter((item) => item.scope === url.searchParams.get("scope")).map((item) => ({ ...item, reply_count: replies.filter((entry) => entry.group_id === item.id).length })))
       : path.endsWith("/replies") ? list(replies.filter((item) => item.scope === url.searchParams.get("scope") && (url.searchParams.get("include_disabled") === "true" || groups.find((entry) => entry.id === item.group_id)?.enabled) && (!url.searchParams.get("group_id") || item.group_id === url.searchParams.get("group_id")) && (!url.searchParams.get("q") || `${item.shortcut} ${item.messages.join(" ")}`.includes(url.searchParams.get("q")))))
-      : path.endsWith("/policies") ? list(policies.filter((item) => item.kind === url.searchParams.get("kind")).sort((left, right) => left.sort_order - right.sort_order || left.id.localeCompare(right.id)))
+      : path.endsWith("/policies") ? list(policies.filter((item) => item.kind === url.searchParams.get("kind") && (!url.searchParams.get("store_id") || item.store_ids.includes(url.searchParams.get("store_id")))).sort((left, right) => left.sort_order - right.sort_order || left.id.localeCompare(right.id)))
       : [];
     await route.fulfill({ status: request.method() === "DELETE" ? 204 : 200, headers, contentType: "application/json", body: request.method() === "DELETE" ? "" : JSON.stringify({ code: 0, message: "ok", data }) });
   });
@@ -116,8 +119,8 @@ test("quick reply editor validates text and previews before save", async () => {
 test("policy editor saves configuration only", async () => {
   const { context, tab, writes } = await open("/marketing/reception/timeout");
   try {
-    await tab.getByText("仅保存配置，自动发送未启用").waitFor();
-    await tab.getByRole("button", { name: "新增超时自动回复" }).click();
+    await tab.getByText("仅保存配置，不自动向买家发送").waitFor();
+    await tab.getByRole("button", { name: "新增策略" }).click();
     const dialog = tab.getByRole("dialog", { name: "新增超时自动回复" });
     await dialog.getByLabel("策略名称").fill("午间接待");
     await dialog.getByLabel("超时分钟").fill("15");
@@ -230,5 +233,112 @@ test("policy configuration switch never reports delivery enabled", async () => {
     await tab.getByText("配置开关已关闭，自动发送仍未启用。").waitFor();
     assert.equal(writes.some((write) => write.method === "PATCH" && write.path.endsWith(`/policies/${policy.id}`) && write.body.enabled === false), true);
     assert.equal(writes.some((write) => write.path.includes("/messages") || write.path.includes("/campaigns")), false);
+  } finally { await context.close(); }
+});
+
+for (const [kind, label] of [["timeout", "超时自动回复"], ["welcome", "进店欢迎语"]]) {
+  test(`${kind} policy remains visible after saving for a different authorized store`, async () => {
+    const { context, tab, writes } = await open(`/marketing/reception/${kind}`, { stores: [store, secondStore], policies: [] });
+    try {
+      await tab.getByRole("button", { name: "新增策略" }).click();
+      const dialog = tab.getByRole("dialog", { name: `新增${label}` });
+      await dialog.getByLabel("策略名称").fill("第二店铺策略");
+      await dialog.getByLabel("回复内容").fill("稍后人工处理。");
+      await dialog.getByRole("button", { name: "适用店铺" }).click();
+      await dialog.getByRole("checkbox", { name: "演示店铺" }).uncheck();
+      await dialog.getByRole("checkbox", { name: "第二店铺" }).check();
+      await dialog.getByRole("button", { name: "保存配置" }).click();
+      await tab.getByText("配置已保存。自动发送仍未启用。").waitFor();
+      assert.equal(writes.some((write) => write.method === "POST" && write.path.endsWith("/policies") && write.body.store_ids.length === 1 && write.body.store_ids[0] === secondStore.id), true);
+      await tab.getByRole("row", { name: /第二店铺策略/ }).waitFor({ timeout: 3000 });
+    } finally { await context.close(); }
+  });
+
+  test(`${kind} saves and reloads a fixed daily validity window`, async () => {
+    const { context, tab, writes } = await open(`/marketing/reception/${kind}`, { policies: [] });
+    try {
+      await tab.getByRole("button", { name: "新增策略" }).click();
+      const dialog = tab.getByRole("dialog", { name: `新增${label}` });
+      await dialog.getByLabel("策略名称").fill("固定时段策略");
+      await dialog.getByLabel("回复内容").fill("人工稍后处理");
+      assert.equal(await dialog.getByRole("radio", { name: "长期" }).isChecked(), true);
+      await dialog.getByRole("radio", { name: "起止", exact: true }).check();
+      assert.equal(await dialog.getByLabel("开始日期").isVisible(), true);
+      assert.equal(await dialog.getByLabel("每天开始时间").count(), 0);
+      await dialog.getByRole("radio", { name: "固定时段" }).check();
+      await dialog.getByLabel("开始日期").fill("2026-10-23");
+      await dialog.getByLabel("结束日期").fill("2026-10-30");
+      await dialog.getByLabel("每天开始时间").fill("09:00");
+      await dialog.getByLabel("每天结束时间").fill("18:00");
+      await dialog.getByRole("button", { name: "保存配置" }).click();
+      await tab.getByRole("row", { name: /固定时段策略/ }).waitFor();
+      const created = writes.find((write) => write.method === "POST" && write.path.endsWith("/policies"));
+      assert.deepEqual(created.body.schedule, { mode: "fixed_hours", start_date: "2026-10-23", end_date: "2026-10-30", daily_start_time: "09:00", daily_end_time: "18:00" });
+      assert.equal(created.body.valid_from, null);
+      await tab.getByRole("row", { name: /固定时段策略/ }).getByRole("button", { name: "编辑" }).click();
+      const editor = tab.getByRole("dialog", { name: `编辑${label}` });
+      assert.equal(await editor.getByRole("radio", { name: "固定时段" }).isChecked(), true);
+      assert.equal(await editor.getByLabel("每天开始时间").inputValue(), "09:00");
+      assert.equal(await editor.getByLabel("每天结束时间").inputValue(), "18:00");
+    } finally { await context.close(); }
+  });
+}
+
+test("policy table filters by store alias and effective status", async () => {
+  const future = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  const later = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+  const entries = [
+    { ...policy, name: "当前生效", schedule: { mode: "long_term", start_date: null, end_date: null, daily_start_time: null, daily_end_time: null } },
+    { ...policy, id: "00000000-0000-4000-8000-0000000000c2", name: "未来开始", store_ids: [secondStore.id], schedule: { mode: "date_range", start_date: future, end_date: later, daily_start_time: null, daily_end_time: null } },
+    { ...policy, id: "00000000-0000-4000-8000-0000000000c3", name: "开关关闭", store_ids: [secondStore.id], enabled: false },
+  ];
+  const { context, tab } = await open("/marketing/reception/timeout", { stores: [store, { ...secondStore, alias: "第二别名" }], policies: entries });
+  try {
+    await tab.getByRole("row", { name: /未来开始/ }).getByText("未开始").waitFor();
+    await tab.getByRole("button", { name: "有效策略" }).click();
+    assert.equal(await tab.locator(".reception-policy-table tbody tr").count(), 1);
+    await tab.getByRole("button", { name: "失效策略" }).click();
+    assert.equal(await tab.locator(".reception-policy-table tbody tr").count(), 2);
+    await tab.getByRole("button", { name: "全部策略" }).click();
+    await tab.getByRole("textbox", { name: "按店铺名称或别名搜索" }).fill("第二别名");
+    assert.equal(await tab.locator(".reception-policy-table tbody tr").count(), 2);
+  } finally { await context.close(); }
+});
+
+test("policy actions remain reachable in the narrow workspace", async () => {
+  const { context, tab } = await open("/marketing/reception/welcome", { policies: [{ ...policy, kind: "welcome", timeout_minutes: null }] });
+  try {
+    await tab.setViewportSize({ width: 1120, height: 892 });
+    await tab.getByRole("button", { name: "夜间值守更多操作" }).click();
+    await tab.getByRole("button", { name: "删除", exact: true }).click();
+    await tab.getByRole("alertdialog", { name: "删除策略" }).waitFor();
+  } finally { await context.close(); }
+});
+
+test("editing an old policy preserves its UTC validity until the user changes it", async () => {
+  const old = { ...policy, valid_from: "2026-10-20T08:00:00Z", valid_to: "2026-11-20T08:00:00Z", schedule: null };
+  const { context, tab, writes } = await open("/marketing/reception/timeout", { policies: [old] });
+  try {
+    await tab.getByRole("row", { name: /夜间值守/ }).getByRole("button", { name: "编辑" }).click();
+    const dialog = tab.getByRole("dialog", { name: "编辑超时自动回复" });
+    await dialog.getByLabel("回复内容").fill("更新文本，不改时间");
+    await dialog.getByRole("button", { name: "保存配置" }).click();
+    const updated = writes.find((write) => write.method === "PATCH" && write.path.endsWith(`/policies/${old.id}`));
+    assert.equal(updated.body.valid_from, old.valid_from);
+    assert.equal(updated.body.valid_to, old.valid_to);
+    assert.equal(updated.body.schedule, null);
+  } finally { await context.close(); }
+});
+
+test("batch settings add only unassigned stores to an existing welcome policy", async () => {
+  const welcome = { ...policy, kind: "welcome", timeout_minutes: null };
+  const { context, tab, writes } = await open("/marketing/reception/welcome", { stores: [store, secondStore], policies: [welcome] });
+  try {
+    await tab.getByText("未加入策略的店铺：1").waitFor();
+    await tab.getByRole("button", { name: "批量设置" }).click();
+    const dialog = tab.getByRole("dialog", { name: "批量设置店铺" });
+    await dialog.getByRole("button", { name: "保存设置" }).click();
+    await tab.getByText("未加入策略的店铺：0").waitFor();
+    assert.equal(writes.some((write) => write.method === "PATCH" && write.path.endsWith(`/policies/${welcome.id}`) && write.body.store_ids.includes(store.id) && write.body.store_ids.includes(secondStore.id)), true);
   } finally { await context.close(); }
 });
