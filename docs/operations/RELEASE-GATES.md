@@ -2,6 +2,8 @@
 
 状态含义：`已实现` 只说明代码/确定性测试存在；`待真实验证` 表示仍缺真实账号、负载或持续运行证据；`阻塞` 表示不能签署发布；`范围外` 表示不属于 TikTok 人工辅助 v0.1。
 
+2026-10-23 当前 staging 已从合并主线 `db16111d` 直接部署接待与工作台变更：手动部署门禁、迁移 031、12 容器、三公网健康通过，自动回复/自动营销/高风险写入关闭；[低敏现场证据](../../release/evidence/staging/crm-staging-direct-reception-workspace-20261023.json)。此部署不改变下表 G8 的 production No-Go，也不作为真实媒体买家接收或持续稳定性证据。
+
 | 门禁 | 范围 | 当前状态 | 阻断条件 / 证据入口 | 下一动作 |
 |---|---|---|---|---|
 | G0 | 基础设施、配置、密钥、备份与回滚 | 通过（staging） | `MVP-STAGING-001` split-ingress Rootless 部署、`MVP-001` 凭据轮换/安全注入、`MVP-EGRESS-001` 固定出口均有现场证据；`MVP-008-RESTORE-001` 已在隔离 PostgreSQL/MinIO 验证备份恢复。2026-09-30 六个不可变镜像摘要预取、候选部署、上一版三镜像实际切回及候选切返均通过，切返后候选三摘要、迁移头 `024`、11 容器、三个公网健康接口 200 和固定出口 `38.55.145.52` 已核对，见 [G0 现场证据](../../release/evidence/staging/crm-staging-mvp008-g0-20260930.json)。2026-10-08 固定出口 helper 被发现退出，已只启动该容器并复核健康与固定 IP，见 [恢复证据](../../release/evidence/staging/crm-staging-tiktok-egress-recovery-20261008.json)；该运行中断须计入 G6。活动 MinIO 业务桶为空，真实对象字节恢复只在隔离合成对象上验证；不外推 production | 转向 G1～G6 的真实平台、模型、容量和持续运行验收；G8 仍阻塞 |

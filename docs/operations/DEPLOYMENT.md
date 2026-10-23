@@ -1,6 +1,8 @@
 # 部署与运行边界
 
-工作台媒体发送候选尚未合并或部署。未来部署该候选时，公网 staging Nginx 和内层 Nginx 仅对 `/v1/workspace/sessions/{uuid}/messages/media/upload` 放宽请求体至 105 MiB、上游读取超时至 720 秒；其他路由继续 10 MiB。必须先对两层配置执行语法检查，再和前后端精确摘要一起发布；回滚同时恢复旧 Nginx 配置与镜像。TikTok 上传全程复用 `TIKTOK_EGRESS_PROXY_URL` 固定出口，平台上传 URL 仅接受官方 `open-api.tiktokglobalshop.com/file/`。本地模拟测试不等于真实媒体外发验收，staging 真实发送仍限既有目标白名单和人工二次确认；production 继续 G8 No-Go。
+2026-10-23 基础接待和工作台媒体能力已从合并主线 `db16111df252c4d941cfd1b6c1223a83e2c58cac` 手动直部署 staging，无 GitHub Actions。后端 `sha256:a5628dc0…bd6361`、前端 `sha256:ae92b0df…2b488b2` 均有同一 OCI revision；原检索和文档解析镜像不变。私有 PostgreSQL、MinIO 和公网 Nginx 配置备份后，`ValidateOnly`、`Deploy`、迁移头 `031_reception_policy_schedule`、12 容器、三健康及四个产品 URL 均通过。原 Webhook 读取、单店人工发送、翻译和文档解析保持；自动回复、自动营销和高风险写入关闭。精确摘要及备份哈希见[低敏证据](../../release/evidence/staging/crm-staging-direct-reception-workspace-20261023.json)。
+
+公网 staging Nginx 与内层 Nginx 仅对 `/v1/workspace/sessions/{uuid}/messages/media/upload` 放宽请求体至 105 MiB、上游读取超时至 720 秒；其他路由继续 10 MiB。公网配置保留既有 `/activate/`，通过 `nginx -t` 后重载；回滚须同时恢复旧 Nginx 配置与原前后端镜像。TikTok 上传全程复用 `TIKTOK_EGRESS_PROXY_URL` 固定出口，平台上传 URL 仅接受官方 `open-api.tiktokglobalshop.com/file/`。本地合成测试不等于真实媒体外发验收，staging 真实发送仍限既有目标白名单和人工二次确认；production 继续 G8 No-Go。
 
 2026-10-23 知识库全部知识分类口径修复已从合并主线 `c7f601fdf27655235449deb66e634a4e2ad27245` 部署 staging：前端 `sha256:b19abcf0…4d095`、后端 `sha256:bfc83821…948b3`，检索与解析器摘要不变。私有 `0600` PostgreSQL 备份且 `pg_restore -l` 可读，`ValidateOnly` 和 `Deploy` 均通过，迁移头 `030_merge_rag_reception`；公网 `/knowledge` 与 `/v1/health` 为 200。带认证 API 只读核对：原 11 个未分类文件保留，`categorized_only=true` 返回 0，与分类数 0 一致。原单店人工辅助模式、Webhook 读取和工作台翻译保持；无外发和 production 发布。精确摘要、备份哈希及门禁见[低敏证据](../../release/evidence/staging/crm-staging-knowledge-all-category-20261023.json)。
 
