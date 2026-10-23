@@ -21,6 +21,9 @@ def test_document_routes_expose_managed_contract() -> None:
     assert "/v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review" in paths
     assert "/v1/knowledge/files/{file_id}/versions/{version_number}/retry" in paths
     assert "/v1/knowledge/file-settings" in paths
+    for path in ("/v1/knowledge/entries", "/v1/knowledge/files"):
+        params = paths[path]["get"]["parameters"]
+        assert any(item["name"] == "categorized_only" and item["in"] == "query" for item in params)
     for path in (
         "/v1/knowledge/files/imports",
         "/v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review",

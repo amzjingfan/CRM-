@@ -132,10 +132,13 @@ async def entries(
     search: Annotated[str | None, Query(max_length=200)] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    categorized_only: bool = False,
 ) -> ApiResponse[KnowledgePage]:
     """分页查询 FAQ。"""
     return ApiResponse(
-        data=await get_entries(session, user, store_id, category_id, layer, entry_status, search, page, page_size)
+        data=await get_entries(
+            session, user, store_id, category_id, layer, entry_status, search, page, page_size, categorized_only
+        )
     )
 
 

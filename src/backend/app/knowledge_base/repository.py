@@ -59,6 +59,7 @@ async def list_documents(
     search: str | None,
     page: int,
     page_size: int,
+    categorized_only: bool = False,
 ) -> tuple[list[KnowledgeDocument], int]:
     """按更新时间和 UUID 稳定排序 FAQ。"""
     if not store_ids:
@@ -71,6 +72,14 @@ async def list_documents(
         conditions.append(KnowledgeDocument.store_id == store_id)
     if category_id:
         conditions.append(KnowledgeDocument.category_id == category_id)
+    if categorized_only:
+        visible_category_ids = select(KnowledgeCategory.id).where(
+            KnowledgeCategory.store_id.in_(store_ids),
+            KnowledgeCategory.status == "active",
+        )
+        if store_id:
+            visible_category_ids = visible_category_ids.where(KnowledgeCategory.store_id == store_id)
+        conditions.append(KnowledgeDocument.category_id.in_(visible_category_ids))
     if layer:
         # 层级筛选必须在数据库分页前完成，否则前端只能过滤当前页，条目总数和翻页都会失真。
         layer_category_ids = select(KnowledgeCategory.id).where(

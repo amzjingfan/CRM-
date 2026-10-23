@@ -148,12 +148,15 @@ async def get_entries(
     search: str | None,
     page: int,
     page_size: int,
+    categorized_only: bool = False,
 ) -> KnowledgePage:
     """返回店铺隔离 FAQ 分页。"""
     stores = await allowed_store_ids(session, user)
     if store_id and store_id not in stores:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
-    items, total = await list_documents(session, stores, store_id, category_id, layer, status, search, page, page_size)
+    items, total = await list_documents(
+        session, stores, store_id, category_id, layer, status, search, page, page_size, categorized_only
+    )
     return KnowledgePage(
         items=[KnowledgeEntryView.model_validate(item) for item in items],
         page=page,

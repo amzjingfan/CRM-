@@ -55,8 +55,11 @@ async def document_files(
     search: Annotated[str | None, Query(max_length=200)] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    categorized_only: bool = False,
 ) -> ApiResponse[DocumentFilePage]:
-    return ApiResponse(data=await list_document_files(session, user, store_id, category_id, search, page, page_size))
+    return ApiResponse(
+        data=await list_document_files(session, user, store_id, category_id, search, page, page_size, categorized_only)
+    )
 
 
 @router.get(

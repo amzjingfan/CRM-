@@ -9,6 +9,7 @@ const origin = new URL(baseUrl).origin;
 if (!["127.0.0.1", "localhost", "::1"].includes(new URL(baseUrl).hostname)) throw new Error("UI tests require a local server");
 
 const storeId = "00000000-0000-4000-8000-0000000000f1";
+const categoryId = "00000000-0000-4000-8000-0000000000c1";
 const fileId = "00000000-0000-4000-8000-0000000000f2";
 const versionId = "00000000-0000-4000-8000-0000000000f3";
 const timestamp = "2026-10-23T05:00:00Z";
@@ -26,7 +27,7 @@ async function open(status = "ready") {
   let savedConfig = { ...config };
   let currentStatus = status;
   const version = () => ({ id: versionId, version_number: 1, status: currentStatus, error_code: null, retry_count: 0, created_at: timestamp, completed_at: null, is_active: status === "ready", chunk_count: currentStatus === "review_required" ? 0 : 1 });
-  const file = () => ({ id: fileId, store_id: storeId, category_id: null, filename: "policy.txt", active_version_number: status === "ready" ? 1 : null, latest_version: version() });
+  const file = () => ({ id: fileId, store_id: storeId, category_id: categoryId, filename: "policy.txt", active_version_number: status === "ready" ? 1 : null, latest_version: version() });
   const detail = () => ({ ...version(), file_id: fileId, filename: "policy.txt", file_sha256: "a".repeat(64), config: savedConfig, parser_version: "native-text-v1", cleaning_version: "clean-v1", units: [{ unit_index: 0, unit_kind: "document_unit", source_locator: { source_unit: 0 }, raw_text: "原始政策文本", cleaned_text: "原始政策文本", issue_codes: currentStatus === "review_required" ? ["TEXT_CORRUPTED"] : [], needs_review: currentStatus === "review_required", parse_mode: "native_text", reviewed_by: null, reviewed_at: null }] });
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
@@ -40,7 +41,7 @@ async function open(status = "ready") {
     if (path.endsWith("/review") && method === "POST") currentStatus = "queued";
     const data = path === "/v1/auth/me" ? user
       : path === "/v1/settings/stores" ? [store]
-      : path === "/v1/knowledge/categories" ? []
+      : path === "/v1/knowledge/categories" ? [{ id: categoryId, store_id: storeId, parent_id: null, name: "商品与目录", code: "goods", layer: "C", sort_order: 0, status: "active" }]
       : path === "/v1/knowledge/entries" ? { items: [], page: 1, page_size: 20, total: 0 }
       : path === "/v1/knowledge/files" ? { items: [file()], page: Number(url.searchParams.get("page") ?? 1), page_size: 20, total: 1 }
       : path === "/v1/knowledge/file-settings" ? savedConfig
@@ -68,6 +69,7 @@ test("selected chunk settings reach document upload and same-name replacement is
     await settings.getByRole("button", { name: "保存并应用" }).click();
     await tab.getByRole("button", { name: "新增知识" }).click();
     await tab.getByLabel("选择知识文件").setInputFiles({ name: "policy.txt", mimeType: "text/plain", buffer: Buffer.from("新政策文本") });
+    await tab.getByRole("combobox", { name: "归属分类" }).selectOption(categoryId);
     await tab.getByRole("button", { name: "确认上传并解析" }).click();
     const replacement = tab.getByRole("dialog", { name: "替换同名文件" });
     await replacement.waitFor();
@@ -80,6 +82,22 @@ test("selected chunk settings reach document upload and same-name replacement is
     assert.match(upload.body, /"chunk_size":80/);
     assert.match(upload.body, /"overlap":8/);
     assert.match(upload.body, new RegExp(fileId));
+  } finally { await context.close(); }
+});
+
+test("new document needs a category before it can enter the import queue", async () => {
+  const { context, tab, writes } = await open();
+  try {
+    await tab.getByRole("button", { name: "新增知识" }).click();
+    await tab.getByLabel("选择知识文件").setInputFiles({ name: "new-policy.txt", mimeType: "text/plain", buffer: Buffer.from("新政策文本") });
+    await tab.getByRole("button", { name: "确认上传并解析" }).click();
+    await tab.getByRole("status").getByText("请先选择归属分类").waitFor();
+    assert.equal(writes.some((item) => item.path === "/v1/knowledge/files/imports"), false);
+    await tab.getByRole("combobox", { name: "归属分类" }).selectOption(categoryId);
+    await tab.getByRole("button", { name: "确认上传并解析" }).click();
+    await tab.getByText("文件 v2 已进入解析队列", { exact: false }).waitFor();
+    const upload = writes.find((item) => item.path === "/v1/knowledge/files/imports");
+    assert.match(upload.body, new RegExp(categoryId));
   } finally { await context.close(); }
 });
 

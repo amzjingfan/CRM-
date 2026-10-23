@@ -503,11 +503,18 @@ async def list_document_files(
     search: str | None,
     page: int,
     page_size: int,
+    categorized_only: bool = False,
 ) -> DocumentFilePage:
     await ensure_store_access(session, user, store_id)
     query = select(KnowledgeFile).where(KnowledgeFile.store_id == store_id, KnowledgeFile.deleted_at.is_(None))
     if category_id is not None:
         query = query.where(KnowledgeFile.category_id == category_id)
+    if categorized_only:
+        visible_categories = select(KnowledgeCategory.id).where(
+            KnowledgeCategory.store_id == store_id,
+            KnowledgeCategory.status == "active",
+        )
+        query = query.where(KnowledgeFile.category_id.in_(visible_categories))
     if search:
         query = query.where(KnowledgeFile.original_filename.ilike(f"%{search}%"))
     total = await session.scalar(select(func.count()).select_from(query.subquery())) or 0

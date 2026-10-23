@@ -164,6 +164,38 @@ test("knowledge creation controls stay disabled until a store is available", asy
   }
 });
 
+test("all knowledge excludes legacy unclassified FAQ and files before counting or paging", async () => {
+  const requests = [];
+  const legacyFaq = { id: "legacy-faq", store_id: store.id, category_id: null, question: "未分类 FAQ", answer: "历史内容", source: null, tags: [], status: "draft", vectorization_status: "pending", document_version: 1, publication_approval: "draft", updated_at: "2026-10-23T00:00:00Z" };
+  const legacyFile = { id: "legacy-file", store_id: store.id, category_id: null, filename: "legacy.pdf", latest_version: { version_number: 1, status: "ready", created_at: "2026-10-23T00:00:00Z", chunk_count: 1 } };
+  const { context, page } = await openPage("/knowledge", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+    "GET /v1/knowledge/categories": [],
+    "GET /v1/knowledge/vectorization/status": { store_id: store.id, counts: { pending: 0, processing: 0, ready: 0, failed: 0 } },
+  }, async (browserContext) => {
+    for (const path of ["entries", "files"]) {
+      await browserContext.route(`**/v1/knowledge/${path}*`, async (route) => {
+        const query = new URL(route.request().url()).searchParams;
+        requests.push({ path, categorizedOnly: query.get("categorized_only") });
+        const item = path === "entries" ? legacyFaq : legacyFile;
+        const visible = query.get("categorized_only") === "true" ? [] : [item];
+        await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" }, body: JSON.stringify({ code: 0, message: "ok", data: { items: visible, page: 1, page_size: 20, total: visible.length } }) });
+      });
+    }
+  });
+  try {
+    await page.getByRole("heading", { name: "全部知识" }).waitFor();
+    assert.match(await page.locator(".scope .total").innerText(), /^0 篇知识$/);
+    await page.getByText("当前条件下没有知识文档").waitFor({ timeout: 5000 });
+    assert.equal(await page.getByRole("button", { name: "下一页" }).isDisabled(), true);
+    assert.equal(requests.some((request) => request.path === "entries" && request.categorizedOnly === "true"), true);
+    assert.equal(requests.some((request) => request.path === "files" && request.categorizedOnly === "true"), true);
+  } finally {
+    await context.close();
+  }
+});
+
 test("knowledge prototype keeps navigation, parameter drawer, and detail interaction coherent", async () => {
   const category = {
     id: "00000000-0000-4000-8000-0000000000c1",
@@ -463,10 +495,11 @@ test("knowledge ignores a category URL that does not belong to the selected stor
 
 test("knowledge document upload uses the file API while FAQ CSV keeps the existing import API", async () => {
   const importJob = { id: "demo-job", status: "succeeded", total_rows: 1, succeeded_rows: 1, failed_rows: 0 };
+  const category = { id: "00000000-0000-4000-8000-0000000000c1", store_id: store.id, parent_id: null, name: "商品与目录", code: "goods", layer: "C", sort_order: 0, status: "active" };
   const { context, page } = await openPage("/knowledge", {
     "GET /v1/auth/me": { ...user, store_ids: [store.id] },
     "GET /v1/settings/stores": [store],
-    "GET /v1/knowledge/categories": [],
+    "GET /v1/knowledge/categories": [category],
     "GET /v1/knowledge/entries": { items: [], page: 1, page_size: 20, total: 0 },
     "GET /v1/knowledge/vectorization/status": {
       store_id: store.id, worker_enabled: true, provider: "local_bge", model: "BAAI/bge-m3", dimensions: 1024,
@@ -485,6 +518,7 @@ test("knowledge document upload uses the file API while FAQ CSV keeps the existi
   try {
     await page.getByRole("button", { name: "新增知识" }).click();
     await page.locator('input[type="file"]').setInputFiles({ name: "manual.pdf", mimeType: "application/pdf", buffer: Buffer.from("sample") });
+    await page.getByRole("combobox", { name: "归属分类" }).selectOption(category.id);
     await page.getByRole("button", { name: "确认上传并解析" }).click();
     await page.getByText(/文件 v1 已进入解析队列/).waitFor();
     assert.equal(documentRequests.length, 1);
@@ -886,10 +920,11 @@ test("late Agent log error cannot replace the newly selected Agent logs", async 
 });
 
 test("knowledge archive failure is visibly announced", async () => {
+  const category = { id: "00000000-0000-4000-8000-0000000000c1", store_id: store.id, parent_id: null, name: "商品与目录", code: "goods", layer: "C", sort_order: 0, status: "active" };
   const entry = {
     id: "00000000-0000-4000-8000-0000000000e1",
     store_id: store.id,
-    category_id: null,
+    category_id: category.id,
     question: "Shipping time?",
     answer: "Three days.",
     source: null,
@@ -911,7 +946,7 @@ test("knowledge archive failure is visibly announced", async () => {
   };
   const { context, page } = await openPage("/knowledge", {
     "GET /v1/auth/me": { ...user, store_ids: [store.id] },
-    "GET /v1/knowledge/categories": [],
+    "GET /v1/knowledge/categories": [category],
     "GET /v1/knowledge/entries": { items: [entry], page: 1, page_size: 20, total: 1 },
     "GET /v1/knowledge/vectorization/status": {
       store_id: store.id,
