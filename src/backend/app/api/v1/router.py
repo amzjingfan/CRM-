@@ -10,6 +10,7 @@ from app.integrations.oauth_router import router as oauth_router
 from app.integrations.router import router as integrations_router
 from app.knowledge_base.router import router as knowledge_router
 from app.marketing.router import router as marketing_router
+from app.reception.router import router as reception_router
 
 # 应用启动时集中注册全部 ORM 表，确保跨模块外键（例如 tool_calls → agent_runs）
 # 在任一模块首次 flush 前都能由 SQLAlchemy 正确解析。
@@ -32,5 +33,6 @@ router.include_router(integrations_router)
 router.include_router(oauth_router)
 router.include_router(knowledge_router)
 router.include_router(marketing_router)
+router.include_router(reception_router)
 router.include_router(workspace_router)
 router.include_router(sessions_alias_router)

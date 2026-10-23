@@ -17,6 +17,7 @@ import {
 } from "@phosphor-icons/react";
 import { currentUser, isAuthenticationError, logout, type UserView } from "../lib/api";
 import { LoadingState } from "./States";
+import "../app/marketing/reception/reception.css";
 
 const copy = {
   zh: { workspace: "客服工作台", dashboard: "数据看板", knowledge: "知识库", marketing: "智能营销", agents: "Agent 管理", settings: "系统配置", signOut: "退出", online: "系统运行正常" },
@@ -99,7 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <nav className="main-nav">{navItems.map((item) => {
         const Icon = item.icon;
         const active = current.href === item.href;
-        return <div className={"separated" in item && item.separated ? "nav-group-separated" : ""} key={item.href}><Link aria-current={active ? "page" : undefined} aria-label={text[item.key]} className={active ? "nav-link active" : "nav-link"} href={item.href}>{knowledgePrototype ? <KnowledgeNavIcon name={item.key} /> : <Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} />}<span>{text[item.key]}</span></Link></div>;
+        return <div className={"separated" in item && item.separated ? "nav-group-separated" : ""} key={item.href}><Link aria-current={pathname === item.href ? "page" : undefined} aria-label={text[item.key]} className={active ? "nav-link active" : "nav-link"} href={item.href}>{knowledgePrototype ? <KnowledgeNavIcon name={item.key} /> : <Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} />}<span>{text[item.key]}</span></Link>{item.key === "marketing" && active ? <div className="reception-side-subnav"><Link aria-current={pathname === "/marketing" ? "page" : undefined} href="/marketing">营销流程</Link><span>基础接待</span><Link aria-current={pathname === "/marketing/reception/quick-replies" ? "page" : undefined} href="/marketing/reception/quick-replies">快捷回复</Link><Link aria-current={pathname === "/marketing/reception/timeout" ? "page" : undefined} href="/marketing/reception/timeout">超时自动回复</Link><Link aria-current={pathname === "/marketing/reception/welcome" ? "page" : undefined} href="/marketing/reception/welcome">进店欢迎语</Link></div> : null}</div>;
       })}</nav>
       {knowledgePrototype ? <div className="knowledge-sidebar-note">知识库交互界面 · 按店铺隔离</div> : null}
       <div className="sidebar-footer">
@@ -107,6 +108,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-user"><span className="user-avatar" aria-hidden="true">{userInitial}</span><span className="sidebar-user-copy"><strong>{user.name}</strong><small>{user.role}</small></span><div className="sidebar-tools"><button aria-label={language === "en" ? "Switch theme" : "切换主题"} onClick={toggleTheme} title={theme === "light" ? "Dark" : "Light"} type="button"><Moon size={17} /></button><button aria-label={language === "en" ? "Switch language" : "切换语言"} onClick={toggleLanguage} title={language === "zh" ? "English" : "中文"} type="button"><Translate size={17} /></button><button aria-label={text.signOut} onClick={() => logout().finally(() => { window.location.href = "/login"; })} title={text.signOut} type="button"><SignOut size={17} /></button></div></div>
       </div>
     </aside>
-    <section className="app-main min-w-0 flex-1">{children}</section>
+    <section className="app-main min-w-0 flex-1">{current.key === "marketing" ? <nav aria-label="基础接待移动导航" className="reception-mobile-nav"><Link aria-current={pathname === "/marketing" ? "page" : undefined} href="/marketing">营销流程</Link><Link aria-current={pathname === "/marketing/reception/quick-replies" ? "page" : undefined} href="/marketing/reception/quick-replies">快捷回复</Link><Link aria-current={pathname === "/marketing/reception/timeout" ? "page" : undefined} href="/marketing/reception/timeout">超时自动回复</Link><Link aria-current={pathname === "/marketing/reception/welcome" ? "page" : undefined} href="/marketing/reception/welcome">进店欢迎语</Link></nav> : null}{children}</section>
   </div>;
 }

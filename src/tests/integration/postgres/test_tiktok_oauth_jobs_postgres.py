@@ -13,7 +13,7 @@ import app.integrations.oauth_service as oauth_service
 from app.audit.models import AuditLog
 from app.integrations.models import TikTokOAuthJob
 from app.shared.config.settings import Settings
-from app.shared.database.base import User
+from app.shared.database.base import Role, User, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount, Store
 
@@ -36,9 +36,6 @@ async def test_oauth_job_is_encrypted_deduplicated_and_completed(monkeypatch: py
     async def peek(_: str) -> dict[str, str]:
         return {"user_id": str(user_id), "store_id": str(store_id), "return_to": "/settings/channels"}
 
-    async def access(*_: object) -> None:
-        return None
-
     async def store(*_: object) -> SimpleNamespace:
         return SimpleNamespace(id=store_id)
 
@@ -51,7 +48,6 @@ async def test_oauth_job_is_encrypted_deduplicated_and_completed(monkeypatch: py
         return SimpleNamespace(status="connected")
 
     monkeypatch.setattr(oauth_service, "peek_tiktok_oauth_state", peek)
-    monkeypatch.setattr(oauth_service, "ensure_store_access", access)
     monkeypatch.setattr(oauth_service, "get_active_store", store)
     monkeypatch.setattr(oauth_service, "complete_tiktok_oauth", complete)
     monkeypatch.setattr(oauth_service, "validate_oauth_runtime", lambda _: None)
@@ -61,6 +57,10 @@ async def test_oauth_job_is_encrypted_deduplicated_and_completed(monkeypatch: py
                 User(id=user_id, email=f"oauth-{uuid.uuid4().hex}@example.invalid", password_hash="unused", name="Test")
             )
             session.add(Store(id=store_id, name="OAuth Test", code=f"oauth-job-{uuid.uuid4().hex}"))
+            admin_role_id = await session.scalar(select(Role.id).where(Role.code == "admin"))
+            assert admin_role_id is not None
+            await session.flush()
+            await session.execute(user_roles.insert().values(user_id=user_id, role_id=admin_role_id, store_id=store_id))
             await session.commit()
 
             first = await oauth_service.queue_tiktok_oauth(
@@ -103,14 +103,10 @@ async def test_oauth_job_lock_fences_parallel_worker_and_crash_rolls_back_channe
     async def peek(_: str) -> dict[str, str]:
         return {"user_id": str(user_id), "store_id": str(store_id), "return_to": "/settings/channels"}
 
-    async def access(*_: object) -> None:
-        return None
-
     async def store(*_: object) -> SimpleNamespace:
         return SimpleNamespace(id=store_id)
 
     monkeypatch.setattr(oauth_service, "peek_tiktok_oauth_state", peek)
-    monkeypatch.setattr(oauth_service, "ensure_store_access", access)
     monkeypatch.setattr(oauth_service, "get_active_store", store)
     monkeypatch.setattr(oauth_service, "validate_oauth_runtime", lambda _: None)
     entered = asyncio.Event()
@@ -142,6 +138,10 @@ async def test_oauth_job_lock_fences_parallel_worker_and_crash_rolls_back_channe
                 User(id=user_id, email=f"oauth-{uuid.uuid4().hex}@example.invalid", password_hash="unused", name="Test")
             )
             setup.add(Store(id=store_id, name="OAuth Test", code=f"oauth-lock-{uuid.uuid4().hex}"))
+            admin_role_id = await setup.scalar(select(Role.id).where(Role.code == "admin"))
+            assert admin_role_id is not None
+            await setup.flush()
+            await setup.execute(user_roles.insert().values(user_id=user_id, role_id=admin_role_id, store_id=store_id))
             await setup.commit()
             job = await oauth_service.queue_tiktok_oauth(setup, state, "code", settings)
 
@@ -186,9 +186,6 @@ async def test_failed_oauth_keeps_claim_lock_until_single_audit_commit(monkeypat
     async def peek(_: str) -> dict[str, str]:
         return {"user_id": str(user_id), "store_id": str(store_id), "return_to": "/settings/channels"}
 
-    async def access(*_: object) -> None:
-        return None
-
     async def store(*_: object) -> SimpleNamespace:
         return SimpleNamespace(id=store_id)
 
@@ -196,7 +193,6 @@ async def test_failed_oauth_keeps_claim_lock_until_single_audit_commit(monkeypat
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "synthetic platform failure", 502)
 
     monkeypatch.setattr(oauth_service, "peek_tiktok_oauth_state", peek)
-    monkeypatch.setattr(oauth_service, "ensure_store_access", access)
     monkeypatch.setattr(oauth_service, "get_active_store", store)
     monkeypatch.setattr(oauth_service, "validate_oauth_runtime", lambda _: None)
     monkeypatch.setattr(oauth_service, "complete_tiktok_oauth", fail)
@@ -218,6 +214,10 @@ async def test_failed_oauth_keeps_claim_lock_until_single_audit_commit(monkeypat
                 User(id=user_id, email=f"oauth-{uuid.uuid4().hex}@example.invalid", password_hash="unused", name="Test")
             )
             setup.add(Store(id=store_id, name="OAuth Test", code=f"oauth-fail-{uuid.uuid4().hex}"))
+            admin_role_id = await setup.scalar(select(Role.id).where(Role.code == "admin"))
+            assert admin_role_id is not None
+            await setup.flush()
+            await setup.execute(user_roles.insert().values(user_id=user_id, role_id=admin_role_id, store_id=store_id))
             await setup.commit()
             job = await oauth_service.queue_tiktok_oauth(setup, "failed-state-with-enough-length", "code", settings)
 

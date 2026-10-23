@@ -10,6 +10,13 @@ from app.integrations.models import TikTokOAuthJob, WebhookEvent
 from app.knowledge_base.models import KnowledgeCategory, KnowledgeChunk, KnowledgeDocument, KnowledgeImportJob
 from app.marketing.models import CustomerReview, MarketingCampaign, MarketingEvent
 from app.orders.models import Order, OrderItem
+from app.reception.models import (
+    ReceptionGroup,
+    ReceptionMutation,
+    ReceptionPolicy,
+    ReceptionPolicyStore,
+    ReceptionReply,
+)
 from app.shared.database.base import Permission, Role, User
 from app.stores.models import ChannelAccount, Store
 from app.tools.models import CouponIssuance, ToolCall
@@ -37,6 +44,11 @@ __all__ = [
     "Order",
     "OrderItem",
     "Permission",
+    "ReceptionGroup",
+    "ReceptionMutation",
+    "ReceptionPolicy",
+    "ReceptionPolicyStore",
+    "ReceptionReply",
     "Role",
     "Store",
     "ToolCall",

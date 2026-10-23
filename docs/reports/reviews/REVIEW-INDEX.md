@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-MARKETING-BASIC-RECEPTION-001-20261023-R01 | MVP-MARKETING-BASIC-RECEPTION-001 | R01 | APPROVE | `439c50c926240e34e85d543629dab9cd03bdaea4` | authorization, store-isolation, csrf, idempotency, audit, migration, no-auto-send, manual-send | 2026-10-23T03:16:13Z | [`RR-MVP-MARKETING-BASIC-RECEPTION-001-20261023-R01.md`](RR-MVP-MARKETING-BASIC-RECEPTION-001-20261023-R01.md) |
 | RR-MVP-SETTINGS-TIKTOK-STORES-001-20261022-R01 | MVP-SETTINGS-TIKTOK-STORES-001 | R01 | APPROVE | `76767ed78682614e78ef66fedcd1284a43f2256f` | oauth-state / tenant-isolation / credential-revocation / webhook / migration / staging-boundary | 2026-10-22T10:20:07Z | [`RR-MVP-SETTINGS-TIKTOK-STORES-001-20261022-R01.md`](RR-MVP-SETTINGS-TIKTOK-STORES-001-20261022-R01.md) |
 | RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R03 | MVP-SETTINGS-TEAM-ACCOUNTS-002 | R03 | APPROVE | `6bf4177d4f3768eb4e238c4545e19a50691ef44b` | read-contract / role-assignment / store-scope / staging-boundary / rollback | 2026-10-22T09:14:07Z | [`RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R03.md`](RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R03.md) |
 | RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R02 | MVP-SETTINGS-TEAM-ACCOUNTS-002 | R02 | APPROVE | `257eafd3c0bcfe0c7ada3dae6433abaea9bc5482` | staging-boundary, authentication, migration, backup, runtime-mode, rollback | 2026-10-22T07:20:08Z | [`RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R02.md`](RR-MVP-SETTINGS-TEAM-ACCOUNTS-002-20261022-R02.md) |

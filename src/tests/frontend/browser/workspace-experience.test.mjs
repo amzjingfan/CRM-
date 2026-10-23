@@ -10,6 +10,11 @@ const firstId = "00000000-0000-4000-8000-000000000101";
 const secondId = "00000000-0000-4000-8000-000000000102";
 const storeId = "00000000-0000-4000-8000-000000000201";
 const assigneeId = "00000000-0000-4000-8000-000000000301";
+const quickReply = { id: "reply-1", store_id: storeId, scope: "personal", owner_user_id: assigneeId, group_id: "group-1", shortcut: "1", tags: ["售后"], site_code: "US", messages: ["Hello,", "your replacement is on its way."], sort_order: 0 };
+const teamReplies = [
+  { ...quickReply, id: "team-reply-1", scope: "team", owner_user_id: null, shortcut: "team", messages: ["Team tracking response"] },
+  { ...quickReply, id: "team-reply-2", scope: "team", owner_user_id: null, shortcut: "1", messages: ["Team collision response"] },
+];
 let browser;
 
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
@@ -37,6 +42,16 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     }
     let data;
     if (path === "/v1/auth/me") data = { id: assigneeId, name: "Agent", email: "agent@example.invalid", role: "agent", avatar: null, permissions: ["workspace.view", "workspace.reply", "workspace.transfer"], store_ids: [storeId] };
+    else if (path === "/v1/marketing/reception/groups") data = { items: [{ id: "group-1", store_id: storeId, scope: "personal", owner_user_id: assigneeId, name: "售后", sort_order: 0 }], total: 1, page: 1, page_size: 100 };
+    else if (path === "/v1/marketing/reception/replies") {
+      const query = url.searchParams.get("q")?.toLowerCase();
+      const shortcut = url.searchParams.get("shortcut")?.toLowerCase();
+      const pageNumber = Number(url.searchParams.get("page") ?? 1);
+      const pageSize = Number(url.searchParams.get("page_size") ?? 100);
+      const items = (url.searchParams.get("scope") === "personal" ? [quickReply] : teamReplies).filter((reply) =>
+        (!shortcut || reply.shortcut === shortcut) && (!query || [reply.shortcut, ...reply.tags, ...reply.messages].some((value) => value.toLowerCase().includes(query))));
+      data = { items: items.slice((pageNumber - 1) * pageSize, pageNumber * pageSize), total: items.length, page: pageNumber, page_size: pageSize };
+    }
     else if (path === "/v1/settings/stores") data = [{ id: storeId, name: "TKW FITNESS", code: "tkw", status: "active", timezone: "America/Los_Angeles", currency: "USD", created_at: "2026-10-01T00:00:00Z" }];
     else if ((path === "/v1/workspace/sessions" && method === "GET") || (path === "/v1/workspace/sessions/search" && method === "POST")) {
       const payload = method === "POST" ? JSON.parse(request.postData()) : null;
@@ -127,6 +142,137 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   await page.getByRole("heading", { name: "Alice" }).first().waitFor();
   return { context, page, messages, records, calls };
 }
+
+test("quick reply stays in the draft or existing manual review until confirmation", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await page.getByRole("button", { name: "快捷回复", exact: true }).click();
+    await page.getByText("your replacement is on its way.").waitFor();
+    await page.getByRole("button", { name: "编辑后发送" }).click();
+    assert.equal(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), "Hello,\nyour replacement is on its way.");
+    assert.equal(calls.send, 0);
+    await page.getByRole("button", { name: "快捷回复", exact: true }).click();
+    await page.getByRole("button", { name: "发送", exact: true }).click();
+    await page.getByRole("dialog", { name: "审阅外发消息" }).waitFor();
+    assert.equal(calls.send, 0);
+    await page.getByRole("button", { name: "返回修改" }).click();
+    await page.getByRole("button", { name: "图片" }).click();
+    await page.getByText("图片发送暂不可用").waitFor();
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("slash shortcut fills only the selected conversation draft", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    const composer = page.getByRole("textbox", { name: "回复内容" });
+    await composer.fill("/1");
+    await page.getByRole("dialog", { name: "快捷回复" }).waitFor();
+    await composer.press("Enter");
+    await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value === "Hello,\nyour replacement is on its way.");
+    assert.equal(await composer.inputValue(), "Hello,\nyour replacement is on its way.");
+    await page.getByRole("button", { name: /Bob/ }).click();
+    assert.equal(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), "");
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("slash shortcut resolves team replies and prefers personal on a collision", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    const composer = page.getByRole("textbox", { name: "回复内容" });
+    await composer.fill("/team");
+    await page.getByRole("dialog", { name: "快捷回复" }).waitFor();
+    await composer.press("Enter");
+    await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value === "Team tracking response");
+    await composer.fill("/1");
+    await composer.press("Enter");
+    await page.waitForFunction(() => document.querySelector('textarea[aria-label="回复内容"]')?.value === "Hello,\nyour replacement is on its way.");
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("a delayed shortcut lookup cannot fill the next conversation draft", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  let releaseLookup;
+  let lookupStarted;
+  let lookupDelivered;
+  const gate = new Promise((resolve) => { releaseLookup = resolve; });
+  const started = new Promise((resolve) => { lookupStarted = resolve; });
+  const delivered = new Promise((resolve) => { lookupDelivered = resolve; });
+  await page.route("**/v1/marketing/reception/replies?*", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("shortcut") === "team" && url.searchParams.get("scope") === "personal") {
+      lookupStarted();
+      await gate;
+      await route.fallback();
+    } else {
+      await route.fallback();
+      if (url.searchParams.get("shortcut") === "team" && url.searchParams.get("scope") === "team") lookupDelivered();
+    }
+  });
+  try {
+    const composer = page.getByRole("textbox", { name: "回复内容" });
+    await composer.fill("/team");
+    await composer.press("Enter");
+    await started;
+    await page.getByRole("button", { name: /Bob/ }).click();
+    await page.getByRole("heading", { name: "Bob" }).first().waitFor();
+    releaseLookup();
+    await delivered;
+    await page.waitForTimeout(50);
+    assert.equal(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), "");
+    assert.equal(calls.send, 0);
+  } finally { releaseLookup?.(); await context.close(); }
+});
+
+test("an unknown slash draft still opens manual send review", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    const composer = page.getByRole("textbox", { name: "回复内容" });
+    await composer.fill("/unknown");
+    await page.getByRole("dialog", { name: "快捷回复" }).waitFor();
+    await composer.press("Enter");
+    const review = page.getByRole("dialog", { name: "审阅外发消息" });
+    await review.waitFor();
+    await review.getByText("/unknown", { exact: true }).waitFor();
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("late quick reply pages cannot leak into a newly selected scope", async () => {
+  const { context, page } = await openWorkspace(2);
+  let releasePageTwo;
+  let pageTwoStarted;
+  let pageTwoDelivered;
+  const delayedPage = new Promise((resolve) => { releasePageTwo = resolve; });
+  const started = new Promise((resolve) => { pageTwoStarted = resolve; });
+  const delivered = new Promise((resolve) => { pageTwoDelivered = resolve; });
+  const personal = Array.from({ length: 101 }, (_, index) => ({ ...quickReply, id: `personal-${index}`, shortcut: `p${index}`, messages: [`Personal reply ${index}`] }));
+  const team = { ...quickReply, id: "team-only", scope: "team", owner_user_id: null, messages: ["Team only"] };
+  await context.route("**/v1/marketing/reception/replies?*", async (route) => {
+    const url = new URL(route.request().url());
+    const scope = url.searchParams.get("scope");
+    const pageNumber = Number(url.searchParams.get("page"));
+    if (scope === "personal" && pageNumber === 2) { pageTwoStarted(); await delayedPage; }
+    const items = scope === "personal" ? personal.slice((pageNumber - 1) * 100, pageNumber * 100) : [team];
+    await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" }, body: JSON.stringify({ code: 0, message: "ok", data: { items, total: scope === "personal" ? personal.length : 1, page: pageNumber, page_size: 100 } }) });
+    if (scope === "personal" && pageNumber === 2) pageTwoDelivered();
+  });
+  try {
+    await page.getByRole("button", { name: "快捷回复", exact: true }).click();
+    const picker = page.getByRole("dialog", { name: "快捷回复" });
+    await picker.getByRole("button", { name: "加载更多" }).click();
+    await started;
+    await picker.getByRole("tab", { name: "团队" }).click();
+    await picker.getByText("Team only").waitFor();
+    releasePageTwo();
+    await delivered;
+    await page.waitForTimeout(200);
+    assert.equal(await picker.locator(".quick-reply-item").count(), 1);
+    assert.equal(await picker.getByText("Personal reply 100").count(), 0);
+  } finally { releasePageTwo(); await context.close(); }
+});
 
 test("conversation opens at newest message and offers a return button while reading history", async () => {
   const { context, page, messages, records } = await openWorkspace();

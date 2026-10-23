@@ -1,15 +1,18 @@
 "use client";
 
 import { KeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, CaretDown, CaretRight, MagnifyingGlass, Star, UserFocus, UserSwitch, X } from "@phosphor-icons/react";
+import { ArrowDown, ArrowLeft, ArrowRight, CaretDown, CaretRight, Heart, ImageSquare, MagnifyingGlass, NotePencil, Smiley, Star, UserFocus, UserSwitch, Video, X } from "@phosphor-icons/react";
 import { AppShell } from "../../components/AppShell";
 import { CustomerSidebar } from "../../components/CustomerSidebar";
 import { MessageBubble } from "../../components/MessageBubble";
+import { QuickReplyPicker } from "../../components/QuickReplyPicker";
+import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, setSessionClosed, setSessionStar, streamChatQuery, transferSession, translateDraft, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type StoreView, type Suggestion } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
+import "./quick-reply.css";
 
 type Filter = "all" | "unread" | "mine" | "starred" | "closed";
 type SearchScope = "all" | "buyer" | "order" | "tracking" | "product";
@@ -92,6 +95,11 @@ export default function WorkspacePage() {
   const previewRequestId = useRef(0);
   const [review, setReview] = useState<{ sessionId: string; source: string; language: ReplyLanguage; content: string; key: string } | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [quickReplyOpen, setQuickReplyOpen] = useState(false);
+  const [quickReplyFavoritesOnly, setQuickReplyFavoritesOnly] = useState(false);
+  const [quickReplyQuery, setQuickReplyQuery] = useState("");
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [composerNotice, setComposerNotice] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [suggestionDraft, setSuggestionDraft] = useState("");
   const [suggestionStatus, setSuggestionStatus] = useState("");
@@ -113,6 +121,8 @@ export default function WorkspacePage() {
   const [closeError, setCloseError] = useState("");
   const closeDialogRef = useRef<HTMLDialogElement | null>(null);
 
+  useEffect(() => { setQuickReplyOpen(false); setEmojiOpen(false); setComposerNotice(""); }, [selectedId]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setSelectedId(params.get("session")); setPlatform(params.get("platform") ?? ""); setStoreId(params.get("store_id") ?? "");
@@ -126,7 +136,8 @@ export default function WorkspacePage() {
   }, [searchInput]);
   useEffect(() => {
     previewRequestId.current += 1;
-    setPreview(null); setPreviewError(""); setPreviewLoading(false); setReview(null);
+    setPreview(null); setPreviewError(""); setPreviewLoading(false);
+    setReview((current) => current?.sessionId === selectedId && current.source === draft && (current.language === "original" || current.language === replyLanguage) ? current : null);
   }, [draft, replyLanguage, selectedId]);
   useEffect(() => {
     const dialog = closeDialogRef.current;
@@ -419,7 +430,41 @@ export default function WorkspacePage() {
     finally { setLoadingOlder(false); }
   }
   function composerKey(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void openReview(activeSendChoice); }
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    const shortcut = /^\/([a-z0-9]{1,8})$/i.exec(draft)?.[1];
+    if (!shortcut || !selectedId || !detail) { void openReview(activeSendChoice); return; }
+    const source = draft;
+    const sessionId = selectedId;
+    const storeId = detail.session.store_id;
+    void resolveQuickReplyShortcut(storeId, shortcut).then((reply) => {
+      if (currentComposeRef.current.sessionId !== sessionId || currentComposeRef.current.draft !== source) return;
+      const text = reply?.messages.filter((message) => message.trim()).join("\n") ?? "";
+      if (text.trim() && text.length <= messageLimit) applyQuickReply(text, false);
+      else void openReview(activeSendChoice);
+    }).catch(() => {
+      if (currentComposeRef.current.sessionId === sessionId && currentComposeRef.current.draft === source) {
+        setComposerNotice(en ? "Could not look up the shortcut. Try again." : "快捷键查询失败，请重试。");
+      }
+    });
+  }
+
+  function updateComposerDraft(value: string) {
+    setDraft(value);
+    if (/^\/[a-z0-9]{0,8}$/i.test(value)) {
+      setQuickReplyQuery(value.slice(1));
+      setQuickReplyFavoritesOnly(false);
+      setQuickReplyOpen(true);
+    }
+  }
+
+  function applyQuickReply(text: string, reviewNow: boolean) {
+    if (!selectedId || !detail || detail.send_mode === "disabled" || text.length > messageLimit || !text.trim()) return;
+    setDraft(text);
+    setQuickReplyOpen(false);
+    setComposerNotice("");
+    if (reviewNow) setReview({ sessionId: selectedId, source: text, language: "original", content: text.trim(), key: newKey() });
+    else setAnnouncement(en ? "Quick reply inserted. Review before sending." : "快捷回复已填入草稿，请核对后发送。");
   }
 
   async function requestSuggestion() {
@@ -541,7 +586,18 @@ export default function WorkspacePage() {
       <div className="message-area"><div className="message-scroll" onScroll={onMessageScroll} ref={messageScrollRef}>{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>{showLatest ? <button className="latest-button" onClick={scrollToLatest} type="button"><ArrowDown size={16} />{en ? "Latest message" : "到最新消息"}</button> : null}</div>
       <section className="ai-suggestion" aria-label={en ? "AI suggestion" : "AI 建议"}><div className="min-w-0 flex-1"><strong>{en ? "AI reply suggestion" : "AI 回复建议"}</strong><p aria-live="polite" className="truncate">{suggestionStatus || (suggestionDraft ? (en ? "Suggestion is ready in the draft" : "建议已填入草稿，可编辑后发送") : (en ? "Generate a draft on demand" : "按需生成草稿"))}</p></div><div className="flex gap-2">{suggestionLoading ? <button className="text-button" type="button" onClick={cancelSuggestion}><X size={16} />{en ? "Cancel" : "取消"}</button> : <button className="text-button" type="button" onClick={() => void requestSuggestion()}>{suggestionDraft ? (en ? "Refresh" : "刷新") : (en ? "Generate" : "生成")}</button>}{suggestionDraft && draft !== suggestionDraft ? <button className="secondary-button" type="button" onClick={() => { setDraft(suggestionDraft); setAnnouncement(en ? "Suggestion inserted; review it before sending" : "建议已填入输入框，确认后再发送"); }}>{en ? "Use" : "使用"}</button> : null}</div></section>
       <div className="composer">
-        {cardDraft ? <div className="workspace-card-draft"><TrackingCard card={cardDraft.card} en={en} enhancedAvailable={cardDraft.enhancedAvailable} packages={cardDraft.packages} selected={cardDraft.selected} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} /><button className="text-button" onClick={() => { setCardDrafts((current) => ({ ...current, [detail.session.id]: undefined })); setCardReview(null); }} type="button">{en ? "Remove card" : "移除卡片"}</button></div> : <textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} maxLength={messageLimit} onChange={(event) => setDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a message, Enter to review, Shift+Enter for a new line" : "请输入消息，Enter 进入发送审阅 / Shift+Enter 换行")} value={draft} />}
+        <div className="workspace-composer-tools">
+          <button aria-expanded={emojiOpen} aria-label={en ? "Emoji" : "表情"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setEmojiOpen(!emojiOpen); setQuickReplyOpen(false); }} title={en ? "Emoji" : "表情"} type="button"><Smiley size={19} /></button>
+          <button aria-label={en ? "Image" : "图片"} onClick={() => setComposerNotice(en ? "Image sending is not available yet" : "图片发送暂不可用")} title={en ? "Image sending is not available" : "图片发送暂不可用"} type="button"><ImageSquare size={19} /></button>
+          <button aria-label={en ? "Video" : "视频"} onClick={() => setComposerNotice(en ? "Video sending is not available yet" : "视频发送暂不可用")} title={en ? "Video sending is not available" : "视频发送暂不可用"} type="button"><Video size={19} /></button>
+          <button aria-label={en ? "Favorite replies" : "收藏的快捷回复"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setQuickReplyFavoritesOnly(true); setQuickReplyQuery(""); setQuickReplyOpen(true); setEmojiOpen(false); }} title={en ? "Favorite replies" : "收藏的快捷回复"} type="button"><Heart size={19} /></button>
+          <span className="workspace-composer-tool-spacer" />
+          <button aria-expanded={quickReplyOpen} aria-label={en ? "Quick replies" : "快捷回复"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setQuickReplyFavoritesOnly(false); setQuickReplyQuery(""); setQuickReplyOpen(!quickReplyOpen); setEmojiOpen(false); }} title={en ? "Quick replies" : "快捷回复"} type="button"><NotePencil size={19} /></button>
+        </div>
+        {emojiOpen ? <div aria-label={en ? "Choose emoji" : "选择表情"} className="workspace-emoji-picker" role="menu">{["😊", "👍", "❤️", "🙏", "🎉"].map((emoji) => <button aria-label={emoji} key={emoji} onClick={() => { setDraft(`${draft}${emoji}`); setEmojiOpen(false); }} role="menuitem" type="button">{emoji}</button>)}</div> : null}
+        {composerNotice ? <p className="workspace-composer-notice" role="status">{composerNotice}</p> : null}
+        {quickReplyOpen ? <QuickReplyPicker en={en} favoritesOnly={quickReplyFavoritesOnly} initialQuery={quickReplyQuery} onClose={() => setQuickReplyOpen(false)} onDraft={(text) => applyQuickReply(text, false)} onReview={(text) => applyQuickReply(text, true)} storeId={detail.session.store_id} /> : null}
+        {cardDraft ? <div className="workspace-card-draft"><TrackingCard card={cardDraft.card} en={en} enhancedAvailable={cardDraft.enhancedAvailable} packages={cardDraft.packages} selected={cardDraft.selected} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} /><button className="text-button" onClick={() => { setCardDrafts((current) => ({ ...current, [detail.session.id]: undefined })); setCardReview(null); }} type="button">{en ? "Remove card" : "移除卡片"}</button></div> : <textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} maxLength={messageLimit} onChange={(event) => updateComposerDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a message, Enter to review, Shift+Enter for a new line" : "请输入消息，Enter 进入发送审阅 / Shift+Enter 换行")} value={draft} />}
         {previewError ? <p className="workspace-translation-error" role="alert">{previewError}</p> : null}
         {preview && preview.sessionId === selectedId && preview.source === draft && preview.language === replyLanguage ? <div className="workspace-translation-preview" aria-label={en ? "Translation preview" : "译文预览"}><strong>{en ? "Translation preview · review before sending" : "译文预览 · 发送前请核对"}</strong><p>{preview.content}</p><small>{en ? "Original draft" : "原始草稿"}：{draft}</small></div> : null}
         {failedDraft?.sessionId === selectedId ? <button className="text-button text-red-600" onClick={() => setReview({ sessionId: failedDraft.sessionId, source: failedDraft.content, language: "original", content: failedDraft.content, key: failedDraft.key })} type="button">{en ? "Request interrupted; review exact retry" : "请求中断，审阅原内容后重试"}</button> : null}

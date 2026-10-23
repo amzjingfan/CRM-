@@ -2,6 +2,8 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
+2026-10-23 基础接待源码 [TR R01](../reports/tests/TR-MVP-MARKETING-BASIC-RECEPTION-001-20261023-R01.md) 为 `PARTIAL`：subject `439c50c` 的隔离 PostgreSQL 全量 2294 passed/3 skipped、前端契约 48/48、生产浏览器 81/81、Ruff/format/mypy/lint/typecheck/build 与迁移 028 升降级通过；lint 0 error/5 条既有 warning。三项基础接待导航、快捷回复人工审阅与策略仅存配置由合成浏览器和后端隔离测试覆盖。尚未合并后直接部署 staging，真实登录态与现场迁移/健康门禁未验；不自动向 TikTok 买家发送，production No-Go。
+
 2026-10-23 知识库侧栏和删除确认弹窗 [TR R02](../reports/tests/TR-MVP-KNOWLEDGE-SIDEBAR-DIALOG-001-20261023-R02.md) 为限定范围 `PASS`：subject `f7950619` 本地生产构建、48/48 合同、66 passed/1 skipped 浏览器，lint 0 error/5 既有 warning；staging 六角色预取、私有备份、ValidateOnly、精确摘要 Deploy、11 容器及四公网健康通过。已部署页面合成浏览器确认整块层级侧栏消失、站内删除弹窗与取消零 DELETE；10 个指纹资源 200 immutable。真实登录态和真实删除未测，Agent/后端/检索不变；Actions 零步骤失败不计 CI，production No-Go。详见[低敏部署证据](../../release/evidence/staging/crm-staging-knowledge-sidebar-dialog-20261023.json)。
 
 2026-10-23 知识库分类 UI staging 部署 [TR R01](../reports/tests/TR-MVP-KNOWLEDGE-CATEGORY-DELETE-DEPLOY-001-20261023-R01.md) 为限定范围 `PASS`：主线 `2ccc93b2` 前端契约 48/48、typecheck、Docker 生产构建通过，lint 0 error/5 既有 warning；现场六镜像角色预取、`ValidateOnly`、私有可读备份及 `Deploy` 通过，运行精确摘要、11 容器、迁移头与四公网入口均核对。已部署页面的新增自定义分类及确认删除 2/2 合成浏览器通过，所有 `/v1/` 请求被本地代理阻断并在浏览器内模拟，未修改真实分类；真实授权店铺页面尚未直接验收。镜像发布工作流 `39881715896` 与证据 PR 的 CI `39884114716`、`39884553653` 均零步骤失败，不计 CI 通过；production No-Go。
