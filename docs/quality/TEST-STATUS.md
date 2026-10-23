@@ -2,6 +2,8 @@
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
 
+2026-10-23 知识库“全部知识”分类一致性 [TR R01](../reports/tests/TR-MVP-KNOWLEDGE-ALL-CONSISTENCY-001-20261023-R01.md) 为限定范围 `PASS`：subject `662da11e` 后端完整 2380 passed/3 skipped、前端契约 48/48、生产浏览器 87/87，Ruff/format/mypy/typecheck/build 通过，lint 0 error/5 既有 warning。源码经 PR #546 合并后，staging 手动门禁、精确镜像摘要、公网知识库和 API 健康 200；真实认证 API 确认 11 个未分类旧文件在默认列表保留，在新分类筛选下 total 0，与有效分类 0 一致。GitHub Actions 零步骤失败不计 CI；真实登录页面未直接点击，production G8 No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-knowledge-all-category-20261023.json)。
+
 2026-10-23 通用 RAG 文档入口 subject `5ae37c54` 已在隔离 PostgreSQL 与 staging 合成店铺完成全流程：后端 2379 passed/3 skipped，前端契约 48/48、Next.js 16.4.2 生产浏览器 85/85、Ruff/format、类型检查与构建通过；lint 0 error/5 条既有 warning，生产依赖审计 0 漏洞。staging 精确摘要部署、唯一迁移头 `030_merge_rag_reception`、12 容器、五个公网入口及真实 API/Worker/MinerU/BGE-M3/pgvector 流程通过。原生 PDF 与 Office 就绪，图片和混合页整版本待复核且零新向量，人工修订后整版入库，同名显式替换保留旧版本。长 PDF 选用固定 Token 32/4 后实得 19 块、最大 32 Token。详细命令、前端浏览器与构建、限制见 [本任务 TR](../reports/tests/TR-MVP-RAG-DOCUMENT-INGEST-001-20261023-R01.md) 和[低敏现场证据](../../release/evidence/staging/crm-staging-rag-document-ingestion-20261023.json)。通用文档检索/Rerank 与 production 不在本次放行范围。
 2026-10-23 基础接待交互跟进 [TR R01](../reports/tests/TR-MVP-MARKETING-BASIC-RECEPTION-UI-002-20261023-R01.md) 为源码候选 `PARTIAL`：subject `c7843608` 的隔离 PostgreSQL 迁移 029 升/降/升、后端 2294 passed/3 skipped、前端契约 48/48、生产浏览器 83/83、Ruff/format/mypy/typecheck/build 通过；lint 0 error/5 条既有 warning。停用分组在默认回复查询中不可选，管理查询仍可查看编辑。尚未合并或部署 staging，真实店铺页面未写入，未向买家发送消息；production No-Go。
 

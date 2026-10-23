@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "evidence_type": "knowledge_all_category_consistency_staging",
+  "environment": "staging",
+  "task_id": "MVP-KNOWLEDGE-ALL-CONSISTENCY-001",
+  "subject_sha": "662da11e4bad0785c7b1338bc7de0c8f22dd47d5",
+  "merged_main_sha": "c7f601fdf27655235449deb66e634a4e2ad27245",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/546",
+  "source_and_merge_trees_equal": true,
+  "reviewed_source_bundle_sha256": "56ab059f59d7392415ad531672bcf64254a03b37a727b0d2d7a0dd0032107fd4",
+  "frontend_image_tar_sha256": "18f7558285318b9812c5c71005d1a9c41793fc8748a0564312648710ae3ebea5",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:bfc83821aa6b30563cc5e9e10d9630cd051c0423e0cc48be7356f42e856948b3",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:b19abcf09d5f4908bfb687a3dcabd80732df3ab24ea7f606643fd620c8f4d095",
+    "retrieval_model_service_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2"
+  },
+  "previous_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:07b2b4554b3d2ae3adebfec9ea89bf742d1c6b0123c3e81d52265e1ac0ded662",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:c33392d6011e909063f43938d3932f7c9c26c467d8af7040bf3c578afa44af52"
+  },
+  "private_postgresql_backup": {
+    "mode": "0600",
+    "size_bytes": 672127,
+    "pg_restore_list_readable": true,
+    "sha256": "a8682540d474daccce88139a8970cf957c4c7d4ada57a3dfb871f9834764ebaa"
+  },
+  "manual_gates": {
+    "validate": "validated",
+    "validate_generated_at_utc": "2026-10-23T09:28:20.3239740Z",
+    "validate_private_evidence_sha256": "6993aad2a52a9cb5fb2c03e1560b5141b2bffeafc0614580c7b89c59a5ebb982",
+    "deploy": "passed",
+    "deploy_generated_at_utc": "2026-10-23T09:30:48.4864921Z",
+    "deploy_private_evidence_sha256": "838882ce147ae51c8870a93c02dac99ff9e57fe59d422df59ad6bb14d100c64d",
+    "database_migration": "heads_applied",
+    "runtime_mode_verified": true
+  },
+  "postdeploy": {
+    "crm_container_count": 12,
+    "database_migration_head": "030_merge_rag_reception",
+    "backend_and_frontend_running_digests_match": true,
+    "retrieval_and_parser_digests_unchanged": true,
+    "backend_frontend_retrieval_health": "healthy",
+    "document_parser_state": "running",
+    "public_knowledge_http": 200,
+    "public_api_health_http": 200,
+    "tiktok_fixed_egress_verified": true,
+    "tiktok_webhook_read_enabled": true,
+    "tiktok_manual_send_store_count": 1,
+    "workspace_translation_enabled": true,
+    "database_files_total": 11,
+    "database_files_without_category": 11,
+    "database_files_with_category": 0,
+    "authenticated_api": {
+      "login_http": 200,
+      "categories_http": 200,
+      "categories_count": 0,
+      "files_default_http": 200,
+      "files_default_total": 11,
+      "files_categorized_http": 200,
+      "files_categorized_total": 0,
+      "entries_default_http": 200,
+      "entries_default_total": 0,
+      "entries_categorized_http": 200,
+      "entries_categorized_total": 0
+    }
+  },
+  "github_actions": "PR_546_backend_and_frontend_checks_failed_before_steps; local_full_tests_passed",
+  "authenticated_real_store_ui_click": "not_directly_checked",
+  "data_deleted_or_reclassified": false,
+  "external_message_sent": false,
+  "production_release": false
+}
