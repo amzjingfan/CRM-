@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "evidence_type": "store_view_consistency_staging_deployment",
+  "environment": "staging",
+  "task_id": "MVP-STORE-VIEW-CONSISTENCY-001",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/553",
+  "merged_main_sha": "aadf5087969ceb8ccb2b533ce8a42c191c3f96d9",
+  "merged_main_tree_sha": "f9b214402144bcaa4a4a1e5c4d18d3316e3a5bda",
+  "source_candidate_sha": "35c3929e1d2c88ba965d4ac2f39391a826412fb0",
+  "source_build_inputs_match_candidate": true,
+  "reviewed_source_bundle_sha256": "dadb2acbb8700d7455a2f8d6f93e91d9da336fb68e65b0661982f4614c9077f9",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:46fe1edcc6a20bd628f8b353fe8a8a3881b5788968ca37dce09eb2dd66d6697c",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:92744d145906205aa9b66045f21f0e92806dfd17199964802cd606d5d8f236a8",
+    "backend_and_frontend_oci_revision": "aadf5087969ceb8ccb2b533ce8a42c191c3f96d9",
+    "retrieval_model_service_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2"
+  },
+  "previous_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:a5628dc078c6fea7d69e2e472372b7d5f73de9f15b7dd846bd8ff1f4d4bd6361",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:ae92b0df33b2969028112302fdf1e7dc97891423276909750e6ca7d282b488b2"
+  },
+  "private_backups": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "postgresql_sha256": "91ce35aed937ec23bcfdf35964f88151392da0dbc101c6594327107b2414f4eb",
+    "postgresql_bytes": 672943,
+    "pg_restore_list_readable": true,
+    "minio_sha256": "2f5c02a2a02e1620cb5e182aa15de85f764747a867f280c1e1925700e8304fb4",
+    "minio_bytes": 358400,
+    "environment_snapshot_private": true
+  },
+  "manual_gates": {
+    "validate": "validated",
+    "validate_private_evidence_sha256": "de58373b5aa7fb6610a43ee6075b4176bc040295142b216731c48c53fc3691a1",
+    "deploy": "passed",
+    "deploy_generated_at_utc": "2026-10-25T03:44:33.9038182Z",
+    "deploy_private_evidence_sha256": "2fe67dbeb6eb06119c4ae4998b26956dd514f75a9c2e07175136453a24c2838c",
+    "mineru_assets_validated": true,
+    "fixed_tiktok_egress_verified": "38.55.145.52"
+  },
+  "postdeploy": {
+    "crm_running_container_count": 12,
+    "database_migration_head": "032_knowledge_file_archive",
+    "knowledge_file_count": 11,
+    "knowledge_file_archived_count": 0,
+    "backend_and_frontend_running_digests_match": true,
+    "public_http_200": ["/healthz", "/v1/health", "/v1/health/ready", "/login", "/knowledge", "/dashboard", "/marketing", "/workspace", "/settings/stores"],
+    "html_no_store_verified": true,
+    "fingerprinted_js_http_200_immutable": true,
+    "tiktok_webhook_read_enabled": true,
+    "tiktok_manual_send_store_count": 1,
+    "workspace_translation_enabled": true,
+    "document_ingestion_enabled": true,
+    "auto_reply_enabled": false,
+    "ai_marketing_enabled": false,
+    "llm_enabled": false,
+    "authenticated_ui": "UI_UNAVAILABLE: in-app browser tab creation and binding timed out; local synthetic production-browser checks 108/108 passed"
+  },
+  "other_workloads": {
+    "system_docker_container_count": 15,
+    "system_docker_unchanged_not_claimed": true,
+    "unrelated_sucai_remote_redis_observed_restarting": true,
+    "unrelated_redis_restart_count_at_observation": 5464,
+    "crm_deployment_used_only_rootless_docker": true
+  },
+  "gateway_host_check": "NOT_RUN: automatic approval review rejected copying the gateway SSH private key to a restricted temporary file; gateway configuration was not changed, public routes were independently verified",
+  "github_actions": "not_used_for_this_direct_staging_deployment; PR #553 checks failed before any steps; user explicitly authorized direct deployment",
+  "real_tiktok_message_sent_for_smoke": false,
+  "production_release": false
+}

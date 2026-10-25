@@ -1,5 +1,6 @@
 # 最新测试状态
 
+2026-10-25 知识库与跨店铺页面一致性 [TR R02](../reports/tests/TR-MVP-STORE-VIEW-CONSISTENCY-001-20261025-R02.md) 在源码和 staging 部署范围为 `PASS`：本地后端 2398 passed/3 skipped、前端契约 48/48、生产浏览器 108/108、迁移 032 升降级及类型/构建/格式通过；手动 staging 备份、ValidateOnly/Deploy、迁移 032、12 容器、固定出口、公网健康及主页面 200 通过。Actions 零步骤失败不计 CI，已登录 UI 工具超时，真实店铺点击未验证；production No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-store-view-consistency-20261025.json)。
 2026-10-23 合并主线 `db16111d` 的接待与工作台四项任务在限定 staging 范围为 `PASS`：本地完整后端 2351 passed/42 skipped、前端契约 48 passed、生产浏览器 101 passed/1 skipped，Ruff/格式/mypy/typecheck/lint（0 error/7 warning）/build 通过。手动 staging `ValidateOnly`、`Deploy`、迁移 031、12 容器、三健康和四个产品页面 200；已登录页面核对导航、现有超时策略、欢迎语表单及工作台新控件。见[四任务现场证据](../../release/evidence/staging/crm-staging-direct-reception-workspace-20261023.json)及各任务最新版 TR。未运行 GitHub Actions，原作业因账户付款/额度零步骤结束；未新增真实欢迎策略、未向真实买家测试外发，production No-Go。
 
 本文件只汇总当前仍有效的正式结论。历史报告用于追溯，不代表本分支重新运行。生产是否可放行以 `../operations/RELEASE-GATES.md` 为准。
