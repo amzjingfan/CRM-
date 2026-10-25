@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from app.auth.dependencies import get_current_user, require_csrf, require_idempotency_key, require_permission
 from app.knowledge_base.document_api_schemas import (
+    DocumentFileCategoryUpdate,
     DocumentFileDetail,
     DocumentFilePage,
     DocumentImportAccepted,
@@ -20,6 +21,7 @@ from app.knowledge_base.document_service import (
     MAX_DOCUMENT_BYTES,
     DocumentUploadError,
     accept_document_import,
+    change_document_file,
     get_document_file,
     get_document_settings,
     get_document_source,
@@ -71,6 +73,70 @@ async def document_file(
     file_id: uuid.UUID, session: DbSession, user: Annotated[User, Depends(get_current_user)]
 ) -> ApiResponse[DocumentFileDetail]:
     return ApiResponse(data=await get_document_file(session, user, file_id))
+
+
+@router.patch(
+    "/files/{file_id}",
+    response_model=ApiResponse[DocumentFileDetail],
+    dependencies=WRITE_GUARDS,
+)
+async def update_document_file_category(
+    file_id: uuid.UUID,
+    payload: DocumentFileCategoryUpdate,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[DocumentFileDetail]:
+    result = await change_document_file(session, user, file_id, "category_update", idempotency_key, payload.category_id)
+    assert result is not None
+    return ApiResponse(data=result)
+
+
+@router.post(
+    "/files/{file_id}/archive",
+    response_model=ApiResponse[DocumentFileDetail],
+    dependencies=WRITE_GUARDS,
+)
+async def archive_document_file(
+    file_id: uuid.UUID,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[DocumentFileDetail]:
+    result = await change_document_file(session, user, file_id, "archive", idempotency_key)
+    assert result is not None
+    return ApiResponse(data=result)
+
+
+@router.post(
+    "/files/{file_id}/restore",
+    response_model=ApiResponse[DocumentFileDetail],
+    dependencies=WRITE_GUARDS,
+)
+async def restore_document_file(
+    file_id: uuid.UUID,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[DocumentFileDetail]:
+    result = await change_document_file(session, user, file_id, "restore", idempotency_key)
+    assert result is not None
+    return ApiResponse(data=result)
+
+
+@router.delete(
+    "/files/{file_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=WRITE_GUARDS,
+)
+async def delete_document_file(
+    file_id: uuid.UUID,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> Response:
+    await change_document_file(session, user, file_id, "delete", idempotency_key)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get(

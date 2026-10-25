@@ -20,7 +20,8 @@ def test_independently_deployed_reception_and_document_migrations_join_one_head(
     """两条 029 已分别在环境落地，合流必须保留两个历史 revision。"""
     migration_path = Path(__file__).resolve().parents[3] / "backend" / "migrations"
     scripts = ScriptDirectory(str(migration_path))
-    assert scripts.get_heads() == ["031_reception_policy_schedule"]
+    assert scripts.get_heads() == ["032_knowledge_file_archive"]
+    assert scripts.get_revision("032_knowledge_file_archive").down_revision == "031_reception_policy_schedule"
     assert scripts.get_revision("031_reception_policy_schedule").down_revision == "030_merge_rag_reception"
     assert set(scripts.get_revision("030_merge_rag_reception").down_revision) == {
         "029_knowledge_file_ingestion",
@@ -46,6 +47,7 @@ def test_file_vectors_are_separate_and_fixed_to_bge_dimension() -> None:
 def test_version_status_and_active_pointer_support_whole_version_review() -> None:
     """待复核状态与有效版本指针必须同时存在，不能用页状态替代版本状态。"""
     assert KnowledgeFile.__table__.c.active_version_number.nullable
+    assert KnowledgeFile.__table__.c.archived_at.nullable
     assert "review_required" in " ".join(
         str(constraint.sqltext)
         for constraint in KnowledgeFileVersion.__table__.constraints

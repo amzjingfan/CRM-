@@ -116,6 +116,7 @@ export default function WorkspacePage() {
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const suggestionController = useRef<AbortController | null>(null);
   const listRequestId = useRef(0);
+  const detailRequestId = useRef(0);
   const conversationScrollRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreRef = useRef(false);
   const messageScrollRef = useRef<HTMLDivElement | null>(null);
@@ -236,6 +237,25 @@ export default function WorkspacePage() {
     finally { if (requestId === listRequestId.current) setLoading(false); }
   }, [buildListQuery, en]);
 
+  const changeConversationScope = (kind: "platform" | "store", value: string) => {
+    // 切换筛选范围时立即清除旧会话，防止旧店铺详情在新列表返回前继续可操作。
+    listRequestId.current += 1;
+    detailRequestId.current += 1;
+    previewRequestId.current += 1;
+    suggestionController.current?.abort();
+    setSelectedId(null);
+    setDetail(null);
+    setPreview(null);
+    setList(null);
+    setContextMenu(null);
+    setPendingContextAction(null);
+    setReview(null);
+    setCardReview(null);
+    setCustomerOpen(false);
+    setLoading(true);
+    if (kind === "platform") setPlatform(value); else setStoreId(value);
+  };
+
   const loadMoreConversations = useCallback(async () => {
     if (!list || loading || loadingMoreRef.current || list.items.length >= list.pagination.total) return;
     loadingMoreRef.current = true;
@@ -318,19 +338,20 @@ export default function WorkspacePage() {
   }, [filter, platform, selectedId, storeId]);
 
   useEffect(() => {
+    const requestId = ++detailRequestId.current;
     suggestionController.current?.abort(); setSuggestionDraft(""); setSuggestionStatus(""); setSuggestionLoading(false);
     setTransferOpen(false); setCloseConfirmId(null); setCloseError(""); stickToBottomRef.current = true; pendingPrependRef.current = null; setShowLatest(false);
     setDetail(null); setDetailError("");
     if (!selectedId) return;
     let isCurrentRequest = true;
     getSessionMessages(selectedId).then((data) => {
-      if (!isCurrentRequest) return;
+      if (!isCurrentRequest || requestId !== detailRequestId.current) return;
       setDetail(data);
       if (data.session.unread_count && document.visibilityState === "visible") {
         void markSessionRead(selectedId).then(() => setList((current) => markReadInList(current, selectedId)));
       }
     }).catch((caught) => {
-      if (!isCurrentRequest) return;
+      if (!isCurrentRequest || requestId !== detailRequestId.current) return;
       const message = caught instanceof Error ? caught.message : en ? "Failed to load messages" : "消息加载失败";
       setDetailError(message); setAnnouncement(message);
     });
@@ -665,7 +686,7 @@ export default function WorkspacePage() {
         </div>
         {searchTerms(search).length > 1 ? <p className="workspace-search-summary">{en ? `${searchTerms(search).length} keywords · ${list?.pagination.total ?? 0} conversations` : `${searchTerms(search).length} 个关键词 · ${list?.pagination.total ?? 0} 个会话`}</p> : search ? <p className="workspace-search-summary">{en ? `${list?.pagination.total ?? 0} matching conversations` : `找到 ${list?.pagination.total ?? 0} 个会话`}</p> : null}
       </div>
-      <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3"><select aria-label={en ? "Platform" : "平台"} className="compact-field" onChange={(event) => setPlatform(event.target.value)} value={platform}><option value="">{en ? "All platforms" : "全部平台"}</option><option value="tiktok">TikTok</option><option value="shopee">Shopee</option><option value="amazon">Amazon</option></select><select aria-label={en ? "Store" : "店铺"} className="compact-field" onChange={(event) => setStoreId(event.target.value)} value={storeId}><option value="">{en ? "All stores" : "全部店铺"}</option>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}{storeId && !stores.some((store) => store.id === storeId) ? <option value={storeId}>{en ? "Store name unavailable" : "店铺名称不可用"}</option> : null}</select>{storeError ? <p className="col-span-2 text-xs text-red-600" role="alert">{storeError}</p> : null}</div>
+      <div className="grid grid-cols-2 gap-2 border-b border-[var(--border)] p-3"><select aria-label={en ? "Platform" : "平台"} className="compact-field" disabled={sending || actionBusy || stageBusy} onChange={(event) => changeConversationScope("platform", event.target.value)} value={platform}><option value="">{en ? "All platforms" : "全部平台"}</option><option value="tiktok">TikTok</option><option value="shopee">Shopee</option><option value="amazon">Amazon</option></select><select aria-label={en ? "Store" : "店铺"} className="compact-field" disabled={sending || actionBusy || stageBusy} onChange={(event) => changeConversationScope("store", event.target.value)} value={storeId}><option value="">{en ? "All stores" : "全部店铺"}</option>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}{storeId && !stores.some((store) => store.id === storeId) ? <option value={storeId}>{en ? "Store name unavailable" : "店铺名称不可用"}</option> : null}</select>{storeError ? <p className="col-span-2 text-xs text-red-600" role="alert">{storeError}</p> : null}</div>
       <div className="conversation-scroll" onScroll={(event) => { const node = event.currentTarget; if (node.scrollHeight - node.scrollTop - node.clientHeight < 100) void loadMoreConversations(); }} ref={conversationScrollRef}>{loading ? <LoadingState label={en ? "Loading conversations…" : "正在加载会话…"} /> : error ? <ErrorState message={error} retry={() => void loadList()} /> : !list?.items.length ? <EmptyState label={search ? (en ? "No matching conversations" : "未找到匹配会话") : (en ? "Conversations will appear when platform messages arrive" : "暂无会话，平台消息到达后会显示在这里")} /> : <>{list.items.map((item) => {
         const lastMessageTime = formatConversationTime(item.last_message_at, en ? "en-US" : "zh-CN");
         return <button aria-pressed={selectedId === item.id} className={selectedId === item.id ? "conversation-card active" : "conversation-card"} key={item.id} onClick={() => setSelectedId(item.id)} onContextMenu={(event) => { event.preventDefault(); setContextMenu({ sessionId: item.id, x: Math.min(event.clientX, window.innerWidth - 174), y: Math.min(event.clientY, window.innerHeight - 150) }); }} onKeyDown={(event) => { if (event.key === "F10" && event.shiftKey) { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); setContextMenu({ sessionId: item.id, x: Math.min(bounds.right, window.innerWidth - 174), y: Math.min(bounds.top, window.innerHeight - 150) }); } }} type="button">

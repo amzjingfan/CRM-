@@ -27,7 +27,12 @@ class DocumentFileSummary(BaseModel):
     category_id: uuid.UUID | None
     filename: str
     active_version_number: int | None
+    archived_at: datetime | None
     latest_version: DocumentVersionSummary
+
+
+class DocumentFileCategoryUpdate(BaseModel):
+    category_id: uuid.UUID
 
 
 class DocumentFilePage(BaseModel):

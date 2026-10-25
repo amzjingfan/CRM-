@@ -61,11 +61,14 @@ async def _claim(session: AsyncSession, worker_id: str) -> KnowledgeFileVersion 
     lease_due = or_(KnowledgeFileVersion.lease_until.is_(None), KnowledgeFileVersion.lease_until <= now)
     version = await session.scalar(
         select(KnowledgeFileVersion)
+        .join(KnowledgeFile, KnowledgeFile.id == KnowledgeFileVersion.file_id)
         .where(
+            KnowledgeFile.deleted_at.is_(None),
+            KnowledgeFile.archived_at.is_(None),
             or_(
                 and_(KnowledgeFileVersion.status.in_(["queued", "failed_retryable"]), lease_due),
                 and_(KnowledgeFileVersion.status.in_(["parsing", "indexing"]), KnowledgeFileVersion.lease_until < now),
-            )
+            ),
         )
         .order_by(KnowledgeFileVersion.created_at, KnowledgeFileVersion.id)
         .with_for_update(skip_locked=True)
@@ -273,6 +276,8 @@ async def _commit_ready(
     file = await session.scalar(select(KnowledgeFile).where(KnowledgeFile.id == version.file_id).with_for_update())
     if file is None or file.store_id != version.store_id:
         raise DocumentIndexError("FILE_SCOPE_INVALID", retriable=False)
+    if file.deleted_at is not None or file.archived_at is not None:
+        raise DocumentIndexError("FILE_INACTIVE", retriable=False)
     existing_chunk = await session.scalar(
         select(KnowledgeFileChunk.id).where(KnowledgeFileChunk.version_id == version.id).limit(1)
     )

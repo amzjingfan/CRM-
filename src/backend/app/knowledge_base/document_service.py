@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -257,6 +257,8 @@ async def accept_document_import(
         )
         .with_for_update()
     )
+    if existing_file is not None and existing_file.archived_at is not None:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "归档文件请先恢复，再替换", 409)
     if existing_file is not None and category_id != existing_file.category_id:
         raise AppError(ErrorCode.VALIDATION_ERROR, "文件分类与现有文件不一致", 422)
     if replace_file_id is not None:
@@ -458,11 +460,13 @@ async def _scoped_version(
 
 
 async def _version_summary(
-    session: AsyncSession, file: KnowledgeFile, version: KnowledgeFileVersion
+    session: AsyncSession, file: KnowledgeFile, version: KnowledgeFileVersion, chunk_count: int | None = None
 ) -> DocumentVersionSummary:
-    count = await session.scalar(
-        select(func.count(KnowledgeFileChunk.id)).where(KnowledgeFileChunk.version_id == version.id)
-    )
+    count = chunk_count
+    if count is None:
+        count = await session.scalar(
+            select(func.count(KnowledgeFileChunk.id)).where(KnowledgeFileChunk.version_id == version.id)
+        )
     return DocumentVersionSummary(
         id=version.id,
         version_number=version.version_number,
@@ -476,6 +480,17 @@ async def _version_summary(
     )
 
 
+async def _chunk_counts(session: AsyncSession, version_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    if not version_ids:
+        return {}
+    rows = await session.execute(
+        select(KnowledgeFileChunk.version_id, func.count(KnowledgeFileChunk.id))
+        .where(KnowledgeFileChunk.version_id.in_(version_ids))
+        .group_by(KnowledgeFileChunk.version_id)
+    )
+    return {row[0]: row[1] for row in rows}
+
+
 def _validated_locator(value: dict[str, object]) -> dict[str, int]:
     if any(not isinstance(item, int) or isinstance(item, bool) for item in value.values()):
         raise AppError(ErrorCode.INTERNAL_ERROR, "文件来源定位信息无效", 500)
@@ -483,7 +498,7 @@ def _validated_locator(value: dict[str, object]) -> dict[str, int]:
 
 
 async def _file_summary(
-    session: AsyncSession, file: KnowledgeFile, latest: KnowledgeFileVersion
+    session: AsyncSession, file: KnowledgeFile, latest: KnowledgeFileVersion, chunk_count: int | None = None
 ) -> DocumentFileSummary:
     return DocumentFileSummary(
         id=file.id,
@@ -491,7 +506,8 @@ async def _file_summary(
         category_id=file.category_id,
         filename=file.original_filename,
         active_version_number=file.active_version_number,
-        latest_version=await _version_summary(session, file, latest),
+        archived_at=file.archived_at,
+        latest_version=await _version_summary(session, file, latest, chunk_count),
     )
 
 
@@ -525,16 +541,35 @@ async def list_document_files(
             .limit(page_size)
         )
     ).all()
+    if not files:
+        return DocumentFilePage(items=[], total=total, page=page, page_size=page_size)
+    latest_numbers = (
+        select(
+            KnowledgeFileVersion.file_id,
+            func.max(KnowledgeFileVersion.version_number).label("latest_number"),
+        )
+        .where(KnowledgeFileVersion.file_id.in_([file.id for file in files]))
+        .group_by(KnowledgeFileVersion.file_id)
+        .subquery()
+    )
+    versions = (
+        await session.scalars(
+            select(KnowledgeFileVersion).join(
+                latest_numbers,
+                and_(
+                    KnowledgeFileVersion.file_id == latest_numbers.c.file_id,
+                    KnowledgeFileVersion.version_number == latest_numbers.c.latest_number,
+                ),
+            )
+        )
+    ).all()
+    latest_by_file = {version.file_id: version for version in versions}
+    chunk_counts = await _chunk_counts(session, [version.id for version in latest_by_file.values()])
     items: list[DocumentFileSummary] = []
     for file in files:
-        latest = await session.scalar(
-            select(KnowledgeFileVersion)
-            .where(KnowledgeFileVersion.file_id == file.id)
-            .order_by(KnowledgeFileVersion.version_number.desc())
-            .limit(1)
-        )
+        latest = latest_by_file.get(file.id)
         if latest is not None:
-            items.append(await _file_summary(session, file, latest))
+            items.append(await _file_summary(session, file, latest, chunk_counts.get(latest.id, 0)))
     return DocumentFilePage(items=items, total=total, page=page, page_size=page_size)
 
 
@@ -549,10 +584,103 @@ async def get_document_file(session: AsyncSession, user: User, file_id: uuid.UUI
     ).all()
     if not versions:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "文件版本不存在", 404)
-    summary = await _file_summary(session, file, versions[0])
+    counts = await _chunk_counts(session, [version.id for version in versions])
+    summary = await _file_summary(session, file, versions[0], counts.get(versions[0].id, 0))
     return DocumentFileDetail(
-        **summary.model_dump(), versions=[await _version_summary(session, file, v) for v in versions]
+        **summary.model_dump(),
+        versions=[await _version_summary(session, file, version, counts.get(version.id, 0)) for version in versions],
     )
+
+
+async def change_document_file(
+    session: AsyncSession,
+    user: User,
+    file_id: uuid.UUID,
+    action: str,
+    idempotency_key: str,
+    category_id: uuid.UUID | None = None,
+) -> DocumentFileDetail | None:
+    """对逻辑文件执行店铺隔离的元数据操作；历史版本和原文件保持不变。"""
+    if action not in {"category_update", "archive", "restore", "delete"}:
+        raise ValueError("unsupported file action")
+    request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+    stores = await allowed_store_ids(session, user)
+    file = await session.scalar(
+        select(KnowledgeFile).where(KnowledgeFile.id == file_id, KnowledgeFile.store_id.in_(stores)).with_for_update()
+    )
+    if file is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "文件不存在", 404)
+    audit_action = f"knowledge.file_{action}"
+    prior = await session.scalar(
+        select(AuditLog).where(
+            AuditLog.store_id == file.store_id,
+            AuditLog.action == audit_action,
+            AuditLog.resource_id == file.id,
+            AuditLog.request_id == request_id,
+        )
+    )
+    if prior is not None:
+        if action == "category_update" and prior.after_data != {"category_id": str(category_id)}:
+            raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于其他分类", 409)
+        await session.commit()
+        return None if action == "delete" else await get_document_file(session, user, file_id)
+    if file.deleted_at is not None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "文件不存在", 404)
+    before: dict[str, object]
+    after: dict[str, object]
+    if action == "category_update":
+        if category_id is None:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "请选择归属分类", 422)
+        category = await session.scalar(
+            select(KnowledgeCategory.id).where(
+                KnowledgeCategory.id == category_id,
+                KnowledgeCategory.store_id == file.store_id,
+                KnowledgeCategory.status == "active",
+            )
+        )
+        if category is None:
+            raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "分类不存在", 404)
+        before = {"category_id": str(file.category_id) if file.category_id else None}
+        after = {"category_id": str(category_id)}
+        file.category_id = category_id
+    else:
+        if action in {"archive", "delete"}:
+            processing = await session.scalar(
+                select(KnowledgeFileVersion.id)
+                .where(
+                    KnowledgeFileVersion.file_id == file.id,
+                    KnowledgeFileVersion.status.in_(["queued", "parsing", "indexing"]),
+                )
+                .limit(1)
+            )
+            if processing is not None:
+                raise AppError(ErrorCode.RESOURCE_CONFLICT, "文件正在处理，请完成后再操作", 409)
+        before = {"archived": file.archived_at is not None, "deleted": file.deleted_at is not None}
+        now = datetime.now(UTC)
+        if action == "archive":
+            file.archived_at = file.archived_at or now
+        elif action == "restore":
+            file.archived_at = None
+        else:
+            file.deleted_at = now
+            file.archived_at = file.archived_at or now
+        after = {"archived": file.archived_at is not None, "deleted": file.deleted_at is not None}
+    session.add(
+        AuditLog(
+            store_id=file.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action=audit_action,
+            resource_type="knowledge_file",
+            resource_id=file.id,
+            request_id=request_id,
+            before_data=before,
+            after_data=after,
+            result="succeeded",
+        )
+    )
+    await session.commit()
+    return None if action == "delete" else await get_document_file(session, user, file_id)
 
 
 async def get_document_version(
@@ -619,6 +747,8 @@ async def review_document_unit(
     from app.knowledge_base.document_parser import ParsedUnit
 
     file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    if file.archived_at is not None:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "归档文件请先恢复，再复核", 409)
     request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
     text_hash = hashlib.sha256(payload.corrected_text.encode("utf-8")).hexdigest()
     prior = await session.scalar(
@@ -725,6 +855,8 @@ async def retry_document_version(
     idempotency_key: str,
 ) -> DocumentVersionDetail:
     file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    if file.archived_at is not None:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "归档文件请先恢复，再重试", 409)
     request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
     prior = await session.scalar(
         select(AuditLog).where(

@@ -196,6 +196,42 @@ test("all knowledge excludes legacy unclassified FAQ and files before counting o
   }
 });
 
+test("knowledge paired pagination reaches FAQ and every document page", async () => {
+  const category = { id: "00000000-0000-4000-8000-0000000000c1", store_id: store.id, parent_id: null, name: "物流与仓储", code: "logistics", layer: "C", sort_order: 0, status: "active" };
+  const faq = { id: "faq-1", store_id: store.id, category_id: category.id, question: "唯一 FAQ", answer: "内容", source: null, tags: [], status: "draft", vectorization_status: "pending", document_version: 1, publication_approval: "draft", updated_at: "2026-10-23T00:00:00Z" };
+  const files = Array.from({ length: 21 }, (_, index) => ({
+    id: `file-${index + 1}`, store_id: store.id, category_id: category.id, filename: `document-${index + 1}.pdf`, archived_at: null,
+    latest_version: { version_number: 1, status: "ready", created_at: "2026-10-23T00:00:00Z", chunk_count: 1 },
+  }));
+  const { context, page } = await openPage("/knowledge", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+    "GET /v1/knowledge/vectorization/status": { store_id: store.id, counts: { pending: 0, processing: 0, ready: 0, failed: 0 } },
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/knowledge/**", async (route) => {
+      const url = new URL(route.request().url());
+      let data;
+      if (url.pathname === "/v1/knowledge/categories") data = [category];
+      else if (url.pathname === "/v1/knowledge/entries") data = { items: url.searchParams.get("page") === "2" ? [] : [faq], page: Number(url.searchParams.get("page") ?? 1), page_size: Number(url.searchParams.get("page_size") ?? 20), total: 1 };
+      else if (url.pathname === "/v1/knowledge/files") {
+        const currentPage = Number(url.searchParams.get("page") ?? 1);
+        const size = Number(url.searchParams.get("page_size") ?? 20);
+        data = { items: files.slice((currentPage - 1) * size, currentPage * size), page: currentPage, page_size: size, total: files.length };
+      } else return route.fallback();
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByText("document-1.pdf").waitFor();
+    await page.getByText("唯一 FAQ").waitFor();
+    assert.match(await page.locator(".scope .total").innerText(), /^22 篇知识$/);
+    await page.getByRole("button", { name: "下一页" }).click();
+    await page.getByText("document-21.pdf").waitFor();
+    assert.equal(await page.getByText("唯一 FAQ").count(), 0);
+    assert.equal(await page.getByRole("button", { name: "下一页" }).isDisabled(), true);
+  } finally { await context.close(); }
+});
+
 test("knowledge prototype keeps navigation, parameter drawer, and detail interaction coherent", async () => {
   const category = {
     id: "00000000-0000-4000-8000-0000000000c1",
@@ -292,6 +328,164 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
   } finally {
     await context.close();
   }
+});
+
+test("knowledge store switch clears the previous store detail and keeps one detail layout", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Demo Store" };
+  const categoryA = { id: "00000000-0000-4000-8000-0000000000c2", store_id: store.id, parent_id: null, name: "商品与目录", code: "goods", layer: "C", sort_order: 0, status: "active" };
+  const categoryB = { ...categoryA, id: "00000000-0000-4000-8000-0000000000c3", store_id: otherStore.id };
+  const entry = {
+    id: "00000000-0000-4000-8000-0000000000e2", store_id: store.id, category_id: categoryA.id,
+    question: "First store FAQ", answer: "First store answer", source: null, tags: [], status: "published",
+    vectorization_status: "ready", document_version: 1, usage_count: 0, satisfaction_rate: null,
+    statement_type: "policy", customer_scope: "generic", publication_approval: "approved_for_internal_review",
+    semantic_schema_version: 1, approved_by: null, approved_at: null, published_at: null,
+    created_at: "2026-10-20T00:00:00Z", updated_at: "2026-10-20T00:00:00Z",
+  };
+  const fileId = "00000000-0000-4000-8000-0000000000d2";
+  const version = { id: "00000000-0000-4000-8000-0000000000d3", version_number: 1, status: "ready", error_code: null, retry_count: 0, created_at: "2026-10-21T00:00:00Z", completed_at: "2026-10-21T00:00:00Z", is_active: true, chunk_count: 2 };
+  const file = { id: fileId, store_id: otherStore.id, category_id: categoryB.id, filename: "Second store policy.pdf", active_version_number: 1, latest_version: version };
+  const { context, page } = await openPage(`/knowledge?store_id=${store.id}`, {
+    "GET /v1/auth/me": { ...user, permissions: ["knowledge.view", "knowledge.manage"], store_ids: [store.id, otherStore.id] },
+    "GET /v1/settings/stores": [store, otherStore],
+    "GET /v1/knowledge/vectorization/status": { store_id: store.id, worker_enabled: true, provider: "local_bge", model: "BAAI/bge-m3", dimensions: 1024, counts: { pending: 0, processing: 0, ready: 0, failed: 0 } },
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/knowledge/**", async (route) => {
+      const request = route.request();
+      if (request.method() !== "GET") return route.fallback();
+      const url = new URL(request.url());
+      const selectedStore = url.searchParams.get("store_id");
+      let data;
+      if (url.pathname === "/v1/knowledge/categories") data = selectedStore === otherStore.id ? [categoryB] : [categoryA];
+      else if (url.pathname === "/v1/knowledge/entries") data = { items: selectedStore === otherStore.id ? [] : [entry], page: 1, page_size: 20, total: selectedStore === otherStore.id ? 0 : 1 };
+      else if (url.pathname === "/v1/knowledge/files") data = { items: selectedStore === otherStore.id ? [file] : [], page: 1, page_size: 20, total: selectedStore === otherStore.id ? 1 : 0 };
+      else if (url.pathname === `/v1/knowledge/files/${fileId}`) data = { ...file, versions: [version] };
+      else if (url.pathname === `/v1/knowledge/files/${fileId}/versions/1`) data = { ...version, file_id: fileId, filename: file.filename, file_sha256: "0".repeat(64), config: { strategy: "recursive", chunk_size: 500, overlap: 50, parser_mode: "auto", embedding_model: "BAAI/bge-m3" }, parser_version: "test", cleaning_version: "test", units: [] };
+      else return route.fallback();
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByText("First store FAQ").waitFor();
+    await page.getByRole("button", { name: "查看" }).click();
+    const detail = page.getByRole("dialog", { name: "知识详情" });
+    await detail.getByText("First store answer").waitFor();
+    const faqWidth = (await detail.boundingBox())?.width;
+    await page.getByRole("combobox", { name: "当前店铺" }).selectOption(otherStore.id);
+    await page.getByText("Second store policy.pdf").waitFor();
+    await detail.waitFor({ state: "hidden" });
+    await page.getByRole("button", { name: "查看" }).click();
+    await detail.getByText("Second store policy.pdf").waitFor();
+    assert.equal((await detail.boundingBox())?.width, faqWidth);
+  } finally { await context.close(); }
+});
+
+test("knowledge file actions keep versions while category, archive and delete update the list", async () => {
+  const category = { id: "00000000-0000-4000-8000-0000000000c2", store_id: store.id, parent_id: null, name: "商品与目录", code: "goods", layer: "C", sort_order: 0, status: "active" };
+  const nextCategory = { ...category, id: "00000000-0000-4000-8000-0000000000c3", name: "物流与仓储", code: "logistics" };
+  const fileId = "00000000-0000-4000-8000-0000000000d2";
+  const version = { id: "00000000-0000-4000-8000-0000000000d3", version_number: 1, status: "ready", error_code: null, retry_count: 0, created_at: "2026-10-21T00:00:00Z", completed_at: "2026-10-21T00:00:00Z", is_active: true, chunk_count: 2 };
+  let file = { id: fileId, store_id: store.id, category_id: category.id, filename: "store policy.pdf", active_version_number: 1, archived_at: null, latest_version: version };
+  let deleted = false;
+  const writes = [];
+  const { context, page } = await openPage(`/knowledge?store_id=${store.id}`, {
+    "GET /v1/auth/me": { ...user, permissions: ["knowledge.view", "knowledge.manage"], store_ids: [store.id] },
+    "GET /v1/settings/stores": [store],
+    "GET /v1/knowledge/vectorization/status": { store_id: store.id, worker_enabled: true, provider: "local_bge", model: "BAAI/bge-m3", dimensions: 1024, counts: { pending: 0, processing: 0, ready: 0, failed: 0 } },
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/knowledge/**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+      if (request.method() !== "GET") writes.push(`${request.method()} ${url.pathname}`);
+      let data;
+      if (url.pathname === "/v1/knowledge/categories") data = [category, nextCategory];
+      else if (url.pathname === "/v1/knowledge/entries") data = { items: [], page: 1, page_size: 20, total: 0 };
+      else if (url.pathname === "/v1/knowledge/files") {
+        const filtered = !deleted && (!url.searchParams.get("category_id") || url.searchParams.get("category_id") === file.category_id) ? [file] : [];
+        data = { items: filtered, page: 1, page_size: 20, total: filtered.length };
+      } else if (url.pathname === `/v1/knowledge/files/${fileId}`) {
+        if (request.method() === "PATCH") file = { ...file, category_id: request.postDataJSON().category_id };
+        if (request.method() === "DELETE") { deleted = true; await route.fulfill({ status: 204 }); return; }
+        data = { ...file, versions: [version] };
+      } else if (url.pathname === `/v1/knowledge/files/${fileId}/archive`) { file = { ...file, archived_at: "2026-10-25T00:00:00Z" }; data = { ...file, versions: [version] }; }
+      else if (url.pathname === `/v1/knowledge/files/${fileId}/restore`) { file = { ...file, archived_at: null }; data = { ...file, versions: [version] }; }
+      else if (url.pathname === `/v1/knowledge/files/${fileId}/versions/1`) data = { ...version, file_id: fileId, filename: file.filename, file_sha256: "0".repeat(64), config: { strategy: "recursive", chunk_size: 500, overlap: 50, parser_mode: "auto", embedding_model: "BAAI/bge-m3" }, parser_version: "test", cleaning_version: "test", units: [] };
+      else return route.fallback();
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByText(file.filename).waitFor();
+    await page.getByRole("button", { name: "查看" }).click();
+    await page.getByRole("dialog", { name: "知识详情" }).getByRole("button", { name: "编辑知识" }).click();
+    const editor = page.getByRole("dialog", { name: "编辑文件知识" });
+    await editor.getByRole("combobox", { name: "文件归属分类" }).selectOption(nextCategory.id);
+    await editor.getByRole("button", { name: "保存分类" }).click();
+    await editor.waitFor({ state: "hidden" });
+    assert.equal(file.category_id, nextCategory.id);
+    await page.getByRole("button", { name: "查看" }).click();
+    await page.getByRole("dialog", { name: "知识详情" }).getByRole("button", { name: "归档" }).click();
+    await page.getByRole("dialog", { name: "文件操作确认" }).getByRole("button", { name: "确认", exact: true }).click();
+    await page.getByRole("dialog", { name: "文件操作确认" }).waitFor({ state: "hidden" });
+    await page.getByText("已归档", { exact: true }).first().waitFor();
+    await page.getByRole("button", { name: "查看" }).click();
+    await page.getByRole("dialog", { name: "知识详情" }).getByRole("button", { name: "编辑知识" }).click();
+    assert.equal(await page.getByRole("dialog", { name: "编辑文件知识" }).getByRole("button", { name: "替换文件" }).isDisabled(), true);
+    await page.getByRole("button", { name: "关闭编辑文件" }).click();
+    await page.getByRole("button", { name: "查看" }).click();
+    await page.getByRole("dialog", { name: "知识详情" }).getByRole("button", { name: "删除" }).click();
+    await page.getByRole("dialog", { name: "文件操作确认" }).getByRole("button", { name: "确认", exact: true }).click();
+    await page.getByRole("button", { name: "查看" }).waitFor({ state: "hidden" });
+    assert.deepEqual(writes, [`PATCH /v1/knowledge/files/${fileId}`, `POST /v1/knowledge/files/${fileId}/archive`, `DELETE /v1/knowledge/files/${fileId}`]);
+  } finally { await context.close(); }
+});
+
+test("dashboard ignores late metrics from the previous store", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Demo Store" };
+  const { context, page } = await openPage("/dashboard", { "GET /v1/settings/stores": [store, otherStore] }, async (browserContext) => {
+    await browserContext.route("**/v1/dashboard/**", async (route) => {
+      const url = new URL(route.request().url());
+      const isOther = url.searchParams.get("store_id") === otherStore.id;
+      if (!isOther && url.searchParams.get("period") === "today") await new Promise((resolve) => setTimeout(resolve, 600));
+      const data = url.pathname.endsWith("/metrics")
+        ? { total_sessions: isOther ? 202 : 101, transfer_rate: 0, avg_response_time: null, recovered_gmv: "0", currency: "USD", period: url.searchParams.get("period"), updated_at: null }
+        : url.pathname.endsWith("/trend") || url.pathname.endsWith("/channels") ? { items: [] }
+        : url.pathname.endsWith("/alerts") ? { refund_requests: { total: 0 }, bad_reviews: { total: 0, golden_window: false }, abandoned_carts: { total: 0, potential_gmv: "0" } }
+        : [];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByText("101", { exact: true }).waitFor();
+    await page.getByRole("combobox", { name: "统计周期" }).selectOption("today");
+    await page.getByRole("combobox", { name: "店铺" }).selectOption(otherStore.id);
+    await page.getByText("202", { exact: true }).waitFor();
+    await page.waitForTimeout(800);
+    assert.equal(await page.getByText("202", { exact: true }).count(), 1);
+  } finally { await context.close(); }
+});
+
+test("marketing store switch closes an editor from another store", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Demo Store" };
+  const { context, page } = await openPage("/marketing", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id, otherStore.id] },
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/marketing/**", async (route) => {
+      const data = { items: [], page: 1, page_size: 20, total: 0 };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+    await browserContext.route("**/v1/dashboard/metrics?*", async (route) => {
+      const data = { total_sessions: 0, transfer_rate: 0, avg_response_time: null, recovered_gmv: "0", currency: "USD", period: "30d", updated_at: null };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByRole("button", { name: "新建流程" }).click();
+    const editor = page.getByRole("dialog", { name: "新建流程" });
+    await editor.waitFor();
+    await page.getByRole("combobox", { name: "店铺" }).selectOption(otherStore.id);
+    await editor.waitFor({ state: "hidden" });
+  } finally { await context.close(); }
 });
 
 test("knowledge category creation enters the custom group for its store and selects the new category", async () => {
@@ -1141,18 +1335,71 @@ test("workspace store filter shows authorized names and keeps options after filt
         body: JSON.stringify({ code: 0, message: "ok", data: { items, pagination: { page: 1, page_size: 30, total: items.length } } }),
       });
     });
+    await context.route("**/v1/workspace/sessions/*/messages*", async (route) => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
+        body: JSON.stringify({ code: 0, message: "ok", data: {
+          session: conversation, messages: [], customer: conversation.customer, recent_orders: [], ai_suggestion: null,
+          pagination: { page: 1, page_size: 100, total: 0 }, send_mode: "disabled", requires_confirmation: true,
+        } }),
+      });
+    });
   });
   try {
     const filter = page.getByRole("combobox", { name: "店铺" });
     await page.locator(".conversation-card").waitFor();
+    await page.getByLabel("聊天窗口").getByRole("heading", { name: "Buyer" }).waitFor();
+    await page.locator(".conversation-card").click({ button: "right" });
+    await page.getByRole("menu", { name: "会话操作" }).waitFor();
     assert.deepEqual(await filter.locator("option").allTextContents(), ["全部店铺", "US Demo Store", "Second Store"]);
     await filter.selectOption(otherStore.id);
+    await page.getByLabel("聊天窗口").getByRole("heading", { name: "Buyer" }).waitFor({ state: "hidden" });
+    await page.getByRole("menu", { name: "会话操作" }).waitFor({ state: "hidden" });
     await page.getByText("暂无会话，平台消息到达后会显示在这里").waitFor();
     assert.equal(await filter.inputValue(), otherStore.id);
     assert.deepEqual(await filter.locator("option").allTextContents(), ["全部店铺", "US Demo Store", "Second Store"]);
   } finally {
     await context.close();
   }
+});
+
+test("workspace ignores a late conversation detail after switching stores", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Store" };
+  const conversation = {
+    id: "session-old-store", store_id: store.id, platform: "tiktok", status: "active", unread_count: 0,
+    assigned_user_id: null, last_message_at: "2026-10-19T00:00:00Z", last_message: "Old store message",
+    customer: { id: "customer-old-store", name: "Old Buyer", email: null, avatar: null, tags: [] },
+  };
+  let releaseDetail;
+  let detailStarted;
+  const detailStartedPromise = new Promise((resolve) => { detailStarted = resolve; });
+  const { context, page } = await openPage("/workspace", { "GET /v1/settings/stores": [store, otherStore] }, async (browserContext) => {
+    await browserContext.route("**/v1/workspace/sessions*", async (route) => {
+      if (new URL(route.request().url()).pathname !== "/v1/workspace/sessions") return route.fallback();
+      const items = new URL(route.request().url()).searchParams.has("store_id") ? [] : [conversation];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data: {
+        items, pagination: { page: 1, page_size: 30, total: items.length },
+      } }) });
+    });
+    await browserContext.route("**/v1/workspace/sessions/*/messages*", async (route) => {
+      await new Promise((resolve) => { releaseDetail = resolve; detailStarted(); });
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data: {
+        session: conversation, messages: [], customer: conversation.customer, recent_orders: [], ai_suggestion: null,
+        pagination: { page: 1, page_size: 100, total: 0 }, send_mode: "disabled", requires_confirmation: true,
+      } }) });
+    });
+  });
+  try {
+    await page.locator(".conversation-card").waitFor();
+    await detailStartedPromise;
+    await page.getByRole("combobox", { name: "店铺" }).selectOption(otherStore.id);
+    const lateResponse = page.waitForResponse((response) => new URL(response.url()).pathname.endsWith("/messages"));
+    releaseDetail();
+    await lateResponse;
+    await page.getByText("暂无会话，平台消息到达后会显示在这里").waitFor();
+    assert.equal(await page.getByLabel("聊天窗口").getByRole("heading", { name: "Old Buyer" }).count(), 0);
+  } finally { await context.close(); }
 });
 
 test("older conversation filter response cannot replace the latest list", async () => {

@@ -57,6 +57,7 @@
 - `POST /knowledge/entries` 和 `PATCH /knowledge/entries/{entry_id}` 支持语义类型、客户范围和文档版本。
 - `POST /knowledge/entries/{entry_id}/publish` 只批准精确版本供内部复核；正文、语义类型或客户范围变化会递增版本并撤销审批。
 - 通用文件使用 `/v1/knowledge/files` 列表、详情、版本和原文件下载；`POST /v1/knowledge/files/imports` 接收 `multipart` 的文件、店铺、可选分类、配置 JSON 和显式 `replace_file_id`，返回 202 与新版本状态。
+- 文件元数据可通过 `PATCH /v1/knowledge/files/{file_id}` 调整到同店铺启用分类；`POST .../archive` 与 `POST .../restore` 维护可恢复归档，`DELETE /v1/knowledge/files/{file_id}` 设置软删除时间。历史版本、原文件和审计不被改写。归档文件仍在管理列表显示，删除文件从列表和详情隐藏；有排队、解析或索引中的版本时拒绝归档/删除。写接口沿用 `knowledge.manage`、CSRF、幂等键和店铺隔离；跨店铺文件返回 404。文件编辑 UI 的“替换文件”复用显式替换导入，要求同名并沿用分类。
 - `GET /v1/knowledge/entries` 与 `GET /v1/knowledge/files` 新增可选 `categorized_only=true` 查询参数：仅返回当前授权店铺内归属启用分类的记录，在数据库分页和总数统计前筛选。省略或传 `false` 保持原有含未分类数据的 API 行为；知识库管理页的“全部知识”、分类角标和列表显式传 `true`。历史未分类数据不删除，文件详情接口仍可按 ID 读取；上传 API 的分类字段继续可选以兼容既有调用，管理页要求用户先选分类。
 - `POST /v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review` 对单元提交人工修订与确认；`.../retry` 只重试可恢复版本。`GET/PUT /v1/knowledge/file-settings` 读取和保存店铺级导入配置；每次上传冻结配置快照。写接口均要求店铺范围、`knowledge.manage`、CSRF 与幂等键，读接口要求 `knowledge.view`；跨店铺文件返回 404。
 - 通用文件状态包括排队、处理中、待复核、失败和就绪；待复核版本没有任何新向量，旧有效版本保持可用。该接口不改变现有 FAQ 审批与 Agent 检索接口。

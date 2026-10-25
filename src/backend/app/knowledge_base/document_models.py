@@ -33,6 +33,7 @@ class KnowledgeFile(TimestampMixin, Base):
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     filename_key: Mapped[str] = mapped_column(String(255), nullable=False)
     active_version_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 

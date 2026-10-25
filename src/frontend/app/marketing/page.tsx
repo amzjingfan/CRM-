@@ -15,7 +15,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import {
@@ -74,9 +74,11 @@ export default function MarketingPage() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [reviewingEventId, setReviewingEventId] = useState("");
+  const loadRequestId = useRef(0);
 
   const load = useCallback(async () => {
     if (!storeId) return;
+    const requestId = ++loadRequestId.current;
     setLoading(true);
     setError("");
     try {
@@ -85,6 +87,7 @@ export default function MarketingPage() {
         listMarketingEvents(storeId, 1),
         getDashboardMetrics(storeId, "30d"),
       ]);
+      if (requestId !== loadRequestId.current) return;
       setCampaigns(campaignPage.items);
       setTotal(campaignPage.total);
       setEvents(eventPage.items);
@@ -92,11 +95,12 @@ export default function MarketingPage() {
       setMetrics(dashboardMetrics);
       setSelectedCampaignId((current) => current && campaignPage.items.some((campaign) => campaign.id === current) ? current : campaignPage.items[0]?.id ?? "");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : (en ? "Marketing loading failed" : "营销数据加载失败"));
+      if (requestId === loadRequestId.current) setError(caught instanceof Error ? caught.message : (en ? "Marketing loading failed" : "营销数据加载失败"));
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [en, page, storeId]);
+  useEffect(() => () => { loadRequestId.current += 1; }, []);
 
   useEffect(() => {
     void currentUser().then((user) => {
@@ -212,7 +216,7 @@ export default function MarketingPage() {
   }, [events]);
 
   return <AppShell><main className="management-page prototype-page">
-    <section className="prototype-page-header"><div className="prototype-title"><span className="prototype-title-icon marketing"><ChartLineUp size={25} weight="duotone" /></span><div><h2>{en ? "Smart marketing" : "智能营销"}<span>{en ? "Proactive outreach · Automated workflows" : "主动触达 · 自动化流程"}</span></h2></div></div><div className="prototype-actions"><select aria-label={en ? "Store" : "店铺"} className="compact-field header-select" onChange={(event) => { setPage(1); setStoreId(event.target.value); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{id.slice(0, 8)}</option>)}</select><button className="primary-button" disabled={!storeId} onClick={() => { setEditing(null); setEditorOpen(true); }} type="button"><Plus size={18} weight="bold" />{en ? "New workflow" : "新建流程"}</button></div></section>
+    <section className="prototype-page-header"><div className="prototype-title"><span className="prototype-title-icon marketing"><ChartLineUp size={25} weight="duotone" /></span><div><h2>{en ? "Smart marketing" : "智能营销"}<span>{en ? "Proactive outreach · Automated workflows" : "主动触达 · 自动化流程"}</span></h2></div></div><div className="prototype-actions"><select aria-label={en ? "Store" : "店铺"} className="compact-field header-select" disabled={saving || Boolean(reviewingEventId)} onChange={(event) => { loadRequestId.current += 1; setEditorOpen(false); setEditing(null); setCampaigns([]); setEvents([]); setMetrics(null); setSelectedCampaignId(""); setLoading(true); setPage(1); setStoreId(event.target.value); }} value={storeId}>{stores.map((id) => <option key={id} value={id}>{id.slice(0, 8)}</option>)}</select><button className="primary-button" disabled={!storeId} onClick={() => { setEditing(null); setEditorOpen(true); }} type="button"><Plus size={18} weight="bold" />{en ? "New workflow" : "新建流程"}</button></div></section>
 
     {notice ? <section aria-live="polite" className="inline-status" role="status"><span>{notice}</span></section> : null}
     {loading ? <LoadingState label={en ? "Loading marketing workflows…" : "正在加载营销流程…"} /> : error ? <ErrorState message={error} retry={() => void load()} /> : !storeId ? <div className="state-box" role="status"><p>{en ? "Create a store to manage marketing workflows." : "请先创建店铺，再管理营销流程。"}</p><Link className="secondary-button mt-3" href="/settings/stores">{en ? "Create store" : "创建店铺"}</Link></div> : <>

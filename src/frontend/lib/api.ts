@@ -42,7 +42,7 @@ export type ImportJob = { id: string; store_id: string; original_filename: strin
 export type DocumentStrategy = "recursive" | "heading_paragraph" | "sentence" | "fixed_token" | "fixed_char" | "semantic_similarity" | "page_slide" | "ocr_layout" | "table_rows";
 export type DocumentIndexConfig = { strategy: DocumentStrategy; chunk_size: number; overlap: number; parser_mode: "auto" | "flash" | "basic"; embedding_model: "BAAI/bge-m3" };
 export type DocumentVersionSummary = { id: string; version_number: number; status: "queued" | "parsing" | "review_required" | "indexing" | "ready" | "failed_retryable" | "failed_final"; error_code: string | null; retry_count: number; created_at: string; completed_at: string | null; is_active: boolean; chunk_count: number };
-export type DocumentFileSummary = { id: string; store_id: string; category_id: string | null; filename: string; active_version_number: number | null; latest_version: DocumentVersionSummary };
+export type DocumentFileSummary = { id: string; store_id: string; category_id: string | null; filename: string; active_version_number: number | null; archived_at: string | null; latest_version: DocumentVersionSummary };
 export type DocumentFilePage = { items: DocumentFileSummary[]; total: number; page: number; page_size: number };
 export type DocumentFileDetail = DocumentFileSummary & { versions: DocumentVersionSummary[] };
 export type DocumentUnit = { unit_index: number; unit_kind: string; source_locator: Record<string, number>; raw_text: string; cleaned_text: string; issue_codes: string[]; needs_review: boolean; parse_mode: string; reviewed_by: string | null; reviewed_at: string | null };
@@ -200,6 +200,10 @@ export const importKnowledge = (storeId: string, file: File) => { const body = n
 export const getImportJob = (jobId: string) => requestApi<ImportJob>(`/knowledge/imports/${jobId}`);
 export const listDocumentFiles = (query: URLSearchParams) => requestApi<DocumentFilePage>(`/knowledge/files?${query.toString()}`);
 export const getDocumentFile = (fileId: string) => requestApi<DocumentFileDetail>(`/knowledge/files/${encodeURIComponent(fileId)}`);
+export const updateDocumentFileCategory = (fileId: string, categoryId: string) => requestApi<DocumentFileDetail>(`/knowledge/files/${encodeURIComponent(fileId)}`, { method: "PATCH", body: JSON.stringify({ category_id: categoryId }) });
+export const archiveDocumentFile = (fileId: string) => requestApi<DocumentFileDetail>(`/knowledge/files/${encodeURIComponent(fileId)}/archive`, { method: "POST" });
+export const restoreDocumentFile = (fileId: string) => requestApi<DocumentFileDetail>(`/knowledge/files/${encodeURIComponent(fileId)}/restore`, { method: "POST" });
+export const deleteDocumentFile = (fileId: string) => requestApi<void>(`/knowledge/files/${encodeURIComponent(fileId)}`, { method: "DELETE" });
 export const getDocumentVersion = (fileId: string, versionNumber: number) => requestApi<DocumentVersionDetail>(`/knowledge/files/${encodeURIComponent(fileId)}/versions/${versionNumber}`);
 export const getDocumentSettings = (storeId: string) => requestApi<DocumentIndexConfig>(`/knowledge/file-settings?store_id=${encodeURIComponent(storeId)}`);
 export const saveDocumentSettings = (storeId: string, config: DocumentIndexConfig) => requestApi<DocumentIndexConfig>(`/knowledge/file-settings?store_id=${encodeURIComponent(storeId)}`, { method: "PUT", body: JSON.stringify(config) });

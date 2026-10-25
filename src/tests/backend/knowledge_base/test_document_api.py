@@ -17,6 +17,10 @@ def test_document_routes_expose_managed_contract() -> None:
     assert "/v1/knowledge/files" in paths
     assert "/v1/knowledge/files/imports" in paths
     assert "/v1/knowledge/files/{file_id}/versions/{version_number}" in paths
+    assert "patch" in paths["/v1/knowledge/files/{file_id}"]
+    assert "delete" in paths["/v1/knowledge/files/{file_id}"]
+    assert "post" in paths["/v1/knowledge/files/{file_id}/archive"]
+    assert "post" in paths["/v1/knowledge/files/{file_id}/restore"]
     assert "/v1/knowledge/files/{file_id}/versions/{version_number}/source" in paths
     assert "/v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review" in paths
     assert "/v1/knowledge/files/{file_id}/versions/{version_number}/retry" in paths
@@ -28,6 +32,8 @@ def test_document_routes_expose_managed_contract() -> None:
         "/v1/knowledge/files/imports",
         "/v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review",
         "/v1/knowledge/files/{file_id}/versions/{version_number}/retry",
+        "/v1/knowledge/files/{file_id}/archive",
+        "/v1/knowledge/files/{file_id}/restore",
     ):
         params = paths[path]["post"]["parameters"]
         assert any(item["name"] == "Idempotency-Key" and item["in"] == "header" for item in params)
