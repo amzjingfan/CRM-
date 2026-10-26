@@ -91,11 +91,18 @@ class SidebarTrackingTimelineTranslationRequest(SidebarOrderDetailRequest):
 
 class SidebarOrderDetail(BaseModel):
     payment_method_name: str | None
+    recipient_address: "SidebarRecipientAddress | None" = None
     shipping_provider: str | None
     latest_tracking_description: str | None
     latest_tracking_at: datetime | None
     tracking_packages: list["SidebarTrackingPackage"] = Field(default_factory=list)
     enhanced_tracking_available: bool = False
+
+
+class SidebarRecipientAddress(BaseModel):
+    name: str | None = None
+    phone_number: str | None = None
+    full_address: str | None = None
 
 
 class SidebarTrackingEvent(BaseModel):
@@ -416,6 +423,13 @@ async def get_sidebar_order_detail(
             ]
     return SidebarOrderDetail(
         payment_method_name=order.payment_method_name,
+        recipient_address=SidebarRecipientAddress(
+            name=order.recipient_address.name,
+            phone_number=order.recipient_address.phone_number,
+            full_address=order.recipient_address.full_address,
+        )
+        if order.recipient_address
+        else None,
         shipping_provider=order.shipping_provider,
         latest_tracking_description=latest_description,
         latest_tracking_at=latest_at,

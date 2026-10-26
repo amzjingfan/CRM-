@@ -80,6 +80,14 @@ class TikTokOrderLineItem(TikTokModel):
     package_id: str | None = Field(default=None, max_length=200, pattern=r"^\d+$")
 
 
+class TikTokRecipientAddress(TikTokModel):
+    """平台订单详情返回的原样收件信息；掩码和缺失值均须保留。"""
+
+    name: str | None = Field(default=None, max_length=500)
+    phone_number: str | None = Field(default=None, max_length=100)
+    full_address: str | None = Field(default=None, max_length=2000)
+
+
 class TikTokOrder(TikTokModel):
     """Get Order Detail 202507 中本系统实际消费的字段。"""
 
@@ -95,6 +103,7 @@ class TikTokOrder(TikTokModel):
     payment_method_name: str | None = Field(default=None, max_length=200)
     tracking_number: str | None = Field(default=None, max_length=200)
     payment: TikTokPayment | None = None
+    recipient_address: TikTokRecipientAddress | None = None
     line_items: list[TikTokOrderLineItem] = Field(default_factory=list, max_length=500)
 
 

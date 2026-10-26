@@ -68,6 +68,9 @@ def live_order(user_id: str = "900001") -> TikTokOrder:
 @pytest.mark.asyncio
 async def test_live_orders_show_official_buyer_order_and_search(monkeypatch: pytest.MonkeyPatch) -> None:
     selected = conversation()
+    order = TikTokOrder.model_validate(
+        {**live_order().model_dump(), "recipient_address": {"name": "A***", "phone_number": "***1234"}}
+    )
     session = SimpleNamespace(
         get=AsyncMock(
             return_value=SimpleNamespace(store_id=selected.store_id, platform="tiktok", external_customer_id="800001")
@@ -75,7 +78,7 @@ async def test_live_orders_show_official_buyer_order_and_search(monkeypatch: pyt
     )
     client = SimpleNamespace(
         get_conversation=AsyncMock(return_value=remote_conversation()),
-        search_orders=AsyncMock(return_value=([live_order()], None, None)),
+        search_orders=AsyncMock(return_value=([order], None, None)),
     )
     monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
 
@@ -91,6 +94,7 @@ async def test_live_orders_show_official_buyer_order_and_search(monkeypatch: pyt
     assert result.items[0].items[0].tracking_number == "TRACK-1"
     assert result.items[0].tracking_number == "TRACK-1"
     assert result.items[0].live_detail_available is True
+    assert "recipient_address" not in result.items[0].model_dump()
     client.search_orders.assert_awaited_once_with(page_size=100, page_token=None, buyer_user_id="900001")
 
 
@@ -180,6 +184,12 @@ async def test_order_detail_shows_official_fields_and_newest_tracking(monkeypatc
     order = live_order()
     order.shipping_provider = "Carrier A"
     order.payment_method_name = "Card"
+    order = TikTokOrder.model_validate(
+        {
+            **order.model_dump(),
+            "recipient_address": {"name": "A***", "phone_number": "***1234", "full_address": "Masked Street, TX 78247"},
+        }
+    )
     client = SimpleNamespace(
         get_conversation=AsyncMock(return_value=remote_conversation()),
         get_order_details=AsyncMock(return_value=([order], None)),
@@ -208,6 +218,10 @@ async def test_order_detail_shows_official_fields_and_newest_tracking(monkeypatc
     result = await sidebar.get_sidebar_order_detail(session, SimpleNamespace(), selected.id, "600001")
 
     assert result.payment_method_name == "Card"
+    assert result.recipient_address is not None
+    assert result.recipient_address.name == "A***"
+    assert result.recipient_address.phone_number == "***1234"
+    assert result.recipient_address.full_address == "Masked Street, TX 78247"
     assert result.shipping_provider == "Carrier A"
     assert result.latest_tracking_description == "Delivered"
     assert result.latest_tracking_at.isoformat() == "2023-11-14T22:13:22+00:00"

@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-26 订单详情 UI 候选 [TR R01](../reports/tests/TR-MVP-WORKSPACE-ORDER-DETAIL-UI-001-20261026-R01.md) 本地范围 `PASS`：候选 SHA 后端 2374 passed/43 skipped、前端生产浏览器 113/113、契约 48/48、类型与构建通过；受影响后端定向 69 passed。首轮 Windows 镜像预取用例曾因 30 秒子进程超时失败，候选全套重跑通过。staging 尚未部署本候选，真实平台收件字段是否脱敏待现场核对；无真实外发或 production 发布。
+
 2026-10-26 浏览器反馈任务 [TR R02](../reports/tests/TR-MVP-STAGING-BROWSER-FEEDBACK-002-20261026-R02.md) 在前端源码及限定 staging 部署范围 `PASS`：生产浏览器 113/113、契约 48/48、类型/构建通过，lint 0 error/8 warning；手动 `ValidateOnly`/`Deploy`、12 容器、迁移 033、公网健康与已登录订单/菜单只读核对通过。GitHub Actions 零步骤失败未计入；没有真实消息或退款，production No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-browser-feedback-20261026.json)。
 
 2026-10-25 知识库与跨店铺页面一致性 [TR R02](../reports/tests/TR-MVP-STORE-VIEW-CONSISTENCY-001-20261025-R02.md) 在源码和 staging 部署范围为 `PASS`：本地后端 2398 passed/3 skipped、前端契约 48/48、生产浏览器 108/108、迁移 032 升降级及类型/构建/格式通过；手动 staging 备份、ValidateOnly/Deploy、迁移 032、12 容器、固定出口、公网健康及主页面 200 通过。Actions 零步骤失败不计 CI，已登录 UI 工具超时，真实店铺点击未验证；production No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-store-view-consistency-20261025.json)。

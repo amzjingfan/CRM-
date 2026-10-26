@@ -28,7 +28,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, enhancedTracking: 0 };
+  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, extraDetailEvent: false, enhancedTracking: 0 };
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -87,7 +87,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       calls.orderDetails++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
       if (orderDetailDelay) await new Promise((resolve) => setTimeout(resolve, orderDetailDelay));
-      data = { payment_method_name: "Card", shipping_provider: "Carrier A", latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", tracking_packages: [{ tracking_number: "878696895644", carrier_name: "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }] }], enhanced_tracking_available: enhancedTracking };
+      data = { payment_method_name: "Card", recipient_address: { name: "A***", phone_number: "***1234", full_address: "Masked Street, TX 78247" }, shipping_provider: "Carrier A", latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", tracking_packages: [{ tracking_number: "878696895644", carrier_name: "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }, ...(calls.extraDetailEvent ? [{ description: "Order placed", occurred_at: "2026-10-14T08:00:00Z", tracking_number: null, action_code: 0, action_code_name: null }] : [])] }], enhanced_tracking_available: enhancedTracking };
     } else if (path.endsWith("/sidebar/orders/enhanced-tracking") && method === "POST") {
       calls.enhancedTracking++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
@@ -234,11 +234,26 @@ test("buyer stage follows verified sidebar orders when synced orders are missing
 test("order details and receipt are read-only and refund is explicitly unavailable", async () => {
   const { context, page, calls } = await openWorkspace(2, "DELIVERED");
   try {
+    calls.extraDetailEvent = true;
     await page.getByRole("button", { name: "客户信息" }).click();
     const card = page.getByTestId("customer-order-card").first();
     await card.getByRole("button", { name: "详情", exact: true }).click();
     const orderDetails = page.getByRole("region", { name: "订单详情" });
     await orderDetails.getByText("577600000000000001").waitFor();
+    const overview = orderDetails.locator("#customer-order-overview");
+    assert.match(await overview.textContent(), /订单编号.*Card.*电话.*\*\*\*1234.*收货地址.*A\*\*\*.*Masked Street, TX 78247/s);
+    assert.doesNotMatch(await overview.textContent(), /下单时间|订单状态/);
+    const tracking = orderDetails.locator("#customer-order-tracking");
+    assert.equal(await tracking.locator(".customer-order-timeline li").count(), 2);
+    assert.equal(await tracking.getByText("Order placed").count(), 0);
+    await tracking.getByRole("button", { name: "展开更多" }).click();
+    assert.equal(await tracking.locator(".customer-order-timeline li").count(), 3);
+    await tracking.getByRole("button", { name: "收起" }).click();
+    assert.equal(await tracking.locator(".customer-order-timeline li").count(), 2);
+    const items = orderDetails.locator("#customer-order-items");
+    assert.match(await items.textContent(), /规格：Black with handrail/);
+    assert.match(await items.textContent(), /SKU 货号：PAD-BLK/);
+    assert.doesNotMatch(await items.textContent(), /SKU：456/);
     await orderDetails.getByRole("button", { name: "收据" }).click();
     const receipt = page.getByRole("dialog", { name: "订单收据预览" });
     await receipt.getByText("USD 97.90").waitFor();

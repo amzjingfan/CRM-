@@ -280,6 +280,12 @@ button:disabled { cursor: not-allowed; opacity: .5; transform: none !important; 
 .customer-order-detail-scroll { min-height: 0; overflow-y: auto; scroll-behavior: smooth; }
 .customer-order-detail-scroll section { scroll-margin-top: 8px; border-bottom: 1px solid var(--border); padding: 12px; }
 .customer-order-detail-scroll h3 { border-left: 3px solid var(--primary); margin-bottom: 9px; padding-left: 7px; font-weight: 750; }
+.customer-order-overview-value { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.customer-order-overview-value small { color: var(--muted); }
+.customer-order-address-line { align-items: flex-start; }
+.customer-order-address-line > .customer-order-address { display: grid; min-width: 0; max-width: 72%; gap: 3px; text-align: right; overflow-wrap: anywhere; }
+.customer-order-address .customer-copy-value > span { overflow: visible; overflow-wrap: anywhere; white-space: normal; }
+.customer-order-expand { margin: 9px 0 0 15px; color: var(--primary); font-weight: 650; }
 .customer-order-timeline { display: grid; gap: 8px; margin-top: 9px; padding-left: 15px; color: var(--muted); }
 .customer-order-timeline li span, .customer-order-timeline li time { display: block; overflow-wrap: anywhere; }
 .customer-order-timeline time { font-size: .66rem; }
