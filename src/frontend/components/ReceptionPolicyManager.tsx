@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CaretDown, DotsThree, Info, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import { FormEvent, MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "./AppShell";
@@ -288,11 +289,11 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
   }
 
   return <AppShell><main className="reception-page reception-policy-page">
+    <div className="reception-crumb"><Link href="/marketing">智能营销</Link><span>/</span><span>基础接待</span><span>/</span><strong>{title}</strong></div>
+    <header className="reception-head"><div><span className="reception-eyebrow">BASIC RECEPTION</span><h1>{title}</h1><p>管理适用店铺、有效期及策略状态；自动发送尚未启用。</p></div><label className="reception-policy-search"><input aria-label="按店铺名称或别名搜索" onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="输入店铺名称/别名" value={search} /><MagnifyingGlass aria-hidden="true" size={17} /></label></header>
     <ReceptionTabs active={kind} />
-    <header className="reception-policy-heading"><div><h1>{title}</h1><p>仅保存配置，不自动向买家发送</p></div>
-      <label className="reception-policy-search"><input aria-label="按店铺名称或别名搜索" onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="输入店铺名称/别名" value={search} /><MagnifyingGlass aria-hidden="true" size={17} /></label>
-    </header>
     {notice ? <p className="reception-notice" role="status">{notice}</p> : null}
+    <section className="reception-card reception-policy-card">
     <div className="reception-policy-tools">
       <div aria-label="策略筛选" className="reception-policy-tabs" role="group">
         {([["all", "全部策略"], ["effective", "有效策略"], ["ineffective", "失效策略"]] as const).map(([value, label]) => <button aria-pressed={filter === value} className={filter === value ? "active" : ""} key={value} onClick={() => { setFilter(value); setPage(1); }} type="button">{label}</button>)}
@@ -300,7 +301,6 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
       <div className="reception-policy-actions"><span>未加入策略的店铺：{unassigned.length}</span><button disabled={!canEdit || !unassigned.length || !policies.length} onClick={() => { setBulkPolicyId(policies[0]?.id ?? ""); setBulkStoreIds(unassigned.map((store) => store.id)); setBulkOpen(true); }} type="button">批量设置</button><button className="primary-button" disabled={!stores.length || !canEdit} onClick={() => openEditor()} type="button"><Plus size={16} />新增策略</button></div>
     </div>
     {error ? <p className="reception-form-error" role="alert">{error}</p> : null}
-    <section className="reception-card reception-policy-card">
       {booting ? <LoadingState label="正在读取授权店铺…" /> : bootError ? <ErrorState message={bootError} retry={() => void loadIdentity()} /> : !stores.length ? <div className="reception-empty"><h2>暂无可管理店铺</h2><p>请先完成店铺授权，再管理基础接待配置。</p></div> : !canRead ? <div className="reception-empty"><h2>当前账号无营销查看权限</h2><p>请联系管理员开通营销权限。</p></div> : loading ? <LoadingState label="正在加载配置…" /> : error ? <ErrorState message={error} retry={() => setRefreshKey((key) => key + 1)} /> : shown.length ? <>
         <div className="reception-table-wrap"><table className="reception-table reception-policy-table"><thead><tr><th>执行顺序</th><th>策略名称</th><th>发送内容</th><th><span className="reception-status-help">策略状态 <Info size={14} aria-label="策略状态说明" tabIndex={0} /><span className="reception-status-tooltip">生效中：开关开启且当前时间在有效期内<br />未开始：开关开启且当前时间在开始时间之前<br />已过期：开关开启且当前时间在结束时间之后<br />未启用：策略开关关闭</span></span></th><th>有效期</th><th>适用店铺</th><th>策略开关</th><th>操作</th></tr></thead><tbody>{visible.map((policy) => {
           const state = policyStatus(policy, stores, now);

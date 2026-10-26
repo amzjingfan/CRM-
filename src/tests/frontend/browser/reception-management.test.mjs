@@ -85,9 +85,29 @@ test("marketing sidebar has two entries and reception pages use in-page tabs", a
     for (const [name, href] of [["超时自动回复", "/marketing/reception/timeout"], ["进店欢迎语", "/marketing/reception/welcome"], ["快捷回复", "/marketing/reception/quick-replies"]]) {
       await tab.locator(".reception-page-tabs").getByRole("link", { name, exact: true }).click();
       await tab.waitForURL(`${baseUrl}${href}`);
-      assert.equal(await sideNav.getByRole("link", { name: "基础接待" }).getAttribute("aria-current"), "page");
+      assert.equal(await marketing.getAttribute("aria-expanded"), "false");
+      assert.match(await tab.locator(".reception-crumb").textContent(), new RegExp(name));
+      assert.equal(await tab.locator(".reception-head h1").textContent(), name);
+      assert.equal(await tab.locator(".reception-card").count(), 1);
     }
     await marketing.click();
+    assert.equal(await marketing.getAttribute("aria-expanded"), "true");
+    await marketing.click();
+    assert.equal(await marketing.getAttribute("aria-expanded"), "false");
+  } finally { await context.close(); }
+});
+
+test("compact marketing flyout closes on outside click and does not persist across pages", async () => {
+  const { context, tab } = await open("/marketing/reception/quick-replies");
+  try {
+    await tab.setViewportSize({ width: 1010, height: 800 });
+    const marketing = tab.getByRole("complementary", { name: "主导航" }).getByRole("button", { name: "智能营销" });
+    await marketing.click();
+    assert.equal(await marketing.getAttribute("aria-expanded"), "true");
+    await tab.locator(".reception-page h1").click();
+    assert.equal(await marketing.getAttribute("aria-expanded"), "false");
+    await marketing.click();
+    await tab.reload();
     assert.equal(await marketing.getAttribute("aria-expanded"), "false");
   } finally { await context.close(); }
 });
@@ -116,7 +136,7 @@ test("quick reply editor validates text and previews before save", async () => {
 test("policy editor saves configuration only", async () => {
   const { context, tab, writes } = await open("/marketing/reception/timeout");
   try {
-    await tab.getByText("仅保存配置，不自动向买家发送").waitFor();
+    await tab.getByText("管理适用店铺、有效期及策略状态；自动发送尚未启用。").waitFor();
     await tab.getByRole("button", { name: "新增策略" }).click();
     const dialog = tab.getByRole("dialog", { name: "新增超时自动回复" });
     await dialog.getByLabel("策略名称").fill("午间接待");

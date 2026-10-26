@@ -134,13 +134,9 @@
 .reception-more-menu button:hover { background: var(--primary-soft); }
 .reception-policy-editor { width: min(100%, 610px); }
 .reception-policy-fields { display: grid; gap: 16px; padding: 20px 22px; }
-.reception-policy-page { padding-top: 18px; }
-.reception-policy-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); margin: -18px -38px 0; padding: 16px 38px; background: var(--surface); }
-.reception-policy-heading h1 { margin: 0; font-size: 17px; }
-.reception-policy-heading p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
-.reception-policy-search { display: flex; align-items: center; width: 240px; min-height: 34px; border: 1px solid var(--border); border-radius: 3px; padding: 0 9px; background: var(--surface); color: var(--muted); }
+.reception-policy-search { display: flex; align-items: center; width: min(100%, 260px); min-height: 38px; border: 1px solid var(--border); border-radius: 7px; padding: 0 9px; background: var(--surface); color: var(--muted); }
 .reception-policy-search input { width: 100%; min-width: 0; border: 0; background: transparent; outline: 0; color: var(--text); font-size: 12px; }
-.reception-policy-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0 12px; }
+.reception-policy-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding: 16px; }
 .reception-policy-tabs { display: flex; }
 .reception-policy-tabs button { border: 1px solid var(--border); margin-right: -1px; padding: 8px 14px; background: var(--surface); font-size: 12px; }
 .reception-policy-tabs button.active { position: relative; z-index: 1; border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
@@ -148,7 +144,7 @@
 .reception-policy-actions > button:not(.primary-button) { color: var(--primary); }
 .reception-policy-actions > button:disabled { color: var(--muted); cursor: not-allowed; }
 .reception-policy-actions .primary-button { min-height: 34px; border-radius: 3px; padding: 7px 13px; }
-.reception-policy-card { min-height: 180px; border-radius: 3px; box-shadow: none; }
+.reception-policy-card { min-height: 180px; }
 .reception-policy-table { min-width: 820px; table-layout: fixed; }
 .reception-policy-table th, .reception-policy-table td { padding: 16px 9px; }
 .reception-policy-table td { height: 66px; }

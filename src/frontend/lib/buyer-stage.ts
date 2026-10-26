@@ -1,8 +1,8 @@
-import type { BuyerStage, OrderSummary } from "./api";
+import type { BuyerStage } from "./api";
 
-export function stageFromOrders(orders: OrderSummary[]): BuyerStage | "unknown" {
+export function stageFromOrders(orders: Array<{ status: string }>): BuyerStage | "unknown" {
   if (!orders.length) return "pre";
-  // recent_orders 已由服务端按创建时间降序排序，以最近一笔订单判断当前阶段。
+  // 调用方传入按创建时间降序排列的订单，以最近一笔判断当前阶段。
   const status = orders[0].status.trim().toUpperCase();
   if (["UNPAID", "AWAITING_PAYMENT", "AWAITING_SHIPMENT", "AWAITING_COLLECTION", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "PARTIALLY_SHIPPING"].includes(status)) return "during";
   if (["DELIVERED", "COMPLETED", "CANCELLED", "CANCELED", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"].includes(status)) return "after";

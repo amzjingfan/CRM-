@@ -20,7 +20,7 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false, orderSellerSku = "PAD-BLK") {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false, orderSellerSku = "PAD-BLK", syncedOrderStatus = orderStatus) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } },
@@ -70,7 +70,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/messages") && method === "GET") {
       const record = records.find((item) => path.includes(item.id));
       const page = Number(url.searchParams.get("page") ?? "1");
-      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: [{ id: "order-1", external_order_id: "577600000000000001", platform: "tiktok", status: orderStatus, currency: "USD", total_amount: "97.90", tracking_number: null, tracking_status: null }], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: translationEnabled, draft_translation_enabled: record.status !== "closed" };
+      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: syncedOrderStatus ? [{ id: "order-1", external_order_id: "577600000000000001", platform: "tiktok", status: syncedOrderStatus, currency: "USD", total_amount: "97.90", tracking_number: null, tracking_status: null }] : [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: translationEnabled, draft_translation_enabled: record.status !== "closed" };
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
@@ -219,10 +219,40 @@ test("quick reply management link and emoji panel remain manual draft tools", as
   } finally { await context.close(); }
 });
 
+test("buyer stage follows verified sidebar orders when synced orders are missing", async () => {
+  const { context, page, calls } = await openWorkspace(2, "DELIVERED", 2, null, 0, false, "Black with handrail", false, "PAD-BLK", null);
+  try {
+    const stage = page.getByRole("button", { name: "买家阶段" });
+    await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售后买家"));
+    assert.equal(await stage.getAttribute("data-stage"), "after");
+    assert.doesNotMatch(await stage.getAttribute("title") ?? "", /根据订单自动判断/);
+    assert.ok(calls.sidebarQueries.some((query) => query.section === "orders" && query.status === "all"));
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("order details and receipt are read-only and refund is explicitly unavailable", async () => {
+  const { context, page, calls } = await openWorkspace(2, "DELIVERED");
+  try {
+    await page.getByRole("button", { name: "客户信息" }).click();
+    const card = page.getByTestId("customer-order-card").first();
+    await card.getByRole("button", { name: "详情", exact: true }).click();
+    const orderDetails = page.getByRole("region", { name: "订单详情" });
+    await orderDetails.getByText("577600000000000001").waitFor();
+    await orderDetails.getByRole("button", { name: "收据" }).click();
+    const receipt = page.getByRole("dialog", { name: "订单收据预览" });
+    await receipt.getByText("USD 97.90").waitFor();
+    assert.equal(await receipt.getByRole("button", { name: "发送发票" }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "退款", exact: true }).count(), 0);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
 test("buyer stage uses order status by default and saves a reversible manual override", async () => {
   const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT");
   try {
     const stage = page.getByRole("button", { name: "买家阶段" });
+    await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售中买家"));
     assert.match(await stage.textContent(), /售中买家/);
     await stage.click();
     await page.getByRole("menuitem", { name: "售后买家" }).click();
@@ -231,7 +261,7 @@ test("buyer stage uses order status by default and saves a reversible manual ove
     await page.reload();
     assert.match(await page.getByRole("button", { name: "买家阶段" }).textContent(), /售后买家/);
     await page.getByRole("button", { name: "买家阶段" }).click();
-    await page.getByRole("menuitem", { name: "根据订单自动判断" }).click();
+    await page.getByRole("menuitem", { name: "恢复自动判断" }).click();
     await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售中买家"));
     assert.match(await stage.textContent(), /售中买家/);
     assert.deepEqual(calls.stage.map((entry) => entry.stage), ["after", null]);
@@ -289,6 +319,7 @@ test("buyer stage uses order status by default and saves a reversible manual ove
   const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT");
   try {
     const stage = page.getByRole("button", { name: "买家阶段" });
+    await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售中买家"));
     assert.match(await stage.textContent(), /售中买家/);
     await stage.click();
     await page.getByRole("menuitem", { name: "售后买家" }).click();
@@ -297,7 +328,7 @@ test("buyer stage uses order status by default and saves a reversible manual ove
     await page.reload();
     assert.match(await page.getByRole("button", { name: "买家阶段" }).textContent(), /售后买家/);
     await page.getByRole("button", { name: "买家阶段" }).click();
-    await page.getByRole("menuitem", { name: "根据订单自动判断" }).click();
+    await page.getByRole("menuitem", { name: "恢复自动判断" }).click();
     await page.waitForFunction(() => document.querySelector(".workspace-buyer-stage-button")?.textContent?.includes("售中买家"));
     assert.match(await stage.textContent(), /售中买家/);
     assert.deepEqual(calls.stage.map((entry) => entry.stage), ["after", null]);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CaretDown,
   ChartPieSlice,
@@ -54,10 +54,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState("");
   const [authRetry, setAuthRetry] = useState(0);
   const [marketingOpen, setMarketingOpen] = useState(false);
+  const marketingNavRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => { setMarketingOpen(false); }, [pathname]);
   useEffect(() => {
-    setMarketingOpen(sessionStorage.getItem("crm_marketing_open") === "1");
-  }, []);
+    if (!marketingOpen) return;
+    const closeOnOutside = (event: PointerEvent) => { if (!marketingNavRef.current?.contains(event.target as Node)) setMarketingOpen(false); };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => { if (event.key === "Escape") setMarketingOpen(false); };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOnOutside); document.removeEventListener("keydown", closeOnEscape); };
+  }, [marketingOpen]);
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem("crm_language") === "en" ? "en" : "zh";
@@ -108,8 +115,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <nav className="main-nav">{navItems.map((item) => {
         const Icon = item.icon;
         const active = current.href === item.href;
-        if (item.key === "marketing") return <div key={item.href}>
-          <button aria-expanded={marketingOpen} aria-label={text.marketing} className={active ? "nav-link active" : "nav-link"} onClick={() => { const next = !marketingOpen; setMarketingOpen(next); sessionStorage.setItem("crm_marketing_open", next ? "1" : "0"); }} type="button"><Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} /><span>{text.marketing}</span><CaretDown aria-hidden="true" className={marketingOpen ? "reception-nav-caret open" : "reception-nav-caret"} size={14} /></button>
+        if (item.key === "marketing") return <div key={item.href} ref={marketingNavRef}>
+          <button aria-expanded={marketingOpen} aria-label={text.marketing} className={active ? "nav-link active" : "nav-link"} onClick={() => setMarketingOpen((open) => !open)} type="button"><Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} /><span>{text.marketing}</span><CaretDown aria-hidden="true" className={marketingOpen ? "reception-nav-caret open" : "reception-nav-caret"} size={14} /></button>
           {marketingOpen ? <div className="reception-side-subnav"><Link aria-current={pathname === "/marketing" ? "page" : undefined} href="/marketing">营销流程</Link><Link aria-current={pathname.startsWith("/marketing/reception") ? "page" : undefined} href="/marketing/reception">基础接待</Link></div> : null}
         </div>;
         return <div className={"separated" in item && item.separated ? "nav-group-separated" : ""} key={item.href}><Link aria-current={pathname === item.href ? "page" : undefined} aria-label={text[item.key]} className={active ? "nav-link active" : "nav-link"} href={item.href}>{prototypeNavigation ? <KnowledgeNavIcon name={item.key} /> : <Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} />}<span>{text[item.key]}</span></Link></div>;
