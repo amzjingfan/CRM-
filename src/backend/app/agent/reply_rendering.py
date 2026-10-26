@@ -69,6 +69,8 @@ def render_trusted_faq_reply(
     hit = next((item for item in hits if item.chunk_id == citation_ids[0]), None)
     if hit is None:
         return None
+    if hit.source_type != "faq":
+        return None
     answer = extract_trusted_faq_answer(hit)
     if answer is None or _normalize_text(answer) != _normalize_text(model_answer):
         return None
@@ -89,6 +91,8 @@ def render_trusted_tool_reply(
 
 def extract_trusted_faq_answer(hit: KnowledgeRetrievalHit) -> str | None:
     """从已发布 FAQ 命中提取可逐字复制的答案模板。"""
+    if hit.source_type != "faq":
+        return None
     return _extract_faq_answer(hit.content)
 
 

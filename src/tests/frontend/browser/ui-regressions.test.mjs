@@ -1018,6 +1018,7 @@ test("Agent code with punctuation is rejected by browser validation", async () =
     "GET /v1/settings/stores": [store],
   });
   try {
+    await page.getByRole("button", { name: "新建 Agent" }).click();
     const code = page.locator('input[name="code"]');
     await code.fill("c's");
     assert.equal(await code.evaluate((input) => input.validity.valid), false);
@@ -1042,7 +1043,10 @@ test("Agent save failure is visibly announced", async () => {
     });
   });
   try {
-    await page.getByRole("button", { name: "保存运营配置" }).click();
+    await page.getByRole("button", { name: "新建 Agent" }).click();
+    await page.locator('input[name="code"]').fill("service_new");
+    await page.locator('input[name="name"]').fill("新客服");
+    await page.getByRole("button", { name: "创建 Agent" }).click();
     const status = page.getByRole("status").filter({ hasText: "Agent 配置无效" });
     await status.waitFor({ state: "visible", timeout: 5000 });
     assert.ok((await status.boundingBox()).y < 400, "Agent save error should be near the page header");
@@ -1066,6 +1070,7 @@ test("Agent log request failure is not shown as an empty log", async () => {
     });
   });
   try {
+    await page.getByRole("tab", { name: /运行记录/ }).click();
     await page.getByRole("alert").getByText("日志服务不可用").waitFor({ state: "visible", timeout: 5000 });
     assert.equal(await page.getByText("暂无运行日志").count(), 0);
   } finally {
@@ -1099,7 +1104,8 @@ test("late Agent log error cannot replace the newly selected Agent logs", async 
   });
   try {
     await startedAPromise;
-    await page.locator(".agent-summary-card").filter({ hasText: "Agent B" }).getByRole("button", { name: "配置" }).click();
+    await page.getByRole("button", { name: /Agent B/ }).click();
+    await page.getByRole("tab", { name: /运行记录/ }).click();
     await page.getByText("B ACTION").waitFor();
     const oldResponse = page.waitForResponse((response) => response.url().includes(agentA.id) && response.url().includes("/logs"));
     releaseA();
@@ -1174,7 +1180,7 @@ test("Agent form without a store disables save and points to store setup", async
   const { context, page } = await openPage("/agents");
   try {
     await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
-    assert.equal(await page.getByRole("button", { name: "保存运营配置" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "新建 Agent" }).isDisabled(), true);
   } finally {
     await context.close();
   }

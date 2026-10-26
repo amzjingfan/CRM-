@@ -60,7 +60,8 @@
 - 文件元数据可通过 `PATCH /v1/knowledge/files/{file_id}` 调整到同店铺启用分类；`POST .../archive` 与 `POST .../restore` 维护可恢复归档，`DELETE /v1/knowledge/files/{file_id}` 设置软删除时间。历史版本、原文件和审计不被改写。归档文件仍在管理列表显示，删除文件从列表和详情隐藏；有排队、解析或索引中的版本时拒绝归档/删除。写接口沿用 `knowledge.manage`、CSRF、幂等键和店铺隔离；跨店铺文件返回 404。文件编辑 UI 的“替换文件”复用显式替换导入，要求同名并沿用分类。
 - `GET /v1/knowledge/entries` 与 `GET /v1/knowledge/files` 新增可选 `categorized_only=true` 查询参数：仅返回当前授权店铺内归属启用分类的记录，在数据库分页和总数统计前筛选。省略或传 `false` 保持原有含未分类数据的 API 行为；知识库管理页的“全部知识”、分类角标和列表显式传 `true`。历史未分类数据不删除，文件详情接口仍可按 ID 读取；上传 API 的分类字段继续可选以兼容既有调用，管理页要求用户先选分类。
 - `POST /v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review` 对单元提交人工修订与确认；`.../retry` 只重试可恢复版本。`GET/PUT /v1/knowledge/file-settings` 读取和保存店铺级导入配置；每次上传冻结配置快照。写接口均要求店铺范围、`knowledge.manage`、CSRF 与幂等键，读接口要求 `knowledge.view`；跨店铺文件返回 404。
-- 通用文件状态包括排队、处理中、待复核、失败和就绪；待复核版本没有任何新向量，旧有效版本保持可用。该接口不改变现有 FAQ 审批与 Agent 检索接口。
+- `POST /v1/knowledge/files/{file_id}/versions/{version_number}/approve` 接受显式 `statement_type` 与 `customer_scope`，仅当前店铺、未归档/删除、当前有效且索引就绪的版本可由 `knowledge.manage` 审批为内部建议知识；`.../revoke` 撤销已批准版本。CSRF、幂等键和审计必需。未知类型与具体客户事实拒绝审批，替换文件须重新审批。文件列表与版本详情返回审批状态和语义元数据。
+- 通用文件状态包括排队、处理中、待复核、失败和就绪；待复核版本没有任何新向量，旧有效版本保持可用。Agent 仅使用显式绑定、已审批且当前有效的文件版本；未绑定 Agent 仍走既有 FAQ 检索。
 - 当前不开放 `approved_for_public_reply`，发布 FAQ 不等于允许自动发送。
 
 ### 营销
@@ -74,6 +75,8 @@
 - `GET/POST /agents`、`GET/PATCH/DELETE /agents/{agent_id}`。
 - `POST /agents/{agent_id}/enable|disable|toggle`、`GET /agents/{agent_id}/logs`。
 - `reply_profile` 仅接受固定语气、回复语言、坐席语言和经清洗的品牌名；任意 Prompt、模型和阈值字段拒绝。
+- Agent 新建与修改支持 `agent_type=service|operations` 和当前授权店铺的 `knowledge_file_ids`。新增或改变非空文件绑定还需 `knowledge.view`；经营类不能启用面向客户的运行。文件绑定在保存时校验店铺，运行时仍以版本审批、有效状态、归档/删除和模型门禁过滤。文件 RAG 的查询向量化、SQL 与重排共用 12 秒总时限，超时以 `RAG_RETRIEVAL_TIMEOUT` 失败关闭并记入运行日志。
+- 只读 `runtime.available_models` 只列出当前服务端配置的主/备用模型；管理页选择仅作页面预览，不写入运行配置或改变实际模型。Prompt 仍仅展示版本化策略摘要。
 
 ### 团队与渠道
 

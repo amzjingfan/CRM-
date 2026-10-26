@@ -23,7 +23,7 @@ from app.agent.embeddings import EmbeddingErrorCode, EmbeddingProviderError
 from app.agent.errors import LLMErrorCode, LLMFailureStage, LLMOutputFailureKind, LLMOutputSchemaIssue, LLMProviderError
 from app.agent.prompt_registry import BusinessPromptId
 from app.agent.providers.base import OutputT, ProviderResult, StructuredRequest
-from app.agent.rag import RagRetrievalResult
+from app.agent.rag import RagRetrievalResult, RagRetrievalTimeout
 from app.agent.reply_policy import CustomerLanguage, SupportedLanguage, detect_customer_language, resolve_reply_language
 from app.agent.reply_rendering import (
     bind_redacted_tool_claims,
@@ -140,6 +140,7 @@ class RagClient(Protocol):
         session: AsyncSession,
         store_id: uuid.UUID,
         query: str,
+        file_ids: tuple[uuid.UUID, ...] = (),
     ) -> RagRetrievalResult:
         """返回当前店铺的发布知识。"""
         ...
@@ -386,6 +387,9 @@ class AgentWorkflowService:
         except asyncio.CancelledError:
             await self._record_failure(run_id, "AGENT_CANCELLED", started_at)
             raise
+        except RagRetrievalTimeout as error:
+            await self._record_failure(run_id, "RAG_RETRIEVAL_TIMEOUT", started_at)
+            raise AgentWorkflowExecutionError(run_id, "RAG_RETRIEVAL_TIMEOUT") from error
         except (LLMProviderError, EmbeddingProviderError, RerankingProviderError) as error:
             error_code = error.code.value
             await self._record_failure(
@@ -410,6 +414,17 @@ class AgentWorkflowService:
                 },
             )
             raise AgentWorkflowExecutionError(run_id, "AGENT_WORKFLOW_ERROR") from error
+
+    async def _retrieve(self, state: WorkflowState) -> RagRetrievalResult:
+        command = state["command"]
+        if command.knowledge_file_ids:
+            return await self.rag_service.retrieve(
+                state["session"],
+                command.store_id,
+                command.message,
+                file_ids=tuple(command.knowledge_file_ids),
+            )
+        return await self.rag_service.retrieve(state["session"], command.store_id, command.message)
 
     def _build_graph(self) -> Any:
         """构建无循环工作流，硬性限制节点次数和模型消费。"""
@@ -483,12 +498,16 @@ class AgentWorkflowService:
     async def _intent_classified(self, state: WorkflowState) -> WorkflowState:
         """工具问题沿用分类器；FAQ 命中使用组合请求，其余旧路径保留兼容。"""
         command = state["command"]
-        if self.combined_faq_enabled and not any(
-            detect_required_tools(command.message, intent) for intent in IntentName
+        if (
+            self.combined_faq_enabled
+            and not command.knowledge_file_ids
+            and not any(detect_required_tools(command.message, intent) for intent in IntentName)
         ):
             return await self._classify_and_draft_faq(state)
-        if self.trusted_faq_enabled and not any(
-            detect_required_tools(command.message, intent) for intent in IntentName
+        if (
+            self.trusted_faq_enabled
+            and not command.knowledge_file_ids
+            and not any(detect_required_tools(command.message, intent) for intent in IntentName)
         ):
             return await self._classify_with_trusted_faq_review(state)
         retrieval_task: asyncio.Task[tuple[RagRetrievalResult, int]] | None = None
@@ -497,7 +516,7 @@ class AgentWorkflowService:
 
             async def retrieve_timed() -> tuple[RagRetrievalResult, int]:
                 started_at = time.perf_counter_ns()
-                result = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+                result = await self._retrieve(state)
                 return result, max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
 
             retrieval_task = asyncio.create_task(retrieve_timed())
@@ -555,6 +574,8 @@ class AgentWorkflowService:
         if len(retrieval.hits) != 1 or retrieval.top_score < self.human_review_threshold:
             return None
         hit = retrieval.hits[0]
+        if hit.source_type != "faq":
+            return None
         metadata = hit.safety_metadata
         if (
             metadata.store_id != state["command"].store_id
@@ -586,7 +607,7 @@ class AgentWorkflowService:
 
         async def prefetch() -> TrustedFaqPrefetch:
             retrieval_started_at = time.perf_counter_ns()
-            retrieval = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+            retrieval = await self._retrieve(state)
             retrieval_ms = max(0, (time.perf_counter_ns() - retrieval_started_at) // 1_000_000)
             answer = self._trusted_faq_answer(state, retrieval)
             if answer is None:
@@ -696,7 +717,7 @@ class AgentWorkflowService:
         """先读取当前店铺 FAQ，再用一次严格结构化请求分类并生成草稿。"""
         command = state["command"]
         started_at = time.perf_counter_ns()
-        retrieval = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+        retrieval = await self._retrieve(state)
         retrieval_ms = max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
         if not retrieval.hits:
             inference = IntentInferenceResult(
@@ -987,12 +1008,11 @@ class AgentWorkflowService:
 
     async def _knowledge_retrieved(self, state: WorkflowState) -> WorkflowState:
         """查询当前 store_id 的发布 FAQ，并累计 Embedding Token。"""
-        command = state["command"]
         retrieval = state.get("retrieval")
         timings: list[tuple[str, int]] = []
         if retrieval is None:
             started_at = time.perf_counter_ns()
-            retrieval = await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+            retrieval = await self._retrieve(state)
             timings = [("retrieval", max(0, (time.perf_counter_ns() - started_at) // 1_000_000))]
         update: WorkflowState = {
             "retrieval": retrieval,

@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.knowledge_base.document_schemas import DocumentIndexConfig
+from app.knowledge_base.schemas import KnowledgeCustomerScope, KnowledgeStatementType
 
 
 class DocumentVersionSummary(BaseModel):
@@ -19,6 +20,14 @@ class DocumentVersionSummary(BaseModel):
     completed_at: datetime | None
     is_active: bool
     chunk_count: int
+    approval_status: str = "draft"
+    statement_type: str = "unknown"
+    customer_scope: str = "none"
+
+
+class DocumentVersionApproval(BaseModel):
+    statement_type: KnowledgeStatementType
+    customer_scope: KnowledgeCustomerScope
 
 
 class DocumentFileSummary(BaseModel):

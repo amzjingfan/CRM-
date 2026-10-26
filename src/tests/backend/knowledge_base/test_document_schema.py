@@ -20,7 +20,7 @@ def test_independently_deployed_reception_and_document_migrations_join_one_head(
     """两条 029 已分别在环境落地，合流必须保留两个历史 revision。"""
     migration_path = Path(__file__).resolve().parents[3] / "backend" / "migrations"
     scripts = ScriptDirectory(str(migration_path))
-    assert scripts.get_heads() == ["032_knowledge_file_archive"]
+    assert scripts.get_heads() == ["033_file_version_approval"]
     assert scripts.get_revision("032_knowledge_file_archive").down_revision == "031_reception_policy_schedule"
     assert scripts.get_revision("031_reception_policy_schedule").down_revision == "030_merge_rag_reception"
     assert set(scripts.get_revision("030_merge_rag_reception").down_revision) == {

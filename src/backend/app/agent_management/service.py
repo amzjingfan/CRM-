@@ -2,7 +2,9 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import cast
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +29,7 @@ from app.agent_management.schemas import (
 )
 from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
+from app.knowledge_base.document_models import KnowledgeFile
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.exceptions.errors import AppError, ErrorCode
@@ -38,6 +41,9 @@ def runtime_view() -> AgentRuntimeView:
         available=settings.llm_enabled and settings.embedding_enabled,
         llm_provider=settings.llm_primary_provider,
         llm_model=settings.llm_primary_model,
+        available_models=list(
+            dict.fromkeys(model for model in (settings.llm_primary_model, settings.llm_fallback_model) if model)
+        ),
         embedding_provider=settings.embedding_provider,
         embedding_model=settings.embedding_model,
         reranker_model="BAAI/bge-reranker-large",
@@ -60,8 +66,12 @@ def config_view(config: AgentConfig) -> AgentConfigView:
         name=config.name,
         code=config.code,
         description=config.description,
+        agent_type=config.knowledge_scope.get("agent_type", "service"),  # type: ignore[arg-type]
         status=config.status,  # type: ignore[arg-type]
         enabled_tools=list(config.enabled_tools),
+        knowledge_file_ids=[
+            uuid.UUID(str(item)) for item in cast(list[object], config.knowledge_scope.get("file_ids", []))
+        ],
         knowledge_scope=dict(config.knowledge_scope),
         reply_profile=resolve_store_reply_profile(config.knowledge_scope),
         runtime=runtime_view(),
@@ -82,12 +92,46 @@ async def get_config(session: AsyncSession, user: User, config_id: uuid.UUID) ->
     return item
 
 
+async def validate_knowledge_file_ids(
+    session: AsyncSession, store_id: uuid.UUID, file_ids: list[uuid.UUID]
+) -> list[uuid.UUID]:
+    """文件绑定只接受当前店铺仍可用的导入文件，不能用客户端 ID 扩大范围。"""
+    unique_ids = list(dict.fromkeys(file_ids))
+    if not unique_ids:
+        return []
+    found = (
+        await session.scalars(
+            select(KnowledgeFile.id).where(
+                KnowledgeFile.id.in_(unique_ids),
+                KnowledgeFile.store_id == store_id,
+                KnowledgeFile.archived_at.is_(None),
+                KnowledgeFile.deleted_at.is_(None),
+            )
+        )
+    ).all()
+    if set(found) != set(unique_ids):
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "所选知识文件不存在或不可绑定", 404)
+    return unique_ids
+
+
+def require_knowledge_view_for_binding(user: User, file_ids: list[uuid.UUID]) -> None:
+    """Agent 配置权限不能提升为知识文件读取或绑定权限。"""
+    if not file_ids:
+        return
+    if "admin" in {role.code for role in user.roles}:
+        return
+    if "knowledge.view" not in {permission.code for role in user.roles for permission in role.permissions}:
+        raise AppError(ErrorCode.PERMISSION_DENIED, "没有绑定知识文件的权限", 403)
+
+
 async def create_config(
     session: AsyncSession,
     user: User,
     payload: AgentConfigCreate,
 ) -> AgentConfigView:
     await ensure_store_access(session, user, payload.store_id)
+    require_knowledge_view_for_binding(user, payload.knowledge_file_ids)
+    file_ids = await validate_knowledge_file_ids(session, payload.store_id, payload.knowledge_file_ids)
     config = AgentConfig(
         store_id=payload.store_id,
         name=payload.name,
@@ -96,6 +140,8 @@ async def create_config(
         enabled_tools=list(dict.fromkeys(payload.enabled_tools)),
         knowledge_scope={
             "mode": payload.knowledge_scope,
+            "agent_type": payload.agent_type,
+            "file_ids": [str(item) for item in file_ids],
             **(
                 {"reply_profile": payload.reply_profile.model_dump(mode="json")}
                 if payload.reply_profile is not None
@@ -136,6 +182,8 @@ async def update_config(
     before = {
         "name": config.name,
         "enabled_tools": list(config.enabled_tools),
+        "agent_type": config.knowledge_scope.get("agent_type", "service"),
+        "file_ids": config.knowledge_scope.get("file_ids", []),
         "reply_profile": resolve_store_reply_profile(config.knowledge_scope).model_dump(mode="json"),
     }
     changes = payload.model_dump(exclude_unset=True)
@@ -150,6 +198,22 @@ async def update_config(
             scope.pop("reply_profile", None)
         else:
             scope["reply_profile"] = reply_profile
+    if "agent_type" in changes:
+        agent_type = changes.pop("agent_type")
+        if agent_type is None:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "Agent 类型不能为空", 422)
+        scope["agent_type"] = agent_type
+        if agent_type == "operations":
+            config.status = "disabled"
+    if "knowledge_file_ids" in changes:
+        requested_ids = changes.pop("knowledge_file_ids")
+        existing_ids = scope.get("file_ids", [])
+        if not isinstance(existing_ids, list):
+            raise AppError(ErrorCode.VALIDATION_ERROR, "Agent 知识文件配置无效", 422)
+        if {str(item) for item in requested_ids or []} != {str(item) for item in existing_ids}:
+            require_knowledge_view_for_binding(user, requested_ids or [])
+        file_ids = await validate_knowledge_file_ids(session, config.store_id, requested_ids or [])
+        scope["file_ids"] = [str(item) for item in file_ids]
     config.knowledge_scope = scope
     for field, value in changes.items():
         setattr(config, field, value)
@@ -165,6 +229,8 @@ async def update_config(
             after_data={
                 "name": config.name,
                 "enabled_tools": list(config.enabled_tools),
+                "agent_type": scope.get("agent_type", "service"),
+                "file_ids": scope.get("file_ids", []),
                 "reply_profile": resolve_store_reply_profile(config.knowledge_scope).model_dump(mode="json"),
             },
             result="succeeded",
@@ -182,6 +248,8 @@ async def set_config_status(
     status: str,
 ) -> AgentConfigView:
     config = await get_config(session, user, config_id)
+    if status == "enabled" and config.knowledge_scope.get("agent_type", "service") != "service":
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "经营类 Agent 不能启用客服运行", 409)
     before = config.status
     config.status = status
     session.add(

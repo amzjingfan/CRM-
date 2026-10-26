@@ -99,10 +99,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const current = navItems.find((item) => pathname.startsWith(item.href)) ?? navItems[0];
   const userInitial = user.name.trim().slice(0, 1).toUpperCase() || "U";
   const knowledgePrototype = current.href === "/knowledge";
+  const agentPrototype = current.href === "/agents";
+  const prototypeNavigation = knowledgePrototype || agentPrototype;
 
-  return <div className={knowledgePrototype ? "app-shell knowledge-prototype-shell" : "app-shell"}>
+  return <div className={knowledgePrototype ? "app-shell knowledge-prototype-shell" : agentPrototype ? "app-shell agent-prototype-shell" : "app-shell"}>
     <aside className="sidebar" aria-label={language === "en" ? "Main navigation" : "主导航"}>
-      {knowledgePrototype ? <div className="knowledge-brand"><span className="knowledge-brand-mark" aria-hidden="true">◇</span><strong>CRM 智能聊天系统</strong></div> : null}
+      {prototypeNavigation ? <div className="knowledge-brand"><span className="knowledge-brand-mark" aria-hidden="true">◇</span><strong>CRM 智能聊天系统</strong></div> : null}
       <nav className="main-nav">{navItems.map((item) => {
         const Icon = item.icon;
         const active = current.href === item.href;
@@ -110,9 +112,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button aria-expanded={marketingOpen} aria-label={text.marketing} className={active ? "nav-link active" : "nav-link"} onClick={() => { const next = !marketingOpen; setMarketingOpen(next); sessionStorage.setItem("crm_marketing_open", next ? "1" : "0"); }} type="button"><Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} /><span>{text.marketing}</span><CaretDown aria-hidden="true" className={marketingOpen ? "reception-nav-caret open" : "reception-nav-caret"} size={14} /></button>
           {marketingOpen ? <div className="reception-side-subnav"><Link aria-current={pathname === "/marketing" ? "page" : undefined} href="/marketing">营销流程</Link><Link aria-current={pathname.startsWith("/marketing/reception") ? "page" : undefined} href="/marketing/reception">基础接待</Link></div> : null}
         </div>;
-        return <div className={"separated" in item && item.separated ? "nav-group-separated" : ""} key={item.href}><Link aria-current={pathname === item.href ? "page" : undefined} aria-label={text[item.key]} className={active ? "nav-link active" : "nav-link"} href={item.href}>{knowledgePrototype ? <KnowledgeNavIcon name={item.key} /> : <Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} />}<span>{text[item.key]}</span></Link></div>;
+        return <div className={"separated" in item && item.separated ? "nav-group-separated" : ""} key={item.href}><Link aria-current={pathname === item.href ? "page" : undefined} aria-label={text[item.key]} className={active ? "nav-link active" : "nav-link"} href={item.href}>{prototypeNavigation ? <KnowledgeNavIcon name={item.key} /> : <Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} />}<span>{text[item.key]}</span></Link></div>;
       })}</nav>
       {knowledgePrototype ? <div className="knowledge-sidebar-note">知识库交互界面 · 按店铺隔离</div> : null}
+      {agentPrototype ? <div className="knowledge-sidebar-note">Agent 管理 · 按店铺隔离</div> : null}
       <div className="sidebar-footer">
         <div className="service-status"><span className="live-dot" /> <span>{text.online}</span></div>
         <div className="sidebar-user"><span className="user-avatar" aria-hidden="true">{userInitial}</span><span className="sidebar-user-copy"><strong>{user.name}</strong><small>{user.role}</small></span><div className="sidebar-tools"><button aria-label={language === "en" ? "Switch theme" : "切换主题"} onClick={toggleTheme} title={theme === "light" ? "Dark" : "Light"} type="button"><Moon size={17} /></button><button aria-label={language === "en" ? "Switch language" : "切换语言"} onClick={toggleLanguage} title={language === "zh" ? "English" : "中文"} type="button"><Translate size={17} /></button><button aria-label={text.signOut} onClick={() => logout().finally(() => { window.location.href = "/login"; })} title={text.signOut} type="button"><SignOut size={17} /></button></div></div>

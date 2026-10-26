@@ -122,6 +122,10 @@ class RagRetrievalResult:
     candidate_count: int = 0
 
 
+class RagRetrievalTimeout(TimeoutError):
+    """Embedding、数据库检索和重排共享的总时限已耗尽。"""
+
+
 class RagRetrievalService:
     """使用可信 store_id 执行 Top-K FAQ 检索，不访问其他业务表。"""
 
@@ -140,6 +144,7 @@ class RagRetrievalService:
         min_lexical_score: float,
         max_context_tokens: int,
         search_session_factory: Callable[[], AbstractAsyncContextManager[AsyncSession]] | None = None,
+        timeout_seconds: float = 12.0,
     ) -> None:
         if not 1 <= dense_top_k <= 100 or not 1 <= lexical_top_k <= 100:
             raise ValueError("混合检索单路候选数必须在 1 到 100 之间")
@@ -151,6 +156,8 @@ class RagRetrievalService:
             raise ValueError("RAG Dense/词法最低分数必须在 0 到 1 之间")
         if max_context_tokens < 1:
             raise ValueError("RAG 上下文预算必须大于 0")
+        if not 0 < timeout_seconds <= 120:
+            raise ValueError("RAG 全链路超时必须在 0 到 120 秒之间")
         self.embedding_service = embedding_service
         self.search_port = search_port
         self.reranking_service = reranking_service
@@ -163,14 +170,26 @@ class RagRetrievalService:
         self.min_lexical_score = min_lexical_score
         self.max_context_tokens = max_context_tokens
         self.search_session_factory = search_session_factory
+        self.timeout_seconds = timeout_seconds
 
     async def retrieve(
         self,
         session: AsyncSession,
         store_id: uuid.UUID,
         query: str,
+        file_ids: tuple[uuid.UUID, ...] = (),
     ) -> RagRetrievalResult:
-        """检索 FAQ，并按分数顺序装入不超过 Token 预算的上下文。"""
+        """对 Embedding、检索连接/SQL、重排施加同一个总时限。"""
+        try:
+            async with asyncio.timeout(self.timeout_seconds):
+                return await self._retrieve_unbounded(session, store_id, query, file_ids)
+        except TimeoutError as error:
+            raise RagRetrievalTimeout("RAG_RETRIEVAL_TIMEOUT") from error
+
+    async def _retrieve_unbounded(
+        self, session: AsyncSession, store_id: uuid.UUID, query: str, file_ids: tuple[uuid.UUID, ...]
+    ) -> RagRetrievalResult:
+        """按绑定范围检索文件，否则沿用旧 FAQ 路径。"""
         sanitized_query = sanitize_prompt_text(query).strip()
         if not sanitized_query:
             raise ValueError("RAG 查询不能为空")
@@ -182,6 +201,18 @@ class RagRetrievalService:
         search_started_at = time.perf_counter_ns()
 
         async def search(search_session: AsyncSession) -> list[KnowledgeRetrievalHit]:
+            if file_ids:
+                return await self.search_port.hybrid_search_files(
+                    search_session,
+                    store_id,
+                    file_ids,
+                    sanitized_query,
+                    embedding_result.vectors[0],
+                    dense_top_k=self.dense_top_k,
+                    lexical_top_k=self.lexical_top_k,
+                    candidate_top_k=self.candidate_top_k,
+                    rrf_k=self.rrf_k,
+                )
             return await self.search_port.hybrid_search(
                 search_session,
                 store_id,

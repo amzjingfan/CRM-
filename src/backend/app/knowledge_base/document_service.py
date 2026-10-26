@@ -24,6 +24,7 @@ from app.knowledge_base.document_api_schemas import (
     DocumentFileSummary,
     DocumentUnitReview,
     DocumentUnitView,
+    DocumentVersionApproval,
     DocumentVersionDetail,
     DocumentVersionSummary,
 )
@@ -37,6 +38,7 @@ from app.knowledge_base.document_models import (
 )
 from app.knowledge_base.document_schemas import DocumentIndexConfig
 from app.knowledge_base.models import KnowledgeCategory
+from app.knowledge_base.schemas import KnowledgeCustomerScope, KnowledgePublicationApproval, KnowledgeStatementType
 from app.knowledge_base.storage import get_import_file, put_import_file
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
@@ -477,7 +479,114 @@ async def _version_summary(
         completed_at=version.completed_at,
         is_active=file.active_version_number == version.version_number,
         chunk_count=count or 0,
+        approval_status=getattr(version, "publication_approval", "draft"),
+        statement_type=getattr(version, "statement_type", "unknown"),
+        customer_scope=getattr(version, "customer_scope", "none"),
     )
+
+
+async def approve_document_version(
+    session: AsyncSession,
+    user: User,
+    file_id: uuid.UUID,
+    version_number: int,
+    payload: DocumentVersionApproval,
+    idempotency_key: str,
+) -> DocumentVersionDetail:
+    """人工确认当前已索引文件版本的语义和内部建议使用范围。"""
+    file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    if file.deleted_at is not None or file.archived_at is not None or file.active_version_number != version_number:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "只能审批当前有效且未归档的文件版本", 409)
+    if version.status != "ready":
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "文件版本尚未索引就绪", 409)
+    if payload.statement_type == KnowledgeStatementType.UNKNOWN:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "审批时必须确认知识语义类型", 422)
+    if payload.customer_scope == KnowledgeCustomerScope.SPECIFIC_CUSTOMER:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "客户实例事实不能用于通用知识检索", 422)
+    if (
+        payload.statement_type == KnowledgeStatementType.TECHNICAL_ARTIFACT
+        and payload.customer_scope != KnowledgeCustomerScope.NONE
+    ):
+        raise AppError(ErrorCode.VALIDATION_ERROR, "技术资产不能绑定客户范围", 422)
+    request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+    prior = await session.scalar(
+        select(AuditLog).where(
+            AuditLog.store_id == file.store_id,
+            AuditLog.action == "knowledge.file_version_approve",
+            AuditLog.resource_id == version.id,
+            AuditLog.request_id == request_id,
+        )
+    )
+    expected = {"statement_type": payload.statement_type.value, "customer_scope": payload.customer_scope.value}
+    if prior is not None:
+        if prior.after_data is None or any(prior.after_data.get(key) != value for key, value in expected.items()):
+            raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于其他审批", 409)
+        await session.rollback()
+        return await get_document_version(session, user, file_id, version_number)
+    if version.publication_approval != KnowledgePublicationApproval.DRAFT:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前版本已审批；如需变更请上传替换版本", 409)
+    version.statement_type = payload.statement_type.value
+    version.customer_scope = payload.customer_scope.value
+    version.publication_approval = KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW.value
+    version.approved_by = user.id
+    version.approved_at = datetime.now(UTC)
+    session.add(
+        AuditLog(
+            store_id=file.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action="knowledge.file_version_approve",
+            resource_type="knowledge_file_version",
+            resource_id=version.id,
+            request_id=request_id,
+            before_data={"publication_approval": "draft"},
+            after_data={**expected, "publication_approval": version.publication_approval},
+            result="succeeded",
+        )
+    )
+    await session.commit()
+    return await get_document_version(session, user, file_id, version_number)
+
+
+async def revoke_document_version(
+    session: AsyncSession, user: User, file_id: uuid.UUID, version_number: int, idempotency_key: str
+) -> DocumentVersionDetail:
+    """撤销内部建议授权，下一次检索立即失效。"""
+    file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+    prior = await session.scalar(
+        select(AuditLog).where(
+            AuditLog.store_id == file.store_id,
+            AuditLog.action == "knowledge.file_version_revoke",
+            AuditLog.resource_id == version.id,
+            AuditLog.request_id == request_id,
+        )
+    )
+    if prior is not None:
+        await session.rollback()
+        return await get_document_version(session, user, file_id, version_number)
+    if version.publication_approval == KnowledgePublicationApproval.DRAFT:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前文件版本尚未审批", 409)
+    before = {"publication_approval": version.publication_approval}
+    version.publication_approval = KnowledgePublicationApproval.DRAFT.value
+    version.approved_by = None
+    version.approved_at = None
+    session.add(
+        AuditLog(
+            store_id=file.store_id,
+            actor_type="user",
+            actor_id=user.id,
+            action="knowledge.file_version_revoke",
+            resource_type="knowledge_file_version",
+            resource_id=version.id,
+            request_id=request_id,
+            before_data=before,
+            after_data={"publication_approval": "draft"},
+            result="succeeded",
+        )
+    )
+    await session.commit()
+    return await get_document_version(session, user, file_id, version_number)
 
 
 async def _chunk_counts(session: AsyncSession, version_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:

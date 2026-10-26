@@ -14,6 +14,7 @@ from app.knowledge_base.document_api_schemas import (
     DocumentFilePage,
     DocumentImportAccepted,
     DocumentUnitReview,
+    DocumentVersionApproval,
     DocumentVersionDetail,
 )
 from app.knowledge_base.document_schemas import DocumentIndexConfig
@@ -21,6 +22,7 @@ from app.knowledge_base.document_service import (
     MAX_DOCUMENT_BYTES,
     DocumentUploadError,
     accept_document_import,
+    approve_document_version,
     change_document_file,
     get_document_file,
     get_document_settings,
@@ -29,6 +31,7 @@ from app.knowledge_base.document_service import (
     list_document_files,
     retry_document_version,
     review_document_unit,
+    revoke_document_version,
     save_document_settings,
 )
 from app.shared.config.settings import get_settings
@@ -173,6 +176,39 @@ async def document_source(
             "X-Content-Type-Options": "nosniff",
         },
     )
+
+
+@router.post(
+    "/files/{file_id}/versions/{version_number}/approve",
+    response_model=ApiResponse[DocumentVersionDetail],
+    dependencies=WRITE_GUARDS,
+)
+async def approve_file_version(
+    file_id: uuid.UUID,
+    version_number: int,
+    payload: DocumentVersionApproval,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[DocumentVersionDetail]:
+    return ApiResponse(
+        data=await approve_document_version(session, user, file_id, version_number, payload, idempotency_key)
+    )
+
+
+@router.post(
+    "/files/{file_id}/versions/{version_number}/revoke",
+    response_model=ApiResponse[DocumentVersionDetail],
+    dependencies=WRITE_GUARDS,
+)
+async def revoke_file_version(
+    file_id: uuid.UUID,
+    version_number: int,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[DocumentVersionDetail]:
+    return ApiResponse(data=await revoke_document_version(session, user, file_id, version_number, idempotency_key))
 
 
 @router.post(

@@ -124,6 +124,13 @@ async def _build_command(
         available_tools=cast(set[ToolName], allowed),
         permissions=permissions,
     )
+    raw_file_ids = config.knowledge_scope.get("file_ids", [])
+    if not isinstance(raw_file_ids, list):
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "Agent 知识绑定配置无效", 409)
+    try:
+        file_ids = [uuid.UUID(value) for value in raw_file_ids]
+    except (TypeError, ValueError, AttributeError) as error:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "Agent 知识绑定配置无效", 409) from error
     return AgentWorkflowCommand(
         store_id=conversation.store_id,
         conversation_id=conversation.id,
@@ -134,6 +141,7 @@ async def _build_command(
         trace_id=trace_id,
         tool_context=context,
         reply_profile=resolve_store_reply_profile(config.knowledge_scope),
+        knowledge_file_ids=file_ids,
     )
 
 

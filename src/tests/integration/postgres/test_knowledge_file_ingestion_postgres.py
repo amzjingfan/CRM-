@@ -2,13 +2,15 @@
 
 import os
 import uuid
+from datetime import UTC, datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.knowledge_base import document_service, repository
+from app.knowledge_base import document_search, document_service, repository
 from app.knowledge_base import service as knowledge_service
 from app.knowledge_base.document_models import KnowledgeFile, KnowledgeFileChunk, KnowledgeFileVersion
 from app.knowledge_base.models import KnowledgeCategory, KnowledgeDocument
@@ -37,6 +39,7 @@ async def test_file_vector_is_separate_and_category_with_file_cannot_be_deleted(
         category_id=category.id,
         original_filename="guide.pdf",
         filename_key="guide.pdf",
+        active_version_number=1,
     )
     version = KnowledgeFileVersion(
         id=uuid.uuid4(),
@@ -49,6 +52,11 @@ async def test_file_vector_is_separate_and_category_with_file_cannot_be_deleted(
         config_json={"strategy": "recursive", "chunk_size": 500, "overlap": 50},
         status="ready",
         created_by=user.id,
+        publication_approval="approved_for_internal_review",
+        statement_type="policy",
+        customer_scope="generic",
+        approved_by=user.id,
+        approved_at=datetime.now(UTC),
     )
     chunk = KnowledgeFileChunk(
         store_id=store.id,
@@ -68,6 +76,7 @@ async def test_file_vector_is_separate_and_category_with_file_cannot_be_deleted(
         embedding=[1.0, *([0.0] * 1023)],
     )
     monkeypatch.setattr(knowledge_service, "allowed_store_ids", AsyncMock(return_value={store.id}))
+    monkeypatch.setattr(document_search, "get_settings", lambda: SimpleNamespace(embedding_model="BAAI/bge-m3"))
     try:
         async with sessions() as session:
             session.add_all([store, user])
@@ -87,6 +96,37 @@ async def test_file_vector_is_separate_and_category_with_file_cannot_be_deleted(
                     .where(KnowledgeFileChunk.version_id == version.id)
                 )
                 == 1
+            )
+            hits = await document_search.hybrid_search_files(
+                session,
+                store.id,
+                (document_file.id,),
+                "测试内容",
+                [1.0, *([0.0] * 1023)],
+                dense_top_k=5,
+                lexical_top_k=5,
+                candidate_top_k=5,
+                rrf_k=60,
+            )
+            assert len(hits) == 1 and hits[0].source_type == "file"
+            assert hits[0].safety_metadata.approved_by == user.id
+            version.publication_approval = "draft"
+            version.approved_by = None
+            version.approved_at = None
+            await session.commit()
+            assert (
+                await document_search.hybrid_search_files(
+                    session,
+                    store.id,
+                    (document_file.id,),
+                    "测试内容",
+                    [1.0, *([0.0] * 1023)],
+                    dense_top_k=5,
+                    lexical_top_k=5,
+                    candidate_top_k=5,
+                    rrf_k=60,
+                )
+                == []
             )
             with pytest.raises(AppError) as error:
                 await knowledge_service.delete_category(session, user, category.id)

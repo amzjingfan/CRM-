@@ -68,6 +68,11 @@ class KnowledgeFileVersion(TimestampMixin, Base):
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    publication_approval: Mapped[str] = mapped_column(String(40), nullable=False, default="draft")
+    statement_type: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown")
+    customer_scope: Mapped[str] = mapped_column(String(40), nullable=False, default="none")
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class KnowledgeFileImportReceipt(Base):

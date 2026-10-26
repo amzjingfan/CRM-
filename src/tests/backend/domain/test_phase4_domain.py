@@ -78,6 +78,27 @@ def test_agent_operational_schema_accepts_only_typed_store_reply_profile() -> No
         AgentConfigUpdate.model_validate({"reply_profile": profile | {"system_prompt": "forbidden"}})
 
 
+def test_agent_management_accepts_safe_type_and_file_bindings_only() -> None:
+    file_id = uuid.uuid4()
+    created = AgentConfigCreate(
+        store_id=uuid.uuid4(),
+        name="客服 Agent",
+        code="service_agent",
+        agent_type="operations",
+        knowledge_file_ids=[file_id],
+    )
+    assert created.agent_type == "operations"
+    assert created.knowledge_file_ids == [file_id]
+    assert AgentConfigUpdate(knowledge_file_ids=[]).knowledge_file_ids == []
+    with pytest.raises(ValidationError):
+        AgentConfigCreate(
+            store_id=uuid.uuid4(),
+            name="客服 Agent",
+            code="service_agent",
+            agent_type="automatic_sender",
+        )
+
+
 def test_team_assignment_enforces_explicit_store_scope() -> None:
     """店铺角色缺少店铺范围时必须失败关闭。"""
     with pytest.raises(ValidationError, match="必须指定店铺"):

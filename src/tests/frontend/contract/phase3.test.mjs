@@ -172,7 +172,8 @@ test("protected routes quietly handle expected authentication errors", () => {
 test("Phase 4 agent page exposes operations while AI runtime fields remain read only", () => {
   const agentSource = readRequiredSource("agent");
   const apiSource = readRequiredSource("api");
-  assert.match(agentSource, /AI 运行配置（只读）/);
+  assert.match(agentSource, /系统提示词策略摘要 · 只读/);
+  assert.match(agentSource, /实际运行模型由服务端配置决定/);
   assert.match(agentSource, /白名单工具/);
   assert.match(apiSource, /\/agents/);
   assert.doesNotMatch(agentSource, /name="llm_model"/);

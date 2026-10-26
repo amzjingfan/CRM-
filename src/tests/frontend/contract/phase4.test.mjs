@@ -37,13 +37,13 @@ test("settings pages cover stores channels and team", async () => {
   assert.match(sources[2], /Account management/);
 });
 
-test("Phase 4 English mode covers Agent forms and workspace SSE content", async () => {
+test("Agent prototype keeps managed tools while workspace SSE content remains accessible", async () => {
   const [agent, workspace] = await Promise.all([
     read("app/agents/page.tsx"),
     read("app/workspace/page.tsx"),
   ]);
-  assert.match(agent, /Allowed tools/);
-  assert.match(agent, /Save operations configuration/);
+  assert.match(agent, /白名单工具/);
+  assert.match(agent, /保存配置/);
   assert.match(workspace, /AI reply suggestion/);
   assert.match(workspace, /Suggestion inserted; review it before sending/);
   assert.match(workspace, /Transfer conversation/);
@@ -69,7 +69,8 @@ test("Agent tool codes use readable Chinese labels", async () => {
   for (const label of ["查询订单", "查询物流", "查询客户资料", "修改收货地址", "发送优惠券", "转人工", "发送平台消息"]) {
     assert.match(agent, new RegExp(label));
   }
-  assert.match(agent, /name=\{tool\}/);
+  assert.match(agent, /name=\{tool\.code\}/);
+  assert.match(agent, /disabled=\{!tool\.configurable\}/);
 });
 
 test("interactive filters and compact fields meet the 44px touch target", async () => {

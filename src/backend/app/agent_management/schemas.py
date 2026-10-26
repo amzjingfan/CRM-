@@ -17,6 +17,7 @@ ToolName = Literal[
     "transfer_to_human",
     "send_platform_message",
 ]
+AgentType = Literal["service", "operations"]
 
 
 class AgentConfigCreate(BaseModel):
@@ -26,8 +27,10 @@ class AgentConfigCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     code: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]{1,99}$")
     description: str | None = Field(default=None, max_length=1000)
+    agent_type: AgentType = "service"
     enabled_tools: list[ToolName] = Field(default_factory=list, max_length=7)
     knowledge_scope: Literal["store_ready_faq"] = "store_ready_faq"
+    knowledge_file_ids: list[uuid.UUID] = Field(default_factory=list, max_length=100)
     reply_profile: AgentReplyProfile | None = None
 
     model_config = {"extra": "forbid"}
@@ -38,8 +41,10 @@ class AgentConfigUpdate(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=1000)
+    agent_type: AgentType | None = None
     enabled_tools: list[ToolName] | None = Field(default=None, max_length=7)
     knowledge_scope: Literal["store_ready_faq"] | None = None
+    knowledge_file_ids: list[uuid.UUID] | None = Field(default=None, max_length=100)
     reply_profile: AgentReplyProfile | None = None
 
     model_config = {"extra": "forbid"}
@@ -51,6 +56,7 @@ class AgentRuntimeView(BaseModel):
     available: bool
     llm_provider: str
     llm_model: str | None
+    available_models: list[str] = Field(default_factory=list)
     embedding_provider: str
     embedding_model: str
     reranker_model: str
@@ -66,8 +72,10 @@ class AgentConfigView(BaseModel):
     name: str
     code: str
     description: str | None
+    agent_type: AgentType
     status: Literal["enabled", "disabled"]
     enabled_tools: list[str]
+    knowledge_file_ids: list[uuid.UUID]
     knowledge_scope: dict[str, object]
     reply_profile: AgentReplyProfile
     runtime: AgentRuntimeView

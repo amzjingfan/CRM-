@@ -264,6 +264,7 @@ class KnowledgeRetrievalHit(BaseModel):
     """知识端口返回给 Agent 的租户安全引用结果。"""
 
     document_id: uuid.UUID
+    source_type: Literal["faq", "file"] = "faq"
     chunk_id: uuid.UUID
     category_id: uuid.UUID | None
     document_version: int = Field(ge=1)

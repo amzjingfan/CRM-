@@ -9,8 +9,94 @@ import pytest
 
 from app.audit.models import AuditLog
 from app.knowledge_base import document_indexer, document_service
-from app.knowledge_base.document_api_schemas import DocumentUnitReview
+from app.knowledge_base.document_api_schemas import DocumentUnitReview, DocumentVersionApproval
 from app.shared.exceptions.errors import AppError
+
+
+@pytest.mark.asyncio
+async def test_document_approval_requires_active_ready_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    store_id, file_id, version_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    file = SimpleNamespace(
+        id=file_id,
+        store_id=store_id,
+        deleted_at=None,
+        archived_at=None,
+        active_version_number=1,
+    )
+    version = SimpleNamespace(id=version_id, version_number=2, status="ready", publication_approval="draft")
+    monkeypatch.setattr(document_service, "_scoped_version", AsyncMock(return_value=(file, version)))
+    session = SimpleNamespace(add=Mock(), commit=AsyncMock())
+    payload = DocumentVersionApproval(statement_type="policy", customer_scope="generic")
+    with pytest.raises(AppError) as error:
+        await document_service.approve_document_version(
+            session,
+            SimpleNamespace(id=uuid.uuid4()),
+            file_id,
+            2,
+            payload,
+            "key",
+        )
+    assert error.value.status_code == 409
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_document_approval_records_user_version_and_semantics(monkeypatch: pytest.MonkeyPatch) -> None:
+    store_id, file_id, version_id, user_id = (uuid.uuid4() for _ in range(4))
+    file = SimpleNamespace(
+        id=file_id,
+        store_id=store_id,
+        deleted_at=None,
+        archived_at=None,
+        active_version_number=1,
+    )
+    version = SimpleNamespace(id=version_id, version_number=1, status="ready", publication_approval="draft")
+    monkeypatch.setattr(document_service, "_scoped_version", AsyncMock(return_value=(file, version)))
+    monkeypatch.setattr(document_service, "get_document_version", AsyncMock(return_value="approved"))
+    session = SimpleNamespace(scalar=AsyncMock(return_value=None), add=Mock(), commit=AsyncMock())
+    payload = DocumentVersionApproval(statement_type="policy", customer_scope="generic")
+    result = await document_service.approve_document_version(
+        session,
+        SimpleNamespace(id=user_id),
+        file_id,
+        1,
+        payload,
+        "approve-key",
+    )
+    assert result == "approved"
+    assert version.publication_approval == "approved_for_internal_review"
+    assert version.approved_by == user_id and version.approved_at is not None
+    audit = session.add.call_args.args[0]
+    assert audit.action == "knowledge.file_version_approve"
+    assert audit.resource_id == version_id and audit.actor_id == user_id
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_revocation_clears_approval_and_audits(monkeypatch: pytest.MonkeyPatch) -> None:
+    store_id, file_id, version_id, user_id = (uuid.uuid4() for _ in range(4))
+    file = SimpleNamespace(id=file_id, store_id=store_id)
+    version = SimpleNamespace(
+        id=version_id,
+        publication_approval="approved_for_internal_review",
+        approved_by=user_id,
+        approved_at=datetime.now(UTC),
+    )
+    monkeypatch.setattr(document_service, "_scoped_version", AsyncMock(return_value=(file, version)))
+    monkeypatch.setattr(document_service, "get_document_version", AsyncMock(return_value="revoked"))
+    session = SimpleNamespace(scalar=AsyncMock(return_value=None), add=Mock(), commit=AsyncMock())
+    result = await document_service.revoke_document_version(
+        session,
+        SimpleNamespace(id=user_id),
+        file_id,
+        1,
+        "revoke-key",
+    )
+    assert result == "revoked"
+    assert version.publication_approval == "draft"
+    assert version.approved_by is None and version.approved_at is None
+    assert session.add.call_args.args[0].action == "knowledge.file_version_revoke"
+    session.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio

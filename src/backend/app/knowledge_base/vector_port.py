@@ -502,6 +502,22 @@ class KnowledgeSearchPort(Protocol):
         """返回当前店铺经 Dense、词法和 RRF 融合的安全候选。"""
         ...
 
+    async def hybrid_search_files(
+        self,
+        session: AsyncSession,
+        store_id: uuid.UUID,
+        file_ids: tuple[uuid.UUID, ...],
+        query_text: str,
+        query_embedding: list[float],
+        *,
+        dense_top_k: int,
+        lexical_top_k: int,
+        candidate_top_k: int,
+        rrf_k: int,
+    ) -> list[KnowledgeRetrievalHit]:
+        """仅检索当前店铺已绑定并获内部审批的文件版本。"""
+        ...
+
 
 class SqlAlchemyKnowledgeVectorPort:
     """把 AI 服务限制在全栈层批准的知识库函数内。"""
@@ -547,6 +563,33 @@ class SqlAlchemyKnowledgeSearchPort:
         return await hybrid_search(
             session,
             store_id,
+            query_text,
+            query_embedding,
+            dense_top_k=dense_top_k,
+            lexical_top_k=lexical_top_k,
+            candidate_top_k=candidate_top_k,
+            rrf_k=rrf_k,
+        )
+
+    async def hybrid_search_files(
+        self,
+        session: AsyncSession,
+        store_id: uuid.UUID,
+        file_ids: tuple[uuid.UUID, ...],
+        query_text: str,
+        query_embedding: list[float],
+        *,
+        dense_top_k: int,
+        lexical_top_k: int,
+        candidate_top_k: int,
+        rrf_k: int,
+    ) -> list[KnowledgeRetrievalHit]:
+        from app.knowledge_base.document_search import hybrid_search_files
+
+        return await hybrid_search_files(
+            session,
+            store_id,
+            file_ids,
             query_text,
             query_embedding,
             dense_top_k=dense_top_k,
