@@ -1,0 +1,51 @@
+{
+  "task_id": "MVP-AGENT-LIVE-DEBUG-001",
+  "environment": "staging",
+  "subject_sha": "7e59ab743f29ca501890c52f7ba121f4268a6c44",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/564",
+  "deployment": {
+    "method": "manual immutable image; ValidateOnly then Deploy",
+    "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:78102558d630d511d0c512d27f26ddf8a439ff1f44d1207b7152dd169d484994",
+    "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:f7fc46fdbb0fc74eee3a5a138da30e080b55965039c03ef9b5e7316d8e04fd4d",
+    "validate_only": "passed",
+    "deploy_gate": "passed",
+    "running_containers": 12,
+    "migration_head": "034_agent_debug_runs",
+    "public_health": "three endpoints HTTP 200; /agents HTTP 200",
+    "runtime_scope": "existing feature flags and allowed store/conversation scope preserved",
+    "backup_sha256": {
+      "postgres": "14858b6a1d89cd692f93283587bd66c5c040c56073c69d3232bb80229370fa97",
+      "minio": "a3efd14e6753ba21fc13828dc206436df5ba53e08d204337ac58f9181945ad1d",
+      "environment_copy": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+      "previous_backend_inspect": "3b54a2c5666e0ea2cb0c687494f529149e624e29c13a2590463504c9a68907f8"
+    }
+  },
+  "live_browser": {
+    "knowledge": {
+      "trace_id": "8f2ded2e-1154-498b-952a-da844648e83c",
+      "status": "succeeded",
+      "action": "human_review",
+      "retrieval_score": 0.7739,
+      "candidate_count": 1,
+      "citation_present": true,
+      "answer": "synthetic seven-day rule with explicit test disclaimer",
+      "latency_ms": 3518
+    },
+    "read_only_tool": {
+      "trace_id": "3467d114-5007-4e79-9737-3e6b47d431a7",
+      "status": "succeeded",
+      "tool": "query_logistics",
+      "tool_status": "succeeded",
+      "action": "human_review",
+      "answer": "no verifiable tracking; conservative human-review fallback",
+      "latency_ms": 3669
+    },
+    "platform_messages_sent": 0,
+    "cleanup": "synthetic file soft-deleted; agent file binding removed; old empty custom test category count zero"
+  },
+  "limitations": [
+    "Combined tool and knowledge synthesis in one turn was not demonstrated; current route prioritizes tool.",
+    "Logistics lacked verifiable tracking; no delivery status was invented.",
+    "Production release was not performed."
+  ]
+}
