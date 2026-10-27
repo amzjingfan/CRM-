@@ -118,6 +118,8 @@ class LogisticsToolData(StrictToolOutput):
     external_order_id: str = Field(min_length=1, max_length=200)
     tracking_number: str | None = Field(default=None, max_length=200)
     tracking_status: str | None = Field(default=None, max_length=100)
+    latest_tracking_description: str | None = Field(default=None, max_length=1000)
+    latest_tracking_at: datetime | None = None
     shipped_at: datetime | None = None
     delivered_at: datetime | None = None
 

@@ -6,16 +6,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.tools.contracts import QueryLogisticsArguments, QueryOrderArguments, ToolInvocation
 from app.tools.executor import SqlAlchemyToolExecutor, ToolDispatchError, ToolDispatchOutcome
-from app.workspace.sidebar import SidebarOrder
+from app.workspace.sidebar import SidebarOrder, SidebarOrderDetail
+
+
+def _tracking_stage(description: str | None) -> str | None:
+    """只从官方轨迹的明确开头识别阶段，不把订单状态当物流状态。"""
+    if not description:
+        return None
+    value = description.strip().casefold()
+    for prefixes, stage in (
+        (("delivered", "signed for", "已签收", "已送达"), "delivered"),
+        (("in transit", "arrived at", "departed", "运送中", "运输中"), "in_transit"),
+        (("shipped", "dispatched", "已发货"), "shipped"),
+    ):
+        for prefix in prefixes:
+            if value == prefix or (
+                value.startswith(prefix) and value[len(prefix) : len(prefix) + 1] in {" ", ",", ".", ":"}
+            ):
+                return stage
+    return None
 
 
 class AgentDebugLiveOrderExecutor(SqlAlchemyToolExecutor):
     """复用工具权限、审计与超时，只替换本次已验证的实时订单查询。"""
 
-    def __init__(self, session: AsyncSession, store_id: uuid.UUID, order: SidebarOrder) -> None:
+    def __init__(
+        self, session: AsyncSession, store_id: uuid.UUID, order: SidebarOrder, detail: SidebarOrderDetail | None = None
+    ) -> None:
         super().__init__(session)
         self.store_id = store_id
         self.order = order
+        self.detail = detail
 
     def _matches(self, invocation: ToolInvocation, order_id: str) -> bool:
         return invocation.context.store_id == self.store_id and order_id == str(self.order.id)
@@ -45,6 +66,8 @@ class AgentDebugLiveOrderExecutor(SqlAlchemyToolExecutor):
     ) -> ToolDispatchOutcome:
         if not self._matches(invocation, arguments.order_id):
             return await super()._query_logistics(invocation, arguments)
+        description = self.detail.latest_tracking_description if self.detail else None
+        status = _tracking_stage(description)
         return ToolDispatchOutcome(
             status="succeeded",
             data={
@@ -52,9 +75,17 @@ class AgentDebugLiveOrderExecutor(SqlAlchemyToolExecutor):
                 "external_order_id": self.order.external_order_id,
                 "tracking_number": self.order.tracking_number,
                 # 订单状态不等于物流轨迹；没有已验证轨迹时不得冒充实时物流状态。
-                "tracking_status": self.order.tracking_status,
+                "tracking_status": status,
+                "latest_tracking_description": description,
+                "latest_tracking_at": self.detail.latest_tracking_at.isoformat()
+                if self.detail and self.detail.latest_tracking_at
+                else None,
                 "shipped_at": None,
                 "delivered_at": None,
             },
-            output_summary={"order_id": str(self.order.id), "tracking_status": self.order.tracking_status},
+            output_summary={
+                "order_id": str(self.order.id),
+                "tracking_status": status,
+                "has_tracking_event": bool(description),
+            },
         )

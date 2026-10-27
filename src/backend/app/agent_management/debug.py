@@ -24,7 +24,7 @@ from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.tools.contracts import ToolName
-from app.workspace.sidebar import SidebarOrder, latest_verified_live_order
+from app.workspace.sidebar import SidebarOrder, SidebarOrderDetail, get_sidebar_order_detail, latest_verified_live_order
 
 
 async def run_agent_debug(
@@ -59,6 +59,7 @@ async def run_agent_debug(
     order_id: str | None = None
     customer_id: uuid.UUID | None = None
     live_order: SidebarOrder | None = None
+    live_detail: SidebarOrderDetail | None = None
     deadline: float | None = None
     if payload.conversation_id is not None:
         if "admin" not in {role.code for role in user.roles} and "workspace.view" not in permissions:
@@ -87,9 +88,11 @@ async def run_agent_debug(
             set(detect_required_tools(payload.message, intent)) & {"query_order", "query_logistics"}
             for intent in IntentName
         )
+        wants_logistics_tool = any(
+            "query_logistics" in detect_required_tools(payload.message, intent) for intent in IntentName
+        )
         if (
-            order_id is None
-            and conversation.platform == "tiktok"
+            conversation.platform == "tiktok"
             and getattr(settings, "real_tiktok_read_enabled", False)
             and available_tools & {"query_order", "query_logistics"}
             and wants_order_tool
@@ -98,10 +101,13 @@ async def run_agent_debug(
             try:
                 async with asyncio.timeout_at(deadline):
                     live_order = await latest_verified_live_order(session, conversation)
+                    if live_order is not None and wants_logistics_tool:
+                        live_detail = await get_sidebar_order_detail(
+                            session, user, conversation.id, live_order.external_order_id
+                        )
             except TimeoutError as error:
                 raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Agent 调试已超时，请稍后重试", 504) from error
-            if live_order is not None:
-                order_id = str(live_order.id)
+            order_id = str(live_order.id) if live_order is not None else None
 
     command = AgentWorkflowCommand(
         store_id=config.store_id,
@@ -137,7 +143,11 @@ async def run_agent_debug(
     )
     await session.commit()
     try:
-        executor = AgentDebugLiveOrderExecutor(session, config.store_id, live_order) if live_order is not None else None
+        executor = (
+            AgentDebugLiveOrderExecutor(session, config.store_id, live_order, live_detail)
+            if live_order is not None
+            else None
+        )
         deadline = deadline or asyncio.get_running_loop().time() + settings.agent_debug_timeout_seconds
         async with asyncio.timeout_at(deadline):
             result = await build_agent_workflow(session, settings, runtime=runtime, tool_executor=executor).run(

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.agent.schemas import AgentAction, WorkflowTerminalState
-from app.agent_management import debug
+from app.agent_management import debug, live_tools
 from app.agent_management.schemas import AgentDebugRequest
 from app.shared.config.settings import Settings
 from app.shared.exceptions.errors import AppError
@@ -20,7 +20,7 @@ from app.tools.contracts import (
     ToolInvocation,
     validate_tool_output,
 )
-from app.workspace.sidebar import SidebarOrder
+from app.workspace.sidebar import SidebarOrder, SidebarOrderDetail
 
 
 def _user(*permissions: str) -> SimpleNamespace:
@@ -38,6 +38,20 @@ def _config() -> SimpleNamespace:
         knowledge_scope={"agent_type": "service", "file_ids": [str(uuid.uuid4())]},
         enabled_tools=["query_order", "query_logistics", "transfer_to_human", "send_platform_message"],
     )
+
+
+@pytest.mark.parametrize(
+    ("description", "expected"),
+    [
+        ("Delivered to service counter.", "delivered"),
+        ("Arrived at sorting center.", "in_transit"),
+        ("Deliveredness is a marketing term.", None),
+        ("Delivery attempted.", None),
+        (None, None),
+    ],
+)
+def test_live_tracking_stage_requires_explicit_trajectory(description: str | None, expected: str | None) -> None:
+    assert live_tools._tracking_stage(description) == expected
 
 
 @pytest.mark.asyncio
@@ -189,7 +203,9 @@ async def test_agent_debug_only_grants_configured_read_tools_for_authorized_cont
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _config()
-    conversation = SimpleNamespace(id=uuid.uuid4(), store_id=config.store_id, customer_id=uuid.uuid4())
+    conversation = SimpleNamespace(
+        id=uuid.uuid4(), store_id=config.store_id, customer_id=uuid.uuid4(), platform="other"
+    )
     order = SimpleNamespace(id=uuid.uuid4())
     session = SimpleNamespace(
         scalar=AsyncMock(side_effect=[conversation, order]),
@@ -235,11 +251,13 @@ async def test_agent_debug_only_grants_configured_read_tools_for_authorized_cont
     assert "send_platform_message" not in context.available_tools
 
 
+@pytest.mark.parametrize("has_local_order", [False, True])
 @pytest.mark.asyncio
 async def test_agent_debug_uses_verified_live_buyer_order_without_persisting_it(
     monkeypatch: pytest.MonkeyPatch,
+    has_local_order: bool,
 ) -> None:
-    """本地未同步订单时仅借用已验证平台订单的只读投影。"""
+    """TikTok 调试始终以已验证平台订单和轨迹为准，不持久化投影。"""
     config = _config()
     config.knowledge_scope["file_ids"] = []
     conversation = SimpleNamespace(
@@ -259,8 +277,9 @@ async def test_agent_debug_uses_verified_live_buyer_order_without_persisting_it(
         items=[],
         live_detail_available=True,
     )
+    local_order = SimpleNamespace(id=uuid.uuid4()) if has_local_order else None
     session = SimpleNamespace(
-        scalar=AsyncMock(side_effect=[conversation, None]),
+        scalar=AsyncMock(side_effect=[conversation, local_order]),
         get=AsyncMock(return_value=None),
         add=lambda _: None,
         commit=AsyncMock(),
@@ -278,6 +297,14 @@ async def test_agent_debug_uses_verified_live_buyer_order_without_persisting_it(
     )
     monkeypatch.setattr(debug, "get_config", AsyncMock(return_value=config))
     monkeypatch.setattr(debug, "latest_verified_live_order", AsyncMock(return_value=order))
+    live_detail = SidebarOrderDetail(
+        payment_method_name=None,
+        shipping_provider="Synthetic Carrier",
+        latest_tracking_description="Delivered to service counter.",
+        latest_tracking_at=None,
+    )
+    detail_lookup = AsyncMock(return_value=live_detail)
+    monkeypatch.setattr(debug, "get_sidebar_order_detail", detail_lookup, raising=False)
 
     async def run(_session, command):  # type: ignore[no-untyped-def]
         captured.append(command)
@@ -308,6 +335,8 @@ async def test_agent_debug_uses_verified_live_buyer_order_without_persisting_it(
     assert captured[0].store_id == config.store_id
     assert captured[1].tool_context.order_id == str(order.id)
     assert captured[1].tool_context.available_tools == {"query_order", "query_logistics"}
+    detail_lookup.assert_awaited_once()
+    assert captured[0].detail is live_detail
     assert session.commit.await_count == 1
 
 
@@ -328,7 +357,13 @@ async def test_agent_debug_live_order_tool_only_returns_scoped_minimal_fields() 
         items=[],
         live_detail_available=True,
     )
-    executor = debug.AgentDebugLiveOrderExecutor(AsyncMock(), store_id, order)
+    detail = SidebarOrderDetail(
+        payment_method_name=None,
+        shipping_provider="Synthetic Carrier",
+        latest_tracking_description="Delivered to service counter.",
+        latest_tracking_at=None,
+    )
+    executor = debug.AgentDebugLiveOrderExecutor(AsyncMock(), store_id, order, detail)
     invocation = ToolInvocation(
         tool_name="query_order",
         idempotency_key="test-only",
@@ -342,7 +377,9 @@ async def test_agent_debug_live_order_tool_only_returns_scoped_minimal_fields() 
     assert (
         validate_tool_output("query_logistics", logistics_result.data or {})["tracking_number"] == "synthetic-tracking"
     )
-    assert logistics_result.data["tracking_status"] is None
+    assert logistics_result.data["tracking_status"] == "delivered"
+    assert logistics_result.data["latest_tracking_description"] == detail.latest_tracking_description
+    assert "service counter" not in str(logistics_result.output_summary)
     assert "synthetic-tracking" not in str(logistics_result.output_summary)
 
 
