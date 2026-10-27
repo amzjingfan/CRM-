@@ -11,7 +11,7 @@ from app.agent.tool_execution import ExecutedAgentTool
 from app.knowledge_base.schemas import KnowledgeRetrievalHit
 from app.tools.contracts import TOOL_OUTPUT_SCHEMAS
 
-WORKFLOW_PROMPT_VERSION = "faq-agent-workflow-v1.8.5"
+WORKFLOW_PROMPT_VERSION = "faq-agent-workflow-v1.8.6"
 FAQ_ANSWER_PROMPT_VERSION = "faq-answer-v1.6.3"
 COMBINED_FAQ_PROMPT_VERSION = "faq-classified-draft-v1.0.2"
 GROUNDING_REVIEW_PROMPT_VERSION = "faq-grounding-review-v1.5.1"

@@ -2317,7 +2317,7 @@ async def test_debug_shows_grounded_bound_knowledge_that_requires_human() -> Non
 
 @pytest.mark.asyncio
 async def test_debug_shows_grounded_model_uncertainty_for_missing_tracking() -> None:
-    """已核验工具无轨迹时，安全的模型解释应供人工复核而不变成固定提示。"""
+    """工具无轨迹导致模型置信度低时，安全解释仍应交人工复核。"""
     query_call_id = uuid.uuid4()
     tool_data = logistics_tool_data()
     tool_data["tracking_status"] = None
@@ -2343,7 +2343,7 @@ async def test_debug_shows_grounded_model_uncertainty_for_missing_tracking() -> 
             ToolAnswerModelOutput(
                 answer=answer,
                 tool_call_ids=[query_call_id],
-                grounding_confidence=0.91,
+                grounding_confidence=0.50,
                 answer_language="zh-CN",
                 needs_human=True,
                 business_claims=empty_claim_inventory(),

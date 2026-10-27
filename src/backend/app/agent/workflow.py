@@ -1412,14 +1412,15 @@ class AgentWorkflowService:
             action = AgentAction.HUMAN_REVIEW
         if (
             action == AgentAction.TRANSFER_HUMAN
-            and self._unknown_debug_read_tools(state) == required_tools
+            and state["command"].debug_mode
             and required_tools
+            and all(tool in {"query_order", "query_logistics", "query_customer_profile"} for tool in required_tools)
             and not state.get("unresolved_tools")
             and not execution_failed
             and state.get("tool_safety_passed", False)
         ):
-            # 原始分类仍记录 UNKNOWN、置信度仍为零；安全复核过的只读调试
-            # 文本只交给坐席，不能因为这条确定性路由获得自动发送资格。
+            # 低置信度或后续知识拒答只限制自动决策；已安全复核的工具草稿仍可交坐席。
+            # 原始分类和置信度如实保留，此路由不获得平台发送资格。
             action = AgentAction.HUMAN_REVIEW
         decision_reason: AgentDecisionReason = "none"
         if action == AgentAction.TRANSFER_HUMAN:

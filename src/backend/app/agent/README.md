@@ -71,7 +71,7 @@ Agent 管理页调试中，`needs_human=true` 表示模型草稿必须由坐席�
 
 | 用途 | 版本 |
 | --- | --- |
-| 工作流 | `faq-agent-workflow-v1.8.5` |
+| 工作流 | `faq-agent-workflow-v1.8.6` |
 | FAQ 组合分类与草稿（保留路径） | `faq-classified-draft-v1.0.2` |
 | FAQ 回答（当前并行分类/检索路径） | `faq-answer-v1.6.3` |
 | FAQ 依据复核 | `faq-grounding-review-v1.5.1` |
