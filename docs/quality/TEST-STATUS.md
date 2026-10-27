@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-27 Agent 调试物流轨迹 [TR R04](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R04.md) 综合 `PARTIAL`：用户仅对 PR #569 批准本地 2455 passed/3 skipped 替代零步骤 CI，合并主线并手动部署 staging 后，已登录 TikTok US 店铺的只读物流工具读到官方 `delivered` 轨迹，页面显示模型“已送达”建议；但工具加已审批绑定知识同轮仅显示固定物流提示，无知识引用，知识复核失败。合成文档已撤销审批、解绑并软删除；无平台发送，production No-Go。
+
 2026-10-26 Agent 真实调试 [TR R01](../reports/tests/TR-MVP-AGENT-LIVE-DEBUG-001-20261026-R01.md) 综合 `PARTIAL`：subject `9302bb6d` 的隔离 PostgreSQL 完整回归 2426 passed/3 skipped、前端契约 48/48、生产浏览器 113/113、静态检查/构建及迁移 034 通过；staging 手动备份、`ValidateOnly`/`Deploy`、健康与独立调试开关通过。TikTok US 测试店铺的真实 DeepSeek 请求 `succeeded`、审计 1 条，未选买家会话或发送平台消息。该店零文件/零订单，绑定文件命中和成功工具返回仍待现场样本；见[低敏证据](../../release/evidence/staging/crm-staging-agent-live-debug-20261026.json)。GitHub Actions 未运行，production No-Go。
 2026-10-26 订单详情 UI 候选 [TR R01](../reports/tests/TR-MVP-WORKSPACE-ORDER-DETAIL-UI-001-20261026-R01.md) 本地范围 `PASS`：候选 SHA 后端 2374 passed/43 skipped、前端生产浏览器 113/113、契约 48/48、类型与构建通过；受影响后端定向 69 passed。首轮 Windows 镜像预取用例曾因 30 秒子进程超时失败，候选全套重跑通过。staging 尚未部署本候选，真实平台收件字段是否脱敏待现场核对；无真实外发或 production 发布。
 
