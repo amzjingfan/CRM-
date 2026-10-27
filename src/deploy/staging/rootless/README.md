@@ -9,11 +9,12 @@ staging.overselfx.com:443
   → 38.55.145.52 宝塔 Nginx + 公信 TLS
   → 127.0.0.1:18080
   → crm-tunnel 受限 SSH 反向隧道
-  → 192.168.110.210:127.0.0.1:18081
+  → 192.168.1.173:127.0.0.1:18081
   → crmdeploy Rootless proxy:80
   → CRM 全部服务与 /home/crmdeploy 数据/模型
 ```
 
+- 2026-10-27 业务机 `enp2s0` 当前由 DHCP 获得 `192.168.1.173/23`；地址保留尚未核实，后续连接前先确认实际 IP 和 SSH 主机身份。
 - 新服务器只运行宝塔 Nginx、站点 TLS 和回环 SSH 监听，不运行 CRM、数据库或模型。
 - 旧服务器固定使用 `crmdeploy`、UID/GID 1004、`/home/crmdeploy` 和 `unix:///run/user/1004/docker.sock`。
 - 系统 Docker 及 GitLab 的 `0.0.0.0:10080/10443` 属于公司负载，禁止停止、重启、改配置、迁移、修复或接管。

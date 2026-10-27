@@ -2,7 +2,7 @@
 
 本目录说明 REAL-FS-01～04 的安全运行面。OAuth、真实只读、Webhook 和人工确认普通消息已具备工程实现，但尚未完成真实店铺正式验收，因此所有 `REAL_TIKTOK_*` 开关默认保持 `false`；高风险写入和自动回复必须固定关闭。
 
-2026-09-19：当前 staging 采用 `38.55.145.52` 宝塔 Nginx/TLS 经受限 SSH 反向隧道访问 `192.168.110.210` `/home/crmdeploy` Rootless Docker。唯一活动操作手册见 [`../staging/rootless/README.md`](../staging/rootless/README.md)。本文的 `www.overselfx.com`、TLS 目录和 Compose 示例仅是 production 契约；production 最终运行拓扑尚未决定，不从 staging 双服务器方案自动继承。两台服务器上的系统 Docker与现有公司容器都禁止停止、重启、迁移、修复或接管。
+2026-10-27：当前 staging 采用 `38.55.145.52` 宝塔 Nginx/TLS 经受限 SSH 反向隧道访问 `192.168.1.173` `/home/crmdeploy` Rootless Docker。唯一活动操作手册见 [`../staging/rootless/README.md`](../staging/rootless/README.md)。本文的 `www.overselfx.com`、TLS 目录和 Compose 示例仅是 production 契约；production 最终运行拓扑尚未决定，不从 staging 双服务器方案自动继承。两台服务器上的系统 Docker 与现有公司容器都禁止停止、重启、迁移、修复或接管。
 
 ## 1. 外部基础设施前置条件
 

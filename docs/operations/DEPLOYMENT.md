@@ -106,7 +106,7 @@ Compose 以 `src/compose/docker-compose.yml` 为基础文件，再叠加同目�
 
 宝塔 Nginx 的 `http` 级配置启用了共享 `proxy_cache cache_one`，所以仅让 Next 返回 `no-store` 不会使已缓存的旧 HTML 立即消失。正式 staging vhost 在 HTTPS `server` 级显式设置 `proxy_cache off;`，不修改全局缓存或其他站点；验收必须对公网**无查询参数**的 `/login`、`/marketing`、`/knowledge` 执行 GET，确认不再返回旧 `x-nextjs-cache: HIT` 与长期 `s-maxage`，并复核业务机回环响应和静态指纹资源。不得通过加随机 query 代替精确路径验收。
 
-当前 staging 固定使用双服务器入口分离：`staging.overselfx.com:443 → 38.55.145.52 宝塔 Nginx/TLS → 127.0.0.1:18080 → SSH 反向隧道 → 192.168.110.210:127.0.0.1:18081 → crmdeploy Rootless CRM`。Compose 项目名为 `crm-staging`，Docker socket 为 `unix:///run/user/1004/docker.sock`，数据和模型均留在 `/home/crmdeploy`。
+当前 staging 固定使用双服务器入口分离：`staging.overselfx.com:443 → 38.55.145.52 宝塔 Nginx/TLS → 127.0.0.1:18080 → SSH 反向隧道 → 192.168.1.173:127.0.0.1:18081 → crmdeploy Rootless CRM`。业务服务器于 2026-10-27 搬迁，网卡 `enp2s0` 当前通过 DHCP 获得 `192.168.1.173/23`、网关 `192.168.1.1`；该地址的长期保持仍需 DHCP 地址保留或经网络管理员确认的静态配置。反向隧道由业务服务器主动连接公网入口，目标仍是业务服务器回环 `18081`。Compose 项目名为 `crm-staging`，Docker socket 为 `unix:///run/user/1004/docker.sock`，数据和模型均留在 `/home/crmdeploy`。
 
 2026-10-20 G6 失联缓解已在 staging 安装：入口反向 SSH 与独立 TikTok 出口 SSH 的 `ServerAliveInterval/ServerAliveCountMax` 从 `30/3` 收紧为 `10/2`，分别由用户级 systemd 与 Docker 既有重启策略恢复；仅检测已建立连接的失活，不保证公网零抖动。staging `/healthz` 使用与其他路径相同的低敏 `crm_staging_safe_json` 访问日志，格式仅记录路径 `$uri`，不记录查询参数或正文。来自已合并源码的运行 argv、三公网健康、固定出口及其他应用容器 ID 已现场核对，见 [R03 TR](../reports/tests/TR-MVP-007-20261020-R03.md)和[低敏证据](../../release/evidence/staging/crm-staging-g6-ssh-mitigation-live-20261020.json)。网关现场 vhost 比仓库受审文件多 `/activate/` 块，本次精确改动并保留，未来整体覆盖前须调和；公网 TLS 间歇超时仍阻塞新的独立 G6 观察。
 

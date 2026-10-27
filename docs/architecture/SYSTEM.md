@@ -77,7 +77,7 @@ staging.overselfx.com:443
   → 38.55.145.52 宝塔 Nginx / TLS
   → 127.0.0.1:18080
   → 受限 SSH 反向隧道
-  → 192.168.110.210:127.0.0.1:18081
+  → 192.168.1.173:127.0.0.1:18081
   → crmdeploy Rootless proxy:80
   → frontend / backend / worker / jobs / agent-worker / data / retrieval model
 ```

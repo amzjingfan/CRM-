@@ -338,7 +338,7 @@ if [[ $account_exists == false ]]; then
 fi
 
 /usr/sbin/sshd -t || fail "SSH server rejected the egress account policy"
-sshd_effective=$(/usr/sbin/sshd -T -C "user=$ACCOUNT,host=localhost,addr=192.168.110.210") ||
+sshd_effective=$(/usr/sbin/sshd -T -C "user=$ACCOUNT,host=localhost,addr=192.168.1.173") ||
     fail "Cannot read account-scoped SSH server configuration"
 for expected_policy in \
     "authenticationmethods publickey" \
