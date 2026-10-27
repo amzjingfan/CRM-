@@ -50,7 +50,7 @@ class AgentRunStart:
     """创建 Agent 运行记录所需的安全字段。"""
 
     store_id: uuid.UUID
-    conversation_id: uuid.UUID
+    conversation_id: uuid.UUID | None
     trigger_message_id: uuid.UUID | None
     provider_name: str
     model_name: str

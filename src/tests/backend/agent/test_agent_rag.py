@@ -79,6 +79,42 @@ class MemorySearchPort:
         return self.hits
 
 
+@pytest.mark.asyncio
+async def test_explicit_empty_file_scope_never_searches_store_faq() -> None:
+    class ScopedSearchPort(MemorySearchPort):
+        def __post_init__(self) -> None:
+            super().__post_init__()
+            self.file_searches = 0
+
+        async def hybrid_search_files(self, _session, _store_id, file_ids, *_args, **_kwargs):  # type: ignore[no-untyped-def]
+            self.file_searches += 1
+            assert file_ids == ()
+            return []
+
+        async def hybrid_search(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            raise AssertionError("空绑定不能回退到整店 FAQ")
+
+    port = ScopedSearchPort([])
+    service = RagRetrievalService(
+        embedding_service=CapturingEmbeddingService(),
+        search_port=port,
+        reranking_service=FixedRerankingService(),
+        dense_top_k=20,
+        lexical_top_k=20,
+        candidate_top_k=20,
+        final_top_k=5,
+        rrf_k=60,
+        min_dense_score=0.45,
+        min_lexical_score=0.10,
+        max_context_tokens=100,
+    )
+
+    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "你好", file_ids=())
+
+    assert result.hits == []
+    assert port.file_searches == 1
+
+
 class FixedRerankingService:
     """按测试给定顺序返回 Cross-Encoder 结果。"""
 

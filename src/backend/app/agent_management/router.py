@@ -2,11 +2,20 @@
 
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, cast
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 
-from app.agent_management.schemas import AgentConfigCreate, AgentConfigUpdate, AgentConfigView, AgentRunLogPage
+from app.agent.factory import SharedAgentRuntime
+from app.agent_management.debug import run_agent_debug
+from app.agent_management.schemas import (
+    AgentConfigCreate,
+    AgentConfigUpdate,
+    AgentConfigView,
+    AgentDebugRequest,
+    AgentDebugView,
+    AgentRunLogPage,
+)
 from app.agent_management.service import (
     config_view,
     create_config,
@@ -18,8 +27,11 @@ from app.agent_management.service import (
     update_config,
 )
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
+from app.shared.config.settings import get_settings
 from app.shared.database.base import User
+from app.shared.database.redis import consume_chat_query
 from app.shared.database.session import DbSession
+from app.shared.exceptions.errors import AppError, ErrorCode
 from app.shared.schemas.responses import ApiResponse
 
 router = APIRouter(prefix="/agents", tags=["Agent 运营管理"])
@@ -130,6 +142,28 @@ async def toggle_agent(
     return ApiResponse(
         data=await set_config_status(session, user, agent_id, "disabled" if current.status == "enabled" else "enabled")
     )
+
+
+@router.post(
+    "/{agent_id}/debug",
+    response_model=ApiResponse[AgentDebugView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("agent.manage"))],
+    description="真实模型调试已保存的服务类 Agent。可选授权会话供只读工具查询；不发送平台消息。",
+)
+async def debug_agent(
+    agent_id: uuid.UUID,
+    payload: AgentDebugRequest,
+    request: Request,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[AgentDebugView]:
+    settings = get_settings()
+    client_ip = request.client.host if request.client else "unknown"
+    if not await consume_chat_query(user.id, client_ip, settings.chat_query_limit, settings.chat_query_window_seconds):
+        raise AppError(ErrorCode.RATE_LIMITED, "Agent 调试请求过于频繁", 429)
+    runtime = cast(SharedAgentRuntime | None, getattr(request.app.state, "agent_runtime", None))
+    trace_id = str(getattr(request.state, "trace_id", uuid.uuid4()))
+    return ApiResponse(data=await run_agent_debug(session, user, agent_id, payload, trace_id, runtime))
 
 
 @router.get(

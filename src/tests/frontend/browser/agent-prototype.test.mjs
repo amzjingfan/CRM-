@@ -40,6 +40,9 @@ async function openAgentPage() {
     } else if (url.pathname.startsWith("/v1/agents/") && request.method() === "PATCH") {
       const payload = JSON.parse(request.postData() ?? "{}"); writes.push(payload);
       const current = agents.find((item) => url.pathname.includes(item.id)); Object.assign(current, payload); data = current;
+    } else if (url.pathname.endsWith("/debug") && request.method() === "POST") {
+      writes.push({ debug: JSON.parse(request.postData() ?? "{}"), path: url.pathname });
+      data = { agent_run_id: "00000000-0000-4000-8000-0000000000b1", content: "已查询绑定知识，订单信息需要关联会话。", action: "human_review", terminal_state: "HUMAN_REVIEW", citations: [], tool_calls: [], trace_id: "debug-trace", send_performed: false };
     } else if (url.pathname.endsWith("/logs")) data = { items: [], page: 1, page_size: 20, total: 0 };
     else if (url.pathname.endsWith("/approve") && request.method() === "POST") { writes.push(JSON.parse(request.postData() ?? "{}")); data = { ...file.latest_version, approval_status: "approved_for_internal_review" }; }
     else if (url.pathname.endsWith("/revoke") && request.method() === "POST") { writes.push({ revoked: true }); data = { ...file.latest_version, approval_status: "draft" }; }
@@ -79,7 +82,7 @@ test("Agent prototype tabs, store isolation and bound files", async () => {
   } finally { await context.close(); }
 });
 
-test("new Agent dialog and local preview never call model or platform", async () => {
+test("disabled Agent live debug calls backend without platform sending", async () => {
   const { context, page, writes } = await openAgentPage();
   const requests = [];
   page.on("request", (request) => requests.push(new URL(request.url()).pathname));
@@ -90,9 +93,15 @@ test("new Agent dialog and local preview never call model or platform", async ()
     await page.getByRole("button", { name: "创建 Agent" }).click();
     await page.getByRole("dialog", { name: "新建 Agent" }).waitFor({ state: "hidden" });
     assert.equal(writes.at(-1).code, "service_us_new");
+    await page.getByRole("tab", { name: /知识库/ }).click();
+    await page.getByLabel("选择已导入知识").selectOption(file.id);
+    await page.getByRole("button", { name: /绑定知识/ }).click();
+    await page.getByRole("button", { name: "保存配置" }).click();
+    assert.deepEqual(writes.at(-1).knowledge_file_ids, [file.id]);
     await page.getByPlaceholder(/试试/).fill("你好");
-    await page.getByRole("button", { name: "生成演示建议" }).click();
-    await page.getByText(/Agent 已停用/).waitFor();
+    await page.getByRole("button", { name: "运行调试" }).click();
+    await page.getByText(/已查询绑定知识/).waitFor();
+    assert.deepEqual(writes.at(-1), { debug: { message: "你好", conversation_id: null }, path: "/v1/agents/00000000-0000-4000-8000-0000000000a3/debug" });
     assert.equal(requests.some((path) => path.includes("/chat/query") || path.includes("/messages")), false);
   } finally { await context.close(); }
 });

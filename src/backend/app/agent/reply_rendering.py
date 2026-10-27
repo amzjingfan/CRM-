@@ -49,6 +49,7 @@ _ORDER_TEMPLATES: dict[str, dict[SupportedLanguage, str]] = {
     "pending": {"zh-CN": "订单当前处于待处理状态。", "en": "The order is currently pending."},
     "paid": {"zh-CN": "订单当前已支付。", "en": "The order is currently paid."},
     "shipped": {"zh-CN": "订单当前已发货。", "en": "The order is currently shipped."},
+    "delivered": {"zh-CN": "订单当前已送达。", "en": "The order is currently delivered."},
     "completed": {"zh-CN": "订单当前已完成。", "en": "The order is currently completed."},
     "cancelled": {"zh-CN": "订单当前已取消。", "en": "The order is currently cancelled."},
 }
@@ -115,6 +116,36 @@ def build_trusted_tool_template(
         status = data.get("status")
         return _template_for_status(_ORDER_TEMPLATES, status, language)
     return None
+
+
+def build_debug_tool_fallback_reply(executions: list[ExecutedAgentTool], language: SupportedLanguage) -> str | None:
+    """调试时只用已校验的单次只读结果生成不含对象标识的固定提示。"""
+    successful = [item for item in executions if item.result.status == "succeeded" and not item.result.mocked]
+    if len(successful) != 1 or _validated_tool_data(successful[0]) is None:
+        return None
+    tool_name = successful[0].tool_name
+    if tool_name not in {"query_order", "query_logistics", "query_customer_profile"}:
+        return None
+    template = build_trusted_tool_template(executions, language)
+    if template is None:
+        fallback = {
+            "query_order": {
+                "zh-CN": "当前订单状态需要坐席核对。",
+                "en": "An agent needs to verify the current order status.",
+            },
+            "query_logistics": {
+                "zh-CN": "当前没有可核验的配送状态。请坐席核对。",
+                "en": "No verified delivery status is available. An agent should check it.",
+            },
+            "query_customer_profile": {
+                "zh-CN": "已读取当前会话的客户资料。请坐席核对。",
+                "en": "The customer profile was read. An agent should review it.",
+            },
+        }[tool_name][language]
+    else:
+        fallback = template
+    prefix = "【系统固定提示·非模型原文】" if language == "zh-CN" else "[System fact prompt. Not model text] "
+    return prefix + fallback
 
 
 def build_trusted_tool_evidence(

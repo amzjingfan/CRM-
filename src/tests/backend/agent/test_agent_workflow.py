@@ -333,6 +333,26 @@ def service(
 
 
 @pytest.mark.asyncio
+async def test_debug_workflow_passes_explicit_empty_file_scope_to_rag() -> None:
+    class CapturingRag:
+        def __init__(self) -> None:
+            self.file_ids: tuple[uuid.UUID, ...] | None = None
+
+        async def retrieve(self, _session, _store_id, _query, *, file_ids=None):  # type: ignore[no-untyped-def]
+            self.file_ids = file_ids
+            return retrieval(0)
+
+    rag = CapturingRag()
+    workflow = object.__new__(AgentWorkflowService)
+    workflow.rag_service = rag  # type: ignore[assignment]
+    debug_command = command().model_copy(update={"debug_mode": True, "knowledge_file_ids": []})
+
+    await workflow._retrieve({"command": debug_command, "session": object()})  # type: ignore[arg-type]
+
+    assert rag.file_ids == ()
+
+
+@pytest.mark.asyncio
 async def test_combined_faq_uses_one_model_request_before_independent_review() -> None:
     rag_result = replace(
         retrieval(0.92), embedding_wait_ms=11, search_wall_ms=17, search_acquire_ms=7, search_query_ms=8
@@ -2080,6 +2100,291 @@ async def test_successful_logistics_tool_generates_grounded_reply_without_platfo
     assert "TOOL_EXECUTED" in recorder.completed.state_path
     assert "TOOL_SAFETY_CHECKED" in recorder.completed.state_path
     assert recorder.completed.business_claim_summaries == [f"logistics:report_status:tool_call:{query_call_id}"]
+
+
+@pytest.mark.asyncio
+async def test_debug_replaces_low_confidence_location_draft_with_fixed_tool_hint_before_review() -> None:
+    """真实调试的可疑模型文案不外发复核；固定只读提示仍需完整复核。"""
+    query_call_id = uuid.uuid4()
+    tool_data = logistics_tool_data()
+    tool_data["tracking_status"] = None
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.LOGISTICS_QUERY,
+            confidence=0.95,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=retrieval(),
+        tool_batches=[
+            AgentToolBatchResult(
+                results=[
+                    ExecutedAgentTool(
+                        tool_name="query_logistics",
+                        result=ToolResult(tool_call_id=query_call_id, status="succeeded", data=tool_data),
+                    )
+                ]
+            )
+        ],
+        outcomes=[
+            ToolAnswerModelOutput(
+                answer="订单号和运单号已核对。",
+                tool_call_ids=[query_call_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=False,
+                business_claims=empty_claim_inventory(),
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                completion_claim_valid=True,
+                business_claims_consistent=True,
+                confidence=0.90,
+                reason_codes=[],
+            ),
+        ],
+    )
+    workflow_command = command("请查询我的包裹物流状态。").model_copy(
+        update={
+            "debug_mode": True,
+            "tool_context": AgentToolRuntimeContext(
+                order_id="ORDER-2026-001",
+                available_tools={"query_logistics"},
+                permissions={"orders.view"},
+            ),
+        }
+    )
+
+    result = await workflow.run(cast_session(), workflow_command)
+
+    assert result.action == AgentAction.HUMAN_REVIEW
+    assert result.draft_reply == "【系统固定提示·非模型原文】当前没有可核验的配送状态。请坐席核对。"
+    assert generator.requests[1].prompt_safety_state == PromptSafetyState.ALLOWED
+    assert "订单号和运单号" not in generator.requests[1].user_prompt
+    assert result.send_performed is False
+
+
+@pytest.mark.parametrize("retry_accepted", [True, False])
+@pytest.mark.parametrize(
+    ("order_status", "expected_hint"),
+    [
+        ("unknown", "当前订单状态需要坐席核对。"),
+        ("delivered", "订单当前已送达。"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_debug_retries_rejected_tool_claim_with_fixed_reviewed_hint(
+    retry_accepted: bool, order_status: str, expected_hint: str
+) -> None:
+    """模型复核否决订单草稿时，仅重新复核已验证工具的固定提示。"""
+    query_call_id = uuid.uuid4()
+    workflow, _, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.GENERAL,
+            confidence=0.95,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=retrieval(),
+        tool_batches=[
+            AgentToolBatchResult(
+                results=[
+                    ExecutedAgentTool(
+                        tool_name="query_order",
+                        result=ToolResult(
+                            tool_call_id=query_call_id,
+                            status="succeeded",
+                            data={
+                                "order_id": str(uuid.uuid4()),
+                                "external_order_id": "ORDER-2026-001",
+                                "status": order_status,
+                                "currency": "USD",
+                                "total_amount": "10.00",
+                            },
+                        ),
+                    )
+                ]
+            )
+        ],
+        outcomes=[
+            ToolAnswerModelOutput(
+                answer="订单已送达。",
+                tool_call_ids=[query_call_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=False,
+                business_claims=empty_claim_inventory(),
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=False,
+                is_grounded=False,
+                completion_claim_valid=False,
+                business_claims_consistent=False,
+                confidence=0.2,
+                reason_codes=["candidate_contradicts_tool_status"],
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=retry_accepted,
+                is_grounded=retry_accepted,
+                completion_claim_valid=retry_accepted,
+                business_claims_consistent=retry_accepted,
+                confidence=0.9,
+                reason_codes=[] if retry_accepted else ["fixed_hint_unverified"],
+            ),
+        ],
+    )
+    workflow_command = command("请查询我的订单状态。").model_copy(
+        update={
+            "debug_mode": True,
+            "tool_context": AgentToolRuntimeContext(
+                order_id="ORDER-2026-001",
+                available_tools={"query_order"},
+                permissions={"orders.view"},
+            ),
+        }
+    )
+
+    result = await workflow.run(cast_session(), workflow_command)
+
+    assert result.action == AgentAction.HUMAN_REVIEW
+    if retry_accepted:
+        assert result.draft_reply == "【系统固定提示·非模型原文】" + expected_hint
+    else:
+        assert result.draft_reply is None
+    assert len(generator.requests) == 3
+    assert "订单已送达" not in generator.requests[2].user_prompt
+    assert result.send_performed is False
+
+
+@pytest.mark.asyncio
+async def test_debug_explicit_customer_read_survives_unknown_model_intent() -> None:
+    """分类器拒判显式只读请求时，已授权调试仍可给坐席安全建议。"""
+    query_call_id = uuid.uuid4()
+    workflow, rag, _, recorder = service(
+        message_intent=IntentModelOutput(
+            intent=None,
+            confidence=0,
+            classification_state=ClassificationState.UNKNOWN,
+        ),
+        rag_result=retrieval(),
+        tool_batches=[
+            AgentToolBatchResult(
+                results=[
+                    ExecutedAgentTool(
+                        tool_name="query_customer_profile",
+                        result=ToolResult(
+                            tool_call_id=query_call_id,
+                            status="succeeded",
+                            data={
+                                "customer_id": str(uuid.uuid4()),
+                                "tags": [],
+                                "order_count": 1,
+                                "total_spend": "10.00",
+                            },
+                        ),
+                    )
+                ]
+            )
+        ],
+        outcomes=[
+            ToolAnswerModelOutput(
+                answer="已读取当前会话的客户资料，请坐席核对。",
+                tool_call_ids=[query_call_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=False,
+                business_claims=empty_claim_inventory(),
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                completion_claim_valid=True,
+                business_claims_consistent=True,
+                confidence=0.9,
+                reason_codes=[],
+            ),
+        ],
+    )
+    workflow_command = command("请查询我的会员信息。").model_copy(
+        update={
+            "debug_mode": True,
+            "tool_context": AgentToolRuntimeContext(
+                available_tools={"query_customer_profile"},
+                permissions={"workspace.view"},
+            ),
+        }
+    )
+
+    result = await workflow.run(cast_session(), workflow_command)
+
+    assert result.classification_state == ClassificationState.UNKNOWN
+    assert result.action == AgentAction.HUMAN_REVIEW
+    assert result.required_tools == ["query_customer_profile"]
+    assert result.draft_reply == "已读取当前会话的客户资料，请坐席核对。"
+    assert result.send_performed is False
+    assert rag.calls == 0
+    assert recorder.completed is not None
+    assert recorder.completed.decision_reason == "classification_unresolved"
+
+
+@pytest.mark.asyncio
+async def test_debug_does_not_replace_blocked_address_draft() -> None:
+    """完整地址仍在 Provider 边界被拒绝，不能借固定提示放行。"""
+    query_call_id = uuid.uuid4()
+    workflow, _, generator, recorder = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.LOGISTICS_QUERY,
+            confidence=0.95,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=retrieval(),
+        tool_batches=[
+            AgentToolBatchResult(
+                results=[
+                    ExecutedAgentTool(
+                        tool_name="query_logistics",
+                        result=ToolResult(
+                            tool_call_id=query_call_id,
+                            status="succeeded",
+                            data=logistics_tool_data(),
+                        ),
+                    )
+                ]
+            )
+        ],
+        outcomes=[
+            ToolAnswerModelOutput(
+                answer="请寄到 12 Main Street, Springfield, IL 62704。",
+                tool_call_ids=[query_call_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=False,
+                business_claims=empty_claim_inventory(),
+            ),
+        ],
+    )
+    original_generate = generator.generate
+
+    async def enforce_provider_boundary(request: StructuredRequest, schema: type[OutputT]) -> ProviderResult[OutputT]:
+        request.ensure_safe_for_external_provider(response_schema_name=schema.__name__)
+        return await original_generate(request, schema)
+
+    generator.generate = enforce_provider_boundary
+    workflow_command = command("请查询我的包裹物流状态。").model_copy(
+        update={
+            "debug_mode": True,
+            "tool_context": AgentToolRuntimeContext(
+                order_id="ORDER-2026-001",
+                available_tools={"query_logistics"},
+                permissions={"orders.view"},
+            ),
+        }
+    )
+
+    result = await workflow.run(cast_session(), workflow_command)
+
+    assert result.draft_reply is None
+    assert recorder.completed is not None
+    assert recorder.completed.safety_reason_codes == ["MODEL_REFUSAL"]
 
 
 @pytest.mark.asyncio

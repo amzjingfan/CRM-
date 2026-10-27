@@ -4,9 +4,10 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.agent.reply_policy import AgentReplyProfile
+from app.agent.schemas import AgentCitation, AgentToolCallView
 
 ToolName = Literal[
     "query_order",
@@ -66,6 +67,34 @@ class AgentRuntimeView(BaseModel):
     token_streaming: Literal[False] = False
 
 
+class AgentDebugRequest(BaseModel):
+    """输入只用于当前调试调用；会话 ID 仅提供可信只读工具上下文。"""
+
+    message: str = Field(min_length=1, max_length=4000)
+    conversation_id: uuid.UUID | None = None
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("message")
+    @classmethod
+    def non_blank_message(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("调试消息不能为空")
+        return stripped
+
+
+class AgentDebugView(BaseModel):
+    agent_run_id: uuid.UUID
+    content: str | None
+    action: str
+    terminal_state: str
+    citations: list[AgentCitation]
+    tool_calls: list[AgentToolCallView]
+    trace_id: str
+    send_performed: Literal[False] = False
+
+
 class AgentConfigView(BaseModel):
     id: uuid.UUID
     store_id: uuid.UUID
@@ -94,7 +123,7 @@ class ToolCallLogView(BaseModel):
 
 class AgentRunLogView(BaseModel):
     id: uuid.UUID
-    conversation_id: uuid.UUID
+    conversation_id: uuid.UUID | None
     status: str
     action: str
     intent: str | None

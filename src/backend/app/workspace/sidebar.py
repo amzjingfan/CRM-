@@ -349,6 +349,16 @@ async def _search_live_orders(
     )
 
 
+async def latest_verified_live_order(session: AsyncSession, conversation: Conversation) -> SidebarOrder | None:
+    """只读查询已验证会话买家的最新平台订单，供受控 Agent 调试使用。"""
+    result = await _search_live_orders(
+        session,
+        conversation,
+        SidebarSearch(section="orders", field="order", query="", page=1),
+    )
+    return result.items[0] if result.items else None
+
+
 async def _verified_buyer_user_id(session: AsyncSession, conversation: Conversation, client: TikTokReadClient) -> str:
     customer = await session.get(Customer, conversation.customer_id)
     if (

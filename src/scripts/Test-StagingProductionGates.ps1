@@ -39,6 +39,7 @@ param(
     [string]$AllowedTikTokConversationId,
     [string]$AllowedTikTokStoreIds,
     [switch]$EnableWorkspaceTranslation,
+    [switch]$EnableAgentDebug,
     [switch]$EnableG5SSELoadTest,
     [switch]$EnableDocumentIngestion,
     [switch]$EnableG2WebhookProbe,
@@ -178,12 +179,16 @@ function Assert-EnvironmentContract {
         $Values["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"].Trim().ToLowerInvariant() -ne "false") {
         throw "Staging preflight requires WORKSPACE_MESSAGE_TRANSLATION_ENABLED=false outside the reviewed overlay."
     }
+    if ($Values.ContainsKey("AGENT_DEBUG_ENABLED") -and
+        $Values["AGENT_DEBUG_ENABLED"].Trim().ToLowerInvariant() -ne "false") {
+        throw "Staging preflight requires AGENT_DEBUG_ENABLED=false outside the reviewed overlay."
+    }
     foreach ($name in $G2ProbeVariables) {
         if ($Values.ContainsKey($name) -and -not [string]::IsNullOrEmpty($Values[$name])) {
             throw "G2 Webhook probe target must not be stored in the staging environment file."
         }
     }
-    if (($EnableG5SSELoadTest -or $EnableWorkspaceTranslation) -and (
+    if (($EnableG5SSELoadTest -or $EnableWorkspaceTranslation -or $EnableAgentDebug) -and (
         -not $Values.ContainsKey("LLM_PRIMARY_PROVIDER") -or $Values["LLM_PRIMARY_PROVIDER"].Trim() -cne "deepseek" -or
         -not $Values.ContainsKey("LLM_PRIMARY_MODEL") -or [string]::IsNullOrWhiteSpace($Values["LLM_PRIMARY_MODEL"]) -or
         -not $Values.ContainsKey("DEEPSEEK_API_KEY") -or [string]::IsNullOrWhiteSpace($Values["DEEPSEEK_API_KEY"])
@@ -406,6 +411,7 @@ function Assert-ProductionComposeContract {
         [string]$AllowedTikTokConversationId,
         [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
+        [switch]$EnableAgentDebug,
         [switch]$EnableG5SSELoadTest,
         [Parameter(Mandatory = $true)][hashtable]$G2ProbeExpected
     )
@@ -434,7 +440,7 @@ function Assert-ProductionComposeContract {
     if ([string]$retrievalService.environment.RETRIEVAL_MODEL_VERIFY_HASHES -ne "true") {
         throw "Production retrieval model service must enable startup weight hash verification."
     }
-    if ($EnableG5SSELoadTest) {
+    if ($EnableG5SSELoadTest -or $EnableAgentDebug) {
         $backendTokenProperty = $Config.services.backend.environment.PSObject.Properties["RETRIEVAL_MODEL_SERVICE_TOKEN"]
         $retrievalTokenProperty = $retrievalService.environment.PSObject.Properties["RETRIEVAL_MODEL_SERVICE_TOKEN"]
         $backendToken = if ($null -eq $backendTokenProperty) { "" } else { [string]$backendTokenProperty.Value }
@@ -542,12 +548,18 @@ function Assert-ProductionComposeContract {
         if ($storeActual -cne $storeExpected) {
             throw "Staging Compose manual send target does not match reviewed mode: $serviceName"
         }
-        $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug) -and $serviceName -ceq "backend") { "true" } else { "false" }
         $embeddingProperty = $applicationEnvironment.PSObject.Properties["EMBEDDING_ENABLED"]
         $actualEmbedding = if ($null -eq $embeddingProperty) { "false" } else { [string]$embeddingProperty.Value }
         if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
         if ($actualEmbedding -cne $expectedEmbedding) {
             throw "Staging Compose embedding capability does not match reviewed mode: $serviceName"
+        }
+        $debugProperty = $applicationEnvironment.PSObject.Properties["AGENT_DEBUG_ENABLED"]
+        $actualDebug = if ($null -eq $debugProperty) { "false" } else { [string]$debugProperty.Value }
+        $expectedDebug = if ($EnableAgentDebug -and $serviceName -ceq "backend") { "true" } else { "false" }
+        if ($actualDebug -cne $expectedDebug) {
+            throw "Staging Compose Agent debug capability does not match reviewed mode: $serviceName"
         }
         $expectedTranslation = if ($EnableWorkspaceTranslation -and $serviceName -ceq "backend") { "true" } else { "false" }
         if ([string]$applicationEnvironment.WORKSPACE_MESSAGE_TRANSLATION_ENABLED -cne $expectedTranslation) {
@@ -631,6 +643,7 @@ function Assert-RunningStagingMode {
         [string]$AllowedTikTokConversationId,
         [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
+        [switch]$EnableAgentDebug,
         [switch]$EnableG5SSELoadTest,
         [Parameter(Mandatory = $true)][hashtable]$G2ProbeExpected
     )
@@ -700,11 +713,17 @@ function Assert-RunningStagingMode {
         if ($storeActual -cne $storeExpected) {
             throw "Staging runtime manual send target does not match reviewed mode: $serviceName"
         }
-        $expectedEmbedding = if ($EnableG5SSELoadTest -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug) -and $serviceName -ceq "backend") { "true" } else { "false" }
         $actualEmbedding = [string]$runtimeEnvironment["EMBEDDING_ENABLED"]
         if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
         if ($actualEmbedding -cne $expectedEmbedding) {
             throw "Staging runtime embedding capability does not match reviewed mode: $serviceName"
+        }
+        $actualDebug = [string]$runtimeEnvironment["AGENT_DEBUG_ENABLED"]
+        if ([string]::IsNullOrEmpty($actualDebug)) { $actualDebug = "false" }
+        $expectedDebug = if ($EnableAgentDebug -and $serviceName -ceq "backend") { "true" } else { "false" }
+        if ($actualDebug -cne $expectedDebug) {
+            throw "Staging runtime Agent debug capability does not match reviewed mode: $serviceName"
         }
         $expectedTranslation = if ($EnableWorkspaceTranslation -and $serviceName -ceq "backend") { "true" } else { "false" }
         if ($runtimeEnvironment["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"] -cne $expectedTranslation) {
@@ -885,6 +904,7 @@ function Write-Evidence {
         } else { 0 }
         g5_sse_load_test_enabled = [bool]$EnableG5SSELoadTest
         workspace_message_translation_enabled = [bool]$EnableWorkspaceTranslation
+        agent_debug_enabled = [bool]$EnableAgentDebug
         backend_query_limit = if ($EnableG5SSELoadTest) { 60 } else { 10 }
         runtime_mode_verified = ($Status -ceq "passed")
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
@@ -909,6 +929,10 @@ function Write-Evidence {
     if ($EnableWorkspaceTranslation) {
         $evidence["workspace_translation_overlay_sha256"] =
             (Get-FileHash -LiteralPath $translationOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    if ($EnableAgentDebug) {
+        $evidence["agent_debug_overlay_sha256"] =
+            (Get-FileHash -LiteralPath $agentDebugOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
     }
     if ($null -ne $EgressVerification) {
         $evidence["tiktok_egress"] = $EgressVerification
@@ -1031,6 +1055,7 @@ $g2ProbeOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging
 $manualSendOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-manual-send.yml"
 $g5SSEOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-g5-sse.yml"
 $translationOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-translation.yml"
+$agentDebugOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-agent-debug.yml"
 if (-not (Test-Path -LiteralPath $egressOverlay -PathType Leaf)) {
     throw "The repository-fixed TikTok egress overlay does not exist."
 }
@@ -1051,6 +1076,9 @@ if ($EnableG5SSELoadTest -and -not (Test-Path -LiteralPath $g5SSEOverlay -PathTy
 }
 if ($EnableWorkspaceTranslation -and -not (Test-Path -LiteralPath $translationOverlay -PathType Leaf)) {
     throw "The repository-fixed staging translation overlay does not exist."
+}
+if ($EnableAgentDebug -and -not (Test-Path -LiteralPath $agentDebugOverlay -PathType Leaf)) {
+    throw "The repository-fixed staging Agent debug overlay does not exist."
 }
 
 $savedEnvironment = @{}
@@ -1106,6 +1134,9 @@ try {
     if ($EnableWorkspaceTranslation) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $translationOverlay).Path)
     }
+    if ($EnableAgentDebug) {
+        $composeArguments += @("-f", (Resolve-Path -LiteralPath $agentDebugOverlay).Path)
+    }
     Set-DisabledCapabilities
     [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID", $AllowedTikTokConversationId, "Process")
     [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS", $AllowedTikTokStoreIds, "Process")
@@ -1146,7 +1177,8 @@ try {
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
-        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -G2ProbeExpected $g2ProbeExpected
+        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -EnableAgentDebug:$EnableAgentDebug `
+        -G2ProbeExpected $g2ProbeExpected
 
     if ($ValidateOnly) {
         Write-Evidence -Status "validated" -HealthChecks @()
@@ -1256,7 +1288,8 @@ try {
         -EnableTikTokWebhookRead:$EnableTikTokWebhookRead -EnableG5SSELoadTest:$EnableG5SSELoadTest `
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
-        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -G2ProbeExpected $g2ProbeExpected
+        -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -EnableAgentDebug:$EnableAgentDebug `
+        -G2ProbeExpected $g2ProbeExpected
     if ($EnableDocumentIngestion) {
         Assert-RunningDocumentWorker -Command $compose -Arguments $composeArguments `
             -ExpectedImage $DocumentParserImage -ExpectedToken $environmentValues["RETRIEVAL_MODEL_SERVICE_TOKEN"]

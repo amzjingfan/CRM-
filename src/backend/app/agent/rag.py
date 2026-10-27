@@ -177,7 +177,7 @@ class RagRetrievalService:
         session: AsyncSession,
         store_id: uuid.UUID,
         query: str,
-        file_ids: tuple[uuid.UUID, ...] = (),
+        file_ids: tuple[uuid.UUID, ...] | None = None,
     ) -> RagRetrievalResult:
         """对 Embedding、检索连接/SQL、重排施加同一个总时限。"""
         try:
@@ -187,9 +187,9 @@ class RagRetrievalService:
             raise RagRetrievalTimeout("RAG_RETRIEVAL_TIMEOUT") from error
 
     async def _retrieve_unbounded(
-        self, session: AsyncSession, store_id: uuid.UUID, query: str, file_ids: tuple[uuid.UUID, ...]
+        self, session: AsyncSession, store_id: uuid.UUID, query: str, file_ids: tuple[uuid.UUID, ...] | None
     ) -> RagRetrievalResult:
-        """按绑定范围检索文件，否则沿用旧 FAQ 路径。"""
+        """显式文件范围可为空；未指定范围时沿用旧 FAQ 路径。"""
         sanitized_query = sanitize_prompt_text(query).strip()
         if not sanitized_query:
             raise ValueError("RAG 查询不能为空")
@@ -201,7 +201,7 @@ class RagRetrievalService:
         search_started_at = time.perf_counter_ns()
 
         async def search(search_session: AsyncSession) -> list[KnowledgeRetrievalHit]:
-            if file_ids:
+            if file_ids is not None:
                 return await self.search_port.hybrid_search_files(
                     search_session,
                     store_id,

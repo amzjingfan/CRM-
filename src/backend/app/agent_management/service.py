@@ -38,7 +38,7 @@ from app.shared.exceptions.errors import AppError, ErrorCode
 def runtime_view() -> AgentRuntimeView:
     settings = get_settings()
     return AgentRuntimeView(
-        available=settings.llm_enabled and settings.embedding_enabled,
+        available=(settings.llm_enabled or settings.agent_debug_enabled) and settings.embedding_enabled,
         llm_provider=settings.llm_primary_provider,
         llm_model=settings.llm_primary_model,
         available_models=list(

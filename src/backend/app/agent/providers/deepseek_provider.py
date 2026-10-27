@@ -1,4 +1,4 @@
-"""DeepSeek Chat Completions 与 FAQ 专用 Responses 适配器。"""
+"""DeepSeek Chat Completions 与客服草稿专用 Responses 适配器。"""
 
 import json
 import logging
@@ -92,7 +92,7 @@ def _safe_schema_issues(error: ValidationError) -> tuple[LLMOutputSchemaIssue, .
 
 
 class DeepSeekProvider(LLMProvider):
-    """FAQ 草稿及分类草稿组合用 JSON Schema，其余请求用 JSON Output；均在本地复核。
+    """FAQ 和工具草稿用 JSON Schema，其余请求用 JSON Output；均在本地复核。
 
     两种端点的响应都转换成同一失败关闭边界，不把未校验正文传给工作流。
     """
@@ -172,11 +172,13 @@ class DeepSeekProvider(LLMProvider):
 
         response: object
         try:
-            # ensure_safe_for_external_provider 已按注册表锁定 FAQ 的响应 Schema 名称。
+            # ensure_safe_for_external_provider 已按注册表锁定客服草稿的响应 Schema 名称。
             if request.business_prompt_id in (
                 BusinessPromptId.FAQ_ANSWER,
                 BusinessPromptId.FAQ_CLASSIFIED_DRAFT,
                 BusinessPromptId.FAQ_TRUSTED_REVIEW,
+                BusinessPromptId.TOOL_ANSWER,
+                BusinessPromptId.TOOL_GROUNDING_REVIEW,
             ):
                 structured_response = await self._client.responses.create(
                     model=self.model_name,

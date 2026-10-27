@@ -18,7 +18,7 @@ async def test_agent_routes_bound_files_to_rag_and_preserves_legacy_faq_route() 
     rag = SimpleNamespace(retrieve=AsyncMock(return_value="retrieved"))
     workflow = object.__new__(AgentWorkflowService)
     workflow.rag_service = rag
-    command = SimpleNamespace(store_id=store_id, message="退货政策", knowledge_file_ids=[file_id])
+    command = SimpleNamespace(store_id=store_id, message="退货政策", knowledge_file_ids=[file_id], debug_mode=False)
     state = {"command": command, "session": object()}
     assert await workflow._retrieve(state) == "retrieved"
     assert rag.retrieve.await_args.kwargs["file_ids"] == (file_id,)

@@ -62,7 +62,7 @@ class RealModelEvaluationSafetyContext:
             raise ValueError("真实模型评测修复载荷摘要无效")
 
 
-PROMPT_DLP_POLICY_VERSION = "prompt-dlp-v1.3.0"
+PROMPT_DLP_POLICY_VERSION = "prompt-dlp-v1.3.1"
 TRUSTED_PROVIDER_CONTRACT_PROMPT_VERSION = "provider-contract-v1.1.0"
 TRUSTED_PROVIDER_CONTRACT_SYSTEM_PROMPT = (
     "You are a provider contract checker. Return only a valid json object matching the requested structured output. "
@@ -374,7 +374,7 @@ JAPANESE_ADDRESS_PATTERN = re.compile(
 MULTILINGUAL_LOCATION_TERM_PATTERN = re.compile(
     r"(?i)(?:\b(?:avenida|av\.?|calle|rue|via|jalan|allee|strasse|straße|road|rd\.?|street|st\.?|"
     r"avenue|ave\.?|parkway|pkwy\.?|flat|apartment|apt\.?|unit|suite|tower|block|blk|"
-    r"residency|building|floor)\b|(?:路|街|道|巷|弄|号|號|栋|棟|单元|單元|室|层|層)|"
+    r"residency|building|floor)\b|(?:路|街|道|巷|弄|门牌|門牌|号|號|栋|棟|单元|單元|室|层|層)|"
     r"(?:특별시|광역시|도|시|군|구|로|길|층)|(?:都|道|府|県|市|区|町|村|丁目))"
 )
 ADDRESS_SEPARATOR_PATTERN = re.compile(r"[,，،#]|\s-\s")
@@ -830,14 +830,16 @@ def _is_unlabeled_building_reference(text: str) -> bool:
     return BARE_BUILDING_ADDRESS_PATTERN.search(text) is not None and ADDRESS_SEPARATOR_PATTERN.search(text) is None
 
 
-def _structured_location_risk(value: object) -> tuple[PromptSafetyState, str] | None:
+def _structured_location_risk(
+    value: object, *, knowledge_business_number: bool = False
+) -> tuple[PromptSafetyState, str] | None:
     """递归检查结构化允许列表中的字符串值和地址字段名。"""
     if isinstance(value, dict):
         pending_uncertain: tuple[PromptSafetyState, str] | None = None
         for key, item in value.items():
             if is_sensitive_address_field(key):
                 return PromptSafetyState.BLOCKED, "STRUCTURED_ADDRESS_FIELD_BLOCKED"
-            child_risk = _structured_location_risk(item)
+            child_risk = _structured_location_risk(item, knowledge_business_number=knowledge_business_number)
             if child_risk is not None and child_risk[0] == PromptSafetyState.BLOCKED:
                 return child_risk
             if child_risk is not None:
@@ -846,7 +848,7 @@ def _structured_location_risk(value: object) -> tuple[PromptSafetyState, str] | 
     if isinstance(value, list):
         pending_uncertain = None
         for item in value:
-            child_risk = _structured_location_risk(item)
+            child_risk = _structured_location_risk(item, knowledge_business_number=knowledge_business_number)
             if child_risk is not None and child_risk[0] == PromptSafetyState.BLOCKED:
                 return child_risk
             if child_risk is not None:
@@ -854,11 +856,15 @@ def _structured_location_risk(value: object) -> tuple[PromptSafetyState, str] | 
         return pending_uncertain
     if not isinstance(value, str):
         return None
-    if _contains_ambiguous_address_context(value):
+    # 已审批知识中的“编号、订单号、型号”等不是门牌；只为 FAQ 知识字段排除这些词。
+    location_text = (
+        re.sub(r"(?<=[编編型版序单單账賬帳机機])(?:号|號)", "", value) if knowledge_business_number else value
+    )
+    if _contains_ambiguous_address_context(location_text):
         return PromptSafetyState.UNCERTAIN, "ADDRESS_CONTEXT_AMBIGUOUS"
-    if _contains_high_risk_address(value) or _contains_open_address_signature(value):
+    if _contains_high_risk_address(value) or _contains_open_address_signature(location_text):
         return PromptSafetyState.BLOCKED, "COMPLETE_ADDRESS_DETECTED"
-    if _contains_low_confidence_location_shape(value):
+    if _contains_low_confidence_location_shape(location_text):
         return PromptSafetyState.UNCERTAIN, "LOCATION_TEXT_LOW_CONFIDENCE"
     return None
 
@@ -930,7 +936,21 @@ def _evaluate_registered_business_payload(text: str, prompt_id: BusinessPromptId
             sanitized_text=UNTRUSTED_JSON_MARKER,
             reason_code="BUSINESS_PROMPT_PAYLOAD_SCHEMA_MISMATCH",
         )
-    location_risk = _structured_location_risk(payload)
+    if (
+        prompt_id
+        in {
+            BusinessPromptId.FAQ_ANSWER,
+            BusinessPromptId.FAQ_CLASSIFIED_DRAFT,
+            BusinessPromptId.FAQ_GROUNDING_REVIEW,
+            BusinessPromptId.FAQ_TRUSTED_REVIEW,
+        }
+        and "knowledge" in payload
+    ):
+        location_risk = _structured_location_risk({key: item for key, item in payload.items() if key != "knowledge"})
+        if location_risk is None:
+            location_risk = _structured_location_risk(payload["knowledge"], knowledge_business_number=True)
+    else:
+        location_risk = _structured_location_risk(payload)
     if location_risk is not None:
         state, reason_code = location_risk
         return PromptSafetyDecision(

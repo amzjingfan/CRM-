@@ -165,6 +165,49 @@ def test_docker_compose_resolves_g5_and_default_staging_modes(g5_enabled: bool, 
     assert backend_token == (RETRIEVAL_TOKEN_SENTINEL if g5_enabled else None)
 
 
+def test_agent_debug_overlay_only_opens_backend_model_clients(staging_env_file: Path) -> None:
+    """Compose 真实合并后，调试不打开通用 LLM、SSE 或其他服务的检索能力。"""
+    if shutil.which("docker") is None:
+        pytest.skip("Docker Compose CLI unavailable")
+    compose_root = SOURCE_ROOT / "compose"
+    files = [
+        "docker-compose.yml",
+        "docker-compose.prod.yml",
+        "docker-compose.tiktok-egress.yml",
+        "docker-compose.rootless-staging.yml",
+        "docker-compose.rootless-staging-agent-debug.yml",
+    ]
+    command = ["docker", "compose", "--project-name", "crm-agent-debug-contract", "--profile", "ai"]
+    command.extend(["--env-file", str(staging_env_file)])
+    for name in files:
+        command.extend(["-f", str(compose_root / name)])
+    command.extend(["config", "--format", "json"])
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "BACKEND_IMAGE": BACKEND_IMAGE,
+            "FRONTEND_IMAGE": FRONTEND_IMAGE,
+            "TIKTOK_EGRESS_IMAGE": BACKEND_IMAGE,
+            "TLS_CERT_DIR": "/__crm_staging_tls_not_used__",
+        }
+    )
+    result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", env=environment, check=False)
+    assert result.returncode == 0, "Docker Compose could not parse the Agent debug overlay"
+    config = json.loads(result.stdout)
+    backend = config["services"]["backend"]["environment"]
+    assert backend["AGENT_DEBUG_ENABLED"] == "true"
+    assert backend["EMBEDDING_ENABLED"] == "true"
+    assert backend["LLM_ENABLED"] == "false"
+    assert backend["SSE_LOAD_TEST_ENABLED"] == "false"
+    retrieval_token = config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"]
+    assert backend["RETRIEVAL_MODEL_SERVICE_TOKEN"] == retrieval_token
+    for name in ("worker", "jobs", "agent-worker"):
+        service = config["services"][name]["environment"]
+        assert service.get("AGENT_DEBUG_ENABLED", "false") == "false"
+        assert service.get("EMBEDDING_ENABLED", "false") == "false"
+        assert service["LLM_ENABLED"] == "false"
+
+
 def test_g5_workflow_opt_in_is_limited_to_validate_and_deploy() -> None:
     """调度必须使用显式布尔开关，且不能与 G2 或回滚混用。"""
     workflow = yaml.safe_load((REPOSITORY_ROOT / ".github/workflows/staging-gates.yml").read_text("utf-8"))
@@ -888,6 +931,68 @@ def test_staging_webhook_read_opt_in_rejects_other_capability_changes(
 
     assert result.returncode != 0
     assert "does not match reviewed mode" in normalized_process_output(result)
+
+
+def test_staging_agent_debug_requires_explicit_mode_and_shared_token(staging_env_file: Path, tmp_path: Path) -> None:
+    """调试开关、Embedding 与共享模型令牌必须同时通过受审门禁。"""
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["services"]["backend"]["environment"].update(
+        {
+            "AGENT_DEBUG_ENABLED": "true",
+            "EMBEDDING_ENABLED": "true",
+            "LLM_ENABLED": "false",
+            "LLM_PRIMARY_PROVIDER": "deepseek",
+            "LLM_PRIMARY_MODEL": "deepseek-chat",
+            "DEEPSEEK_API_KEY": "private-test-key",
+            "RETRIEVAL_MODEL_SERVICE_TOKEN": RETRIEVAL_TOKEN_SENTINEL,
+        }
+    )
+    config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = (
+        RETRIEVAL_TOKEN_SENTINEL
+    )
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    with staging_env_file.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key"
+        )
+    evidence_file = tmp_path / "agent-debug-validate.json"
+    args = (
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+    )
+    denied = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert denied.returncode != 0
+    accepted = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentDebug", environment=environment)
+    assert accepted.returncode == 0, normalized_process_output(accepted)
+    evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
+    assert evidence["agent_debug_enabled"] is True
+    assert evidence["g5_sse_load_test_enabled"] is False
+
+    config["services"]["backend"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = "wrong" * 8
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    rejected = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentDebug", environment=environment)
+    assert rejected.returncode != 0
 
 
 @pytest.mark.parametrize("with_webhook_read", [False, True])

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import {
-  approveDocumentVersion, createAgent, getAgentLogs, listAgents, listDocumentFiles, listStores, revokeDocumentVersion, setAgentEnabled, updateAgent,
-  type AgentConfig, type AgentRunLog, type DocumentFileSummary, type StoreView,
+  approveDocumentVersion, createAgent, debugAgent, getAgentLogs, listAgents, listDocumentFiles, listSessions, listStores, revokeDocumentVersion, setAgentEnabled, updateAgent,
+  type AgentConfig, type AgentDebugResult, type AgentRunLog, type DocumentFileSummary, type SessionSummary, type StoreView,
 } from "../../lib/api";
 import "./agent-prototype.css";
 
@@ -60,9 +60,15 @@ export default function AgentsPage() {
   const [newType, setNewType] = useState<"service" | "operations">("service");
   const [previewInput, setPreviewInput] = useState("");
   const [previewLines, setPreviewLines] = useState<string[]>([]);
+  const [previewResult, setPreviewResult] = useState<AgentDebugResult | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [conversationId, setConversationId] = useState("");
   const [demoAutoSend, setDemoAutoSend] = useState<Record<string, boolean>>({});
   const [modelChoices, setModelChoices] = useState<Record<string, string>>({});
   const requestId = useRef(0);
+  const previewRequestId = useRef(0);
   const selected = agents.find((item) => item.id === selectedId && item.store_id === storeId) ?? null;
   const currentStore = stores.find((item) => item.id === storeId);
   const visibleAgents = agents.filter((item) => item.store_id === storeId);
@@ -88,11 +94,19 @@ export default function AgentsPage() {
     setSelectedId((old) => agents.some((item) => item.id === old && item.store_id === storeId)
       ? old : agents.find((item) => item.store_id === storeId)?.id ?? "");
   }, [agents, storeId]);
-  useEffect(() => { setTab("basic"); setPreviewLines([]); }, [storeId, selectedId]);
+  useEffect(() => { setTab("basic"); setPreviewLines([]); setPreviewResult(null); setPreviewError(""); setPreviewBusy(false); setConversationId(""); previewRequestId.current++; }, [storeId, selectedId]);
   useEffect(() => {
     setDraft(selected ? draftOf(selected) : null);
     setPreviewLines([]);
   }, [selected]);
+  useEffect(() => {
+    let active = true;
+    setSessions([]);
+    if (storeId) void listSessions(new URLSearchParams({ store_id: storeId, page: "1", page_size: "50" }))
+      .then((page) => { if (active) setSessions(page.items.filter((item) => item.store_id === storeId)); })
+      .catch(() => { if (active) setSessions([]); });
+    return () => { active = false; };
+  }, [storeId]);
   useEffect(() => {
     const sequence = ++requestId.current;
     let active = true;
@@ -175,14 +189,19 @@ export default function AgentsPage() {
       setNotice("文件版本内部建议审批已撤销");
     } catch (caught) { setNotice(message(caught)); }
   }
-  function preview() {
+  async function preview() {
     const input = previewInput.trim();
-    if (!input) return;
-    const reply = !selected || selected.status !== "enabled" ? "Agent 已停用：当前仅展示本地规则演示。"
-      : /(退款|退货|赔偿|投诉|地址|优惠|政策)/.test(input) ? "该咨询需核实当前店铺事实并由坐席处理。"
-      : demoAutoSend[selected.id] ? "模拟自动发送：已收到咨询，请稍候，坐席将核实后回复。真实平台消息未发送。"
-      : "这是页面内演示建议。真实建议需在客服工作台调用并经过坐席复核。";
-    setPreviewLines((old) => [...old, input, reply]); setPreviewInput("");
+    if (!input || !selected || previewBusy || dirty) return;
+    const sequence = ++previewRequestId.current;
+    setPreviewBusy(true); setPreviewError(""); setPreviewResult(null);
+    try {
+      const result = await debugAgent(selected.id, input, conversationId || null);
+      if (sequence !== previewRequestId.current) return;
+      setPreviewLines((old) => [...old, input, result.content || "没有可安全展示的建议。请检查绑定知识、工具上下文和运行记录。"]);
+      setPreviewResult(result); setPreviewInput("");
+      void getAgentLogs(selected.id).then((page) => { if (sequence === previewRequestId.current) setLogs(page.items); });
+    } catch (caught) { if (sequence === previewRequestId.current) setPreviewError(message(caught)); }
+    finally { if (sequence === previewRequestId.current) setPreviewBusy(false); }
   }
   return <AppShell><div className="agent-page"><div className="shell">
     <header className="topbar"><div className="title"><span className="title-icon">◇</span><div><h1>Agent 管理</h1><p>配置 TikTok 店铺的人工辅助客服建议</p></div></div>
@@ -203,7 +222,7 @@ export default function AgentsPage() {
             <label className="field-group"><span>所属店铺</span><input className="field" value={currentStore?.name ?? ""} disabled /></label><label className="field-group"><span>Agent 编码</span><input className="field" value={selected.code} disabled /></label>
             <label className="field-group wide"><span>Agent 名称</span><input className="field" maxLength={200} value={draft.name} onChange={(event) => updateDraft({ name: event.target.value })} /></label>
             <label className="field-group wide"><span>用途描述</span><textarea className="field fieldarea" maxLength={1000} value={draft.description ?? ""} onChange={(event) => updateDraft({ description: event.target.value || null })} /></label>
-          </div><div className="auto-send-setting"><div><strong>自动发送 · 原型演示</strong><p>仅影响下方本地预览，不连接平台，不保存至服务端。</p></div><button className={`auto-send-switch ${demoAutoSend[selected.id] ? "on" : ""}`} type="button" role="switch" aria-label="自动发送原型演示" aria-checked={Boolean(demoAutoSend[selected.id])} disabled={draft.agent_type === "operations"} onClick={() => setDemoAutoSend((old) => ({ ...old, [selected.id]: !old[selected.id] }))}><span className="switch-track" aria-hidden="true" /><span>{demoAutoSend[selected.id] ? "已开启" : "已关闭"}</span></button></div><div className="inline-note">当前仅提供 TikTok 人工辅助建议。Agent 不直接发送平台消息，坐席须复核并确认回复。</div></section> : null}
+          </div><div className="auto-send-setting"><div><strong>自动发送 · 原型演示</strong><p>此开关仅演示界面状态，不影响真实调试，也不连接平台。</p></div><button className={`auto-send-switch ${demoAutoSend[selected.id] ? "on" : ""}`} type="button" role="switch" aria-label="自动发送原型演示" aria-checked={Boolean(demoAutoSend[selected.id])} disabled={draft.agent_type === "operations"} onClick={() => setDemoAutoSend((old) => ({ ...old, [selected.id]: !old[selected.id] }))}><span className="switch-track" aria-hidden="true" /><span>{demoAutoSend[selected.id] ? "已开启" : "已关闭"}</span></button></div><div className="inline-note">当前仅提供 TikTok 人工辅助建议。Agent 不直接发送平台消息，坐席须复核并确认回复。</div></section> : null}
           {tab === "reply" ? <section className="panel active" role="tabpanel"><div className="section-head"><h3>模型与提示词</h3><p>模型和系统策略由项目发布基线管理；下方受控回复参数可保存。</p></div>
             <div className="model-section"><label className="field-group"><span>驱动模型 · 已接入</span><select className="field model-select" value={modelChoices[selected.id] ?? selected.runtime.llm_model ?? ""} disabled={draft.agent_type === "operations"} onChange={(event) => setModelChoices((old) => ({ ...old, [selected.id]: event.target.value }))}>{(selected.runtime.available_models?.length ? selected.runtime.available_models : [selected.runtime.llm_model ?? ""]).map((model) => <option value={model} key={model}>{model || "未配置模型"}{model === selected.runtime.llm_model ? " · 主模型" : " · 备用模型"}</option>)}</select></label><p className="model-help">下拉仅列出项目已配置模型。选择只影响本页演示；实际运行模型由服务端配置决定。</p></div>
             <div className="prompt-section"><h4>系统提示词策略摘要 · 只读</h4><textarea className="prompt-summary" aria-label="系统提示词策略摘要" value={promptSummary} readOnly /><p className="prompt-help">此处是策略摘要，完整生产 Prompt 由发布基线管理。</p></div>
@@ -217,7 +236,7 @@ export default function AgentsPage() {
             <div className="binding-meta"><span>当前店铺：<b>{currentStore?.name}</b></span><span>真实平台自动回复：<b>关闭</b></span><span>检索失败：<b>失败关闭</b></span></div><Link className="binding-link" href={`/knowledge?store_id=${storeId}`}>打开知识库 →</Link></section> : null}
           {tab === "logs" ? <section className="panel active" role="tabpanel"><div className="section-head"><h3>脱敏运行记录</h3><p>真实运行记录，不展示客户原文、完整模型输入或密钥。</p></div><div className="logs">{logsError ? <p role="alert">{logsError}</p> : logs.length ? logs.map((run) => <div className="bound-item" key={run.id}><div className="bound-item-body"><strong>{run.intent ?? "未识别意图"} · {run.action}</strong><small>{run.model_provider}/{run.model_name} · {run.latency_ms ?? "—"} ms · trace {run.trace_id?.slice(0, 12) ?? "—"}</small></div><span className="bound-state">{run.status}</span></div>) : <div className="bound-empty">暂无运行记录</div>}</div></section> : null}
         </div></section>
-      <section className="preview" aria-labelledby="previewTitle"><div className="preview-head"><div><h3 id="previewTitle">预览与调试</h3><p>本地规则演示 · 无模型调用 · 不发送真实消息</p></div><button type="button" className="btn small" onClick={() => setPreviewLines([])}>清空</button></div><div className="preview-body" aria-live="polite">{previewLines.length ? previewLines.map((line, index) => <div className={`preview-bubble ${index % 2 ? "assistant" : "user"}`} key={index}>{line}</div>) : <p>输入一条示例问题，查看本地演示反馈。</p>}</div><form className="preview-input" onSubmit={(event) => { event.preventDefault(); preview(); }}><input className="field" maxLength={300} placeholder="试试：你好 / 我的订单什么时候到？" value={previewInput} onChange={(event) => setPreviewInput(event.target.value)} /><button className="btn primary" type="submit">生成演示建议</button></form><p className="preview-note">真实建议请在客服工作台生成，由坐席复核。</p></section>
+      <section className="preview" aria-labelledby="previewTitle"><div className="preview-head"><div><h3 id="previewTitle">预览与调试</h3><p>真实模型 · 已绑定知识检索 · 授权会话的只读工具 · 不发送真实消息</p></div><button type="button" className="btn small" onClick={() => { previewRequestId.current++; setPreviewLines([]); setPreviewResult(null); setPreviewError(""); setPreviewBusy(false); }}>清空</button></div><div className="preview-body" aria-live="polite">{previewLines.length ? previewLines.map((line, index) => <div className={`preview-bubble ${index % 2 ? "assistant" : "user"}`} key={index}>{line}</div>) : <p>输入问题，调试当前 Agent 已保存的配置。</p>}{previewBusy ? <p role="status">正在调用模型、检索和工具…</p> : null}{previewError ? <p role="alert">{previewError}</p> : null}{previewResult ? <div className="preview-diagnostics"><strong>本次运行 · {previewResult.terminal_state}</strong><p>工具：{previewResult.tool_calls.length ? previewResult.tool_calls.map((call) => `${call.tool_name}（${call.status}）`).join("、") : "未调用"}</p><p>引用：{previewResult.citations.length ? previewResult.citations.map((item) => item.source_label).join("、") : "无"}</p><small>追踪 ID：{previewResult.trace_id}</small></div> : null}</div><label className="preview-context">只读工具上下文（可选）<select className="field" aria-label="只读工具上下文" value={conversationId} onChange={(event) => setConversationId(event.target.value)}><option value="">不关联会话；仅测试模型与已绑定知识</option>{sessions.map((item) => <option key={item.id} value={item.id}>{item.customer.name || "未命名客户"} · {item.id.slice(0, 8)}</option>)}</select></label><form className="preview-input" onSubmit={(event) => { event.preventDefault(); void preview(); }}><input className="field" maxLength={4000} placeholder="试试：你好 / 我的订单什么时候到？" value={previewInput} onChange={(event) => setPreviewInput(event.target.value)} /><button className="btn primary" type="submit" disabled={previewBusy || dirty || !selected.runtime.available || draft.agent_type !== "service"}>运行调试</button></form><p className="preview-note">未绑定知识文件时仍可调试模型与授权只读工具，不会检索整店 FAQ。订单、物流和客户工具需关联当前店铺的授权会话；所有建议须由坐席复核。</p></section>
       </>}
     </main>
     {modalOpen ? <div className="overlay"><form className="modal" role="dialog" aria-modal="true" aria-label="新建 Agent" onSubmit={(event) => void create(event)}><div className="modal-head"><h2>新建 Agent</h2><button type="button" className="close" aria-label="关闭" onClick={() => setModalOpen(false)}>×</button></div><div className="modal-body"><div className="section-head"><h3>选择 Agent 类别</h3><p>新建后默认停用；经营类用于内部分析配置。</p></div><div className="template-grid">{(["service", "operations"] as const).map((type) => <button type="button" className={`template ${newType === type ? "selected" : ""}`} onClick={() => setNewType(type)} key={type}><span className="template-icon">{type === "service" ? "🤝" : "📈"}</span><strong>{type === "service" ? "服务类 Agent" : "经营类 Agent"}</strong><small>{type === "service" ? "售前 / 售后 / 物流咨询" : "数据监测与内部分析"}</small></button>)}</div><div className="form-grid"><label className="field-group"><span>所属店铺</span><input className="field" value={currentStore?.name ?? ""} disabled /></label><label className="field-group"><span>Agent 编码</span><input className="field" name="code" aria-label="Agent 编码" required pattern="[a-z0-9](?:[a-z0-9_]|-){1,99}" maxLength={100} placeholder="例如：service_us_02" /></label><label className="field-group wide"><span>Agent 名称</span><input className="field" name="name" aria-label="Agent 名称" required maxLength={200} placeholder="例如：售前咨询 Agent" /></label></div></div><div className="modal-foot"><button type="button" className="btn" onClick={() => setModalOpen(false)}>取消</button><button type="submit" className="btn primary">创建 Agent</button></div></form></div> : null}

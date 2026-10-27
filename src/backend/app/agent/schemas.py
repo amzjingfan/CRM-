@@ -183,6 +183,8 @@ class AgentWorkflowCommand(ClassificationCommand):
     tool_context: AgentToolRuntimeContext | None = None
     reply_profile: AgentReplyProfile = Field(default_factory=AgentReplyProfile)
     knowledge_file_ids: list[uuid.UUID] = Field(default_factory=list, max_length=100)
+    debug_mode: bool = False
+    agent_config_id: uuid.UUID | None = None
 
 
 class FaqAnswerModelOutput(BaseModel):

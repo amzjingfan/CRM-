@@ -28,6 +28,7 @@ from app.agent.reply_policy import CustomerLanguage, SupportedLanguage, detect_c
 from app.agent.reply_rendering import (
     bind_redacted_tool_claims,
     build_authoritative_tool_claims,
+    build_debug_tool_fallback_reply,
     build_trusted_tool_evidence,
     extract_trusted_faq_answer,
     render_trusted_faq_reply,
@@ -61,7 +62,7 @@ from app.agent.schemas import (
     TrustedFaqReviewOutput,
     WorkflowTerminalState,
 )
-from app.agent.security import sanitize_prompt_text
+from app.agent.security import PromptSafetyState, evaluate_prompt_safety, sanitize_prompt_text
 from app.agent.service import build_input_summary
 from app.agent.tool_execution import AgentToolBatchResult, ExecutedAgentTool
 from app.agent.tool_routing import detect_required_tools
@@ -264,13 +265,14 @@ class AgentWorkflowService:
         run_id = await self.run_recorder.start(
             AgentRunStart(
                 store_id=command.store_id,
-                conversation_id=command.conversation_id,
-                trigger_message_id=command.trigger_message_id,
+                conversation_id=None if command.debug_mode else command.conversation_id,
+                trigger_message_id=None if command.debug_mode else command.trigger_message_id,
                 provider_name=self.classifier.provider_name,
                 model_name=self.classifier.model_name,
                 prompt_version=WORKFLOW_PROMPT_VERSION,
-                input_summary=build_input_summary(command),
+                input_summary=build_input_summary(command) + (";mode=debug" if command.debug_mode else ""),
                 trace_id=command.trace_id,
+                agent_config_id=command.agent_config_id,
             )
         )
         started_at = time.perf_counter()
@@ -304,6 +306,14 @@ class AgentWorkflowService:
         try:
             state = cast(WorkflowState, await self._graph.ainvoke(initial_state))
             result = self._build_result(state, max(0, int((time.perf_counter() - started_at) * 1000)))
+            if command.debug_mode and result.action in {AgentAction.AUTO_REPLY, AgentAction.TRANSFER_HUMAN}:
+                result = result.model_copy(
+                    update={
+                        "action": AgentAction.HUMAN_REVIEW,
+                        "terminal_state": WorkflowTerminalState.HUMAN_REVIEW,
+                        "requires_human": True,
+                    }
+                )
             retrieval_phase_timings: list[tuple[str, int]] = []
             retrieval = state.get("retrieval")
             if retrieval is not None:
@@ -417,7 +427,7 @@ class AgentWorkflowService:
 
     async def _retrieve(self, state: WorkflowState) -> RagRetrievalResult:
         command = state["command"]
-        if command.knowledge_file_ids:
+        if command.debug_mode or command.knowledge_file_ids:
             return await self.rag_service.retrieve(
                 state["session"],
                 command.store_id,
@@ -500,12 +510,14 @@ class AgentWorkflowService:
         command = state["command"]
         if (
             self.combined_faq_enabled
+            and not command.debug_mode
             and not command.knowledge_file_ids
             and not any(detect_required_tools(command.message, intent) for intent in IntentName)
         ):
             return await self._classify_and_draft_faq(state)
         if (
             self.trusted_faq_enabled
+            and not command.debug_mode
             and not command.knowledge_file_ids
             and not any(detect_required_tools(command.message, intent) for intent in IntentName)
         ):
@@ -808,6 +820,8 @@ class AgentWorkflowService:
     def _route_after_intent(self, state: WorkflowState) -> str:
         """拒判和低置信度直接决策；实时业务需求进入工具门禁。"""
         output = state["inference"].output
+        if self._unknown_debug_read_tools(state):
+            return "tool_required"
         if (
             output.classification_state != ClassificationState.CLASSIFIED
             or output.confidence < self.human_review_threshold
@@ -818,12 +832,37 @@ class AgentWorkflowService:
             return "tool_required"
         return "knowledge_retrieved"
 
+    @staticmethod
+    def _unknown_debug_read_tools(state: WorkflowState) -> list[RequiredToolName]:
+        """仅对明确文字、已授权会话的只读调试请求保留工具路径。"""
+        command = state["command"]
+        output = state["inference"].output
+        if (
+            not command.debug_mode
+            or output.classification_state != ClassificationState.UNKNOWN
+            or output.intent is not None
+            or command.tool_context is None
+        ):
+            return []
+        for intent in (IntentName.LOGISTICS_QUERY, IntentName.GENERAL):
+            tools = detect_required_tools(command.message, intent)
+            if (
+                len(tools) == 1
+                and tools[0] in {"query_order", "query_logistics", "query_customer_profile"}
+                and tools[0] in command.tool_context.available_tools
+            ):
+                return tools
+        return []
+
     async def _tool_required(self, state: WorkflowState) -> WorkflowState:
         """由确定性规则声明白名单工具，模型无权发明工具名称。"""
         intent = state["inference"].output.intent
-        assert intent is not None
         return {
-            "required_tools": detect_required_tools(state["command"].message, intent),
+            "required_tools": (
+                detect_required_tools(state["command"].message, intent)
+                if intent is not None
+                else self._unknown_debug_read_tools(state)
+            ),
             "state_path": ["TOOL_REQUIRED"],
         }
 
@@ -876,8 +915,39 @@ class AgentWorkflowService:
                 error.failure_stage = LLMFailureStage.TOOL_DRAFT
                 raise
             return {"model_refusal": True, "state_path": ["TOOL_RESPONSE_DRAFTED"]}
+        draft = generated.parsed_output
+        if command.debug_mode:
+            review_prompt = build_tool_grounding_review_prompt(command, state["tool_executions"], draft)
+            decision = evaluate_prompt_safety(review_prompt, business_prompt_id=BusinessPromptId.TOOL_GROUNDING_REVIEW)
+            if (
+                decision.state == PromptSafetyState.UNCERTAIN
+                and decision.reason_code == "BUSINESS_PROMPT_LOCATION_TEXT_LOW_CONFIDENCE"
+            ):
+                fallback = build_debug_tool_fallback_reply(state["tool_executions"], state["reply_language"])
+                if fallback is not None:
+                    successful_ids = [
+                        item.result.tool_call_id
+                        for item in state["tool_executions"]
+                        if item.result.status == "succeeded"
+                    ]
+                    safe_draft = draft.model_copy(
+                        update={
+                            "answer": fallback,
+                            "tool_call_ids": successful_ids,
+                            "grounding_confidence": self.human_review_threshold,
+                            "answer_language": state["reply_language"],
+                            "needs_human": False,
+                            "business_claims": BusinessClaimInventory(complete=True, claims=[]),
+                        }
+                    )
+                    safe_prompt = build_tool_grounding_review_prompt(command, state["tool_executions"], safe_draft)
+                    safe_decision = evaluate_prompt_safety(
+                        safe_prompt, business_prompt_id=BusinessPromptId.TOOL_GROUNDING_REVIEW
+                    )
+                    if safe_decision.state == PromptSafetyState.ALLOWED:
+                        draft = safe_draft
         return {
-            "tool_draft": generated.parsed_output,
+            "tool_draft": draft,
             "provider": generated.provider,
             "model": generated.model,
             "input_tokens": state["input_tokens"] + generated.input_tokens,
@@ -984,6 +1054,78 @@ class AgentWorkflowService:
                 "state_path": ["TOOL_SAFETY_CHECKED"],
             }
         review = generated.parsed_output
+        review_input_tokens = generated.input_tokens
+        review_output_tokens = generated.output_tokens
+        review_passed = (
+            review.is_safe
+            and review.is_grounded
+            and review.completion_claim_valid
+            and review.business_claims_consistent
+            and not draft.needs_human
+        )
+        if command.debug_mode and not review_passed:
+            # 调试草稿被独立复核否决时，丢弃模型原文。固定提示仍必须通过
+            # 本地 DLP、确定性声明策略及第二次独立模型复核才可供坐席查看。
+            fallback = build_debug_tool_fallback_reply(state.get("tool_executions", []), state["reply_language"])
+            if fallback is not None and fallback != draft.answer:
+                safe_draft = draft.model_copy(
+                    update={
+                        "answer": fallback,
+                        "tool_call_ids": list(successful_ids),
+                        "grounding_confidence": self.human_review_threshold,
+                        "answer_language": state["reply_language"],
+                        "needs_human": False,
+                        "business_claims": BusinessClaimInventory(complete=True, claims=[]),
+                    }
+                )
+                safe_prompt = build_tool_grounding_review_prompt(command, state["tool_executions"], safe_draft)
+                safe_prompt_decision = evaluate_prompt_safety(
+                    safe_prompt, business_prompt_id=BusinessPromptId.TOOL_GROUNDING_REVIEW
+                )
+                safe_policy = self.reply_safety_policy.evaluate(
+                    fallback,
+                    evidence_kind=ReplyEvidenceKind.TOOL,
+                    successful_tools=successful_tools,
+                    has_mock_result=any(item.result.mocked for item in state.get("tool_executions", [])),
+                    claim_inventory=authoritative_claims,
+                    successful_tool_evidence=successful_tool_evidence,
+                    mocked_tool_call_ids=mocked_tool_call_ids,
+                    expected_store_id=command.store_id,
+                    content_origin=ReplyContentOrigin.MODEL_GENERATED,
+                )
+                if safe_prompt_decision.state == PromptSafetyState.ALLOWED and safe_policy.is_safe:
+                    try:
+                        safe_generated = await self.generator.generate(
+                            StructuredRequest(
+                                system_prompt=TOOL_GROUNDING_REVIEW_SYSTEM_PROMPT,
+                                user_prompt=safe_prompt,
+                                trace_id=command.trace_id,
+                                max_output_tokens=256,
+                                business_prompt_id=BusinessPromptId.TOOL_GROUNDING_REVIEW,
+                            ),
+                            ToolGroundingReviewOutput,
+                        )
+                    except LLMProviderError as error:
+                        if error.code != LLMErrorCode.LLM_REFUSAL:
+                            error.failure_stage = LLMFailureStage.TOOL_SAFETY_REVIEW
+                            raise
+                    else:
+                        review_input_tokens += safe_generated.input_tokens
+                        review_output_tokens += safe_generated.output_tokens
+                        safe_review = safe_generated.parsed_output
+                        if (
+                            safe_review.is_safe
+                            and safe_review.is_grounded
+                            and safe_review.completion_claim_valid
+                            and safe_review.business_claims_consistent
+                        ):
+                            draft = safe_draft
+                            review = safe_review
+                            generated = safe_generated
+                            deterministic_safety = safe_policy
+                            trusted_reply = render_trusted_tool_reply(
+                                state["tool_executions"], state["reply_language"], fallback
+                            )
         safety_passed = (
             review.is_safe
             and review.is_grounded
@@ -992,6 +1134,7 @@ class AgentWorkflowService:
             and not draft.needs_human
         )
         return {
+            "tool_draft": draft,
             "tool_review": review,
             "tool_safety_passed": safety_passed,
             "automatic_delivery_allowed": safety_passed and deterministic_safety.automatic_delivery_allowed,
@@ -1001,8 +1144,8 @@ class AgentWorkflowService:
             "authoritative_claims": authoritative_claims,
             "provider": generated.provider,
             "model": generated.model,
-            "input_tokens": state["input_tokens"] + generated.input_tokens,
-            "output_tokens": state["output_tokens"] + generated.output_tokens,
+            "input_tokens": state["input_tokens"] + review_input_tokens,
+            "output_tokens": state["output_tokens"] + review_output_tokens,
             "state_path": ["TOOL_SAFETY_CHECKED"],
         }
 
@@ -1236,6 +1379,17 @@ class AgentWorkflowService:
         if action == AgentAction.AUTO_REPLY and not state.get("automatic_delivery_allowed", False):
             # 语言模型草稿只能供人工复核；自动就绪必须来自当次可信数据的固定文本。
             action = AgentAction.HUMAN_REVIEW
+        if (
+            action == AgentAction.TRANSFER_HUMAN
+            and self._unknown_debug_read_tools(state) == required_tools
+            and required_tools
+            and not state.get("unresolved_tools")
+            and not execution_failed
+            and state.get("tool_safety_passed", False)
+        ):
+            # 原始分类仍记录 UNKNOWN、置信度仍为零；安全复核过的只读调试
+            # 文本只交给坐席，不能因为这条确定性路由获得自动发送资格。
+            action = AgentAction.HUMAN_REVIEW
         decision_reason: AgentDecisionReason = "none"
         if action == AgentAction.TRANSFER_HUMAN:
             if uses_tools:
@@ -1271,6 +1425,8 @@ class AgentWorkflowService:
                     decision_reason = "faq_retrieval_confidence_low"
                 else:
                     decision_reason = "unknown"
+        elif action == AgentAction.HUMAN_REVIEW and self._unknown_debug_read_tools(state):
+            decision_reason = "classification_unresolved"
         return {
             "final_confidence": final_confidence,
             "action": action,
@@ -1284,7 +1440,7 @@ class AgentWorkflowService:
         翻译虽然是辅助字段，但仍属于本次模型运行；供应商超时、拒绝或
         结构错误必须让工作流失败，避免运行记录伪装成成功。
         """
-        if self.translation_service is None:
+        if self.translation_service is None or state["command"].debug_mode:
             return {"state_path": ["REPLY_TRANSLATED"]}
         command = state["command"]
         draft_reply = self._safe_draft_reply(state)

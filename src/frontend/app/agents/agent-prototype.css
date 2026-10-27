@@ -56,6 +56,10 @@
 .agent-page .tabs { border-radius: 0; }
 .agent-page .preview-body { max-height: 380px; overflow-y: auto; }
 .agent-page .preview-bubble { white-space: pre-wrap; }
+.agent-page .preview-context { display:block; padding:10px 24px 0; color:#536987; font-size:12px; }
+.agent-page .preview-context .field { margin-top:6px; }
+.agent-page .preview-diagnostics { margin:12px 24px; padding:11px 13px; border:1px solid #dce8ff; border-radius:8px; background:#f6f9ff; color:#405879; font-size:12px; overflow-wrap:anywhere; }
+.agent-page .preview-diagnostics p { margin:6px 0; }
 .agent-page .agent-empty { border: 1px dashed #d6dfec; border-radius: 10px; background: #fff; padding: 24px; color: #718099; }
 .agent-page .agent-error { margin: 10px 28px 0; border: 1px solid #edcbd0; border-radius: 8px; background: #fff4f4; padding: 11px 14px; color: #b4434e; }
 .agent-page .agent-modal-error { margin: 0 22px 14px; color: #b4434e; font-size: 12px; }

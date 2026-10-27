@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-LIVE-DEBUG-001",
+  "environment": "staging",
+  "source_sha": "9302bb6d4d16b67d942f23251e58d7356e116ac5",
+  "deployment_method": "manual SSH, immutable-image staging gate; no GitHub Actions",
+  "generated_at_utc": "2026-10-26T05:36:29.6538696Z",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:5b54aae73b8e7e955568721848e6298caf6e635b59d371cf96c7f4839e0a26d7",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:d1e8d8b0dfd0f7f2c5633becd9de8545113d9e5e335b420ccece65cd328dd931",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2"
+  },
+  "source_bundle_sha256": "bff5803e5dd64fefcdfe0e661eb002a4bce51a447ac1a8d7c8ee159ff43b3ce0",
+  "private_backup_sha256": {
+    "postgres": "ad6e85aef39383d3ca22111d52ec7be152f7c4db9f826a0f5f1a7ad1c444e0e3",
+    "minio": "df5a34a26990c97f238292dad63692763357e9d7055d4d242af5c09fb443875f",
+    "environment": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d"
+  },
+  "gate": {
+    "validate_only": "validated",
+    "deploy": "passed",
+    "migration": "034_agent_debug_runs (head)",
+    "runtime_mode_verified": true,
+    "agent_debug_enabled": true,
+    "document_ingestion_enabled": true,
+    "tiktok_manual_send_enabled": true,
+    "tiktok_webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "general_llm_enabled": false,
+    "public_health": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    },
+    "agents_http_status": 200
+  },
+  "live_debug": [
+    {
+      "fixture": "G5 synthetic store, no file binding",
+      "trace_id": "72c402cb-5207-4a64-a47d-1ad1eea43070",
+      "model": "deepseek-v4-flash",
+      "status": "succeeded",
+      "action": "human_review",
+      "input_tokens": 560,
+      "output_tokens": 17,
+      "citations": 0,
+      "tool_calls": 0,
+      "conversation_context": false,
+      "audit_events": 1
+    },
+    {
+      "fixture": "TikTok US test store, no file binding or conversation context",
+      "trace_id": "635d20c0-4788-41cb-a389-bc702d012638",
+      "model": "deepseek-v4-flash",
+      "status": "succeeded",
+      "action": "human_review",
+      "input_tokens": 552,
+      "output_tokens": 19,
+      "citations": 0,
+      "tool_calls": 0,
+      "conversation_context": false,
+      "audit_events": 1
+    }
+  ],
+  "live_limits": [
+    "TikTok US test store has zero imported files and zero orders; bound-file retrieval and successful order/logistics tools were not exercised there.",
+    "No real buyer conversation was selected and no platform message was sent."
+  ]
+}

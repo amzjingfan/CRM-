@@ -295,6 +295,9 @@ def test_customer_profile_selection_is_explicitly_supported() -> None:
         ("可以给我补发一张优惠券吗", IntentName.PRICE_INQUIRY, ["send_coupon"]),
         ("我想看看自己的会员标签和订单数", IntentName.GENERAL, ["query_customer_profile"]),
         ("我要人工客服", IntentName.GENERAL, ["transfer_to_human"]),
+        ("请查询我的订单状态。", IntentName.LOGISTICS_QUERY, ["query_order"]),
+        ("我的订单到哪里了？", IntentName.LOGISTICS_QUERY, ["query_logistics"]),
+        ("请查询我的包裹物流状态。", IntentName.LOGISTICS_QUERY, ["query_logistics"]),
     ],
 )
 def test_tool_selection_maps_business_intent_to_exact_allowlisted_name(

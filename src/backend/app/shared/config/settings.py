@@ -215,6 +215,10 @@ class Settings(BaseSettings):
         repr=False,
     )
     llm_enabled: bool = Field(default=False, validation_alias="LLM_ENABLED")
+    agent_debug_enabled: bool = Field(default=False, validation_alias="AGENT_DEBUG_ENABLED")
+    agent_debug_timeout_seconds: float = Field(
+        default=45.0, gt=0, le=120, validation_alias="AGENT_DEBUG_TIMEOUT_SECONDS"
+    )
     llm_live_eval: bool = Field(default=False, validation_alias="LLM_LIVE_EVAL")
     ai_synthetic_demo_enabled: bool = Field(default=False, validation_alias="AI_SYNTHETIC_DEMO_ENABLED")
     ai_translation_enabled: bool = Field(default=False, validation_alias="AI_TRANSLATION_ENABLED")
@@ -423,6 +427,16 @@ class Settings(BaseSettings):
             raise ValueError("REAL-FS-04 真实 TikTok 普通消息仅允许人工确认发送，禁止同时启用自动回复")
         if self.real_tiktok_high_risk_write_enabled:
             raise ValueError("真实 TikTok 高风险写入尚未完成后续灰度，禁止启用")
+        if self.agent_debug_enabled:
+            if self.app_env == "production":
+                raise ValueError("production 禁止启用 Agent 页面调试")
+            if not self.embedding_enabled or self.embedding_provider != "local_bge":
+                raise ValueError("Agent 页面调试需要本地 Embedding 服务")
+            if self.llm_primary_provider != "deepseek" or (self.llm_fallback_provider and self.llm_fallback_model):
+                raise ValueError("Agent 页面调试仅支持已配置的 DeepSeek 主模型且无备用模型")
+            if not has_non_blank_secret(self.retrieval_model_service_token):
+                raise ValueError("Agent 页面调试需要内部检索模型令牌")
+            self._validate_production_llm()
         if self.app_env in REAL_DEPLOYMENT_ENVIRONMENTS and self.llm_enabled:
             self._validate_production_llm()
 

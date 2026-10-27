@@ -6,7 +6,7 @@ from app.agent.schemas import IntentName, RequiredToolName
 
 ORDER_IDENTIFIER = re.compile(r"\b(?=[A-Z0-9-]{8,}\b)(?=[A-Z0-9-]*\d)[A-Z0-9-]+\b", re.IGNORECASE)
 LOGISTICS_REALTIME = re.compile(
-    r"(我的.*(?:订单|包裹)|订单.*(?:到哪|哪里|位置|物流)|包裹.*(?:到哪|哪里|位置)|"
+    r"(我的.*包裹|订单.*(?:到哪|哪里|位置|物流)|包裹.*(?:到哪|哪里|位置)|"
     r"where\s+is\s+my\s+(?:order|package)|track\s+my|tracking\s+(?:status|number))",
     re.IGNORECASE,
 )
@@ -39,6 +39,8 @@ def detect_required_tools(message: str, intent: IntentName) -> list[RequiredTool
     has_identifier = ORDER_IDENTIFIER.search(message) is not None
     if intent == IntentName.LOGISTICS_QUERY and (has_identifier or LOGISTICS_REALTIME.search(message)):
         return ["query_logistics"]
+    if ORDER_STATUS.search(message):
+        return ["query_order"]
     if intent in {IntentName.RETURN_POLICY, IntentName.GENERAL, IntentName.PRICE_INQUIRY} and (
         has_identifier or ORDER_STATUS.search(message)
     ):

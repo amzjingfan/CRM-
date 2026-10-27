@@ -1,0 +1,7 @@
+# 独立 staging 调试：只开放 Agent 管理页，通用 LLM 与平台发送仍关闭。
+services:
+  backend:
+    environment:
+      AGENT_DEBUG_ENABLED: "true"
+      EMBEDDING_ENABLED: "true"
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:?RETRIEVAL_MODEL_SERVICE_TOKEN is required}

@@ -74,6 +74,7 @@
 
 - `GET/POST /agents`、`GET/PATCH/DELETE /agents/{agent_id}`。
 - `POST /agents/{agent_id}/enable|disable|toggle`、`GET /agents/{agent_id}/logs`。
+- `POST /agents/{agent_id}/debug` 接收 `message` 与可选 `conversation_id`，需要 `agent.manage`、CSRF 和 AI 查询限流；Agent 不必启用，但须为服务类且运行环境显式开启调试。服务端再次校验 Agent 店铺及文件绑定；绑定文件需 `knowledge.view`，传入会话还需 `workspace.view` 并与 Agent 同店。响应只含安全建议、文件引用、只读工具状态和追踪号；没有会话时不提供订单/客户工具上下文。TikTok 本地订单缺失时，订单/物流问题可使用已核验买家会话的最新平台订单，只在本次运行内提供最小字段。调试不创建客户消息、不转人工写入、不发送平台消息。
 - `reply_profile` 仅接受固定语气、回复语言、坐席语言和经清洗的品牌名；任意 Prompt、模型和阈值字段拒绝。
 - Agent 新建与修改支持 `agent_type=service|operations` 和当前授权店铺的 `knowledge_file_ids`。新增或改变非空文件绑定还需 `knowledge.view`；经营类不能启用面向客户的运行。文件绑定在保存时校验店铺，运行时仍以版本审批、有效状态、归档/删除和模型门禁过滤。文件 RAG 的查询向量化、SQL 与重排共用 12 秒总时限，超时以 `RAG_RETRIEVAL_TIMEOUT` 失败关闭并记入运行日志。
 - 只读 `runtime.available_models` 只列出当前服务端配置的主/备用模型；管理页选择仅作页面预览，不写入运行配置或改变实际模型。Prompt 仍仅展示版本化策略摘要。

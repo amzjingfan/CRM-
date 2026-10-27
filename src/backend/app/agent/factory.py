@@ -45,7 +45,7 @@ class SharedAgentRuntime:
 def build_shared_agent_runtime(settings: Settings) -> SharedAgentRuntime | None:
     """只在 G5 的 DeepSeek + 本地 BGE 配置下构建进程级连接池。"""
     if not (
-        settings.llm_enabled
+        (settings.llm_enabled or settings.agent_debug_enabled)
         and settings.embedding_enabled
         and settings.llm_primary_provider == "deepseek"
         and settings.embedding_provider == "local_bge"
@@ -127,7 +127,10 @@ def build_marketing_copy_service(settings: Settings) -> MarketingCopyService:
 
 
 def build_agent_workflow(
-    session: AsyncSession, settings: Settings, runtime: SharedAgentRuntime | None = None
+    session: AsyncSession,
+    settings: Settings,
+    runtime: SharedAgentRuntime | None = None,
+    tool_executor: SqlAlchemyToolExecutor | None = None,
 ) -> AgentWorkflowService:
     """构建全栈内部服务可调用的 FAQ Agent，不执行平台发送。"""
     primary_provider, fallback_provider = (
@@ -161,7 +164,7 @@ def build_agent_workflow(
         rag_service=rag_service,
         generator=generator,
         run_recorder=recorder,
-        tool_service=AgentToolService(SqlAlchemyToolExecutor(session)),
+        tool_service=AgentToolService(tool_executor or SqlAlchemyToolExecutor(session)),
         # 翻译会额外消耗一次模型调用，默认不进入 SSE 关键路径。
         # 只有显式启用后才返回与触发消息关联的双语结果。
         translation_service=TranslationService(generator) if settings.ai_translation_enabled else None,
