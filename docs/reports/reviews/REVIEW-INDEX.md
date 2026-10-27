@@ -4,6 +4,7 @@ View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R04 | MVP-AGENT-DEBUG-ANSWER-001 | R04 | APPROVE | `b55847f8d697c8dc12f87860a773c93e6368445c` | correctness, prompt_registry, DLP, store_isolation, read_only_tools, timeout, no_send | 2026-10-27T15:08:03Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R04.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R04.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R03 | MVP-AGENT-DEBUG-ANSWER-001 | R03 | APPROVE | `d0a2e6e4cd1ab62892d3b0d8e6f6a3dc021a07ff` | correctness, TikTok_buyer_identity, store_isolation, tracking_semantics, sensitive_data, timeout, no_send | 2026-10-27T11:11:00Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R03.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R03.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R02 | MVP-AGENT-DEBUG-ANSWER-001 | R02 | APPROVE | `dc9116eef74d0f197a9fccf397076fdd49ad2248` | correctness, low_confidence, prompt_dlp, store_isolation, read_only_tools, automatic_delivery | 2026-10-27T10:09:10Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R02.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R02.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R01 | MVP-AGENT-DEBUG-ANSWER-001 | R01 | APPROVE | `a4e58e53005768ec78e4e73911904a364181a087` | correctness, prompt_dlp, store_isolation, read_only_tools, automatic_delivery | 2026-10-27T09:24:14Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R01.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R01.md) |

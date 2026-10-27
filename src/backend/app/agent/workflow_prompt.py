@@ -11,8 +11,9 @@ from app.agent.tool_execution import ExecutedAgentTool
 from app.knowledge_base.schemas import KnowledgeRetrievalHit
 from app.tools.contracts import TOOL_OUTPUT_SCHEMAS
 
-WORKFLOW_PROMPT_VERSION = "faq-agent-workflow-v1.8.6"
+WORKFLOW_PROMPT_VERSION = "faq-agent-workflow-v1.8.7"
 FAQ_ANSWER_PROMPT_VERSION = "faq-answer-v1.6.3"
+FAQ_ANSWER_CONCISE_PROMPT_VERSION = "faq-answer-debug-file-v1.0.0"
 COMBINED_FAQ_PROMPT_VERSION = "faq-classified-draft-v1.0.2"
 GROUNDING_REVIEW_PROMPT_VERSION = "faq-grounding-review-v1.5.1"
 TRUSTED_FAQ_REVIEW_PROMPT_VERSION = "faq-trusted-review-v1.0.1"
@@ -42,6 +43,13 @@ FAQ 政策声明不得缺少证据 ID；无具体证据的声明不能填证据 
 订单、物流、退款、优惠券、地址和承诺时间都是高风险命题；承诺时间必须使用 promise_time/promise。
 FAQ chunk 只能证明政策，不能证明某个客户的订单状态、退款结果、优惠发放、地址修改或未来时效。
 否定、条件、假设、引用的作用域无法明确对应正文时设置 needs_human=true；不得通过省略声明规避检查。只返回结构化对象。"""
+
+FAQ_ANSWER_CONCISE_SYSTEM_PROMPT = (
+    FAQ_ANSWER_SYSTEM_PROMPT
+    + "\n仅在 Agent 调试已绑定文件时使用：只回答当前知识问题，用一小句概括已引用片段。"
+    + "不要回答订单或物流个案，不要增加与问题无关的解释；必要条件仍须保留。"
+    + "正文与 business_claims 中的自然语言尽量避免逗号串列，不能为此删去安全条件或事实。"
+)
 
 COMBINED_FAQ_SYSTEM_PROMPT = (
     """你是 CRM 客服意图分类和 FAQ 草稿节点。只返回 classification 与 draft 两个顶层字段。

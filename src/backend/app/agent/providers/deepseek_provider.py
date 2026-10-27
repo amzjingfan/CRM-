@@ -175,6 +175,7 @@ class DeepSeekProvider(LLMProvider):
             # ensure_safe_for_external_provider 已按注册表锁定客服草稿的响应 Schema 名称。
             if request.business_prompt_id in (
                 BusinessPromptId.FAQ_ANSWER,
+                BusinessPromptId.FAQ_ANSWER_CONCISE,
                 BusinessPromptId.FAQ_CLASSIFIED_DRAFT,
                 BusinessPromptId.FAQ_TRUSTED_REVIEW,
                 BusinessPromptId.TOOL_ANSWER,

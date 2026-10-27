@@ -940,6 +940,7 @@ def _evaluate_registered_business_payload(text: str, prompt_id: BusinessPromptId
         prompt_id
         in {
             BusinessPromptId.FAQ_ANSWER,
+            BusinessPromptId.FAQ_ANSWER_CONCISE,
             BusinessPromptId.FAQ_CLASSIFIED_DRAFT,
             BusinessPromptId.FAQ_GROUNDING_REVIEW,
             BusinessPromptId.FAQ_TRUSTED_REVIEW,

@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import operator
+import re
 import time
 import uuid
 from collections.abc import Awaitable, Callable
@@ -70,6 +71,8 @@ from app.agent.translation import TRANSLATION_PROMPT_VERSION, TranslationBundleR
 from app.agent.workflow_prompt import (
     COMBINED_FAQ_PROMPT_VERSION,
     COMBINED_FAQ_SYSTEM_PROMPT,
+    FAQ_ANSWER_CONCISE_PROMPT_VERSION,
+    FAQ_ANSWER_CONCISE_SYSTEM_PROMPT,
     FAQ_ANSWER_PROMPT_VERSION,
     FAQ_ANSWER_SYSTEM_PROMPT,
     GROUNDING_REVIEW_PROMPT_VERSION,
@@ -426,16 +429,35 @@ class AgentWorkflowService:
             )
             raise AgentWorkflowExecutionError(run_id, "AGENT_WORKFLOW_ERROR") from error
 
+    @staticmethod
+    def _knowledge_command(state: WorkflowState) -> AgentWorkflowCommand | None:
+        """调试混合问题仅把未由工具处理的独立问句交给文件知识节点。"""
+        command = state["command"]
+        required_tools = state.get("required_tools", [])
+        if not command.debug_mode or not required_tools:
+            return command
+        clauses = [part.strip() for part in re.split(r"(?<=[。！？?；;])", command.message) if part.strip()]
+        knowledge_clauses = [
+            clause
+            for clause in clauses
+            if not set(detect_required_tools(clause, IntentName.LOGISTICS_QUERY)).intersection(required_tools)
+        ]
+        if not knowledge_clauses:
+            return None
+        return command.model_copy(update={"message": " ".join(knowledge_clauses), "history": []})
+
     async def _retrieve(self, state: WorkflowState) -> RagRetrievalResult:
         command = state["command"]
+        knowledge_command = self._knowledge_command(state)
+        query = knowledge_command.message if knowledge_command is not None else command.message
         if command.debug_mode or command.knowledge_file_ids:
             return await self.rag_service.retrieve(
                 state["session"],
                 command.store_id,
-                command.message,
+                query,
                 file_ids=tuple(command.knowledge_file_ids),
             )
-        return await self.rag_service.retrieve(state["session"], command.store_id, command.message)
+        return await self.rag_service.retrieve(state["session"], command.store_id, query)
 
     def _build_graph(self) -> Any:
         """构建无循环工作流，硬性限制节点次数和模型消费。"""
@@ -968,6 +990,7 @@ class AgentWorkflowService:
             command.debug_mode
             and command.knowledge_file_ids
             and state.get("tool_safety_passed", False)
+            and self._knowledge_command(state) is not None
             and (
                 output.classification_state == ClassificationState.MIXED
                 or output.intent in {IntentName.RETURN_POLICY, IntentName.SIZE_GUIDE, IntentName.PRICE_INQUIRY}
@@ -1199,12 +1222,14 @@ class AgentWorkflowService:
     async def _response_drafted(self, state: WorkflowState) -> WorkflowState:
         """仅依据本次 Top-K 片段生成带引用草稿。"""
         command = state["command"]
+        knowledge_command = self._knowledge_command(state) or command
+        debug_file = command.debug_mode and bool(command.knowledge_file_ids)
         request = StructuredRequest(
-            system_prompt=FAQ_ANSWER_SYSTEM_PROMPT,
-            user_prompt=build_faq_answer_prompt(command, state["hits"], state["reply_language"]),
+            system_prompt=FAQ_ANSWER_CONCISE_SYSTEM_PROMPT if debug_file else FAQ_ANSWER_SYSTEM_PROMPT,
+            user_prompt=build_faq_answer_prompt(knowledge_command, state["hits"], state["reply_language"]),
             trace_id=command.trace_id,
             max_output_tokens=1024,
-            business_prompt_id=BusinessPromptId.FAQ_ANSWER,
+            business_prompt_id=BusinessPromptId.FAQ_ANSWER_CONCISE if debug_file else BusinessPromptId.FAQ_ANSWER,
         )
         try:
             generated = await self.generator.generate(request, FaqAnswerModelOutput)
@@ -1285,9 +1310,10 @@ class AgentWorkflowService:
         trusted_review = state.get("trusted_faq_review")
         if trusted_review is None:
             command = state["command"]
+            knowledge_command = self._knowledge_command(state) or command
             request = StructuredRequest(
                 system_prompt=GROUNDING_REVIEW_SYSTEM_PROMPT,
-                user_prompt=build_grounding_review_prompt(command, state["hits"], draft),
+                user_prompt=build_grounding_review_prompt(knowledge_command, state["hits"], draft),
                 trace_id=command.trace_id,
                 max_output_tokens=256,
                 business_prompt_id=BusinessPromptId.FAQ_GROUNDING_REVIEW,
@@ -1664,6 +1690,8 @@ class AgentWorkflowService:
                     if state.get("trusted_faq_attempted")
                     else COMBINED_FAQ_PROMPT_VERSION
                     if state.get("combined_faq_attempted")
+                    else FAQ_ANSWER_CONCISE_PROMPT_VERSION
+                    if state["command"].debug_mode and state["command"].knowledge_file_ids
                     else FAQ_ANSWER_PROMPT_VERSION
                 ),
                 "review": (

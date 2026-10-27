@@ -1,6 +1,7 @@
 """验证 LangGraph FAQ 工作流的状态、置信度和保守降级。"""
 
 import asyncio
+import json
 import uuid
 from collections import deque
 from dataclasses import replace
@@ -115,11 +116,13 @@ class FixedRagService:
     def __init__(self, result: RagRetrievalResult) -> None:
         self.result = result
         self.calls = 0
+        self.queries: list[str] = []
 
     async def retrieve(
         self, session: AsyncSession, store_id: uuid.UUID, query: str, *, file_ids: tuple[uuid.UUID, ...] = ()
     ) -> RagRetrievalResult:
         self.calls += 1
+        self.queries.append(query)
         return self.result
 
 
@@ -2265,7 +2268,14 @@ async def test_debug_combines_safe_tool_and_bound_knowledge_answers() -> None:
     assert [item.tool_name for item in result.tool_calls] == ["query_logistics"]
     assert result.send_performed is False
     assert rag.calls == 1
+    assert rag.queries == ["退货期限是多久？"]
     assert len(generator.requests) == 4
+    knowledge_request = generator.requests[2]
+    assert knowledge_request.business_prompt_id == BusinessPromptId.FAQ_ANSWER_CONCISE
+    assert "一小句" in knowledge_request.system_prompt
+    assert json.loads(knowledge_request.user_prompt.split("\n", 1)[1])["message"] == "退货期限是多久？"
+    review_request = generator.requests[3]
+    assert json.loads(review_request.user_prompt.split("\n", 1)[1])["message"] == "退货期限是多久？"
 
 
 @pytest.mark.asyncio
@@ -2313,6 +2323,7 @@ async def test_debug_shows_grounded_bound_knowledge_that_requires_human() -> Non
     assert result.send_performed is False
     assert rag.calls == 1
     assert len(generator.requests) == 2
+    assert generator.requests[0].business_prompt_id == BusinessPromptId.FAQ_ANSWER_CONCISE
 
 
 @pytest.mark.asyncio
