@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R01 | MVP-AGENT-DEBUG-ANSWER-001 | R01 | APPROVE | `a4e58e53005768ec78e4e73911904a364181a087` | correctness, prompt_dlp, store_isolation, read_only_tools, automatic_delivery | 2026-10-27T09:24:14Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R01.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R01.md) |
 | RR-MVP-AGENT-LIVE-DEBUG-001-20261027-R03 | MVP-AGENT-LIVE-DEBUG-001 | R03 | APPROVE | `7e59ab743f29ca501890c52f7ba121f4268a6c44` | prompt_dlp, store_isolation, read_only_tools, staging_release | 2026-10-27T08:39:12Z | [`RR-MVP-AGENT-LIVE-DEBUG-001-20261027-R03.md`](RR-MVP-AGENT-LIVE-DEBUG-001-20261027-R03.md) |
 | RR-MVP-AGENT-LIVE-DEBUG-001-20261027-R02 | MVP-AGENT-LIVE-DEBUG-001 | R02 | APPROVE | `b1053d4027266df3d334f67db3bae8aa5724e96e` | prompt_dlp, sensitive_data, business_knowledge, staging_release | 2026-10-27T07:18:30Z | [`RR-MVP-AGENT-LIVE-DEBUG-001-20261027-R02.md`](RR-MVP-AGENT-LIVE-DEBUG-001-20261027-R02.md) |
 | RR-MVP-AGENT-LIVE-DEBUG-001-20261026-R01 | MVP-AGENT-LIVE-DEBUG-001 | R01 | APPROVE | `9302bb6d4d16b67d942f23251e58d7356e116ac5` | store_isolation, safe_tools, file_scope, migration, staging_release | 2026-10-26T06:10:01Z | [`RR-MVP-AGENT-LIVE-DEBUG-001-20261026-R01.md`](RR-MVP-AGENT-LIVE-DEBUG-001-20261026-R01.md) |

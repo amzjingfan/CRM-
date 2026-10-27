@@ -116,7 +116,9 @@ class FixedRagService:
         self.result = result
         self.calls = 0
 
-    async def retrieve(self, session: AsyncSession, store_id: uuid.UUID, query: str) -> RagRetrievalResult:
+    async def retrieve(
+        self, session: AsyncSession, store_id: uuid.UUID, query: str, *, file_ids: tuple[uuid.UUID, ...] = ()
+    ) -> RagRetrievalResult:
         self.calls += 1
         return self.result
 
@@ -2100,6 +2102,290 @@ async def test_successful_logistics_tool_generates_grounded_reply_without_platfo
     assert "TOOL_EXECUTED" in recorder.completed.state_path
     assert "TOOL_SAFETY_CHECKED" in recorder.completed.state_path
     assert recorder.completed.business_claim_summaries == [f"logistics:report_status:tool_call:{query_call_id}"]
+
+
+@pytest.mark.parametrize("knowledge_failure", ["invalid_citation", "model_refusal"])
+@pytest.mark.asyncio
+async def test_debug_keeps_safe_tool_answer_when_bound_knowledge_is_unusable(knowledge_failure: str) -> None:
+    """知识拒答或引用非法时只展示已独立复核的工具解释。"""
+    query_call_id = uuid.uuid4()
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    hit.source_type = "file"
+    hit.content = "测试退货政策：签收后七天内可申请退货。"
+    tool_answer = "目前没有可核验的物流轨迹，请坐席核对。"
+    tool_data = logistics_tool_data()
+    tool_data["tracking_status"] = None
+    workflow, rag, generator, _ = service(
+        message_intent=IntentModelOutput(intent=None, confidence=0, classification_state=ClassificationState.MIXED),
+        rag_result=rag_result,
+        tool_batches=[
+            AgentToolBatchResult(
+                results=[
+                    ExecutedAgentTool(
+                        tool_name="query_logistics",
+                        result=ToolResult(tool_call_id=query_call_id, status="succeeded", data=tool_data),
+                    )
+                ]
+            )
+        ],
+        outcomes=[
+            ToolAnswerModelOutput(
+                answer=tool_answer,
+                tool_call_ids=[query_call_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=True,
+                business_claims=empty_claim_inventory(),
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                completion_claim_valid=True,
+                business_claims_consistent=True,
+                confidence=0.90,
+                reason_codes=[],
+            ),
+            (
+                LLMProviderError(LLMErrorCode.LLM_REFUSAL, "refusal", retriable=False)
+                if knowledge_failure == "model_refusal"
+                else FaqAnswerModelOutput(
+                    answer="没有来源的退货承诺。",
+                    citation_chunk_ids=[uuid.uuid4()],
+                    grounding_confidence=0.91,
+                    answer_language="zh-CN",
+                    needs_human=False,
+                    business_claims=empty_claim_inventory(),
+                )
+            ),
+        ],
+    )
+    debug_command = command("我的订单物流到哪里了？退货期限是多久？").model_copy(
+        update={
+            "debug_mode": True,
+            "knowledge_file_ids": [hit.document_id],
+            "tool_context": AgentToolRuntimeContext(
+                order_id="ORDER-2026-001",
+                available_tools={"query_logistics"},
+                permissions={"orders.view"},
+            ),
+        }
+    )
+
+    result = await workflow.run(cast_session(), debug_command)
+
+    assert result.action == AgentAction.HUMAN_REVIEW
+    assert result.draft_reply == tool_answer
+    assert result.citations == []
+    assert result.send_performed is False
+    assert rag.calls == 1
+    assert len(generator.requests) == 3
+
+
+@pytest.mark.asyncio
+async def test_debug_combines_safe_tool_and_bound_knowledge_answers() -> None:
+    """同一问题包含物流与政策时，调试建议由两个独立复核过的模型草稿组成。"""
+    query_call_id = uuid.uuid4()
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    hit.source_type = "file"
+    hit.content = "测试退货政策：签收后七天内可申请退货。"
+    tool_answer = "目前没有可核验的物流轨迹，请坐席核对。"
+    knowledge_answer = "测试政策写明签收后七天内可申请退货。"
+    tool_data = logistics_tool_data()
+    tool_data["tracking_status"] = None
+    workflow, rag, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=None,
+            confidence=0,
+            classification_state=ClassificationState.MIXED,
+        ),
+        rag_result=rag_result,
+        tool_batches=[
+            AgentToolBatchResult(
+                results=[
+                    ExecutedAgentTool(
+                        tool_name="query_logistics",
+                        result=ToolResult(tool_call_id=query_call_id, status="succeeded", data=tool_data),
+                    )
+                ]
+            )
+        ],
+        outcomes=[
+            ToolAnswerModelOutput(
+                answer=tool_answer,
+                tool_call_ids=[query_call_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=True,
+                business_claims=empty_claim_inventory(),
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                completion_claim_valid=True,
+                business_claims_consistent=True,
+                confidence=0.90,
+                reason_codes=[],
+            ),
+            FaqAnswerModelOutput(
+                answer=knowledge_answer,
+                citation_chunk_ids=[hit.chunk_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=True,
+                business_claims=empty_claim_inventory(),
+            ),
+            GroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                business_claims_consistent=True,
+                confidence=0.90,
+                reason_codes=[],
+            ),
+        ],
+    )
+    debug_command = command("我的订单物流现在到哪里了？退货期限是多久？").model_copy(
+        update={
+            "debug_mode": True,
+            "knowledge_file_ids": [hit.document_id],
+            "tool_context": AgentToolRuntimeContext(
+                order_id="ORDER-2026-001",
+                available_tools={"query_logistics"},
+                permissions={"orders.view"},
+            ),
+        }
+    )
+
+    result = await workflow.run(cast_session(), debug_command)
+
+    assert result.action == AgentAction.HUMAN_REVIEW
+    assert result.draft_reply == tool_answer + "\n\n" + knowledge_answer
+    assert [item.chunk_id for item in result.citations] == [hit.chunk_id]
+    assert [item.tool_name for item in result.tool_calls] == ["query_logistics"]
+    assert result.send_performed is False
+    assert rag.calls == 1
+    assert len(generator.requests) == 4
+
+
+@pytest.mark.asyncio
+async def test_debug_shows_grounded_bound_knowledge_that_requires_human() -> None:
+    """知识回答若已独立验证安全，人工核对标记不应让调试页吞掉模型正文。"""
+    rag_result = retrieval(0.92)
+    hit = rag_result.hits[0]
+    hit.source_type = "file"
+    hit.content = "测试退货政策：签收后七天内可申请退货，具体订单需坐席核对。"
+    answer = "该测试政策写明签收后七天内可申请退货，具体订单仍需坐席核对。"
+    workflow, rag, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.RETURN_POLICY,
+            confidence=0.95,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=rag_result,
+        outcomes=[
+            FaqAnswerModelOutput(
+                answer=answer,
+                citation_chunk_ids=[hit.chunk_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=True,
+                business_claims=empty_claim_inventory(),
+            ),
+            GroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                business_claims_consistent=True,
+                confidence=0.90,
+                reason_codes=[],
+            ),
+        ],
+    )
+    debug_command = command("退货期限是多久？").model_copy(
+        update={"debug_mode": True, "knowledge_file_ids": [hit.document_id]}
+    )
+
+    result = await workflow.run(cast_session(), debug_command)
+
+    assert result.action == AgentAction.HUMAN_REVIEW
+    assert result.draft_reply == answer
+    assert [item.chunk_id for item in result.citations] == [hit.chunk_id]
+    assert result.send_performed is False
+    assert rag.calls == 1
+    assert len(generator.requests) == 2
+
+
+@pytest.mark.asyncio
+async def test_debug_shows_grounded_model_uncertainty_for_missing_tracking() -> None:
+    """已核验工具无轨迹时，安全的模型解释应供人工复核而不变成固定提示。"""
+    query_call_id = uuid.uuid4()
+    tool_data = logistics_tool_data()
+    tool_data["tracking_status"] = None
+    answer = "目前没有可核验的物流轨迹，请坐席核对订单的最新配送信息。"
+    workflow, rag, generator, _ = service(
+        message_intent=IntentModelOutput(
+            intent=IntentName.LOGISTICS_QUERY,
+            confidence=0.95,
+            classification_state=ClassificationState.CLASSIFIED,
+        ),
+        rag_result=retrieval(),
+        tool_batches=[
+            AgentToolBatchResult(
+                results=[
+                    ExecutedAgentTool(
+                        tool_name="query_logistics",
+                        result=ToolResult(tool_call_id=query_call_id, status="succeeded", data=tool_data),
+                    )
+                ]
+            )
+        ],
+        outcomes=[
+            ToolAnswerModelOutput(
+                answer=answer,
+                tool_call_ids=[query_call_id],
+                grounding_confidence=0.91,
+                answer_language="zh-CN",
+                needs_human=True,
+                business_claims=empty_claim_inventory(),
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                completion_claim_valid=True,
+                business_claims_consistent=True,
+                confidence=0.90,
+                reason_codes=[],
+            ),
+            ToolGroundingReviewOutput(
+                is_safe=True,
+                is_grounded=True,
+                completion_claim_valid=True,
+                business_claims_consistent=True,
+                confidence=0.90,
+                reason_codes=[],
+            ),
+        ],
+    )
+    debug_command = command("我的订单的物流现在到哪里了？").model_copy(
+        update={
+            "debug_mode": True,
+            "knowledge_file_ids": [],
+            "tool_context": AgentToolRuntimeContext(
+                order_id="ORDER-2026-001",
+                available_tools={"query_logistics"},
+                permissions={"orders.view"},
+            ),
+        }
+    )
+
+    result = await workflow.run(cast_session(), debug_command)
+
+    assert result.action == AgentAction.HUMAN_REVIEW
+    assert result.draft_reply == answer
+    assert result.send_performed is False
+    assert result.citations == []
+    assert rag.calls == 0
+    assert len(generator.requests) == 2
 
 
 @pytest.mark.asyncio

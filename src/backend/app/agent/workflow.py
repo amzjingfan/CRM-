@@ -203,6 +203,7 @@ class WorkflowState(TypedDict, total=False):
     transfer_performed: bool
     model_refusal: bool
     grounding_confidence: float
+    tool_grounding_confidence: float
     final_confidence: float
     action: AgentAction
     terminal_state: WorkflowTerminalState
@@ -460,7 +461,7 @@ class AgentWorkflowService:
         builder.add_edge("tool_required", "tool_executed")
         builder.add_conditional_edges("tool_executed", self._route_after_tool_execution)
         builder.add_conditional_edges("tool_response_drafted", self._route_after_tool_draft)
-        builder.add_edge("tool_safety_checked", "confidence_evaluated")
+        builder.add_conditional_edges("tool_safety_checked", self._route_after_tool_safety)
         builder.add_conditional_edges("knowledge_retrieved", self._route_after_retrieval)
         builder.add_conditional_edges("response_drafted", self._route_after_draft)
         builder.add_edge("safety_checked", "confidence_evaluated")
@@ -839,7 +840,7 @@ class AgentWorkflowService:
         output = state["inference"].output
         if (
             not command.debug_mode
-            or output.classification_state != ClassificationState.UNKNOWN
+            or output.classification_state not in {ClassificationState.UNKNOWN, ClassificationState.MIXED}
             or output.intent is not None
             or command.tool_context is None
         ):
@@ -959,6 +960,22 @@ class AgentWorkflowService:
         """拒绝或无草稿时直接失败关闭。"""
         return "tool_safety_checked" if state.get("tool_draft") else "confidence_evaluated"
 
+    def _route_after_tool_safety(self, state: WorkflowState) -> str:
+        """混合调试问题的已绑定知识另走独立检索与复核，正式工具路径不变。"""
+        command = state["command"]
+        output = state["inference"].output
+        if (
+            command.debug_mode
+            and command.knowledge_file_ids
+            and state.get("tool_safety_passed", False)
+            and (
+                output.classification_state == ClassificationState.MIXED
+                or output.intent in {IntentName.RETURN_POLICY, IntentName.SIZE_GUIDE, IntentName.PRICE_INQUIRY}
+            )
+        ):
+            return "knowledge_retrieved"
+        return "confidence_evaluated"
+
     async def _tool_safety_checked(self, state: WorkflowState) -> WorkflowState:
         """先用代码校验工具引用，再由独立模型复核事实和完成声明。"""
         draft = state["tool_draft"]
@@ -1061,7 +1078,7 @@ class AgentWorkflowService:
             and review.is_grounded
             and review.completion_claim_valid
             and review.business_claims_consistent
-            and not draft.needs_human
+            and (command.debug_mode or not draft.needs_human)
         )
         if command.debug_mode and not review_passed:
             # 调试草稿被独立复核否决时，丢弃模型原文。固定提示仍必须通过
@@ -1131,13 +1148,16 @@ class AgentWorkflowService:
             and review.is_grounded
             and review.completion_claim_valid
             and review.business_claims_consistent
-            and not draft.needs_human
+            and (command.debug_mode or not draft.needs_human)
         )
         return {
             "tool_draft": draft,
             "tool_review": review,
             "tool_safety_passed": safety_passed,
-            "automatic_delivery_allowed": safety_passed and deterministic_safety.automatic_delivery_allowed,
+            "tool_grounding_confidence": (min(draft.grounding_confidence, review.confidence) if safety_passed else 0.0),
+            "automatic_delivery_allowed": (
+                safety_passed and not draft.needs_human and deterministic_safety.automatic_delivery_allowed
+            ),
             "trusted_reply": trusted_reply or "",
             "grounding_confidence": min(draft.grounding_confidence, review.confidence) if safety_passed else 0.0,
             "safety_reason_codes": [] if safety_passed else review.reason_codes,
@@ -1290,7 +1310,10 @@ class AgentWorkflowService:
         else:
             review = trusted_review
         safety_passed = (
-            review.is_safe and review.is_grounded and review.business_claims_consistent and not draft.needs_human
+            review.is_safe
+            and review.is_grounded
+            and review.business_claims_consistent
+            and (state["command"].debug_mode or not draft.needs_human)
         )
         if trusted_review is not None:
             safety_passed = safety_passed and trusted_review.answers_question
@@ -1301,7 +1324,10 @@ class AgentWorkflowService:
             "review": review,
             "safety_passed": safety_passed,
             "automatic_delivery_allowed": (
-                safety_passed and deterministic_safety.automatic_delivery_allowed and trusted_review is None
+                safety_passed
+                and not draft.needs_human
+                and deterministic_safety.automatic_delivery_allowed
+                and trusted_review is None
             ),
             "trusted_reply": trusted_reply or "",
             "grounding_confidence": min(draft.grounding_confidence, review.confidence) if safety_passed else 0.0,
@@ -1328,6 +1354,9 @@ class AgentWorkflowService:
         uses_tools = bool(required_tools)
 
         if uses_tools:
+            grounding_confidence = state.get("tool_grounding_confidence", grounding_confidence)
+            if state.get("safety_passed", False) and retrieval is not None:
+                grounding_confidence = min(grounding_confidence, state.get("grounding_confidence", 0.0))
             succeeded_names = {item.tool_name for item in executions if item.result.status == "succeeded"}
             execution_failed = any(item.result.status != "succeeded" for item in executions)
             transfer_requested = "transfer_to_human" in required_tools
@@ -1379,6 +1408,8 @@ class AgentWorkflowService:
         if action == AgentAction.AUTO_REPLY and not state.get("automatic_delivery_allowed", False):
             # 语言模型草稿只能供人工复核；自动就绪必须来自当次可信数据的固定文本。
             action = AgentAction.HUMAN_REVIEW
+        if state["command"].debug_mode and action == AgentAction.AUTO_REPLY:
+            action = AgentAction.HUMAN_REVIEW
         if (
             action == AgentAction.TRANSFER_HUMAN
             and self._unknown_debug_read_tools(state) == required_tools
@@ -1429,6 +1460,7 @@ class AgentWorkflowService:
             decision_reason = "classification_unresolved"
         return {
             "final_confidence": final_confidence,
+            "grounding_confidence": grounding_confidence,
             "action": action,
             "decision_reason": decision_reason,
             "state_path": ["CONFIDENCE_EVALUATED"],
@@ -1558,9 +1590,16 @@ class AgentWorkflowService:
             )
             for hit in state.get("hits", [])
             if hit.chunk_id in referenced_ids
+            and state.get("safety_passed", False)
+            and (
+                not state.get("required_tools")
+                or (retrieval is not None and retrieval.top_score >= self.human_review_threshold)
+            )
         ]
-        can_expose_faq_draft = action in {AgentAction.AUTO_REPLY, AgentAction.HUMAN_REVIEW} and state.get(
-            "safety_passed", False
+        can_expose_faq_draft = (
+            action in {AgentAction.AUTO_REPLY, AgentAction.HUMAN_REVIEW}
+            and state.get("safety_passed", False)
+            and (not state.get("required_tools") or bool(citations))
         )
         can_expose_tool_draft = action in {AgentAction.AUTO_REPLY, AgentAction.HUMAN_REVIEW} and state.get(
             "tool_safety_passed", False
@@ -1579,6 +1618,10 @@ class AgentWorkflowService:
         draft_reply: str | None = None
         if action == AgentAction.AUTO_REPLY:
             draft_reply = state.get("trusted_reply") or None
+        elif state["command"].debug_mode and tool_draft is not None and can_expose_tool_draft:
+            draft_reply = tool_draft.answer
+            if draft is not None and can_expose_faq_draft:
+                draft_reply += "\n\n" + draft.answer
         elif draft is not None and can_expose_faq_draft:
             draft_reply = draft.answer
         elif tool_draft is not None and can_expose_tool_draft:
