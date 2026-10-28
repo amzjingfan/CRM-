@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-STAGING-LATENCY-001-20261029-R16 | MVP-STAGING-LATENCY-001 | R16 | APPROVE | `053ebc9f625042e6c38c3c3c10df6e4c9e0284ba` | authorization, tenant_isolation, release_scope, immutable_image, private_backup, safety_switches, latency_claims | 2026-10-29T07:30:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R16.md`](RR-MVP-STAGING-LATENCY-001-20261029-R16.md) |
 | RR-MVP-STAGING-LATENCY-001-20261029-R15 | MVP-STAGING-LATENCY-001 | R15 | APPROVE | `053ebc9f625042e6c38c3c3c10df6e4c9e0284ba` | authorization, tenant_isolation, response_order, failure_state, release_scope, latency_claims | 2026-10-29T06:58:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R15.md`](RR-MVP-STAGING-LATENCY-001-20261029-R15.md) |
 | RR-MVP-STAGING-LATENCY-001-20261029-R14 | MVP-STAGING-LATENCY-001 | R14 | APPROVE | `86e5c4e48862da445932ad50529c3a85bd3801f5` | authorization, tenant_isolation, release_scope, immutable_image, private_backup, safety_switches, latency_claims | 2026-10-29T06:30:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R14.md`](RR-MVP-STAGING-LATENCY-001-20261029-R14.md) |
 | RR-MVP-STAGING-LATENCY-001-20261029-R13 | MVP-STAGING-LATENCY-001 | R13 | APPROVE | `86e5c4e48862da445932ad50529c3a85bd3801f5` | authorization, tenant_isolation, request_order, failure_state, release_scope, latency_claims | 2026-10-29T06:05:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R13.md`](RR-MVP-STAGING-LATENCY-001-20261029-R13.md) |

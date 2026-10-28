@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-29 [TR R20](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R20.md) **PARTIAL（看板局部发布通过）**：主线 [PR #623](https://github.com/CP11-gh/CRM/pull/623) 源码已从实际运行的性能专用 release 单独摘取并部署 staging，仅更新前端；隔离 release 的 129/129 生产浏览器、51/51 契约、类型/构建、私有备份、精确摘要、ValidateOnly/Deploy、12 容器、固定出口及安全开关通过。三健康和四页面公网 HTTP 200，已登录看板只读显示授权店铺名称与指标。两项 PR CI 作业均 0 steps，按已批准本地替代门禁记录；单次公网 TTFB、浏览器工具墙钟都不能证明提速，真实冷热、跨店、401、429/失败和全站对照仍待验。见[低敏证据](../../release/evidence/staging/crm-staging-dashboard-authorized-20261029.json)。
+
 2026-10-29 [TR R19](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R19.md) **PARTIAL（看板授权店铺先回显源码）**：店铺名称延迟时指标先回显的合成用例先红后绿，生产浏览器 133/133、契约 51/51、类型/构建通过，lint 0 error/8 既有 warning。尚未发布到 staging，实际冷/热和跨店/故障耗时仍待测。
 
 2026-10-29 [TR R18](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R18.md) **PARTIAL（欢迎语已登录补测）**：R17 首次浏览器工具超时后，重新绑定同一 staging 页面，完整页面状态显示既有欢迎语策略及“仅配置状态，不自动发送”。仅只读浏览，没有页面回显计时或平台写入；真实冷热、跨店与异常/限流及整体提速仍待验。

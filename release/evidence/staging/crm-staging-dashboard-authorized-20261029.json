@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_dashboard_authorized_first_performance_only",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "mainline_pr": 623,
+  "mainline_subject_sha": "053ebc9f625042e6c38c3c3c10df6e4c9e0284ba",
+  "mainline_merge_sha": "c1bf283c4f3c3fff2e135cd0136afe019d9c298b",
+  "mainline_index_pr": 624,
+  "mainline_index_merge_sha": "010fa4c3ceb70655602b220e42942e263c7a4350",
+  "release_base_sha": "82e9fd8365d09b0a2bd2cc8a44f82ed89c40d2fc",
+  "release_source_sha": "3efa1f2e3c7d75030401aee7a1c189a4b4f54b23",
+  "release_git_bundle_sha256": "ffb3852c442e8c1b11e82914e6a56b619a40e7b61e0e192e9b502a6eb552a013",
+  "release_diff": [
+    "src/frontend/app/dashboard/page.tsx",
+    "src/tests/frontend/browser/ui-regressions.test.mjs"
+  ],
+  "images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:1cb5f243507678c8b889a01ac6b6ba375a03b427b0371c0e90cbd9583389c1d9",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:7ff0098991f96845df0099ebaea931bebbe4edf658eaeb7a3a56626c4dc01a30",
+    "backend_unchanged": "ghcr.io/cp11-gh/crm-backend@sha256:60e9b795a3a1f58ea220667982f4bf29a3032e59fab6255f320a2e20a2a816a2",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "frontend_linux_amd64": true,
+    "frontend_oci_revision_matches_release": true,
+    "local_and_remote_repo_digests_match": true,
+    "dynamic_agent_v2_deployed": false
+  },
+  "image_transport": {
+    "method": "verified_ssh_transfer_after_remote_ghcr_pull_stalled",
+    "docker_save_sha256": "1dc132cf6fbdc94b07ee995095ed0514011b00de0eaaee310c8e6ff42101b6f1",
+    "remote_archive_sha256_matches": true,
+    "remote_exact_digest_pull_after_load": true,
+    "temporary_local_and_remote_ghcr_auth_removed": true
+  },
+  "private_backup": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "environment_sha256": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+    "postgres_custom_dump_sha256": "66b295212aefbb249ac566555cfabba15ddff3acc7005752aa747aba267ee05d",
+    "minio_tar_sha256": "f3bdeef4a4be41c9532dd31b7e523c2efe6c93fb6b5d55274f4e5de3cad6cdbd",
+    "postgres_catalog_readable": true,
+    "minio_tar_readable": true
+  },
+  "gates": {
+    "release_script_sha256": "6882c65147be458095bdfe1b6e4273090f9349803a5045d19a7e1a07a8e5dca7",
+    "validate_only": "validated",
+    "validate_only_sha256": "a3fd54e572d452de509f4ed21a0a5be703be0620adfad36223b9dced4ea62ac1",
+    "deploy": "passed",
+    "deploy_sha256": "b60097737fe1a649de296c8c1019191a707f81c1c68f9f40d25b484b952a4eb1",
+    "database_migration": "heads_applied",
+    "containers_running": 12,
+    "fixed_egress_verified": true,
+    "manual_send_scope": "one existing authorized store",
+    "webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "existing_agent_debug_enabled": true,
+    "document_ingestion_enabled": true,
+    "auto_reply_enabled": false,
+    "llm_enabled": false,
+    "high_risk_write_enabled": false
+  },
+  "verification": {
+    "source_frontend_contract": "51/51",
+    "source_frontend_production_browser": "133/133",
+    "release_frontend_contract": "51/51",
+    "release_frontend_production_browser": "129/129",
+    "release_typecheck_and_build": "passed",
+    "release_lint": "0 errors, 8 pre-existing warnings",
+    "public_http_status": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/dashboard": 200,
+      "/settings/stores": 200,
+      "/workspace": 200,
+      "/marketing/reception/quick-replies": 200
+    },
+    "public_http_ttfb_seconds_single_samples": {
+      "/healthz": 1.246495,
+      "/v1/health": 0.733833,
+      "/v1/health/ready": 1.824257,
+      "/dashboard": 1.379992,
+      "/settings/stores": 1.387359,
+      "/workspace": 1.550245,
+      "/marketing/reception/quick-replies": 1.443163
+    },
+    "authenticated_dashboard_ui": "rendered authorized store name, core metrics and secondary widgets; read only",
+    "ui_tool_wall_clock_is_not_page_latency": true
+  },
+  "github_ci": {
+    "head_sha": "b70866c7fc4cd77d98b0ad29cb8e7d3dd1d1c9d5",
+    "run_id": 40784270034,
+    "backend_job_id": 123153418018,
+    "frontend_job_id": 123153418362,
+    "both_jobs_runner_empty_and_zero_steps": true,
+    "ci_executed": false,
+    "local_substitute_used": true
+  },
+  "github_actions_used_for_deployment": false,
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false,
+  "overall_latency_acceptance": "partial"
+}
