@@ -1,0 +1,14 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-047",
+  "state": "deleted",
+  "execution_main_sha": "060dc8c13ca39e31b00d9b0e3d03e71ea06309d9",
+  "deleted_branch_count": 1,
+  "scope": "one unattached split-ingress branch delivered through successor PRs #20-#26; archive original commit before deleting local branch name; no worktree or remote operation",
+  "ref": "refs/heads/feature/split-ingress-staging-20260919",
+  "head": "4f8fe4344728410fada5023243cfa3660ad659e4",
+  "archive_ref": "refs/archive/CLEANUP-20261028-047/feature/split-ingress-staging-20260919",
+  "proof_task": "MVP-STAGING-001",
+  "changed_path_count": 34,
+  "merged_successor_prs": [20, 21, 22, 23, 24, 25, 26]
+}
