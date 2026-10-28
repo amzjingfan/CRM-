@@ -1,8 +1,11 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-010",
-  "state": "candidate",
+  "state": "deleted",
   "base_sha": "079a01456f2af0094b5266bd7849a5ac2e1fd9b8",
+  "execution_main_sha": "17baa8eaa8c1b8c7b33b28697e883b2252be71b2",
+  "deleted_worktree_count": 3,
+  "archived_file_count": 17,
   "scope": "three exact detached worktrees and seventeen ignored deployment artifacts archived before removal; no branch or remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-010",
   "candidates": [
