@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_store_refresh_readonly_followup",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "environment": "staging",
+  "release_source_sha": "18cea7f2ea873b30f5ea9966ff26502d43189256",
+  "implementation_subject_sha": "c1fcc1c74dbb073b2d560c178499b2ac5ec99f2e",
+  "authenticated_browser": {
+    "route": "/settings/stores",
+    "initial_authorized_rows": 1,
+    "refresh_clicked": true,
+    "authorized_rows_after_refresh": 1,
+    "refresh_button_enabled_afterward": true,
+    "browser_tool_wall_time_is_not_page_latency": true,
+    "precise_user_visible_latency_measured": false
+  },
+  "business_proxy_safe_log": {
+    "normalized_route": "GET /v1/settings/store-authorizations",
+    "successful_requests_in_last_hour": 3,
+    "status": 200,
+    "timestamps_utc": [
+      "2026-10-28T17:17:35Z",
+      "2026-10-28T17:20:41Z",
+      "2026-10-28T17:37:10Z"
+    ],
+    "request_time_ms": [22, 18, 16],
+    "last_request_temporally_near_browser_refresh": true,
+    "end_to_end_trace_correlation_available": false
+  },
+  "cross_store_live_test": "not_run_only_one_authorized_store_visible",
+  "fault_and_rate_limit_live_test": "not_run",
+  "cold_warm_page_latency": "not_measured",
+  "real_message_sent": false,
+  "production_changed": false,
+  "overall_acceptance": "partial"
+}
