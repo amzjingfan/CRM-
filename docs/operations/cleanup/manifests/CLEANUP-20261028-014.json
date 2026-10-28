@@ -1,0 +1,353 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-014",
+  "state": "candidate",
+  "base_sha": "2b947ff66445c6d3096495a67cb60656fce8b7a9",
+  "scope": "one exact detached worktree whose head is in local main; 56 ignored files archived; no branch or remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-014",
+  "candidates": [
+    {
+      "worktree": ".worktrees/workspace-hygiene-20261019",
+      "head": "d0ba04575407abdeddb66525467aaf9bf6f14621",
+      "directory_modified": "2026-10-19T17:59:18.3482760+08:00",
+      "ignored": [
+        {
+          "path": "src/.pytest_cache/.gitignore",
+          "size": 39,
+          "modified": "2026-10-19T22:13:20.8771148+08:00",
+          "sha256": "E7C6BB30148CF667606DCD63E7CA77ACAA3CFB0C8303BF09E6419E1E1669DC6D"
+        },
+        {
+          "path": "src/.pytest_cache/CACHEDIR.TAG",
+          "size": 191,
+          "modified": "2026-10-19T22:13:20.8781144+08:00",
+          "sha256": "37DC88EF9A0ABEDDBE81053A6DD8FDFB13AFB613045EA1EB4A5C815A74A3BDE4"
+        },
+        {
+          "path": "src/.pytest_cache/README.md",
+          "size": 310,
+          "modified": "2026-10-19T22:13:20.8771148+08:00",
+          "sha256": "420E808D79A6C25D3CDA0AF33BC4782314A14949866682C68CE8149E89B66B70"
+        },
+        {
+          "path": "src/.pytest_cache/v/cache/lastfailed",
+          "size": 89,
+          "modified": "2026-10-20T09:19:20.5103874+08:00",
+          "sha256": "2F7CB81574A96961B737B554245D9EFA6179B43CA11CFB446EB0E29D6D3939CA"
+        },
+        {
+          "path": "src/.pytest_cache/v/cache/nodeids",
+          "size": 1615,
+          "modified": "2026-10-20T09:19:20.5103874+08:00",
+          "sha256": "3A5887AE991000A310688A197CCE1038C7167703154C9E76AABDDE7A1CD87390"
+        },
+        {
+          "path": "src/backend/.mypy_cache/.gitignore",
+          "size": 36,
+          "modified": "2026-10-19T22:18:51.3559630+08:00",
+          "sha256": "FFBB394643C112F2356BB5F3184E95E33FD732146892F4EEEAD126975570FF39"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.0.db",
+          "size": 69632,
+          "modified": "2026-10-19T22:18:51.3569628+08:00",
+          "sha256": "B18C8C43D134586CDC0A0B135A3B9051EB0579E6841AF534EA9638523C534529"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.1.db",
+          "size": 204800,
+          "modified": "2026-10-19T22:18:51.3569628+08:00",
+          "sha256": "73C175763175938CC78F366053D312B02EFDEED51DF56C6E05F502EEDAD28F35"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.10.db",
+          "size": 434176,
+          "modified": "2026-10-19T22:18:51.3609619+08:00",
+          "sha256": "2E407DEC4A82060FD2D861BDAADB4EF2329D149CEA1A8DE916064C0FF0EF29D8"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.11.db",
+          "size": 94208,
+          "modified": "2026-10-19T22:18:51.3619617+08:00",
+          "sha256": "6932F73820511418A9FAF9F55DB0A94CC9A895335BED5CA5BC922C0EA52960A9"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.12.db",
+          "size": 24576,
+          "modified": "2026-10-19T22:18:51.3619617+08:00",
+          "sha256": "B4C3731552684A1461CA7E43B1EB46D25C2B5DFF2FE744EDD07AE308861CC64C"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.13.db",
+          "size": 94208,
+          "modified": "2026-10-19T22:18:51.3619617+08:00",
+          "sha256": "E8809DED3B6B68656057BA4839D0172240997F2C2BB55A899A2B5A368652BFA0"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.14.db",
+          "size": 106496,
+          "modified": "2026-10-19T22:18:51.3619617+08:00",
+          "sha256": "05FAB727E331E94CF408D016F6F0080FE8F629F647EA6D7A4C130B1AD7049DF0"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.15.db",
+          "size": 278528,
+          "modified": "2026-10-19T22:18:51.3629618+08:00",
+          "sha256": "ADBC07B2B14EE72EA2A1A40E259ADC37906E291F5BBF45946366297B0F576222"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.2.db",
+          "size": 53248,
+          "modified": "2026-10-19T22:18:51.3579623+08:00",
+          "sha256": "B3EA5AB9D17007F0F9AD9E4DB5CFA227E84E1FD6B8B932C0CEF073F73C45DE3F"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.3.db",
+          "size": 40960,
+          "modified": "2026-10-19T22:56:01.4816089+08:00",
+          "sha256": "994E8F55CF92D0BADFE3ACD6F3E1DB147DD19D7C305A34C84E2DFA4C8B305EA8"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.4.db",
+          "size": 143360,
+          "modified": "2026-10-19T22:18:51.3579623+08:00",
+          "sha256": "B4616E26ECB015F0945B75489703691A514C6DED307D64DE96575914F889DB6A"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.5.db",
+          "size": 98304,
+          "modified": "2026-10-19T22:56:01.4826100+08:00",
+          "sha256": "46D9E53AF803DA2AA5593E179E79DCA1A969BBC09762F720FAC640146C02073C"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.6.db",
+          "size": 73728,
+          "modified": "2026-10-19T22:18:51.3589619+08:00",
+          "sha256": "68356CA7A61DD3675AACF20577F20F650CDDDE89980DBAFF662CCB527FC7795D"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.7.db",
+          "size": 28672,
+          "modified": "2026-10-19T22:18:51.3589619+08:00",
+          "sha256": "9ABF782063648457D99FCA9CC1A18C7E9B2821BC96C5B9B106D4DA4326D4F214"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.8.db",
+          "size": 118784,
+          "modified": "2026-10-19T22:18:51.3599620+08:00",
+          "sha256": "325CA87F5ADDE12CF1D21A60D82E2BA5B5803950CADF6DB4F7C922CD931ABD24"
+        },
+        {
+          "path": "src/backend/.mypy_cache/3.11/cache.9.db",
+          "size": 462848,
+          "modified": "2026-10-19T22:18:51.3599620+08:00",
+          "sha256": "64DE29182795A81E6D98574248A3FD10AD8275FA6A00172A161159BC68410B9F"
+        },
+        {
+          "path": "src/backend/.mypy_cache/CACHEDIR.TAG",
+          "size": 193,
+          "modified": "2026-10-19T22:18:51.3569628+08:00",
+          "sha256": "70EBB54FACB76F7DAB3058261EEFB43A2315D28D10FCF90A85538C05A72B8D1E"
+        },
+        {
+          "path": "src/backend/.ruff_cache/.gitignore",
+          "size": 35,
+          "modified": "2026-10-19T22:18:48.5202696+08:00",
+          "sha256": "9E3A60F1E6EC4AE60215C11D54B171392745EC25E9DDED433D5BD921363AF316"
+        },
+        {
+          "path": "src/backend/.ruff_cache/0.16.3/7879096436701174982",
+          "size": 260,
+          "modified": "2026-10-19T22:56:01.2413391+08:00",
+          "sha256": "239DB9EA7E7AE47C15B43DFE27B499B850EAA2E439BBA8A33233F0578A612D6D"
+        },
+        {
+          "path": "src/backend/.ruff_cache/0.16.3/8706268362070810763",
+          "size": 228,
+          "modified": "2026-10-19T22:56:01.2413391+08:00",
+          "sha256": "23EF2ADE0869A7F3DFF5CD5B6FF8317E8D041156325D8F25FD06FDCD52504342"
+        },
+        {
+          "path": "src/backend/.ruff_cache/CACHEDIR.TAG",
+          "size": 43,
+          "modified": "2026-10-19T22:18:48.5202696+08:00",
+          "sha256": "5953156D7E0C564A427251316EAF26F8870E6483AE2197F916B630E4F93E31AE"
+        },
+        {
+          "path": "src/backend/.venv/.gitignore",
+          "size": 1,
+          "modified": "2026-10-19T22:13:12.4608298+08:00",
+          "sha256": "684888C0EBB17F374298B65EE2807526C066094C701BCC7EBBE1C1095F494FC1"
+        },
+        {
+          "path": "src/backend/.venv/CACHEDIR.TAG",
+          "size": 43,
+          "modified": "2026-10-19T22:13:12.4608298+08:00",
+          "sha256": "5953156D7E0C564A427251316EAF26F8870E6483AE2197F916B630E4F93E31AE"
+        },
+        {
+          "path": "src/backend/.venv/Lib/site-packages/_virtualenv.pth",
+          "size": 18,
+          "modified": "2026-10-19T22:13:12.5236663+08:00",
+          "sha256": "69AC3D8F27E679C81B94AB30B3B56E9CD138219B1BA94A1FA3606D5A76A1433D"
+        },
+        {
+          "path": "src/backend/.venv/Lib/site-packages/_virtualenv.py",
+          "size": 5246,
+          "modified": "2026-10-19T22:13:12.5236663+08:00",
+          "sha256": "CFB3DB86AAA53BB62B5FF764970BEC2D71C9228590A0EBEC57F6EC926CC0BF1A"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate",
+          "size": 4177,
+          "modified": "2026-10-19T22:13:12.5152413+08:00",
+          "sha256": "546EEB954CF65C057D95AD36456384F65CF1D6F8E70B3F98D09D4E25DC91DAC6"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate.bat",
+          "size": 2741,
+          "modified": "2026-10-19T22:13:12.5220883+08:00",
+          "sha256": "3DE9268B2880FE37EDBED7B6D5BC4D80C14104FFEA6FAA710FDAA4ABD72B0BAF"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate.csh",
+          "size": 2707,
+          "modified": "2026-10-19T22:13:12.5152413+08:00",
+          "sha256": "F4280646437019474DB7CB92FB0CA33EC505DC8709F4890D176BA24060BA1AC3"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate.fish",
+          "size": 4418,
+          "modified": "2026-10-19T22:13:12.5152413+08:00",
+          "sha256": "19A4DB8A157A4E4EB4311890E90A4002A0055852FD8697AC64072A4FF2B8DBB7"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate.nu",
+          "size": 4033,
+          "modified": "2026-10-19T22:13:12.5215725+08:00",
+          "sha256": "BFA53335AB908239CF31ACD8AEABE4E687B82DCCF04EBA303BF034BD76A9F53E"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate.ps1",
+          "size": 2800,
+          "modified": "2026-10-19T22:13:12.5220883+08:00",
+          "sha256": "32BC1F7FC393EC2863B208ED3E6A762E46C07AC12EC0C75F604F8F511CF0B5FC"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate.xsh",
+          "size": 3859,
+          "modified": "2026-10-19T22:13:12.5220883+08:00",
+          "sha256": "3021F81222D285A0714476EEFE5A729B70E2697747309E59B8F6C79177002A12"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/activate_this.py",
+          "size": 2394,
+          "modified": "2026-10-19T22:13:12.5226288+08:00",
+          "sha256": "CCF6D210D9C21D2073227FED578D040A8C0818456A993D11C6D0DB96EA67985D"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/deactivate.bat",
+          "size": 1730,
+          "modified": "2026-10-19T22:13:12.5220883+08:00",
+          "sha256": "13EA86073A9EE43A66E3549312599DD47FF315758B4CA5A0406FAF041FB82300"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/pydoc.bat",
+          "size": 1219,
+          "modified": "2026-10-19T22:13:12.5226288+08:00",
+          "sha256": "09F9608D478FA48A9E49AF8F413CFEAAB47773EFFD185433088B7688CE75890E"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/python.exe",
+          "size": 45568,
+          "modified": "2026-10-19T22:13:12.4894389+08:00",
+          "sha256": "4614619E7C35626EF508A25503CB38D7C74FBF3FF2EB0FA972575BA46EECCD15"
+        },
+        {
+          "path": "src/backend/.venv/Scripts/pythonw.exe",
+          "size": 45568,
+          "modified": "2026-10-19T22:13:12.5146847+08:00",
+          "sha256": "4614619E7C35626EF508A25503CB38D7C74FBF3FF2EB0FA972575BA46EECCD15"
+        },
+        {
+          "path": "src/backend/.venv/pyvenv.cfg",
+          "size": 209,
+          "modified": "2026-10-19T22:13:12.5226288+08:00",
+          "sha256": "25DE106B2CBF8B7D8E41C45F84BD310214675F6BD90C5BBD093A3AFAAF6CA9FB"
+        },
+        {
+          "path": "src/backend/scripts/__pycache__/__init__.cpython-314.pyc",
+          "size": 257,
+          "modified": "2026-10-19T22:13:58.8565832+08:00",
+          "sha256": "0F1E799CC690432C875789266C83667F8A30497D3A0AC4BE437539BFE0646679"
+        },
+        {
+          "path": "src/backend/scripts/__pycache__/observe_staging_g6.cpython-314.pyc",
+          "size": 29622,
+          "modified": "2026-10-19T22:56:00.9915124+08:00",
+          "sha256": "727457BA41C96D44B749C9F19BEB7FCCD66876266DF42E6E651D76F49327ABEF"
+        },
+        {
+          "path": "src/tests/.artifacts/g6-gateway-vhost-before.conf",
+          "size": 5320,
+          "modified": "2026-10-20T09:44:20.9960946+08:00",
+          "sha256": "45191E53FE09ED29FAD061D7BAD9BCA43C3C36FA26924E05B610159A27B6E147"
+        },
+        {
+          "path": "src/tests/.artifacts/g6-ssh-liveness-pr-body.md",
+          "size": 1783,
+          "modified": "2026-10-20T09:39:36.8923389+08:00",
+          "sha256": "29FCD5E82465B936A1D96F132B8127E204EAC87799207D8C1CD85AF66C4CECBA"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/.gitignore",
+          "size": 39,
+          "modified": "2026-10-20T09:19:42.2966169+08:00",
+          "sha256": "E7C6BB30148CF667606DCD63E7CA77ACAA3CFB0C8303BF09E6419E1E1669DC6D"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/CACHEDIR.TAG",
+          "size": 191,
+          "modified": "2026-10-20T09:19:42.3031710+08:00",
+          "sha256": "37DC88EF9A0ABEDDBE81053A6DD8FDFB13AFB613045EA1EB4A5C815A74A3BDE4"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/README.md",
+          "size": 310,
+          "modified": "2026-10-20T09:19:42.2966169+08:00",
+          "sha256": "420E808D79A6C25D3CDA0AF33BC4782314A14949866682C68CE8149E89B66B70"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/v/cache/lastfailed",
+          "size": 2,
+          "modified": "2026-10-20T09:20:00.9680404+08:00",
+          "sha256": "44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/v/cache/nodeids",
+          "size": 4448,
+          "modified": "2026-10-20T09:26:31.9454320+08:00",
+          "sha256": "811F000241EA5E7E2EACEC788014448D69CD419F373D58F33FAC678872397F7E"
+        },
+        {
+          "path": "src/tests/backend/__pycache__/_support.cpython-314.pyc",
+          "size": 1089,
+          "modified": "2026-10-20T09:19:42.0000419+08:00",
+          "sha256": "4939A103F28B00C0E685AE4423F02EDC82DFEC7DBC94889DE5CB9582955D1A3A"
+        },
+        {
+          "path": "src/tests/backend/runtime_infrastructure/__pycache__/test_split_ingress_staging_assets.cpython-314-pytest-8.4.2.pyc",
+          "size": 108697,
+          "modified": "2026-10-20T09:21:04.9589051+08:00",
+          "sha256": "6D5C3F465DBE1D9B5302622B8EBA8FCF6401E5FFF890639E4DD063138C8389DC"
+        },
+        {
+          "path": "src/tests/backend/runtime_infrastructure/__pycache__/test_staging_g6_observer.cpython-314-pytest-8.4.2.pyc",
+          "size": 41529,
+          "modified": "2026-10-19T22:56:00.9865048+08:00",
+          "sha256": "3F6B9577EDD85A559C5A4A4D3A12166ABAF4F386259AEFF75CC4DFAC4565A6D1"
+        }
+      ]
+    }
+  ]
+}
