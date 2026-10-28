@@ -17,11 +17,11 @@
       "reason": "Detached build worktree; HEAD is ancestor of local main",
       "reference_checks": ["HEAD ancestor of local main", "No tracked path-name references", "No reparse points", "No untracked or ignored files"],
       "related_tasks_or_worktrees": ["basic-reception-deploy-main-20261023"],
-      "action": "candidate",
+      "action": "deleted",
       "quarantine_path": "N/A: Git checkout is recreatable from retained commit",
       "retention_until": "N/A: pure Git worktree without generated residual",
       "restore_method": "git worktree add --detach <new-path> d19f683558c1d186478fb4f4a0682d8af95f5a15",
-      "verification": []
+      "verification": ["Exact path absent", "Git worktree registration absent", "HEAD commit retained", "Local main unchanged"]
     },
     {
       "task_id": "MAINT-CLEANUP-20261028-003",
@@ -37,11 +37,11 @@
       "reason": "Detached build worktree; HEAD is ancestor of local main",
       "reference_checks": ["HEAD ancestor of local main", "No tracked path-name references", "No reparse points", "No untracked or ignored files"],
       "related_tasks_or_worktrees": ["tracking-native-card-build-20261022"],
-      "action": "candidate",
+      "action": "deleted",
       "quarantine_path": "N/A: Git checkout is recreatable from retained commit",
       "retention_until": "N/A: pure Git worktree without generated residual",
       "restore_method": "git worktree add --detach <new-path> ce70bbbaa735157c8cfa1417f3e21bc27f67c52e",
-      "verification": []
+      "verification": ["Exact path absent", "Git worktree registration absent", "HEAD commit retained", "Local main unchanged"]
     },
     {
       "task_id": "MAINT-CLEANUP-20261028-003",
@@ -57,11 +57,11 @@
       "reason": "Exact head of merged PR #541; squash merge commit is ancestor of local main",
       "reference_checks": ["PR #541 merged at exact head", "Merge commit ancestor of local main", "No tracked path-name references", "No reparse points", "No untracked or ignored files"],
       "related_tasks_or_worktrees": ["PR #541", "docs/basic-reception-finalize-20261023"],
-      "action": "candidate",
+      "action": "deleted",
       "quarantine_path": "N/A: Git checkout is recreatable from retained commit",
       "retention_until": "N/A: pure Git worktree without generated residual",
       "restore_method": "git worktree add <new-path> docs/basic-reception-finalize-20261023",
-      "verification": []
+      "verification": ["Exact path absent", "Git worktree registration absent", "Local branch retained", "Local main unchanged"]
     },
     {
       "task_id": "MAINT-CLEANUP-20261028-003",
@@ -77,11 +77,11 @@
       "reason": "Exact head of merged PR #502; squash merge commit is ancestor of local main",
       "reference_checks": ["PR #502 merged at exact head", "Merge commit ancestor of local main", "No tracked path-name references", "No reparse points", "No untracked or ignored files"],
       "related_tasks_or_worktrees": ["PR #502", "docs/customer-sidebar-variant-index-current-20261021"],
-      "action": "candidate",
+      "action": "deleted",
       "quarantine_path": "N/A: Git checkout is recreatable from retained commit",
       "retention_until": "N/A: pure Git worktree without generated residual",
       "restore_method": "git worktree add <new-path> docs/customer-sidebar-variant-index-current-20261021",
-      "verification": []
+      "verification": ["Exact path absent", "Git worktree registration absent", "Local branch retained", "Local main unchanged"]
     }
   ]
 }

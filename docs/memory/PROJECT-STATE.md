@@ -71,7 +71,7 @@
 
 ## 当前状态
 
-2026-10-28 本地 worktree 整合：本地 `main=d4abc13242e75bcc64754b930dd9113b82b63cd8` 已包含 `origin/main=0e4100b2b83012692ac2fb368707946687c9cde8` 与原本地独有治理提交；只读盘点时有 75 个附加工作树。`MAINT-CLEANUP-20261028-003` 正按用户选择逐支核验后清理，第一批四个无独有文件目录见 [清理记录](../operations/cleanup/CLEANUP-20261028-003.md)。Workspace hygiene: ATTENTION（两个指定会话的活动工作、开放 PR、未验收提交与其他现场材料保留）。
+2026-10-28 本地 worktree 整合：本地 `main=d4abc13242e75bcc64754b930dd9113b82b63cd8` 已包含 `origin/main=0e4100b2b83012692ac2fb368707946687c9cde8` 与原本地独有治理提交；只读盘点时有 75 个附加工作树。`MAINT-CLEANUP-20261028-003` 正按用户选择逐支核验后清理，第一批四个无独有文件目录已移除，见 [清理记录](../operations/cleanup/CLEANUP-20261028-003.md)。Workspace hygiene: ATTENTION（两个指定会话的活动工作、开放 PR、未验收提交与其他现场材料保留）。
 
 2026-10-28 本地 worktree 清理：用户对两个精确目录授权；`MAINT-CLEANUP-20261028-002` 的本地删除已执行，两个路径与 Git 注册项消失，提交及一个本地分支保留，见 [清理批次](../operations/cleanup/CLEANUP-20261028-002.md)。记录分支 `docs/cleanup-worktrees-20261028-002` 待合入，任务保持 `VERIFYING`。Workspace hygiene: ATTENTION（其余活动、带独有提交或含现场资料的 worktree 与根 checkout 未跟踪文件均保留）。
 
