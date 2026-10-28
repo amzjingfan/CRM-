@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 staging 入口分段日志 [TR R04](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R04.md) **PARTIAL**：Nginx 候选隔离语法、原配置私有备份、首次回滚与第二次重载、健康 200、数值 `Server-Timing` 日志验证通过；应用镜像未变。30 次公网健康 TTFB p50/p95 1.750/5.189 秒，入口总耗时 171/1175 毫秒，应用 1/2 毫秒。工作台和设置页样本显示网络/隧道等待明显大于应用处理，但后两页样本不足完整验收。见[低敏证据](../../release/evidence/staging/crm-staging-server-timing-20261028.json)。
+
 2026-10-28 staging 入口连接复用 [TR R03](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R03.md) **PARTIAL**：原活动 vhost 私有备份、源码哈希、独立 20 组对照、`nginx -t`/reload 与健康/安全/缓存只读回归通过；活动入口回环 30 次 p50/p95 `1.042/2.061` → `0.400/1.161` 秒，公网 30 次 `1.564/4.002` → `1.742/4.028` 秒，未证实公网整体改善。两机广域网重传仍显著，前后端镜像和 Agent 不变，未外发或发布 production。见[低敏证据](../../release/evidence/staging/crm-staging-nginx-keepalive-20261028.json)。
 
 2026-10-28 staging 性能专用发布 [TR R02](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R02.md) **PARTIAL（部署通过，公网性能未达完整验收）**：release `e64ef52c` 的后端 2407/43、前端合同 48/48、静态门禁和 Docker 构建通过；私有备份、六摘要、ValidateOnly/Deploy、12 容器、固定出口与已登录订单只读 UI 通过。指纹 JS 冷 MISS 1.728 秒、热 HIT 0.000 秒；20 样本公网健康 TTFB p50/p95 前后为 1.782/9.108 和 2.472/4.819 秒，非受控对照，不声称因果改善。动态 Agent 未部署，生产 No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-latency-performance-only-20261028.json)。
