@@ -1,0 +1,68 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-016",
+  "state": "candidate",
+  "base_sha": "b4e3428ba4470c74add63c59666ceaccc6300fe9",
+  "scope": "two exact merged-PR worktrees and branches; ignored cache classes deleted; other ignored files archived; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-016",
+  "candidates": [
+    {
+      "worktree": ".worktrees/agent-debug-concise-schema-20261027",
+      "head": "316d8a2d64d5aea14f37f80a6cc017b1005b603f",
+      "branch_ref": "refs/heads/fix/agent-debug-concise-schema-20261027",
+      "pr": 572,
+      "merge_commit": "30b29c968a657f6e10a57a20f726548d13339643",
+      "directory_modified": "2026-10-27T23:54:57.0752230+08:00",
+      "ignored_count": 13122,
+      "ignored_paths_sha256": "C781F14154B8DC6F1AA32E3E49E94CFE194278AFC87ED302B382A3CD5B8CCA92",
+      "cache_file_count": 13120,
+      "cache_bytes": 247401171,
+      "archive_file_count": 2,
+      "archive_bytes": 2265,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-deterministic-r05.json",
+          "size": 235,
+          "modified": "2026-10-28T00:03:36.4396534+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-agent-debug-concise-schema-20261028.md",
+          "size": 2030,
+          "modified": "2026-10-28T00:07:51.2152072+08:00",
+          "sha256": "B47B201DFAEA4747CB78DEED6984242041DB23AF672AA7538CA65A2D70EE7B08"
+        }
+      ],
+      "untracked": []
+    },
+    {
+      "worktree": ".worktrees/agent-debug-deterministic-file-20261028",
+      "head": "437ec0a21dc87cc7957e24ea8e249b24c497e0a9",
+      "branch_ref": "refs/heads/fix/agent-debug-deterministic-file-20261028",
+      "pr": 573,
+      "merge_commit": "5f0feb7ffeec4290a5cabcb8df0550df696c7aca",
+      "directory_modified": "2026-10-28T08:14:22.7509494+08:00",
+      "ignored_count": 13122,
+      "ignored_paths_sha256": "0460E01F45E65F28AC3C4B5E47CAF309DCB8B8285379561581156D48B07717BA",
+      "cache_file_count": 13120,
+      "cache_bytes": 247455453,
+      "archive_file_count": 2,
+      "archive_bytes": 1604,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-deterministic-r06.json",
+          "size": 235,
+          "modified": "2026-10-28T08:20:21.3650239+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-agent-debug-deterministic-file-20261028.md",
+          "size": 1369,
+          "modified": "2026-10-28T08:24:11.8172933+08:00",
+          "sha256": "8E868DB96696B412970B0F9686293B69E7F173CDA94520BF98590F6F5330FEF7"
+        }
+      ],
+      "untracked": []
+    }
+  ]
+}
