@@ -1,0 +1,21 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-058",
+  "state": "deleted",
+  "execution_main_sha": "f84b3c9b798b591a5612d90a43cac8df8ff2eada",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
+  "worktree": ".worktrees/order-detail-agent-stage-20261026",
+  "ref": "refs/heads/fix/order-detail-agent-stage-20261026",
+  "head": "99507569146719253124535fa3b18cbcdb2be750",
+  "archive_ref": "refs/archive/CLEANUP-20261028-058/fix/order-detail-agent-stage-20261026",
+  "merged_pr": 564,
+  "merged_pr_head": "8330b26748e7051b61059b51d1cca2fcad715972",
+  "merged_pr_commit": "7e59ab743f29ca501890c52f7ba121f4268a6c44",
+  "ignored_file_count": 46814,
+  "ignored_total_bytes": 804443281,
+  "ignored_archive_bytes": 262562989,
+  "ignored_archive_sha256": "4359391227CD3FF584D6007861CFE373A4E381E7FA4D84020CC186D4A5BAFEE1",
+  "ignored_path_list_sha256": "BF2D97F87BFC537C96A5E001159DE2AF717F51E955B42221C122FFFA435C07AB",
+  "ignored_archive_retention_until": "2026-11-02T16:30:00+08:00"
+}
