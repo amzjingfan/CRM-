@@ -1,0 +1,16 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-056",
+  "state": "deleted",
+  "execution_main_sha": "ff5657b969d8693dfa1ef7dc9e0303caef16d9e6",
+  "deleted_branch_count": 1,
+  "scope": "unoccupied source branch of merged PR #587, with ingress config and R03 evidence identical on local main; archive original SHA and remove local name only",
+  "ref": "refs/heads/fix/staging-nginx-upstream-keepalive-20261028",
+  "head": "176c7068781fb4698e7060f8f5a03981fee079ab",
+  "archive_ref": "refs/archive/CLEANUP-20261028-056/fix/staging-nginx-upstream-keepalive-20261028",
+  "merged_pr": 587,
+  "merged_pr_commit": "7e17fa42a64085c3f7aa15f3e08359c1154701b1",
+  "changed_paths": 12,
+  "identical_to_main": 6,
+  "later_main_or_reconciled_docs": 6
+}
