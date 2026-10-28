@@ -4,6 +4,7 @@ View: `CURRENT`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-STAGING-LATENCY-001-20261028-R02 | MVP-STAGING-LATENCY-001 | R02 | APPROVE | `e64ef52c9702540a5c5eb3a151cd19afce97b0e0` | release_scope, source_identity, backup, gateway_cache, store_isolation, fixed_egress, safety_switches, recovery | 2026-10-28T18:07:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R02.md`](RR-MVP-STAGING-LATENCY-001-20261028-R02.md) |
 | RR-MAINT-CLEANUP-20261028-003-20261028-R01 | MAINT-CLEANUP-20261028-003 | R01 | APPROVE | `24472913439acb522cd3ee71774238f6d16307b4` | merge_integrity, migration_graph, evidence_collision, regression, restore | 2026-10-28T18:27:28+08:00 | [`RR-MAINT-CLEANUP-20261028-003-20261028-R01.md`](RR-MAINT-CLEANUP-20261028-003-20261028-R01.md) |
 | RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01 | MVP-TIKTOK-MULTISHOP-AUTH-001 | R01 | APPROVE | `bfb470e5e76d1ddc52facee21708ffead73c16d3` | authorization, store_isolation, token_lifecycle, migration, regression | 2026-10-28T09:09:46Z | [`RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md`](RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R01 | MVP-STAGING-LATENCY-001 | R01 | APPROVE | `2c77b8d9a729e467d702c116ad7403e94660f979` | correctness, store_isolation, privacy, fixed_egress, cache, rate_limits, deployment_boundary | 2026-10-28T16:35:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R01.md`](RR-MVP-STAGING-LATENCY-001-20261028-R01.md) |

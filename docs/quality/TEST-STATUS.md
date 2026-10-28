@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 staging 性能专用发布 [TR R02](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R02.md) **PARTIAL（部署通过，公网性能未达完整验收）**：release `e64ef52c` 的后端 2407/43、前端合同 48/48、静态门禁和 Docker 构建通过；私有备份、六摘要、ValidateOnly/Deploy、12 容器、固定出口与已登录订单只读 UI 通过。指纹 JS 冷 MISS 1.728 秒、热 HIT 0.000 秒；20 样本公网健康 TTFB p50/p95 前后为 1.782/9.108 和 2.472/4.819 秒，非受控对照，不声称因果改善。动态 Agent 未部署，生产 No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-latency-performance-only-20261028.json)。
+
 2026-10-28 动态Agent本地候选 [TR](../reports/tests/TR-MVP-AGENT-DYNAMIC-REWRITE-001-20261028-R01.md) **PASS（本地范围）**：subject `7594a1a53ede8e0b65f8987e352d78662bb04c41`；完整后端/隔离PostgreSQL-pgvector 2335 passed / 3 POSIX平台条件跳过，前端48契约/114生产浏览器、typecheck/build、Ruff/mypy245文件、迁移034↔039、16动态边界与237安全样本通过。依赖审计无已知漏洞，两轴审查无剩余阻断。已移除旧FAQ执行/正则与LangGraph依赖；asyncio项目编排＋langchain-core @tool。没有部署或真实模型/TikTok现场验收，G5/G6/G8现场结论不变。
 
 2026-10-28 订单详情 UI [TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-DETAIL-UI-001-20261028-R02.md) staging 范围 **PASS**：合并主线 `0e4100b2` 前端类型/构建、契约 48/48、生产浏览器 113/113；手动私有备份、`ValidateOnly`/`Deploy`、12 容器、迁移头 034、四个公网路径 200。已登录真实订单电话、完整地址、规格、卖家 SKU 可见，物流默认 2 条、展开 8 条；不记录买家具体值。后端与 Agent 模式保持，无真实外发、退款或 production 发布。见[低敏证据](../../release/evidence/staging/crm-staging-order-detail-redeploy-20261028.json)。
