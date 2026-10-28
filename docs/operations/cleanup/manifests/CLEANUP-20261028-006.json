@@ -1,0 +1,112 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-006",
+  "state": "candidate",
+  "base_sha": "c5be0134224c138d39977184046f5dcf88833ab3",
+  "scope": "three exact local worktrees, three local branch refs, twelve ignored files; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-006",
+  "candidates": [
+    {
+      "worktree": ".worktrees/staging-server-ip-20261027",
+      "head": "92966e214ff5d8e562be1992ed351719320c34b6",
+      "branch_ref": "refs/heads/docs/staging-ip-close-20261027",
+      "pr": 563,
+      "merge_commit": "5d39f5eb601d874bf8b336c1b66e3482597e055c",
+      "directory_modified": "2026-10-27T11:32:39.8568335+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/pytest-cache/.gitignore",
+          "size": 37,
+          "modified": "2026-10-27T11:38:00.1692028+08:00",
+          "sha256": "3ED731B65D06150C138E2DADB0BE0697550888A6B47EB8C45ECC9ADBA8B8E9BD"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/CACHEDIR.TAG",
+          "size": 191,
+          "modified": "2026-10-27T11:38:00.1692028+08:00",
+          "sha256": "37DC88EF9A0ABEDDBE81053A6DD8FDFB13AFB613045EA1EB4A5C815A74A3BDE4"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/README.md",
+          "size": 302,
+          "modified": "2026-10-27T11:38:00.1692028+08:00",
+          "sha256": "73FD6FCCDD802C419A6B2D983D6C3173B7DA97558AC4B589EDEC2DFE443DB9AD"
+        },
+        {
+          "path": "src/tests/.artifacts/pytest-cache/v/cache/nodeids",
+          "size": 4448,
+          "modified": "2026-10-27T11:41:09.6312604+08:00",
+          "sha256": "811F000241EA5E7E2EACEC788014448D69CD419F373D58F33FAC678872397F7E"
+        },
+        {
+          "path": "src/tests/backend/__pycache__/_support.cpython-311.pyc",
+          "size": 988,
+          "modified": "2026-10-27T11:37:59.3646384+08:00",
+          "sha256": "7EE62F30B7F74A5D1B4C3D7A40B49D755853DA29C6A794E8EC869A24EB1EF6A9"
+        },
+        {
+          "path": "src/tests/backend/runtime_infrastructure/__pycache__/test_split_ingress_staging_assets.cpython-311-pytest-9.1.1.pyc",
+          "size": 111872,
+          "modified": "2026-10-27T11:37:57.9937714+08:00",
+          "sha256": "4F09E1B99119B438C7A18D63A54B8D7C31EF15080A81807FF74E454BC0766D07"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/tiktok-empty-orders-evidence-20261021",
+      "head": "d8abf2fd6283197b1bb51d8dd4a27b4e190c637d",
+      "branch_ref": "refs/heads/docs/tiktok-empty-orders-staging-20261021",
+      "pr": 486,
+      "merge_commit": "0c5ab0f13ff61e37d065253fabbbf3ecaa7d1bba",
+      "directory_modified": "2026-10-21T09:24:34.1613295+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/empty-orders-evidence-pr-body.md",
+          "size": 965,
+          "modified": "2026-10-21T09:28:34.9348221+08:00",
+          "sha256": "1D4B8825A5448523F272A52040AD25E940806DFBC9AC9091646CD779C210BF96"
+        },
+        {
+          "path": "src/tests/.artifacts/empty-orders-staging/deploy.json",
+          "size": 2911,
+          "modified": "2026-10-21T09:24:55.4188265+08:00",
+          "sha256": "3CBE156D7A96E906F9A88FB9883514D8E8190C02789D1C5CB44601A89940734E"
+        },
+        {
+          "path": "src/tests/.artifacts/empty-orders-staging/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-21T09:24:55.4177527+08:00",
+          "sha256": "727D209ED5F5305ADFB5AFDBAF5E5F95867E6F1F4978318EAA51DD2CD872A7C7"
+        },
+        {
+          "path": "src/tests/.artifacts/empty-orders-staging/validate.json",
+          "size": 2589,
+          "modified": "2026-10-21T09:24:55.4193655+08:00",
+          "sha256": "3F575E427ADA3C6D45A5556555C48B040542D37C0F60431193DCCDACFD0566FF"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/composer-layout-20261020",
+      "head": "336a74ee995b4da81536bad9a0e2f50cd7fcddd4",
+      "branch_ref": "refs/heads/docs/customer-sidebar-staging-20261020",
+      "pr": 481,
+      "merge_commit": "f076c7f82f19f3ee54ec74f8ae4ab28a1ada38b2",
+      "directory_modified": "2026-10-20T23:25:26.4427615+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-pr-body.md",
+          "size": 1417,
+          "modified": "2026-10-21T01:59:24.7984666+08:00",
+          "sha256": "E0198F6B35E245A78945CE60817FB1BACF3805F9B1F9D3D12697E5676B6E391F"
+        },
+        {
+          "path": "src/tests/.artifacts/probe-order-tracking.py",
+          "size": 2158,
+          "modified": "2026-10-21T02:06:07.4598781+08:00",
+          "sha256": "1D9320E19BE9A046713517BEA39B62CC3ABA66C40A121B0D2B06D50DB3341E3C"
+        }
+      ]
+    }
+  ]
+}
