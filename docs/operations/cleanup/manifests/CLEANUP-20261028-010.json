@@ -1,0 +1,133 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-010",
+  "state": "candidate",
+  "base_sha": "079a01456f2af0094b5266bd7849a5ac2e1fd9b8",
+  "scope": "three exact detached worktrees and seventeen ignored deployment artifacts archived before removal; no branch or remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-010",
+  "candidates": [
+    {
+      "worktree": ".worktrees/basic-reception-ui-deploy-20261023",
+      "head": "d82a3445cb00db50182fbadd45b977614e59ab5e",
+      "directory_modified": "2026-10-23T14:47:53.7906547+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/backend-build.log",
+          "size": 3178,
+          "modified": "2026-10-23T14:49:46.8138378+08:00",
+          "sha256": "0A981BE7A252FAD28B6219684821F351FC43EEB932AEAA98D6EB8EB76E30B704"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/backup.sh",
+          "size": 864,
+          "modified": "2026-10-23T11:19:10.5133980+08:00",
+          "sha256": "F65E44EE3932A83635BB4256F11027A0D3885FBB05A439EE88396EB6E88FE106"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/frontend-build.log",
+          "size": 5365,
+          "modified": "2026-10-23T14:52:45.2403441+08:00",
+          "sha256": "C51595186342FBD1AADB3275E5E9BE25D2509E0A7707577A17C5ED7D00764EEC"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/gate.ps1",
+          "size": 9151,
+          "modified": "2026-10-23T11:18:46.5198891+08:00",
+          "sha256": "9C480D9506E3CE615BBD01AD86DFBFA1BB995012F695135288EBFFC366DB3391"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/images.tar",
+          "size": 174550016,
+          "modified": "2026-10-23T14:53:15.4217993+08:00",
+          "sha256": "3EAB5F3BC22DB1C7054B3C71BCAD73CD7126CA61A790D759453C1E90CFED07BE"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/remote-prep.sh",
+          "size": 1803,
+          "modified": "2026-10-23T14:54:05.8133617+08:00",
+          "sha256": "CDD1561CDE074A39BC1DCF526A68973F4A477533926B40E4E534D0C2ED2F1380"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/remote-status.sh",
+          "size": 421,
+          "modified": "2026-10-23T14:58:34.3423366+08:00",
+          "sha256": "74C17249909CECC5A822F1DE93D341F778D0540337188DE0C93D80DE58246DCC"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-direct-staging-20261023/source.bundle",
+          "size": 7429981,
+          "modified": "2026-10-23T14:49:12.9711567+08:00",
+          "sha256": "9950A15548A82A70D1E4B301C945F921B2E0394FCAEA8F8AF09858C165348B86"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/knowledge-all-category-deploy-main-20261023",
+      "head": "c7f601fdf27655235449deb66e634a4e2ad27245",
+      "directory_modified": "2026-10-23T17:08:50.2638536+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/knowledge-all-deploy/check-staging-category.py",
+          "size": 1836,
+          "modified": "2026-10-23T17:35:21.4331778+08:00",
+          "sha256": "E2DF2BD8E5935EFB18C7E31A1B5990D3E68E1D90EA2BFEDD6E2981EC3F99AFBB"
+        },
+        {
+          "path": "src/tests/.artifacts/knowledge-all-deploy/crm-frontend-c7f601fd.tar",
+          "size": 64333824,
+          "modified": "2026-10-23T17:23:38.3855023+08:00",
+          "sha256": "18F7558285318B9812C5C71005D1A9C41793FC8748A0564312648710AE3EBEA5"
+        },
+        {
+          "path": "src/tests/.artifacts/knowledge-all-deploy/run-staging-gate.ps1",
+          "size": 3799,
+          "modified": "2026-10-23T17:28:02.2494255+08:00",
+          "sha256": "86E229D6DA68024887E303B233A5444DCB2389741A54CA86155B0E35C70366F6"
+        },
+        {
+          "path": "src/tests/.artifacts/knowledge-all-deploy/source-c7f601fd.bundle",
+          "size": 7600577,
+          "modified": "2026-10-23T17:25:44.9566313+08:00",
+          "sha256": "56AB059F59D7392415AD531672BCF64254A03B37A727B0D2D7A0DD0032107FD4"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-store-label-deploy-20261019",
+      "head": "e82b8ddba4297cabbc443311bb852952bb61d765",
+      "directory_modified": "2026-10-19T10:59:40.4872187+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/Invoke-StoreLabelStaging.ps1",
+          "size": 4180,
+          "modified": "2026-10-19T11:12:34.8448013+08:00",
+          "sha256": "44F74217BB42F0CC712A9EAB96709AA2BADBA638EA4A0BD3C26027786E549F98"
+        },
+        {
+          "path": "src/tests/.artifacts/__pycache__/prefetch_single_manifest.cpython-311.pyc",
+          "size": 3929,
+          "modified": "2026-10-19T11:27:59.9461938+08:00",
+          "sha256": "AEE65EE8DDA6D4B83E7F48A4745D0F1CC8AE3BE597109BB6B6408B9F9490712F"
+        },
+        {
+          "path": "src/tests/.artifacts/prefetch_single_manifest.py",
+          "size": 2145,
+          "modified": "2026-10-19T11:27:34.2956465+08:00",
+          "sha256": "AC7EB68FF12532FB552E2FC650C7C0F34D0F9CD980A60FCB6BAB171E5BE4E419"
+        },
+        {
+          "path": "src/tests/.artifacts/store-label-e82b8ddb.bundle",
+          "size": 6358033,
+          "modified": "2026-10-19T11:04:14.8678849+08:00",
+          "sha256": "5A5F8A69CDA7C3FB79132022C9B8E9C622B7A275D589B5051DA21BC2E5ABDCAB"
+        },
+        {
+          "path": "src/tests/.artifacts/store-label-frontend-image-e82b8ddb.json",
+          "size": 2423,
+          "modified": "2026-10-19T11:01:45.9797284+08:00",
+          "sha256": "AA79FFEDD0FECF1AC8C59402419A5565CE3F7B14B4F542CE7BC7BD32E4E15234"
+        }
+      ]
+    }
+  ]
+}
