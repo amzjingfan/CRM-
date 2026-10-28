@@ -1,0 +1,11 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-054",
+  "state": "deleted",
+  "execution_main_sha": "0a730d6444b47ec0e32c90643142ecae79351ecf",
+  "deleted_branch_count": 1,
+  "scope": "unoccupied old staging latency index branch after its worktree switched to the active nginx branch; original commit already ancestor of local main; no worktree, file or remote operation",
+  "ref": "refs/heads/docs/staging-latency-index-current-20261028",
+  "head": "a709e4a02ce164171b29ac3ca2d8131cd16535b5",
+  "archive_ref": "refs/archive/CLEANUP-20261028-054/docs/staging-latency-index-current-20261028"
+}
