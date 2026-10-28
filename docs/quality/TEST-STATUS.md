@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-29 浏览器并发认证刷新 [TR R11](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R11.md) **PARTIAL（本地通过，现场待验）**：源码候选 `eab7e2c2` 的 51 契约、129 生产浏览器、类型及构建通过，lint 0 error/8 既有 warning；迟到只读订单 POST 不再启动第二次刷新，原幂等键保持。双轴审查通过，尚未合入或部署；全站实际回显和公网耗时不能由合成测试证明，WAN 抖动期间公网 p50/p95 仅作诊断。
+
 2026-10-28 数据看板渐进回显 [TR R07](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R07.md) **PARTIAL（局部发布通过）**：主线候选 `fe627e4f` 已由 [PR #597](https://github.com/CP11-gh/CRM/pull/597) 合入 main `f440fb64`，类型/构建、48 契约、125 生产浏览器通过，lint 0 error/8 既有 warning；该 PR 的 CI run 40718646905 两作业均 runner 空/0 步骤失败，不计通过，按已批准本地替代门禁记录；慢趋势/预警与预警 503 回归确认核心指标独立回显且不伪装零。独立 staging release `f9bfc109` 对应 48/121，通过精确镜像、私有备份、ValidateOnly/Deploy、12 容器、公网四路径和已登录默认店铺看板只读核对。已登录跨店切换工具超时，现场结果仍缺；公网 `/dashboard` 单次 TTFB 6.476 秒，不能宣称整体提速。动态 Agent、后端和人工发送边界未变；完整冷热、跨店、失败/限流验收仍待完成。见 [低敏证据](../../release/evidence/staging/crm-staging-dashboard-progressive-20261028.json)。
 
 2026-10-28 基础接待并行启动 [TR R06](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R06.md) **PARTIAL（局部发布通过）**：主线候选 `ef4beff3` 类型/构建、48 契约、123 生产浏览器通过，源码 [PR #595](https://github.com/CP11-gh/CRM/pull/595) 已合入 main `b84cbb6d`；该 PR 两项 GitHub CI 均是 runner 空/0 步骤失败，不计通过，采用项目已批准的本地替代门禁。专用 staging release `97ac71ef` 对应 48/119，通过私有备份、ValidateOnly/Deploy、12 容器、公网 6 路径及已登录三页面只读核对。第一次部署因空 GHCR 凭据停止于拉镜像，旧前端未切换，重试成功并注销临时凭据。公网/隧道等待仍主导，不将公网 p50/p95 作为该应用改动的绝对阈值；同条件真实回显及全站冷热/跨店/失败限流验收仍缺。动态 Agent 未部署，安全开关保持。见 [低敏证据](../../release/evidence/staging/crm-staging-reception-bootstrap-20261028.json)。

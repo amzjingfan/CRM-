@@ -14,6 +14,7 @@
 
 - `POST /auth/login`、`GET /auth/me`、`POST /auth/refresh`、`POST /auth/logout`。
 - 浏览器会话接口提供 HttpOnly Cookie 与 CSRF 保护；失败统一返回认证/权限错误。
+- 前端同一页面中并发请求遇到 401 时共用一次浏览器 Cookie 刷新；已在本批次刷新后才返回 401 的 GET/HEAD 及已确认只读的会话搜索、客户侧栏搜索/订单详情/通用与增强物流 POST 直接重试。其他写请求仍经刷新后重试，不能据此省略刷新。每个原请求最多重试一次，POST/PATCH 等复用原幂等键；刷新失败保持未认证结果，不保存 Token 或扩大权限。
 
 ### 看板
 

@@ -139,13 +139,45 @@ async function rawRequest(path: string, init: RequestInit = {}): Promise<Respons
   return response;
 }
 
+let browserRefreshInFlight: Promise<boolean> | null = null;
+let browserRefreshVersion = 0;
+
+function isReadOnlyRequest(path: string, method: string): boolean {
+  if (method === "GET" || method === "HEAD") return true;
+  if (method !== "POST") return false;
+  // 搜索与订单详情使用 POST 隐藏买家查询条件，但服务端只读取授权店铺数据。
+  return path === "/workspace/sessions/search"
+    || /^\/workspace\/sessions\/[^/]+\/sidebar\/(search|orders\/(detail|standard-tracking|enhanced-tracking))$/.test(path);
+}
+
+function refreshBrowserSession(): Promise<boolean> {
+  if (typeof window === "undefined") return rawRequest("/auth/browser/refresh", { method: "POST" }).then((response) => response.ok);
+  if (!browserRefreshInFlight) {
+    // 同页并发 401 共用一次 Cookie 刷新，避免弱网下重复往返和旧响应竞争。
+    const refresh = rawRequest("/auth/browser/refresh", { method: "POST" }).then((response) => {
+      if (response.ok) browserRefreshVersion += 1;
+      return response.ok;
+    });
+    browserRefreshInFlight = refresh;
+    void refresh.then(
+      () => { if (browserRefreshInFlight === refresh) browserRefreshInFlight = null; },
+      () => { if (browserRefreshInFlight === refresh) browserRefreshInFlight = null; },
+    );
+  }
+  return browserRefreshInFlight;
+}
+
 export async function requestApi<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   // 同一次业务请求的 401 刷新重试必须复用原键，避免首个响应丢失后重复写入。
   const stableInit = withStableIdempotencyKey(init);
+  const refreshVersionAtStart = browserRefreshVersion;
   let response = await rawRequest(path, stableInit);
   if (response.status === 401 && retry && path !== "/auth/browser/refresh") {
-    const refreshed = await rawRequest("/auth/browser/refresh", { method: "POST" });
-    if (refreshed.ok) response = await rawRequest(path, stableInit);
+    // 只读请求若晚于同批次 Cookie 刷新才返回 401，直接用新登录态重试一次。
+    const alreadyRefreshed = typeof window !== "undefined"
+      && isReadOnlyRequest(path, (stableInit.method ?? "GET").toUpperCase())
+      && browserRefreshVersion !== refreshVersionAtStart;
+    if (alreadyRefreshed || await refreshBrowserSession()) response = await rawRequest(path, stableInit);
   }
   if (response.status === 204) return undefined as T;
   const body = (await response.json().catch(() => null)) as ApiResponse<T> | null;

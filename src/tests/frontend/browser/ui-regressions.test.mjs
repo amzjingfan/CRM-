@@ -1040,6 +1040,59 @@ test("re-add uses the same store and deletion needs a second confirmation", asyn
   }
 });
 
+test("concurrent expired settings requests share one browser refresh and both recover", async () => {
+  const attempts = new Map();
+  let initialRequests = 0;
+  let releaseInitialRequests;
+  const initialRequestsReady = new Promise((resolve) => { releaseInitialRequests = resolve; });
+  let refreshCalls = 0;
+  const headers = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" };
+  const { context, page } = await openPage("/settings/channels", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/settings/*", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (route.request().method() !== "GET" || !["/v1/settings/stores", "/v1/settings/channels"].includes(path)) {
+        await route.fallback();
+        return;
+      }
+      const attempt = (attempts.get(path) ?? 0) + 1;
+      attempts.set(path, attempt);
+      if (attempt === 1) {
+        initialRequests += 1;
+        if (initialRequests === 2) releaseInitialRequests();
+        await initialRequestsReady;
+      }
+      await route.fulfill({
+        status: attempt === 1 ? 401 : 200,
+        contentType: "application/json",
+        headers,
+        body: JSON.stringify(attempt === 1
+          ? { code: 401, message: "expired", data: null }
+          : { code: 0, message: "ok", data: path.endsWith("/stores") ? [store] : [storeChannel] }),
+      });
+    });
+    await browserContext.route("**/v1/auth/browser/refresh", async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.fallback();
+        return;
+      }
+      refreshCalls += 1;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      await route.fulfill({ status: 200, contentType: "application/json", headers,
+        body: JSON.stringify({ code: 0, message: "ok", data: {} }) });
+    });
+  });
+  try {
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor({ timeout: 5000 });
+    assert.equal(refreshCalls, 1);
+    assert.equal(attempts.get("/v1/settings/stores"), 2);
+    assert.equal(attempts.get("/v1/settings/channels"), 2);
+  } finally {
+    await context.close();
+  }
+});
+
 test("channel authorization without an internal store explains the prerequisite", async () => {
   const { context, page } = await openPage("/settings/channels");
   try {
