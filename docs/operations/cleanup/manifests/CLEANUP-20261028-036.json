@@ -1,0 +1,171 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-036",
+  "state": "candidate",
+  "base_sha": "793b5aad213d435cd63bcba7eb29cb7baf659b77",
+  "scope": "one exact merged-PR old Agent debug worktree and branch; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-036",
+  "candidates": [
+    {
+      "worktree": ".worktrees/agent-debug-grounded-answer-20261027",
+      "head": "2983118c2397651aaf04506f84dfe1e0be241fd2",
+      "branch_ref": "refs/heads/fix/agent-debug-live-tracking-20261027",
+      "pr": 569,
+      "merge_commit": "bc076c5bec48f2c173dc72c4fc4fa4f58b5d10b4",
+      "directory_modified": "2026-10-27T18:49:22.5450444+08:00",
+      "untracked": [],
+      "ignored_count": 13149,
+      "ignored_paths_sha256": "849A53D6DF64F6C6A7463818B4BEF486470F8C9F9BA1D47594C402EC8A6EDE1A",
+      "cache_file_count": 13125,
+      "cache_bytes": 248302613,
+      "archive_file_count": 24,
+      "archive_bytes": 245757779,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/agent-debug-answer-pr.md",
+          "size": 1579,
+          "modified": "2026-10-27T17:27:49.6304661+08:00",
+          "sha256": "B02C4E93DDD64B1F0D34BF3A19CFE1247A7B4EE91F9962F8F997DBC2CB089FA6"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-backend-bc076c5b.tar",
+          "size": 110387200,
+          "modified": "2026-10-27T19:32:50.9035719+08:00",
+          "sha256": "CE16809DD5D3B62DA78D1842580FE7ED932B097294C1CDF2A11C0FCCC5272776"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-backend-c130326d.tar",
+          "size": 111441408,
+          "modified": "2026-10-27T18:25:02.1985466+08:00",
+          "sha256": "01A2DA264F11C5A909E515F5328ACD56797D8DDDF7ED25C5EC13BF628B09D50F"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-live-tracking-pr-body.md",
+          "size": 1091,
+          "modified": "2026-10-27T19:13:38.6289455+08:00",
+          "sha256": "F1A4493B78831403992EB95334B1D853EACA9F59B77D5B5A071BE5BB9D7B9BE3"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-low-confidence-pr.md",
+          "size": 1804,
+          "modified": "2026-10-27T18:15:21.6458089+08:00",
+          "sha256": "CB0406B6EBE68C5D7EE1974277BCF48D26207253CA01B405EC95AC2891807662"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-main-417c6762.bundle",
+          "size": 7987992,
+          "modified": "2026-10-27T17:36:25.1696131+08:00",
+          "sha256": "541AFA3F2A079D66D0F495BAC124099F4C29D2A86AC62B9CE883554DE6B00D18"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-main-bc076c5b.bundle",
+          "size": 7953936,
+          "modified": "2026-10-27T19:29:59.4229419+08:00",
+          "sha256": "2A2E494468360ADA78CF8CE18F2D2B0F8D7FDEB6F8BC6C52BB6B002E84C1F4BB"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-main-c130326d.bundle",
+          "size": 7973837,
+          "modified": "2026-10-27T18:20:09.9173899+08:00",
+          "sha256": "DE6A14CA9F64E563BB2FB095B5ADD0C3FE4B7615B65DE8653E1D52C9257D04B2"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-staging-prepare-bc076c5b.sh",
+          "size": 1827,
+          "modified": "2026-10-27T19:30:15.7985522+08:00",
+          "sha256": "177740FD4F48D526C25C74C702CEED08D4D27DFD86F07D6A98A5D84A3AA7C927"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-staging-run-417c6762.sh",
+          "size": 1455,
+          "modified": "2026-10-27T17:40:40.0169828+08:00",
+          "sha256": "3D8CAD226169F0D87F833CAABCF2879EC66F16760591BE1868FD74394322488F"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-staging-run-bc076c5b.sh",
+          "size": 1462,
+          "modified": "2026-10-27T19:33:39.1827866+08:00",
+          "sha256": "784B44AB041F16BAFD13B43E1356B9B3AAAB48D73F5501C8BB9CAE76433BD796"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-staging-run-c130326d.sh",
+          "size": 1455,
+          "modified": "2026-10-27T18:23:48.8060419+08:00",
+          "sha256": "DA302115DCBA30B69C1E56781401158E9DEDA7E4047005FF8A8C176789570B27"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-synthetic-clean/agent-debug-synthetic-policy-20261027.txt",
+          "size": 122,
+          "modified": "2026-10-27T20:13:50.4125573+08:00",
+          "sha256": "A8A6E99782DD04D734588B8E83DC1FAC405E9A472117D174336E4B9316895E3E"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-synthetic-policy-20261027.txt",
+          "size": 547,
+          "modified": "2026-10-27T18:18:17.8673108+08:00",
+          "sha256": "FA68BE7E58FFC9470D83E7C76C3695AFB18EED433846F72DD18D6DF22694BF94"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/.token_seed",
+          "size": 61,
+          "modified": "2026-10-27T18:19:49.9999231+08:00",
+          "sha256": "FC7EA8A643456356CF5B1FE7BEA27880D9342376A7A4DA80E752FA793186FD7F"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-27T17:32:53.8689347+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-27T17:32:37.8125919+08:00",
+          "sha256": "AE931F2132DAF5A320E182D19E6E031D1BE96BC440C5714C85C3DE0B731EC7B3"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-27T17:32:31.6072228+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-27T18:19:36.1654027+08:00",
+          "sha256": "7391B0EE449F8A8B1D83965E8944C18AF1203BB82DDBA57ECDEC316978B91C07"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/buildx/current",
+          "size": 76,
+          "modified": "2026-10-27T18:19:36.1088935+08:00",
+          "sha256": "AD4436223BFADF60E9921A9BE166DA1D9C454921DB007F16B8F21E5553CDE791"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/buildx/refs/default/default/igkw4aywlwpk8084c2hgd4e9x",
+          "size": 270,
+          "modified": "2026-10-27T17:32:38.3870049+08:00",
+          "sha256": "77DBCB5FEBDDB2F3C98892C3C9044B772F5EB5FAD5679A9B246C7D0269431240"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/buildx/refs/default/default/ndwi03bv4uongnkjdls45ae26",
+          "size": 270,
+          "modified": "2026-10-27T18:19:36.5951921+08:00",
+          "sha256": "77DBCB5FEBDDB2F3C98892C3C9044B772F5EB5FAD5679A9B246C7D0269431240"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/config.json",
+          "size": 42,
+          "modified": "2026-10-27T20:48:39.6562344+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/Invoke-AgentDebugStagingSsh.ps1",
+          "size": 1309,
+          "modified": "2026-10-27T17:36:53.4580382+08:00",
+          "sha256": "DFD7200D031A35640AA9ADDD2BEEE0D9247F2128A2127D05CA1EBB85D93E7CD6"
+        }
+      ]
+    }
+  ]
+}
