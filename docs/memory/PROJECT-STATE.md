@@ -4,7 +4,7 @@
 
 CANDIDATE_SUBJECT_SHA=eab7e2c207308fde34be1ca50f25d32be1670cfa，EVIDENCE_HEAD_SHA=READ_AT_GATE。最新性能IR/RR为MVP-STAGING-LATENCY-001-20261029-R11、TR为R12；工具IR/TR/RR为MVP-AGENT-TOOL-SUITE-001-20261028-R03。门店授权聚合源码经[PR #599](https://github.com/CP11-gh/CRM/pull/599)合入主线 `0eda03197efe81c271ae3de180507e9d222d3f2b`，R08索引经PR #600成为CURRENT；R09发布证据经[PR #601](https://github.com/CP11-gh/CRM/pull/601)合入主线 `b0c3efcf05ab1633972c419675755cc96dd2226f`，R09三索引经PR #602从权威主线源记录核对为CURRENT；TR R10补测经[PR #603](https://github.com/CP11-gh/CRM/pull/603)合入主线 `0896fb757a1acce92ae8ca1b636402208a17efae`，三索引已从权威主线源记录核对为CURRENT。
 
-浏览器并发认证刷新 eab7e2c2 的 51 契约、129 生产浏览器、类型、构建及双轴审查已通过；迟到订单只读 POST 复用已刷新 Cookie，写请求仍保留刷新和原幂等键。源码经 PR #605 合入 main f8c3be74；三索引从权威主线源记录重建为 CURRENT；性能专用 release 4edddffb 已从原运行 18cea7f2 摘取认证修复并手动部署 staging，仅更新前端；私有备份、精确镜像、ValidateOnly/Deploy、12 容器、三公网健康和已登录门店/渠道只读核对通过。主线动态 Agent 不纳入，真实并发 401 与全站现场回显未完成。
+浏览器并发认证刷新 eab7e2c2 的 51 契约、129 生产浏览器、类型、构建及双轴审查已通过；迟到订单只读 POST 复用已刷新 Cookie，写请求仍保留刷新和原幂等键。源码经 PR #605 合入 main f8c3be74；R11/R12 发布证据经 [PR #607](https://github.com/CP11-gh/CRM/pull/607) 合入 main `188d1b09`；从该权威主线逐条核对 IR/TR/RR 285/307/268 条源记录，三索引恢复 CURRENT；性能专用 release 4edddffb 已从原运行 18cea7f2 摘取认证修复并手动部署 staging，仅更新前端；私有备份、精确镜像、ValidateOnly/Deploy、12 容器、三公网健康和已登录门店/渠道只读核对通过。主线动态 Agent 不纳入，真实并发 401 与全站现场回显未完成。
 
 十二业务工具、六类目录、三种操作标签和原四项人工确认提议已在本地验收。后端/前端/测试与完整受测84702ae0同树，完整后端2375 passed/3 POSIX跳过；生产浏览器121、前端契约48、Ruff/格式/mypy252源文件、040往返、16动态协议/237安全样本和依赖审计通过。最终01975ab2仅导入既有入口低敏日志字段，受影响入口38 passed/3平台跳过；未冒充在该提交重跑全量。两轴技术审查闭环。PR #589精确head的CI两作业均终止于runner=0/steps=0，CI未运行，按用户持续批准采用本地替代；用户另已明确批准本PR合并及仅任务/索引/恢复摘要文档收尾。
 
