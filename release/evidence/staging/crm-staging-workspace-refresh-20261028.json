@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_workspace_parallel_refresh",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "release_source_sha": "9d6ccc208ce3b31342c8aedea98ed16181047048",
+  "mainline_code_sha": "921e3c051a0bf54d942531947faff9f98c04009c",
+  "release_base_sha": "e64ef52c9702540a5c5eb3a151cd19afce97b0e0",
+  "release_diff": ["src/frontend/app/workspace/page.tsx", "src/tests/frontend/browser/workspace-experience.test.mjs"],
+  "frontend_image_digest": "sha256:ba138da355d1e51b33e15c389004f16c238ca55787201466778c70b7c472f98c",
+  "backend_image_unchanged": "sha256:a1f05c91bb6061a0bb2ed6080175ec89d404d96402eafa7c8490921a08428c36",
+  "private_backup": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "environment_sha256": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+    "postgres_custom_dump_sha256": "0b347b2f6df8be95bffaa1636468c6181d2063495d325f3ff673decf99fca99d",
+    "minio_tar_sha256": "7219a062232e39b848802b6737d14001ea7f6829a7e8c1bafdd4e6642a2e9a3d",
+    "postgres_catalog_readable": true,
+    "minio_tar_readable": true
+  },
+  "gates": {
+    "validate_only": "validated",
+    "validate_only_sha256": "ae7a1d1757dae5c8bdcf1fb28b4726a57ef9d92ebef95d0444e6e56a1c5f2bf0",
+    "deploy": "passed",
+    "deploy_sha256": "02a80d5c1814d90aac776c5e09b663568c3a47221bb61f5b8256e38d2a941ba4",
+    "containers_healthy": 12,
+    "manual_send_store_count": 1,
+    "agent_debug_setting_preserved": true,
+    "document_setting_preserved": true
+  },
+  "verification": {
+    "release_frontend_contract": "48/48",
+    "release_frontend_browser": "118/118",
+    "mainline_frontend_contract": "48/48",
+    "mainline_frontend_browser": "122/122",
+    "mainline_typecheck": "passed",
+    "mainline_lint": "0 errors, 8 pre-existing warnings",
+    "mainline_production_build": "passed",
+    "browser_authenticated_workspace": "read-only loaded conversations and selected messages",
+    "public_health_http": [200, 200, 200],
+    "public_workspace_http": 200,
+    "public_settings_stores_http": 200,
+    "public_health_30": {"http_200": 30, "ttfb_p50_seconds": 2.6781845, "ttfb_p95_seconds": 5.600554, "connect_p50_seconds": 0.183817, "connect_p95_seconds": 2.212619},
+    "gateway_health_recent_90": {"http_200": 89, "http_504": 1, "request_p50_seconds": 0.191, "request_p95_seconds": 1.72},
+    "limit": "The public and gateway windows are observational and not matched per request. Browser synthetic tests use intercepted data; one authenticated staging page was only inspected read-only."
+  },
+  "github_actions_used_for_deployment": false,
+  "dynamic_agent_deployed": false,
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false,
+  "overall_latency_acceptance": "partial"
+}
