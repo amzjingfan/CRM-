@@ -1,0 +1,512 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-030",
+  "state": "candidate",
+  "base_sha": "fba676b5d2f1050a537a3e9b792b45695b68e072",
+  "scope": "two exact merged-PR old TikTok and logistics worktrees and branches; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-030",
+  "candidates": [
+    {
+      "worktree": ".worktrees/tiktok-bidirectional-staging-20261017",
+      "head": "9eca3d2d3c962b1b3e904c7d0b408f456f2b1924",
+      "branch_ref": "refs/heads/docs/mvp004-g3-finalize-20261017",
+      "pr": 308,
+      "merge_commit": "b90f31712cb0f9452fdb0bc0f572802e39f9f536",
+      "directory_modified": "2026-10-17T14:37:54.5105764+08:00",
+      "untracked": [],
+      "ignored_count": 46432,
+      "ignored_paths_sha256": "A3F5F7A64062C58DB3225C700F7408FE79F5FA61FDC6D2AB2FDCCE900EA9A374",
+      "cache_file_count": 46393,
+      "cache_bytes": 950717507,
+      "archive_file_count": 39,
+      "archive_bytes": 37107098,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/crm-g3-main-70d8968.bundle",
+          "size": 5571988,
+          "modified": "2026-10-17T15:22:45.8703788+08:00",
+          "sha256": "9B3397A5D1729A728DDDC2815B457D103646955B4AE28283ED33460C56AE655A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/.token_seed",
+          "size": 133,
+          "modified": "2026-10-17T15:30:08.5871965+08:00",
+          "sha256": "8C6FAA879E44B5954859B0BDB1948A48642DE814F613E642633A4B88925940D7"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-17T15:22:28.7644691+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-17T15:22:13.3336275+08:00",
+          "sha256": "B777C396F024F117B182D359FA4E196448F83C853B49A445CCB89AFB5FDE2B56"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-17T15:22:13.1979131+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-17T15:30:01.1202275+08:00",
+          "sha256": "BDB3466ACFA620FB78F0304295ACAFAF91D015FF314E893BF5857373DF3AB7A9"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/buildx/current",
+          "size": 65,
+          "modified": "2026-10-17T15:30:01.0764429+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/buildx/refs/default/default/0bxbgevrbkqdy8a56kn6g5z9m",
+          "size": 279,
+          "modified": "2026-10-17T15:23:33.6720645+08:00",
+          "sha256": "4D66D704927CD922D6576C9074107E0811BE79AAAAD95A91FE73DBFA435ECAC6"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/buildx/refs/default/default/88lkxlfulqggolv2afoog58og",
+          "size": 279,
+          "modified": "2026-10-17T15:30:01.5646434+08:00",
+          "sha256": "4D66D704927CD922D6576C9074107E0811BE79AAAAD95A91FE73DBFA435ECAC6"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/buildx/refs/default/default/nzdnps54ohp3e9ht7ka56mf99",
+          "size": 272,
+          "modified": "2026-10-17T15:22:14.7262032+08:00",
+          "sha256": "348B71B05B2A4EBB035C0BDE20C41D800C713D2F23B191F47125D5F068C6A8C7"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-g3-70d8968/config.json",
+          "size": 120,
+          "modified": "2026-10-17T15:34:56.8411217+08:00",
+          "sha256": "6A9C8E2CAC9036A0A85E2528D21F86C5D38872076C906C423899EE486EEA2DF5"
+        },
+        {
+          "path": "src/tests/.artifacts/fetch-g3-frontend-blob.py",
+          "size": 1080,
+          "modified": "2026-10-17T15:35:20.1193599+08:00",
+          "sha256": "B0D28C38E42962B534AD71D42F920C2EEDAE0DDF1FEE52D3BC1022CAF5FC8FFE"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-close-pr-body.md",
+          "size": 852,
+          "modified": "2026-10-17T16:02:38.3494059+08:00",
+          "sha256": "C89E8AAA6ADB22EA0297C0A501004159AA3936BD98832A87D9E064CB00F2B3FB"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/blobs/sha256/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917",
+          "size": 15656953,
+          "modified": "2026-10-17T15:35:53.1036236+08:00",
+          "sha256": "9CEE87E057474714536A92E69EDD286EA5C3BE1FAED5630837EFB67460C9C917"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:38.7585943+08:00",
+          "sha256": "6000F5E28989B87BC269CD84B878906886261CEB41E0FBE5D11ACF2D3F9D99A5"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:35.1996263+08:00",
+          "sha256": "6024D0205CF987C0DBE0DAACA0B6AA49DA56A0676FA34E3E97A023E08D3B4EA4"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:34.9186381+08:00",
+          "sha256": "F285AF672B55FD59E25DCA58671CB7037C0AEF7305EC7EB34C1BD67E9D727142"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:35.0978344+08:00",
+          "sha256": "505F6B8A42835B157759E03F8515CB07FA2F948FA7AD2F2E8454FBEC1272710F"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000004.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:34.9318003+08:00",
+          "sha256": "CFC95F2C7907AF975D13E7A73AEBD526DD8132EAFE76AEFE3E503D39C2B6FA42"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:35.7436572+08:00",
+          "sha256": "E49B77D3D3D176CC91CFCFD3B34CEB866D383FDB62C24CDFE29A6F188949B19B"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:36.8461876+08:00",
+          "sha256": "8056D8308F30505B7A8E57E70ADFE457031F59B693E56943C9376F0AB6061D67"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:35.4370253+08:00",
+          "sha256": "D7BC801062EA0BF3A0AA4420F92602CA239C73C15D72EB215FEDEA6F5237E520"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:53.0021331+08:00",
+          "sha256": "0090C761ADA1E69A55A50257BD1AD27FA4D792883F7F4F04171FF78862A494DC"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:39.7825428+08:00",
+          "sha256": "C264A5C33570F56992CF4CA1DCF40E85075B4D04386653F561FF44226C8CABDD"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:42.0529395+08:00",
+          "sha256": "D3F34CEDC97EE2B3597FB035BD1E85D432FE391C1C6A540D7C3D6255040A9393"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:41.6118046+08:00",
+          "sha256": "591C8C67A4805ED80D688608202DB7FB9BCB387824C0847F8C7DD750F0536998"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:42.8519913+08:00",
+          "sha256": "6C55B36947E3535E16009FA39149BD9D8DEC6CBA5AF1C26C45F47BC30F623C62"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-17T15:35:42.0560836+08:00",
+          "sha256": "B1A53F7AD0E02BB88814E5E462B5329B2A95B1AE45BA56797CEA1955F8D16019"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-frontend-oci-cache/parts/9cee87e057474714536a92e69edd286ea5c3be1faed5630837efb67460c9c917/000014.part",
+          "size": 976889,
+          "modified": "2026-10-17T15:35:42.5396567+08:00",
+          "sha256": "0D231DE3A6544E87AE36F51829763CD941848E6648A73D560E1A761BAF8EB9EA"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-platform-readback.py",
+          "size": 2255,
+          "modified": "2026-10-17T15:50:40.6179900+08:00",
+          "sha256": "A8EB0EB3EE4CED92656625E9F817D8B70DF7647D9ACD3E58B80C517096500C67"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-pr-body.md",
+          "size": 2100,
+          "modified": "2026-10-17T15:58:11.1892013+08:00",
+          "sha256": "FABF8F2F93381EF5C0C33F7D74F6FBB9300E609A3F737E8D9728A83E13F948A4"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-reply-audit.py",
+          "size": 3529,
+          "modified": "2026-10-17T15:53:10.1259713+08:00",
+          "sha256": "CEE4BD5693C91DF9CDA22794708CA39E4AE69BF5EC710736D1B573CFAC8B650A"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-runtime-audit.py",
+          "size": 2090,
+          "modified": "2026-10-17T15:43:37.1042307+08:00",
+          "sha256": "731102AC57D25A84569396354937B7A390E8627B65D09340107F3E36E3768217"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-send-audit.py",
+          "size": 2766,
+          "modified": "2026-10-17T15:49:39.9084044+08:00",
+          "sha256": "218A2028B655D16BB430359FA1D97D7F4820313CF51FB33D59872925FE13B64A"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-staging-gate.ps1",
+          "size": 1434,
+          "modified": "2026-10-17T15:30:53.7276599+08:00",
+          "sha256": "E8C1A1E3DD9E9A5E3CD0D560394A0EEEA49E1E04AAFFFC89636CC7E2C1F60542"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-workbench-bidirectional-final.jpg",
+          "size": 62389,
+          "modified": "2026-10-17T16:05:01.8150100+08:00",
+          "sha256": "28988718DF7D89C733D83ED0FD4BB2120A9537643FDC58149D8606CF2B627EB8"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-workbench-bidirectional.jpg",
+          "size": 69819,
+          "modified": "2026-10-17T15:53:43.8354037+08:00",
+          "sha256": "74728C0AED2B001F0B6C0DE50DA9223EE4665FAB17A5585079ECBB716E8FAA51"
+        },
+        {
+          "path": "src/tests/.artifacts/g3-workbench-sent.jpg",
+          "size": 69912,
+          "modified": "2026-10-17T15:51:53.3059659+08:00",
+          "sha256": "170B53BD5622F5A39EF4726583FCDC1D595CF90E8C985F57AA69B7B968E69737"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-mvp004-body.md",
+          "size": 1794,
+          "modified": "2026-10-17T15:18:48.0389188+08:00",
+          "sha256": "96991A217B3E6CF9AD23B0F26B266E8200D6EF767C0CEDCC7A59A850AF41E594"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-logistics-zh-build-20261021",
+      "head": "91ff80d24e0825988d2472f58179a51ffb35ff71",
+      "branch_ref": "refs/heads/docs/workspace-tracking-index-current-20261021",
+      "pr": 497,
+      "merge_commit": "8830d6c88ef18eea36985bc81e7816ff702005ad",
+      "directory_modified": "2026-10-21T17:32:48.0212850+08:00",
+      "untracked": [],
+      "ignored_count": 33104,
+      "ignored_paths_sha256": "96EA77A4D39ED1C764A223570922987461BA1E3851ACD93464651200B5E9518F",
+      "cache_file_count": 33065,
+      "cache_bytes": 547138036,
+      "archive_file_count": 39,
+      "archive_bytes": 14061143,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/backend-workspace-logistics-zh-770e.json",
+          "size": 2046,
+          "modified": "2026-10-21T17:34:53.0799090+08:00",
+          "sha256": "21F7653E774C6BD54C9C7380A6830F7CCA3C10D20F4EBDC030E422453245E4A9"
+        },
+        {
+          "path": "src/tests/.artifacts/build-workspace-translation-display.ps1",
+          "size": 2105,
+          "modified": "2026-10-21T18:09:39.9277431+08:00",
+          "sha256": "5E3183E3A74E0441761A4B048DC96C64FED7341A5F39A0CDC1DBF23EA4123F61"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/.token_seed",
+          "size": 133,
+          "modified": "2026-10-21T17:37:38.0929352+08:00",
+          "sha256": "DE4CC8FF70023C6BCA7FD666658E85988735DDA4F22F33BF2D9E9BE5F830BBB6"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-21T17:34:42.9975965+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-21T17:34:19.9031458+08:00",
+          "sha256": "B4535A05D3993297F3800AF9661FCED5C3D3581F6D2EAB279F6CFA385FB84944"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-21T17:34:19.8169605+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-21T17:35:16.0495103+08:00",
+          "sha256": "057B48EEAACB5BB65C898EC2B86AA72707AB792250EA20C34B202A5AA684042A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/buildx/current",
+          "size": 65,
+          "modified": "2026-10-21T17:38:22.6777962+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/buildx/refs/default/default/pb0956541fmnp5ljs2ndayk06",
+          "size": 279,
+          "modified": "2026-10-21T17:35:16.3869135+08:00",
+          "sha256": "7E30EBD1782FA75960A66029A15BF5FB69ACFE67FE16C329BBC0F7E97117229D"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/buildx/refs/default/default/wlxsiywk28d8r9p1h61x53x79",
+          "size": 272,
+          "modified": "2026-10-21T17:34:20.8204669+08:00",
+          "sha256": "03F3065D6293A56EC3A418C7C42EB709AC8534770AFBF6D192E9A61E929BC471"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-logistics-zh/config.json",
+          "size": 42,
+          "modified": "2026-10-21T17:38:33.5557049+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/.token_seed",
+          "size": 133,
+          "modified": "2026-10-21T18:12:38.6014741+08:00",
+          "sha256": "C03DE32E071CA033511A530AE3DFBDAE648B25A1D041D9E28065A0098B969921"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-21T18:09:52.8565529+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-21T18:09:50.0514789+08:00",
+          "sha256": "33936D8ECAD002DBFD39A67E44DB52CD8BD2471A1D9633678F476285E1E08B21"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-21T18:09:49.9847198+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-21T18:12:23.4190497+08:00",
+          "sha256": "6B384BFCBE4C28F564E5AC1C342F27A10D62F49B446D3B034D2B4E4E7CED32C0"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/buildx/current",
+          "size": 65,
+          "modified": "2026-10-21T18:12:23.2594893+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/buildx/refs/default/default/rl9exrf47bp2prih7rmpzol4t",
+          "size": 272,
+          "modified": "2026-10-21T18:12:25.2121314+08:00",
+          "sha256": "03F3065D6293A56EC3A418C7C42EB709AC8534770AFBF6D192E9A61E929BC471"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/buildx/refs/default/default/v297thtbsfv745vf0b23k07xo",
+          "size": 279,
+          "modified": "2026-10-21T18:09:50.5646912+08:00",
+          "sha256": "7E30EBD1782FA75960A66029A15BF5FB69ACFE67FE16C329BBC0F7E97117229D"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-workspace-translation-display/config.json",
+          "size": 123,
+          "modified": "2026-10-21T18:12:47.2061802+08:00",
+          "sha256": "D7B2E7B1F35A192CC901ADD49F0FBAF048F71D5962089DFF2ACF5DF9E78AFDC5"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-workspace-logistics-zh-770e.json",
+          "size": 2152,
+          "modified": "2026-10-21T17:38:07.1214317+08:00",
+          "sha256": "9B4813EED20D48D115D95DA95AE1094B26455F59829E859FAC51157511225611"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-backup-translation-display.sh",
+          "size": 517,
+          "modified": "2026-10-21T18:11:32.8740228+08:00",
+          "sha256": "7A2BBBE7424D0622D64F7B81DCD9034748A0B3F4CE7BCA6EE41F6175C20011B6"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-check-translation-display.sh",
+          "size": 1289,
+          "modified": "2026-10-21T18:13:15.8826415+08:00",
+          "sha256": "4024E5B891A3870D4117C0E7E78FFF5DE6D50254C09BD77F2E8AC338E32E1A80"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-gate-translation-display.sh",
+          "size": 3518,
+          "modified": "2026-10-21T18:14:48.4387356+08:00",
+          "sha256": "7FC9BB03A8C12281AF4AC84241C5DE272AA7D230FB6D2C6CE2B9D7CD72F776ED"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-prefetch-translation-display.sh",
+          "size": 1624,
+          "modified": "2026-10-21T18:13:37.7760923+08:00",
+          "sha256": "3C1C9A8C711D78455A5307085BF048A716F93907792D99DDEB57A455EC30FF1D"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-source-translation-display.sh",
+          "size": 666,
+          "modified": "2026-10-21T18:10:57.4056543+08:00",
+          "sha256": "A915D28F9143BF920443C4182DA58A53CC54F2057EE3983AE969317D8D6B7EB9"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-logistics-backup.sh",
+          "size": 507,
+          "modified": "2026-10-21T17:37:48.2382424+08:00",
+          "sha256": "D06C2EF90AA67551575EE754CEA2B7829010E0302AB9925761EA784F8750A37C"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-logistics-check.sh",
+          "size": 1277,
+          "modified": "2026-10-21T17:38:56.8897780+08:00",
+          "sha256": "4C7FF54D98E9020D68AFC0B2536BD25791182B650F7EE5FAB9DF2FB335EB2941"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-logistics-gate.sh",
+          "size": 3476,
+          "modified": "2026-10-21T17:40:44.4720713+08:00",
+          "sha256": "66BEE2EF22AC9ED793FD2EC57E89D4EE0EEA152F105A2E0DA9BE02A37F666FF2"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-logistics-main-770ec69a.bundle",
+          "size": 7013303,
+          "modified": "2026-10-21T17:36:23.9299469+08:00",
+          "sha256": "FBF979DE4A7BA0C070E6C0DD8C79349C66635B85EF46DD7AD45929482DAE5A47"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-logistics-prefetch.sh",
+          "size": 1602,
+          "modified": "2026-10-21T17:39:45.9834873+08:00",
+          "sha256": "A1AED840E14741B32FEF80EA7053B86C7DD0F9432FC7E8F0ABAFCD531379C760"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-backend-build.log",
+          "size": 3456,
+          "modified": "2026-10-21T18:12:47.0667077+08:00",
+          "sha256": "26DB02A43921756BD2BFD67664D0973F6F90D9E0E533755C8DE31D7D601E3576"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-backend-metadata.json",
+          "size": 2053,
+          "modified": "2026-10-21T18:12:47.0667077+08:00",
+          "sha256": "30092AC601051A9EFD67A804457162A910B5E09DED4B62741A906C7A24316879"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-evidence-pr.txt",
+          "size": 778,
+          "modified": "2026-10-21T18:30:41.1559582+08:00",
+          "sha256": "8C81DB614ADE397EC7773211BA8694C89B4BA5EA00BF0E7B748D6A82EECFA837"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-f98dca4e.bundle",
+          "size": 7010116,
+          "modified": "2026-10-21T18:10:26.9415701+08:00",
+          "sha256": "69833EA946A32B686C9080E9A7E77B40475F84196649CDBEC156047210C38CDB"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-frontend-build.log",
+          "size": 5581,
+          "modified": "2026-10-21T18:12:22.8597628+08:00",
+          "sha256": "3764A64DEBA76828F228F63332E37202CD9D0E53C128AA22C9A3F3B05099659F"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-frontend-metadata.json",
+          "size": 2159,
+          "modified": "2026-10-21T18:12:22.8745946+08:00",
+          "sha256": "4F2104E13A64EDC07410DA6C84D98D7A47493EA375E5B851C99C09FADDB80DDC"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-index-pr.txt",
+          "size": 479,
+          "modified": "2026-10-21T18:33:27.8315256+08:00",
+          "sha256": "8CDA557503040C8CC04C174F12C42923C9E10816B7FED990FCA6380E5BCF4D3F"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-translation-display-pr.txt",
+          "size": 704,
+          "modified": "2026-10-21T18:06:19.6634494+08:00",
+          "sha256": "CDC298CA9C03F1FBF21DE86A40B5F46894AA7F5404A0F7A8B4269C402E7151D5"
+        }
+      ]
+    }
+  ]
+}
