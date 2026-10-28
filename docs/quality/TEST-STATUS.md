@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 Agent 调试工具加知识 [TR R08](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R08.md) **PASS**：`main=5f0feb7f` 的后端 `sha256:6d50f5dd…f7a20` 手动部署 staging，来源、私有备份、迁移头和健康检查通过。TikTok US 店铺同一审批绑定合成文件的纯知识 trace `ae1d5d67` 显示七天回答与引用；授权会话物流加知识 trace `35c0f2fd` 同时显示已送达、七天规则、`query_logistics:succeeded` 与文件引用，两条均为 `succeeded / human_review`。测试后 Agent 已保存解绑且文件软删除；无平台发送。原本地隔离数据库 2460 passed/3 skipped，237 样本安全评测通过。GitHub #573 两作业零步骤失败，经用户仅本 PR 批准本地替代。知识库旧文案仍误称文档检索未接入，另行修正；production G8 No-Go。
+
 2026-10-28 Agent 调试文件知识格式修复候选 [TR R07](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07.md) 综合 `PARTIAL`：已部署主线 `30b29c96` 的纯知识回答在 staging 显示七天事实与文件引用，混合物流加知识问题因模型输出 `answer:other` 未显示建议。新 subject `c63421fa` 仅将绑定文件调试草稿温度固定为 0；隔离 PostgreSQL/pgvector 全套 2460 passed/3 skipped，Ruff、mypy、锁文件和 237 样本确定性安全评测通过，受控真实模型格式探针 3/3 有效。本 subject 尚未部署，完整同轮链路需 staging 复测；按用户要求保留同一测试文件至成功后统一清理，零平台发送，production No-Go。
 
 2026-10-28 Agent 调试知识输出候选 [TR R06](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06.md) 综合 `PARTIAL`：subject `d368b529` 的隔离 PostgreSQL/pgvector 全套 2460 passed/3 skipped，Ruff、mypy、锁文件及 237 样本确定性安全评测通过。主线 `8096728f` 已手动部署 staging，但保留的文件知识单问 trace `4bb7170b` 在独立复核前因草稿两个逗号被位置 DLP 低置信拒绝；新候选通过严格输出 Schema 的受控 DeepSeek 单次探针，完整 Agent 工具加知识现场链路仍待新版本部署验证。保留唯一合成文件的审批与绑定直至成功后统一清理；零平台发送，production No-Go。

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-DEBUG-ANSWER-001",
+  "environment": "staging",
+  "production_release": false,
+  "source_main_sha": "5f0feb7ffeec4290a5cabcb8df0550df696c7aca",
+  "tested_subject_sha": "c63421fa4bf19b92c66aa57b8298b75dcc83a9a5",
+  "backend_image_digest": "sha256:6d50f5ddd1b1660ad6fa218a2bf41ecc501b54d6ca6548ca10e8a999d45f7a20",
+  "deployment": {
+    "method": "manual_staging_gate",
+    "preflight": "passed",
+    "deploy": "passed",
+    "database_migration_head": "034_agent_debug_runs",
+    "health_paths_200": ["/healthz", "/v1/health", "/v1/health/ready"],
+    "private_backup_verified": true
+  },
+  "test_context": {
+    "store": "TikTok US 测试店铺",
+    "agent": "物流Agent",
+    "knowledge_file": "agent-debug-redeploy-synthetic-policy-20261027.txt",
+    "knowledge_version": 1,
+    "knowledge_ready_and_approved_before_test": true,
+    "authorized_read_only_conversation": true,
+    "platform_message_send_requested": false
+  },
+  "runs": [
+    {
+      "case": "bound_file_knowledge_only",
+      "trace_id": "ae1d5d67-a54f-4563-8955-f3a6eb31e169",
+      "status": "succeeded",
+      "action": "human_review",
+      "knowledge_fact_displayed": "seven_days_after_receipt_with_human_review",
+      "citation_file_displayed": true,
+      "retrieval_score": 0.8067,
+      "tool_calls": [],
+      "latency_ms": 2895
+    },
+    {
+      "case": "live_logistics_plus_bound_file_knowledge",
+      "trace_id": "35c0f2fd-2091-43c8-ae50-05870097a2f1",
+      "status": "succeeded",
+      "action": "human_review",
+      "logistics_status_displayed": "delivered",
+      "knowledge_fact_displayed": "seven_days_after_receipt_with_human_review",
+      "citation_file_displayed": true,
+      "retrieval_score": 0.8067,
+      "tool_calls": ["query_logistics:succeeded"],
+      "latency_ms": 5246
+    }
+  ],
+  "trace_audit_actions": {
+    "ae1d5d67-a54f-4563-8955-f3a6eb31e169": ["agent.debug.run:accepted"],
+    "35c0f2fd-2091-43c8-ae50-05870097a2f1": ["agent.debug.run:accepted"]
+  },
+  "cleanup": {
+    "agent_saved_bound_file_count": 0,
+    "synthetic_file_soft_deleted": true,
+    "knowledge_list_count_after_cleanup": 0,
+    "original_file_versions_and_audit_retained": true
+  }
+}
