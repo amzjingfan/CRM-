@@ -1,7 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-036",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "3ff129eb69e9a66e31c2fe3430c26af2172c978a",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
+  "archived_file_count": 24,
+  "deleted_cache_file_count": 13125,
   "base_sha": "793b5aad213d435cd63bcba7eb29cb7baf659b77",
   "scope": "one exact merged-PR old Agent debug worktree and branch; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-036",
