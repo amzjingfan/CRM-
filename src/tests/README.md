@@ -102,3 +102,5 @@ uv run python -m scripts.evaluate_dynamic_agents --dataset ../tests/ai/datasets/
 ```
 
 16 条版本化样例只用合成模型协议/工具结果验证边界；跨轮工具数量、绑定文件联合回答、会话记忆与真实数据库行为由后端和 PostgreSQL 测试验证。真实模型质量/时延需单独现场验收。
+
+Agent 工具分类浏览器测试使用 `frontend/browser/fixtures/agent-tool-catalog.json` 的合成目录，其名称、描述、分类与参数来源为后端 agents/tools/metadata.py；不含真实店铺或 scope 授权。目录更新时同步此测试资产，浏览器用例核对搜索、绑定、知识计数、迟到响应与内部协作显示。工具与业务参数、返回值、迁移和隔离的后端验收入口为 test_agent_tool_suite.py、test_agent_business_tools.py、test_agent_product_details.py 与 integration/postgres/test_agent_collaboration.py。

@@ -18,8 +18,10 @@ from app.agents.orchestration.router import RoutedAgent, RoutePlan
 from app.agents.orchestration.service import DynamicRunResult
 from app.agents.runtime.models import AgentRun
 from app.agents.runtime.state import RunPhase
+from app.agents.tools.loop import ToolEvent
 from app.shared.database.base import User
 from app.stores.models import Store
+from app.tools.models import ToolCall
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="未提供隔离的 PostgreSQL 测试数据库")
@@ -77,7 +79,16 @@ async def test_v2_debug_records_route_and_returns_review_only(monkeypatch) -> No
     result = DynamicRunResult(
         phase=RunPhase.REVIEW_READY,
         route=RoutePlan((RoutedAgent(config.id, "查订单"),), 1, 2, 2),
-        specialists=(SpecialistResult(config.id, "订单信息供坐席复核"),),
+        specialists=(
+            SpecialistResult(
+                config.id,
+                "订单信息供坐席复核",
+                tool_events=(
+                    ToolEvent("call-test", "search_customer_orders", "succeeded"),
+                    ToolEvent("call-note", "add_internal_note", "permission_denied"),
+                ),
+            ),
+        ),
         suggestion=ReviewedSuggestion("订单信息供坐席复核", "human_review", None, (config.id,), (), 2, 2),
         reason_code=None,
     )
@@ -112,6 +123,10 @@ async def test_v2_debug_records_route_and_returns_review_only(monkeypatch) -> No
             child = await session.scalar(select(AgentRun).where(AgentRun.parent_run_id == run.id))
             assert child is not None and child.agent_config_id == config.id
             assert child.config_version == 1
+            calls = (await session.scalars(select(ToolCall).where(ToolCall.agent_run_id == child.id))).all()
+            assert {item.tool_name for item in calls} == {"search_customer_orders", "add_internal_note"}
+            assert {item.status for item in calls} == {"succeeded", "failed"}
+            assert "我的订单在哪" not in str([item.input_summary for item in calls])
     finally:
         async with sessions() as session:
             await session.execute(delete(Store).where(Store.id == store.id))

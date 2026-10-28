@@ -3,7 +3,7 @@
 import asyncio
 import uuid
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -34,6 +34,8 @@ def _setup(monkeypatch: pytest.MonkeyPatch, *, tools: tuple[str, ...] = ()) -> t
         AsyncMock(
             return_value=SimpleNamespace(
                 ready_for_v2=True,
+                id=agent_id,
+                config_version=1,
                 file_ids=(),
                 tool_names=tools,
             )
@@ -76,17 +78,25 @@ async def test_cross_store_conversation_is_not_read(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
-async def test_live_order_lookup_respects_debug_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_dynamic_run_respects_deadline_and_does_not_prefetch_latest_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     store_id, agent_id = _setup(monkeypatch, tools=("query_order",))
     monkeypatch.setattr(debug, "user_permissions", lambda _user: {"workspace.view"})
     conversation = SimpleNamespace(id=uuid.uuid4(), store_id=store_id, customer_id=uuid.uuid4(), platform="tiktok")
-    session = SimpleNamespace(scalar=AsyncMock(side_effect=[conversation, None]))
-    user = SimpleNamespace(roles=[SimpleNamespace(code="operator")])
+    session = SimpleNamespace(scalar=AsyncMock(return_value=conversation), add=Mock(), commit=AsyncMock())
+    user = SimpleNamespace(id=uuid.uuid4(), roles=[SimpleNamespace(code="operator")])
 
-    async def slow_lookup(*_args: object) -> None:
+    async def slow_run(**_args: object) -> None:
         await asyncio.sleep(0.1)
 
-    monkeypatch.setattr(debug, "latest_verified_live_order", slow_lookup)
+    monkeypatch.setattr(
+        debug,
+        "freeze_debug_context",
+        AsyncMock(return_value=SimpleNamespace(snapshot_hash="test", low_sensitive_reference=lambda: {})),
+    )
+    monkeypatch.setattr(debug, "load_memory", AsyncMock(return_value=SimpleNamespace(summary="", facts=())))
+    monkeypatch.setattr(debug, "execute_model_run", slow_run)
 
     with pytest.raises(AppError) as error:
         await debug.run_agent_debug_v2(
@@ -99,3 +109,4 @@ async def test_live_order_lookup_respects_debug_deadline(monkeypatch: pytest.Mon
         )
 
     assert error.value.status_code == 504
+    assert session.scalar.await_count == 1

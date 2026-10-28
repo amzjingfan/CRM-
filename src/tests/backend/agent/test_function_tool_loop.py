@@ -130,3 +130,64 @@ async def test_shared_deadline_cancels_waiting_provider() -> None:
             deadline=time.monotonic() + 0.01,
             max_output_tokens=1024,
         )
+
+
+@pytest.mark.asyncio
+async def test_oversized_tool_result_is_not_treated_as_visible_grounding_evidence() -> None:
+    from langchain_core.tools import tool
+
+    from app.agents.tools.loop import run_tool_loop
+
+    @tool
+    async def large_result() -> dict:
+        """返回需要分页的过大内容。"""
+        return {"status": "succeeded", "facts": {"policy": "X" * 17000}}
+
+    provider = SimpleNamespace(
+        complete=AsyncMock(
+            side_effect=[
+                ToolTurn(
+                    None, (FunctionCall("large", "large_result", {}),), {"role": "assistant", "content": None}, 1, 1
+                ),
+                ToolTurn("请缩小范围", (), {"role": "assistant", "content": "请缩小范围"}, 1, 1),
+            ]
+        )
+    )
+    result = await run_tool_loop(
+        provider=provider, messages=(), tools=(large_result,), deadline=time.monotonic() + 2, max_output_tokens=100
+    )
+    assert result.events[0].status == "tool_result_too_large"
+    assert result.observations[0].status == "tool_result_too_large"
+    assert result.observations[0].facts == {}
+
+
+@pytest.mark.asyncio
+async def test_shared_deadline_cancels_waiting_business_tool() -> None:
+    from langchain_core.tools import tool
+
+    from app.agents.tools.loop import run_tool_loop
+
+    cancelled = False
+
+    @tool
+    async def slow_read() -> dict:
+        """模拟等待只读平台请求。"""
+        nonlocal cancelled
+        try:
+            await asyncio.sleep(1)
+        finally:
+            cancelled = True
+        return {"status": "succeeded"}
+
+    provider = SimpleNamespace(
+        complete=AsyncMock(
+            return_value=ToolTurn(
+                None, (FunctionCall("slow", "slow_read", {}),), {"role": "assistant", "content": None}, 1, 1
+            )
+        )
+    )
+    with pytest.raises(TimeoutError):
+        await run_tool_loop(
+            provider=provider, messages=(), tools=(slow_read,), deadline=time.monotonic() + 0.01, max_output_tokens=100
+        )
+    assert cancelled

@@ -1,0 +1,214 @@
+{
+  "groups": [
+    {
+      "key": "orders",
+      "title": "订单与物流",
+      "description": "找到正确订单，核实交易与配送进度"
+    },
+    {
+      "key": "products",
+      "title": "商品与优惠",
+      "description": "查询商品规格、可售状态和优惠条件"
+    },
+    {
+      "key": "aftersales",
+      "title": "售后服务",
+      "description": "核实退货、退款与换货申请"
+    },
+    {
+      "key": "customers",
+      "title": "客户与会话",
+      "description": "了解当前买家及本次会话上下文"
+    },
+    {
+      "key": "knowledge",
+      "title": "知识检索",
+      "description": "从绑定文件中查找有来源的依据"
+    },
+    {
+      "key": "collaboration",
+      "title": "人工协作",
+      "description": "保留内部建议，帮助坐席接手"
+    }
+  ],
+  "tools": [
+    {
+      "name": "search_customer_orders",
+      "title": "买家订单查询",
+      "description": "按状态、商品、订单号和时间查询当前买家订单，返回候选引用与分页。多订单时先选单。",
+      "category": "orders",
+      "operation": "read",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "query_order",
+      "title": "订单详情",
+      "description": "核实已选择订单的金额、支付、履约时间、商品及规格；多订单无选择时返回候选，不能默认最新。",
+      "category": "orders",
+      "operation": "read",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "query_logistics",
+      "title": "完整物流",
+      "description": "读取所选订单的包裹、承运商、完整轨迹与最新节点；大量轨迹需继续分页，增强轨迹按店铺能力提供。",
+      "category": "orders",
+      "operation": "read",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "search_products",
+      "title": "商品搜索",
+      "description": "按名称、SKU 或商家 SKU 搜索当前店铺商品，返回可供进一步查询的候选引用。",
+      "category": "products",
+      "operation": "read",
+      "requires_context": false,
+      "availability": "available",
+      "reason": "可用",
+      "missing_scopes": []
+    },
+    {
+      "name": "query_product",
+      "title": "商品详情",
+      "description": "使用本轮商品候选引用读取参数、品牌、描述、规格、价格、可售状态及平台提供的库存；长内容需继续分页。",
+      "category": "products",
+      "operation": "read",
+      "requires_context": false,
+      "availability": "available",
+      "reason": "可用",
+      "missing_scopes": []
+    },
+    {
+      "name": "query_available_coupons",
+      "title": "优惠券查询",
+      "description": "只读查询店铺优惠券状态、优惠内容和有效期；查询不等于买家满足领取条件或已经发券。",
+      "category": "products",
+      "operation": "read",
+      "requires_context": false,
+      "availability": "available",
+      "reason": "可用",
+      "missing_scopes": []
+    },
+    {
+      "name": "query_aftersales",
+      "title": "售后查询",
+      "description": "查询已选择订单的退货、退款、换货申请、金额、期限和退回物流；include_records读取所选申请的处理历史，缺授权不等于无售后。",
+      "category": "aftersales",
+      "operation": "read",
+      "requires_context": true,
+      "availability": "unavailable",
+      "reason": "缺少平台授权：seller.return_refund.basic",
+      "missing_scopes": [
+        "seller.return_refund.basic"
+      ]
+    },
+    {
+      "name": "query_customer_profile",
+      "title": "客户画像",
+      "description": "读取当前会话买家的 CRM 已同步标签、订单数、消费摘要与阶段；不代表平台完整历史，不提供地址电话。",
+      "category": "customers",
+      "operation": "read",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "query_conversation_messages",
+      "title": "会话历史",
+      "description": "按需读取当前会话在本次运行冻结之前的历史消息；不能跨用户、跨会话读取。",
+      "category": "customers",
+      "operation": "read",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "search_knowledge",
+      "title": "知识检索",
+      "description": "检索当前 Agent 显式绑定且仍获内部审批的知识文件，返回原文片段、版本和引用。",
+      "category": "knowledge",
+      "operation": "read",
+      "requires_context": false,
+      "availability": "requires_knowledge",
+      "reason": "仅检索已绑定且获批的文件",
+      "missing_scopes": []
+    },
+    {
+      "name": "create_handoff_request",
+      "title": "创建接管请求",
+      "description": "保存当前会话的 AI 接管建议、已查事实与未解决事项；不会完成实际会话转交。",
+      "category": "collaboration",
+      "operation": "internal_write",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "add_internal_note",
+      "title": "添加内部备注",
+      "description": "在当前会话保存明确标为 AI 建议的内部备注，供坐席查阅；不会发送给买家。",
+      "category": "collaboration",
+      "operation": "internal_write",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "update_shipping_address",
+      "title": "修改收货地址",
+      "description": "提出修改地址的人工确认请求；Agent 不执行地址变更。",
+      "category": "orders",
+      "operation": "confirmation",
+      "requires_context": true,
+      "availability": "confirmation",
+      "reason": "仅生成待人工确认的提议",
+      "missing_scopes": []
+    },
+    {
+      "name": "send_coupon",
+      "title": "发放优惠券",
+      "description": "提出发券的人工确认请求；Agent 不发放优惠券。",
+      "category": "products",
+      "operation": "confirmation",
+      "requires_context": true,
+      "availability": "confirmation",
+      "reason": "仅生成待人工确认的提议",
+      "missing_scopes": []
+    },
+    {
+      "name": "transfer_to_human",
+      "title": "实际转交会话",
+      "description": "提出会话转交的人工确认请求；Agent 不修改会话分配状态。",
+      "category": "collaboration",
+      "operation": "confirmation",
+      "requires_context": true,
+      "availability": "confirmation",
+      "reason": "仅生成待人工确认的提议",
+      "missing_scopes": []
+    },
+    {
+      "name": "send_platform_message",
+      "title": "发送平台消息",
+      "description": "提出平台发送的人工确认请求；Agent 不发送任何真实消息。",
+      "category": "collaboration",
+      "operation": "confirmation",
+      "requires_context": true,
+      "availability": "confirmation",
+      "reason": "仅生成待人工确认的提议",
+      "missing_scopes": []
+    }
+  ]
+}

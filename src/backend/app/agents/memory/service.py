@@ -55,7 +55,8 @@ async def remember_session_question(
     lines = [*previous[-2:], f"客户此前提问（未经核实）：{safe_question}"]
     sources = (*prior.source_message_ids[-2:], snapshot.trigger_message_id)
     previous_tool_facts: dict[uuid.UUID, dict[str, str]] = {}
-    merged_facts = {item.key: item for item in prior.facts}
+    run_refs = {"order_ref", "product_ref", "return_ref", "next_page_ref"}
+    merged_facts = {item.key: item for item in prior.facts if item.key.rsplit(".", 1)[-1] not in run_refs}
     for fact in prior.facts:
         kind, _, raw_id = fact.source_ref.partition(":")
         if kind == "tool":
@@ -65,9 +66,12 @@ async def remember_session_question(
             continue
         source_id = uuid.uuid5(uuid.NAMESPACE_URL, f"{snapshot.snapshot_hash}:{agent_id}:{observation.call_id}")
         for key, value in observation.facts.items():
-            if not isinstance(value, str | int | float | bool):
+            # 候选引用仅在本轮执行器有效，恢复记忆不能把旧引用当成当前选单。
+            if key in run_refs or not isinstance(value, str | int | float | bool):
                 continue
-            fact_key = f"{observation.name}.{key}"
+            fact_key = (
+                f"{observation.name}.{observation.scope}.{key}" if observation.scope else f"{observation.name}.{key}"
+            )
             fact_value = str(value)
             if len(fact_key) > 80 or len(fact_value) > 500:
                 continue

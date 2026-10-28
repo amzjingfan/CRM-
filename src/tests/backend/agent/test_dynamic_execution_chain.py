@@ -20,7 +20,8 @@ from app.tools.contracts import ToolResult
 
 
 @pytest.mark.asyncio
-async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeypatch) -> None:
+@pytest.mark.parametrize(("use_business", "selection"), [(False, False), (True, False), (True, True)])
+async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeypatch, use_business, selection) -> None:
     from app.agents.runtime import execution
 
     store, conversation, customer, agent_id, run_id = (uuid.uuid4() for _ in range(5))
@@ -45,6 +46,15 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeyp
     now = datetime.now(UTC)
     snapshot = RunSnapshot(store, conversation, customer, uuid.uuid4(), now, (), (agent,), (), 0, now, "synthetic-hash")
     calls = []
+    answer = "您问的是29元商品还是39元商品？" if selection else "订单已发货，请坐席复核。"
+    tool_facts = (
+        {
+            "selection_required": True,
+            "candidates": [{"order_ref": "o1", "total_amount": "29.00"}, {"order_ref": "o2", "total_amount": "39.00"}],
+        }
+        if selection
+        else {"status": "shipped"}
+    )
 
     class FakeModel:
         async def complete(self, *, messages, tools, max_output_tokens):
@@ -65,12 +75,10 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeyp
                     None, (call,), {"role": "assistant", "content": None, "tool_calls": [{"id": "tool-1"}]}, 5, 3
                 )
             if names == ["query_order"]:
-                assert "shipped" in str(messages[-1])
-                return ToolTurn("订单已发货。", (), {"role": "assistant", "content": "订单已发货。"}, 5, 3)
+                assert ("29.00" if selection else "shipped") in str(messages[-1])
+                return ToolTurn(answer, (), {"role": "assistant", "content": answer}, 5, 3)
             assert names == []
-            return ToolTurn(
-                "订单已发货，请坐席复核。", (), {"role": "assistant", "content": "订单已发货，请坐席复核。"}, 5, 3
-            )
+            return ToolTurn(answer, (), {"role": "assistant", "content": answer}, 5, 3)
 
     model = FakeModel()
 
@@ -90,12 +98,24 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeyp
     monkeypatch.setattr(execution, "tool_provider", provider)
     monkeypatch.setattr(execution, "session_factory", session_factory)
     monkeypatch.setattr(execution, "SqlAlchemyToolExecutor", lambda _session: executor)
+    business = SimpleNamespace(
+        invoke=AsyncMock(
+            return_value={
+                "status": "selection_required" if selection else "succeeded",
+                "facts": tool_facts,
+                "fact_scope": "f" * 16,
+            }
+        ),
+        permits=AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(execution, "AgentBusinessExecutor", lambda *_args: business)
+    monkeypatch.setattr(execution, "current_permissions", AsyncMock(return_value={"orders.view", "knowledge.view"}))
     result = await execution.execute_model_run(
         snapshot=snapshot,
         question="我的订单现在怎么样？",
         agents=(agent,),
         run_id=run_id,
-        permissions={"orders.view"},
+        permissions={"orders.view", "knowledge.view"},
         trace_id="synthetic-trace",
         deadline=time.monotonic() + 5,
         settings=Settings(_env_file=None, LLM_PRIMARY_PROVIDER="deepseek", LLM_PRIMARY_MODEL="deepseek-chat"),
@@ -103,18 +123,31 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeyp
         order_id="trusted-order",
         live_order=None,
         memory_summary="",
+        user=SimpleNamespace(id=uuid.uuid4()) if use_business else None,
     )
-    assert result.suggestion.content == "订单已发货，请坐席复核。"
+    assert result.suggestion.content == answer
     assert result.phase.value == "review_ready"
-    assert result.specialists[0].verified_facts == {"query_order.status": "shipped"}
+    if selection:
+        assert "29.00" in str(result.specialists[0].verified_facts)
+        assert result.specialists[0].successful_tools == ()
+        assert result.specialists[0].tool_events[0].status == "selection_required"
+    else:
+        assert result.specialists[0].verified_facts == {
+            ("query_order." + "f" * 16 + ".status" if use_business else "query_order.status"): "shipped"
+        }
     assert calls == [["route_agents"], ["query_order"], ["query_order"], [], ["review_answer_evidence"]]
-    invocation = executor.execute.await_args.args[0]
-    assert invocation.arguments["order_id"] == "trusted-order"
-    assert invocation.context.store_id == store
+    if use_business:
+        assert business.invoke.await_args.args[0] == "query_order"
+        executor.execute.assert_not_awaited()
+    else:
+        invocation = executor.execute.await_args.args[0]
+        assert invocation.arguments["order_id"] == "trusted-order"
+        assert invocation.context.store_id == store
 
 
 @pytest.mark.asyncio
-async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch) -> None:
+@pytest.mark.parametrize("use_business", [False, True])
+async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch, use_business) -> None:
     from app.agents.runtime import execution, worker
 
     store, conversation, customer, agent_id, file_id = (uuid.uuid4() for _ in range(5))
@@ -229,6 +262,12 @@ async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch)
         )
     )
     monkeypatch.setattr(execution, "SqlAlchemyToolExecutor", lambda _session: executor)
+    business = SimpleNamespace(
+        invoke=AsyncMock(return_value={"status": "succeeded", "facts": {"status": "shipped"}, "fact_scope": "f" * 16}),
+        permits=AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(execution, "AgentBusinessExecutor", lambda *_args: business)
+    monkeypatch.setattr(execution, "current_permissions", AsyncMock(return_value={"orders.view", "knowledge.view"}))
     monkeypatch.setattr(worker, "revalidate_evidence", revalidate)
     monkeypatch.setattr(execution, "revalidate_evidence", revalidate)
     result = await execution.execute_model_run(
@@ -236,7 +275,7 @@ async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch)
         question="物流政策是什么？",
         agents=(agent,),
         run_id=uuid.uuid4(),
-        permissions={"orders.view"},
+        permissions={"orders.view", "knowledge.view"},
         trace_id="rag-trace",
         deadline=time.monotonic() + 5,
         settings=Settings(_env_file=None, LLM_PRIMARY_PROVIDER="deepseek", LLM_PRIMARY_MODEL="deepseek-chat"),
@@ -244,9 +283,12 @@ async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch)
         order_id="trusted-order",
         live_order=None,
         memory_summary="",
+        user=SimpleNamespace(id=uuid.uuid4()) if use_business else None,
     )
     assert result.suggestion.content == "订单已发货，按绑定政策需核实物流轨迹，请坐席复核。"
     assert result.suggestion.citations == (str(chunk_id),)
-    assert result.specialists[0].verified_facts == {"query_order.status": "shipped"}
-    assert executor.execute.await_count == 1
+    assert result.specialists[0].verified_facts == {
+        ("query_order." + "f" * 16 + ".status" if use_business else "query_order.status"): "shipped"
+    }
+    assert (business.invoke.await_count if use_business else executor.execute.await_count) == 1
     assert rag.retrieve.await_args.kwargs["file_ids"] == (file_id,)

@@ -8,16 +8,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.agents.core.reply_policy import AgentReplyProfile
 from app.agents.core.schemas import AgentCitation, AgentToolCallView
+from app.agents.tools.metadata import TOOL_METADATA
 
-ToolName = Literal[
-    "query_order",
-    "query_logistics",
-    "query_customer_profile",
-    "update_shipping_address",
-    "send_coupon",
-    "transfer_to_human",
-    "send_platform_message",
-]
 AgentType = Literal["service", "operations"]
 
 
@@ -29,7 +21,7 @@ class AgentConfigCreate(BaseModel):
     code: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]{1,99}$")
     description: str | None = Field(default=None, max_length=1000)
     agent_type: AgentType = "service"
-    enabled_tools: list[ToolName] = Field(default_factory=list)
+    enabled_tools: list[str] = Field(default_factory=list)
     model_provider: str | None = Field(default=None, max_length=50)
     model_name: str | None = Field(default=None, max_length=150)
     prompt_sections: dict[str, str] = Field(default_factory=dict)
@@ -38,6 +30,13 @@ class AgentConfigCreate(BaseModel):
     reply_profile: AgentReplyProfile | None = None
 
     model_config = {"extra": "forbid"}
+
+    @field_validator("enabled_tools")
+    @classmethod
+    def known_tools(cls, value: list[str] | None) -> list[str] | None:
+        if value is not None and any(name not in TOOL_METADATA for name in value):
+            raise ValueError("工具名称未知")
+        return value
 
     @field_validator("knowledge_scope", mode="before")
     @classmethod
@@ -51,7 +50,7 @@ class AgentConfigUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=1000)
     agent_type: AgentType | None = None
-    enabled_tools: list[ToolName] | None = None
+    enabled_tools: list[str] | None = None
     model_provider: str | None = Field(default=None, max_length=50)
     model_name: str | None = Field(default=None, max_length=150)
     prompt_sections: dict[str, str] | None = None
@@ -61,6 +60,13 @@ class AgentConfigUpdate(BaseModel):
     expected_revision: int | None = Field(default=None, ge=1)
 
     model_config = {"extra": "forbid"}
+
+    @field_validator("enabled_tools")
+    @classmethod
+    def known_tools(cls, value: list[str] | None) -> list[str] | None:
+        if value is not None and any(name not in TOOL_METADATA for name in value):
+            raise ValueError("工具名称未知")
+        return value
 
     @field_validator("knowledge_scope", mode="before")
     @classmethod

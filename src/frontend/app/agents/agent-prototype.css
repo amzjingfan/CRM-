@@ -1,5 +1,38 @@
 /* Scoped from the user-approved Agent v3 HTML prototype. */
 
+/* 工具目录采用六类卡片；分类不影响模型调用范围。 */
+.agent-page .capability-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.agent-page .capability-directory-label{font-size:12px;color:#5b6b85;border:1px solid #e0e7f0;border-radius:6px;padding:5px 9px;white-space:nowrap}
+.agent-page .capability-toolbar{display:flex;gap:12px;margin:20px 0 14px;align-items:flex-end}
+.agent-page .capability-toolbar label{display:grid;gap:7px;font-size:12px;color:#52627b;font-weight:600}
+.agent-page .capability-search{flex:1}.agent-page .capability-filter{width:180px}
+.agent-page .capability-toolbar .field{width:100%;min-height:44px;background:#fff}
+.agent-page .capability-legend{display:flex;flex-wrap:wrap;gap:10px 22px;padding-bottom:20px;color:#52627b;font-size:12px;border-bottom:1px solid #e7edf5}
+.agent-page .capability-legend>span{display:flex;align-items:center;gap:6px}
+.agent-page .legend-dot{width:7px;height:7px;border-radius:50%;background:#315fd6}.agent-page .legend-dot.internal_write{background:#14856b}.agent-page .legend-dot.confirmation{background:#b07816}
+.agent-page .capability-group{margin-top:25px}.agent-page .capability-group-heading{display:flex;align-items:center;gap:11px;margin-bottom:13px}
+.agent-page .capability-group-icon{width:36px;height:36px;display:grid;place-items:center;background:#eef3ff;color:#315fd6;border-radius:9px;flex:none}.agent-page .capability-group-icon svg{width:20px;height:20px}
+.agent-page .capability-group-heading h4{font-size:15px;font-weight:700;margin:0 0 3px}.agent-page .capability-group-heading p{font-size:12px;color:#69768c;margin:0;line-height:1.5}
+.agent-page .capability-group-count{margin-left:auto;font-size:12px;color:#69768c;white-space:nowrap}
+.agent-page .capability-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.agent-page .capability-card{border:1px solid #dfe6f0;background:#fff;border-radius:12px;overflow:hidden;transition:border-color .15s,box-shadow .15s;min-width:0;padding:15px;display:flex;flex-direction:column}
+.agent-page .capability-card:hover{border-color:#a1b7e4;box-shadow:0 3px 12px #23478009}.agent-page .capability-card.selected{border-color:#90acf0;background:#fbfcff;box-shadow:inset 0 0 0 1px #d5e2ff}
+.agent-page .capability-card-main{cursor:pointer;display:flex;flex-direction:column;gap:8px;flex:1}.agent-page .capability-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.agent-page .capability-card-top strong{font-size:14px;color:#17233a}
+.agent-page .capability-card input{accent-color:#315fd6;width:18px;height:18px;flex:none;margin:0}
+.agent-page .capability-code{font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#68768d;overflow-wrap:anywhere}
+.agent-page .capability-description{color:#52627b;font-size:12px;line-height:1.7;min-height:60px;overflow-wrap:anywhere}
+.agent-page .capability-card-bottom{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:15px}
+.agent-page .capability-operation,.agent-page .capability-availability{padding:3px 7px;border-radius:5px;font-size:12px;line-height:1.5}
+.agent-page .capability-operation.read{color:#2854b5;background:#eaf0ff}.agent-page .capability-operation.internal_write{color:#156c59;background:#e6f4ef}.agent-page .capability-operation.confirmation{color:#89600f;background:#fff3d9}
+.agent-page .capability-availability{color:#52627b;background:#edf1f7}.agent-page .capability-availability.unavailable{color:#9b4b1b;background:#fff1e7}
+.agent-page .capability-reason{color:#65738a;font-size:12px;line-height:1.6;margin:10px 0 0;overflow-wrap:anywhere}.agent-page .capability-link{border:0;background:transparent;color:#2854bd;padding:10px 0 0;text-align:left;font-weight:600;min-height:44px}
+.agent-page .capability-feedback{text-align:center;padding:36px 16px;color:#65738a;background:#f8faff;border:1px dashed #dce5f4;border-radius:10px;margin-top:18px}
+.agent-page .collaboration-panel{border:1px solid #dfe6f0;border-radius:12px;background:#fff;padding:22px;margin-top:18px}.agent-page .collaboration-empty{font-size:13px;color:#69768c}
+.agent-page .collaboration-entry{padding:16px;background:#f8faff;border:1px solid #e4ebf7;border-radius:9px;margin-top:12px}.agent-page .collaboration-entry>div{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.agent-page .collaboration-entry span{color:#315fd6;background:#eaf0ff;padding:3px 6px;border-radius:4px;font-size:11px}.agent-page .collaboration-entry time{color:#69768c;font-size:12px;margin-left:auto}.agent-page .collaboration-entry p{font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:0}
+@media(max-width:1280px){.agent-page .capability-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.agent-page .capability-grid{grid-template-columns:1fr}.agent-page .capability-toolbar{flex-direction:column;align-items:stretch}.agent-page .capability-filter{width:auto}.agent-page .capability-description{min-height:0}.agent-page .capability-heading{flex-wrap:wrap}.agent-page .collaboration-panel{padding:16px}}
+@media(prefers-reduced-motion:reduce){.agent-page .capability-card{transition:none}}
+
 .agent-page{font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#17233a;background:#f5f7fb;font-size:14px}
 .agent-page *{box-sizing:border-box}.agent-page{margin:0}.agent-page button,.agent-page input,.agent-page select,.agent-page textarea{font:inherit}.agent-page button{cursor:pointer}.agent-page button:focus-visible,.agent-page input:focus-visible,.agent-page select:focus-visible,.agent-page textarea:focus-visible{outline:3px solid #9db8ff;outline-offset:2px}.agent-page [hidden]{display:none!important}
 .agent-page .app{display:flex;min-height:100vh}.agent-page .global{width:224px;flex:none;background:#fff;border-right:1px solid #e3e8f0;padding:24px 16px}.agent-page .brand{display:flex;gap:10px;align-items:center;font-size:17px;font-weight:750;margin:0 8px 30px;white-space:nowrap}.agent-page .brand-mark{display:grid;place-items:center;width:22px;height:22px;color:#fff;background:#315fd6;border-radius:6px}.agent-page .global-nav{display:grid;gap:5px}.agent-page .nav{display:flex;gap:13px;align-items:center;height:43px;border-radius:9px;padding:0 13px;color:#69768c;font-weight:600;text-decoration:none}.agent-page .nav:hover{background:#f6f8fc}.agent-page .nav.active{background:#ebf1ff;color:#315fd6}.agent-page .nav-icon{width:18px;text-align:center;font-size:17px}.agent-page .global-note{position:sticky;top:calc(100vh - 35px);margin:40px 8px 0;color:#96a2b4;font-size:11px;line-height:1.5}

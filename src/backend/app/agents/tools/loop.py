@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 import time
 from dataclasses import dataclass
 from typing import Protocol
@@ -38,6 +39,7 @@ class ToolObservation:
     name: str
     status: str
     facts: dict[str, object]
+    scope: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,7 +102,9 @@ async def run_tool_loop(
             events.append(ToolEvent(call_id=call.id, name=call.name, status=status))
             raw_facts = result.get("facts") if isinstance(result, dict) else None
             facts = dict(raw_facts) if isinstance(raw_facts, dict) else {}
-            observations.append(ToolObservation(call.id, call.name, status, facts))
+            raw_scope = result.get("fact_scope") if isinstance(result, dict) else None
+            scope = raw_scope if isinstance(raw_scope, str) and re.fullmatch(r"[0-9a-f]{16}", raw_scope) else None
+            observations.append(ToolObservation(call.id, call.name, status, facts, scope))
             if status in {"tool_unavailable", "invalid_arguments"}:
                 signature = json.dumps([call.name, call.arguments], sort_keys=True, ensure_ascii=False)
                 if signature in invalid_signatures:
@@ -117,4 +121,6 @@ async def run_tool_loop(
             if len(result_text) > 16_000:
                 result_text = '{"status":"tool_result_too_large"}'
                 events[-1] = ToolEvent(call_id=call.id, name=call.name, status="tool_result_too_large")
+                # 未送入模型的数据不能进入最终依据复核或会话事实记忆。
+                observations[-1] = ToolObservation(call.id, call.name, "tool_result_too_large", {})
             history.append({"role": "tool", "tool_call_id": call.id, "content": result_text})

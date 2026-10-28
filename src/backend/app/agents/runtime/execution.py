@@ -1,9 +1,11 @@
 """调试与正式会话共用的动态 Agent 模型、工具和知识执行入口。"""
 
+import hashlib
 import uuid
 from dataclasses import replace
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.core.factory import SharedAgentRuntime
@@ -21,14 +23,18 @@ from app.agents.runtime.snapshot import RunSnapshot
 from app.agents.runtime.state import RunPhase
 from app.agents.runtime.worker import run_specialist
 from app.agents.safety.input import prepare_untrusted_text
+from app.agents.tools.access import current_permissions
+from app.agents.tools.business import AgentBusinessExecutor
 from app.agents.tools.catalog import AgentToolContext
 from app.agents.tools.live_order import AgentDebugLiveOrderExecutor
+from app.agents.tools.metadata import TOOL_METADATA
 from app.conversations.models import Message
 from app.shared.config.settings import Settings
 from app.shared.database.base import User
 from app.shared.database.session import session_factory
 from app.shared.exceptions.errors import AppError
 from app.tools.executor import SqlAlchemyToolExecutor
+from app.tools.models import ToolCall
 from app.workspace.sidebar import SidebarOrder
 
 
@@ -81,13 +87,38 @@ async def load_snapshot_history(session: AsyncSession, snapshot: RunSnapshot) ->
     return tuple(history)
 
 
-async def finalize_result_evidence(result: DynamicRunResult, snapshot: RunSnapshot) -> DynamicRunResult:
+async def finalize_result_evidence(
+    result: DynamicRunResult, snapshot: RunSnapshot, user: User | None = None
+) -> DynamicRunResult:
     """汇总和独立复核结束后，用新事务复查本次引用，撤权则隐藏整个候选。"""
-    if not result.suggestion.citations:
+    if not result.suggestion.citations and user is None:
         return result
     current_ids: set[str] = set()
+    permission_changed = False
     async with session_factory() as final_session:
+        if user is not None:
+            required = {
+                TOOL_METADATA[name].permission
+                for specialist in result.specialists
+                for name in specialist.successful_tools
+                if name in TOOL_METADATA
+            }
+            required.update(
+                TOOL_METADATA[key.partition(".")[0]].permission
+                for specialist in result.specialists
+                for key in specialist.verified_facts
+                if key.partition(".")[0] in TOOL_METADATA
+            )
+            if result.suggestion.citations:
+                required.add("knowledge.view")
+            try:
+                granted = await current_permissions(final_session, User(id=user.id), snapshot.store_id)
+                permission_changed = not granted or not required <= granted
+            except AppError:
+                permission_changed = True
         for specialist in result.specialists:
+            if permission_changed:
+                break
             if not specialist.knowledge_hits:
                 continue
             agent = next(item for item in snapshot.published_agents if item.id == specialist.agent_id)
@@ -98,15 +129,25 @@ async def finalize_result_evidence(result: DynamicRunResult, snapshot: RunSnapsh
                 bundle=EvidenceBundle(specialist.knowledge_hits, 0),
             )
             current_ids.update(str(hit.chunk_id) for hit in current.hits)
-    if set(result.suggestion.citations) <= current_ids:
+    if not permission_changed and set(result.suggestion.citations) <= current_ids:
         return result
+    reason = "tool_permission_changed" if permission_changed else "knowledge_approval_changed"
     return replace(
         result,
         phase=RunPhase.REVIEW_REQUIRED,
-        reason_code="knowledge_approval_changed",
-        suggestion=replace(result.suggestion, content=None, citations=(), reason_code="knowledge_approval_changed"),
+        reason_code=reason,
+        suggestion=replace(result.suggestion, content=None, citations=(), reason_code=reason),
         specialists=tuple(
-            replace(item, answer=None, citations=(), citation_details=(), knowledge_hits=())
+            replace(
+                item,
+                answer=None,
+                citations=(),
+                citation_details=(),
+                knowledge_hits=(),
+                reason_code=reason,
+                verified_facts={} if permission_changed else item.verified_facts,
+                observations=() if permission_changed else item.observations,
+            )
             for item in result.specialists
         ),
     )
@@ -141,29 +182,53 @@ async def persist_dynamic_result(
     by_id = {agent.id: agent for agent in agents}
     for specialist in result.specialists:
         agent = by_id[specialist.agent_id]
-        session.add(
-            AgentRun(
-                parent_run_id=run.id,
-                store_id=snapshot.store_id,
-                agent_config_id=agent.id,
-                conversation_id=None if snapshot.debug_without_conversation else snapshot.conversation_id,
-                trigger_message_id=None if mode == "debug" else snapshot.trigger_message_id,
-                model_provider=agent.model_provider or "unconfigured",
-                model_name=agent.model_name or "unconfigured",
-                prompt_version=agent.prompt_hash,
-                config_version=agent.config_version,
-                action="human_review",
-                status="succeeded" if specialist.answer is not None else "failed",
-                phase="review_ready" if specialist.answer is not None else "review_required",
-                input_summary=f"mode={mode}-v2-child",
-                output_summary=f"tool_count={len(specialist.tool_events)};citation_count={len(specialist.citations)}",
-                error_code=specialist.reason_code,
-                input_tokens=specialist.input_tokens,
-                output_tokens=specialist.output_tokens,
-                trace_id=run.trace_id,
-                snapshot_hash=snapshot.snapshot_hash,
-            )
+        child = AgentRun(
+            parent_run_id=run.id,
+            store_id=snapshot.store_id,
+            agent_config_id=agent.id,
+            conversation_id=None if snapshot.debug_without_conversation else snapshot.conversation_id,
+            trigger_message_id=None if mode == "debug" else snapshot.trigger_message_id,
+            model_provider=agent.model_provider or "unconfigured",
+            model_name=agent.model_name or "unconfigured",
+            prompt_version=agent.prompt_hash,
+            config_version=agent.config_version,
+            action="human_review",
+            status="succeeded" if specialist.answer is not None else "failed",
+            phase="review_ready" if specialist.answer is not None else "review_required",
+            input_summary=f"mode={mode}-v2-child",
+            output_summary=f"tool_count={len(specialist.tool_events)};citation_count={len(specialist.citations)}",
+            error_code=specialist.reason_code,
+            input_tokens=specialist.input_tokens,
+            output_tokens=specialist.output_tokens,
+            trace_id=run.trace_id,
+            snapshot_hash=snapshot.snapshot_hash,
         )
+        session.add(child)
+        await session.flush()
+        for index, event in enumerate(specialist.tool_events):
+            name = event.name if event.name in TOOL_METADATA else "unavailable_tool"
+            digest = hashlib.sha256(f"{run.id}:{agent.id}:{index}:{event.call_id}:{name}".encode()).hexdigest()
+            status = event.status if event.status in {"succeeded", "timeout", "unknown"} else "failed"
+            # 只保留能力、阶段与配置关联，不复制模型参数、平台响应或正文。
+            await session.execute(
+                insert(ToolCall)
+                .values(
+                    id=uuid.uuid4(),
+                    store_id=snapshot.store_id,
+                    agent_run_id=child.id,
+                    actor_type="agent",
+                    tool_name=name,
+                    idempotency_key=f"dynamic:{digest}",
+                    request_hash=digest,
+                    status=status,
+                    input_summary={"mode": mode, "config_version": agent.config_version},
+                    output_summary={"succeeded": status == "succeeded"},
+                    error_code=None if status == "succeeded" else "DYNAMIC_TOOL_" + status.upper(),
+                    trace_id=run.trace_id,
+                    mocked=False,
+                )
+                .on_conflict_do_nothing(constraint="uq_tool_call_store_idempotency")
+            )
     await session.commit()
 
 
@@ -234,6 +299,11 @@ async def execute_model_run(
                     session_summary=memory_summary,
                     recent_history=recent_history,
                     session_facts=memory_facts,
+                    business_executor=AgentBusinessExecutor(
+                        worker_session, user, snapshot, run_id, frozenset(permissions), trace_id
+                    )
+                    if user
+                    else None,
                 )
 
     async with tool_provider(settings, settings.llm_primary_provider, settings.llm_primary_model) as provider:
@@ -247,4 +317,4 @@ async def execute_model_run(
             max_catalog_tokens=catalog_budget,
             routing_context=routing_context,
         )
-    return await finalize_result_evidence(result, snapshot)
+    return await finalize_result_evidence(result, snapshot, user=user)

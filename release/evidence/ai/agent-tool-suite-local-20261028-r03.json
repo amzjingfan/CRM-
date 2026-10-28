@@ -1,0 +1,82 @@
+{
+  "task_id": "MVP-AGENT-TOOL-SUITE-001",
+  "subject_sha": "01975ab2471adfe2a704116367c34d27415a3240",
+  "local_only": true,
+  "created_at": "2026-10-28T19:52:02+08:00",
+  "catalog": {
+    "business_tools": 12,
+    "categories": 6,
+    "read": 10,
+    "internal_write": 2,
+    "confirmation_proposals": 4
+  },
+  "verification": {
+    "backend": {
+      "passed": 2375,
+      "skipped": 3,
+      "failed": 0,
+      "duration_seconds": 228.12
+    },
+    "frontend_browser": {
+      "passed": 121,
+      "failed": 0
+    },
+    "frontend_contract": {
+      "passed": 48
+    },
+    "ruff_files": 465,
+    "mypy_files": 252,
+    "migration_roundtrip": "base→040→039→040",
+    "dynamic_contract": {
+      "gate": "dynamic_agent_contract_v1",
+      "dataset_sha256": "5d2794b04ed7fac51ac318a1114398745a1ecde21207f1f6dc5113935637e77e",
+      "sample_count": 16,
+      "failed_case_ids": [],
+      "passed": true,
+      "live_model_evaluation": false,
+      "semantic_routing_accuracy_measured": false,
+      "platform_send_count": 0
+    },
+    "safety": {
+      "gate": "deterministic_safety_gate",
+      "sample_count": 237,
+      "safety_accuracy": 1.0,
+      "reason_code_accuracy": 1.0,
+      "unsafe_escape_count": 0,
+      "failed_case_ids": [],
+      "passed": true,
+      "live_model_evaluation": false
+    },
+    "dependency_audit": "no_known_vulnerabilities",
+    "finite_secret_patterns": {
+      "private_key": 0,
+      "github_token": 0,
+      "provider_token": 0,
+      "aws_access": 0
+    },
+    "standards_review": "closed_no_remaining_blocker",
+    "spec_review": "closed_no_remaining_blocker"
+  },
+  "live_model_calls": false,
+  "real_tiktok_calls": false,
+  "platform_send_performed": false,
+  "deployed": false,
+  "limitations": [
+    "Deterministic model ports do not measure semantic routing or evidence-review accuracy",
+    "Official site field availability and end-to-end latency pending approved staging acceptance",
+    "Three POSIX-only process tests skipped on Windows",
+    "Single tracking record over content budget fails explicitly"
+  ],
+  "supersedes": "release/evidence/ai/agent-tool-suite-local-20261028-r02.json",
+  "integrated_main": "7fadaec8bc0053857450f29c648bd4b36bf412a2",
+  "integration_test_correction": "No new test/product changes; imported safe Nginx log field only",
+  "full_backend_tested_sha": "84702ae0e59edc54fd6ba1ea8755c1cf79c1f4be",
+  "application_and_test_tree_identical": true,
+  "full_suite_rerun_at_subject": false,
+  "affected_validation": {
+    "command": "pytest test_split_ingress_staging_assets.py",
+    "passed": 38,
+    "skipped": 3,
+    "failed": 0
+  }
+}

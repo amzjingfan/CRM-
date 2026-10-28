@@ -25,11 +25,11 @@ from app.agents.rag.search import RagRetrievalTimeout
 from app.agents.runtime.context import LiteralFact, ModelLimits, build_context
 from app.agents.runtime.snapshot import RunSnapshot
 from app.agents.safety.input import prepare_untrusted_text
-from app.agents.tools.catalog import AgentToolContext, ToolExecutionPort, build_agent_tools
+from app.agents.tools.catalog import AgentToolContext, BusinessToolPort, ToolExecutionPort, build_agent_tools
 from app.agents.tools.loop import run_tool_loop
+from app.agents.tools.metadata import TOOL_METADATA
 from app.knowledge_base.schemas import KnowledgeRetrievalHit
 from app.shared.exceptions.errors import AppError
-from app.tools.contracts import TOOL_DEFINITIONS
 
 _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
@@ -42,11 +42,17 @@ def _verified_facts(observations: object) -> dict[str, str]:
     if not isinstance(observations, tuple):
         return facts
     for item in observations:
-        if not isinstance(item, ToolObservation) or item.status != "succeeded":
+        if not isinstance(item, ToolObservation) or item.status not in {"succeeded", "selection_required"}:
             continue
         for key, value in item.facts.items():
+            fact_key = f"{item.name}.{item.scope}.{key}" if item.scope else f"{item.name}.{key}"
+            if fact_key in facts and facts[fact_key] != str(value):
+                fact_key += f".{item.call_id}"
             if isinstance(value, str | int | float | bool):
-                facts[f"{item.name}.{key}"] = str(value)
+                facts[fact_key] = str(value)
+            elif isinstance(value, dict | list):
+                # 结构化工具事实也必须进入独立依据复核，不能只让生成模型看到。
+                facts[fact_key] = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     return facts
 
 
@@ -66,6 +72,7 @@ async def run_specialist(
     session_summary: str = "",
     session_facts: tuple[MemoryFact, ...] = (),
     max_output_tokens: int = 1024,
+    business_executor: BusinessToolPort | None = None,
 ) -> SpecialistResult:
     """Agent 发布版本、工具对象与知识范围均按运行快照校验。"""
     if (
@@ -85,13 +92,15 @@ async def run_specialist(
     safe_question = prepare_untrusted_text(selection.subquestion, source="user_message").text
     base_tokens = len(_TOKENIZER.encode(prompt.text + safe_question))
     fresh_facts = tuple(
-        LiteralFact(item.key, item.value, f"{item.source_ref}@{item.observed_at.isoformat()}")
+        LiteralFact(
+            item.key, item.value, f"historical_hint_requery_required:{item.source_ref}@{item.observed_at.isoformat()}"
+        )
         for item in session_facts
         if item.observed_at is not None
         and datetime.now(UTC) - item.observed_at <= timedelta(minutes=15)
         and item.key.partition(".")[0] in agent.tool_names
-        and item.key.partition(".")[0] in TOOL_DEFINITIONS
-        and TOOL_DEFINITIONS[item.key.partition(".")[0]].permission in tool_context.permissions
+        and item.key.partition(".")[0] in TOOL_METADATA
+        and TOOL_METADATA[item.key.partition(".")[0]].permission in tool_context.permissions
     )
     context = build_context(
         literal_facts=fresh_facts,
@@ -104,6 +113,8 @@ async def run_specialist(
     searched: list[EvidenceBundle] = []
 
     async def search_knowledge(query: str) -> dict[str, object]:
+        if business_executor is not None and not await business_executor.permits("knowledge.view"):
+            return {"status": "permission_denied", "hits": []}
         if rag_service is None:
             return {"status": "rag_unavailable", "hits": []}
         bundle = await retrieve_bound_files(
@@ -131,6 +142,7 @@ async def run_specialist(
         context=tool_context,
         executor=executor,
         knowledge_search=search_knowledge if agent.file_ids else None,
+        business_executor=business_executor,
     )
     messages: tuple[dict[str, object], ...] = (
         {"role": "system", "content": prompt.text},

@@ -31,6 +31,152 @@ from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount
 
 
+@pytest.mark.asyncio
+async def test_return_records_are_read_only_and_exclude_media() -> None:
+    from unittest.mock import AsyncMock
+
+    from app.integrations.tiktok_read import TikTokApiEnvelope
+
+    channel = connected_channel()
+    channel.scopes = [*channel.scopes, "seller.return_refund.basic"]
+    client = TikTokReadClient(real_settings(), channel)
+    client._request = AsyncMock(
+        return_value=TikTokApiEnvelope(
+            code=0,
+            message="Success",
+            data={
+                "records": [
+                    {
+                        "event": "ORDER_RETURN",
+                        "create_time": 1690532213,
+                        "description": "Buyer submitted request",
+                        "role": "BUYER",
+                        "note": "Wrong item",
+                        "images": [{"url": "private-media"}],
+                    }
+                ]
+            },
+        )
+    )
+    rows = await client.get_return_records("456")
+    assert rows[0].description == "Buyer submitted request"
+    assert "private-media" not in str(rows[0].model_dump())
+    assert client._request.await_args.args[:2] == ("GET", "/return_refund/202309/returns/456/records")
+
+
+@pytest.mark.asyncio
+async def test_search_returns_202602_uses_verified_order_filter_and_scope() -> None:
+    from unittest.mock import AsyncMock
+
+    from app.integrations.tiktok_read import TikTokApiEnvelope
+
+    channel = connected_channel()
+    channel.scopes = [*channel.scopes, "seller.return_refund.basic"]
+    client = TikTokReadClient(real_settings(), channel)
+    client._request = AsyncMock(
+        return_value=TikTokApiEnvelope(
+            code=0,
+            message="Success",
+            data={
+                "return_orders": [
+                    {
+                        "order_id": "123",
+                        "return_id": "456",
+                        "return_type": "REFUND",
+                        "return_status": "RETURN_OR_REFUND_REQUEST_PENDING",
+                        "return_reason_text": "Wrong item",
+                    }
+                ],
+                "next_page_token": "next",
+            },
+        )
+    )
+    rows, token = await client.search_returns("123")
+    assert rows[0].return_status == "RETURN_OR_REFUND_REQUEST_PENDING"
+    assert token == "next"
+    call = client._request.await_args
+    assert call.args[0:2] == ("POST", "/return_refund/202602/returns/search")
+    assert call.args[3] == {"order_ids": ["123"]}
+    channel.scopes.remove("seller.return_refund.basic")
+    with pytest.raises(AppError) as error:
+        await client.search_returns("123")
+    assert error.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_search_returns_rejects_cross_order_response() -> None:
+    from unittest.mock import AsyncMock
+
+    from app.integrations.tiktok_read import TikTokApiEnvelope
+
+    channel = connected_channel()
+    channel.scopes = [*channel.scopes, "seller.return_refund.basic"]
+    client = TikTokReadClient(real_settings(), channel)
+    client._request = AsyncMock(
+        return_value=TikTokApiEnvelope(
+            code=0,
+            message="Success",
+            data={
+                "return_orders": [
+                    {
+                        "order_id": "999",
+                        "return_id": "456",
+                        "return_type": "REFUND",
+                        "return_status": "RETURN_OR_REFUND_REQUEST_PENDING",
+                    }
+                ]
+            },
+        )
+    )
+    with pytest.raises(AppError):
+        await client.search_returns("123")
+
+
+def test_return_optional_money_deadlines_and_lines_are_typed_without_private_addresses() -> None:
+    from app.integrations.tiktok_read import TikTokReturn
+
+    row = TikTokReturn.model_validate(
+        {
+            "order_id": "123",
+            "return_id": "456",
+            "return_type": "REFUND",
+            "return_status": "PENDING",
+            "refund_amount": {"currency": "USD", "refund_total": "12.30"},
+            "seller_next_action_response": [{"action": "SELLER_RESPOND_REFUND", "deadline": 1793000000}],
+            "return_line_items": [{"product_name": "Band", "sku_name": "Blue", "seller_sku": "B1"}],
+            "return_warehouse_address": {"full_address": "private"},
+        }
+    )
+    assert str(row.refund_amount.refund_total) == "12.30"
+    assert row.seller_next_action_response[0].deadline == 1793000000
+    assert "private" not in str(row.model_dump())
+    with pytest.raises(ValueError):
+        TikTokReturn.model_validate({**row.model_dump(), "refund_amount": {"refund_total": "NaN"}})
+
+
+def test_coupon_projection_preserves_time_window_threshold_and_buyer_conditions() -> None:
+    from app.integrations.tiktok_read import TikTokCoupon
+    from app.workspace.sidebar import _coupon_view
+
+    coupon = TikTokCoupon.model_validate(
+        {
+            "id": "123",
+            "title": "New buyer offer",
+            "status": "ONGOING",
+            "product_scope": "FULL_SHOP",
+            "target_buyer_segment": "NEW",
+            "claim_duration": {"start_time": 10, "end_time": 20},
+            "redemption_duration": {"type": "RELATIVE", "relative_time": 7},
+            "threshold": {"type": "MIN_SPEND", "min_spend": {"amount": "30.00", "currency": "USD"}},
+        }
+    )
+    view = _coupon_view(coupon)
+    assert view.claim_start_time == 10
+    assert view.redemption_duration == {"type": "RELATIVE", "relative_time": 7}
+    assert view.threshold["min_spend"]["amount"] == "30.00"
+    assert view.target_buyer_segment == "NEW"
+
+
 def real_settings(**overrides: Any) -> Settings:
     """构造不包含真实凭证的 REAL-FS-03 测试配置。"""
     values: dict[str, Any] = {
