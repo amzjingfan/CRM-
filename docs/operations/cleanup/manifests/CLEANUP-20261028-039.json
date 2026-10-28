@@ -1,0 +1,2973 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-039",
+  "state": "candidate",
+  "base_sha": "74e4b38a3018892904b2f97d7391328e579f3e12",
+  "scope": "one exact merged-PR old G5 worktree and branch; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-039",
+  "candidates": [
+    {
+      "worktree": ".worktrees/g5-manual-candidate-20261017",
+      "head": "6eb74a79cf69cee2e0b4c4353f27a1a636ee1eb2",
+      "branch_ref": "refs/heads/docs/g2-staging-index-current-20261019",
+      "pr": 435,
+      "merge_commit": "7a8e78c0643989c6b5ced33ce0f6b260eb5fe6ab",
+      "directory_modified": "2026-10-17T15:22:14.5530134+08:00",
+      "untracked": [],
+      "ignored_count": 13728,
+      "ignored_paths_sha256": "CD1965E2DA9A3D69A666666787E2C06CFB9CCB7C0D45C7F59E5B4A3CCB24D053",
+      "cache_file_count": 13237,
+      "cache_bytes": 247277764,
+      "archive_file_count": 491,
+      "archive_bytes": 203392032,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-r75-deterministic.json",
+          "size": 235,
+          "modified": "2026-10-18T13:55:28.3801431+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-r77-deterministic.json",
+          "size": 235,
+          "modified": "2026-10-18T14:45:46.0081422+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-r77-final.json",
+          "size": 235,
+          "modified": "2026-10-18T14:51:15.3135233+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-r79-final.json",
+          "size": 235,
+          "modified": "2026-10-18T15:59:34.9472533+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-r82-local.json",
+          "size": 235,
+          "modified": "2026-10-18T17:48:59.7191075+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-r84-local.json",
+          "size": 235,
+          "modified": "2026-10-18T18:54:18.7625849+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/ai/agent-phase4-r86-local.json",
+          "size": 235,
+          "modified": "2026-10-18T19:40:48.9311885+08:00",
+          "sha256": "BF8C271C80443A4E1532CF034BE63BB0B7683359136972CFE2F19DCDD98F9953"
+        },
+        {
+          "path": "src/tests/.artifacts/g1l-cbt-unavailable-pr-body.md",
+          "size": 1137,
+          "modified": "2026-10-19T14:21:52.8613023+08:00",
+          "sha256": "D100DE1F48EADAFC4929BE592046AC02E3B4B9B48C3A61B065D86130E4454FB6"
+        },
+        {
+          "path": "src/tests/.artifacts/g1l-index-current-pr-body.md",
+          "size": 369,
+          "modified": "2026-10-19T14:26:50.6318652+08:00",
+          "sha256": "A4A8BFA9885EA49099967A271D0D025D2BA9D05E7AC84E34B190DDCF66C5A4D0"
+        },
+        {
+          "path": "src/tests/.artifacts/g1l-pr-body-20261019.md",
+          "size": 523,
+          "modified": "2026-10-19T13:57:04.6597156+08:00",
+          "sha256": "86FC4872779898620F0A4DDFD813D97A8EC8CFD83DC5FE60D5967894002042E5"
+        },
+        {
+          "path": "src/tests/.artifacts/g2-pr-body-20261019.md",
+          "size": 519,
+          "modified": "2026-10-19T13:49:36.4910366+08:00",
+          "sha256": "B96199CE9F047D54EFE271DDCB4D9AD72155F99A396C12604DA68ED3624922F3"
+        },
+        {
+          "path": "src/tests/.artifacts/g2-probe-pr-body.md",
+          "size": 1005,
+          "modified": "2026-10-19T15:12:56.9881875+08:00",
+          "sha256": "D055E5A4A16545736AC70F5B090771E86522EBCA59D18F9205C9066133FE738C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5_r66_agent.sh",
+          "size": 737,
+          "modified": "2026-10-18T09:41:31.0858487+08:00",
+          "sha256": "91E62595DDA454AFDD263DDD2001B398AFA5B5E100E2876DE9C611AACC28EA1E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5_r66_prepare.py",
+          "size": 838,
+          "modified": "2026-10-18T09:37:46.7073314+08:00",
+          "sha256": "94CE8E29CF2C74D867BCAF01300C4B63A37A04332C97E9D2904E9B44ACB815E8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5_r66_prepare.sh",
+          "size": 1028,
+          "modified": "2026-10-18T09:38:20.0175833+08:00",
+          "sha256": "32306A803365F89802899D3BD84AD523F2BC5538F2B3762E879E365C3F2F5EB0"
+        },
+        {
+          "path": "src/tests/.artifacts/g5_r66_single.sh",
+          "size": 1158,
+          "modified": "2026-10-18T09:38:38.0211583+08:00",
+          "sha256": "191EB8B5E8A6ACC8A1EFCC8D6B794D3961D8EAB3C0D93893E890D986075ED8C9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-agent-summary-probe.py",
+          "size": 1816,
+          "modified": "2026-10-17T18:05:05.5401446+08:00",
+          "sha256": "E1A3D72C1793B169AFBB71537923191DAD762B8C504021D7D59BB20DBAAC21F9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-ba0f5e0.bundle",
+          "size": 5626742,
+          "modified": "2026-10-17T17:43:36.0541438+08:00",
+          "sha256": "D0DF2DEFE77759BAD4041232518068CF31BF16FBEFE771AC87FDFF361A90C038"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-credential-expiry-probe.py",
+          "size": 672,
+          "modified": "2026-10-17T17:48:02.3640227+08:00",
+          "sha256": "F570C6FAC9951B188764039BAAF404385DFD18DD86BC1410954FD5948BCC3F91"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-exec-with-token.py",
+          "size": 476,
+          "modified": "2026-10-17T17:53:05.1352626+08:00",
+          "sha256": "65C4CBD093CC53C584FE507258FFF80C8EDFFD75B1595C965364CA914B787675"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-github-probe.py",
+          "size": 1036,
+          "modified": "2026-10-17T17:46:08.2419890+08:00",
+          "sha256": "622DD060BE6DFC11528CA12862D0379F92DEA1F4E9E59ABBFF9737563CD08D93"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-prompt-safety-probe.py",
+          "size": 3330,
+          "modified": "2026-10-17T18:07:19.5037620+08:00",
+          "sha256": "5ED5D363970D07015413D27CC9FE1B298C20529C6BA01812AFE2290AEBA777CF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r100-pr-body.md",
+          "size": 1339,
+          "modified": "2026-10-19T10:50:39.3183092+08:00",
+          "sha256": "01C18DD8B2B259FC51941E5FBBE0E9EF4358C72C06D3E191273338ECC7222D86"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-agent-run-status.sh",
+          "size": 797,
+          "modified": "2026-10-19T11:08:17.6153680+08:00",
+          "sha256": "F931A2736CA7DD2F8933251FF461A8467074D81E218BCFB4DC108C39CB945A4B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-build-metadata.json",
+          "size": 2230,
+          "modified": "2026-10-19T10:54:14.9731911+08:00",
+          "sha256": "6E3E1D124D193A72C081ABED200E5E0B9E5BB8D81589C8D02EF71DAA63668827"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-disconnect.sh",
+          "size": 6169,
+          "modified": "2026-10-19T11:00:02.5245028+08:00",
+          "sha256": "398B1822DA743765BFB65C7B0059D4606205DF0EB882DA519CB01341D9E944CD"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-docker-config/config.json",
+          "size": 42,
+          "modified": "2026-10-19T10:56:37.8154247+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-final-pr-body.md",
+          "size": 770,
+          "modified": "2026-10-19T11:26:03.0934466+08:00",
+          "sha256": "8039031D71A6FACED58F26063312DE4C421C54666A6CE985C0E93F09F37BB54C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-invoke.ps1",
+          "size": 2581,
+          "modified": "2026-10-19T10:59:35.5672463+08:00",
+          "sha256": "47A9CC6EA12E291367B76EED93FCC38E3D689CD368C1711755526E9454057C57"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-main-e82b8dd.bundle",
+          "size": 6380748,
+          "modified": "2026-10-19T10:58:00.5227688+08:00",
+          "sha256": "DB8E02310EF1BA2985F27EBED631229138AFE07335FAAFE55EE0E20EA8901874"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-pr-body.md",
+          "size": 1479,
+          "modified": "2026-10-19T11:21:24.9047247+08:00",
+          "sha256": "BA1C89A13FE7BED51F361E55AB6743A9889764451D848D6A5DA5B0F652620CD6"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-preflight.sh",
+          "size": 984,
+          "modified": "2026-10-19T11:00:02.5235038+08:00",
+          "sha256": "8F295AA50C192D2AE8E81B3BC8DE3041427F1B7AF12656452A668E4BAB37D844"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-prepare19.py",
+          "size": 838,
+          "modified": "2026-10-19T11:00:02.5255033+08:00",
+          "sha256": "CC36B7C4732322058469DCD47FDC3724E75049E6B642D9C8EA93644841BE9943"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-remote-amd64.json",
+          "size": 2486,
+          "modified": "2026-10-19T10:56:37.7466046+08:00",
+          "sha256": "473ADF205E0AC07C1DB275F00661B4B5270C0D3049F4F82494CD3075B6DE6957"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-remote-index.json",
+          "size": 733,
+          "modified": "2026-10-19T10:56:02.3621038+08:00",
+          "sha256": "BD0643A8887F4B22A75AC3776E5ABEBD1900182A1C13E15762FB230CD2EE5D84"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r101-window.ps1",
+          "size": 2050,
+          "modified": "2026-10-19T11:01:00.5658037+08:00",
+          "sha256": "A8136D3BF3114D2E8E95A96364F744DA27DA37F4DD297D8FCCF39253B26A613B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-agent-run-status.sh",
+          "size": 1139,
+          "modified": "2026-10-19T12:03:19.4111721+08:00",
+          "sha256": "7876F3D1E6397364E5FD59694C49379E467732C530C20CDA3B7FE5711CFCDC29"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-build-metadata.json",
+          "size": 2214,
+          "modified": "2026-10-19T11:59:59.5832088+08:00",
+          "sha256": "D3FE029B3F71645E2E7AFF8D0354A18DCFB5039119626AD97B723F448F906B94"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-diagnose.sh",
+          "size": 1168,
+          "modified": "2026-10-19T12:10:12.6583337+08:00",
+          "sha256": "3D20C634DA73739A5C64456D8791A819CA0407D9B5AF78E8BCBA88DD9CEAD8C8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-disconnect.sh",
+          "size": 6171,
+          "modified": "2026-10-19T12:03:19.4111721+08:00",
+          "sha256": "886884D383E105C74803860AACED659B8E97FE5F12AD23921CB421B59B940662"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/.token_seed",
+          "size": 61,
+          "modified": "2026-10-19T12:30:56.3079419+08:00",
+          "sha256": "56019D5780B5E999243894A5EDE00DDFC6C7B50D45D24C832F9CD6C60A37D6BD"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-19T11:59:43.2455295+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-19T11:59:23.5947641+08:00",
+          "sha256": "EE6B465EA0070DE3E4CF1770AA781AFD686D39CFA47C976F7C30806DACF48278"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-19T11:59:23.5350066+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-19T12:30:39.5240474+08:00",
+          "sha256": "EB8F62C91FA505E835C8D49988825663EC83495D13F29F14A2624E3547C31E6D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/buildx/current",
+          "size": 65,
+          "modified": "2026-10-19T12:31:23.3239959+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/buildx/refs/default/default/g18ujubsta04fnvdclxsm08lg",
+          "size": 254,
+          "modified": "2026-10-19T12:30:40.7156455+08:00",
+          "sha256": "FE39CC2F29E298116A92259FC1432AE7104CF119EA8F2FEC26C8920345AAEBAB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/buildx/refs/default/default/qhb2kvgmf10m0mbn363uj0uhz",
+          "size": 254,
+          "modified": "2026-10-19T11:59:24.1229147+08:00",
+          "sha256": "FE39CC2F29E298116A92259FC1432AE7104CF119EA8F2FEC26C8920345AAEBAB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-docker-config/config.json",
+          "size": 123,
+          "modified": "2026-10-19T12:31:36.5344957+08:00",
+          "sha256": "D7B2E7B1F35A192CC901ADD49F0FBAF048F71D5962089DFF2ACF5DF9E78AFDC5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-invoke.ps1",
+          "size": 2586,
+          "modified": "2026-10-19T12:02:10.1433115+08:00",
+          "sha256": "DE8E969AC5C6D65F21E0355AD2CFFD41596FEC9F3475A7E36827196ECA54B74C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-main-92e0aeaf.bundle",
+          "size": 6417267,
+          "modified": "2026-10-19T12:01:02.8844836+08:00",
+          "sha256": "09481DA1F2C3045DF3CC750184B7288B19768FC7EB8347FA136C971D344F6CDE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-preflight.sh",
+          "size": 986,
+          "modified": "2026-10-19T12:03:19.4101712+08:00",
+          "sha256": "8CF9D1A89922D7EF81F35CA997CFAFF4B6371A7EFAC7E048152674FF7487A0E7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-remote-amd64.json",
+          "size": 2654,
+          "modified": "2026-10-19T12:00:26.1658150+08:00",
+          "sha256": "1D463578D2E7FDF98EC008C73421EED12B168A86051F98BA4FAEC3FDAF499835"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-remote-index.json",
+          "size": 885,
+          "modified": "2026-10-19T12:00:23.4649740+08:00",
+          "sha256": "6CADA935E98D8E0B00FD15E05CAC3E95E68F165DDA8F17B158304D5DCB044AC2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-scope-diagnose.py",
+          "size": 1866,
+          "modified": "2026-10-19T12:11:16.1529366+08:00",
+          "sha256": "45B5BA716170EAD7DFB790F6EBC116947C23090CFF5061B23960F52ECEE95EA6"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r102-window.ps1",
+          "size": 2159,
+          "modified": "2026-10-19T12:03:52.7460617+08:00",
+          "sha256": "63F73A66AB00CE25C7F8E22EF30498C771F56A1FC21BF0B1D6A9DB2EF7591EAF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r103-agent-run-status.sh",
+          "size": 1139,
+          "modified": "2026-10-19T12:12:31.4807403+08:00",
+          "sha256": "9E576F62165A3720120CD57A1EA686DBF385C85A2D08A0FBBAB9CDD29C4915A8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r103-diagnose.sh",
+          "size": 1168,
+          "modified": "2026-10-19T12:26:22.1897341+08:00",
+          "sha256": "09A0A282D7B2B831D6FC7A15C76D5EEB4C3BC97AA200C8875E46B898DC093660"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r103-disconnect.sh",
+          "size": 6882,
+          "modified": "2026-10-19T12:12:42.3087789+08:00",
+          "sha256": "DD73C9B6D899EC0574CFAF9C98A045C0F17748FB30760A94486AA42DF728D7B2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r103-invoke.ps1",
+          "size": 2584,
+          "modified": "2026-10-19T12:12:31.4767231+08:00",
+          "sha256": "7A45DA8B56B07BFB9A8ABDC5D24469873F34C9E04D928532D3BBDB7366AC0B3C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r103-log-categories.py",
+          "size": 1117,
+          "modified": "2026-10-19T12:16:18.2111876+08:00",
+          "sha256": "2E5302639B2DD2E7B5309D5A85BC811859AECE07D0F009C078E9842B678C25E5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r103-preflight.sh",
+          "size": 986,
+          "modified": "2026-10-19T12:12:31.4787233+08:00",
+          "sha256": "E0EBB9DE4479E44E6D4E0AD02CF27BCADFC47E2886B6C8D6953A20CA16A1269F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r103-window.ps1",
+          "size": 2158,
+          "modified": "2026-10-19T12:12:31.4817869+08:00",
+          "sha256": "BD41DCAF11370476BE8E40C19229C7E8EB5C2E51710B74D00BA6D8563EF1337E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-agent-run-status.sh",
+          "size": 1139,
+          "modified": "2026-10-19T12:32:24.4418190+08:00",
+          "sha256": "14B40F4BDD0BC17056A3174904921FD19319E71D499D78F8466EAF016E71D5C1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-build-metadata.json",
+          "size": 2214,
+          "modified": "2026-10-19T12:31:06.6829230+08:00",
+          "sha256": "09665551BFD2C2E5C52176A50B195E03F05F26A6718ADB72330D26350C2642E9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-disconnect.sh",
+          "size": 6882,
+          "modified": "2026-10-19T12:32:24.4418190+08:00",
+          "sha256": "1E4B4352C4F74F7E343FACB27352263A5852AFDD69D24251F3949A6CBC78A5AA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-invoke.ps1",
+          "size": 2584,
+          "modified": "2026-10-19T12:32:24.4408151+08:00",
+          "sha256": "7AC1872FEC7508B0C6F6AEE6DA5D5BD979900903C6FBCB3FC2251DDCB0AEE2D3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-main-2eea3ed4.bundle",
+          "size": 6427517,
+          "modified": "2026-10-19T12:31:50.1800155+08:00",
+          "sha256": "BC436E8B9C9EAFB1AEA283ACC076518504ACF7B06254E8F09F43C73ADC930A6E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-preflight.sh",
+          "size": 986,
+          "modified": "2026-10-19T12:32:24.4408151+08:00",
+          "sha256": "445CC27CC98CC1937B4A59970BB03C83A15D09A931660E864825D9AA54CDE4CF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-remote-amd64.json",
+          "size": 2654,
+          "modified": "2026-10-19T12:31:26.6185779+08:00",
+          "sha256": "F08780DC500CEFCB6B0815F8704B9461ADE770843431F7D2535758BB281B699A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-remote-index.json",
+          "size": 885,
+          "modified": "2026-10-19T12:31:23.1843877+08:00",
+          "sha256": "837761774C96A88CA2D3322A5952F2F37ADA523BFF2BA3B544659142D564579E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r104-window.ps1",
+          "size": 2158,
+          "modified": "2026-10-19T12:32:24.4428185+08:00",
+          "sha256": "30BC10BD2D505A08C4408D62C61883E8A6986D46ACF95A0ED39E2182E56AFBC7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r105-agent-run-status.sh",
+          "size": 1139,
+          "modified": "2026-10-19T12:42:07.4040215+08:00",
+          "sha256": "5D69F378243FDA09A14CCB7B62827C41ED9E170D2EFEC7BE7CA349F701359F79"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r105-disconnect.sh",
+          "size": 6882,
+          "modified": "2026-10-19T12:42:07.4040215+08:00",
+          "sha256": "1965D16EB724CC0363A0CBA1E572A58027BAA3EC737515FC37C1BE30079CC999"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r105-done-pr-body.md",
+          "size": 530,
+          "modified": "2026-10-19T12:59:49.4828334+08:00",
+          "sha256": "985B0FE57BBEBA1377D9F844A282AF338B40F603256F90D23AC6EF7CCE548D9A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r105-pr-body.md",
+          "size": 812,
+          "modified": "2026-10-19T12:56:41.9497231+08:00",
+          "sha256": "C0879B8CB2C83D1DA7CAC9C1B5AC267636BE31DA402EF6DA788656377A1E092B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r105-preflight.sh",
+          "size": 986,
+          "modified": "2026-10-19T12:42:07.4030216+08:00",
+          "sha256": "F34BC7BA3B3BD3D6C991BFC4E15A7D92FD84BA326FBEB33B60723BEC039DC80A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r105-window.sh",
+          "size": 3148,
+          "modified": "2026-10-19T12:41:59.2487371+08:00",
+          "sha256": "5736CB61EF8C752EF9C60DCCA520C9A8DF716905D42B63B912255BAD7165A7FB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r37-pr-body.md",
+          "size": 1370,
+          "modified": "2026-10-17T14:01:59.9988691+08:00",
+          "sha256": "0636AAC9AEE2D565FE3587908FB9C8D537C179BDA800A90625D4449C2E76155A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r39-ghcr-auth-7d4a72d7/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-17T15:13:58.5948201+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r39-ghcr-auth-7d4a72d7/buildx/current",
+          "size": 65,
+          "modified": "2026-10-17T15:15:29.5522079+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r39-ghcr-auth-7d4a72d7/config.json",
+          "size": 123,
+          "modified": "2026-10-17T15:15:48.7627509+08:00",
+          "sha256": "D7B2E7B1F35A192CC901ADD49F0FBAF048F71D5962089DFF2ACF5DF9E78AFDC5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r41-pr-body.md",
+          "size": 1160,
+          "modified": "2026-10-17T15:39:47.3266879+08:00",
+          "sha256": "1AEF2C03B3287B34D0DE9671E9D3266AD07985B3E7169F066E4857077176B45B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r42-ghcr-auth-20261017/config.json",
+          "size": 42,
+          "modified": "2026-10-17T15:54:49.6830300+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r42-ghcr-auth-20261017/manifest-error.txt",
+          "size": 0,
+          "modified": "2026-10-17T15:53:30.4454958+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r42-ghcr-auth-20261017/verbose-manifest-error.txt",
+          "size": 0,
+          "modified": "2026-10-17T15:54:16.7629972+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r42-pr-body-20261017.md",
+          "size": 978,
+          "modified": "2026-10-17T15:57:59.5567745+08:00",
+          "sha256": "DE094B42FB05403287D55140C44536CB5D6B7EB473070A235AC3C883906E7B61"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r42-pr-body.md",
+          "size": 1026,
+          "modified": "2026-10-17T15:44:19.7427205+08:00",
+          "sha256": "4A26ED6C8EDD44735914B39497CC989A3D934EC0530B6AC352304AC150860EF3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-main-b90f317-20261017.tar",
+          "size": 8396800,
+          "modified": "2026-10-17T16:07:44.5775631+08:00",
+          "sha256": "B928D950C0D4A296C785704C4F580CB85ECF14537E2272A6C63C8672B65A02BF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-record-20261017/after-reconcile.json",
+          "size": 164,
+          "modified": "2026-10-17T16:37:23.2632108+08:00",
+          "sha256": "A3F29C2E5C9513A4D993E22BEB5E5EFC3782DB0D8DC8F46A1BD837406B8AA73E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-record-20261017/after-vectorize.json",
+          "size": 163,
+          "modified": "2026-10-17T16:37:23.6216373+08:00",
+          "sha256": "20E5B292E2CD86E930ABE6802D028CB89033828E1089BB0F5F1C49CC99191A31"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-record-20261017/index-pr-body.md",
+          "size": 562,
+          "modified": "2026-10-17T17:38:38.6059958+08:00",
+          "sha256": "797BAD02605197B8D1CA1A1011DBF01206B4A4D45556D21C434D7D6F23B7BA37"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-record-20261017/pr-body.md",
+          "size": 1145,
+          "modified": "2026-10-17T17:35:08.3248305+08:00",
+          "sha256": "19B17E80CACE90F1E1B9EACED341B80F0F14896907C680C41A593A179514E3FF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-record-20261017/reconcile.json",
+          "size": 131,
+          "modified": "2026-10-17T16:37:23.0770320+08:00",
+          "sha256": "962BC95AC4992DB0CADA3F89C583DD15234A4947A9E11C5E3A6CCAF218EE7913"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-record-20261017/vectorize.json",
+          "size": 137,
+          "modified": "2026-10-17T16:37:23.4213531+08:00",
+          "sha256": "45DF6B614E02BC12CB622707F38A08EC0F3C5A39D641FB9CAAB71EDB6CD1222E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r43-runtime-70d8968-20261017.tar",
+          "size": 8366080,
+          "modified": "2026-10-17T16:11:55.9929922+08:00",
+          "sha256": "32F7366188878A4763542EEC2CB64F62EDDB8960FF4567B863161A866B2C34F5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/contentcheck.json",
+          "size": 163,
+          "modified": "2026-10-17T18:08:38.7150429+08:00",
+          "sha256": "27E5D216FD519FB1FB5B0D5E67435118ECB47D4C8241F635D1D6098F69FFD620"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/deploy.json",
+          "size": 2543,
+          "modified": "2026-10-17T18:08:38.2760745+08:00",
+          "sha256": "448DADD1CC4FF64E859C0FCEB5BC2143AE11BBE69FE5D8B02749984A3ACE7298"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-17T18:08:37.8156525+08:00",
+          "sha256": "D42C6790F4E778180D17573EBF214DFB2A545A9A22F764AFF9CCEC91BC37AB60"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/prepare.json",
+          "size": 166,
+          "modified": "2026-10-17T18:08:38.9468944+08:00",
+          "sha256": "6AA0E6EBBAD64ABEBBB05994AF4170B2E6D2B7E6E0952672128C30617443D4F1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/renew.json",
+          "size": 88,
+          "modified": "2026-10-17T18:08:38.4806355+08:00",
+          "sha256": "490C77DA877BD4B2165F7EA36A076A1D7FFD9851AF85CE8FFBEFD869C1368576"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/restore-deploy.json",
+          "size": 2761,
+          "modified": "2026-10-17T18:08:39.5866998+08:00",
+          "sha256": "70A5F2DE97350F8A3B4311E967A11C0361F56FA9FC0EF760A36323A9A9CA902C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/restore-validate.json",
+          "size": 2439,
+          "modified": "2026-10-17T18:08:39.4165883+08:00",
+          "sha256": "77D91B68EF10279321DDCC695E96054991582C12FDFCD673B20198623F318644"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/single.json",
+          "size": 892,
+          "modified": "2026-10-17T18:08:39.1754393+08:00",
+          "sha256": "9CE5FF71E57A5F8D33BC9B9E938AF2AF871E029F0C39DA64AE50E91EBECEC9D5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r45-captured/validate.json",
+          "size": 2221,
+          "modified": "2026-10-17T18:08:38.0317239+08:00",
+          "sha256": "2335133888B5EA42E7DCE1150B3CAF104D044DB76BA2A223525DF64B9BB00AA1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r46-index-pr-body.md",
+          "size": 574,
+          "modified": "2026-10-17T18:36:37.4235975+08:00",
+          "sha256": "017A994AAF0B862247C42B18A93F0DB6369C25D733140440E0F8FD2B2FE82AE3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r46-pr-body.md",
+          "size": 1334,
+          "modified": "2026-10-17T18:33:24.1531753+08:00",
+          "sha256": "8F90B252C52BD1BA65E59A436596C69EC13EFBDFCF9C8F097AF6CAE3C4029990"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-checkonly-20261017/crm-g5-r47-d29d5e0.bundle",
+          "size": 5645811,
+          "modified": "2026-10-17T18:54:43.5855023+08:00",
+          "sha256": "1D7911CBC5E7BB051A80E7D149DFB801F8AE8FA0B0F26E8DCB8B590421757654"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-checkonly-20261017/crm-g5-r47-d29d5e0.tar",
+          "size": 8519680,
+          "modified": "2026-10-17T18:52:41.8204400+08:00",
+          "sha256": "851256444754994E34341F134916AC511FF4AB1705396AC94047DA2149FAC957"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-checkonly-20261017/crm-g5-r47-runtime-70d8968a.tar",
+          "size": 8366080,
+          "modified": "2026-10-17T18:58:23.1663943+08:00",
+          "sha256": "32F7366188878A4763542EEC2CB64F62EDDB8960FF4567B863161A866B2C34F5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47contentpostrenew-content.json",
+          "size": 166,
+          "modified": "2026-10-17T21:00:43.6312815+08:00",
+          "sha256": "FCBAC393155C28827695A242316F377DE14F51CADE29325AACCE35C6B58C742F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47contentpostvector-content.json",
+          "size": 166,
+          "modified": "2026-10-17T21:00:43.2734857+08:00",
+          "sha256": "05FCD6BC8B45271AE8E83F6FDCAB3763029BB34F5DFE3360E18D4A75E5DB4F39"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47contentpostwrite-content.json",
+          "size": 167,
+          "modified": "2026-10-17T21:00:42.8086458+08:00",
+          "sha256": "E92A7EDE540EFB08FFBE12AF46EF1F89DD46684BF4F77EF22237572BA6B73C7F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47contentpre-content.json",
+          "size": 163,
+          "modified": "2026-10-17T21:00:42.3865909+08:00",
+          "sha256": "6A99F086F087C17DE654D6C296767949E5D73AABEF61D73E7E00839CBDB97AF5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47deploy-deploy.json",
+          "size": 2543,
+          "modified": "2026-10-17T21:00:42.1559788+08:00",
+          "sha256": "13ABB9641DA3CA49AE35489F797A75B0A020CC65182C2C8E0CBC676322E00727"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47deploy-prefetch.json",
+          "size": 944,
+          "modified": "2026-10-17T21:00:41.6542886+08:00",
+          "sha256": "AC03BFDB1F917A0A4EE285DDAD052F2ADE3828EC5589EBADA0BFE5EA458DF14F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47deploy-validate.json",
+          "size": 2221,
+          "modified": "2026-10-17T21:00:41.9082961+08:00",
+          "sha256": "06F923E0EF519809F0164BAD84B23074FE57D8AAF6D0EF04D96AD160E86F2850"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47prepare-prepare.json",
+          "size": 166,
+          "modified": "2026-10-17T21:00:43.8402650+08:00",
+          "sha256": "6AA0E6EBBAD64ABEBBB05994AF4170B2E6D2B7E6E0952672128C30617443D4F1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47renew-content.json",
+          "size": 88,
+          "modified": "2026-10-17T21:00:43.4310594+08:00",
+          "sha256": "512A8A034387AD5BA6A3AFE027E43A225FA41AC99440DDAD39E522AEEC32435E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47restore-deploy.json",
+          "size": 2761,
+          "modified": "2026-10-17T21:00:44.4490504+08:00",
+          "sha256": "DF8359D0ACF40C9D3D6596C22D4C631184C4D641F2F66806EEA916527D51EADD"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47restore-validate.json",
+          "size": 2439,
+          "modified": "2026-10-17T21:00:44.2660283+08:00",
+          "sha256": "DDCEB7843DBE7D927495198B879159138C90F0AA69C93B56BDD2E11D8BC42D68"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47single-single.json",
+          "size": 899,
+          "modified": "2026-10-17T21:00:44.0477865+08:00",
+          "sha256": "0AC37C9DA76F1A0F0312BBD4B6AFA9C2E452E39247BC494BE9BBC3A7B8F527E4"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47v3write-content.json",
+          "size": 133,
+          "modified": "2026-10-17T21:00:42.6264606+08:00",
+          "sha256": "1CD40F98EA66AF22F5DB563C3CE2BC577D83306277CDB27012EAEE654597E67C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/g5r47vector-content.json",
+          "size": 137,
+          "modified": "2026-10-17T21:00:43.0254231+08:00",
+          "sha256": "A58FBD1CDEF7072A85A37404C0A0BDCF60652729424B9A5DC84F32766A037D26"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/index-pr-body.md",
+          "size": 473,
+          "modified": "2026-10-17T21:10:22.6199845+08:00",
+          "sha256": "24A6AA9C76EB0097A32021B02246137957ECF2D0E16632B5F587103495D8AABF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-evidence/pr-body.md",
+          "size": 1063,
+          "modified": "2026-10-17T21:07:39.0869992+08:00",
+          "sha256": "B20CBCA00BF64FFC83F4BEEF1847B5816A896A2474A71DCFEBB9107D27E935F7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r47-ghcr-auth-20261017/config.json",
+          "size": 42,
+          "modified": "2026-10-17T18:44:06.6187367+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-index-pr-body.md",
+          "size": 527,
+          "modified": "2026-10-18T01:43:17.1324963+08:00",
+          "sha256": "C71400D07A2205A6CF58EBFCA91C1BD3E6278BE86E471766EFE57C426477C1C0"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-pr-body.md",
+          "size": 1287,
+          "modified": "2026-10-18T01:41:30.7293548+08:00",
+          "sha256": "D76F6C574BD6B58F63ED7BE1AE6477D8B597F7A8A116C6655DD5C21B18AEC0CB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/content-content.json",
+          "size": 166,
+          "modified": "2026-10-18T01:37:52.5248309+08:00",
+          "sha256": "E19FB2A72CDD42F63E8536D56222507E298B5D7A49E1260C3EC0FA24B5D591BA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/load-prepare.json",
+          "size": 166,
+          "modified": "2026-10-18T01:37:52.7635046+08:00",
+          "sha256": "9D9069FF80F9724DE58D10382BDE26AEFC38B437C2BA92585DE9628F994EA15F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/load-single.json",
+          "size": 899,
+          "modified": "2026-10-18T01:37:53.0273924+08:00",
+          "sha256": "932DF9454D6C19EBB78781400B96EDEEBC6CC3096DBC9ED15326C420DB7D9C86"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/restore-deploy.json",
+          "size": 2761,
+          "modified": "2026-10-18T01:37:53.4384838+08:00",
+          "sha256": "63AEA9E63B61A699D0F3E104DF6F3341188C35BB329BD8E7F85140DD3FB35FFC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/restore-validate.json",
+          "size": 2439,
+          "modified": "2026-10-18T01:37:53.2769407+08:00",
+          "sha256": "F61E3A27CB89E3B6558169806ADCF48A4F1A4FCDFE81A85A39D3C7E5900FDF58"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/window-deploy.json",
+          "size": 2543,
+          "modified": "2026-10-18T01:37:52.2976133+08:00",
+          "sha256": "7EEF26212EE12512C61ED3F23867AC580E29C09FEFEB9A06FD08682CF7A2E6C5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/window-prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T01:37:51.7876504+08:00",
+          "sha256": "FF854784C9CC7D84498FAD226B63F95AABA0647D994DA9F42760EC44318CBE51"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r58-remote-evidence/window-validate.json",
+          "size": 2221,
+          "modified": "2026-10-18T01:37:52.0594128+08:00",
+          "sha256": "C981C41DCF4DC05EA8D85B9D32C99154E0B18C869561D19EA59380CC2DD13F26"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r59-agent-readonly.sql",
+          "size": 561,
+          "modified": "2026-10-18T02:38:55.1696728+08:00",
+          "sha256": "9A8B7886D273ABB1BAE69296C8DCE0BBBE99B02EE22C8D9A2DC04315F4C498A8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r59-main-146e48b.bundle",
+          "size": 5785083,
+          "modified": "2026-10-18T02:26:10.2970794+08:00",
+          "sha256": "9F02D4AB9A073E20A3E41E2054E57BB967ED12D4F94DF92CE82E572328BF076C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r60-index-pr-body.md",
+          "size": 396,
+          "modified": "2026-10-18T02:47:33.7973661+08:00",
+          "sha256": "07B0DA6CD818573139051A5E3E945A967F805E03E1A17EF023C6FE2A17FC2A40"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r60-pr-body.md",
+          "size": 617,
+          "modified": "2026-10-18T02:46:11.6072568+08:00",
+          "sha256": "A6ACA54B59D3D3823A95048F0D855BDE584AE0C8C76078A9BDEE370277C437C0"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r61-index-pr-body.md",
+          "size": 358,
+          "modified": "2026-10-18T02:59:18.3173328+08:00",
+          "sha256": "795E51F1E194158E798D9AADC1A4F65B4C1C8DEE7A5D8680DD78B54E46A1E100"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r61-main-c6915ba.bundle",
+          "size": 5833008,
+          "modified": "2026-10-18T03:02:17.8261364+08:00",
+          "sha256": "D691D7E86C78005FCD2CF589D123680388E51F3A4951600D394D3B1B743E7927"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r61-pr-body.md",
+          "size": 934,
+          "modified": "2026-10-18T02:58:07.2657423+08:00",
+          "sha256": "609580E53BA84D5EED29B28C1D9ADBB41E405B4238D5CEDF9EFEB33E93A4F6B7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r62-index-pr-body.md",
+          "size": 420,
+          "modified": "2026-10-18T03:18:06.3657158+08:00",
+          "sha256": "0499092EF7C7036FE462DFC671B1A6908D248ECE40094D826F8E345D148E7517"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r62-pr-body.md",
+          "size": 1024,
+          "modified": "2026-10-18T03:16:30.2818888+08:00",
+          "sha256": "2385A1D458B0E88F0FCE8224F00F2A384999FF85E85356495CD21DAA9D12E820"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r63-index-pr-body.md",
+          "size": 459,
+          "modified": "2026-10-18T03:44:05.1097871+08:00",
+          "sha256": "AE517D9C79969E5C9E8C92481F9C18956A4858B354B4D84FD4CE37FE945E2BD9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r63-pr-body.md",
+          "size": 844,
+          "modified": "2026-10-18T03:42:32.1871912+08:00",
+          "sha256": "0DF38F7DEC559947542C0B39460BE324E4D47A5102E31E76E4DAB7976BD0A1EC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r64-main-665e05f.bundle",
+          "size": 5854930,
+          "modified": "2026-10-18T03:47:09.9442598+08:00",
+          "sha256": "943D5BAAABF2BECE1D1234DC4E6D769124F01BE4437A22E941F98DCA28D9EF4F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r65-index-pr-body.md",
+          "size": 590,
+          "modified": "2026-10-18T09:27:38.5087499+08:00",
+          "sha256": "7BBEE0D029F896E638165B6600CA43C9F21845637ED28911C506A79E27D75777"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r65-pr-body.md",
+          "size": 1092,
+          "modified": "2026-10-18T09:23:05.4686149+08:00",
+          "sha256": "3D792DEE447AFD34A0251EE3B10B8AC13FE530EF1AF6B9E6DC4DF8984B03A5A2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r66-index-pr-body.md",
+          "size": 479,
+          "modified": "2026-10-18T09:48:33.9988530+08:00",
+          "sha256": "2E25488C3CF806301B0AD0D5C73D16EEAB8E7A00743571D84E5BD68A98E0DF78"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r66-main-ea8011b.bundle",
+          "size": 5852099,
+          "modified": "2026-10-18T09:31:29.7416279+08:00",
+          "sha256": "04BF2F14834C41DCEA7418B455162A1FB7E3BC615EA5EA2D1FFF69FD4EE7E54F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r66-pr-body.md",
+          "size": 1528,
+          "modified": "2026-10-18T09:47:06.5140147+08:00",
+          "sha256": "D9C68E2DD485E5B0EC33BE739574FF532BA13C119691D93726D0037C4DD6DD36"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r68-index-pr-body.md",
+          "size": 584,
+          "modified": "2026-10-18T10:35:17.5205200+08:00",
+          "sha256": "1C1DADE1C194B215468D1B7E33D7E0122570EBEC1B316B91163D0C14B41134BC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r68-main-04f0fbe.bundle",
+          "size": 5899441,
+          "modified": "2026-10-18T10:13:41.8103640+08:00",
+          "sha256": "54369FDBD6038243C0D4B8B4580DA94B46AA851B14CAFB6C6B904D00FA230487"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r68-pr-body.md",
+          "size": 1076,
+          "modified": "2026-10-18T10:33:04.5009818+08:00",
+          "sha256": "401B7B64648851F3C07AED3DF312E832FFA18801EF916AE9ABCFB9DD1442243D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r70-agent-readonly.py",
+          "size": 2824,
+          "modified": "2026-10-18T11:41:48.0107382+08:00",
+          "sha256": "ED7E5A9ED0FC2F8B00633FDFC9EBDFA9D7C7817486CF9E08CC3D3E25081AD309"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r70-pr-body.md",
+          "size": 1377,
+          "modified": "2026-10-18T11:50:21.4417947+08:00",
+          "sha256": "8768C197599917A4633153E41191D22E89273EF4ED81E3B8A4F32B7597D4B6AA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r70-resolve.py",
+          "size": 694,
+          "modified": "2026-10-18T11:49:13.0829339+08:00",
+          "sha256": "5101E667D14BCFFFE99A002CE40FA3C572070501C8694D1443DB1A9D4578EBD8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r70-resolve2.py",
+          "size": 896,
+          "modified": "2026-10-18T11:50:56.8781263+08:00",
+          "sha256": "63F2C9E1E955A258C0D3B19473EB1E50A5E38A4060399314D680598E3A0A8067"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r70-update-docs.py",
+          "size": 1767,
+          "modified": "2026-10-18T11:47:21.8388368+08:00",
+          "sha256": "EE31A50DEEF42B830BB9E8686FEB16D1289B46C32F0371C1DAD4D2A5961EE569"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r71-pr-body.md",
+          "size": 1238,
+          "modified": "2026-10-18T12:01:35.2156404+08:00",
+          "sha256": "AB382264C05AB0E1F58FC8185CB4320A60E301269545034692D25FFF3C0CB90F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r71-update-docs.py",
+          "size": 1795,
+          "modified": "2026-10-18T12:00:41.9346708+08:00",
+          "sha256": "6924BC95CF7A069C3DB0D9F7EFC12DB09A7CDA335D0D62375FB24DA6C2FCA9E8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r72-agent-readonly.py",
+          "size": 2824,
+          "modified": "2026-10-18T12:17:23.5179250+08:00",
+          "sha256": "83F2287A6E5C5A116E0327371E5A59D9495BD51893A3CB35D567697D98B6B87E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r72-index-pr-body.md",
+          "size": 506,
+          "modified": "2026-10-18T12:28:56.1901117+08:00",
+          "sha256": "DE621206C9A3AE57CBBD64FC5DEE7906A2E4303F56E34C17EDC8C41C4F0E0F89"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r72-pr-body.md",
+          "size": 1651,
+          "modified": "2026-10-18T12:24:46.2034543+08:00",
+          "sha256": "57C6194A8CFF92A3E5D6EFD4798ED69FBF17A74772FEE9B1FFA015F366FD42BA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r73-index-pr-body.md",
+          "size": 436,
+          "modified": "2026-10-18T12:46:02.8502459+08:00",
+          "sha256": "5EED23D1B74DB570D955436CB4B0D4722D05447ABC626762FCAE4E86335B06EB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r73-pr-body.md",
+          "size": 1155,
+          "modified": "2026-10-18T12:43:11.0179767+08:00",
+          "sha256": "B002D52E4B4770A37FDFD98CA4F703D2BFB01101D3B7014C26B3E62B38E310A2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r74-agent-readonly.py",
+          "size": 2816,
+          "modified": "2026-10-18T13:14:40.0044872+08:00",
+          "sha256": "94B6A33E5D0A9A505357E15459187577A098395D22E47D97AB1AB63AB72E3651"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r74-docker-auth/config.json",
+          "size": 42,
+          "modified": "2026-10-18T12:50:16.1068602+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r74-index-pr-body.md",
+          "size": 429,
+          "modified": "2026-10-18T13:24:01.3213313+08:00",
+          "sha256": "FE1DED4CD78EE852137CFC6CB9725F305FF25ABC57A5860F34AAE36B5F609C30"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r74-main-2225248.bundle",
+          "size": 6027501,
+          "modified": "2026-10-18T12:51:40.2870945+08:00",
+          "sha256": "12955B7F402736B969B23937603119F2BF7BE75E9635A7FB3BDF89F9C3FCD9D5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r74-pr-body.md",
+          "size": 1582,
+          "modified": "2026-10-18T13:21:27.8316588+08:00",
+          "sha256": "A3E11C1D38868833BF8BC45231BEDA67592BB41FC5BB011081BA034968D8E02F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r74-with-gh-token.sh",
+          "size": 267,
+          "modified": "2026-10-18T12:54:23.3689433+08:00",
+          "sha256": "6593F65DA5F035C75AC469FFF2A2963D95B36C37F54763711E5B16D9CA5DE3EC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-agent-aggregate.py",
+          "size": 3610,
+          "modified": "2026-10-18T14:20:55.0740624+08:00",
+          "sha256": "D32160CA93DE41E061EFF7A1F7BB1CAD728C82F07AA9E7B8A60DFEFADC88CCF2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-concurrent.sh",
+          "size": 2571,
+          "modified": "2026-10-18T14:16:21.6580853+08:00",
+          "sha256": "9767CAB08ECFE76354525AA41A22BE9E77752EF6AB391A0B055A49D229021FFF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-diagnostics.sh",
+          "size": 1901,
+          "modified": "2026-10-18T14:26:36.6027177+08:00",
+          "sha256": "237C6F5A143A67F2DCFA7E0CEADB6E751F0B0A1E13B22C4EF2264FCDF20C5FC2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-docker-auth/config.json",
+          "size": 42,
+          "modified": "2026-10-18T14:03:59.3733606+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-failure-probe.py",
+          "size": 1912,
+          "modified": "2026-10-18T14:27:51.1289742+08:00",
+          "sha256": "B49F721E63566A4D7734BC6873A86B68D12E91517405566E41B9755C5CB57747"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-main-1fbef299.bundle",
+          "size": 6047175,
+          "modified": "2026-10-18T14:05:26.5899299+08:00",
+          "sha256": "92D9FCBA73F9B3DDAE317955427580BFB29E0BDDFF4AF1B9DC8E7720516E6AD9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-pr-body.md",
+          "size": 1296,
+          "modified": "2026-10-18T13:59:33.1130263+08:00",
+          "sha256": "19B2E027E6F6311B3806B03671D444ED0C077BD2673AE7E88C9B3E4BCE52D28F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-prepare.py",
+          "size": 837,
+          "modified": "2026-10-18T14:14:38.4203058+08:00",
+          "sha256": "09CFC27B8A549E5F272AB3F9AA3F7F6AB12471ECD89BA506E07FA38ECE77E37A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-prepare.sh",
+          "size": 983,
+          "modified": "2026-10-18T14:15:19.8186517+08:00",
+          "sha256": "0B3F5B0B107D28FC1CCEE2DF0CAA2043FDE8201BBCBC16A123C2A5FC54A00887"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-rag-probe.py",
+          "size": 4985,
+          "modified": "2026-10-18T14:24:36.2800517+08:00",
+          "sha256": "21444ECC89CAF5D4967937DDB3EA02CCF4AF5E7E1140AF993391949132E1860E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/agent-aggregate.json",
+          "size": 530,
+          "modified": "2026-10-18T14:27:33.1722993+08:00",
+          "sha256": "579A290B14D2F8648D73F0707307116A6CB37D3E298183127D1B78DD47F7ACB6"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/concurrent.json",
+          "size": 10760,
+          "modified": "2026-10-18T14:20:00.2277543+08:00",
+          "sha256": "6C1A573FA06E67339D85037FDBD0185BFAC35D468EF593CC000AF2E077E20093"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/content.json",
+          "size": 166,
+          "modified": "2026-10-18T14:20:00.2172663+08:00",
+          "sha256": "1842FCA20935A89965EC5A995337883A0B5090DA2944088D330781A0800B6C6D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T14:20:00.2271928+08:00",
+          "sha256": "AD858F48F3C06D10C3607C723A94FCCB08A7DB44565B65E3DBCF2EC73D3ABE2C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/failure-probe.json",
+          "size": 191,
+          "modified": "2026-10-18T14:28:46.5320024+08:00",
+          "sha256": "E91F8CD146F4F1DBAC2CBEEC60FC346020495816A7CBD6453570A241ED493BD2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T14:20:00.2321960+08:00",
+          "sha256": "1AA17AD0E1DA854DF6ABA065D91D4D1F5EFACF9EE9E2A55EBFCA12BA8DF24521"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/preflight.json",
+          "size": 153,
+          "modified": "2026-10-18T14:20:00.2261078+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/rag-probe.json",
+          "size": 830,
+          "modified": "2026-10-18T14:27:33.4329283+08:00",
+          "sha256": "E2FFDA1B6C30968CD17D1BC1637E7E428CA075490480F4A07BF39E4650A6B46A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/renew.json",
+          "size": 88,
+          "modified": "2026-10-18T14:20:00.2082660+08:00",
+          "sha256": "73C9E90919CBBA32FE61B59A2CE24411A5DFE9E409089E40720010918C90F91A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/resources.json",
+          "size": 838,
+          "modified": "2026-10-18T14:20:00.1786969+08:00",
+          "sha256": "A706E2D132115AEEBE6496F5DDBB253B711B41572FC3D483ECEF6197C9E25C93"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T14:20:00.2112661+08:00",
+          "sha256": "1A12A4A62F3CBB2F7E47D78F2147F2135022A839387E68AC2512D571AA5A7AA3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-remote-evidence/single.json",
+          "size": 930,
+          "modified": "2026-10-18T14:20:00.2221566+08:00",
+          "sha256": "F1489860A4026E848DED0BF247271FBA675A0D88BB2D5720E5A69E59AC0C1697"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r75-single.sh",
+          "size": 1151,
+          "modified": "2026-10-18T14:15:38.0635857+08:00",
+          "sha256": "7655DA886C6C99B4E87653E3482DBE65E9F55706D179D2A263EDF3C70D39A501"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r76-pr-body.md",
+          "size": 1262,
+          "modified": "2026-10-18T14:33:48.0279393+08:00",
+          "sha256": "3FA1C4B2ED098DF1B9A3BD6DAD2BCBEE594776CC3CC93505D25F20391FEACF0F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-docker-auth-20261018-1459/config.json",
+          "size": 42,
+          "modified": "2026-10-18T14:59:56.2082092+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-docker-verify-20261018-1502/config.json",
+          "size": 42,
+          "modified": "2026-10-18T15:00:15.1714856+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-docker-verify-20261018-1503/config.json",
+          "size": 42,
+          "modified": "2026-10-18T15:01:00.1336784+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-gh-api-check.sh",
+          "size": 413,
+          "modified": "2026-10-18T15:04:51.4108644+08:00",
+          "sha256": "35C6AFCEFD24278185F9A22E58703F0E8EF0597A6E55F96E4716F48DCC915BA7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-main-ebffdc80.bundle",
+          "size": 6075294,
+          "modified": "2026-10-18T15:02:56.8308208+08:00",
+          "sha256": "0AF2F3AC004DAA7091D3080ACD6C3D69F7D303E1A8D721870F4206F849E45ED3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-pr-body.md",
+          "size": 1345,
+          "modified": "2026-10-18T14:56:23.1036328+08:00",
+          "sha256": "98C9C9582D9CAE21E0198C09F50C258413B1B5DD0CF0CDC2E28E645D7565E5EA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-pwsh-api-check.ps1",
+          "size": 812,
+          "modified": "2026-10-18T15:05:13.5634783+08:00",
+          "sha256": "AE7FBD05D6921D9BDFD771D57CA38DFE1F1BA89B1A365E9DB3D93F0DB7FC4BE3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r77-with-gh-token.sh",
+          "size": 295,
+          "modified": "2026-10-18T15:05:48.2311698+08:00",
+          "sha256": "486AB6BC155F86D0E01F4D1C27A7B3E3C12702B50473D5B3AD9801EBCC4227F5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-agent-aggregate.py",
+          "size": 3609,
+          "modified": "2026-10-18T15:16:55.7228167+08:00",
+          "sha256": "8A69FF494A5F6DE5A36BF35B8776B07077EAA604FEDEFC73B80495622E918759"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-agent-aggregate2.py",
+          "size": 3628,
+          "modified": "2026-10-18T15:18:07.5334848+08:00",
+          "sha256": "26D27946F0241D83AEDE4719B37AAF8E8A02C7BE8FFE2A1997DE0ADC5E40F432"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-concurrent.sh",
+          "size": 2571,
+          "modified": "2026-10-18T15:12:39.0333268+08:00",
+          "sha256": "BDCCDE0A4DCFCC50B3EBAD9FD588E3C21CC5C4106A7F65B27E7D70F6E4A97480"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-diagnostic.sh",
+          "size": 904,
+          "modified": "2026-10-18T15:17:16.1994301+08:00",
+          "sha256": "1AE3165E3B498CB54E84BF142CE84E4268C5385A45691FB74B6C3BB1422106B1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-diagnostic2.sh",
+          "size": 906,
+          "modified": "2026-10-18T15:18:18.0080919+08:00",
+          "sha256": "82FFA1E8A18C4460998BAAC444643EF92A9C6ADC5077CD8D0A44099EDB31ADB0"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-index-pr-body.md",
+          "size": 653,
+          "modified": "2026-10-18T15:30:23.7252093+08:00",
+          "sha256": "A28E6C60E8B81CA4F3A3C4E37819B916A102375B88CB87C930D64928287D9185"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-invoke.ps1",
+          "size": 2365,
+          "modified": "2026-10-18T15:07:28.6821113+08:00",
+          "sha256": "2E3D45450376ECFF97A72E091A7BE92F7D16BF9D06C68ED7D353AF4CD43DF63D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-pr-body.md",
+          "size": 1224,
+          "modified": "2026-10-18T15:27:30.7058699+08:00",
+          "sha256": "18A68F3FBC7806976A0ECD96D791A6D15A02AF5B88B0D1BCFA5A01DB64B1F488"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-preflight.sh",
+          "size": 982,
+          "modified": "2026-10-18T15:11:38.8434900+08:00",
+          "sha256": "8BC5D4F8ADE56723FAC9DBA722B52FD3A761951B660DC3DBF844DBC4B860A717"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/agent-aggregate.json",
+          "size": 499,
+          "modified": "2026-10-18T15:19:56.6546761+08:00",
+          "sha256": "27CD0D6D55D5CEDB090CF9A566B46B6C3DB05126A1AD973ED0B12D4602186F71"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/concurrent.json",
+          "size": 10738,
+          "modified": "2026-10-18T15:16:13.5029847+08:00",
+          "sha256": "6808B7F8DB6007DBCBC32FD0AA655F2E65243F1FDD4E7B689C5BC9FDFC40AA60"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/content.json",
+          "size": 166,
+          "modified": "2026-10-18T15:16:12.8528398+08:00",
+          "sha256": "169291EEBF97E5A8912B03475AA5BA7079CE859D3DACF646271CF86F1C242C26"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/deploy-validate.json",
+          "size": 2303,
+          "modified": "2026-10-18T15:16:12.4681566+08:00",
+          "sha256": "F7E990E2944ACDE191E84F1AB06E62322841D3A816881F1A52008C5A3D7A9E19"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T15:16:12.6939801+08:00",
+          "sha256": "DA951CC3D28A3BB59D94C24E3648F136272A98C04F19BE2992543AF59225992A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T15:16:12.2353278+08:00",
+          "sha256": "529E3BE087EBE12B811DEF05492330DE410CD6672EDB5ED5B42620E6807C850D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/preflight.json",
+          "size": 153,
+          "modified": "2026-10-18T15:16:13.0056470+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/resources.json",
+          "size": 837,
+          "modified": "2026-10-18T15:16:13.6889071+08:00",
+          "sha256": "2BF9CAC9F5205AE5AE6A17FEACC1E8D5EA246B0560F00D666783BC6985EC329A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T15:16:14.0804200+08:00",
+          "sha256": "E70E11834C8CC9AA3CBC955008CB74BB53BEA7DAD17427142975C6301C12FB48"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/restore-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T15:16:13.8997830+08:00",
+          "sha256": "EF05054490F6B28937159AB0B1C3B5E800F413E5FC8E5F6BA695AC7B67F01662"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-remote-evidence/single.json",
+          "size": 939,
+          "modified": "2026-10-18T15:16:13.2714334+08:00",
+          "sha256": "AE7FFAADAB36EAD7423AFA0A0F4A3CEE046FF0596795C42DCE70D75585AF1EC7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r78-single.sh",
+          "size": 1151,
+          "modified": "2026-10-18T15:12:14.7651692+08:00",
+          "sha256": "60F82DBF95E28DFEBBFAC6C8CE589EC4681186D7DDE8F95799488303D28EDB1C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r79-entry-probe.py",
+          "size": 3575,
+          "modified": "2026-10-18T15:35:33.6880721+08:00",
+          "sha256": "2F183D4D6895894FF37E963B1EAD3CD8C699BD984715D91681D0A8D4003BDEEC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r79-entry-probe.sh",
+          "size": 1340,
+          "modified": "2026-10-18T15:36:56.6876945+08:00",
+          "sha256": "3A09E52B7D2987484EB8126E4735B24FAAA6E01CC208AC536D2E170896C01C8E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r79-index-pr-body.md",
+          "size": 472,
+          "modified": "2026-10-18T16:11:19.6328878+08:00",
+          "sha256": "2C39C04254CE687FB2ECD2F278ED60875D6ADC04E538E410B15E6F299C9CFECA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r79-pr-body.md",
+          "size": 1248,
+          "modified": "2026-10-18T16:08:30.4906900+08:00",
+          "sha256": "5B3ED746B94242D43F4415B8E1650F56266C389EC45D85DE6D942198549014B2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-agent-aggregate-stdin.py",
+          "size": 3523,
+          "modified": "2026-10-18T17:17:41.6712548+08:00",
+          "sha256": "B26CB6D6A2CACD9A723DBCE7EF7359D74CC81E4DCA9D059D2076F648C8C4153D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-agent-aggregate.py",
+          "size": 3627,
+          "modified": "2026-10-18T17:05:27.6644326+08:00",
+          "sha256": "594ACD8A5B32601F81343C12A8A035DCDCD0E3C994388AEF5EB0D4A4B9E4E413"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-aggregate-runner.py",
+          "size": 959,
+          "modified": "2026-10-18T17:17:34.8912158+08:00",
+          "sha256": "3439325437C71AB4E34E14512B795C80EA4F518A0A0F751FEDCC77504A62A682"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-concurrent.sh",
+          "size": 2584,
+          "modified": "2026-10-18T17:00:45.6132802+08:00",
+          "sha256": "DCB9472992C1C7DE8C8DD4A9432CE2C1C578922F17B4FFCC41D5BF03249B81D3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-index-pr-body.md",
+          "size": 597,
+          "modified": "2026-10-18T17:24:08.1793873+08:00",
+          "sha256": "EDC5BB6E517D17256F4AF931C8A71EF9A852FB0D2427A9E1ED2ACEBE63EB8B7D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-invoke.ps1",
+          "size": 2363,
+          "modified": "2026-10-18T16:53:33.5453207+08:00",
+          "sha256": "C63FCDC84E4C2AE7ADD660C35E2F9DB439D8A3EB17BEDA151A7AF3AC79D5F64B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-main-22e9f8a.bundle",
+          "size": 6127181,
+          "modified": "2026-10-18T16:52:27.5981003+08:00",
+          "sha256": "272723484FCB51A9A37B0A1FAE9513EDBB7AEDC09F13C311991266652D1AB8D5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-pr-body.md",
+          "size": 1163,
+          "modified": "2026-10-18T17:22:11.9432366+08:00",
+          "sha256": "5A0464F2BEA7EFC2266C7C0706EDD1F1E43FBEF88C69EE74F8320D87AA990B2C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-18T16:58:45.8876553+08:00",
+          "sha256": "93802332ABC24C7484D1C190B9FDA53C7A92806AEB575DADDC0B71516CC7FEC9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-prepare15.py",
+          "size": 837,
+          "modified": "2026-10-18T16:58:45.8846568+08:00",
+          "sha256": "90CC9EB17AB1043922A141D06BD0AB5094257027E0D3F094BE7A4C67D1110EBF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/concurrent.json",
+          "size": 10775,
+          "modified": "2026-10-18T17:08:34.1256645+08:00",
+          "sha256": "4DF0873BD57B2F0C8F989AE505514479DC613C93131EC19F5C9F87C4227EE6E9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/content.json",
+          "size": 166,
+          "modified": "2026-10-18T17:08:34.0647897+08:00",
+          "sha256": "3AD12996C41E40947973E259F6169666EA4C1AC3021E5B21C97A6D8190F1FCE9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/deploy-validate.json",
+          "size": 2303,
+          "modified": "2026-10-18T17:08:34.0847895+08:00",
+          "sha256": "819B7C464B067CD1E55B3046931438A1F662838537DE995524910DD6C5498D04"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T17:08:34.0967908+08:00",
+          "sha256": "D8C4DF5B5EB14DA262E7DED7204DADD4BC87E76F9DD532D56179CB9AA7FC436C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T17:08:34.0727906+08:00",
+          "sha256": "A8541BD28AB8F6817C605354DFC497E016D02A8AA2AAB6FA7B2268201E872E30"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/preflight.json",
+          "size": 153,
+          "modified": "2026-10-18T17:08:34.1043539+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/renew.json",
+          "size": 88,
+          "modified": "2026-10-18T17:08:34.1195461+08:00",
+          "sha256": "D532B8D443726871253C8D21A5634C0B4744E2857792DFB007FEF03F1C5C0E9C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/resources.json",
+          "size": 836,
+          "modified": "2026-10-18T17:08:34.1366725+08:00",
+          "sha256": "AE88FE03D91A7BFB16B3A585EC98B15820DBCAB9D983CEDB3BBFE9266AD7668F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T17:08:34.1376724+08:00",
+          "sha256": "BB1C38CFD7032A31A8B2B1F1E89FC37E52FD4858FFFD4EC0830A93C1205C39B0"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/restore-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T17:08:34.1356710+08:00",
+          "sha256": "87685F035201735D6172210A954A5B0CB1805FF970059F88244C916466E9B4DC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-remote-evidence/single.json",
+          "size": 930,
+          "modified": "2026-10-18T17:08:34.1183526+08:00",
+          "sha256": "4556FDD63AE0B1CB4B022F203728A980786F168A850F800F4BE68726DEE6D3F7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-retrieval-config-check.py",
+          "size": 544,
+          "modified": "2026-10-18T17:26:05.8979900+08:00",
+          "sha256": "843F5E23B1A3C0A3621F1DA1668753B34B03FB1AA11BAAF238033FAFDAA0580D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r80-single.sh",
+          "size": 1150,
+          "modified": "2026-10-18T16:59:37.9532849+08:00",
+          "sha256": "509A8B22C65D890EEF50C53CA734D34F33192F4E27FCF4C30A88637FCDC4C7D4"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r81-agent-profiles-stdin.py",
+          "size": 2257,
+          "modified": "2026-10-18T17:31:33.1377926+08:00",
+          "sha256": "E56F2825DD5BDE8CBE1169DDF1F532ACE5518A38421B9D636BD95E62E2056359"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r81-agent-profiles.json",
+          "size": 6926,
+          "modified": "2026-10-18T17:31:57.9164184+08:00",
+          "sha256": "A5610F02E9A89D02F1591E8A259663824F7BCCF0A56AB3A44087C7ECDB27569B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r81-correlate.py",
+          "size": 3912,
+          "modified": "2026-10-18T17:32:24.5194198+08:00",
+          "sha256": "909735F757FA15427513B111C7A26824C3292E890C7EDB5C14809F8ECA996CD3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r81-index-pr-body.md",
+          "size": 518,
+          "modified": "2026-10-18T17:37:53.1170556+08:00",
+          "sha256": "2A9DCD6E2ED09AC8F49BCFE7C80135AACAF2511738CC166AA146CD801E5F0B29"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r81-pr-body.md",
+          "size": 976,
+          "modified": "2026-10-18T17:36:24.1375724+08:00",
+          "sha256": "C8A41FC2E4B12B81E4C8E79131E1F457E7894448047E76CEE5748AB899810C12"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r81-profiles-runner.py",
+          "size": 960,
+          "modified": "2026-10-18T17:29:12.0871728+08:00",
+          "sha256": "8DAD3CF6BA951F9F340DBBEF1EACF5CD1DAFBF36EC5512F78A2D8AE964E27BE4"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r81-retrieval-phase-probe.py",
+          "size": 6386,
+          "modified": "2026-10-18T17:27:23.4619124+08:00",
+          "sha256": "4C8B056548D3397F3DE6E7A4EB6F8B842E574DE954BC901E3AC956E21F7549C4"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r82-index-pr-body.md",
+          "size": 486,
+          "modified": "2026-10-18T18:01:06.9647613+08:00",
+          "sha256": "F37D7DDEE5492A4BAC04009C6DC7460D79DF1E26715B69060475D571C0B3B7CC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r82-pr-body.md",
+          "size": 1123,
+          "modified": "2026-10-18T17:59:02.8697761+08:00",
+          "sha256": "000D9FAC766C77DC8C68BC79B5613EB0A9FF04F2A256158C7875CE373B8654D3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-agent-profiles-stdin.py",
+          "size": 2337,
+          "modified": "2026-10-18T18:16:46.7237754+08:00",
+          "sha256": "3D76CA0551293ABB113FE02867BF77131389308B367FC5E8F46F98769A7C9F13"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-agent-profiles.json",
+          "size": 10378,
+          "modified": "2026-10-18T18:17:43.0130472+08:00",
+          "sha256": "042D03F54CF71247B4F9498EC9A2FEB2C71E7D8986B92F0F0FEA72740043653E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-concurrent.sh",
+          "size": 2584,
+          "modified": "2026-10-18T18:12:11.9721627+08:00",
+          "sha256": "AE9AE2E5D01F4F717FCF1F7725F73EA50D44A25E6B9717DF853C9F63AF2A1B09"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-concurrent.sh",
+          "size": 2810,
+          "modified": "2026-10-18T18:21:11.1836247+08:00",
+          "sha256": "4EA6942B4480B423F412F03A532330028188E6370D36DC1687FAC5D8D17E8D59"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/concurrent.json",
+          "size": 10793,
+          "modified": "2026-10-18T18:28:30.1625603+08:00",
+          "sha256": "7A739192F074B5347E536563B236FF2AED865A58FA6FCF20862DB16850F4B112"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/content.json",
+          "size": 166,
+          "modified": "2026-10-18T18:28:29.4972195+08:00",
+          "sha256": "F38252B6E55C09C2E64646E56A12C2D205A5EEA7C2D978D647C96AA775D2F0CA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/deploy-validate.json",
+          "size": 2303,
+          "modified": "2026-10-18T18:28:29.0516872+08:00",
+          "sha256": "69A9C6E06430F00E3CDCDB301DA2C57C1255682D648512DF098CBB45C1265AF5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T18:28:29.2880720+08:00",
+          "sha256": "82D0D669A7E6AE59E66AD4DC3CFD5CC552A34A89136A3E84563F2FAE005D9735"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/pg-activity.json",
+          "size": 5085,
+          "modified": "2026-10-18T18:28:30.6377412+08:00",
+          "sha256": "470B928E6BD3EEF39CD8DE564E5D4A853B06E871C16AFF48A2E28118B3BA07B7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T18:28:28.8036336+08:00",
+          "sha256": "D0E026938D2020FCF42BB844A6BE7681B94DF943CB827B44AA095E1C5C01453E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/preflight.json",
+          "size": 153,
+          "modified": "2026-10-18T18:28:29.7293026+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/resources.json",
+          "size": 1009,
+          "modified": "2026-10-18T18:28:30.3990124+08:00",
+          "sha256": "84B5D847B4FA3881FD6348D58A5E7B817371CA5B82A98C8B77D2055013078CE0"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T18:28:30.9803351+08:00",
+          "sha256": "62E151E16A5B69A226BF18ACFB659191BA1B8D542250BB7293C6187F86F06D10"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/restore-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T18:28:30.8188849+08:00",
+          "sha256": "FFB12C5F3D289610350D03927234A2E2565FEEF4047631426D9E5B85B1895923"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-evidence/single.json",
+          "size": 939,
+          "modified": "2026-10-18T18:28:29.9282777+08:00",
+          "sha256": "63C9DCBC9EEC3B1DB4080B93896E7846D1E3E7A8561756DB427C1492C81BFB75"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-preflight.sh",
+          "size": 992,
+          "modified": "2026-10-18T18:21:11.1735238+08:00",
+          "sha256": "D6810AD16E91DB4BCC65295315B75D2CAD4EDC39368016BECDAF163955CBE4A6"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-connection-single.sh",
+          "size": 1161,
+          "modified": "2026-10-18T18:21:11.1745243+08:00",
+          "sha256": "00778F75F0BBC86B2FBD8F9E1112EDFE2985D6E9FD2DE165B5AAE846E5AB1CBA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-correlate.py",
+          "size": 3531,
+          "modified": "2026-10-18T18:18:03.3996605+08:00",
+          "sha256": "CC45CC0311E96AFB2AD16338614AE13246C05973385F7012043913E32FFA9E12"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/concurrent.json",
+          "size": 10763,
+          "modified": "2026-10-18T18:16:17.7206464+08:00",
+          "sha256": "EA26901076B6C0E1C9CA2B0FBE6C4C6B39F1A020D509BF64ED86AD9777B76B30"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/content.json",
+          "size": 166,
+          "modified": "2026-10-18T18:16:17.0303250+08:00",
+          "sha256": "4D567695A2F2DB07101D79E2F0CDED55C92841F0075A43FBD1F14686A45CB463"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/deploy-validate.json",
+          "size": 2303,
+          "modified": "2026-10-18T18:16:16.5458559+08:00",
+          "sha256": "57CFA8D65D95805F2932E3D0EF687B69F1B560A83D39E1AAA7BBF7D1AFDA4060"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T18:16:16.7904652+08:00",
+          "sha256": "B4CFA0D6A9C6236AC6BCA88D297E9E7BE408A4FA83A5C7091702B7213E511E0A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T18:16:16.3034087+08:00",
+          "sha256": "BD6DF08A72A10F46860E87DD55E3D66D693BB3A9D376D9288766FB4C3EF487C9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/preflight.json",
+          "size": 153,
+          "modified": "2026-10-18T18:16:17.2711500+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/resources.json",
+          "size": 1009,
+          "modified": "2026-10-18T18:16:17.9384168+08:00",
+          "sha256": "54B29FC73308C28708A58DC361E9D4263F2BE5802D6ABAE2194EE28349F1F10D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T18:16:18.4142485+08:00",
+          "sha256": "731AB217AFA712BA986B09D557F481AF3D41E3BF37F33F74D1FFF70FE4043958"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/restore-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T18:16:18.1769738+08:00",
+          "sha256": "C17E0D997972561B34315076426186A85898330A26985E7CE9B34A73184D98D9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-evidence/single.json",
+          "size": 936,
+          "modified": "2026-10-18T18:16:17.5124288+08:00",
+          "sha256": "F8EC083045CACE41CA73AE05A222F98640948ED9259871370AE04107005118B8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-index-pr-body.md",
+          "size": 387,
+          "modified": "2026-10-18T18:42:20.7544675+08:00",
+          "sha256": "031A90C4CD577E44BA9FB406D457D3B2747971F32BB5C358E867D6C97BFF6743"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-invoke-connection.ps1",
+          "size": 2378,
+          "modified": "2026-10-18T18:21:11.1709572+08:00",
+          "sha256": "72A9DFD863EB2F5C1FFC7E711279496C1941856DC9C967DDABB300F50800771E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-invoke.ps1",
+          "size": 2367,
+          "modified": "2026-10-18T18:05:56.7859338+08:00",
+          "sha256": "01405A053AB8C0C0839FCF0A35EDB584B51A2FD59084E3F61C23019807F099AF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-main-4228e0b.bundle",
+          "size": 6172624,
+          "modified": "2026-10-18T18:04:46.2056520+08:00",
+          "sha256": "6AE395089CD482FC58988FCF6D628C1FC7C70067987D7F7F02D41DA8DC147E7B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-make-manifest.py",
+          "size": 952,
+          "modified": "2026-10-18T18:34:39.8647343+08:00",
+          "sha256": "DBD9528F67E56396981FBCD1763D222002CD4012BE32BFCAC52AF23B4630C0C1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-pg-activity.py",
+          "size": 3224,
+          "modified": "2026-10-18T18:20:23.4334137+08:00",
+          "sha256": "AC063B6091140E93FB278A3C1EFD0513830B7E2CE5B6DF1716272121FD5F8D64"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-pr-body.md",
+          "size": 891,
+          "modified": "2026-10-18T18:40:45.1103989+08:00",
+          "sha256": "A76C01D92C7DB34E4A01B1B5A62CE7B63090442BFE44888ED9C4595068973963"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-18T18:12:11.9711636+08:00",
+          "sha256": "62259BAF832390ADA111981686F11EABC5534A096AAEB2B37372277C12140437"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-prepare15.py",
+          "size": 837,
+          "modified": "2026-10-18T18:12:11.9721627+08:00",
+          "sha256": "90CC9EB17AB1043922A141D06BD0AB5094257027E0D3F094BE7A4C67D1110EBF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-profiles-runner.py",
+          "size": 959,
+          "modified": "2026-10-18T18:16:46.7247739+08:00",
+          "sha256": "B023C693930B10C2B97B226FC50A9853076884A72873F288863CD134B82C5C7E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r83-single.sh",
+          "size": 1150,
+          "modified": "2026-10-18T18:12:11.9721627+08:00",
+          "sha256": "3AA25419C5CA8521F0DD6793493069287EBF0BF5D2EC6EEDD333EF12DE5E4375"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r84-index-pr-body.md",
+          "size": 381,
+          "modified": "2026-10-18T19:00:03.5862778+08:00",
+          "sha256": "6A465EFE5E82A557897899E2419B2502D8C39CBE772E6DE096F8E69F09DE9FC7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r84-pr-body.md",
+          "size": 1078,
+          "modified": "2026-10-18T18:58:35.8300565+08:00",
+          "sha256": "B3D9DC5FBE95E4822A176C5ED25BD79E9861FE1E4508E7EBA0DE3E7CB55A8A43"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-agent-profiles-stdin.py",
+          "size": 2336,
+          "modified": "2026-10-18T19:14:50.3223096+08:00",
+          "sha256": "000C05624746BB30E3A6C6B0A4FEB521A05FC9462AC94C7899A29C3FB4EBAC18"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-concurrent.sh",
+          "size": 2799,
+          "modified": "2026-10-18T19:11:15.5439136+08:00",
+          "sha256": "94491F421ACC905581F076C0E91138084A0BB87BAEFF8BEFAA716CD403466325"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-correlate.py",
+          "size": 3540,
+          "modified": "2026-10-18T19:15:21.1999551+08:00",
+          "sha256": "327F5274744113A752AFB412CE75C5EC02F71A959ED380EC5006E42583553144"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/agent-profiles.json",
+          "size": 10318,
+          "modified": "2026-10-18T19:15:14.2313040+08:00",
+          "sha256": "0262B222EA6122A4A663AF10BBEBB37971DEF36856668CBA4FE9835828563D7C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/concurrent.json",
+          "size": 10793,
+          "modified": "2026-10-18T19:15:14.4512696+08:00",
+          "sha256": "7896DBE6EB7397DFB8111933E05E692F737653D7D0A0E3A848E4B20FFE34827E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/content.json",
+          "size": 166,
+          "modified": "2026-10-18T19:16:56.0478975+08:00",
+          "sha256": "96829F4DA33B67168662F2BF9CF1B24F58BC67B3A206CCB474F6E7BA54B63268"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/correlated-timing.json",
+          "size": 1752,
+          "modified": "2026-10-18T19:17:30.2550059+08:00",
+          "sha256": "2BE2A14A8109AF172150FB99BF45E2B765E1CEDCBB8BBFA3B8FD6D6B552B9ACB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T19:16:55.8161561+08:00",
+          "sha256": "1CA1F24F1ECFE17A5DC4F7FFF34FC8AB7880B373D85249C0D213B1DC82C0A810"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/pg-activity.json",
+          "size": 5188,
+          "modified": "2026-10-18T19:15:14.8665745+08:00",
+          "sha256": "8E73CFEA8C22977CDD7FFE7E0222FA675A41E62400E9B309C32952D42D9C0240"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T19:16:55.3926268+08:00",
+          "sha256": "4A0A819B6725472C05633AEBB85ADC1F29F8CC9193D534BB67D1D2029A78FEA3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/preflight.json",
+          "size": 153,
+          "modified": "2026-10-18T19:16:56.5194844+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/renew.json",
+          "size": 88,
+          "modified": "2026-10-18T19:16:56.2864904+08:00",
+          "sha256": "26EAAA26410150DC10B514C6E9CEDD2CCD381980CA263D7D9FEFFA4B29406B41"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/resources.json",
+          "size": 1011,
+          "modified": "2026-10-18T19:15:14.6386972+08:00",
+          "sha256": "066DCF2B57CA4A1CCB34D0071FC1C2E7365019745BDFB42484BECE8A3B2476B1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T19:16:57.2265617+08:00",
+          "sha256": "EC51E7D8230F42085E9F18ACEF9C6C0CB45B1BFAFD7FB63F207EF673D5FEAA7C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/restore-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T19:16:56.9901605+08:00",
+          "sha256": "55474921A43D71786938FE3A331933FBDA59A8A1C05EB33212FBC0AC3FB72144"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/single.json",
+          "size": 936,
+          "modified": "2026-10-18T19:16:56.7594350+08:00",
+          "sha256": "D683C6AC7963AB80382DB0F7E0225FCAD6854E4357BD5865BF7982CAA38CA9DA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-evidence/validate.json",
+          "size": 2303,
+          "modified": "2026-10-18T19:16:55.6305103+08:00",
+          "sha256": "92B50326E6559074F4832A88B495203FDA7C57EA7362C4CFA34D8965A1465E26"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-index-pr-body.md",
+          "size": 554,
+          "modified": "2026-10-18T19:24:33.3255936+08:00",
+          "sha256": "2728AFBAAA3EFBF728FC14696278CCEA7E327E072F355853818B3EDA9A9873D3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-invoke.ps1",
+          "size": 2367,
+          "modified": "2026-10-18T19:04:53.9218661+08:00",
+          "sha256": "CAC4E42BBFA0D629FD9FEA910C61B23AC90502CF858C9118212EAAB3FF0426D9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-main-42d5ea2.bundle",
+          "size": 6172041,
+          "modified": "2026-10-18T19:03:17.1112900+08:00",
+          "sha256": "C4778EC83AD98B3DB7C3390C36A7C12657D0495E2CF2B15894C860621C5EB4DD"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-make-manifest.py",
+          "size": 952,
+          "modified": "2026-10-18T19:17:53.8466278+08:00",
+          "sha256": "F03A4641390F669233FFAE86D4D3B3CFF2AE8A8F3D5147DBAB197FF8507840AA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-pg-activity.py",
+          "size": 3224,
+          "modified": "2026-10-18T19:11:23.5226678+08:00",
+          "sha256": "606CF429ED8A6CA7CBC396444A78E4B316D40167B2244AC5DFE0878EA7F7268C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-pr-body.md",
+          "size": 938,
+          "modified": "2026-10-18T19:22:22.0379833+08:00",
+          "sha256": "3BD7D793079FD34314AB1038B5483D0EC6D5EB2024B5F0A39D52417C7C8F6527"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-18T19:10:14.5102139+08:00",
+          "sha256": "7FB30DE06BCB5A56055D1F1330FA9A733A9C63CD8F2556F4EB2981CF6411DD72"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-prepare16.py",
+          "size": 837,
+          "modified": "2026-10-18T19:10:14.5102139+08:00",
+          "sha256": "288332D57D2B43F7FDF15617FFC8C30077805EDAAB112C4BD27A82D0088A1E8E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-profiles-runner.py",
+          "size": 959,
+          "modified": "2026-10-18T19:14:50.3213116+08:00",
+          "sha256": "25545D8DFC64571F274DB11B68FE88C58486CB0FA29D23E2B4766D003F177CD8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-single.sh",
+          "size": 1150,
+          "modified": "2026-10-18T19:10:14.5102139+08:00",
+          "sha256": "9AECFB782B8F4843C000A83B5323D602215D22F8BFE3C8FCD5017A881369835E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r85-verify-index.py",
+          "size": 1692,
+          "modified": "2026-10-18T19:24:01.0485292+08:00",
+          "sha256": "FEC153E282622A8345C6E9DAF2A3D5762EC9DB6451119DEF0E917FC54E554AA5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-agent-profiles-stdin.py",
+          "size": 2391,
+          "modified": "2026-10-18T20:04:33.1079854+08:00",
+          "sha256": "B83318895C52571F1C712676908B672B80B908CA777DA9F041BD19CB117E354E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-agent-profiles.json",
+          "size": 13306,
+          "modified": "2026-10-18T20:05:16.8343431+08:00",
+          "sha256": "95D8C56EA65964447CAEA2DEDE585BF3B64CF65EBA5F631420741F9D96072375"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-auth-probe.json",
+          "size": 166,
+          "modified": "2026-10-18T19:43:29.1201066+08:00",
+          "sha256": "B76913515353BB141F1A0DCF89A69D69B4FC810AB9AD325587FCC98BA441D9EE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-auth-probe.py",
+          "size": 1996,
+          "modified": "2026-10-18T19:26:18.0156344+08:00",
+          "sha256": "8D5CD6B694F9333CBCB4AA4234C13AFBDA761834B11D4409A29AE14F35442D87"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-auth-probe.sh",
+          "size": 989,
+          "modified": "2026-10-18T19:26:18.0156344+08:00",
+          "sha256": "67E9528E43CCACE33D1BF0302D211B291E5E191A73B17A8F02C604F0CAC03989"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-build-metadata.json",
+          "size": 2216,
+          "modified": "2026-10-18T19:50:29.0467780+08:00",
+          "sha256": "8660AA6CBC2631E5582872C431BF4C3E9D4B811DF877322323ECE7EF7B710BEF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-concurrent.json",
+          "size": 10789,
+          "modified": "2026-10-18T20:00:28.7167800+08:00",
+          "sha256": "C124CE5B1282FF3E81A5847A282743BB72C488D804F9B55DE39456D38EBF333B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-concurrent.sh",
+          "size": 2800,
+          "modified": "2026-10-18T19:59:16.4938110+08:00",
+          "sha256": "A5772A39E0761845CF168717E413B9296F8E8F008A5682252BE51B2532286B08"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/concurrent-admission-timing.json",
+          "size": 412,
+          "modified": "2026-10-18T20:09:06.3747926+08:00",
+          "sha256": "BD5227661EEA6E430DE074D7D8DBD6C2C4452616FC68C61FBD7D07A48547FACD"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/concurrent-agent-profiles.json",
+          "size": 13306,
+          "modified": "2026-10-18T20:09:06.3587927+08:00",
+          "sha256": "95D8C56EA65964447CAEA2DEDE585BF3B64CF65EBA5F631420741F9D96072375"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/concurrent-concurrent.json",
+          "size": 10789,
+          "modified": "2026-10-18T20:09:06.3890263+08:00",
+          "sha256": "C124CE5B1282FF3E81A5847A282743BB72C488D804F9B55DE39456D38EBF333B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/concurrent-resources.json",
+          "size": 1011,
+          "modified": "2026-10-18T20:09:06.3547909+08:00",
+          "sha256": "18529464DFA915B6F3B08AC08492A29172545A6D9B8EECE057F104E3E112A384"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/content-content.json",
+          "size": 166,
+          "modified": "2026-10-18T20:09:06.3587927+08:00",
+          "sha256": "1DDA348A424EC6A2964086EB3F35B296D879BFED600CE196DE62C87A3E90BB6A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/deploy-deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T20:09:06.3587927+08:00",
+          "sha256": "B941729E8B6BF4A26CD5AAAB08440DEB1B88571C80DBB65D8A981084F50BD7CA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/deploy-prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T20:09:06.3054514+08:00",
+          "sha256": "1E59910A4C9D4FB0864D144DF5C7E48152762C3B4244F763D0455A113AC937CE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/deploy-validate.json",
+          "size": 2303,
+          "modified": "2026-10-18T20:09:06.3084500+08:00",
+          "sha256": "F602EF0F06FCE50F369683411730C846464682824B9F8AC36102B45D33DC1B5C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/preflight-prepare.json",
+          "size": 153,
+          "modified": "2026-10-18T20:09:06.3870264+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T20:09:06.3527901+08:00",
+          "sha256": "0F1B169F32806300A82D7F04178F6ED37DC3F960468E13A53B3385700666E9FF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/restore-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T20:09:06.2814512+08:00",
+          "sha256": "178C69CA5D0E958A50249387711870CFA40073B94D25D30C5FF4D2E617158B2A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-evidence/single-single.json",
+          "size": 939,
+          "modified": "2026-10-18T20:09:06.3763516+08:00",
+          "sha256": "3E81B2861BA9525A3F597EE895BE779A904EF2DDA6B1352739C75C39DCE9588D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-invoke.ps1",
+          "size": 2368,
+          "modified": "2026-10-18T19:53:47.1641939+08:00",
+          "sha256": "8072BC4614910990E3008AAF155FD56221F142621B57E858CBF22182CE6E316F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-main-3648b3da.bundle",
+          "size": 6204987,
+          "modified": "2026-10-18T19:51:59.0090432+08:00",
+          "sha256": "292928419FE6F9E009864A47ADCF36AFDB467165A31B275F3440CEF64395E7BF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-make-correlated.py",
+          "size": 2551,
+          "modified": "2026-10-18T20:10:55.7044019+08:00",
+          "sha256": "675D70501040BF1B6E03DB06B48014A3B1FB85646BC19943F6BA02446747F0F6"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-make-manifest.py",
+          "size": 952,
+          "modified": "2026-10-18T20:11:33.2772529+08:00",
+          "sha256": "96C22C1F1F9B1AFA0F3A222A610ABC3CC38A30E023DCE69417F53588E472A7C7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-pr-body.md",
+          "size": 625,
+          "modified": "2026-10-18T19:45:36.3432721+08:00",
+          "sha256": "54812EC19F2033BB1CB4555ADFEB6CEA0F01DC4D7DBEA36817EC867790235C86"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-18T19:58:08.9079162+08:00",
+          "sha256": "40BF0C5D0F86E677D1E5CB82F7C7A1872C90C95410C4B0484BB8C29C89DD36FF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-profiles-runner.py",
+          "size": 959,
+          "modified": "2026-10-18T20:04:33.1099792+08:00",
+          "sha256": "26F196DD804DBB7965A7162D1D21876E37D248D42624F4988CDDB90F9455B5F7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-resources.json",
+          "size": 1011,
+          "modified": "2026-10-18T20:07:28.5365091+08:00",
+          "sha256": "18529464DFA915B6F3B08AC08492A29172545A6D9B8EECE057F104E3E112A384"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-single.sh",
+          "size": 1150,
+          "modified": "2026-10-18T19:58:35.1748570+08:00",
+          "sha256": "A600E7A6C9EC2A58C4ECFBEACADD8CA2DA17E057EFD0A0D1B9072EAE6FF3A204"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r86-summarize-logs.py",
+          "size": 2250,
+          "modified": "2026-10-18T20:00:56.3636766+08:00",
+          "sha256": "D5E0C7669DA1EEE51787EAC3A5C78DBC0077E06013652B3534E55873A7B5335D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-build-metadata.json",
+          "size": 2215,
+          "modified": "2026-10-18T20:39:39.7609004+08:00",
+          "sha256": "D01D512C320779CFBB3616D50A152EFAB15B22C177C1B812AC6D9B39B76EF9EE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-concurrent.sh",
+          "size": 2799,
+          "modified": "2026-10-18T20:43:21.1338891+08:00",
+          "sha256": "107BB4CB217BCD73AB8E1C368C215B3D4AB499B3522ECFBF0E8A635DFDD44470"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-evidence/concurrent.json",
+          "size": 10779,
+          "modified": "2026-10-18T20:50:25.5336724+08:00",
+          "sha256": "619E8665EA653EE53BCECD401F8187161818D67D90D495EEC7A8A52A03E6B5F6"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-evidence/pg-activity.json",
+          "size": 5193,
+          "modified": "2026-10-18T20:50:25.3809608+08:00",
+          "sha256": "6A8FF4AB7F737C04745BEF61BF218F6F2665BCD2C0C3EAA28605B75F452F9274"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-evidence/resources.json",
+          "size": 1011,
+          "modified": "2026-10-18T20:50:25.6859295+08:00",
+          "sha256": "D14344D4AE895D51D1C5D045486CF956937EEC5828D358004368FBD94DB1E860"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T20:50:25.8450581+08:00",
+          "sha256": "DC122EE15FE7B11D6B9533AE7EF92C1AD6215BAD22F8728F55C4D8706272716E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-invoke.ps1",
+          "size": 2367,
+          "modified": "2026-10-18T20:42:01.3180884+08:00",
+          "sha256": "DEE522381914F65D9AEFC99982966F0C01FA57D24C8895DE53077022175BD918"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-main-fcdabfc.bundle",
+          "size": 6262862,
+          "modified": "2026-10-18T20:41:21.7850257+08:00",
+          "sha256": "5544C414763DFA89B716403908CDC2D7D7CE65ABB159267256349580C53CD21C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-pg-activity.py",
+          "size": 3224,
+          "modified": "2026-10-18T20:42:35.6524095+08:00",
+          "sha256": "51B47F4EFA37E62D1E5CAE8064F388E5A2562F5F3AD63210C14DA1FA5520E0F2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-18T20:43:21.1237048+08:00",
+          "sha256": "6A1D191217C4C22E3D062821DC143FAF3DF7D1B7DF54BBA68FD91DC1028E0FE5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88-single.sh",
+          "size": 1150,
+          "modified": "2026-10-18T20:43:21.1288979+08:00",
+          "sha256": "389CD01EA2096039B1B2F33291867F356FE98597A589999079D4488B16375096"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-agent-profiles-runner.py",
+          "size": 2489,
+          "modified": "2026-10-18T21:06:39.9815344+08:00",
+          "sha256": "A800C63C0899944CA59B4997EAD2CE197F3AA19BAEF78A1466E884F06AD4B055"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-agent-profiles-stdin.py",
+          "size": 2391,
+          "modified": "2026-10-18T21:06:20.8779937+08:00",
+          "sha256": "75772D9A03235C348E4AD1F9FD3FAFA96AEE274EF674077676B7DACDC1884783"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-concurrent.sh",
+          "size": 2801,
+          "modified": "2026-10-18T20:53:56.1417484+08:00",
+          "sha256": "9247085DD1CBC4559D70EE31BDBF0F8323A2629520A1B8D84FC3926E7FCA92ED"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/admission-phases.json",
+          "size": 19270,
+          "modified": "2026-10-18T21:01:17.3756265+08:00",
+          "sha256": "CFF8ABEBB470545D7299772DEF897B4672FF7AEE7D45C05EBEE200CC675C1957"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/agent-profiles.json",
+          "size": 13272,
+          "modified": "2026-10-18T21:07:14.2145796+08:00",
+          "sha256": "5F61F82316ABCD13EBBB73E04E0CBC4CA5C4D87358E793D1950B6F6026C859E9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/concurrent.json",
+          "size": 10798,
+          "modified": "2026-10-18T21:01:17.1497598+08:00",
+          "sha256": "1EBC5D00F18CA34E34BE579A92220164DC2EA7593603AFBA433F00DC387F007C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/content.json",
+          "size": 166,
+          "modified": "2026-10-18T21:03:57.1271287+08:00",
+          "sha256": "E163606F54D1A15E7721FA486DEFDD578F4715EC116EB2F28F4FF0A9AC6D36AF"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T21:03:56.4593137+08:00",
+          "sha256": "428E647E0DDAE1FB2F02FBE282417BDC8BA0DC49F52BDD00F6EBCE705CA1C959"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/pg-activity.json",
+          "size": 5193,
+          "modified": "2026-10-18T21:01:17.6297662+08:00",
+          "sha256": "F001523AEBC2464F70AD641E7775F92778371440608B1F29DE095C7C42D32CC8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T21:03:56.8669574+08:00",
+          "sha256": "6161018F5088C15B8A728EC67149DDD8264EDFC821618F3B7E02EFCA48C819C7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/preflight.json",
+          "size": 153,
+          "modified": "2026-10-18T21:03:57.3620699+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/resources.json",
+          "size": 1010,
+          "modified": "2026-10-18T21:01:17.8721266+08:00",
+          "sha256": "3463FCE8930D7F67BD11298017A7F0D164702EDD240C6A7900EBD4442971796D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/restore-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T21:01:18.0518676+08:00",
+          "sha256": "4A14BC0A27586603367EF54B3E1F795485C63FB071EBE5675184F216BE37757E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/restore-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T21:03:57.8420144+08:00",
+          "sha256": "C1B5AC086AD401FC4A9EA873DF19DECEB5C5B7D77D1A6F91C0EAEA573C8C2A92"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/single.json",
+          "size": 936,
+          "modified": "2026-10-18T21:03:57.6078030+08:00",
+          "sha256": "BDEEC7D2D218CA158F06B9748BB2B52993C8C5435576A3764C7F99492275050C"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-evidence/validate.json",
+          "size": 2303,
+          "modified": "2026-10-18T21:03:56.6606759+08:00",
+          "sha256": "233AFECEB76C1AA735BC52BA009376EC809E8293B68F931E733CB13CB703B9F2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-invoke.ps1",
+          "size": 2368,
+          "modified": "2026-10-18T20:53:56.1387482+08:00",
+          "sha256": "F2CE07DF38491E7B7CECAFD5DC39CA9C1C29DC137BCD85918C7BFDA2CAC954CD"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-pg-activity.py",
+          "size": 3225,
+          "modified": "2026-10-18T20:53:56.1427484+08:00",
+          "sha256": "38FDD664071F6152685C8A8AE0D725F6FBEE03CDF534B4F9C4B39D411E2FF667"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-preflight.sh",
+          "size": 982,
+          "modified": "2026-10-18T20:53:56.1397481+08:00",
+          "sha256": "AD8AF99CA418CCF7709541105778769C195DB3B21C95D0F1AC952FF4DE9A2F95"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-single.sh",
+          "size": 1151,
+          "modified": "2026-10-18T20:53:56.1397481+08:00",
+          "sha256": "A89CDADB122A7191219181CD96E442EC9A15826E34110096EABC497EA6F3C4FA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r88b-summarize-phases.py",
+          "size": 4607,
+          "modified": "2026-10-18T20:58:30.5510973+08:00",
+          "sha256": "06E4B0F2858A2E2760BC31837B1A63440A5F5D3012794032AB148E761E680534"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r89-index-pr-body.txt",
+          "size": 390,
+          "modified": "2026-10-18T21:15:42.5606233+08:00",
+          "sha256": "B3666AB6F0B6834D3E05194B9F1DBE802F01E805A1A7FFBEF1FA7D8DD207815D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r89-package-evidence.py",
+          "size": 4115,
+          "modified": "2026-10-18T21:05:21.6852415+08:00",
+          "sha256": "812ADD31B6A2579918AA975747DBDE60B7AA87D87CDB37BA0B261045AD8F28F4"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r89-pr-body.txt",
+          "size": 1197,
+          "modified": "2026-10-18T21:13:10.4623587+08:00",
+          "sha256": "A1CE279C1453800EA3026E838D3C532731E50DFF7EA9D0BE9FDA8A2ED8F2218F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r89-update-task.py",
+          "size": 1925,
+          "modified": "2026-10-18T21:10:10.6019866+08:00",
+          "sha256": "E07E270B47B387ED6663C2562599B3256F2F4CE1E9AA8226BDAEA5578F3531F2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r89-verify-evidence.py",
+          "size": 2738,
+          "modified": "2026-10-18T21:11:25.8539696+08:00",
+          "sha256": "CB494A9B35B3DC5BFE6FEE1945DC0F14C41042785203AEE679038133EBFFC51F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r90-build-metadata.json",
+          "size": 2215,
+          "modified": "2026-10-18T21:29:45.1144925+08:00",
+          "sha256": "B7554480AA6A76D00CF0379CCC2726669C192462C842BB3F8D14AEE17496EA3D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r90-index-pr-body.txt",
+          "size": 365,
+          "modified": "2026-10-18T21:28:19.4699562+08:00",
+          "sha256": "0D755B8B478212AE10B173D816A178A2B662F125176DFDFF50EE113C51FC91A2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r90-main-a708347.bundle",
+          "size": 6265876,
+          "modified": "2026-10-18T21:30:30.1013756+08:00",
+          "sha256": "CEFD9E13765DBCC84EDBE7D623AC759B1D946F8E05B5CAEEA323FD9395AB5A44"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r90-pr-body.txt",
+          "size": 911,
+          "modified": "2026-10-18T21:26:53.4582057+08:00",
+          "sha256": "237DF9C6376ED682841D907D500470DB5BBA38A0912B0B9AF4AED4A742362FA9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r90-update-task.py",
+          "size": 1581,
+          "modified": "2026-10-18T21:25:38.3037318+08:00",
+          "sha256": "52EBEE37D568C7F103B31DA7106C4E058E1311A4F2757254555625BEF45B02F4"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-concurrent.sh",
+          "size": 2799,
+          "modified": "2026-10-18T21:31:32.5308641+08:00",
+          "sha256": "E71F69D35C530DAF662A3D82F90009683A041D4715423B75141B41824A2D0AD2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91-content-a708347-content.json",
+          "size": 166,
+          "modified": "2026-10-18T21:49:54.9646790+08:00",
+          "sha256": "1D8860D4E38B5F0838942935F3DEC9B4A5B7841370FA3BEB714E5F3F5B898087"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91-deploy-a708347-deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T21:49:54.7695045+08:00",
+          "sha256": "6B5C44CC9171C769FCCFAF5DF37D3C0AFDE94553FEC16B961055B0248EB058D7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91-deploy-a708347-prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T21:49:54.4670011+08:00",
+          "sha256": "EF7DE7FE237D8376D33FF23F764AB86FEAE04D665F5ACE4F54D7C75B4AE384C6"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91-preflight-a708347-prepare.json",
+          "size": 171,
+          "modified": "2026-10-18T21:49:55.2095586+08:00",
+          "sha256": "B31F0F7A307654BBDCD9BB27228C210BB1B00EA8FA0E534397400C4FEE160AB2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91-restore-a708347-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T21:49:55.4452500+08:00",
+          "sha256": "D16627DE6237D9F6C71C11584591DF0878300CB67011962197B6D43C0F2E3665"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-concurrent-a708347-admission-phases.json",
+          "size": 21366,
+          "modified": "2026-10-18T21:49:57.0279875+08:00",
+          "sha256": "BF435ACB33F3997C00BB15253D0E4604B3DEB0220D8B2FF5450052460D1AC7C1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-concurrent-a708347-concurrent.json",
+          "size": 10789,
+          "modified": "2026-10-18T21:49:56.7964411+08:00",
+          "sha256": "A03DD28861662B57C5911A3ECA89B15B06FEA975DB7C1C73C65E71A0F118716A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-concurrent-a708347-resources.json",
+          "size": 1008,
+          "modified": "2026-10-18T21:49:57.2506510+08:00",
+          "sha256": "1A319F66C99F3F45DD166207E892B4623C2CF437A8FF0427C45092DF58E8AB3E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-deploy-a708347-deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T21:49:55.8702014+08:00",
+          "sha256": "BA318D594F936AF55FE06CB3805CE0314D4EA2CFE36EB09E9D322D99C5181C8E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-deploy-a708347-prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T21:49:55.6419076+08:00",
+          "sha256": "D6B58D89C467F6A807A9BECD6AA190CB5E51CA0108A19AFFF5EDCB3904FD0C38"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-pg-activity-a708347-pg-activity.json",
+          "size": 5086,
+          "modified": "2026-10-18T21:49:57.4527421+08:00",
+          "sha256": "AC500126A79B8E1287E86C956F4B078ECC3D25266E28957A33147E2A5C2133C4"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-preflight-a708347-prepare.json",
+          "size": 153,
+          "modified": "2026-10-18T21:49:56.3182367+08:00",
+          "sha256": "78D3746E712673A64810981163B4A28D956E70BDA685B9D88FE74D4BA3ABAA3A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-renew-a708347-content.json",
+          "size": 88,
+          "modified": "2026-10-18T21:49:56.0635430+08:00",
+          "sha256": "5E40B275E4E61B544743DB7C934B0248C2DDEBE43C8B26EA58C7E34B7A732B7F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-restore-a708347-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T21:49:57.6896010+08:00",
+          "sha256": "F238FEA72ABA5B2CBCFF69DE047BA8FCF2A77160AA187062271F5A4ED571624A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-evidence/g5-r91b-single-a708347-single.json",
+          "size": 936,
+          "modified": "2026-10-18T21:49:56.5478742+08:00",
+          "sha256": "CD1198BD5C45502263CC7CE637BC15BA71AD0B4C1EF260B8A7413114E16A5B3B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-index-pr-body.md",
+          "size": 628,
+          "modified": "2026-10-18T22:01:14.2317798+08:00",
+          "sha256": "A85A8B54E27563E1287AACAFDCB6B6365078CF3CC11F79281E3C651457F657B5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-invoke.ps1",
+          "size": 2367,
+          "modified": "2026-10-18T21:31:32.5288642+08:00",
+          "sha256": "18CB3CF2F34D0D48C4881D4BD808107B45FEBB515883989AB3868A261C0073B7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-pg-activity.py",
+          "size": 3224,
+          "modified": "2026-10-18T21:31:32.5318648+08:00",
+          "sha256": "B35743F487797C420F812FE3A1EE476A7D84543DCB6A9BBD7BC89A8C67C5423F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-pr-body.md",
+          "size": 1773,
+          "modified": "2026-10-18T21:58:12.3024227+08:00",
+          "sha256": "2EA3B72AA42E75BFA69252ED740403E402F673467FC49C02E7F49E3ECB9D5C20"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-18T21:31:32.5298642+08:00",
+          "sha256": "65F0D863CF5CC21B318193D6F67113FFBE56EF2F6E7D987274DD2330E4473D42"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-single.sh",
+          "size": 1150,
+          "modified": "2026-10-18T21:31:32.5298642+08:00",
+          "sha256": "FFB9B7B4990D9DD80DB3204CBE4EFA951BCC6EAF8CDDDA478720B41BAA4EE8DB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91-summarize-phases.py",
+          "size": 4649,
+          "modified": "2026-10-18T21:31:46.9474377+08:00",
+          "sha256": "94FF0714CFB061D93213E5A9A1CF439F19A76E68D78478536360BB3A05190E72"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91b-concurrent.sh",
+          "size": 2801,
+          "modified": "2026-10-18T21:42:44.1413100+08:00",
+          "sha256": "4E0F22AD243D853D8ED87B80B8052FA0E7C59D7529338100911C8C2A8D956780"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91b-invoke.ps1",
+          "size": 2368,
+          "modified": "2026-10-18T21:42:44.1391439+08:00",
+          "sha256": "B7C38DA89113E0482C784832F8783197FB991AE2B3842E2CF3934B030C8AB9DE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91b-pg-activity.py",
+          "size": 3225,
+          "modified": "2026-10-18T21:42:44.1436689+08:00",
+          "sha256": "2FFF50032817AD73D4318100FE7D07262CFE3A3A05707B6E3C4617FA443A1D7D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91b-preflight.sh",
+          "size": 983,
+          "modified": "2026-10-18T21:42:44.1402306+08:00",
+          "sha256": "EEC7037EEF4D69578CBCDDD2A49FCCCEE3F9BC47F3F3199955D8672635DCD7C7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91b-prepare17.py",
+          "size": 837,
+          "modified": "2026-10-18T21:42:58.4000839+08:00",
+          "sha256": "40B54878C51E00F197003043BD0533EBAA097C7A6899F592CFF9A6B5DD736E92"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91b-single.sh",
+          "size": 1151,
+          "modified": "2026-10-18T21:42:44.1407479+08:00",
+          "sha256": "DF543E16627DC961C223BF8E3292027751EFBC80D0363A6F8A31F1E9A626FF2E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r91b-summarize-phases.py",
+          "size": 4650,
+          "modified": "2026-10-18T21:42:44.1431390+08:00",
+          "sha256": "43FF292B1A15906564EB096BA9CA7803FCC5B85BFAF167B1EC6BC0CFB1FB148E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r92-index-pr-body.md",
+          "size": 611,
+          "modified": "2026-10-18T22:21:44.2966071+08:00",
+          "sha256": "8E6F8004DA4C6721A624DDB2F2962C21A08FDF1A90D4327463C38DCE20357397"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r92-pr-body.md",
+          "size": 954,
+          "modified": "2026-10-18T22:18:33.5653910+08:00",
+          "sha256": "BBCA26E6FF4195C3036C45F7A1A9561D257520D4B5C4D2081A73F14AD0BCB047"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r93-index-pr-body.md",
+          "size": 338,
+          "modified": "2026-10-18T22:40:23.5745097+08:00",
+          "sha256": "3E2AB4EC5857BF64B515D3EAC458831EB5B1A10F7E60184C7962E152C262628E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r93-pr-body.md",
+          "size": 568,
+          "modified": "2026-10-18T22:38:22.1925697+08:00",
+          "sha256": "8A9A0DABAE31F17F372B7D6778E408980A3559F6AB872F150662BB3C754FF6D8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-disconnect.sh",
+          "size": 4054,
+          "modified": "2026-10-18T22:46:21.1860703+08:00",
+          "sha256": "CFB883DAC8C1ED4E995D0A4CCEDE7E8069527F4AA79B409EA612412150F894EE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/content.json",
+          "size": 166,
+          "modified": "2026-10-18T22:58:08.3046712+08:00",
+          "sha256": "C618E1CE8FCE981A4B2F168A11A4E5340C572C7BFBFD652493F727522B3ADF4B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/deploy.json",
+          "size": 2625,
+          "modified": "2026-10-18T22:58:07.8363629+08:00",
+          "sha256": "B018A48A6AA387FC6EE10D58CCD2EF31A6EB97AC39A77150B0AA635628C89439"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/disconnect-client.json",
+          "size": 156,
+          "modified": "2026-10-18T22:58:08.5238521+08:00",
+          "sha256": "9A90BBE313E68CFEF8196C54F3A4BB79DAD510A5D30873B648841CD6E3154BDE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/disconnect-server.json",
+          "size": 212,
+          "modified": "2026-10-18T22:58:08.7649589+08:00",
+          "sha256": "2215C690D84C4A5EEB8A3DB66C249DBAD6FFA36CD64F47E9950E2F03BDCF4C4D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/first-prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T22:58:07.3735620+08:00",
+          "sha256": "1C987DC1C0E891F2F774098D9C1ADB5A745D0D19888FEE3946E781E8B27EAF6B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/first-restore.json",
+          "size": 2840,
+          "modified": "2026-10-18T22:58:07.5983439+08:00",
+          "sha256": "88A140B66E5CEDEA345C5BD719041F218F4A44D53753A2EE0F8C1CAA50EB73C8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T22:58:08.0631250+08:00",
+          "sha256": "AF7FFBA136EAC840CB8209B17145A6E2B7A0C96757C952324E7E717E88E12E28"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-field-a/restore.json",
+          "size": 2840,
+          "modified": "2026-10-18T22:58:08.9878337+08:00",
+          "sha256": "42C2557C36492A8DC1C90B1A1913B6EA139AD9B49918758BEE2978341DDD9E5F"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-head-2c14fc7.bundle",
+          "size": 6369135,
+          "modified": "2026-10-18T22:50:33.4992713+08:00",
+          "sha256": "86B8DB2372F8EA16AD91573E392FCCA57CBA02FEF901F9D8D127E593EB287311"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-index-pr-body.md",
+          "size": 300,
+          "modified": "2026-10-18T23:09:05.0790390+08:00",
+          "sha256": "13AFC00B06FD3407CF2A57DA22E7D96CDDC69BD7C017054DF29253A7668DFF1D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-invoke.ps1",
+          "size": 2367,
+          "modified": "2026-10-18T22:51:05.1738198+08:00",
+          "sha256": "31BDC61B1E7A04346AFECEA0591A316E9AB787D45082F1F48D6980EC76271C31"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-pr-body.md",
+          "size": 792,
+          "modified": "2026-10-18T23:07:42.8106572+08:00",
+          "sha256": "1E9727FAF8101C6DFFBE3B4276CA46CE563BB9855B043239ABF39C2EADC84521"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-source-2c14fc7.bundle",
+          "size": 6318957,
+          "modified": "2026-10-18T22:50:08.4425882+08:00",
+          "sha256": "8352D74D5DF29A885EE8485FF7BBC9A753A962318A358B186CA3212468E5BFF3"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-source-2c14fc7.tar",
+          "size": 10127360,
+          "modified": "2026-10-18T22:43:54.5689828+08:00",
+          "sha256": "64A793733FF90E21423828F66DD231F9F86B70DA871E72BE1E66E2CF37E2063E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r94-window.ps1",
+          "size": 1220,
+          "modified": "2026-10-18T22:51:05.1748266+08:00",
+          "sha256": "2476AEBE8A801DF7B298069D0D506EB5974B96A972511BDEB9115E9F19DEE7AE"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-disconnect.sh",
+          "size": 4190,
+          "modified": "2026-10-18T23:11:47.3267097+08:00",
+          "sha256": "C443EEC4628A36F00BE298C0E26E3E22B64906727824CBD6B6B7D190F5637D38"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-gen18-disconnect.sh",
+          "size": 4190,
+          "modified": "2026-10-19T08:57:23.4697976+08:00",
+          "sha256": "AC5EE4997C715A650BDFB869855F36ED7A64C6F19251C677208266E2C773FA83"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-head-5e65ba3.bundle",
+          "size": 6363645,
+          "modified": "2026-10-18T23:11:01.3558129+08:00",
+          "sha256": "6844052FF763E129E404ADB866948608CEBC2FE368E5A6109E1A0537BA6B7CE0"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-invoke.ps1",
+          "size": 2366,
+          "modified": "2026-10-18T23:11:39.5304476+08:00",
+          "sha256": "19A091FF662EEAB96E0039FC33A6F2605E81EAA8D35D464DD40A778EE754B5E5"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-pr-body.md",
+          "size": 1033,
+          "modified": "2026-10-19T09:27:01.2822969+08:00",
+          "sha256": "770F204DDAC0F8FE05E89D725AADC0128C9ADB5E1ED4A167221F1E33EEAE126A"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-19T08:57:23.4710272+08:00",
+          "sha256": "9A306318401BFC0DD93E9080740EA61EB7A69D03BB3D68170C7014590E40FD33"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-prepare18.py",
+          "size": 837,
+          "modified": "2026-10-19T08:55:01.2896866+08:00",
+          "sha256": "2BA92893FA8B8DE35346F81225AB6920771A695945947685D130E7BFB7FBC176"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95-window.ps1",
+          "size": 1628,
+          "modified": "2026-10-19T08:55:01.3417414+08:00",
+          "sha256": "F52DC58F4E62A9E6581C5F20BF789B26293D0998721C81D64DB23E9CB2626D1E"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95b-disconnect.sh",
+          "size": 4832,
+          "modified": "2026-10-19T09:06:21.4140422+08:00",
+          "sha256": "F3EA14028F904E90B40D00F37693893BDEBF71ED6D62DBA984226EF25A1840B8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95b-invoke.ps1",
+          "size": 2367,
+          "modified": "2026-10-19T09:05:24.0326757+08:00",
+          "sha256": "FB2658CD20DF8C047826CAA2DFDCA75A8B84C1A54E78B4D3662BF4FB6BF10482"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95b-preflight.sh",
+          "size": 982,
+          "modified": "2026-10-19T09:06:21.4150426+08:00",
+          "sha256": "362AC5C6A1A888689FEE0563BE7041F24D900ECC5D3E16F1D07AF7F8F40E5C82"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r95b-window.ps1",
+          "size": 1463,
+          "modified": "2026-10-19T09:05:24.0456830+08:00",
+          "sha256": "197CC6DFCE37FCC9AFF45D8B8F70CC8BA8B06E8BBAA729E7FC8ADD95CE1FCEBA"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r96-build-metadata.json",
+          "size": 2237,
+          "modified": "2026-10-19T09:32:28.6616137+08:00",
+          "sha256": "E4C46511A10F26D14A96C8ECEA97D5FEE3D26CC1920124495E47986B0FCBB171"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r96-disconnect.sh",
+          "size": 4831,
+          "modified": "2026-10-19T09:34:16.4257124+08:00",
+          "sha256": "46F5A48C2CB306EBBD031AA3AFCA24AECDEDAFF5277C6B9F181AC7BAD706D1C2"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r96-head-6e1d24b.bundle",
+          "size": 6347212,
+          "modified": "2026-10-19T09:33:43.3844606+08:00",
+          "sha256": "04C7C4321AF061BF63DAE10C61F777D89BDE9E763671EDF57A11276E01DF53E8"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r96-invoke.ps1",
+          "size": 2366,
+          "modified": "2026-10-19T09:34:30.7249894+08:00",
+          "sha256": "C339AE816C143863EA24BA6005E19FF788950695AD0BE6ADD3B3F1907B25D189"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r96-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-19T09:34:16.4247120+08:00",
+          "sha256": "9067B60ABAE0509F9196384312B117DCA5827FA1920319E085963457A6954DF9"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r96-prepare18.py",
+          "size": 837,
+          "modified": "2026-10-19T08:55:01.2896866+08:00",
+          "sha256": "2BA92893FA8B8DE35346F81225AB6920771A695945947685D130E7BFB7FBC176"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r96-window.ps1",
+          "size": 1457,
+          "modified": "2026-10-19T09:34:16.4237124+08:00",
+          "sha256": "E5436E71D1228F81CFA23545C665BC407BDD6552F40169B01F337653EE527BEC"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-build-metadata.json",
+          "size": 2237,
+          "modified": "2026-10-19T09:49:41.3061532+08:00",
+          "sha256": "01B34FEFE4E40B1778E61762AD30CECCC3B35BA3E03D9DF0ECD028F4B1C2C9C1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-disconnect.sh",
+          "size": 6167,
+          "modified": "2026-10-19T10:19:05.6205651+08:00",
+          "sha256": "D2FDCFCF66BDC6F6B7C2D698624C5B13AAE2DDA8D2B139587E46688B39CD1097"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-head-1476253.bundle",
+          "size": 6380531,
+          "modified": "2026-10-19T09:50:55.6253192+08:00",
+          "sha256": "4236500E23F8A47B3493F1956533A8EEF41B055F9F7D07974E89F3151BBEEC79"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-invoke.ps1",
+          "size": 2576,
+          "modified": "2026-10-19T10:18:24.1605910+08:00",
+          "sha256": "65D2230287972AED9451F3F5D5454C8C7F27A03B96A59953912963B452C028AB"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-preflight.sh",
+          "size": 981,
+          "modified": "2026-10-19T10:19:05.6205651+08:00",
+          "sha256": "D45D2EAEC1F73A3A1B45471DF6CDA9F44E3B2F3D382EA1B8B7B33801038DFC0B"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-prepare18.py",
+          "size": 837,
+          "modified": "2026-10-19T08:55:01.2896866+08:00",
+          "sha256": "2BA92893FA8B8DE35346F81225AB6920771A695945947685D130E7BFB7FBC176"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-probe-client.py",
+          "size": 5959,
+          "modified": "2026-10-19T09:45:04.2151804+08:00",
+          "sha256": "28CCB21DD120D62E3761C8BAEA8AA36CE8D159B241FE322F3B7F80D1689A7A64"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-router-transport-repro.py",
+          "size": 3930,
+          "modified": "2026-10-19T09:58:54.6199063+08:00",
+          "sha256": "0C0477D3E79C2F231A90DA425892F1CE13E9182CA5463E9FD94A97E0FFCEAC90"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-starlette-disconnect-repro.py",
+          "size": 2343,
+          "modified": "2026-10-19T09:54:41.4033671+08:00",
+          "sha256": "62856D2711C01F41CEC5F5F0BF0FE632DEA616448EF7A5DFF6864B5691FEC3D7"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r97-window.ps1",
+          "size": 1457,
+          "modified": "2026-10-19T10:18:24.1615926+08:00",
+          "sha256": "96ADAAA3A79D28BDF8B0EE2E4D31E6A0ACE2B913682B4A4E0F6E05DCD6D607F1"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-r98-head-aec80dc.bundle",
+          "size": 6341303,
+          "modified": "2026-10-19T10:11:27.5593674+08:00",
+          "sha256": "F1C46AD868F43A85431A6FA18D740F7D5171CB2A8894CD2EA29D80A68E73A25D"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-runtime-probe.py",
+          "size": 1042,
+          "modified": "2026-10-17T17:50:27.9720413+08:00",
+          "sha256": "5824F3AF47A0C10DCDB2F33E7555D9C2564FD3F77A6FCB27EDB2533B13941319"
+        },
+        {
+          "path": "src/tests/.artifacts/g5-source-33053583fe7a5e3e.bundle",
+          "size": 5514908,
+          "modified": "2026-10-17T12:48:47.1165374+08:00",
+          "sha256": "D9FA0A201C31E28C45F5FFB39730B4E505FFE864E7D39BD3270E88E85C56EF8C"
+        },
+        {
+          "path": "src/tests/.artifacts/gates-index-pr-body-20261019.md",
+          "size": 335,
+          "modified": "2026-10-19T14:00:07.3167630+08:00",
+          "sha256": "C66FA36179849911548E84582E85070C7F37B70F1688DD5E2D989F6A9B4AE186"
+        },
+        {
+          "path": "src/tests/.artifacts/mvp006-cancel-pr-body.md",
+          "size": 698,
+          "modified": "2026-10-19T11:56:04.6169409+08:00",
+          "sha256": "18C2136A095874849E06C47F6F2B2B89912E72A3FBAB6875A8963AE9C3D721BE"
+        },
+        {
+          "path": "src/tests/.artifacts/mvp006-cancel-shield-pr-body.md",
+          "size": 749,
+          "modified": "2026-10-19T12:29:19.8628695+08:00",
+          "sha256": "F20863B45A48EEC2ECD7521CB44B7A735B159C6566501D7AE007390DA468AE0B"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-r67-body.md",
+          "size": 1556,
+          "modified": "2026-10-18T10:06:04.0930755+08:00",
+          "sha256": "CC739A4ACC60869B36FF22023C7023748AF123BFA4EAC808D878CA1A8D08883D"
+        }
+      ]
+    }
+  ]
+}
