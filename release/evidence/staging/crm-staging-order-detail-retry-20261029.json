@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_order_detail_retry_performance_only",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "mainline_pr": 612,
+  "mainline_pr_head_sha": "40f39665b03a67712384dec13fec06c0c25ba2bf",
+  "mainline_merge_sha": "7c61f78bcf130394a6c13112adc767b741857887",
+  "implementation_code_sha": "56c8c86d2966d4a13c143fe189a7d1e46169d4dd",
+  "release_base_sha": "4edddffb176c1797065d437e5dea7a67c2a9c39f",
+  "release_source_sha": "eb0eedc722a552b05eb685fcc15dd84ab7f0af59",
+  "release_git_bundle_sha256": "110613dd4555a109484e29fe0b1e39b4c8504534bacb95c4c8a0c01e7e824ba1",
+  "release_diff": [
+    "src/frontend/components/CustomerSidebar.tsx",
+    "src/tests/frontend/browser/workspace-experience.test.mjs"
+  ],
+  "frontend_component_blob_matches_mainline": true,
+  "images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:73304958f59522608eaf0d332f7e83b461dda6910e6fa81694ec9f6b991fdff9",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:f22948063bd098880dd52bc26bd9126a28281ac9e00693b02c9054dee005a83d",
+    "backend_unchanged": "ghcr.io/cp11-gh/crm-backend@sha256:60e9b795a3a1f58ea220667982f4bf29a3032e59fab6255f320a2e20a2a816a2",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "frontend_linux_amd64": true,
+    "frontend_oci_revision_matches_release": true,
+    "local_and_remote_repo_digests_match": true
+  },
+  "private_backup": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "environment_sha256": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+    "postgres_custom_dump_sha256": "77a2c23aeaa41f5f7066c022468f0a57edfb66b78ca37f9cb38b1f97c90590f3",
+    "minio_tar_sha256": "bc8429bcbacb8d0dc1a105e2a27b7e3f40539a3a4c0cc6ab6902bd9a5c37764a",
+    "postgres_catalog_readable": true,
+    "minio_tar_readable": true
+  },
+  "gates": {
+    "validate_only": "validated",
+    "validate_only_sha256": "ddcba3c4a279e82623b6e939e351add03792e69897ce3b6d12fba4d3d5224130",
+    "deploy": "passed",
+    "deploy_sha256": "d11e9443c7dc70635be87de5d04a88f1fe57ccd9b6addf1c5eb8dbd81486ab3e",
+    "database_migration": "heads_applied",
+    "containers_running": 12,
+    "manual_send_scope": "one existing authorized store",
+    "webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "existing_agent_debug_enabled": true,
+    "dynamic_agent_v2_enabled": false,
+    "document_ingestion_enabled": true,
+    "auto_reply_enabled": false,
+    "llm_enabled": false,
+    "temporary_local_ghcr_login_removed": true,
+    "proxy_source_mount_read_only": true
+  },
+  "verification": {
+    "release_frontend_contract": "51/51",
+    "release_frontend_production_workspace_browser": "50/50",
+    "release_typecheck_and_build": "passed",
+    "release_lint": "0 errors, 8 pre-existing warnings",
+    "local_429_detail_and_tracking_recovery": "passed with synthetic responses; no send calls",
+    "authenticated_staging_order_ui": "UI_UNAVAILABLE: in-app browser getTab timed out",
+    "public_http": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/workspace": 200
+    },
+    "public_ttfb_seconds_unpaired_single_samples": {
+      "/healthz": 1.410882,
+      "/v1/health": 1.559553,
+      "/v1/health/ready": 1.596369,
+      "/workspace": 1.705427
+    }
+  },
+  "github_ci": {
+    "head_sha": "40f39665b03a67712384dec13fec06c0c25ba2bf",
+    "run_id": 40767804440,
+    "backend_job_id": 123096571658,
+    "frontend_job_id": 123096572270,
+    "both_jobs_runner_empty_and_zero_steps": true,
+    "ci_executed": false,
+    "local_substitute_used": true
+  },
+  "github_actions_used_for_deployment": false,
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false,
+  "overall_latency_acceptance": "partial"
+}
