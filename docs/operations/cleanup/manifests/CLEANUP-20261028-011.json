@@ -1,0 +1,102 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-011",
+  "state": "candidate",
+  "base_sha": "d95b2584871254e334b1dd88811018f0cc403c94",
+  "scope": "two exact merged-PR worktrees, two local branch refs and twelve ignored deployment files archived before removal; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-011",
+  "candidates": [
+    {
+      "worktree": ".worktrees/tracking-deploy-20261022",
+      "head": "b87bf295c4a65a5154f33253e41cc4c4daad2674",
+      "branch_ref": "refs/heads/docs/workspace-tracking-timeline-evidence-20261022",
+      "pr": 507,
+      "merge_commit": "43f7a3c84b825effd127d0267a25187649a99bf1",
+      "directory_modified": "2026-10-22T10:27:22.0518539+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/tracking-deploy/backup.sh",
+          "size": 545,
+          "modified": "2026-10-22T10:35:27.8898140+08:00",
+          "sha256": "78261F390653189ABBB4BF6E8BF9F2BC4A23917E7B61C42AE0FA189DA16DF020"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-deploy/images.tar",
+          "size": 174286336,
+          "modified": "2026-10-22T10:31:03.8133579+08:00",
+          "sha256": "E82EDF0D7CEA5EF89D8891026AA0084F2C8CE1355615EB25C5188AD2933291AB"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-deploy/run.ps1",
+          "size": 6698,
+          "modified": "2026-10-22T10:34:34.4085862+08:00",
+          "sha256": "FE3FB3A720645280B532EC2F0DD3DE1A413932DAC763B7282609A9751350A1CE"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-deploy/source.bundle",
+          "size": 7055024,
+          "modified": "2026-10-22T10:29:47.9060533+08:00",
+          "sha256": "2177E0CF3E527596AE31DDC9EEBD2B948C2318FD4A92B318B4ADA3DDACDC27DE"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-close-deploy-20261022",
+      "head": "1d7f4a6a3f2611c3c5c3032fce8c68ea50d5c8bf",
+      "branch_ref": "refs/heads/docs/workspace-close-dialog-finalize-20261022",
+      "pr": 505,
+      "merge_commit": "b58e4d99427c09fb89b9938c93d063550865183b",
+      "directory_modified": "2026-10-22T09:05:19.2072113+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/backup-workspace-close-staging.sh",
+          "size": 949,
+          "modified": "2026-10-22T09:18:08.5394413+08:00",
+          "sha256": "8877850F6BB7543396925B28AA4FFE90AD2380297166242641C5025F12182BDB"
+        },
+        {
+          "path": "src/tests/.artifacts/run-workspace-close-staging.ps1",
+          "size": 3671,
+          "modified": "2026-10-22T09:17:12.1826337+08:00",
+          "sha256": "8334C3232A1DAE56CFE537B195CEE1E39871FDB56788AE982F684FBC64AE63F2"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-close-evidence-pr.md",
+          "size": 723,
+          "modified": "2026-10-22T09:25:08.0024848+08:00",
+          "sha256": "09045912F5BDA959500FE36726FB2556B8A6B73D81AA841FCF8EF5DEB83BC219"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-close-finalize-pr.md",
+          "size": 396,
+          "modified": "2026-10-22T09:27:25.8534803+08:00",
+          "sha256": "138894021C60B99105A4BFB9AFA2EB26ECDFF287EE019806A66B2352069AE8F7"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-close-frontend-oci-metadata.json",
+          "size": 2772,
+          "modified": "2026-10-22T09:12:00.1157264+08:00",
+          "sha256": "C3C576016C03A200688FB68628E4772A49CCD1F2B279C86894133B75095BA0A2"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-close-frontend.oci.tar",
+          "size": 64043008,
+          "modified": "2026-10-22T09:11:57.8569335+08:00",
+          "sha256": "CE5AAFCC3599891C016D4B6CFEE206475C25ACA148E298BFF2B96F6702F96056"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-close-reviewed-source.bundle",
+          "size": 7045783,
+          "modified": "2026-10-22T09:14:27.7742057+08:00",
+          "sha256": "89206961777B4602E8CEF94BAF2E2253938A80F7FFF489828D92BD5BC493936A"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-close-reviewed-source.tar",
+          "size": 11274240,
+          "modified": "2026-10-22T09:12:50.6777908+08:00",
+          "sha256": "527BD13038ECD3A5AC81493263AF8A3923AB738678C0B62B0571625E4A3B7C7D"
+        }
+      ]
+    }
+  ]
+}
