@@ -1,0 +1,136 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-019",
+  "state": "candidate",
+  "base_sha": "d2cfbc8c3826486646f41544df02e3c435e5dfcb",
+  "scope": "three exact merged-PR worktrees and branches; three untracked rule files and other ignored non-cache files archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-019",
+  "candidates": [
+    {
+      "worktree": ".worktrees/knowledge-all-category-consistency-20261023",
+      "head": "662da11e4bad0785c7b1338bc7de0c8f22dd47d5",
+      "branch_ref": "refs/heads/fix/knowledge-all-category-consistency-20261023",
+      "pr": 546,
+      "merge_commit": "c7f601fdf27655235449deb66e634a4e2ad27245",
+      "directory_modified": "2026-10-23T16:39:14.4380317+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 679,
+          "modified": "2026-10-23T16:44:09.2138572+08:00",
+          "sha256": "063098F6CB31BB44C6F8FBEA25B3876DE7EE1E5F7D00A50DBAB506F6415EB7F0"
+        }
+      ],
+      "ignored_count": 47101,
+      "ignored_paths_sha256": "2D9AF063A809A4C5C466DADA7DA1AA6FFA987E6B7D2D4D9DA3F0BA5F8779D034",
+      "cache_file_count": 47100,
+      "cache_bytes": 976892544,
+      "archive_file_count": 1,
+      "archive_bytes": 1269,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/pr-knowledge-all-category-consistency.md",
+          "size": 1269,
+          "modified": "2026-10-23T17:06:57.5306923+08:00",
+          "sha256": "9C52DFE941E240EDC17589740D43368426AB79DCACDC19549F51465845B17D19"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/knowledge-store-detail-consistency-20261025",
+      "head": "ae76ce76e5323359b35744f16f6d8622d7292d51",
+      "branch_ref": "refs/heads/fix/knowledge-store-detail-consistency-20261025",
+      "pr": 553,
+      "merge_commit": "aadf5087969ceb8ccb2b533ce8a42c191c3f96d9",
+      "directory_modified": "2026-10-25T10:31:39.4788919+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 679,
+          "modified": "2026-10-25T10:36:17.5712750+08:00",
+          "sha256": "063098F6CB31BB44C6F8FBEA25B3876DE7EE1E5F7D00A50DBAB506F6415EB7F0"
+        }
+      ],
+      "ignored_count": 47273,
+      "ignored_paths_sha256": "25610452CF773133810F87C02E821431677ED204A0D467B4A08F5ABC86AE3379",
+      "cache_file_count": 47271,
+      "cache_bytes": 1058431988,
+      "archive_file_count": 2,
+      "archive_bytes": 4490,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/pr-553-body-staging-override.md",
+          "size": 2265,
+          "modified": "2026-10-25T11:29:59.7630607+08:00",
+          "sha256": "73BD1E07CFA15F163956CDD87E0C8AF8A749529A73132F1317C78E60CA721D21"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-body-store-view-20261025.md",
+          "size": 2225,
+          "modified": "2026-10-25T11:25:04.7589240+08:00",
+          "sha256": "2EB0E6054E2A599D46B4FA20398C9E9892688F2B725FC8CE0AF17A355DC63ABC"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/staging-feedback-20261026",
+      "head": "cd856645fb171b0400768b07d1c8a7367fff495d",
+      "branch_ref": "refs/heads/fix/staging-feedback-20261026",
+      "pr": 558,
+      "merge_commit": "4c8d2365e64e3a0d90df45107200bb8c72b32c81",
+      "directory_modified": "2026-10-26T11:37:53.8607143+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 679,
+          "modified": "2026-10-26T11:43:51.6081849+08:00",
+          "sha256": "063098F6CB31BB44C6F8FBEA25B3876DE7EE1E5F7D00A50DBAB506F6415EB7F0"
+        }
+      ],
+      "ignored_count": 34153,
+      "ignored_paths_sha256": "3BD8322396FF2494CADA52870A4B2D6850D14BB4C0C78DA3D40BBE969E640477",
+      "cache_file_count": 34147,
+      "cache_bytes": 810706251,
+      "archive_file_count": 6,
+      "archive_bytes": 30356,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/staging-feedback-browser-final.log",
+          "size": 10272,
+          "modified": "2026-10-26T12:11:45.3098505+08:00",
+          "sha256": "14BEF09D0D179E791DDE95E7CE7F0C388980C5113AE7BD691D36E627DBC13019"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-feedback-browser-production.log",
+          "size": 10260,
+          "modified": "2026-10-26T12:07:08.0801747+08:00",
+          "sha256": "F2CF1A196748DE80B53C2E6231C60D1F7069AB98DAB3C526D78B7B9859638119"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-feedback-build.log",
+          "size": 936,
+          "modified": "2026-10-26T12:10:14.6430291+08:00",
+          "sha256": "05AC522ED286ED14E6FC919302BD48A8B0D30E0D6421AB59B4C0DD1870D92A58"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-feedback-contract-final.log",
+          "size": 4194,
+          "modified": "2026-10-26T12:11:00.8108940+08:00",
+          "sha256": "1C49D6D20A7BABB17D067B7AF2B4F6C23135C7FBF55C034F834912FD6813AEAE"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-feedback-lint-final.log",
+          "size": 3445,
+          "modified": "2026-10-26T12:11:23.8689131+08:00",
+          "sha256": "D350A1204DB03599698C505FFA069D8CAB9DCC0FA4CECCAABE2A2B99C37F6426"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-feedback-pr-body.md",
+          "size": 1249,
+          "modified": "2026-10-26T12:18:24.4401628+08:00",
+          "sha256": "53E631094AEE90D69BF3752315CDDCB994644544F443B3621F81C3D8C42BFE9F"
+        }
+      ]
+    }
+  ]
+}
