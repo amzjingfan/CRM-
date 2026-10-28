@@ -4,6 +4,7 @@ View: `CURRENT`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MAINT-CLEANUP-20261028-003-20261028-R03 | MAINT-CLEANUP-20261028-003 | R03 | APPROVE | `c6c435b6763b5410e3054faba0a54cb0140f6d7e` | log_sensitivity, ingress_scope, evidence, restore | 2026-10-28T19:57:29+08:00 | [`RR-MAINT-CLEANUP-20261028-003-20261028-R03.md`](RR-MAINT-CLEANUP-20261028-003-20261028-R03.md) |
 | RR-MAINT-CLEANUP-20261028-003-20261028-R02 | MAINT-CLEANUP-20261028-003 | R02 | APPROVE | `b6db3abfdd58ec1549cb727b663102fb545b1b37` | ingress_target, tls_boundary, sse, cache_scope, evidence, restore | 2026-10-28T19:16:49+08:00 | [`RR-MAINT-CLEANUP-20261028-003-20261028-R02.md`](RR-MAINT-CLEANUP-20261028-003-20261028-R02.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R04 | MVP-STAGING-LATENCY-001 | R04 | APPROVE | `9415044da2848877a722a4b790c2e6734a0ecec4` | log_sensitivity, source_identity, nginx_syntax, rollback, latency_claims, deployment_scope | 2026-10-28T19:38:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R04.md`](RR-MVP-STAGING-LATENCY-001-20261028-R04.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R03 | MVP-STAGING-LATENCY-001 | R03 | APPROVE | `81c851bf53b7216ef6f5bf4ee8d125aefacb0eaa` | ingress_scope, connection_reuse, security_headers, cache_boundary, activate_deny, sse, recovery, latency_claims | 2026-10-28T18:52:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R03.md`](RR-MVP-STAGING-LATENCY-001-20261028-R03.md) |

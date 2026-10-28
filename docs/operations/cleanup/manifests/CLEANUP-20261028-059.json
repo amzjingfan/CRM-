@@ -1,0 +1,17 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-059",
+  "state": "deleted",
+  "execution_main_sha": "c6c435b6763b5410e3054faba0a54cb0140f6d7e",
+  "deleted_branch_count": 1,
+  "scope": "unoccupied source branch of merged PR #590; local main contains PR #590 and #591; archive original SHA and remove local name only",
+  "ref": "refs/heads/fix/staging-server-timing-log-20261028",
+  "head": "c827ed3ecf21785b4d21046112b4eaf7f2c05dec",
+  "archive_ref": "refs/archive/CLEANUP-20261028-059/fix/staging-server-timing-log-20261028",
+  "merged_pr": 590,
+  "merged_pr_commit": "7fadaec8bc0053857450f29c648bd4b36bf412a2",
+  "index_pr_commit": "10d9eab99d13fa602a2833b9886e5f5a790d4de5",
+  "changed_paths": 12,
+  "identical_to_main": 6,
+  "later_main_or_reconciled_docs": 6
+}
