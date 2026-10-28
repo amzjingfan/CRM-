@@ -4,6 +4,7 @@
 
 | Batch ID | Task ID | State | Scope | Retention until | Updated | Record |
 |---|---|---|---|---|---|---|
+| CLEANUP-20261028-053 | MAINT-CLEANUP-20261028-003 | DELETED（工作树与原分支名；归档保留） | #511 的历史 Rootless 镜像清理事实已合入本地 main，旧文档工作树与分支移除 | 归档引用长期保留，可按原 SHA 恢复 | 2026-10-28 | [记录](CLEANUP-20261028-053.md) |
 | CLEANUP-20261028-052 | MAINT-CLEANUP-20261028-003 | DELETED（原分支名；归档保留） | 已合入 PR #582/#584 的 Agent 与性能旧源码分支两条 | 归档引用长期保留，可按原 SHA 恢复 | 2026-10-28 | [记录](CLEANUP-20261028-052.md) |
 | CLEANUP-20261028-051 | MAINT-CLEANUP-20261028-003 | DELETED（原分支名；归档保留） | PR #585 的四份正式证据在本地 main 一致，旧本地证据分支已归档移除 | 归档引用长期保留，可按原 SHA 恢复 | 2026-10-28 | [记录](CLEANUP-20261028-051.md) |
 | CLEANUP-20261028-050 | MAINT-CLEANUP-20261028-003 | DELETED（原分支名；归档保留） | 已合流动态 Agent 的单提交等价本地收尾分支已归档并移除 | 归档引用长期保留，可按原 SHA 恢复 | 2026-10-28 | [记录](CLEANUP-20261028-050.md) |

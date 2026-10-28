@@ -1,0 +1,15 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-053",
+  "state": "deleted",
+  "execution_main_sha": "dc69994e9f02a50aeca766a493631ba19e0191cd",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
+  "worktree": ".worktrees/cleanup-rootless-images-20261022",
+  "ref": "refs/heads/docs/cleanup-rootless-images-20261022",
+  "head": "5dc481c385491f6eadb89c085199c17b1e41ca5e",
+  "archive_ref": "refs/archive/CLEANUP-20261028-053/docs/cleanup-rootless-images-20261022",
+  "proof": "original commit is ancestor of local main; worktree clean with zero ignored files; original ref SHA and registered absolute path checked before removal",
+  "remote_pr": 511,
+  "remote_pr_state": "OPEN, CONFLICTING; remote PR unchanged; required CI jobs 119669843045 and 119669843334 each failed with runner_id 0 and zero steps"
+}
