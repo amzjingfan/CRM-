@@ -1,7 +1,10 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-018",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "73b033dd778f4dc9a0e68c5bdaa1f7d101dca5e4",
+  "deleted_branch_count": 2,
+  "archive_count": 2,
   "base_sha": "29511bed90c937dc50b1933ab57aad6cb9d7756b",
   "scope": "two unattached local branches whose exact heads were merged by PR #580 and #581; archive refs before deleting original names; no worktree or remote operations",
   "candidates": [
