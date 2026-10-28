@@ -71,6 +71,8 @@
 
 ## 当前状态
 
+2026-10-28 本地 worktree 整合：本地 `main=d4abc13242e75bcc64754b930dd9113b82b63cd8` 已包含 `origin/main=0e4100b2b83012692ac2fb368707946687c9cde8` 与原本地独有治理提交；只读盘点时有 75 个附加工作树。`MAINT-CLEANUP-20261028-003` 正按用户选择逐支核验后清理，第一批四个无独有文件目录见 [清理记录](../operations/cleanup/CLEANUP-20261028-003.md)。Workspace hygiene: ATTENTION（两个指定会话的活动工作、开放 PR、未验收提交与其他现场材料保留）。
+
 2026-10-28 本地 worktree 清理：用户对两个精确目录授权；`MAINT-CLEANUP-20261028-002` 的本地删除已执行，两个路径与 Git 注册项消失，提交及一个本地分支保留，见 [清理批次](../operations/cleanup/CLEANUP-20261028-002.md)。记录分支 `docs/cleanup-worktrees-20261028-002` 待合入，任务保持 `VERIFYING`。Workspace hygiene: ATTENTION（其余活动、带独有提交或含现场资料的 worktree 与根 checkout 未跟踪文件均保留）。
 
 2026-10-22 知识库原型 UI：`MVP-KNOWLEDGE-PROTOTYPE-UI-001 DONE`，`CANDIDATE_SUBJECT_SHA=64e41b62c476ec97020dd9edc5a6b6d574dbf711`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。知识库路由已接入原型布局和交互，FAQ/分类/CSV/XLSX 继续走真实接口，其他上传格式及检索参数只在本页演示且刷新清空；Agent 页面源文件未变。本地最终 subject 前端契约 48/48、生产浏览器 64/64、typecheck/build 通过，lint 0 error 和 5 条既有 warning；[IR](../records/implementation/IR-MVP-KNOWLEDGE-PROTOTYPE-UI-001-20261022-R01.md)、[TR](../reports/tests/TR-MVP-KNOWLEDGE-PROTOTYPE-UI-001-20261022-R01.md)已定稿，主线 IR/TR/RR 索引按 233/250/222 份源记录核对为 `CURRENT`。[PR #528](https://github.com/CP11-gh/CRM/pull/528) 的 Actions 两作业零步骤失败，不计 CI 通过；本地手动门禁已通过，PR 已 squash 合入 `main=ddeb3018a4e65cea0e42c0b33b1427bc8cfccfd6`。未部署 staging 或 production，真实登录态页面待发布路径独立验收。Workspace hygiene: ATTENTION（原 checkout 未知文件、其他活动 worktree 和本任务已知生成文件保留）。下一步：①如需上线，按 staging 发布门禁部署并进行真实页面核对；②production 仍单独放行。
