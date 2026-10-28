@@ -442,7 +442,7 @@ test("knowledge file actions keep versions while category, archive and delete up
 
 test("dashboard ignores late metrics from the previous store", async () => {
   const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Demo Store" };
-  const { context, page } = await openPage("/dashboard", { "GET /v1/settings/stores": [store, otherStore] }, async (browserContext) => {
+  const { context, page } = await openPage("/dashboard", { "GET /v1/auth/me": { ...user, store_ids: [store.id, otherStore.id] }, "GET /v1/settings/stores": [store, otherStore] }, async (browserContext) => {
     await browserContext.route("**/v1/dashboard/**", async (route) => {
       const url = new URL(route.request().url());
       const isOther = url.searchParams.get("store_id") === otherStore.id;
@@ -465,10 +465,43 @@ test("dashboard ignores late metrics from the previous store", async () => {
   } finally { await context.close(); }
 });
 
+test("dashboard shows authorized metrics before store names return", async () => {
+  let releaseStoreNames = () => {};
+  const storeNamesGate = new Promise((resolve) => { releaseStoreNames = resolve; });
+  const { context, page } = await openPage("/dashboard", {
+    "GET /v1/auth/me": { ...user, store_ids: [store.id] },
+    "GET /v1/settings/stores": [store, { ...store, id: "00000000-0000-4000-8000-0000000000f2" }],
+  }, async (browserContext) => {
+    await browserContext.route("**/v1/settings/stores", async (route) => {
+      await storeNamesGate;
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data: [store, { ...store, id: "00000000-0000-4000-8000-0000000000f2" }] }) });
+    });
+    await browserContext.route("**/v1/dashboard/**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const data = path.endsWith("/metrics")
+        ? { total_sessions: 101, transfer_rate: 0, avg_response_time: null, recovered_gmv: "0", currency: "USD", period: "7d", updated_at: null }
+        : path.endsWith("/trend") || path.endsWith("/channels") ? { items: [] }
+        : path.endsWith("/alerts") ? { refund_requests: { total: 0 }, bad_reviews: { total: 0, golden_window: false }, abandoned_carts: { total: 0, potential_gmv: "0" } }
+        : [];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByRole("region", { name: "核心指标" }).getByText("101", { exact: true }).waitFor({ timeout: 2000 });
+    assert.equal(await page.getByRole("combobox", { name: "店铺" }).inputValue(), store.id);
+    releaseStoreNames();
+    await page.getByRole("combobox", { name: "店铺" }).getByRole("option", { name: store.name }).waitFor({ state: "attached" });
+    assert.deepEqual(await page.getByRole("combobox", { name: "店铺" }).locator("option").allTextContents(), [store.name]);
+  } finally {
+    releaseStoreNames();
+    await context.close();
+  }
+});
+
 test("dashboard shows core metrics while slower widgets are pending", async () => {
   let releaseSlowWidgets = () => {};
   const slowWidgets = new Promise((resolve) => { releaseSlowWidgets = resolve; });
-  const { context, page } = await openPage("/dashboard", { "GET /v1/settings/stores": [store] }, async (browserContext) => {
+  const { context, page } = await openPage("/dashboard", { "GET /v1/auth/me": { ...user, store_ids: [store.id] }, "GET /v1/settings/stores": [store] }, async (browserContext) => {
     await browserContext.route("**/v1/dashboard/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       if (path.endsWith("/trend") || path.endsWith("/alerts")) await slowWidgets;
@@ -491,7 +524,7 @@ test("dashboard shows core metrics while slower widgets are pending", async () =
 });
 
 test("dashboard keeps core metrics when a secondary widget fails", async () => {
-  const { context, page } = await openPage("/dashboard", { "GET /v1/settings/stores": [store] }, async (browserContext) => {
+  const { context, page } = await openPage("/dashboard", { "GET /v1/auth/me": { ...user, store_ids: [store.id] }, "GET /v1/settings/stores": [store] }, async (browserContext) => {
     await browserContext.route("**/v1/dashboard/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       if (path.endsWith("/alerts")) {

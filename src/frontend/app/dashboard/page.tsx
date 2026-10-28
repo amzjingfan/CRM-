@@ -4,7 +4,7 @@ import { ArrowsLeftRight, ChartPieSlice, ChatsCircle, Clock, CurrencyDollar } fr
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { getDashboardAlerts, getDashboardChannels, getDashboardMetrics, getDashboardTrend, getTopQueries, listStores, type DashboardAlerts, type DashboardChannels, type DashboardMetrics, type DashboardTrend, type StoreView, type TopQuery } from "../../lib/api";
+import { currentUser, getDashboardAlerts, getDashboardChannels, getDashboardMetrics, getDashboardTrend, getTopQueries, listStores, type DashboardAlerts, type DashboardChannels, type DashboardMetrics, type DashboardTrend, type StoreView, type TopQuery } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 
 type Period = "today" | "7d" | "30d";
@@ -13,14 +13,37 @@ const pendingWidgets: Record<Widget, boolean> = { trend: true, channels: true, a
 
 export default function DashboardPage() {
   const en = useLanguage() === "en";
-  const [stores, setStores] = useState<StoreView[]>([]); const [storeId, setStoreId] = useState(""); const [period, setPeriod] = useState<Period>("7d");
+  const [stores, setStores] = useState<Pick<StoreView, "id" | "name">[]>([]); const [storeId, setStoreId] = useState(""); const [period, setPeriod] = useState<Period>("7d");
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null); const [trend, setTrend] = useState<DashboardTrend | null>(null); const [channels, setChannels] = useState<DashboardChannels | null>(null); const [alerts, setAlerts] = useState<DashboardAlerts | null>(null); const [queries, setQueries] = useState<TopQuery[]>([]);
   const [showTable, setShowTable] = useState(false); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
   const [widgetLoading, setWidgetLoading] = useState<Record<Widget, boolean>>(pendingWidgets);
   const [widgetError, setWidgetError] = useState<Partial<Record<Widget, string>>>({});
   const loadRequestId = useRef(0);
 
-  useEffect(() => { void listStores().then((items) => { setStores(items); setStoreId((current) => current || items[0]?.id || ""); }).catch((caught) => setError(caught instanceof Error ? caught.message : en ? "Failed to load stores" : "店铺加载失败")); }, [en]);
+  useEffect(() => {
+    let active = true;
+    const storeNamesRequest = listStores().catch((caught: unknown) => {
+      console.warn("店铺名称加载失败", caught);
+      return [] as StoreView[];
+    });
+    void currentUser().then(async (user) => {
+      if (!active) return;
+      const authorizedIds = user.store_ids;
+      const authorizedStores = authorizedIds.map((id) => ({ id, name: id }));
+      // 已授权店铺编号可启动看板，弱网下不等待仅用于显示的店铺名称。
+      setStores(authorizedStores);
+      setStoreId((current) => authorizedIds.includes(current) ? current : authorizedIds[0] ?? "");
+      const names = await storeNamesRequest;
+      if (!active) return;
+      const byId = new Map(names.map((store) => [store.id, store.name]));
+      setStores(authorizedStores.map((store) => ({ ...store, name: byId.get(store.id) ?? store.name })));
+    }).catch((caught: unknown) => {
+      if (!active) return;
+      setError(caught instanceof Error ? caught.message : en ? "Failed to load user" : "用户信息加载失败");
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, [en]);
   const load = useCallback(() => {
     const requestId = ++loadRequestId.current;
     if (!storeId) { setLoading(false); return; } setLoading(true); setError("");
