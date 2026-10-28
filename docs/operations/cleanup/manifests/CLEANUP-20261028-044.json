@@ -1,0 +1,23 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-044",
+  "state": "deleted",
+  "execution_main_sha": "e2ffef417eaecf163e3f09f4731bcee201ebe58a",
+  "deleted_branch_count": 1,
+  "scope": "one unattached G5 R23 historical branch whose eight evidence blobs and three index entries are already in local main; archive original commit ref before deleting branch name; no worktree or remote operation",
+  "ref": "refs/heads/docs/mvp006-g5-r23-field-20261017",
+  "head": "75283d43554bba86db8a66798399825870d59735",
+  "archive_ref": "refs/archive/CLEANUP-20261028-044/docs/mvp006-g5-r23-field-20261017",
+  "proof_task": "MVP-006",
+  "superseding_revision": "R101",
+  "matching_blob_paths": [
+    "docs/records/implementation/IR-MVP-006-20261017-R23.md",
+    "docs/reports/tests/TR-MVP-006-20261017-R23.md",
+    "docs/reports/reviews/RR-MVP-006-20261017-R23.md",
+    "release/evidence/staging/crm-staging-g5-r23-manual-backend-image-20261017.json",
+    "release/evidence/staging/crm-staging-g5-r23-manual-content-check-20261017.json",
+    "release/evidence/staging/crm-staging-g5-r23-manual-deploy-20261017.json",
+    "release/evidence/staging/crm-staging-g5-r23-manual-prefetch-20261017.json",
+    "release/evidence/staging/crm-staging-g5-r23-manual-validate-20261017.json"
+  ]
+}
