@@ -4,6 +4,7 @@ View: `CURRENT`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-STAGING-LATENCY-001-20261028-R06 | MVP-STAGING-LATENCY-001 | R06 | APPROVE | `ef4beff3bb0d26b86195b7b36b590eb5153cfd2e` | request_order, store_authorization, failure_handling, release_scope, safety_switches, backup, latency_claims | 2026-10-28T22:45:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R06.md`](RR-MVP-STAGING-LATENCY-001-20261028-R06.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R05 | MVP-STAGING-LATENCY-001 | R05 | APPROVE | `921e3c051a0bf54d942531947faff9f98c04009c` | request_order, stale_response, release_scope, safety_switches, backup, latency_claims | 2026-10-28T21:15:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R05.md`](RR-MVP-STAGING-LATENCY-001-20261028-R05.md) |
 | RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03 | MVP-AGENT-TOOL-SUITE-001 | R03 | APPROVE | `01975ab2471adfe2a704116367c34d27415a3240` | correctness, spec, source_identity, store_isolation, privacy, integration | 2026-10-28T19:52:02+08:00 | [`RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md`](RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md) |
 | RR-MVP-AGENT-TOOL-SUITE-001-20261028-R02 | MVP-AGENT-TOOL-SUITE-001 | R02 | APPROVE | `84702ae0e59edc54fd6ba1ea8755c1cf79c1f4be` | correctness, spec, source_identity, store_isolation, privacy, idempotency, grounding, migration | 2026-10-28T19:41:40+08:00 | [`RR-MVP-AGENT-TOOL-SUITE-001-20261028-R02.md`](RR-MVP-AGENT-TOOL-SUITE-001-20261028-R02.md) |

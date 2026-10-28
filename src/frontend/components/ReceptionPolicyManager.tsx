@@ -124,12 +124,13 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
 
   const loadIdentity = useCallback(async () => {
     setBooting(true); setBootError("");
+    const storeNamesRequest = listStores().catch(() => null);
     try {
       const user = await currentUser();
       setPermissions(user.permissions);
-      let names: StoreView[] = [];
-      try { names = (await listStores()).filter((store) => user.store_ids.includes(store.id)); }
-      catch { setNotice("店铺名称暂时无法读取，仍可按授权店铺编号管理配置。"); }
+      const storeNames = await storeNamesRequest;
+      if (!storeNames) setNotice("店铺名称暂时无法读取，仍可按授权店铺编号管理配置。");
+      const names: StoreView[] = (storeNames ?? []).filter((store) => user.store_ids.includes(store.id));
       const byId = new Map(names.map((store) => [store.id, store]));
       setStores(user.store_ids.map((id) => byId.get(id) ?? { id, name: id, alias: null, code: id, status: "active", timezone: "UTC", currency: "", created_at: "" }));
       const requested = new URLSearchParams(window.location.search).get("store_id");

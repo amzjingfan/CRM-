@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_reception_parallel_bootstrap",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "release_source_sha": "97ac71ef2fa6ef662cd613c3270dce192eda433e",
+  "mainline_code_sha": "ef4beff3bb0d26b86195b7b36b590eb5153cfd2e",
+  "release_base_sha": "9d6ccc208ce3b31342c8aedea98ed16181047048",
+  "release_diff": [
+    "src/frontend/components/QuickReplyManager.tsx",
+    "src/frontend/components/ReceptionPolicyManager.tsx",
+    "src/tests/frontend/browser/reception-management.test.mjs"
+  ],
+  "frontend_image_digest": "sha256:7bfce9ae5bd2ccc9b83b4c43beccad76bbf39b3fd3b16bf2b527c35ce22ba74c",
+  "previous_frontend_digest": "sha256:ba138da355d1e51b33e15c389004f16c238ca55787201466778c70b7c472f98c",
+  "backend_image_unchanged": "sha256:a1f05c91bb6061a0bb2ed6080175ec89d404d96402eafa7c8490921a08428c36",
+  "supply_chain": {
+    "source_bundle_sha256": "7181d34e299d4e73fdb9d3676f597c8ecff946b4398e9f65fd5865d6f6454b89",
+    "oci_archive_sha256": "01629237e839559c7d6958a7bc655501be75a0a44ed09c3a5513f5017cb42fa2",
+    "linux_amd64": true,
+    "revision_label_matches_release": true,
+    "remote_repo_digest_matches": true,
+    "compressed_layer_bytes": 64407512
+  },
+  "private_backup": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "environment_sha256": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+    "postgres_custom_dump_sha256": "280159acd591787d641712fd85a4937fdc6179f8a9f23a7eca7b6c8a4a273708",
+    "minio_tar_sha256": "8659dd944ce9dc6b79b8e67f9cb01ae297c7cc81a9df620d9a908285d877d748",
+    "postgres_catalog_readable": true,
+    "minio_tar_readable": true
+  },
+  "gates": {
+    "validate_only": "validated",
+    "validate_only_sha256": "bf3d46638a319b5b238d667c00553991168cede39a0049cc0340de90ccbfd568",
+    "first_deploy_attempt": "stopped before switching: temporary GHCR Docker credentials were absent; private failure log retained",
+    "deploy": "passed",
+    "deploy_sha256": "d831a7d3cf69b5bedd1984cd03ebf97a789fb319819de44d15696920296fb5e6",
+    "containers_running": 12,
+    "manual_send_store_count": 1,
+    "agent_debug_setting_preserved": true,
+    "document_setting_preserved": true,
+    "temporary_ghcr_login_removed": true
+  },
+  "verification": {
+    "release_typecheck": "passed",
+    "release_lint": "0 errors, 8 pre-existing warnings",
+    "release_frontend_contract": "48/48",
+    "release_frontend_browser": "119/119",
+    "mainline_typecheck": "passed",
+    "mainline_lint": "0 errors, 8 pre-existing warnings",
+    "mainline_frontend_contract": "48/48",
+    "mainline_frontend_browser": "123/123",
+    "both_production_builds": "passed",
+    "authenticated_reception_pages": "quick replies rendered; timeout and welcome each rendered one existing policy; automatic sending remained disabled",
+    "public_http": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/marketing/reception/quick-replies": 200,
+      "/marketing/reception/timeout": 200,
+      "/marketing/reception/welcome": 200
+    }
+  },
+  "network_diagnostic": "Before this release, thirty valid segmented /healthz probes showed business loopback p50/p95 TTFB 0.000639/0.001533s, gateway via tunnel 1.387844/5.043409s, and public success-only 2.259856/5.125518s with one 504. Browser synthetic tests prove request concurrency, not real-user p50/p95 improvement.",
+  "github_actions_used_for_deployment": false,
+  "dynamic_agent_deployed": false,
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false,
+  "overall_latency_acceptance": "partial"
+}

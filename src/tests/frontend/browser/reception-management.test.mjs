@@ -32,6 +32,7 @@ async function open(path, initial = {}) {
     const headers = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS", "access-control-allow-headers": "content-type,idempotency-key,x-csrf-token" };
     if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
     const path = url.pathname;
+    if (initial.beforeResponse) await initial.beforeResponse(path);
     const body = !["GET", "DELETE"].includes(request.method()) ? request.postDataJSON() : null;
     if (request.method() !== "GET") writes.push({ method: request.method(), path, body });
     let changed = null;
@@ -66,9 +67,28 @@ async function open(path, initial = {}) {
   });
   const tab = await context.newPage();
   await tab.goto(`${baseUrl}${path}`);
-  await tab.getByRole("complementary", { name: "主导航" }).getByRole("button", { name: "智能营销" }).waitFor();
+  if (!initial.skipNavWait) await tab.getByRole("complementary", { name: "主导航" }).getByRole("button", { name: "智能营销" }).waitFor();
   return { context, tab, writes };
 }
+
+test("reception pages request store names while identity is pending", async () => {
+  for (const path of ["/marketing/reception/quick-replies", "/marketing/reception/timeout"]) {
+    let releaseIdentity = () => {};
+    let storeRequested = () => {};
+    const identityGate = new Promise((resolve) => { releaseIdentity = resolve; });
+    const storeRequest = new Promise((resolve) => { storeRequested = resolve; });
+    const { context } = await open(path, { skipNavWait: true, beforeResponse: async (requestPath) => {
+      if (requestPath === "/v1/auth/me") await identityGate;
+      if (requestPath === "/v1/settings/stores") storeRequested();
+    } });
+    try {
+      await Promise.race([storeRequest, new Promise((_, reject) => setTimeout(() => reject(new Error(`Store request waited for identity on ${path}`)), 1500))]);
+    } finally {
+      releaseIdentity();
+      await context.close();
+    }
+  }
+});
 
 test("marketing sidebar has two entries and reception pages use in-page tabs", async () => {
   const { context, tab } = await open("/marketing/reception/quick-replies");
