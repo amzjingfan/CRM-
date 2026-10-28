@@ -1,0 +1,25 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-063",
+  "state": "deleted_branch_only",
+  "base_sha": "933ca68f7217aa8628144e93319d3fdb3077e752",
+  "deleted_branch_count": 2,
+  "deleted_worktree_count": 0,
+  "branches": [
+    {
+      "ref": "refs/heads/hotfix/staging-performance-only-20261028",
+      "head": "e64ef52c9702540a5c5eb3a151cd19afce97b0e0",
+      "archive_ref": "refs/archive/CLEANUP-20261028-063/hotfix/staging-performance-only-20261028",
+      "merged_performance_pr": 584,
+      "merged_performance_commit": "9d6a9182ec7e9e29712e670654b757f8c767ef5d",
+      "release_only_agent_restore_paths": 8,
+      "restore_method": "git branch hotfix/staging-performance-only-20261028 refs/archive/CLEANUP-20261028-063/hotfix/staging-performance-only-20261028"
+    },
+    {
+      "ref": "refs/heads/docs/staging-release-branch-cleanup-20261028",
+      "archive_ref": "refs/archive/CLEANUP-20261028-063/docs/staging-release-branch-cleanup-20261028",
+      "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+      "restore_method": "git branch docs/staging-release-branch-cleanup-20261028 refs/archive/CLEANUP-20261028-063/docs/staging-release-branch-cleanup-20261028"
+    }
+  ]
+}
