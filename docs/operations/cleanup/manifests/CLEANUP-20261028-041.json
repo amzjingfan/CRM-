@@ -1,0 +1,20 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-041",
+  "state": "candidate",
+  "base_sha": "5c799f40a3ce333d66438e9b6bdaea6f4066f3f6",
+  "scope": "one unattached closed-PR local branch whose unique index/current-status update is superseded in local main; archive original commit ref before deleting branch name; no worktree or remote operation",
+  "ref": "refs/heads/docs/workspace-composer-index-current-20261018",
+  "head": "6a008ae62d33a6ca0b140e44e8a5fdb54a4c5044",
+  "archive_ref": "refs/archive/CLEANUP-20261028-041/docs/workspace-composer-index-current-20261018",
+  "closed_pr": 361,
+  "unique_nonmerge_commits": [
+    "7efcbb2e4297ba90d8000ceb279ff5d457d458ae"
+  ],
+  "proof_task": "MVP-WORKSPACE-DRAFT-001",
+  "proof_index_paths": [
+    "docs/records/implementation/IMPLEMENTATION-INDEX.md",
+    "docs/reports/tests/TEST-INDEX.md"
+  ],
+  "proof_memory_marker": "2026-10-18 `MVP-WORKSPACE-DRAFT-001`"
+}
