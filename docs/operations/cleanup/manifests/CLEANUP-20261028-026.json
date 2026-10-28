@@ -1,7 +1,10 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-026",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "71597aef55203ac57dd90ce5afcc99b4c91e24f1",
+  "deleted_branch_count": 1,
+  "archive_count": 1,
   "base_sha": "968f10f59555375a8d8ea4cb3e851b832125a625",
   "scope": "one unattached local branch whose single patch is identical to a commit in local main; archive ref before deleting branch name; no worktree or remote operations",
   "ref": "refs/heads/feature/tiktok-store-send-evidence-20261018",
