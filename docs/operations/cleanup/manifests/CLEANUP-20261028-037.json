@@ -1,0 +1,1084 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-037",
+  "state": "candidate",
+  "base_sha": "5d8c4408be5a4ec942aac2bb70d91838c8254a2c",
+  "scope": "one exact detached main-ancestor old sidebar worktree; ignored non-cache files archived, recognized cache files removed; external links removed in batch 035; no branch or remote operation",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-037",
+  "candidates": [
+    {
+      "worktree": ".worktrees/customer-sidebar-ui-20261020",
+      "head": "433f340de451202e776c41ae1a59739f90dc385e",
+      "directory_modified": "2026-10-20T21:34:04.7313598+08:00",
+      "ignored_count": 13528,
+      "ignored_paths_sha256": "0C5B93A899BBAC72C7FFD68EB424B255685ADDFD886F649D942BCAC20EC4324B",
+      "cache_file_count": 13351,
+      "archive_file_count": 177,
+      "archive_bytes": 130055081.0,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-db916.bundle",
+          "size": 6825436,
+          "modified": "2026-10-20T23:08:02.6930646+08:00",
+          "sha256": "8C56473194E549B5F206D78C45C723F38A5404637EB0F0ABF49F3812577D6479"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-fetch-missing.py",
+          "size": 1025,
+          "modified": "2026-10-20T23:45:59.3166081+08:00",
+          "sha256": "EFFB5D6D3F6C6105ABF97FE22DC4946ECB66F67FF6DCC7C6972124F850C09861"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-fetch-second-layer.py",
+          "size": 1226,
+          "modified": "2026-10-20T23:51:05.5759498+08:00",
+          "sha256": "09E4DEE654AA12B23BD5CA2574BE8B1B9AC80D966B99E6E0968498613578D2FF"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-ghcr-auth/config.json",
+          "size": 16,
+          "modified": "2026-10-21T01:31:55.4396842+08:00",
+          "sha256": "62F30514B5B6CC93930A09B104509686CA93014CE427B018F5780F03BD36F93F"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-missing-parts/000021.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:46:16.6156227+08:00",
+          "sha256": "76BC99FE142F159B15816ED3809BC1BAA42E98574488E11FF675675091A777F3"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-missing-parts/000024.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:46:24.496642+08:00",
+          "sha256": "F3C8179C0613C47E0958447701E8632693BBDDA087397435C3234C8CA56D714F"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-missing-parts/000036.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:46:32.1891174+08:00",
+          "sha256": "F369771865B9E3A884D3ED3EEE5822BB4C62946D39A2493516BDA1ED27568B08"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-order-link-probe.py",
+          "size": 3273,
+          "modified": "2026-10-21T00:03:32.6945678+08:00",
+          "sha256": "5DBE349B38BCB79FB0D37C1EC813A6688EB5CC33376397449CA4D99CE06D9B3A"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-orders-deploy-433f.json",
+          "size": 2911,
+          "modified": "2026-10-21T00:53:46.1056202+08:00",
+          "sha256": "576C541E68041A2C2AC607D8949F81EC9AC053BC41057BE98AA48BA9367BD8C2"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-orders-pr-body.md",
+          "size": 1293,
+          "modified": "2026-10-21T00:22:38.5794704+08:00",
+          "sha256": "4A6D0B3B47F8A13D8CD2383ADA8ED1F0EADDBABCF24234569336C51EE9A8FD2A"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-orders-stage-deploy.sh",
+          "size": 3763,
+          "modified": "2026-10-21T00:33:42.5127752+08:00",
+          "sha256": "3B580C32AD6491C273BD0B4F1829D97061CA697494BEDC3DDB65AD04F686B352"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-orders-staging-smoke.py",
+          "size": 3243,
+          "modified": "2026-10-21T00:51:02.0052129+08:00",
+          "sha256": "222129BCFF87488B319CF018C31FAE4A3743706CC0B8DA812D8518A937646588"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-orders-validate-433f.json",
+          "size": 2589,
+          "modified": "2026-10-21T00:53:45.9050791+08:00",
+          "sha256": "0C12CD1DC4E58392B0BA5ECBBC64DB1C86A3334FD9F80066B73F5D8EA607CE01"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-pr-body.md",
+          "size": 1083,
+          "modified": "2026-10-20T22:57:39.4129648+08:00",
+          "sha256": "D2E784A6FB4814BA81E880D0AD6451766390393271DA24F14FF163FF1297E8F2"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:21.9992342+08:00",
+          "sha256": "B0D43076D08618CDE3942DD5E5DC2EBEACB0636103406FA6D3E204697868D10E"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:23.0440573+08:00",
+          "sha256": "23A6372A0269CECFECBCD90A589F62F1DABDFCF3BEEA673B069FDC5B4A35ED77"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:21.9189175+08:00",
+          "sha256": "349F69350B320DA76E57FD9B654869A4BD3E32C909224EEA96C7C60B1A56C603"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:21.9772501+08:00",
+          "sha256": "FA6E0EA316F16AFB6CA6B94995185EEA77D459D789B9F6A7C3B8148050F4F8B6"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:21.9425642+08:00",
+          "sha256": "C051278BB6CFDA2F4FAC31EDC6D886103F5ED2BE725B84D6750A1D715AAFF0FE"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:22.560256+08:00",
+          "sha256": "BEAAC196F26A8F70598C6DDC984AA56377FAF659D33CEE137FA23AF79472544E"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:23.4310394+08:00",
+          "sha256": "69419713D21158B3FBAB5350B13602DC1DCB99281AFDADC9514AC81FA40C23FD"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:24.5267675+08:00",
+          "sha256": "9AB47C46885426301BA445213F94ABD8AC908095169E69BE08FCA8D5DF35AB9F"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:26.7669199+08:00",
+          "sha256": "C6FD96111BFEA1720077AE812674889325602DFB0C22DE8DFEC458C11B5686F1"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:26.9956628+08:00",
+          "sha256": "D5BDB8D32399C845B89270A0349C555922003DD90F1523A6DCBD34246BBC43ED"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:28.7744884+08:00",
+          "sha256": "76FA88E25E43DDF5A0E5C788189909A594BC0889D8A0E0AB2FFB92E2565A8DCA"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-20T23:51:27.3880752+08:00",
+          "sha256": "465FF1C04EE05A3F0B4587625008611BF127BF1E94DA772D91C78330188E48D4"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-second-layer-parts/000014.part",
+          "size": 980449,
+          "modified": "2026-10-20T23:51:27.466048+08:00",
+          "sha256": "2862246807FEBAAE2075477416D1A87FB2C1F7FB8544D7CAE832BC07382F2AF0"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-stage-deploy.sh",
+          "size": 3733,
+          "modified": "2026-10-20T23:35:56.2574233+08:00",
+          "sha256": "4A1D2F55900E5DE0429930484603EAD02943D24825A8C5DF893629B24FB669B8"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-staging-smoke.py",
+          "size": 3571,
+          "modified": "2026-10-20T23:57:26.6596055+08:00",
+          "sha256": "AEADDBADA0249CB749DC6FCF27FC39A9435D80D170F89C93B71B8D67C32A76D6"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar/coupons.png",
+          "size": 77641,
+          "modified": "2026-10-20T22:20:59.8791916+08:00",
+          "sha256": "B710A4EC459E7AEBE991E01A159B702006CA0CB9E3CF8C3593AA19839FF4A1F7"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar/orders.png",
+          "size": 90772,
+          "modified": "2026-10-20T22:20:58.5463123+08:00",
+          "sha256": "687C2D182CF2DBBEA34D77C899C1CDE91A8817FFB3D61896C1CA0FD08AE52D7C"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar/products.png",
+          "size": 80054,
+          "modified": "2026-10-20T22:20:59.6497605+08:00",
+          "sha256": "00A5771A70D43610E74BF175F51681A97D216A6AC7372A05654A47365AF98280"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/.bin/playwright-core",
+          "size": 393,
+          "modified": "2026-10-21T00:18:05.7605263+08:00",
+          "sha256": "584CAE79499218FCC26F02060943B348AE924A9FAF170C81B2039E0859F007AA"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/.bin/playwright-core.cmd",
+          "size": 327,
+          "modified": "2026-10-21T00:18:05.7605263+08:00",
+          "sha256": "0AB76DD14F55B61E4AFC3948C3D750D5753B81D0939E6DF254CBBF5923EF1477"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/.bin/playwright-core.ps1",
+          "size": 813,
+          "modified": "2026-10-21T00:18:05.7605263+08:00",
+          "sha256": "3BF0F558069840DBF93F823DA0886E3F7B01E58F00C26CA9A2A5551BAFD6052B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/.package-lock.json",
+          "size": 495,
+          "modified": "2026-10-21T00:18:05.7661001+08:00",
+          "sha256": "E4158C09308EAA55FF0AC8B35E0602ED1D299EA41C4D90C8B3A735FEE07C6CAB"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/LICENSE",
+          "size": 11601,
+          "modified": "2026-10-21T00:18:00.8053923+08:00",
+          "sha256": "45873D00A0DD243596DEB4AA23B2493B3D1F0671921BF2538EA431D7380220EB"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/NOTICE",
+          "size": 254,
+          "modified": "2026-10-21T00:18:00.8063927+08:00",
+          "sha256": "6D602191187B35B9B01D2CFFA01C8469C2C8D9DE8A96F1BF868E0F264F51C81D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/README.md",
+          "size": 120,
+          "modified": "2026-10-21T00:18:03.9650986+08:00",
+          "sha256": "D16FF7F8E38FA1FC954F695AD551CDC118D9C9BDD5F3D83203901F4C317D7D7E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/ThirdPartyNotices.txt",
+          "size": 676,
+          "modified": "2026-10-21T00:18:05.7505251+08:00",
+          "sha256": "A549D329BAD8806FE279F0ECAE0FC0270DEC7E7C2DC8EC10F90E394F7C32B144"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/install_media_pack.ps1",
+          "size": 174,
+          "modified": "2026-10-21T00:18:05.0031624+08:00",
+          "sha256": "BC20F049BADF021E3A53BDB4156603CAA5EF482C9A9A251F927605E676A44171"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/install_webkit_wsl.ps1",
+          "size": 1464,
+          "modified": "2026-10-21T00:18:05.051691+08:00",
+          "sha256": "BC61BEDA37A808EEF27D39CE684BAA792F6D17737A25A432B1A84D3B591AB815"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_chrome_beta_linux.sh",
+          "size": 1217,
+          "modified": "2026-10-21T00:18:05.3713345+08:00",
+          "sha256": "DC8C22B9DDE76583CECE2857575B88094299615F3136A3C598149710C45DEE3A"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_chrome_beta_mac.sh",
+          "size": 563,
+          "modified": "2026-10-21T00:18:05.3753684+08:00",
+          "sha256": "A92EAEB4EBCF5633A4E9C981481E14C80764FC81B6FCBC0565398E50FF319433"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_chrome_beta_win.ps1",
+          "size": 957,
+          "modified": "2026-10-21T00:18:05.0902967+08:00",
+          "sha256": "B6D9E44742FEAFB98D5EDC56FA20042949973CF30D141A1C5B4FB384096967C5"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_chrome_stable_linux.sh",
+          "size": 1212,
+          "modified": "2026-10-21T00:18:05.4420134+08:00",
+          "sha256": "DC72AB3567A4CE43BD8353D4ECF41F1D9C03E870169367CD3ED9043AABF67DD1"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_chrome_stable_mac.sh",
+          "size": 519,
+          "modified": "2026-10-21T00:18:05.479758+08:00",
+          "sha256": "BB43A96C192A6CC81524ADE0264686FFF7809C019A89F7DB0A9849635879C3BE"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_chrome_stable_win.ps1",
+          "size": 923,
+          "modified": "2026-10-21T00:18:05.140841+08:00",
+          "sha256": "3D96C4E2F4EBBB3FAD44CF3BA58D9CF90AF1C9FB3073E3B27D45A74CF005515B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_beta_linux.sh",
+          "size": 1494,
+          "modified": "2026-10-21T00:18:05.5012984+08:00",
+          "sha256": "10B26F35DBC2000B94EDF1172D803A29C5873A4EB8D523AFBC687997B642767E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_beta_mac.sh",
+          "size": 377,
+          "modified": "2026-10-21T00:18:05.5033092+08:00",
+          "sha256": "0036D738BC90D686100D81F328BA0003BF07863F5500B792C8DA391D149750FA"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_beta_win.ps1",
+          "size": 874,
+          "modified": "2026-10-21T00:18:05.1791561+08:00",
+          "sha256": "B173C378A59F0CC38033CEE702DE1F44F09276C9B2270D1A650EBE66EE312433"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_dev_linux.sh",
+          "size": 1489,
+          "modified": "2026-10-21T00:18:05.5750554+08:00",
+          "sha256": "00E4947E7A4F8339C6DB09C87976D808583C07F9179E4AA7694D88614B82FE95"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_dev_mac.sh",
+          "size": 372,
+          "modified": "2026-10-21T00:18:05.6010733+08:00",
+          "sha256": "6F899E3B311F742C24CA37FF9E32298E8290514FFC14BF588CC51556A29DA4C0"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_dev_win.ps1",
+          "size": 869,
+          "modified": "2026-10-21T00:18:05.1811555+08:00",
+          "sha256": "46F7F98C81CB0ABE687D7F4A5AFEA9B897A38D2A6DD6F6662FBD847F7A22BD51"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_stable_linux.sh",
+          "size": 1507,
+          "modified": "2026-10-21T00:18:05.6042415+08:00",
+          "sha256": "EC0A31A5F09C565E108473A1850895A4458AB00C713AC1DE3AA2001912E4668F"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_stable_mac.sh",
+          "size": 371,
+          "modified": "2026-10-21T00:18:05.6052455+08:00",
+          "sha256": "3AF1E893527FF2257AA2DBC3B259A053B92F45C3EADB13E38EBA46E87902655D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/bin/reinstall_msedge_stable_win.ps1",
+          "size": 856,
+          "modified": "2026-10-21T00:18:05.2979758+08:00",
+          "sha256": "40BB5FCBFCEBBBE2CE43C6E736E7C5DEEFC5BE03B6E9C6914423C06EC1F591BE"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/browsers.json",
+          "size": 1780,
+          "modified": "2026-10-21T00:18:03.9385382+08:00",
+          "sha256": "F306EED529599B1EAF2F8A85DB9DE2B23E1A3FE36C2B66434B7C9434FB627A99"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/cli.js",
+          "size": 839,
+          "modified": "2026-10-21T00:18:02.7679651+08:00",
+          "sha256": "F1C4075AEF116C766092250D7F37B3249A7CEE6465D953207FC38C8F6145BECD"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/index.d.ts",
+          "size": 634,
+          "modified": "2026-10-21T00:18:05.7241403+08:00",
+          "sha256": "7A8EC10B0834EB7183E4BFCD929838AC77583828E343211BB73676D1E47F6F01"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/index.js",
+          "size": 697,
+          "modified": "2026-10-21T00:18:02.8399086+08:00",
+          "sha256": "A58FB2CEC4293E7DCF73C58A179898A4F3986666451A19DA4E731FA3AF63265B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/index.mjs",
+          "size": 1063,
+          "modified": "2026-10-21T00:18:04.8637555+08:00",
+          "sha256": "3D36E2132D3C8B62397D23F0BB4177336AAEE503203AE2A2C90FBEB5BF3317DD"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/bootstrap.js",
+          "size": 3481,
+          "modified": "2026-10-21T00:18:02.7061535+08:00",
+          "sha256": "4637F4DBFEF9CFC01BAEB5F5D2CB63FA0901522C96915EA2227290558D27123E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/coreBundle.js",
+          "size": 3425603,
+          "modified": "2026-10-21T00:18:02.8108574+08:00",
+          "sha256": "9393FA79E1C67C74EDC26B610D65A4F7ED73D345A762465CC88340A33A2454AC"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/entry/cliDaemon.js",
+          "size": 197,
+          "modified": "2026-10-21T00:18:02.7724324+08:00",
+          "sha256": "062F256FB29A7BF91793A014B9C3F1F9CF2DC6B12E40A8A2EBBA88A630AE16A0"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/entry/dashboardApp.js",
+          "size": 108,
+          "modified": "2026-10-21T00:18:02.8128601+08:00",
+          "sha256": "209962C6EAEEF11629F226D6A2AB33EC7A2480754242B6E19590A9E6EB71D126"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/entry/mcp.js",
+          "size": 442,
+          "modified": "2026-10-21T00:18:02.8536647+08:00",
+          "sha256": "CC87DC0020CB41CAEBBF04F50E42BC7835B033A6D80E9C3F0A3D0B3DBDF341C7"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/entry/oopBrowserDownload.js",
+          "size": 120,
+          "modified": "2026-10-21T00:18:02.857396+08:00",
+          "sha256": "87567CDBD67DD2F50BB232D47D3784701ECE7C81E39C0287BB7D1B466B68CF06"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/package.js",
+          "size": 2112,
+          "modified": "2026-10-21T00:18:02.8613961+08:00",
+          "sha256": "9F938E1D44A0DD231B1660CA62F7DAE964859B79CBDC370B8542C5D375CA3C05"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/server/chromium/appIcon.png",
+          "size": 16565,
+          "modified": "2026-10-21T00:18:04.9034223+08:00",
+          "sha256": "6BA994F05C5CF18E22D9B6BEF9898FBDEC6AD4D4D77F5187D0609CB42D72D01E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/server/electron/loader.js",
+          "size": 5100,
+          "modified": "2026-10-21T00:18:02.8513971+08:00",
+          "sha256": "8F4F2C20933E7BEF2BBED9A1B455278AD1461AA919B0386F360AEE5B2580149D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/serverRegistry.js",
+          "size": 247102,
+          "modified": "2026-10-21T00:18:02.8880149+08:00",
+          "sha256": "E9DB9D4EAA8C3690F700EA3047AF7B0B6E0B16937A969589678C51DB92272AE9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/serverRegistry.js.LICENSE",
+          "size": 18617,
+          "modified": "2026-10-21T00:18:03.9437147+08:00",
+          "sha256": "5CF540FE55A2BA9BCF0EB76E739B454FAA8581E2F1A0F777602EF0855534302E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/channelSessions.js",
+          "size": 7087,
+          "modified": "2026-10-21T00:18:02.7380328+08:00",
+          "sha256": "6B9C613E87340F48AD7182ADDD7495A8FF3FBE55FEB1BBD0CE04F59F1552E126"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/cli.js",
+          "size": 153,
+          "modified": "2026-10-21T00:18:02.7709656+08:00",
+          "sha256": "DFDE8E9DFDE30C4B3914EB25BA1C5A8524EC64651D866171D75CD7B41A827180"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/help.json",
+          "size": 38111,
+          "modified": "2026-10-21T00:18:03.9405877+08:00",
+          "sha256": "D63F1C7E006B1BDFBE656E6BEA2B4DCA9E1B6C17F8C806FDACA656FEF71D234D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/minimist.js",
+          "size": 4106,
+          "modified": "2026-10-21T00:18:02.8563973+08:00",
+          "sha256": "1D200627373A367E0097F1ABEAAA4D67CDE2C33F2E5EFCA5CB55222C7667ADC3"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/output.js",
+          "size": 11703,
+          "modified": "2026-10-21T00:18:02.8593975+08:00",
+          "sha256": "2EACE914547A487B2AA1DC34AF787FE92168F0B7B3DDE24F2B127E817CC9B2B4"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/program.js",
+          "size": 16059,
+          "modified": "2026-10-21T00:18:02.8643966+08:00",
+          "sha256": "4A3ECE6F75A707E6AF71C1DDE8650080E7819421594F251B9397E2E45E89CBB8"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/registry.js",
+          "size": 6662,
+          "modified": "2026-10-21T00:18:02.8663963+08:00",
+          "sha256": "C11D278E05542808BA37BDB032018ECCF9DC78377F8025BD74FA906AE009CA30"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/cli-client/session.js",
+          "size": 9519,
+          "modified": "2026-10-21T00:18:02.8902476+08:00",
+          "sha256": "716E87FC77251129ADF8C66374CCCC6788F76A02B4B33692C7E63A01A659CB5C"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/dashboard/appIcon.png",
+          "size": 18945,
+          "modified": "2026-10-21T00:18:05.001286+08:00",
+          "sha256": "38037BCF18C7F9B950DA2E1A2D8800D38FB27637CCDA293D38368A3704B67F18"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/SKILL.md",
+          "size": 12587,
+          "modified": "2026-10-21T00:18:04.0418495+08:00",
+          "sha256": "29C0B669A524D42B51934D7DB9144C1C07A566D0549AE6FB6CCD810E5A3CF61B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/element-attributes.md",
+          "size": 665,
+          "modified": "2026-10-21T00:18:03.9539554+08:00",
+          "sha256": "BF19AA4671E0A50A0FEFA9C790F39124E803060EEFE395042B723C29FCB7FAA2"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/playwright-tests.md",
+          "size": 1690,
+          "modified": "2026-10-21T00:18:03.9620957+08:00",
+          "sha256": "C5B0719FEF2CFDFF50BD744051B2F9AFC119775DB4B48E9B2882C1CF3886797C"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/request-mocking.md",
+          "size": 2182,
+          "modified": "2026-10-21T00:18:03.967841+08:00",
+          "sha256": "54E801C9663FC2B6D68CEB058CB1C360724C2499F42ACC7852A68E83E5B5F37C"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/running-code.md",
+          "size": 5642,
+          "modified": "2026-10-21T00:18:03.9718514+08:00",
+          "sha256": "D95C539A5990B71D02D8BDF1D9414DF16191EB6CFF95B0063820518B7A13DCB2"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/session-management.md",
+          "size": 5671,
+          "modified": "2026-10-21T00:18:03.9748646+08:00",
+          "sha256": "CD3E261B8763BF952F1E371B876CB78D054379AFEC85482F9250633E1B7E6C44"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/storage-state.md",
+          "size": 5198,
+          "modified": "2026-10-21T00:18:04.3385895+08:00",
+          "sha256": "9AC47F9AE4A1AEDCD2077F8AC9AB1BA6BEE1962CB83FF51ADCD36FB6D83B5EC6"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/test-generation.md",
+          "size": 16114,
+          "modified": "2026-10-21T00:18:04.4388627+08:00",
+          "sha256": "12F54CFA718D9E559BAD918120A4CA4F11C933167713D1B9C5F99872EDDAF749"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/tracing.md",
+          "size": 3440,
+          "modified": "2026-10-21T00:18:04.6389273+08:00",
+          "sha256": "792E0AC7705E56AC48DF84C0F5400221CE86107897C671590A64A4EA6A82508E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-cli/references/video-recording.md",
+          "size": 5387,
+          "modified": "2026-10-21T00:18:04.6814085+08:00",
+          "sha256": "8555AB5400DF0D90E66318AACC0A8A4418FBF872E7463824D55D5C41615ABD83"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-component-testing/SKILL.md",
+          "size": 10027,
+          "modified": "2026-10-21T00:18:04.1059859+08:00",
+          "sha256": "77BC6F8D1DE57AC8F8996AE860C1CFC446F18F48E78CC643B43389E5A97D5C66"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-component-testing/references/gallery-spec.md",
+          "size": 6199,
+          "modified": "2026-10-21T00:18:03.957409+08:00",
+          "sha256": "0CA25DDE6112EB379F56EB618585B64DC2DFD13C2F7F956AC7EABBD76A68912B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-component-testing/references/migration.md",
+          "size": 4758,
+          "modified": "2026-10-21T00:18:03.959571+08:00",
+          "sha256": "0AFDA2E933235AD5C538C914E75C2469C160CD3BE7650BD4EC86BEF9EFAE8D63"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-component-testing/references/react.md",
+          "size": 2921,
+          "modified": "2026-10-21T00:18:03.9640968+08:00",
+          "sha256": "2A9661C3BFF8D12064D50AA71C4E0FE120BCF6E9F243F2506A1AD90B0EDF2F90"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-component-testing/references/vue.md",
+          "size": 3180,
+          "modified": "2026-10-21T00:18:04.6838731+08:00",
+          "sha256": "5A01334A5521D6728F7D0E87751EFB0723D6A7E3F715F994FDF96B88853966C1"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/skills/playwright-trace/SKILL.md",
+          "size": 4712,
+          "modified": "2026-10-21T00:18:04.3055954+08:00",
+          "sha256": "DF85506BFA8A445C961EFA1AC244CCA733667B717711BCC99C1F93994C29D5DC"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/utils/extension.js",
+          "size": 4260,
+          "modified": "2026-10-21T00:18:02.8200185+08:00",
+          "sha256": "ED1A56CB9A6B4643A6A1DEA604C541A4E3A4BE8D8971EDCFE53C7DC9CCEEFE98"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/tools/utils/socketConnection.js",
+          "size": 3317,
+          "modified": "2026-10-21T00:18:02.8947884+08:00",
+          "sha256": "973C2BEA70A1F1445F4673F99E9FA351E50A2EC9FD93D7381B2C41BB4DE764DD"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/utilsBundle.js",
+          "size": 3239355,
+          "modified": "2026-10-21T00:18:03.8255108+08:00",
+          "sha256": "580F571BF063E2256B51B3946A035BC452FC0E22808D5547B198BAEA39923A32"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/utilsBundle.js.LICENSE",
+          "size": 122225,
+          "modified": "2026-10-21T00:18:03.948561+08:00",
+          "sha256": "57945338CBA4878E373646733528017FBE3DB1503EC2B431FD30D2A390C70C33"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/assets/codicon-DCmgc-ay.ttf",
+          "size": 80340,
+          "modified": "2026-10-21T00:18:05.7405266+08:00",
+          "sha256": "0F1D5219934E96E83B8DB162D60B4D8C09B5DE1E7D38031CBAFE4A3C0F2889C9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/assets/firefox-1bWoP6pv.svg",
+          "size": 7488,
+          "modified": "2026-10-21T00:18:05.7081394+08:00",
+          "sha256": "3F3742D1E78C0DB6C2D3531250F70C30675EE5310DE32FA89BEFAF738C54EFD0"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/assets/firefox-beta-k3eOH_eK.svg",
+          "size": 9280,
+          "modified": "2026-10-21T00:18:05.7111408+08:00",
+          "sha256": "7EAB5FFDC25903BA33A7202F7FFFA1999F119C7BE45A39E9E703C118904F917A"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/assets/firefox-nightly-Cp5nfeDT.svg",
+          "size": 9143,
+          "modified": "2026-10-21T00:18:05.7131396+08:00",
+          "sha256": "F311C074B0FA999FCD6B73441301FB54EE87A48FF3BF05F318647928110476DA"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/assets/index-CyWAfh-p.js",
+          "size": 324278,
+          "modified": "2026-10-21T00:18:02.8282582+08:00",
+          "sha256": "33ABC7596E49D241E5B397141073E73BB2FB7EEC9880BB1E0E2E6D0F673A150E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/assets/index-DhC616m4.css",
+          "size": 131922,
+          "modified": "2026-10-21T00:18:01.4904546+08:00",
+          "sha256": "B4ADAF3C09A3A3A4D17D0268255113D0BBACD2045CFAB47ED69A78E0B9BDBD78"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/assets/safari-na3_-uQk.svg",
+          "size": 5254,
+          "modified": "2026-10-21T00:18:05.7241403+08:00",
+          "sha256": "80FD72CA5EB8545F1981277B31F4F92951D469D4EFEBD078E4086B676FE517DC"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/index.html",
+          "size": 1078,
+          "modified": "2026-10-21T00:18:02.5114347+08:00",
+          "sha256": "3C127919B93D9A2A621EC5AA5BE8565680EDC6E961E62D028914549D22BCB218"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/dashboard/playwright-logo.svg",
+          "size": 5645,
+          "modified": "2026-10-21T00:18:05.7161388+08:00",
+          "sha256": "511524A1C145819303A18FB71870A4307C3E740F9E9722F7686A2B42B0995B6C"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/htmlReport/index.html",
+          "size": 464,
+          "modified": "2026-10-21T00:18:02.5125031+08:00",
+          "sha256": "CE7C098020A0EB9CE10EDD416245EA6DA50DFEAAB18DFD0A2176979D22643BE6"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/htmlReport/report.css",
+          "size": 99364,
+          "modified": "2026-10-21T00:18:02.2012439+08:00",
+          "sha256": "AFA5C8F204098C79EB093E9354D82488A2CCAA771B45453CD4D1E9A075779CB8"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/htmlReport/report.js",
+          "size": 415216,
+          "modified": "2026-10-21T00:18:02.8799274+08:00",
+          "sha256": "F0941744B2EF35B91EAFB3D6099F5D4ACB342DDBB3000FF293B6E3ABF80D29AC"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/recorder/assets/codeMirrorModule--QdMvsKi.css",
+          "size": 6251,
+          "modified": "2026-10-21T00:18:01.0282016+08:00",
+          "sha256": "20BE824A82832B62CC04642D31DA3C609FD280B23F1CDCB1E622C4F40AAC5AB8"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/recorder/assets/codeMirrorModule-CwYYHbcZ.js",
+          "size": 307374,
+          "modified": "2026-10-21T00:18:02.7865705+08:00",
+          "sha256": "B673ACF747A1667BBD90B96D9DE583D69905B0BD78A196B2A7979A573F5171FD"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/recorder/assets/codicon-DCmgc-ay.ttf",
+          "size": 80340,
+          "modified": "2026-10-21T00:18:05.7445273+08:00",
+          "sha256": "0F1D5219934E96E83B8DB162D60B4D8C09B5DE1E7D38031CBAFE4A3C0F2889C9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/recorder/assets/index-DYjdXIbE.js",
+          "size": 358249,
+          "modified": "2026-10-21T00:18:02.8389089+08:00",
+          "sha256": "F3C0288840BEDB5739649F7FE938A30F57469D46D6CA1E56EE885A0860B98DF9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/recorder/assets/index-l_lX622x.css",
+          "size": 85451,
+          "modified": "2026-10-21T00:18:01.8846336+08:00",
+          "sha256": "01EECBEF954379CB99BF36502849FF6E503887BD8A131A5D02DD5D8C23B6106F"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/recorder/index.html",
+          "size": 1078,
+          "modified": "2026-10-21T00:18:02.5827103+08:00",
+          "sha256": "D8A974540383C01C031DD7F317D4276675ECC562747986E6D70234751127E891"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/recorder/playwright-logo.svg",
+          "size": 5033,
+          "modified": "2026-10-21T00:18:05.717139+08:00",
+          "sha256": "6B0A4367BDEAB10995BC239278F04C68C10E48ADBEC15E799E01909A0D66DCB9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/assets/codeMirrorModule-rXmQmLUY.js",
+          "size": 307393,
+          "modified": "2026-10-21T00:18:02.796854+08:00",
+          "sha256": "BB0F7C41F9889E4195C2504878E38061288881F426498434C9955479828F7E66"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/assets/defaultSettingsView-B-dXF5JN.js",
+          "size": 643184,
+          "modified": "2026-10-21T00:18:02.8181526+08:00",
+          "sha256": "2CE8BE133FE21A4ABD7D8330D9B443092DC2CE28826F191442C14989F9D55B15"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/assets/urlMatch-L3liM589.js",
+          "size": 2510,
+          "modified": "2026-10-21T00:18:03.8179904+08:00",
+          "sha256": "1BC6321E32D11C31A452BC75896F0B344E6153321854D9F1658818BE7F845C16"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/assets/xtermModule-BuZfJS5v.js",
+          "size": 288730,
+          "modified": "2026-10-21T00:18:03.9363699+08:00",
+          "sha256": "17584C22AD7D49F3C3C9E07E8B2655203CD33E60C1CB527356EABFDA6A59C830"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/codeMirrorModule.-QdMvsKi.css",
+          "size": 6251,
+          "modified": "2026-10-21T00:18:01.0989392+08:00",
+          "sha256": "20BE824A82832B62CC04642D31DA3C609FD280B23F1CDCB1E622C4F40AAC5AB8"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/codicon.DCmgc-ay.ttf",
+          "size": 80340,
+          "modified": "2026-10-21T00:18:05.7485261+08:00",
+          "sha256": "0F1D5219934E96E83B8DB162D60B4D8C09B5DE1E7D38031CBAFE4A3C0F2889C9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/defaultSettingsView.BLFoOugd.css",
+          "size": 105310,
+          "modified": "2026-10-21T00:18:01.3532311+08:00",
+          "sha256": "72241B3112AB609CA0E06195E85E02CB373799217CD5F24A07D61D9273C4AD3E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/index.B_TqY17P.css",
+          "size": 2055,
+          "modified": "2026-10-21T00:18:01.9566753+08:00",
+          "sha256": "08A212FCACAE1866F44F065654AFCC4C7D03409C68C74B3315C5BDA17A0CA003"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/index.KZ4wOW1K.js",
+          "size": 6566,
+          "modified": "2026-10-21T00:18:02.8419118+08:00",
+          "sha256": "53E2227532161670BC601E241A7A9AF00AC54826A9DD2EF9C15B8C1F77E92E63"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/index.html",
+          "size": 2363,
+          "modified": "2026-10-21T00:18:02.6289208+08:00",
+          "sha256": "E2218AF9284B6E1C2EC3B547320857778A323FD1473D90620153E967223C5721"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/manifest.webmanifest",
+          "size": 429,
+          "modified": "2026-10-21T00:18:05.7557329+08:00",
+          "sha256": "D8540500603A32A39FE7E5A0375DC0F9EBAFD11118E06A846DB7EFC608223AB9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/playwright-logo.svg",
+          "size": 5033,
+          "modified": "2026-10-21T00:18:05.7211391+08:00",
+          "sha256": "6B0A4367BDEAB10995BC239278F04C68C10E48ADBEC15E799E01909A0D66DCB9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/snapshot.B_Jk1wbt.js",
+          "size": 650,
+          "modified": "2026-10-21T00:18:02.8926199+08:00",
+          "sha256": "D4D09E05451D107D8E1A6BBD041405FE518B9FD2833890E4EBAAAD83B7F554F5"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/snapshot.html",
+          "size": 389,
+          "modified": "2026-10-21T00:18:02.6300156+08:00",
+          "sha256": "C608C8899C95C5A74D3F556E20146C3D852B9DF85AE2854C659A7CC773C9B727"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/sw.bundle.js",
+          "size": 93459,
+          "modified": "2026-10-21T00:18:02.8986554+08:00",
+          "sha256": "CFD6662A71914516EFE90A5A6F3DA2BBE5DB6E442939B868CA465F765D33723F"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/uiMode.C7UW1sC9.css",
+          "size": 54341,
+          "modified": "2026-10-21T00:18:02.3573935+08:00",
+          "sha256": "C194E703AD4697E31C5E9B8D1E4F75F201A1FBE9940620FA6319DFA5543707B4"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/uiMode.Dzuouizj.js",
+          "size": 37932,
+          "modified": "2026-10-21T00:18:03.5336391+08:00",
+          "sha256": "A584F96F0797144552430D7A04F7E3B84B1BAAA0B781A664B1512339EC1C760B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/uiMode.html",
+          "size": 727,
+          "modified": "2026-10-21T00:18:02.6681616+08:00",
+          "sha256": "32B260F173708FE088834EFE8EFF0F9D92AF0C7E2E6C987CD8E197F0A066742F"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/vite/traceViewer/xtermModule.kHJ-D0s7.css",
+          "size": 2853,
+          "modified": "2026-10-21T00:18:02.5092137+08:00",
+          "sha256": "0DD60056134E6A2994A86B59A1E9789B9F04E92924DA109AEF8C923ACAF08CE5"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/webp_codec.LICENSE",
+          "size": 8841,
+          "modified": "2026-10-21T00:18:03.9512487+08:00",
+          "sha256": "995C7EE35ACEB7666829B7A501CA89C0864E12B493C1174B155774AB1E03D831"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/webp_codec.wasm",
+          "size": 565369,
+          "modified": "2026-10-21T00:18:05.7535246+08:00",
+          "sha256": "164CD9583A3E4D081F767D3B41FF0A730443DC7535FCC5CAFF83561463384B79"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/lib/xdg-open",
+          "size": 32416,
+          "modified": "2026-10-21T00:18:00.906959+08:00",
+          "sha256": "7D759D54F0D4CE1BEEB34EE62C587985B5042374E8DE237B0DCB8CD47AA698CF"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/package.json",
+          "size": 876,
+          "modified": "2026-10-21T00:18:03.9415879+08:00",
+          "sha256": "07C47543631FEF9508760365DEE9FBE958C562093EC8D122543949ED231F233F"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/types/protocol.d.ts",
+          "size": 823302,
+          "modified": "2026-10-21T00:18:05.7291427+08:00",
+          "sha256": "B836EED98B79FABB54F1DF73252A0CE178B8DF4A89794251ADE2FA0C5E52B678"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/types/structs.d.ts",
+          "size": 2455,
+          "modified": "2026-10-21T00:18:05.73114+08:00",
+          "sha256": "C9B9179B7291C8562EB0FB781219DDBDCF36149EBD7BD355E5B4A553D6B60B81"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-browser-deps/node_modules/playwright-core/types/types.d.ts",
+          "size": 1110840,
+          "modified": "2026-10-21T00:18:05.7351374+08:00",
+          "sha256": "6C688250F2B7061CEC3A17AB8797671137B653F8C4E81A6DF3190CB112A7579A"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-433f.bundle",
+          "size": 13663,
+          "modified": "2026-10-21T00:24:43.999939+08:00",
+          "sha256": "D7061DFEFB77A4254C22E7E9D558CE7E7957E9BF0A1F7422C5C7C23EA34C5FFB"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-fetch-blobs.py",
+          "size": 2288,
+          "modified": "2026-10-21T00:44:57.3243137+08:00",
+          "sha256": "8F4B763034302490EEF9BD7E753E24447909CC5ADCFA9690A49C4F792F15DA85"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-fetch-ranges.py",
+          "size": 1915,
+          "modified": "2026-10-21T00:39:48.3188262+08:00",
+          "sha256": "60E4924F77DAFDC97C0DD343CA832E431B5791FFAC6FC807EAE7CECF8E217416"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345",
+          "size": 22786669,
+          "modified": "2026-10-21T00:45:28.1432317+08:00",
+          "sha256": "07BBAD0C9F2012FE1102FC534BE4A764FD5E67CA9B9B64A7956941AA6FC11345"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/2fd310b74be9d677738c1a047b48110afeb29de0303246b0d3344cf7eabe90dd",
+          "size": 33262910,
+          "modified": "2026-10-21T00:46:02.0605673+08:00",
+          "sha256": "2FD310B74BE9D677738C1A047B48110AFEB29DE0303246B0D3344CF7EABE90DD"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/3e439acecb0c295779bd5bf3cfe14e077c843dd1b0279cf5f2f39aad3a17b98d",
+          "size": 66482,
+          "modified": "2026-10-21T00:45:41.2881305+08:00",
+          "sha256": "3E439ACECB0C295779BD5BF3CFE14E077C843DD1B0279CF5F2F39AAD3A17B98D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/6e2af341804867aaacd128badb80bb720016c823462ba6656c9c98a215e3858b",
+          "size": 250,
+          "modified": "2026-10-21T00:45:12.1794077+08:00",
+          "sha256": "6E2AF341804867AAACD128BADB80BB720016C823462BA6656C9C98A215E3858B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/6eec8006b372b6c7a92e68a21e687696512080558df768015e0fbaa1af90404d",
+          "size": 298337,
+          "modified": "2026-10-21T00:46:26.3659789+08:00",
+          "sha256": "6EEC8006B372B6C7A92E68A21E687696512080558DF768015E0FBAA1AF90404D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/97117be61ad3ec44549cb5e36807fb5ca144dc37268709ee1b73b617916a12ce",
+          "size": 1290523,
+          "modified": "2026-10-21T00:46:11.7272944+08:00",
+          "sha256": "97117BE61AD3EC44549CB5E36807FB5CA144DC37268709EE1B73B617916A12CE"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/a2d66d9193758fc23bf45971055aca8d28c8f4b5d33f4820d0066388479f1c59",
+          "size": 93,
+          "modified": "2026-10-21T00:45:31.1027943+08:00",
+          "sha256": "A2D66D9193758FC23BF45971055ACA8D28C8F4B5D33F4820D0066388479F1C59"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/a9b4df696b8be9f12c38f5a0829d090d505fa8d59cd014910bc0c3d41590d3fe",
+          "size": 1202,
+          "modified": "2026-10-21T00:45:39.0278782+08:00",
+          "sha256": "A9B4DF696B8BE9F12C38F5A0829D090D505FA8D59CD014910BC0C3D41590D3FE"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/c4578919384c54f6ffb59423cd761c7031e0d9a53160cdf58a9ad55c608cfbec",
+          "size": 15660492,
+          "modified": "2026-10-21T00:46:23.4522921+08:00",
+          "sha256": "C4578919384C54F6FFB59423CD761C7031E0D9A53160CDF58A9AD55C608CFBEC"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/e1691480fbbc3857581d3e42cede5dd239868d374aac106d772f70750c270dc9",
+          "size": 785067,
+          "modified": "2026-10-21T00:46:06.5954856+08:00",
+          "sha256": "E1691480FBBC3857581D3E42CEDE5DD239868D374AAC106D772F70750C270DC9"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-full-blobs/fecceb262e6722d606bb8a8ddbc6d053913840b9381356368c9689b443525dc3",
+          "size": 5188275,
+          "modified": "2026-10-21T00:45:36.4074078+08:00",
+          "sha256": "FECCEB262E6722D606BB8A8DDBC6D053913840B9381356368C9689B443525DC3"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-list-layers.py",
+          "size": 1090,
+          "modified": "2026-10-21T00:44:00.1601373+08:00",
+          "sha256": "A6A22C05CB75157A4BDC51504F7A9E1D86DC4D2FBA41AF1EB5342F05AE85F90B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-missing-blobs.txt",
+          "size": 1012,
+          "modified": "2026-10-21T00:44:57.3233129+08:00",
+          "sha256": "F5AE8782CD6039FC3BB07D89447C3AC9E71A68171E096AC908863ABE9F123F27"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:28.1767654+08:00",
+          "sha256": "E3BFEC742361F497CB9382D14663425B345B8990E5C5DCFE2D820BEF8122F27D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:27.0346922+08:00",
+          "sha256": "FEFD236F76AADAF1483D818B24C914BD7BAFA4D9104F7D3547614A07C1617CC6"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:28.5081291+08:00",
+          "sha256": "63AE17818505F5F5C73B0840E1C92E8515B43230A49EC195E3D256C49DC2A89E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:26.7247847+08:00",
+          "sha256": "677A1FF3F10EE03434E46C4BA5AACB971F60FD215FDBDD548A2CE4D70FA11159"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:30.6814233+08:00",
+          "sha256": "B0E0F3EA109DE73BE21F67F915D8E876356BCCF47829DFA6813263B2B9C5B21A"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:30.4379747+08:00",
+          "sha256": "45AE49CCDC4A48C77B55B9A55B9BCA52283BF8BDA3CBF3227923973005911742"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:31.717641+08:00",
+          "sha256": "5264B2F25A492A074C6166E68D231FC5290F6BF6450DBDD60E8302804912B00C"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:31.7811089+08:00",
+          "sha256": "3ABC5F489EC927674673DE732728E34FA9E6134F96268982C8FA9F190DBA86CA"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000014.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:43:34.8029973+08:00",
+          "sha256": "C507552764F70BD4BB4EF97D969BB3B4B1B24E1CFED46D90F617539EF7C20722"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000015.part",
+          "size": 203108,
+          "modified": "2026-10-21T00:43:34.7840783+08:00",
+          "sha256": "A4335B107163A6BF80300B1DFE5EEDD2B98550C74412F42067993817A1AB7B1F"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:40:03.5165809+08:00",
+          "sha256": "3BF894838AD196A55E180CBFA22DB188B5520459FB62345D07286E0327B7AC56"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:40:01.6469179+08:00",
+          "sha256": "C8A7B1C0941566AA75C7C313C210554718CB7B80340CF65D30EEE0B0E6DE7267"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000023.part",
+          "size": 1048576,
+          "modified": "2026-10-21T00:40:02.2568325+08:00",
+          "sha256": "F65820D71A4EFF68499295E4CAE06D50FB2FB6ACACD30FC19DE80FEE9F1F639D"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-orders-range-parts/9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8/000003.part",
+          "size": 653961,
+          "modified": "2026-10-21T00:40:15.3723163+08:00",
+          "sha256": "AD77E1D0CF9FD8FDD29B9256C6DF81A687F54D8B247CD26F6B24E7F99A88E195"
+        }
+      ]
+    }
+  ]
+}
