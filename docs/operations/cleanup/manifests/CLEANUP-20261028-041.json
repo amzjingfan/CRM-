@@ -1,7 +1,9 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-041",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "175131e7ec081ddf1109ad9edc51fd53a7a497e9",
+  "deleted_branch_count": 1,
   "base_sha": "5c799f40a3ce333d66438e9b6bdaea6f4066f3f6",
   "scope": "one unattached closed-PR local branch whose unique index/current-status update is superseded in local main; archive original commit ref before deleting branch name; no worktree or remote operation",
   "ref": "refs/heads/docs/workspace-composer-index-current-20261018",
