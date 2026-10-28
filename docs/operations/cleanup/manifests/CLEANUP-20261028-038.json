@@ -1,7 +1,9 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-038",
-  "state": "candidate",
+  "state": "archived",
+  "execution_main_sha": "5aaf0f5ebae596792f56e1d7775949781fadbdcb",
+  "archived_file_count": 1131,
   "base_sha": "6470f6598a72c97a5db53290ab9fbd0d35f2100a",
   "scope": "move one exact clean nested Git repository from an old worktree into ignored local archive; no branch or remote operation",
   "outer_worktree": ".worktrees/g5-manual-candidate-20261017",
