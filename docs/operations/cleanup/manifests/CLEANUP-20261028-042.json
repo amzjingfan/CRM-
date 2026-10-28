@@ -1,0 +1,19 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-042",
+  "state": "deleted",
+  "execution_main_sha": "80e5afe3bff6502fe27c92943f810452c39c2249",
+  "deleted_branch_count": 1,
+  "scope": "one unattached closed-PR local branch whose core feature and test are present in local main; archive original commit ref before deleting branch name; no worktree or remote operation",
+  "ref": "refs/heads/feature/settings-inbox-ui-20261017",
+  "head": "a9f7177eb26e3bee9ed31d53abb6106fe8bbbc9f",
+  "archive_ref": "refs/archive/CLEANUP-20261028-042/feature/settings-inbox-ui-20261017",
+  "closed_pr": 277,
+  "merged_successor_prs": [280, 282, 284],
+  "proof_task": "MVP-SETTINGS-UI-001",
+  "matching_blob_paths": [
+    "src/frontend/components/SettingsFrame.tsx",
+    "src/frontend/lib/conversationTime.ts",
+    "src/tests/frontend/contract/settings-inbox-ui.test.mjs"
+  ]
+}
