@@ -1,0 +1,100 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-009",
+  "state": "candidate",
+  "base_sha": "451b584ffe21929ef05f5c45697b141d5316d5fb",
+  "scope": "three exact local worktrees and branches; ignored cache classes deleted after authorization; other ignored files archived; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-009",
+  "candidates": [
+    {
+      "worktree": ".worktrees/customer-sidebar-real-fields-20261021",
+      "head": "34019c7b81f11dc1bb60b6beb6bef34cba9cbb09",
+      "branch_ref": "refs/heads/fix/customer-sidebar-real-fields-20261021",
+      "pr": 488,
+      "merge_commit": "15ceabf8eac90f2fe8c7843e24af26381c3e0499",
+      "directory_modified": "2026-10-21T09:47:58.1351581+08:00",
+      "ignored_count": 46126,
+      "ignored_paths_sha256": "5556680C029C4199E1A2A2DBADA533509A626E33A80B4B6D1323833F963961F3",
+      "cache_file_count": 46122,
+      "cache_bytes": 794007755,
+      "archive_file_count": 4,
+      "archive_bytes": 243136,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-real-fields/coupons.png",
+          "size": 74123,
+          "modified": "2026-10-21T09:57:25.4831431+08:00",
+          "sha256": "019BDB5ED9D3669E15A6CC5F2646C8726F6E6D5129590D3FA557268D3392F863"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-real-fields/orders.png",
+          "size": 91293,
+          "modified": "2026-10-21T09:57:24.7211623+08:00",
+          "sha256": "5EE0E7047ABE3EB9055D1310F471646F53EA7D4D2834CB5B7D4F01BA0C02FC2B"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-real-fields/pr-body.md",
+          "size": 1140,
+          "modified": "2026-10-21T10:10:16.3894496+08:00",
+          "sha256": "A1679DD743B4FBF45A2EBF1D70CBDC225AF3585B2EA2FC5FC15BA00599F5EEEE"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-real-fields/products.png",
+          "size": 76580,
+          "modified": "2026-10-21T09:57:25.2709382+08:00",
+          "sha256": "BE7631B4A9AC92EBCFD7E3729BCDE69F15902FFC0966E05D76EB57A8E84FFB76"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-browser-comments-20261023",
+      "head": "8d079dee5ca91e09597ff8803919a9a36e58ae34",
+      "branch_ref": "refs/heads/fix/workspace-comments-20261023",
+      "pr": 547,
+      "merge_commit": "62e95b9f3f53209ff04048932359d6a17ac83617",
+      "directory_modified": "2026-10-23T16:50:55.7644407+08:00",
+      "ignored_count": 46831,
+      "ignored_paths_sha256": "E7316AF83B4F4302E7688B63EC1916E6ED380811BB76D157531CB45EC556C8C0",
+      "cache_file_count": 46830,
+      "cache_bytes": 805970019,
+      "archive_file_count": 1,
+      "archive_bytes": 1188,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/workspace-browser-feedback-pr-body.md",
+          "size": 1188,
+          "modified": "2026-10-23T17:37:03.1727307+08:00",
+          "sha256": "3B2C0ED3C8B1F1B91D23AF0F0E3205CA687F75B7050F8B66E505D2BC54CC9D1F"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-media-send-20261023",
+      "head": "b2aa23e6f4d9a728f422fa699639aabb06840a6e",
+      "branch_ref": "refs/heads/feature/workspace-media-send-20261023",
+      "pr": 550,
+      "merge_commit": "db16111df252c4d941cfd1b6c1223a83e2c58cac",
+      "directory_modified": "2026-10-23T17:56:26.4177034+08:00",
+      "ignored_count": 46951,
+      "ignored_paths_sha256": "081DD161EA355AD15DF10A66275511C6352D56ACE61630DB8DCAEF9EABB1E578",
+      "cache_file_count": 46949,
+      "cache_bytes": 806391816,
+      "archive_file_count": 2,
+      "archive_bytes": 3086,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/resolve-media-parent-docs.py",
+          "size": 1372,
+          "modified": "2026-10-23T18:52:09.6620221+08:00",
+          "sha256": "A7A02CCECD4B61B926137F423580C21F4FA460978185ABCD30ED2EE1DBB2F60B"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-media-pr-body.md",
+          "size": 1714,
+          "modified": "2026-10-23T18:48:15.8826845+08:00",
+          "sha256": "118CA1827357E79C2AE9E83FFF1725A8933CC5A67C1093084BA5C2731B1C2741"
+        }
+      ]
+    }
+  ]
+}
