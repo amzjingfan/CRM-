@@ -1,7 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-030",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "a6bd2534e145565440dcd024b192691dd14204ee",
+  "deleted_worktree_count": 2,
+  "deleted_branch_count": 2,
+  "archived_file_count": 78,
+  "deleted_cache_file_count": 79458,
   "base_sha": "fba676b5d2f1050a537a3e9b792b45695b68e072",
   "scope": "two exact merged-PR old TikTok and logistics worktrees and branches; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-030",
