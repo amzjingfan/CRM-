@@ -1,0 +1,160 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-022",
+  "state": "candidate",
+  "base_sha": "f61864e7fc9d016d979a9b7420d614acdfdac8fe",
+  "scope": "one exact merged-PR worktree and branch; two untracked rule files and other ignored non-cache files archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-022",
+  "candidates": [
+    {
+      "worktree": ".worktrees/tiktok-conversation-sync-20261016",
+      "head": "ab60f2b41ac61bfda7dc92f2a1b66c4cdb259fc8",
+      "branch_ref": "refs/heads/fix/frontend-runtime-deps-20261016",
+      "pr": 262,
+      "merge_commit": "14ec836a391e21374c973479897f216956ead594",
+      "directory_modified": "2026-10-16T17:12:51.1705852+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-16T21:19:16.2178076+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-16T21:19:16.2178076+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "ignored_count": 46462,
+      "ignored_paths_sha256": "1F72DF57F78A661B1242F1C4DC2A05997F982C72BC376457D837C2CC493BEEB8",
+      "cache_file_count": 46442,
+      "cache_bytes": 1014464411,
+      "archive_file_count": 20,
+      "archive_bytes": 7789805,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/crm-staging-manual-deploy-20261016-23ac2ad0.json",
+          "size": 2457,
+          "modified": "2026-10-16T20:48:45.7881847+08:00",
+          "sha256": "F61241980A5953B8C71923F446B61C5FD10C4B32CD0D270F338DC89BB18721EA"
+        },
+        {
+          "path": "src/tests/.artifacts/crm-staging-manual-deploy-23ac2ad0.sh",
+          "size": 1403,
+          "modified": "2026-10-16T20:26:41.4105399+08:00",
+          "sha256": "B8BF74403C99FDB4E22C8AFA6A560F942A6A662CDE62B070D5CF19388DDDF1C0"
+        },
+        {
+          "path": "src/tests/.artifacts/crm-staging-manual-validate-20261016-23ac2ad0.json",
+          "size": 2135,
+          "modified": "2026-10-16T20:48:45.7901819+08:00",
+          "sha256": "91877626EDA6AC5ED796F956B3D485B43A20C6B1E526D8A04CEA3686889E5F2E"
+        },
+        {
+          "path": "src/tests/.artifacts/crm-staging-source-23ac2ad0-20261016.tar",
+          "size": 7761920,
+          "modified": "2026-10-16T20:24:57.3040925+08:00",
+          "sha256": "E850F4152DAF7C13D9B49D90A384A165BCB965068FD6266D514A86FEF58173AB"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-253-manual-staging-body.md",
+          "size": 2140,
+          "modified": "2026-10-16T20:55:45.7391097+08:00",
+          "sha256": "6B825AE4036C9A0427B09CC96EF1B5CE28F36DD9A2BCD714DED21CF4D9C0680D"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-conv-sync-complete-20261016-body.md",
+          "size": 931,
+          "modified": "2026-10-16T20:59:47.3933994+08:00",
+          "sha256": "41E396A44DFB75790AA5D7EC4955626108B6EA07D52794B6F079B64DC1AB345E"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-deploy-evidence/crm-staging-deploy-evidence.json",
+          "size": 2457,
+          "modified": "2026-10-16T18:36:30.7267131+08:00",
+          "sha256": "36E30D8EEEE242D8490DEDDDD4ACCF8B70577398257FDD9BFBCDB98301386E2F"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-frontend-38890441975/frontend.json",
+          "size": 449,
+          "modified": "2026-10-16T18:57:35.2065092+08:00",
+          "sha256": "4D046D423286DC211A451593D8BDE0AD56C57D85B0B0B45B9A45FB4AEE4ED7B0"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-live-verifier-20261016.json",
+          "size": 573,
+          "modified": "2026-10-16T19:05:22.5321570+08:00",
+          "sha256": "44A6A9A08F97E151FAD12C9EFE9AB65EA9F3DE7F4B2994D8946B5EB68243DB59"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-prefetch-38890659187/crm-staging-prefetch-evidence-38890659187-1.json",
+          "size": 944,
+          "modified": "2026-10-16T19:14:23.3858698+08:00",
+          "sha256": "739100D6512108C16EBDB3F28DA97899141953F5B92AB1573D37D3B04CFDFCD8"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-prefetch-evidence/crm-staging-prefetch-evidence-38884784214-1.json",
+          "size": 944,
+          "modified": "2026-10-16T18:27:31.5197887+08:00",
+          "sha256": "0A90D538053F1A99419FAEA90BB36E2555B7740DB8D1237485A51E06DF3A8012"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-publish-backend-evidence/backend.json",
+          "size": 447,
+          "modified": "2026-10-16T18:03:34.5479413+08:00",
+          "sha256": "57906A8DC9BCF6C0C546D7CF2167FFA46AD773B2CBBF42E912A4FF9F1691EA06"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-publish-backend/backend-image-evidence-38884484754-1/backend.json",
+          "size": 447,
+          "modified": "2026-10-16T18:03:24.1034199+08:00",
+          "sha256": "57906A8DC9BCF6C0C546D7CF2167FFA46AD773B2CBBF42E912A4FF9F1691EA06"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-publish-frontend-evidence/frontend.json",
+          "size": 449,
+          "modified": "2026-10-16T18:04:03.8330784+08:00",
+          "sha256": "0664D3437460CCDEB0DA84585A8817FA9C1B5E329220EFDD422F61AF0599A5FF"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-validate-38891343316/crm-staging-validate-evidence.json",
+          "size": 2135,
+          "modified": "2026-10-16T19:14:23.0245205+08:00",
+          "sha256": "2D5EFB41D0E1378D16D1CACD4724BA046E254C4905C3F53406B26017CA472A5D"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conv-validate-evidence/crm-staging-validate-evidence.json",
+          "size": 2135,
+          "modified": "2026-10-16T18:30:49.0624919+08:00",
+          "sha256": "66E233C87DAF7FE4D79B65238489182427D99AFE8DC85CDCF78B42760DC3AF9A"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conversation-evidence-pr.md",
+          "size": 966,
+          "modified": "2026-10-16T19:16:46.3894801+08:00",
+          "sha256": "18D6EC6B62E48CC5644012F87A0503D0FFAB028EE0883E3C49D3FC29EE5C64CF"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conversation-list-pr.md",
+          "size": 792,
+          "modified": "2026-10-16T18:51:23.4557627+08:00",
+          "sha256": "03C111A51BF9A65D0BD658CD6820B5F0E7A17FD2D8F5FC2E01718975C16A3E07"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-conversation-sync-pr.md",
+          "size": 828,
+          "modified": "2026-10-16T17:50:32.0722864+08:00",
+          "sha256": "5B0247B7A9F6937C698E57E5E571DD1FD6A43534FFE3C4FF0BAE553436B92772"
+        },
+        {
+          "path": "src/tests/.artifacts/verify_tiktok_sync_staging.py",
+          "size": 5253,
+          "modified": "2026-10-16T19:04:46.5854353+08:00",
+          "sha256": "245517B62B4AD6F5DF5454D2A4E87D6D9EBAB0B00107A591E3906072D3703FF4"
+        }
+      ]
+    }
+  ]
+}
