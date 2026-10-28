@@ -1,0 +1,13 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-048",
+  "state": "deleted",
+  "execution_main_sha": "787792d7fd00af335b14bb4c63ee067a3d2656b3",
+  "deleted_branch_count": 1,
+  "scope": "one unattached duplicate local branch pointing to the same commit as an active protected session branch; archive original ref and delete duplicate branch name; no worktree, file or remote operation",
+  "ref": "refs/heads/docs/staging-latency-merge-evidence-20261028",
+  "head": "9d6a9182ec7e9e29712e670654b757f8c767ef5d",
+  "archive_ref": "refs/archive/CLEANUP-20261028-048/docs/staging-latency-merge-evidence-20261028",
+  "matching_active_ref": "refs/heads/feature/agent-tool-suite-20261028",
+  "merged_pr": 584
+}
