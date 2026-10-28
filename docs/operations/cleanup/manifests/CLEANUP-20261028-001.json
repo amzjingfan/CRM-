@@ -1,0 +1,26 @@
+[
+  {
+    "task_id": "MAINT-CLEANUP-20261028-001",
+    "batch_id": "CLEANUP-20261028-001",
+    "base_sha": "2015ccaac558e5548ca866bffd648d510fe6b6f5",
+    "original_path": "src/tests/backend/agent/test_combined_faq_contract.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 5789,
+    "sha256": "35ad9dcd5527698d10ed8748e04f4e4b811d79901f78d25761878ed345e4ee3e",
+    "modified_at": "2026-10-18T12:44:02+08:00",
+    "reason": "仅验证运行工厂固定关闭的 FAQ 分类与草稿合并试验路径，清理后没有运行引用",
+    "reference_checks": [
+      "运行工厂基线 combined_faq_enabled=False",
+      "Agent 运行与测试目录引用扫描无遗留",
+      "Agent 目录 1278 项测试通过"
+    ],
+    "related_tasks_or_worktrees": ["fix/agent-dead-faq-path-20261028"],
+    "action": "deleted",
+    "quarantine_path": "N/A（被跟踪源码通过独立 Git diff 删除，基线 Git 历史保留）",
+    "retention_until": "N/A（Git 历史保留，不做永久历史删除）",
+    "restore_method": "从基线 Git 提取精确路径；先确认目标不存在，禁止覆盖后来修改",
+    "verification": ["1278 Agent tests passed", "2402 backend tests passed, 4 skipped", "Ruff check/format passed", "mypy app scripts passed", "git diff --check passed"]
+  }
+]

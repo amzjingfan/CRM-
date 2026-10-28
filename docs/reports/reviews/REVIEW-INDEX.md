@@ -4,6 +4,7 @@ View: `CURRENT`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MAINT-CLEANUP-20261028-001-20261028-R01 | MAINT-CLEANUP-20261028-001 | R01 | APPROVE | `4daa2f8949dd67d7772bcb43dbc3703aed5cde7d` | correctness, prompt_registry, DLP, store_isolation, regression, restore | 2026-10-28T10:30:00+08:00 | [`RR-MAINT-CLEANUP-20261028-001-20261028-R01.md`](RR-MAINT-CLEANUP-20261028-001-20261028-R01.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07 | MVP-AGENT-DEBUG-ANSWER-001 | R07 | APPROVE | `c63421fa4bf19b92c66aa57b8298b75dcc83a9a5` | correctness, model_format, DLP, store_isolation, read_only_tools, timeout, no_send, cleanup | 2026-10-28T01:00:00Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06 | MVP-AGENT-DEBUG-ANSWER-001 | R06 | APPROVE | `c63421fa4bf19b92c66aa57b8298b75dcc83a9a5` | correctness, model_format, prompt_registry, DLP, store_isolation, read_only_tools, timeout, no_send | 2026-10-28T00:21:14Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R05 | MVP-AGENT-DEBUG-ANSWER-001 | R05 | APPROVE | `d368b529ae23c61bccab51eebe5a53326a87a213` | correctness, prompt_registry, output_schema, DLP, store_isolation, read_only_tools, timeout, no_send | 2026-10-27T16:04:45Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R05.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R05.md) |

@@ -51,7 +51,6 @@ from app.agent.schemas import (
     AgentWorkflowCommand,
     AgentWorkflowResult,
     ClassificationState,
-    CombinedFaqModelOutput,
     ConciseFaqAnswerModelOutput,
     FaqAnswerModelOutput,
     GroundingReviewOutput,
@@ -70,8 +69,6 @@ from app.agent.tool_execution import AgentToolBatchResult, ExecutedAgentTool
 from app.agent.tool_routing import detect_required_tools
 from app.agent.translation import TRANSLATION_PROMPT_VERSION, TranslationBundleResult, TranslationService
 from app.agent.workflow_prompt import (
-    COMBINED_FAQ_PROMPT_VERSION,
-    COMBINED_FAQ_SYSTEM_PROMPT,
     FAQ_ANSWER_CONCISE_PROMPT_VERSION,
     FAQ_ANSWER_CONCISE_SYSTEM_PROMPT,
     FAQ_ANSWER_PROMPT_VERSION,
@@ -192,7 +189,6 @@ class WorkflowState(TypedDict, total=False):
     tool_executions: Annotated[list[ExecutedAgentTool], operator.add]
     unresolved_tools: list[RequiredToolName]
     draft: FaqAnswerModelOutput
-    combined_faq_attempted: bool
     trusted_faq_attempted: bool
     trusted_faq_review: TrustedFaqReviewOutput
     prefetched_review_ms: int
@@ -247,7 +243,6 @@ class AgentWorkflowService:
         reply_safety_policy: ReplySafetyPolicy | None = None,
         auto_reply_threshold: float,
         human_review_threshold: float,
-        combined_faq_enabled: bool = False,
         trusted_faq_enabled: bool = False,
     ) -> None:
         if not 0 <= human_review_threshold < auto_reply_threshold <= 1:
@@ -261,7 +256,6 @@ class AgentWorkflowService:
         self.reply_safety_policy = reply_safety_policy or ReplySafetyPolicy()
         self.auto_reply_threshold = auto_reply_threshold
         self.human_review_threshold = human_review_threshold
-        self.combined_faq_enabled = combined_faq_enabled
         self.trusted_faq_enabled = trusted_faq_enabled
         self._graph = self._build_graph()
 
@@ -530,15 +524,8 @@ class AgentWorkflowService:
         }
 
     async def _intent_classified(self, state: WorkflowState) -> WorkflowState:
-        """工具问题沿用分类器；FAQ 命中使用组合请求，其余旧路径保留兼容。"""
+        """工具问题沿用分类器；正式 FAQ 命中使用已审批原文复核。"""
         command = state["command"]
-        if (
-            self.combined_faq_enabled
-            and not command.debug_mode
-            and not command.knowledge_file_ids
-            and not any(detect_required_tools(command.message, intent) for intent in IntentName)
-        ):
-            return await self._classify_and_draft_faq(state)
         if (
             self.trusted_faq_enabled
             and not command.debug_mode
@@ -748,98 +735,6 @@ class AgentWorkflowService:
             if not prefetch_task.done():
                 prefetch_task.cancel()
             await asyncio.gather(prefetch_task, return_exceptions=True)
-
-    async def _classify_and_draft_faq(self, state: WorkflowState) -> WorkflowState:
-        """先读取当前店铺 FAQ，再用一次严格结构化请求分类并生成草稿。"""
-        command = state["command"]
-        started_at = time.perf_counter_ns()
-        retrieval = await self._retrieve(state)
-        retrieval_ms = max(0, (time.perf_counter_ns() - started_at) // 1_000_000)
-        if not retrieval.hits:
-            inference = IntentInferenceResult(
-                output=IntentModelOutput(
-                    intent=None,
-                    confidence=0,
-                    classification_state=ClassificationState.INSUFFICIENT_CONTEXT,
-                ),
-                provider=self.classifier.provider_name,
-                model=self.classifier.model_name,
-                prompt_version="deterministic-no-faq-v1",
-                input_tokens=0,
-                output_tokens=0,
-                latency_ms=0,
-            )
-            return {
-                "inference": inference,
-                "retrieval": retrieval,
-                "input_tokens": state["input_tokens"] + retrieval.embedding_input_tokens,
-                "node_timings_ms": [("retrieval", retrieval_ms)],
-                "state_path": ["INTENT_CLASSIFIED"],
-            }
-        request = StructuredRequest(
-            system_prompt=COMBINED_FAQ_SYSTEM_PROMPT,
-            user_prompt=build_faq_answer_prompt(command, retrieval.hits, state["reply_language"]),
-            trace_id=command.trace_id,
-            max_output_tokens=1024,
-            business_prompt_id=BusinessPromptId.FAQ_CLASSIFIED_DRAFT,
-        )
-        model_started_at = time.perf_counter_ns()
-        try:
-            generated = await self.generator.generate(request, CombinedFaqModelOutput)
-        except LLMProviderError as error:
-            if error.code != LLMErrorCode.LLM_REFUSAL:
-                error.failure_stage = LLMFailureStage.FAQ_DRAFT
-                raise
-            inference = IntentInferenceResult(
-                output=IntentModelOutput(
-                    intent=None,
-                    confidence=0,
-                    classification_state=ClassificationState.MODEL_REFUSAL,
-                ),
-                provider=self.classifier.provider_name,
-                model=self.classifier.model_name,
-                prompt_version=COMBINED_FAQ_PROMPT_VERSION,
-                input_tokens=0,
-                output_tokens=0,
-                latency_ms=0,
-            )
-            return {
-                "inference": inference,
-                "retrieval": retrieval,
-                "combined_faq_attempted": True,
-                "input_tokens": state["input_tokens"] + retrieval.embedding_input_tokens,
-                "node_timings_ms": [("retrieval", retrieval_ms)],
-                "state_path": ["INTENT_CLASSIFIED"],
-            }
-        classification_ms = max(0, (time.perf_counter_ns() - model_started_at) // 1_000_000)
-        combined = generated.parsed_output
-        inference = IntentInferenceResult(
-            output=combined.classification,
-            provider=generated.provider,
-            model=generated.model,
-            prompt_version=COMBINED_FAQ_PROMPT_VERSION,
-            input_tokens=generated.input_tokens,
-            output_tokens=generated.output_tokens,
-            latency_ms=generated.latency_ms,
-        )
-        update: WorkflowState = {
-            "inference": inference,
-            "retrieval": retrieval,
-            "combined_faq_attempted": True,
-            "provider": generated.provider,
-            "model": generated.model,
-            "input_tokens": state["input_tokens"] + retrieval.embedding_input_tokens + generated.input_tokens,
-            "output_tokens": state["output_tokens"] + generated.output_tokens,
-            "node_timings_ms": [("retrieval", retrieval_ms), ("classification", classification_ms)],
-            "state_path": ["INTENT_CLASSIFIED"],
-        }
-        if (
-            combined.classification.classification_state == ClassificationState.CLASSIFIED
-            and combined.classification.confidence >= self.human_review_threshold
-            and combined.draft is not None
-        ):
-            update["draft"] = combined.draft
-        return update
 
     def _route_after_intent(self, state: WorkflowState) -> str:
         """拒判和低置信度直接决策；实时业务需求进入工具门禁。"""
@@ -1204,8 +1099,7 @@ class AgentWorkflowService:
         update: WorkflowState = {
             "retrieval": retrieval,
             "hits": retrieval.hits,
-            "input_tokens": state["input_tokens"]
-            + (0 if state.get("combined_faq_attempted") else retrieval.embedding_input_tokens),
+            "input_tokens": state["input_tokens"] + retrieval.embedding_input_tokens,
             "state_path": ["KNOWLEDGE_RETRIEVED"],
         }
         if timings:
@@ -1216,7 +1110,7 @@ class AgentWorkflowService:
         """无知识时禁止调用答案模型，直接进入保守决策。"""
         if not state.get("hits"):
             return "confidence_evaluated"
-        if state.get("combined_faq_attempted") or state.get("trusted_faq_attempted"):
+        if state.get("trusted_faq_attempted"):
             return "safety_checked" if state.get("draft") else "confidence_evaluated"
         return "response_drafted"
 
@@ -1692,8 +1586,6 @@ class AgentWorkflowService:
                 "answer": (
                     TRUSTED_FAQ_TEMPLATE_VERSION
                     if state.get("trusted_faq_attempted")
-                    else COMBINED_FAQ_PROMPT_VERSION
-                    if state.get("combined_faq_attempted")
                     else FAQ_ANSWER_CONCISE_PROMPT_VERSION
                     if state["command"].debug_mode and state["command"].knowledge_file_ids
                     else FAQ_ANSWER_PROMPT_VERSION

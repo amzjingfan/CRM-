@@ -44,7 +44,7 @@
 
 回复 Prompt 只接收解析后的语言、固定语气指令和清洗品牌名。FAQ 与营销输出继续携带 `BusinessClaimInventory(complete=true)` 供纵深检查；订单、物流、客户画像、地址请求、优惠券和平台消息的对象级声明由服务端执行层根据强类型工具结果生成，且声明、固定模板和证据提取边界都会再次执行工具输出 Schema 校验。模型必须返回空清单且不得猜测脱敏 ID。模型自报声明和独立模型复核都只能增加门禁，不能授予自动回复权限。
 
-外部 Provider 共用 `prompt-dlp-v1.3.1` 三态完整信封门禁。明确完整地址和结构化地址字段为 `blocked`；未知字段、未知嵌套结构和重复 JSON 键失败关闭。仅 FAQ 已审批知识字段中的“编号、订单号、型号”等业务标签不作为门牌信号，客户消息和工具草稿仍按原规则检查。当前版本化业务 Prompt 注册表将系统正文 SHA-256、业务载荷字段与响应 Schema 名称绑定；系统 Prompt 与用户 Prompt 任一字段非 `allowed` 时，Provider 不得调用 SDK。G5 FAQ 组合路径也必须使用此信封，且只接收当前店铺已审批知识。日志不记录 Prompt 或客户正文。
+外部 Provider 共用 `prompt-dlp-v1.3.1` 三态完整信封门禁。明确完整地址和结构化地址字段为 `blocked`；未知字段、未知嵌套结构和重复 JSON 键失败关闭。仅 FAQ 已审批知识字段中的“编号、订单号、型号”等业务标签不作为门牌信号，客户消息和工具草稿仍按原规则检查。当前版本化业务 Prompt 注册表将系统正文 SHA-256、业务载荷字段与响应 Schema 名称绑定；系统 Prompt 与用户 Prompt 任一字段非 `allowed` 时，Provider 不得调用 SDK。日志不记录 Prompt 或客户正文。
 
 当前 FAQ 已有政策/实例事实类型与发布审批字段，但批准级别仅为内部人工复核；`published + ready + 逐字一致` 不授予自动交付权限。所有 FAQ 草稿最高进入 `HUMAN_REVIEW`。只有代码根据单次真实 `query_order/query_logistics` 结果生成的有限状态模板，并通过对象、店铺和证据绑定后，才可能进入 `AUTO_REPLY_READY`。
 
@@ -72,7 +72,6 @@ Agent 管理页调试中，`needs_human=true` 表示模型草稿必须由坐席�
 | 用途 | 版本 |
 | --- | --- |
 | 工作流 | `faq-agent-workflow-v1.8.8` |
-| FAQ 组合分类与草稿（保留路径） | `faq-classified-draft-v1.0.2` |
 | FAQ 回答（当前并行分类/检索路径） | `faq-answer-v1.6.3` |
 | Agent 调试绑定文件简答 | `faq-answer-debug-file-v1.1.0` |
 | FAQ 依据复核 | `faq-grounding-review-v1.5.1` |

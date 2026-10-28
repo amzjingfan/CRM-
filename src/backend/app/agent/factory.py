@@ -172,7 +172,6 @@ def build_agent_workflow(
         auto_reply_threshold=settings.agent_auto_reply_threshold,
         human_review_threshold=settings.agent_human_review_threshold,
         # G5 使用已有的分类与店铺 FAQ 检索并行路径；草稿仍经独立安全复核。
-        combined_faq_enabled=False,
         # 当前版本的单条已审批政策 FAQ 使用原文草稿和独立并行复核。
         trusted_faq_enabled=True,
     )

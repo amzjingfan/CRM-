@@ -176,7 +176,6 @@ class DeepSeekProvider(LLMProvider):
             if request.business_prompt_id in (
                 BusinessPromptId.FAQ_ANSWER,
                 BusinessPromptId.FAQ_ANSWER_CONCISE,
-                BusinessPromptId.FAQ_CLASSIFIED_DRAFT,
                 BusinessPromptId.FAQ_TRUSTED_REVIEW,
                 BusinessPromptId.TOOL_ANSWER,
                 BusinessPromptId.TOOL_GROUNDING_REVIEW,
