@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 订单详情 UI [TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-DETAIL-UI-001-20261028-R02.md) staging 范围 **PASS**：合并主线 `0e4100b2` 前端类型/构建、契约 48/48、生产浏览器 113/113；手动私有备份、`ValidateOnly`/`Deploy`、12 容器、迁移头 034、四个公网路径 200。已登录真实订单电话、完整地址、规格、卖家 SKU 可见，物流默认 2 条、展开 8 条；不记录买家具体值。后端与 Agent 模式保持，无真实外发、退款或 production 发布。见[低敏证据](../../release/evidence/staging/crm-staging-order-detail-redeploy-20261028.json)。
+
 2026-10-28 Agent 调试工具加知识 [TR R08](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R08.md) **PASS**：`main=5f0feb7f` 的后端 `sha256:6d50f5dd…f7a20` 手动部署 staging，来源、私有备份、迁移头和健康检查通过。TikTok US 店铺同一审批绑定合成文件的纯知识 trace `ae1d5d67` 显示七天回答与引用；授权会话物流加知识 trace `35c0f2fd` 同时显示已送达、七天规则、`query_logistics:succeeded` 与文件引用，两条均为 `succeeded / human_review`。测试后 Agent 已保存解绑且文件软删除；无平台发送。原本地隔离数据库 2460 passed/3 skipped，237 样本安全评测通过。GitHub #573 两作业零步骤失败，经用户仅本 PR 批准本地替代。知识库旧文案仍误称文档检索未接入，另行修正；production G8 No-Go。
 
 2026-10-28 Agent 调试文件知识格式修复候选 [TR R07](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07.md) 综合 `PARTIAL`：已部署主线 `30b29c96` 的纯知识回答在 staging 显示七天事实与文件引用，混合物流加知识问题因模型输出 `answer:other` 未显示建议。新 subject `c63421fa` 仅将绑定文件调试草稿温度固定为 0；隔离 PostgreSQL/pgvector 全套 2460 passed/3 skipped，Ruff、mypy、锁文件和 237 样本确定性安全评测通过，受控真实模型格式探针 3/3 有效。本 subject 尚未部署，完整同轮链路需 staging 复测；按用户要求保留同一测试文件至成功后统一清理，零平台发送，production No-Go。
