@@ -1,0 +1,12 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-051",
+  "state": "deleted",
+  "execution_main_sha": "1c31704285fc0da584279b02fbd8f12625942a78",
+  "deleted_branch_count": 1,
+  "scope": "unoccupied staging latency evidence branch; formal IR/TR/RR R02 and release evidence identical on local main; no worktree, file, or remote operation",
+  "ref": "refs/heads/docs/staging-latency-evidence-20261028",
+  "head": "304c3655373c9dd0da9b1529d9139eb0f73d1f5e",
+  "archive_ref": "refs/archive/CLEANUP-20261028-051/docs/staging-latency-evidence-20261028",
+  "merged_pr_commit": "7f16d848708da37f481fe8edea4749494e1aa300"
+}
