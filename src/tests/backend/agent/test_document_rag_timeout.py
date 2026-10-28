@@ -3,28 +3,11 @@
 import asyncio
 import uuid
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
 
 import pytest
 
-from app.agent.embeddings import EmbeddingResult
-from app.agent.rag import RagRetrievalService, RagRetrievalTimeout
-from app.agent.workflow import AgentWorkflowService
-
-
-@pytest.mark.asyncio
-async def test_agent_routes_bound_files_to_rag_and_preserves_legacy_faq_route() -> None:
-    file_id, store_id = uuid.uuid4(), uuid.uuid4()
-    rag = SimpleNamespace(retrieve=AsyncMock(return_value="retrieved"))
-    workflow = object.__new__(AgentWorkflowService)
-    workflow.rag_service = rag
-    command = SimpleNamespace(store_id=store_id, message="退货政策", knowledge_file_ids=[file_id], debug_mode=False)
-    state = {"command": command, "session": object()}
-    assert await workflow._retrieve(state) == "retrieved"
-    assert rag.retrieve.await_args.kwargs["file_ids"] == (file_id,)
-    command.knowledge_file_ids = []
-    await workflow._retrieve(state)
-    assert rag.retrieve.await_args.kwargs == {}
+from app.agents.rag.embeddings import EmbeddingResult
+from app.agents.rag.search import RagRetrievalService, RagRetrievalTimeout
 
 
 @pytest.mark.asyncio

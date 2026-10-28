@@ -3,7 +3,11 @@
 import re
 from pathlib import Path
 
-from app.agent.real_model_evaluation import RealModelEvaluationMetrics, RealModelEvaluationReport, RealModelSampleResult
+from app.agents.core.real_model_evaluation import (
+    RealModelEvaluationMetrics,
+    RealModelEvaluationReport,
+    RealModelSampleResult,
+)
 
 ROOT = Path(__file__).resolve().parents[4]
 WORKFLOW = ROOT / ".github/workflows/evaluate-staging-deepseek.yml"

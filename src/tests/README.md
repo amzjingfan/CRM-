@@ -94,3 +94,11 @@ uv run python -m scripts.evaluate_phase4 --dataset ../tests/ai/datasets/agent-ph
 - 当前格式的正式 TR 只在产生真实测试事实时创建于 `docs/reports/tests/`，不得用计划或空模板代替。
 - `release/evidence/` 只保存发布基线必须长期存在且通过低敏检查的机器证据。
 - 每次交付列出真实命令、结果、环境、测试 SHA、覆盖的需求/门禁、未执行项和残余风险。历史结果不能冒充本次运行结果。
+
+动态 Agent 本地协议边界评测（不代表真实模型路由质量）从 `src/backend/` 执行：
+
+```powershell
+uv run python -m scripts.evaluate_dynamic_agents --dataset ../tests/ai/datasets/agent-dynamic-contract-v1.0.0.jsonl --output ../tests/.artifacts/ai/agent-dynamic-contract.json
+```
+
+16 条版本化样例只用合成模型协议/工具结果验证边界；跨轮工具数量、绑定文件联合回答、会话记忆与真实数据库行为由后端和 PostgreSQL 测试验证。真实模型质量/时延需单独现场验收。

@@ -1,0 +1,132 @@
+"""模型自主选择多个配置工具，并把结果按调用 ID 回送。"""
+
+import asyncio
+import time
+import uuid
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
+import pytest
+
+from app.agents.providers.tool_calling import FunctionCall, ToolTurn
+from app.tools.contracts import ToolResult
+
+
+@pytest.mark.asyncio
+async def test_tool_loop_executes_two_read_calls_and_keeps_write_as_proposal() -> None:
+    from app.agents.tools.catalog import AgentToolContext, build_agent_tools
+    from app.agents.tools.loop import run_tool_loop
+
+    responses = [
+        ToolTurn(
+            content=None,
+            calls=(
+                FunctionCall(id="call_order", name="query_order", arguments={}),
+                FunctionCall(id="call_logistics", name="query_logistics", arguments={}),
+                FunctionCall(id="call_send", name="send_platform_message", arguments={}),
+            ),
+            assistant_message={"role": "assistant", "content": None, "tool_calls": [{"id": "call_order"}]},
+            input_tokens=10,
+            output_tokens=10,
+        ),
+        ToolTurn(
+            content="订单已发货，物流仍在运输中，具体到达时间无法确认。",
+            calls=(),
+            assistant_message={"role": "assistant", "content": "订单已发货，物流仍在运输中，具体到达时间无法确认。"},
+            input_tokens=10,
+            output_tokens=10,
+        ),
+    ]
+    provider = SimpleNamespace(complete=AsyncMock(side_effect=responses))
+    executor = SimpleNamespace(
+        execute=AsyncMock(
+            side_effect=[
+                ToolResult(tool_call_id=uuid.uuid4(), status="succeeded", data={"status": "shipped"}),
+                ToolResult(tool_call_id=uuid.uuid4(), status="succeeded", data={"tracking_status": "in_transit"}),
+            ]
+        )
+    )
+    context = AgentToolContext(
+        store_id=uuid.uuid4(),
+        agent_run_id=uuid.uuid4(),
+        order_id="trusted-order",
+        customer_id=None,
+        permissions=frozenset({"orders.view"}),
+        trace_id="trace",
+    )
+    catalog = build_agent_tools(
+        ("query_order", "query_logistics", "send_platform_message"), context=context, executor=executor
+    )
+    result = await run_tool_loop(
+        provider=provider,
+        messages=({"role": "system", "content": "safe"}, {"role": "user", "content": "物流在哪"}),
+        tools=catalog,
+        deadline=time.monotonic() + 10,
+        max_output_tokens=1024,
+    )
+    assert result.answer is not None
+    assert [event.name for event in result.events] == ["query_order", "query_logistics", "send_platform_message"]
+    assert executor.execute.await_count == 2
+    second_messages = provider.complete.await_args_list[1].kwargs["messages"]
+    assert [item["tool_call_id"] for item in second_messages if item["role"] == "tool"] == [
+        "call_order",
+        "call_logistics",
+        "call_send",
+    ]
+    assert "human_confirmation_required" in str(second_messages)
+    assert result.observations[0].facts == {"status": "shipped"}
+    assert result.observations[1].facts == {"tracking_status": "in_transit"}
+    assert result.observations[2].facts == {}
+
+
+@pytest.mark.asyncio
+async def test_repeated_invalid_call_stops_without_executing() -> None:
+    from app.agents.tools.catalog import AgentToolContext, build_agent_tools
+    from app.agents.tools.loop import run_tool_loop
+
+    invalid = ToolTurn(
+        content=None,
+        calls=(FunctionCall(id="call_1", name="query_order", arguments={"order_id": "forged"}),),
+        assistant_message={"role": "assistant", "content": None, "tool_calls": [{"id": "call_1"}]},
+        input_tokens=1,
+        output_tokens=1,
+    )
+    provider = SimpleNamespace(complete=AsyncMock(return_value=invalid))
+    executor = SimpleNamespace(execute=AsyncMock())
+    context = AgentToolContext(
+        store_id=uuid.uuid4(),
+        agent_run_id=uuid.uuid4(),
+        order_id="trusted",
+        customer_id=None,
+        permissions=frozenset({"orders.view"}),
+        trace_id="trace",
+    )
+    catalog = build_agent_tools(("query_order",), context=context, executor=executor)
+    result = await run_tool_loop(
+        provider=provider,
+        messages=({"role": "user", "content": "查订单"},),
+        tools=catalog,
+        deadline=time.monotonic() + 10,
+        max_output_tokens=1024,
+    )
+    assert result.answer is None
+    assert result.reason_code == "repeated_invalid_tool_call"
+    executor.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_shared_deadline_cancels_waiting_provider() -> None:
+    from app.agents.tools.loop import run_tool_loop
+
+    async def slow(**_: object) -> None:
+        await asyncio.sleep(1)
+
+    provider = SimpleNamespace(complete=slow)
+    with pytest.raises(TimeoutError):
+        await run_tool_loop(
+            provider=provider,
+            messages=({"role": "user", "content": "查订单"},),
+            tools=(),
+            deadline=time.monotonic() + 0.01,
+            max_output_tokens=1024,
+        )

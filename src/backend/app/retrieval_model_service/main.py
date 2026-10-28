@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 
-from app.agent.retrieval_models import (
+from app.agents.rag.retrieval_models import (
     EmbeddingServiceRequest,
     EmbeddingServiceResponse,
     RerankServiceRequest,

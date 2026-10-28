@@ -8,9 +8,9 @@ from typing import cast
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.chunking import FaqTokenChunker
-from app.agent.embeddings import EmbeddingResult
-from app.agent.vectorization import KnowledgeVectorizationService
+from app.agents.rag.chunking import FaqTokenChunker
+from app.agents.rag.embeddings import EmbeddingResult
+from app.agents.rag.vectorization import KnowledgeVectorizationService
 from app.knowledge_base.models import KnowledgeDocument
 from app.knowledge_base.schemas import KnowledgeSafetyMetadata, VectorChunkInput
 

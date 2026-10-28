@@ -1,7 +1,9 @@
 """集中导入全部 ORM 模型，确保 Alembic 能发现完整 metadata。"""
 
-from app.agent.models import AgentRun
-from app.agent_management.models import AgentConfig, AgentTask
+from app.agents.management.config_models import AgentConfig, AgentTask
+from app.agents.management.models import AgentConfigVersion
+from app.agents.memory.models import AgentSessionMemory
+from app.agents.runtime.models import AgentRun
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
@@ -34,6 +36,8 @@ __all__ = [
     "AuditLog",
     "AgentRun",
     "AgentConfig",
+    "AgentConfigVersion",
+    "AgentSessionMemory",
     "AgentTask",
     "ChannelAccount",
     "Conversation",

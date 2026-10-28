@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.agent_management import service
-from app.agent_management.schemas import AgentConfigUpdate
+from app.agents.management import config_service as service
+from app.agents.management.schemas import AgentConfigUpdate
 from app.shared.exceptions.errors import AppError
 
 
@@ -58,16 +58,23 @@ def test_binding_files_requires_knowledge_view_permission() -> None:
 
 
 @pytest.mark.asyncio
-async def test_operations_agent_cannot_be_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    config = SimpleNamespace(knowledge_scope={"agent_type": "operations"}, status="disabled")
+async def test_published_operations_agent_can_be_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    config = SimpleNamespace(
+        id=uuid.uuid4(), store_id=uuid.uuid4(), knowledge_scope={"agent_type": "operations"}, status="disabled"
+    )
     monkeypatch.setattr(service, "get_config", AsyncMock(return_value=config))
-    with pytest.raises(AppError):
-        await service.set_config_status(AsyncMock(), SimpleNamespace(), uuid.uuid4(), "enabled")  # type: ignore[arg-type]
-    assert config.status == "disabled"
+    monkeypatch.setattr(service, "get_published_agent", AsyncMock(return_value=SimpleNamespace(ready_for_v2=True)))
+    monkeypatch.setattr(service, "config_view", lambda item: item)
+    session = SimpleNamespace(add=lambda _: None, commit=AsyncMock(), refresh=AsyncMock())
+
+    result = await service.set_config_status(session, SimpleNamespace(id=uuid.uuid4()), config.id, "enabled")  # type: ignore[arg-type]
+
+    assert result.status == "enabled"
+    session.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_switching_to_operations_disables_active_service(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_editing_operations_draft_does_not_disable_published_agent(monkeypatch: pytest.MonkeyPatch) -> None:
     now = datetime.now(UTC)
     config = SimpleNamespace(
         id=uuid.uuid4(),
@@ -91,4 +98,4 @@ async def test_switching_to_operations_disables_active_service(monkeypatch: pyte
         AgentConfigUpdate(agent_type="operations"),  # type: ignore[arg-type]
     )
     assert result.agent_type == "operations"
-    assert result.status == "disabled"
+    assert result.status == "enabled"

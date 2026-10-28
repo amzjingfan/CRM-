@@ -8,9 +8,9 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.agent.embeddings import EmbeddingService, build_embedding_provider
-from app.agent.factory import build_reranking_service
-from app.agent.retrieval_models import RerankCandidate
+from app.agents.core.factory import build_reranking_service
+from app.agents.rag.embeddings import EmbeddingService, build_embedding_provider
+from app.agents.rag.retrieval_models import RerankCandidate
 from app.shared.config.settings import get_settings
 
 

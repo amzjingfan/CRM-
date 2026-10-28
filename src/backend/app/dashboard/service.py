@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.models import AgentRun
+from app.agents.runtime.models import AgentRun
 from app.auth.store_access import ensure_store_access
 from app.dashboard.aggregation import store_zone, utc_bounds
 from app.dashboard.models import MetricDaily

@@ -7,6 +7,7 @@ import uuid
 
 from app.integrations.conversation_sync import process_tiktok_conversation_sync_cycle
 from app.integrations.service import claim_and_process_one, cleanup_processed_payloads
+from app.integrations.tiktok_read import close_tiktok_read_http_pool
 from app.shared.config.settings import get_settings
 from app.shared.database.session import session_factory
 from app.shared.logging.setup import configure_logging
@@ -63,4 +64,11 @@ async def run_worker() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(run_worker())
+
+    async def _run_with_cleanup() -> None:
+        try:
+            await run_worker()
+        finally:
+            await close_tiktok_read_http_pool()
+
+    asyncio.run(_run_with_cleanup())

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 
-from app.agent.models import AgentRun
+from app.agents.runtime.models import AgentRun
 from app.conversations.models import Conversation, Message
 from app.dashboard.models import MetricDaily
 from app.marketing.models import MarketingEvent

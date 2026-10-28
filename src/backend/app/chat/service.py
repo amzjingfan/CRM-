@@ -1,42 +1,34 @@
-"""把可信业务上下文接入既有 Agent 工作流，不修改 AI 内部节点。"""
+"""会话人工建议入口；动态 Agent 使用冻结快照和已发布配置。"""
 
 import logging
 import time
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Literal, cast
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.factory import SharedAgentRuntime, build_agent_workflow
-from app.agent.models import AgentRun
-from app.agent.reply_policy import resolve_store_reply_profile
-from app.agent.schemas import (
+from app.agents.core.factory import SharedAgentRuntime
+from app.agents.core.schemas import (
     AgentAction,
     AgentRunStatus,
-    AgentToolRuntimeContext,
-    AgentWorkflowCommand,
     AgentWorkflowResult,
-    MessageContext,
 )
-from app.agent.security import SYNTHETIC_DEMO_PROMPT_VERSION
-from app.agent.synthetic_demo import generate_synthetic_demo, resolve_synthetic_demo_scenario
-from app.agent_management.models import AgentConfig
-from app.agent_management.repository import find_enabled_config
+from app.agents.core.security import SYNTHETIC_DEMO_PROMPT_VERSION
+from app.agents.core.synthetic_demo import generate_synthetic_demo, resolve_synthetic_demo_scenario
+from app.agents.management.config_models import AgentConfig
+from app.agents.management.config_repository import find_enabled_config
+from app.agents.runtime.models import AgentRun
 from app.auth.store_access import allowed_store_ids
 from app.chat.schemas import SuggestionCitation, SuggestionTranslation, SuggestionView
 from app.conversations.models import Conversation, Message
-from app.orders.models import Order
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.database.session import session_factory
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import Store
-from app.tools.contracts import ToolName
 
-SAFE_SUGGESTION_TOOLS = {"query_order", "query_logistics", "query_customer_profile"}
 logger = logging.getLogger(__name__)
 
 
@@ -79,72 +71,6 @@ async def _conversation_and_trigger(
     return conversation, trigger
 
 
-async def _build_command(
-    session: AsyncSession,
-    config: AgentConfig,
-    conversation: Conversation,
-    trigger: Message,
-    trace_id: str,
-    permissions: set[str],
-    allow_transfer: bool,
-) -> AgentWorkflowCommand:
-    history_rows = list(
-        (
-            await session.scalars(
-                select(Message)
-                .where(
-                    Message.conversation_id == conversation.id,
-                    Message.created_at <= trigger.created_at,
-                    Message.id != trigger.id,
-                )
-                .order_by(Message.created_at.desc(), Message.id.desc())
-                .limit(10)
-            )
-        ).all()
-    )
-    history = [
-        MessageContext(
-            role=cast(Literal["user", "assistant", "agent", "system"], item.role),
-            content=item.content,
-        )
-        for item in reversed(history_rows)
-    ]
-    recent_order = await session.scalar(
-        select(Order)
-        .where(Order.store_id == conversation.store_id, Order.customer_id == conversation.customer_id)
-        .order_by(Order.created_at.desc())
-        .limit(1)
-    )
-    allowed = set(config.enabled_tools) & SAFE_SUGGESTION_TOOLS
-    if allow_transfer and "transfer_to_human" in config.enabled_tools:
-        allowed.add("transfer_to_human")
-    context = AgentToolRuntimeContext(
-        order_id=str(recent_order.id) if recent_order is not None else None,
-        customer_id=conversation.customer_id,
-        available_tools=cast(set[ToolName], allowed),
-        permissions=permissions,
-    )
-    raw_file_ids = config.knowledge_scope.get("file_ids", [])
-    if not isinstance(raw_file_ids, list):
-        raise AppError(ErrorCode.RESOURCE_CONFLICT, "Agent 知识绑定配置无效", 409)
-    try:
-        file_ids = [uuid.UUID(value) for value in raw_file_ids]
-    except (TypeError, ValueError, AttributeError) as error:
-        raise AppError(ErrorCode.RESOURCE_CONFLICT, "Agent 知识绑定配置无效", 409) from error
-    return AgentWorkflowCommand(
-        store_id=conversation.store_id,
-        conversation_id=conversation.id,
-        trigger_message_id=trigger.id,
-        message=trigger.content,
-        history=history,
-        language=trigger.language,
-        trace_id=trace_id,
-        tool_context=context,
-        reply_profile=resolve_store_reply_profile(config.knowledge_scope),
-        knowledge_file_ids=file_ids,
-    )
-
-
 async def run_agent_for_message(
     session: AsyncSession,
     config: AgentConfig,
@@ -154,26 +80,23 @@ async def run_agent_for_message(
     permissions: set[str],
     allow_transfer: bool = False,
     runtime: SharedAgentRuntime | None = None,
+    user: User | None = None,
 ) -> AgentWorkflowResult:
-    """调用既有内部工作流，并在全栈层补充配置关联。"""
+    """正式建议只调用动态 Agent；关闭开关时安全失败，不回落旧 FAQ。"""
     settings = get_settings()
-    if not settings.llm_enabled or not settings.embedding_enabled:
-        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "AI 运行依赖尚未启用", 503)
-    command = await _build_command(
+    if not settings.agent_v2_formal_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "动态 Agent 正式建议尚未启用", 503)
+    from app.agents.runtime.formal import run_formal_suggestion
+
+    return await run_formal_suggestion(
         session,
-        config,
-        conversation,
-        trigger,
-        trace_id,
-        permissions,
-        allow_transfer,
+        conversation=conversation,
+        trigger=trigger,
+        trace_id=trace_id,
+        permissions=permissions,
+        runtime=runtime,
+        user=user,
     )
-    result = await build_agent_workflow(session, settings, runtime=runtime).run(session, command)
-    run = await session.get(AgentRun, result.agent_run_id)
-    if run is not None:
-        run.agent_config_id = config.id
-        await session.commit()
-    return result
 
 
 async def record_first_output_latency(
@@ -391,6 +314,7 @@ async def suggest_for_user(
         trace_id,
         user_permissions(user),
         runtime=runtime,
+        user=user,
     )
     return suggestion_view(result)
 

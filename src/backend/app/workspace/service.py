@@ -9,12 +9,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.draft_translation import DraftTargetLanguage, DraftTranslationService
-from app.agent.errors import LLMProviderError
-from app.agent.generation import StructuredGenerationService
-from app.agent.providers.factory import build_provider
-from app.agent.security import sanitize_prompt_text
-from app.agent.translation import TranslationBundleResult, TranslationService
+from app.agents.core.draft_translation import DraftTargetLanguage, DraftTranslationService
+from app.agents.core.errors import LLMProviderError
+from app.agents.core.generation import StructuredGenerationService
+from app.agents.core.providers.factory import build_provider
+from app.agents.core.security import sanitize_prompt_text
+from app.agents.core.translation import TranslationBundleResult, TranslationService
 from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
 from app.conversations.models import Conversation, Message

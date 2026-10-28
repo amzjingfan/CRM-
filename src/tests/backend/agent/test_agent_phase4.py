@@ -11,7 +11,7 @@ import pytest
 from _support import TESTS_ROOT
 from pydantic import BaseModel, ValidationError
 
-from app.agent.business_claims import (
+from app.agents.core.business_claims import (
     BusinessClaim,
     BusinessClaimAction,
     BusinessClaimCondition,
@@ -21,24 +21,24 @@ from app.agent.business_claims import (
     BusinessClaimSubjectType,
     BusinessClaimTense,
 )
-from app.agent.marketing_generation import (
+from app.agents.core.marketing_generation import (
     MarketingCopyCommand,
     MarketingCopyModelOutput,
     MarketingCopyService,
 )
-from app.agent.phase4_evaluation import AgentMetricSample, calculate_phase4_metrics
-from app.agent.prompt_registry import BusinessPromptId
-from app.agent.providers.base import OutputT, ProviderResult, StructuredRequest
-from app.agent.reply_policy import (
+from app.agents.core.phase4_evaluation import AgentMetricSample, calculate_phase4_metrics
+from app.agents.core.prompt_registry import BusinessPromptId
+from app.agents.core.providers.base import OutputT, ProviderResult, StructuredRequest
+from app.agents.core.reply_policy import (
     AgentReplyProfile,
     CustomerLanguage,
     ReplyTone,
     detect_customer_language,
     resolve_store_reply_profile,
 )
-from app.agent.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
-from app.agent.schemas import AgentAction, WorkflowTerminalState
-from app.agent.translation import (
+from app.agents.core.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
+from app.agents.core.schemas import AgentAction, WorkflowTerminalState
+from app.agents.core.translation import (
     TRANSLATION_SYSTEM_PROMPT,
     TranslationBundleModelOutput,
     TranslationBundleResult,

@@ -7,8 +7,8 @@ from collections import Counter
 
 from _support import TESTS_ROOT
 
-from app.agent.evaluation import EvaluationCase, EvaluationPrediction, calculate_metrics
-from app.agent.schemas import ClassificationState, IntentName
+from app.agents.core.evaluation import EvaluationCase, EvaluationPrediction, calculate_metrics
+from app.agents.core.schemas import ClassificationState, IntentName
 from app.shared.logging.setup import JsonFormatter
 from scripts.evaluate_intents import build_evaluation_trace_id, load_cases
 from scripts.evaluate_rag import load_cases as load_rag_cases

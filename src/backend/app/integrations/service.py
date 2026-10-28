@@ -9,8 +9,8 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent_management.models import AgentTask
-from app.agent_management.repository import find_enabled_config
+from app.agents.management.config_models import AgentTask
+from app.agents.management.config_repository import find_enabled_config
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.conversations.workflow import reopen_on_new_buyer_message

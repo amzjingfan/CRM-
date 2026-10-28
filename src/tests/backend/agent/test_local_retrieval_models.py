@@ -5,8 +5,8 @@ import uuid
 import httpx
 import pytest
 
-from app.agent.embeddings import EmbeddingErrorCode, EmbeddingProviderError, LocalBgeEmbeddingProvider
-from app.agent.retrieval_models import (
+from app.agents.rag.embeddings import EmbeddingErrorCode, EmbeddingProviderError, LocalBgeEmbeddingProvider
+from app.agents.rag.retrieval_models import (
     LocalRetrievalModelClient,
     RerankCandidate,
     RerankingErrorCode,

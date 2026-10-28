@@ -9,15 +9,15 @@ from typing import TypeVar
 import pytest
 from _support import TESTS_ROOT
 
-from app.agent.errors import LLMErrorCode, LLMProviderError
-from app.agent.providers.base import LLMProvider, ProviderResult, StructuredRequest
-from app.agent.real_model_evaluation import (
+from app.agents.core.errors import LLMErrorCode, LLMProviderError
+from app.agents.core.providers.base import LLMProvider, ProviderResult, StructuredRequest
+from app.agents.core.real_model_evaluation import (
     RealModelEvaluationOutput,
     RealModelSampleResult,
     load_verified_real_model_evaluation_dataset,
     run_real_model_evaluation,
 )
-from app.agent.security import PromptSafetyState, evaluate_real_model_draft_safety
+from app.agents.core.security import PromptSafetyState, evaluate_real_model_draft_safety
 
 OutputT = TypeVar("OutputT", bound=RealModelEvaluationOutput)
 DATASET_PATH = TESTS_ROOT / "ai/datasets/real-model-v1.0.0.jsonl"

@@ -10,9 +10,9 @@ import pytest
 from openai import AsyncOpenAI
 from pydantic import SecretStr
 
-from app.agent.errors import LLMErrorCode, LLMProviderError
-from app.agent.providers.deepseek_provider import DeepSeekProvider
-from app.agent.real_model_evaluation import load_verified_real_model_evaluation_dataset
+from app.agents.core.errors import LLMErrorCode, LLMProviderError
+from app.agents.core.providers.deepseek_provider import DeepSeekProvider
+from app.agents.core.real_model_evaluation import load_verified_real_model_evaluation_dataset
 from scripts.diagnose_deepseek_canary import (
     CANARY_SAMPLE_ID,
     CanaryTiming,

@@ -469,6 +469,45 @@ async def test_read_default_client_uses_fixed_egress_factory(monkeypatch: pytest
     assert [shop.id for shop in shops] == ["7494049642642441621"]
     assert request_id == "factory-request-id"
     assert factory_calls == [settings]
+    await tiktok_read_module.close_tiktok_read_http_pool()
+
+
+@pytest.mark.asyncio
+async def test_read_reuses_fixed_egress_connection_within_one_shop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """同店连续读取应共用连接，另一店不能共用可能带 Cookie 的客户端。"""
+    settings = real_settings()
+    first_channel = connected_channel()
+    second_channel = connected_channel()
+    factory_calls: list[Settings] = []
+    cookies: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        cookies.append(request.headers.get("cookie"))
+        return httpx.Response(
+            200,
+            headers={"set-cookie": "shop=one; Path=/"},
+            json={"code": 0, "data": {"shops": [{"id": "7494049642642441621", "region": "US"}]}},
+        )
+
+    def fake_factory(candidate: Settings) -> httpx.AsyncClient:
+        factory_calls.append(candidate)
+        return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(tiktok_read_module, "create_tiktok_http_client", fake_factory)
+    for channel in (first_channel, first_channel, second_channel):
+        await TikTokReadClient(settings, channel).get_active_shops()
+
+    assert factory_calls == [settings, settings]
+    assert cookies == [None, "shop=one", None]
+    first_channel.access_token_ref = encrypt_credential(
+        "rotated-unit-test-token",
+        "unit-test-encryption-key-with-at-least-32-characters",
+        f"tiktok:{first_channel.store_id}:{first_channel.external_store_id}:access",
+    )
+    await TikTokReadClient(settings, first_channel).get_active_shops()
+    assert len(factory_calls) == 3
+    assert cookies[-1] is None
+    await tiktok_read_module.close_tiktok_read_http_pool()
 
 
 @pytest.mark.asyncio

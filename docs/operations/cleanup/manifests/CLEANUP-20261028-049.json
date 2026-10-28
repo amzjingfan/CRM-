@@ -1,0 +1,1118 @@
+[
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/debug.py",
+    "candidate_path": "src/backend/app/agent_management/debug.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 8166,
+    "sha256": "b9ad84d751ba71d1b7549952a22b749af6d944b56e5b59ec581580951f119aa7",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/backend/app/agent_management/debug.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/__init__.py",
+    "candidate_path": "src/backend/app/agent_management/__init__.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 64,
+    "sha256": "586c10e9a92843dc06d4fc6706dd1396cdd527a0ec34c3bda2e7a17e98d9931a",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/backend/app/agent_management/__init__.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/workflow.py",
+    "candidate_path": "src/backend/app/agents/core/workflow.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 79200,
+    "sha256": "382a715193d1577ef04b572090c1d5e13ee99325cc5e990f7b4f41df108bad88",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/backend/app/agent/workflow.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/tool_routing.py",
+    "candidate_path": "src/backend/app/agents/core/tool_routing.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 2171,
+    "sha256": "7d7be934ed7a8bd23bd0687dd3a07993df532730a28279dce308f63119e762b0",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/backend/app/agent/tool_routing.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/workflow_prompt.py",
+    "candidate_path": "src/backend/app/agents/core/workflow_prompt.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 16265,
+    "sha256": "e6d1ae650152b57c4e4995bfcc9bc6eba51d6a9fe971f688e834f122f02fd9af",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/backend/app/agent/workflow_prompt.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/reply_rendering.py",
+    "candidate_path": "src/backend/app/agents/core/reply_rendering.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 14654,
+    "sha256": "81839942e85efd193ee621ccfea213644166e27b7cf474d1c69fea709caedd72",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/backend/app/agent/reply_rendering.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/tool_execution.py",
+    "candidate_path": "src/backend/app/agents/core/tool_execution.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 6260,
+    "sha256": "011b19affa379295bde9c24edfe55d7ce202739403ad3e4a2f9d62b45e0887ef",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/backend/app/agent/tool_execution.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/tests/backend/agent/test_agent_workflow.py",
+    "candidate_path": "src/tests/backend/agent/test_agent_workflow.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 118778,
+    "sha256": "539fa9b695a26885eeb7dae0e9864af0df6f95c75aef49cf915f072c9b820c25",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/tests/backend/agent/test_agent_workflow.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/tests/backend/agent/test_agent_tool_execution.py",
+    "candidate_path": "src/tests/backend/agent/test_agent_tool_execution.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 11494,
+    "sha256": "04f9a408ff9e81a4de37b4aced6a7273cf9d35203d04e029e2befe1cf92acf6e",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/tests/backend/agent/test_agent_tool_execution.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/tests/backend/domain/test_agent_live_debug.py",
+    "candidate_path": "src/tests/backend/domain/test_agent_live_debug.py",
+    "kind": "file",
+    "category": "legacy-code",
+    "git_status": "tracked",
+    "size_bytes": 17713,
+    "sha256": "eca9c0a086bd4515daaab807cfab5bd650c5d5a533e60d651de54660937af7be",
+    "reason": "已切断入口的旧 FAQ 单 Agent 工作流、正则工具路由或其专属适配/测试",
+    "reference_checks": [
+      "新正式与调试入口使用 app.agents.runtime",
+      "替代覆盖 test_dynamic_execution_chain/test_dynamic_debug_guards/test_agent_live_order_tool/test_native_function_calling",
+      "删除后执行完整引用、类型与行为回归"
+    ],
+    "action": "deleted-versioned-working-tree",
+    "quarantine_path": "Git 基线历史保留；仅修改版本化工作树",
+    "retention_until": "N/A：不永久销毁 Git 历史",
+    "restore_method": "git show 7b8dbff26bf5ac9ac63657579b8d61349d97c409:src/tests/backend/domain/test_agent_live_debug.py；先核对冲突，不覆盖后来修改",
+    "verification": [
+      "2283 backend passed; 3 platform-condition skipped",
+      "48 PostgreSQL/pgvector integration passed",
+      "Ruff check/format and mypy app scripts passed",
+      "active Python import scan: no app.agent/app.agent_management"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/__init__.py",
+    "candidate_path": "src/backend/app/agents/core/__init__.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 67,
+    "sha256": "6dba607607068e7e789770b16c57c32581eb07a2b1fac08e44cddf1ed7e1f911",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/business_claims.py",
+    "candidate_path": "src/backend/app/agents/core/business_claims.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 16489,
+    "sha256": "e347b110d9428116b9c20b4e442540e2a813f796b91034cfe7dabb4c18c5954e",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/draft_translation.py",
+    "candidate_path": "src/backend/app/agents/core/draft_translation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3988,
+    "sha256": "c27fd64bd13a45f42032698dcf17c9d0cbdee5bd1659da822fa811e9e455111b",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/errors.py",
+    "candidate_path": "src/backend/app/agents/core/errors.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3395,
+    "sha256": "5756c9510e1b0d10a5d2b0964235f2b631177518109382acdddc497dd5139930",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/evaluation.py",
+    "candidate_path": "src/backend/app/agents/core/evaluation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 6488,
+    "sha256": "6bc77779a6ad6094d7915a3215b65d02c9b91a3d82e1884886907eac7138f5d1",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/factory.py",
+    "candidate_path": "src/backend/app/agents/core/factory.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 8034,
+    "sha256": "b7dd5166c9b730daf87821e4f934145fbf0a728d200c961c13f529e13252bdfa",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/generation.py",
+    "candidate_path": "src/backend/app/agents/core/generation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 2293,
+    "sha256": "41a270ed74fdc4375288a656f2c245338507238362be550f26c30a1db7cc4e36",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/marketing_generation.py",
+    "candidate_path": "src/backend/app/agents/core/marketing_generation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 10061,
+    "sha256": "42b356db63efe80f902f6b15434c5b99abe27b512a80d7c765fff70412442cf8",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/phase4_evaluation.py",
+    "candidate_path": "src/backend/app/agents/core/phase4_evaluation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 4816,
+    "sha256": "a37b1d8a8dafcf54de5625c86b11ce48c52ee60950bad23a539fc7c46fbf8466",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/policy_draft_validation.py",
+    "candidate_path": "src/backend/app/agents/core/policy_draft_validation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 4635,
+    "sha256": "35fff89aeec1cccb8a5ec7d365f89d2a4423628e34dec1250870501808903d80",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/prompt.py",
+    "candidate_path": "src/backend/app/agents/core/prompt.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3360,
+    "sha256": "7b1e982f2741bed44531d40edf3bf15d6a5b36fe3965ff89fc320b04886f21d1",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/prompt_registry.py",
+    "candidate_path": "src/backend/app/agents/core/prompt_registry.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 8419,
+    "sha256": "153b92e03f3d9d968a954fd5c23a5d8bcbeb799bb3a1740b46ea18b2f2d13551",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/providers/anthropic_provider.py",
+    "candidate_path": "src/backend/app/agents/core/providers/anthropic_provider.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 4895,
+    "sha256": "5a2dfbc0a5b86ec2fc22ffe33afee69469470f76cf8f4bbe27d42728cab9507d",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/providers/base.py",
+    "candidate_path": "src/backend/app/agents/core/providers/base.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 5250,
+    "sha256": "0199ae22ef665bdcd130dd55cb6b153918a9a3da3e1f87416e3121d5a910ef91",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/providers/deepseek_provider.py",
+    "candidate_path": "src/backend/app/agents/core/providers/deepseek_provider.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 18336,
+    "sha256": "0755fa2116b7760349c40f7636a502c0e4d97cff939f1b2e738dc6fdee8faef2",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/providers/factory.py",
+    "candidate_path": "src/backend/app/agents/core/providers/factory.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 2902,
+    "sha256": "4b0c735f7e8e0c94db9b05aaab4c692459ee4aa9982c9add92c5a599d54f6d75",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/providers/openai_provider.py",
+    "candidate_path": "src/backend/app/agents/core/providers/openai_provider.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 5393,
+    "sha256": "e6f5412f170b7411e5cfba1075dd4e96469479306778af827c945120ba68ed1a",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/real_model_evaluation.py",
+    "candidate_path": "src/backend/app/agents/core/real_model_evaluation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 62563,
+    "sha256": "ba4ac5d8084ccaabbc569706c05807794bc7fc904a3ed814d103a5199cf87cca",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/refund_safety.py",
+    "candidate_path": "src/backend/app/agents/core/refund_safety.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 66892,
+    "sha256": "42cbea1892c81c7d5c3593434033a1bb45f3dc3452441d643ef59f8672ad0784",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/reply_policy.py",
+    "candidate_path": "src/backend/app/agents/core/reply_policy.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3988,
+    "sha256": "7b7c82a92c00f630e15303a86bc41bd4a4372ba1d34a709cce6ba9ec8b1363f8",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/reply_safety.py",
+    "candidate_path": "src/backend/app/agents/core/reply_safety.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 15358,
+    "sha256": "17ab780031723417c7992971c8629442cf5c9e95a0d39fde2fe070aab2bca7fb",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/repository.py",
+    "candidate_path": "src/backend/app/agents/core/repository.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 16481,
+    "sha256": "0221d67dcb42983086ee58c6481b255e814b53c2a19120d676b1ed3914339e27",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/schemas.py",
+    "candidate_path": "src/backend/app/agents/core/schemas.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 11531,
+    "sha256": "50ea44876a8a0077c500be56a0b20c50599c6c0f27e1b60ddd6124acecc795ac",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/security.py",
+    "candidate_path": "src/backend/app/agents/core/security.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 60651,
+    "sha256": "a218d9f7bbe8b5124b97c115e684ec075a1bfdf8ecd60c579bced455c549e506",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/service.py",
+    "candidate_path": "src/backend/app/agents/core/service.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 11118,
+    "sha256": "4abde2f8edc5abcf7bd9063d39b628a82db03866a3fd22ceed3e2a70e87e7ce2",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/synthetic_demo.py",
+    "candidate_path": "src/backend/app/agents/core/synthetic_demo.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3237,
+    "sha256": "8b506bec3c9317a4715bd2cad7133c710c84a82211098fe23dc7241335126a72",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/translation.py",
+    "candidate_path": "src/backend/app/agents/core/translation.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 4930,
+    "sha256": "2c32c81312739bb27cf195eeeafb398a37ed9c1982726cd49aa51ff509a300d8",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/models.py",
+    "candidate_path": "src/backend/app/agents/management/config_models.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3914,
+    "sha256": "b63806834c06d4f6814f46e1742889f08e098a2cf06c11821c61092797e7b291",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/repository.py",
+    "candidate_path": "src/backend/app/agents/management/config_repository.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3178,
+    "sha256": "a4081c31a3b18c2bc3f2faa85de7847dd00d6acce4e1155e35c8b65b9faef413",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/service.py",
+    "candidate_path": "src/backend/app/agents/management/config_service.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 14976,
+    "sha256": "4dea786d79ddf735b972cf5e31afa4494bd17a56783a3a5c2d5680cf7ba23b5c",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/router.py",
+    "candidate_path": "src/backend/app/agents/management/router.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 7807,
+    "sha256": "893dc5c2b987d3ea8fc8b0a2137226bf4ed75afbcba2bc726479ab24795f9274",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/schemas.py",
+    "candidate_path": "src/backend/app/agents/management/schemas.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 5999,
+    "sha256": "b5c4b015c56a288043da6b620fd35b2ab31c5c56ed89efa0a330b18f4cbb98fe",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/chunking.py",
+    "candidate_path": "src/backend/app/agents/rag/chunking.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 3252,
+    "sha256": "e9101269c2430ed87aff577f5c36eca64ac4e3f3fd4f7e963659f1be9c0f28a8",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/embeddings.py",
+    "candidate_path": "src/backend/app/agents/rag/embeddings.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 14989,
+    "sha256": "4686c5553f2009948c127bab4941cc232e9550958ef0f3285d8a09c9d24184f9",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/retrieval_models.py",
+    "candidate_path": "src/backend/app/agents/rag/retrieval_models.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 13243,
+    "sha256": "b4cf61d80d2e772fb47c03a9667a95d7f486339436d75345f0f52b36633e4120",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/rag.py",
+    "candidate_path": "src/backend/app/agents/rag/search.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 13291,
+    "sha256": "cda1fa8039d08e7dedbf48c82230e847bea48f8c378c69c2eba617c6960562c3",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/vectorization.py",
+    "candidate_path": "src/backend/app/agents/rag/vectorization.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 6687,
+    "sha256": "38fa60d89254d1bfbf01a4cf75ba8868a73be24613d08280e71d6eedff99e400",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/models.py",
+    "candidate_path": "src/backend/app/agents/runtime/models.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 4036,
+    "sha256": "d11dfb8e106b90a34617d9527c78c2337a8581c9f44e82afe9f67e81e2b1e403",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent_management/live_tools.py",
+    "candidate_path": "src/backend/app/agents/tools/live_order.py",
+    "kind": "file",
+    "category": "tracked-module-move",
+    "git_status": "tracked",
+    "size_bytes": 4843,
+    "sha256": "99d496cb8db427064573c0d271e68fdddb44892848b44c7ea32a77a9519df3f4",
+    "reason": "统一 Agent 模块根并迁移全部调用方",
+    "action": "moved",
+    "retention_until": "N/A：Git 历史保留",
+    "restore_method": "从基线提取精确路径并核对后来修改",
+    "verification": [
+      "完整后端和 PostgreSQL/pgvector 回归通过",
+      "Ruff、mypy 与引用检查通过"
+    ]
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/agent/schemas.py",
+    "candidate_path": "src/backend/app/agents/core/schemas.py",
+    "size_bytes": 11531,
+    "sha256": "50ea44876a8a0077c500be56a0b20c50599c6c0f27e1b60ddd6124acecc795ac",
+    "category": "dead-symbols",
+    "action": "removed-sections",
+    "symbols": [
+      "AgentToolRuntimeContext",
+      "AgentWorkflowCommand",
+      "ApprovedToolAction",
+      "ConciseFaqAnswerModelOutput",
+      "FaqAnswerModelOutput",
+      "GroundingReviewOutput",
+      "ToolAnswerModelOutput",
+      "ToolGroundingReviewOutput",
+      "TrustedFaqReviewOutput"
+    ],
+    "reason": "旧执行器已删除且全仓无调用；新运行使用原生协议与 AppError",
+    "restore_method": "从基线 Git 提取原文件，按 diff 核对恢复，历史保留"
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/backend/app/chat/router.py",
+    "candidate_path": "src/backend/app/chat/router.py",
+    "size_bytes": 17711,
+    "sha256": "7bf25e3ee37eb67f2d2c92b3b09571b44d2bb614976acb67d660798b75b1dc21",
+    "category": "dead-symbols",
+    "action": "removed-sections",
+    "symbols": [
+      "_agent_error_payload"
+    ],
+    "reason": "旧执行器已删除且全仓无调用；新运行使用原生协议与 AppError",
+    "restore_method": "从基线 Git 提取原文件，按 diff 核对恢复，历史保留"
+  },
+  {
+    "task_id": "MAINT-CLEANUP-20261028-002",
+    "batch_id": "CLEANUP-20261028-049",
+    "base_sha": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+    "original_path": "src/tests/backend/runtime_infrastructure/test_real_fs05_sse_runtime.py",
+    "candidate_path": "src/tests/backend/runtime_infrastructure/test_real_fs05_sse_runtime.py",
+    "size_bytes": 12302,
+    "sha256": "d30e7db8fde02cabfe0368a22e8f0df26a667439d84ea22f3d6fd7b1231fe0b0",
+    "category": "dead-symbols",
+    "action": "removed-sections",
+    "symbols": [
+      "test_agent_errors_map_to_stable_low_sensitivity_sse_errors"
+    ],
+    "reason": "旧执行器已删除且全仓无调用；新运行使用原生协议与 AppError",
+    "restore_method": "从基线 Git 提取原文件，按 diff 核对恢复，历史保留"
+  }
+]

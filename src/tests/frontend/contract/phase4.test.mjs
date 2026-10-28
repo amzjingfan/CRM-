@@ -70,7 +70,7 @@ test("Agent tool codes use readable Chinese labels", async () => {
     assert.match(agent, new RegExp(label));
   }
   assert.match(agent, /name=\{tool\.code\}/);
-  assert.match(agent, /disabled=\{!tool\.configurable\}/);
+  assert.match(agent, /checked=\{draft\.enabled_tools\.includes\(tool\.code\)\}/);
 });
 
 test("interactive filters and compact fields meet the 44px touch target", async () => {

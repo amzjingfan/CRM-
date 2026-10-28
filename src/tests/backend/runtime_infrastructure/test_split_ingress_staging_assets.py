@@ -622,6 +622,21 @@ def test_public_vhost_disables_inherited_proxy_cache_for_html() -> None:
     assert "proxy_cache off;" in https_server_preamble
 
 
+def test_public_vhost_caches_only_fingerprinted_next_assets() -> None:
+    """入口缓存仅给不可变静态资产，HTML 和携带会话的 API 保持原有隔离。"""
+    source = PUBLIC_HTTPS_VHOST.read_text(encoding="utf-8")
+    static_location = source.split("location ^~ /_next/static/ {", 1)[1].split("}", 1)[0]
+    api_location = source.split("location /v1/ {", 1)[1].split("}", 1)[0]
+    html_location = source.split("location / {", 1)[1].split("}", 1)[0]
+
+    assert "proxy_cache cache_one;" in static_location
+    assert 'proxy_cache_key "$scheme$host$uri";' in static_location
+    assert "proxy_cache_lock on;" in static_location
+    assert "add_header" not in static_location  # 继承 HTTPS 安全头。
+    assert "proxy_cache cache_one;" not in api_location
+    assert "proxy_cache cache_one;" not in html_location
+
+
 def test_split_ingress_verifier_checks_public_and_loopback_boundaries() -> None:
     """全链路验证必须拒绝错误 DNS、证书、监听、GitLab 响应和不安全 TLS。"""
     source = SPLIT_INGRESS_VERIFIER.read_text(encoding="utf-8")

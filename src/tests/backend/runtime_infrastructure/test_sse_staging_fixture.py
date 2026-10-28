@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.agent_management.models import AgentConfig
+from app.agents.management.config_models import AgentConfig
 from app.audit.models import AuditLog
 from app.auth.service import build_user_view
 from app.conversations.models import Conversation, Message

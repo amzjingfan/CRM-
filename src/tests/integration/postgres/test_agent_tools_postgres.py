@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.agent.models import AgentRun
+from app.agents.runtime.models import AgentRun
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer

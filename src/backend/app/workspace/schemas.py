@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.agent.draft_translation import DraftTargetLanguage
+from app.agents.core.draft_translation import DraftTargetLanguage
 
 
 class CustomerSummary(BaseModel):

@@ -6,8 +6,8 @@ from dataclasses import replace
 import pytest
 from _support import TESTS_ROOT
 
-from app.agent.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
-from app.agent.real_model_evaluation import (
+from app.agents.core.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
+from app.agents.core.real_model_evaluation import (
     RealModelEvaluationCase,
     RealModelEvaluationOutput,
     diagnose_real_model_evaluation_output,

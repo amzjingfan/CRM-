@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.agent.reply_safety import ReplyEvidenceKind, ReplySafetyPolicy
+from app.agents.core.reply_safety import ReplyEvidenceKind, ReplySafetyPolicy
 
 
 class Phase4SafetyCase(BaseModel):

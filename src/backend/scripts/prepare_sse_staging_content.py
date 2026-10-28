@@ -16,9 +16,9 @@ from typing import Any
 from sqlalchemy import delete, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.chunking import FaqTokenChunker
-from app.agent.factory import build_embedding_service
-from app.agent.vectorization import KnowledgeVectorizationService
+from app.agents.core.factory import build_embedding_service
+from app.agents.rag.chunking import FaqTokenChunker
+from app.agents.rag.vectorization import KnowledgeVectorizationService
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.knowledge_base.models import KnowledgeChunk, KnowledgeDocument

@@ -8,8 +8,8 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from app.agent.business_claims import BusinessClaimInventory
-from app.agent.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
+from app.agents.core.business_claims import BusinessClaimInventory
+from app.agents.core.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
 from app.audit.models import AuditLog
 from app.knowledge_base import service as knowledge_service
 from app.knowledge_base.schemas import (

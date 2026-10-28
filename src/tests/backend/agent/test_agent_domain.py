@@ -5,8 +5,8 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
-from app.agent.providers.base import StructuredRequest
-from app.agent.schemas import (
+from app.agents.core.providers.base import StructuredRequest
+from app.agents.core.schemas import (
     AgentAction,
     ClassificationCommand,
     ClassificationState,
@@ -14,14 +14,14 @@ from app.agent.schemas import (
     IntentName,
     MessageContext,
 )
-from app.agent.security import (
+from app.agents.core.security import (
     TRUSTED_PROVIDER_CONTRACT_PROMPT_VERSION,
     TRUSTED_PROVIDER_CONTRACT_SYSTEM_PROMPT,
     PromptSafetyState,
     evaluate_prompt_safety,
     sanitize_prompt_text,
 )
-from app.agent.service import decide_phase1_action
+from app.agents.core.service import decide_phase1_action
 
 TRUSTED_PROVIDER_CONTRACT_USER_PROMPT = '{"operation":"provider_contract_check","schema_version":"1","language":"en"}'
 

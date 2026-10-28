@@ -7,9 +7,9 @@ from decimal import Decimal
 import pytest
 from _support import TESTS_ROOT
 
-from app.agent.phase4_evaluation import AgentMetricAction
-from app.agent.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
-from app.agent.real_model_evaluation import (
+from app.agents.core.phase4_evaluation import AgentMetricAction
+from app.agents.core.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
+from app.agents.core.real_model_evaluation import (
     REAL_MODEL_DATASET_VERSION,
     REAL_MODEL_REQUIRED_CATEGORIES,
     RealModelEvaluationOutput,
@@ -20,7 +20,7 @@ from app.agent.real_model_evaluation import (
     load_verified_real_model_evaluation_dataset,
     run_real_model_evaluation,
 )
-from app.agent.security import PromptSafetyState, evaluate_prompt_safety
+from app.agents.core.security import PromptSafetyState, evaluate_prompt_safety
 
 DATASETS_ROOT = TESTS_ROOT / "ai" / "datasets"
 DATASET_PATH = DATASETS_ROOT / "real-model-v1.0.0.jsonl"

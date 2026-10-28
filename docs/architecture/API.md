@@ -4,8 +4,9 @@
 
 - 业务接口位于 `/v1`，响应使用统一 `code/message/data/request_id` 信封；流式接口使用 SSE 事件。
 - 登录态、店铺范围和权限由服务端判定；写操作同时执行 CSRF、幂等和审计要求。
-- 客户端不得提交任意 Prompt、模型名、阈值或跨店铺标识。
+- 客户端不得在普通对话/运行请求提交任意 Prompt、模型名、阈值或跨店铺标识。`agent.manage` 的 Agent 草稿配置是独立授权入口；模型必须属于服务端当前配置，七段式 Prompt 发布前须校验并形成不可变版本。
 - 真实密钥、Token、凭证引用和内部错误正文不进入公开响应。
+- 响应带服务端生成的 `X-Trace-Id` 和低敏 `Server-Timing: app;dur=<毫秒>, tiktok;dur=<毫秒>`；TikTok 耗时为本请求内只读 HTTP 尝试累计值，可能因并发大于应用墙钟耗时。后端日志仅记录路由模板、方法、状态、两段耗时和调用次数，不记录 URL 参数、订单 ID 或请求体；前端仅对耗时超过 1.5 秒的 API 在浏览器控制台输出固定分组、状态、耗时和 Trace ID。
 
 ## 已实现接口族
 
@@ -29,8 +30,10 @@
 - `POST /workspace/sessions/search` 要求 `workspace.view` 和 CSRF，body 可带 `filter/platform/store_id/status/page/page_size/search_scope/q/terms`。`search_scope=all|buyer|order|tracking|product`；`q` 为单项搜索，`terms` 为批量任一命中，二者互斥，最多 20 项、每项 1～120 字符。结果仍按授权店铺稳定分页；订单、物流和商品仅通过同店同平台同买家订单关联。搜索词置于 body，避免 URL 访问日志收集买家及订单标识。普通无搜索列表仍使用 GET。前端在同一搜索框按逗号、分号或换行分词：单项用 `q`，多项用 `terms`；无独立批量弹窗。
 - `POST /workspace/sessions/{session_id}/sidebar/search` 要求 `workspace.view`、CSRF 和该会话所在店铺权限；body 的 `section=orders|products|coupons` 决定结果结构。真实 TikTok `orders` 先按授权店铺读取官方 202601 单会话，核对唯一 BUYER 的 IM ID，再使用官方订单域 `buyer_user_id` 搜索并逐条核对返回身份；其他模式仅查同店、同平台、同买家的已同步订单。TikTok 202309 订单搜索若省略 `orders`，仅在 `total_count` 为整数 0 且 `next_page_token` 为空串时按零订单处理；其余缺失、类型错误或非空分页仍失败关闭。支持状态、订单号、物流号、商品名、商品 ID、SKU ID、卖家 SKU 筛选及页码；仅返回平台实际提供的金额拆分、商品和物流字段，缺失项为 `null`，不推断。单买家超过 2000 笔订单或分页身份异常时明确失败，不返回伪完整结果。`products` 与 `coupons` 只接受 TikTok 已连接的有效店铺，分别按官方只读目录分页返回；商品需要 `seller.product.basic`，优惠券需要 `seller.customer_service` 或 `seller.promotion.info`。商品名和优惠券编码按当前平台页过滤，`partial_search` 与 `next_page_token` 告知后续页可能还有结果；搜索词仅置于 body，不进入访问 URL。缺授权、平台错误和上游结构异常均失败关闭，不用示例数据代替。
 - 真实 TikTok 订单的 `items[]` 仅在官方订单行提供时附带 `package_id` 与 `tracking_number`，用于将卡片草稿的商品与选中包裹对应；映射不唯一时卡片不推造商品信息。
+- 订单搜索只缓存已核验平台买家 ID 和不含收件信息的列表投影 20 秒；键含店铺、会话、CRM 买家、渠道、shop cipher 和加密授权版本。最多 64 个买家、每个投影最多 100 笔订单；更大列表只短存核验买家 ID，过滤与分页仍重新从平台读取以保证完整性。`refresh=true` 绕过缓存，失效后重新核验；异常、429 和未核验结果不缓存。Agent 的最新订单工具仍强制实时读取。此缓存仅在当前后端进程内有效，重启或跨进程不共享。
 - `GET /workspace/sessions/{session_id}/sidebar/products/{product_id}` 要求 `workspace.view`、会话店铺权限及 Product Basic 授权；仅接受数字商品 ID，使用官方商品详情只读接口取得图片、规格和库存，核对返回商品 ID。商品卡片进入可见区域且列表缺图片时自动读取详情，展开 SKU 也可读取尚缺的详情；商品列表触底自动加载后续页。侧栏优惠券与商品的“填入回复草稿”只修改前端草稿，不调用消息发送、优惠券发放或退款接口。
-- `POST /workspace/sessions/{session_id}/sidebar/orders/detail` 要求 `workspace.view`、CSRF 和当前会话店铺权限；数字订单 ID 仅放在请求体。服务端先以官方会话参与者核对 CRM 买家 IM ID，再读取当前店铺订单详情并逐条核对订单 ID 与订单域买家 ID；不匹配返回 404，绝不向前端返回其他买家数据，缺授权或上游异常失败关闭。响应含平台实际给出的付款方式、`recipient_address`（`name`、`phone_number`、`full_address`）、承运商、最新一条通用物流描述/UTC 时间，以及通用 `202309` 返回的全部物流节点，按时间降序。收件字段仅来自核验后的官方订单详情；平台掩码和 `null` 原样保留，不落库、不写日志、不在订单列表接口返回，也不调用解密接口。通用接口不提供可靠包裹分组，不按商品行推造包裹。物流轨迹要求 `seller.logistics`。客户卡片进入可见区域时自动按需读取一次，失败保留手动重试；中文界面的物流状态优先使用独立 `tracking_status` 或能明确表示物流阶段的官方订单状态，其次仅识别最新轨迹描述中明确的常见阶段；无法识别时显示“状态待更新”，原始轨迹仍单独展示，不从动作码推断阶段。详情视图默认只显示最新两条轨迹，坐席可展开全部；此读取不触发履约、退款或消息写入。
+- `POST /workspace/sessions/{session_id}/sidebar/orders/detail` 要求 `workspace.view`、CSRF 和当前会话店铺权限；数字订单 ID 仅放在请求体。服务端先以官方会话参与者核对 CRM 买家 IM ID，再读取当前店铺订单详情并逐条核对订单 ID 与订单域买家 ID；不匹配返回 404，绝不向前端返回其他买家数据，缺授权或上游异常失败关闭。请求体的 `include_tracking` 默认 `true`，兼容原响应；卡片和详情页传 `false` 时先返回付款方式、`recipient_address`（`name`、`phone_number`、`full_address`）及承运商，`tracking_loaded=false`，不等待物流接口。收件字段仅来自核验后的官方订单详情；平台掩码和 `null` 原样保留，不落库、不写日志、不在订单列表接口返回，也不调用解密接口。
+- `POST /workspace/sessions/{session_id}/sidebar/orders/standard-tracking` 以相同数字订单 ID 请求体读取通用 `202309` 物流节点，按时间降序返回最新描述/UTC 时间及全部节点。要求同一 `workspace.view`、CSRF、会话店铺权限和 `seller.logistics`；使用当前店铺、会话买家、授权渠道及订单的 20 秒进程内核验结果，证明失效时重新核验官方会话与订单身份。通用接口不提供可靠包裹分组，不按商品行推造包裹。客户卡片可见时自动详情读取最多两笔并发，摘要立即可见，基础详情与物流独立显示加载和错误；中文物流状态只依据官方订单状态或明确的轨迹描述。详情视图默认只显示最新两条轨迹，坐席可展开全部。所有读取不触发履约、退款或消息写入。
 - `POST /workspace/sessions/{session_id}/sidebar/orders/enhanced-tracking` 使用同一数字订单 ID 请求体，要求 `workspace.view`、CSRF、同店会话及官方买家/订单身份核对；仅 OAuth 店铺类型 `CROSS_BORDER` 调用 `202604` 只读轨迹。按店铺 cipher 摘要与订单 ID 用 Redis 原子占位，成功响应或失败冷却均保持八小时，避免并发或刷新突破平台每单频率限制。响应按官方 `logistics_details[]` 返回包裹、最新单号、承运商及全部节点，历史节点保留原单号。增强接口失败时前端继续显示详情接口的通用轨迹，不把通用事件分配给虚构包裹。
 - `POST /workspace/sessions/{session_id}/sidebar/orders/tracking-translation` 使用同一数字订单 ID 请求体，要求 `workspace.view`、CSRF、翻译开关及速率限制。默认翻译经买家核对的最新物流描述；传入节点描述、UTC 时间、节点单号与 `enhanced` 标志时，必须在重新核对后的通用轨迹或增强缓存中精确命中，才能按坐席点击逐条调用现有翻译节点。敏感描述拒绝送入模型，失败保留前端原文；审计元数据不含原文，不发送消息、不修改平台或订单。
 - `POST /workspace/sessions/{session_id}/sidebar/orders/tracking-timeline-translation` 请求体为数字 `order_id` 与 `enhanced` 布尔值；要求 `workspace.view`、CSRF、翻译开关和一次接口限流。服务端重新核对会话买家与订单，仅从核对后的通用轨迹或跨境增强缓存读取全部节点，不接受客户端提供节点原文；无节点、超过 40 条或任一节点含需脱敏内容时拒绝整批。现有翻译节点以最多三个并发调用模型，按节点原文、UTC 时间及单号返回译文；任一失败时不展示部分译文，审计只保存条数和用量。前端一次替换全部包裹节点，可切回原文或重新翻译；弹窗中的“发送物流卡片”只创建本地卡片草稿，不调用发送接口。
@@ -61,7 +64,7 @@
 - `GET /v1/knowledge/entries` 与 `GET /v1/knowledge/files` 新增可选 `categorized_only=true` 查询参数：仅返回当前授权店铺内归属启用分类的记录，在数据库分页和总数统计前筛选。省略或传 `false` 保持原有含未分类数据的 API 行为；知识库管理页的“全部知识”、分类角标和列表显式传 `true`。历史未分类数据不删除，文件详情接口仍可按 ID 读取；上传 API 的分类字段继续可选以兼容既有调用，管理页要求用户先选分类。
 - `POST /v1/knowledge/files/{file_id}/versions/{version_number}/units/{unit_index}/review` 对单元提交人工修订与确认；`.../retry` 只重试可恢复版本。`GET/PUT /v1/knowledge/file-settings` 读取和保存店铺级导入配置；每次上传冻结配置快照。写接口均要求店铺范围、`knowledge.manage`、CSRF 与幂等键，读接口要求 `knowledge.view`；跨店铺文件返回 404。
 - `POST /v1/knowledge/files/{file_id}/versions/{version_number}/approve` 接受显式 `statement_type` 与 `customer_scope`，仅当前店铺、未归档/删除、当前有效且索引就绪的版本可由 `knowledge.manage` 审批为内部建议知识；`.../revoke` 撤销已批准版本。CSRF、幂等键和审计必需。未知类型与具体客户事实拒绝审批，替换文件须重新审批。文件列表与版本详情返回审批状态和语义元数据。
-- 通用文件状态包括排队、处理中、待复核、失败和就绪；待复核版本没有任何新向量，旧有效版本保持可用。Agent 仅使用显式绑定、已审批且当前有效的文件版本；未绑定 Agent 仍走既有 FAQ 检索。
+- 通用文件状态包括排队、处理中、待复核、失败和就绪；待复核版本没有任何新向量，旧有效版本保持可用。Agent 仅使用显式绑定、已审批且当前有效的文件版本；未绑定时不查询整店 FAQ，仅用本次授权工具，证据不足则澄清或转人工。新运行开关关闭时返回明确不可用，不回落旧 FAQ 执行器。
 - 当前不开放 `approved_for_public_reply`，发布 FAQ 不等于允许自动发送。
 
 ### 营销
@@ -73,11 +76,12 @@
 ### Agent 运营
 
 - `GET/POST /agents`、`GET/PATCH/DELETE /agents/{agent_id}`。
+- 迁移 035～039 后，Agent 响应增加 `draft_revision`、可空 `published_version`、草稿 `model_provider/model_name/prompt_sections`，运行记录增加 `parent_run_id/config_version/phase`。`POST/PATCH /agents` 可保存模型及七段式 Prompt 草稿；`PATCH` 可传 `expected_revision` 做并发检查。`POST /agents/{agent_id}/publish` 需 `agent.manage`、CSRF 和 `expected_revision`，生成不可变版本及摘要。发布不自动启用或部署。新版正式执行开关默认关闭，开启时同店所有启用 Agent 均进入模型路由候选。
 - `POST /agents/{agent_id}/enable|disable|toggle`、`GET /agents/{agent_id}/logs`。
-- `POST /agents/{agent_id}/debug` 接收 `message` 与可选 `conversation_id`，需要 `agent.manage`、CSRF 和 AI 查询限流；Agent 不必启用，但须为服务类且运行环境显式开启调试。服务端再次校验 Agent 店铺及文件绑定；绑定文件需 `knowledge.view`，传入会话还需 `workspace.view` 并与 Agent 同店。响应只含安全建议、文件引用、只读工具状态和追踪号；没有会话时不提供订单/客户工具上下文。TikTok 订单/物流问题使用已核验买家会话的最新平台订单，即使本地存在旧订单也以当次平台读取为准；物流再读取该订单的官方详情与通用轨迹，只在本次运行内提供最小字段，不向模型传递收件地址。调试不创建客户消息、不转人工写入、不发送平台消息。
-- `reply_profile` 仅接受固定语气、回复语言、坐席语言和经清洗的品牌名；任意 Prompt、模型和阈值字段拒绝。
-- Agent 新建与修改支持 `agent_type=service|operations` 和当前授权店铺的 `knowledge_file_ids`。新增或改变非空文件绑定还需 `knowledge.view`；经营类不能启用面向客户的运行。文件绑定在保存时校验店铺，运行时仍以版本审批、有效状态、归档/删除和模型门禁过滤。文件 RAG 的查询向量化、SQL 与重排共用 12 秒总时限，超时以 `RAG_RETRIEVAL_TIMEOUT` 失败关闭并记入运行日志。
-- 只读 `runtime.available_models` 只列出当前服务端配置的主/备用模型；管理页选择仅作页面预览，不写入运行配置或改变实际模型。Prompt 仍仅展示版本化策略摘要。
+- `POST /agents/{agent_id}/debug` 接收 `message`、可选 `conversation_id` 和 `mode=single|store`，需要 `agent.manage`、CSRF 和 AI 查询限流。新版调试开关开启时，`single` 可调试该店铺已发布的停用 Agent；`store` 从该店所有启用 Agent 的发布版本中路由一个或多个。服务端再次校验店铺及文件绑定；绑定文件需 `knowledge.view`，会话需 `workspace.view` 且同店。响应返回人工建议、`routed_agents/tool_events/reason_code`、有效文件引用和追踪号；没有会话时订单和客户工具缺少可信对象，执行会返回 `context_unavailable`。TikTok 会话经已验证买家身份只读获取最新平台订单，模型实际选择物流工具后才查询官方详情。调试不创建客户消息、不执行平台写入或发送。
+- `reply_profile` 仅接受固定语气、回复语言、坐席语言和经清洗的品牌名；阈值字段仍拒绝。模型及 Prompt 仅能经 Agent 草稿与发布接口配置，不由调试或正式运行请求覆盖。
+- Agent 新建与修改支持 `agent_type=service|operations` 和当前授权店铺的 `knowledge_file_ids`。新增或改变非空文件绑定还需 `knowledge.view`；新版执行器由职责描述而非固定类型决定参与路由。文件绑定保存时校验店铺，运行时再校验版本审批、有效状态、归档/删除和模型门禁。文件 RAG 的查询向量化、SQL 与重排共用 12 秒总时限，总 Agent 运行另受同一绝对截止时间限制。
+- 只读 `runtime.model_options` 与旧 `available_models` 列出当前服务端配置的模型；发布时只接受支持原生 function calling 的 provider/model 组合。已保存七段草稿和已发布版本分离；未发布配置不能启用。旧版本 1 可在固定保守七段模板与当前主模型下运行，仍只用原配置工具及绑定文件，管理员发布新版后替换。`knowledge_scope` 规范值为 `bound_files_only`；旧请求的 `store_ready_faq` 字面值只作为输入别名归一化。本地候选尚未部署。
 
 ### 团队与渠道
 

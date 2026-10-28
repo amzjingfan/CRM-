@@ -12,12 +12,12 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from app.agent.errors import LLMProviderError
-from app.agent.evaluation import EvaluationCase, EvaluationMetrics, EvaluationPrediction, calculate_metrics
-from app.agent.providers.factory import build_provider_pair
-from app.agent.repository import NullAgentRunRecorder
-from app.agent.schemas import ClassificationCommand, MessageContext
-from app.agent.service import IntentClassificationService
+from app.agents.core.errors import LLMProviderError
+from app.agents.core.evaluation import EvaluationCase, EvaluationMetrics, EvaluationPrediction, calculate_metrics
+from app.agents.core.providers.factory import build_provider_pair
+from app.agents.core.repository import NullAgentRunRecorder
+from app.agents.core.schemas import ClassificationCommand, MessageContext
+from app.agents.core.service import IntentClassificationService
 from app.shared.config.settings import get_settings
 
 CLASSIFIED_ACCURACY_GATE = 0.85

@@ -19,7 +19,7 @@ import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent_management.models import AgentConfig
+from app.agents.management.config_models import AgentConfig
 from app.audit.models import AuditLog
 from app.auth.security import create_access_token, hash_password
 from app.conversations.models import Conversation, Message

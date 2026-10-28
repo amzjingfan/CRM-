@@ -8,8 +8,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.schemas import AgentAction
-from app.agent_management.models import AgentConfig, AgentTask
+from app.agents.core.schemas import AgentAction
+from app.agents.management.config_models import AgentConfig, AgentTask
 from app.chat.service import load_automation_context, run_agent_for_message
 from app.integrations.adapters import get_platform_adapter
 from app.shared.config.settings import Settings, get_settings

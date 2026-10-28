@@ -9,15 +9,15 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.errors import LLMFailureStage, LLMOutputFailureKind, LLMOutputSchemaIssue
-from app.agent.models import AgentRun
-from app.agent.repository import (
+from app.agents.core.errors import LLMFailureStage, LLMOutputFailureKind, LLMOutputSchemaIssue
+from app.agents.core.repository import (
     AgentDecisionReason,
     AgentRunStart,
     AgentWorkflowRunCompletion,
     SqlAlchemyAgentRunRecorder,
 )
-from app.agent.schemas import AgentAction, AgentRunStatus, ClassificationState, IntentName
+from app.agents.core.schemas import AgentAction, AgentRunStatus, ClassificationState, IntentName
+from app.agents.runtime.models import AgentRun
 
 
 @pytest.mark.asyncio
