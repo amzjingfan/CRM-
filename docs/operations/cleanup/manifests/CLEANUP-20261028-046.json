@@ -1,0 +1,24 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-046",
+  "state": "deleted",
+  "execution_main_sha": "bdfb62d5e5dbbd9b4758080d04db3bee56a1367d",
+  "deleted_branch_count": 2,
+  "scope": "two unattached closed-PR branches with partial historical G1 evidence superseded by later main acceptance; archive original commit refs before deleting branch names; no worktree or remote operation",
+  "branches": [
+    {
+      "ref": "refs/heads/fix/mvp002-readonly-log-deploy-20260928",
+      "head": "44337486e4abd3b160e1e7b48e189168bf399d07",
+      "archive_ref": "refs/archive/CLEANUP-20261028-046/fix/mvp002-readonly-log-deploy-20260928",
+      "closed_pr": 56,
+      "proof_task": "MVP-READONLY-LOG-001"
+    },
+    {
+      "ref": "refs/heads/fix/mvp002-staging-us-oauth-market",
+      "head": "299884a660cf93fbc6bdcb7acf5087d25aab1a9c",
+      "archive_ref": "refs/archive/CLEANUP-20261028-046/fix/mvp002-staging-us-oauth-market",
+      "closed_pr": 42,
+      "proof_task": "MVP-002"
+    }
+  ]
+}
