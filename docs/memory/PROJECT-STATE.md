@@ -4,13 +4,15 @@
 
 本地 worktree 整合 `MAINT-CLEANUP-20261028-003 DOING`：批次见[清理索引](../operations/cleanup/CLEANUP-INDEX.md)。截至批次 067 已由清理批次移除 66 个旧工作树和 90 条本地分支，另一个九月恢复目录由用户手动删除并清理了失效 Git 登记，另有批次 004 的 470 条原分支名已归档移除；三处旧工作树的 105,806 个缓存文件已校验归档并在七天保留期内隔离；截至本批复核有 11 个工作树、8 条本地分支（含 main），活动会话仍可能切换分支，三个指定会话的最新工作保留。本地 `main` 已合流 Agent PR #582–#589 与收尾 PR #592、入口日志 PR #590/#591、工作台刷新 PR #593 和多店授权迁移，`041_merge_agent_multishop_collab` 为唯一迁移 head，详细[IR R01](../records/implementation/IR-MAINT-CLEANUP-20261028-003-20261028-R01.md)、[IR R04](../records/implementation/IR-MAINT-CLEANUP-20261028-003-20261028-R04.md)、[TR R04](../reports/tests/TR-MAINT-CLEANUP-20261028-003-20261028-R04.md)、[RR R04](../reports/reviews/RR-MAINT-CLEANUP-20261028-003-20261028-R04.md)。旧文档工作树对应 PR #482（DRAFT/OPEN，已登录 composer 页面验收缺失）和 PR #527（OPEN，真实 TikTok 授权与撤销链路未验）；本轮 Edge 窗口最小化、Chrome staging 标签读取超时，composer 现场状态记为 `UI_UNAVAILABLE`，待用户可读的已登录截图或浏览器页面。旧 OAuth 工作树含两份 SSH 私钥，原位保留；独有九月现场记录已按批次 066 纳入本地主线，工作树退至 detached HEAD；其他现场资料仍待逐项验收。九月恢复工作树及旧 OCI 缓存原先被自动审批审查以 `blocked by policy` 拒绝删除，现已由用户手动删除目录，本批仅清理其失效 Git 登记；整合工作树临时依赖 junction 的精确删除仍被相同策略阻断并原位保留。根 checkout 五个未知条目未触碰。Workspace hygiene: ATTENTION。
 
+CANDIDATE_SUBJECT_SHA=01975ab2471adfe2a704116367c34d27415a3240，EVIDENCE_HEAD_SHA=READ_AT_GATE。最新工具IR/TR/RR为MVP-AGENT-TOOL-SUITE-001-20261028-R03。本次从本地主线源记录逐条核对285份IR、306份TR、267份RR与对应索引，三索引CURRENT；没有新增产品行为或改写既有记录。
+
 2026-10-22 两个历史 Rootless 镜像清理批次的事实记录已合入本地主线：[001](../operations/cleanup/CLEANUP-20261022-001.md)涉及三个精确镜像 ID，[002](../operations/cleanup/CLEANUP-20261022-002.md)涉及十六个精确 ID；服务器删除与恢复归档是此前已完成的现场操作，本轮仅合入文档，没有触碰服务器。远端 [PR #511](https://github.com/CP11-gh/CRM/pull/511) 仍开放且有冲突，两个 CI 作业均为 0 steps，远端任务门禁另行处理。
 
 `MVP-TIKTOK-MULTISHOP-AUTH-001 DONE`：卖家级多店授权已合入本地主线，未部署 staging 或 production；与动态 Agent 的两条迁移链在 040 合流。正式[IR](../records/implementation/IR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md)、[TR](../reports/tests/TR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md)、[RR](../reports/reviews/RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md)保留。部署须另行验证备份和迁移门禁。
 
 `MVP-STAGING-LATENCY-001 VERIFYING`：性能源码 PR #584 已合入远端主线；用户选择的性能专用 release `e64ef52c9702540a5c5eb3a151cd19afce97b0e0` 已单独部署 staging，动态 Agent 重写未部署。私有备份、摘要、ValidateOnly/Deploy、固定出口、12 容器、网关缓存与已登录订单只读 UI 验收见[IR R02](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261028-R02.md)、[TR R02](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R02.md)、[RR R02](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261028-R02.md)及[低敏证据](../../release/evidence/staging/crm-staging-latency-performance-only-20261028.json)。公网/隧道仍有秒级抖动，20 次样本未控制并发和冷热，AC-01/AC-06 待网络修复与同批受控复测；production G8 No-Go。
 
-部署状态：本轮动态Agent重写和工具扩展尚未部署，等待用户统一批准。性能任务MVP-STAGING-LATENCY-001仍由任务表和性能R05证据维护；工作台并行刷新已从性能专用release 9d6ccc20单独手动部署，后端和Agent未变，私有备份及ValidateOnly/Deploy通过。30次公网健康TTFB p50/p95为2.678/5.601秒，入口近90条同路由有1条504；公网整体改善尚未证实；production G8 No-Go。真实模型语义、TikTok字段及联合链路、现场时延未在本轮验收。欢迎语/超时回复仍只有原基础接待配置，未新增触发或发送工具。
+部署状态：本轮动态Agent重写和工具扩展尚未部署，等待用户统一批准。性能任务MVP-STAGING-LATENCY-001仍由任务表和性能R05证据维护，PR #593已合入main（73ef0852）；工作台并行刷新已从性能专用release 9d6ccc20单独手动部署，后端和Agent未变，私有备份及ValidateOnly/Deploy通过。30次公网健康TTFB p50/p95为2.678/5.601秒，入口近90条同路由有1条504；公网整体改善尚未证实；production G8 No-Go。真实模型语义、TikTok字段及联合链路、现场时延未在本轮验收。欢迎语/超时回复仍只有原基础接待配置，未新增触发或发送工具。
 
 入口连接复用已由远端 PR #587 合入主线并在 staging 验证，PR #588 已将主线证据索引标为 `CURRENT`；[IR R03](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261028-R03.md)、[TR R03](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R03.md)、[RR R03](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261028-R03.md)及[低敏证据](../../release/evidence/staging/crm-staging-nginx-keepalive-20261028.json)记录入口 Nginx 配置。入口回环各 30 次 p50/p95 由 1.042/2.061 秒至 0.400/1.161 秒；公网由 1.564/4.002 秒至 1.742/4.028 秒，公网改善未证实。网络重传与隧道超时风险、AC-01/AC-06 待验收。
 
@@ -22,4 +24,4 @@ Agent 业务工具套件 PR #589 经用户人工审阅批准后合入远端主�
 
 性能 R05 源证据、工作台并行刷新及主线索引经 PR #593 合入远端主线；[IR R05](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261028-R05.md)、[TR R05](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R05.md)、[RR R05](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261028-R05.md)记录仍待验收项。
 
-下一动作：①逐支验收开放 PR 和独有提交，再合入本地 main 清理旧副本；②处理自动审批阻断的两个原位保留项目；③定位入口/隧道偶发 504 与全站慢路径，完成公网受控复测；动态 Agent 部署及真实模型/平台联合验收须另行决策。
+下一动作：①逐支验收开放 PR 和独有提交，合入本地 main 后清理旧副本，并处理整合工作树 junction 的执行策略阻断；②定位入口/隧道偶发 504 与全站慢路径，完成冷热、跨店、故障/限流及公网 p50/p95 受控验收；③动态 Agent 部署及真实模型/平台联合验收须另行决策。
