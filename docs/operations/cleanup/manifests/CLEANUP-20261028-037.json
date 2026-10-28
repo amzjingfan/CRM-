@@ -1,7 +1,11 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-037",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "750bc40f1be13b293e0b675cda1d4f53ef9f3890",
+  "deleted_worktree_count": 1,
+  "archived_file_count": 177,
+  "deleted_cache_file_count": 13351,
   "base_sha": "5d8c4408be5a4ec942aac2bb70d91838c8254a2c",
   "scope": "one exact detached main-ancestor old sidebar worktree; ignored non-cache files archived, recognized cache files removed; external links removed in batch 035; no branch or remote operation",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-037",
