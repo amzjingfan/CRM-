@@ -1,0 +1,66 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-005",
+  "state": "candidate",
+  "base_sha": "3eff24cca5d8afd28bf16ac3b38cc3c7e9af2523",
+  "scope": "five exact local worktrees, five local branch refs, six ignored PR draft files; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-005",
+  "candidates": [
+    {
+      "worktree": ".worktrees/customer-sidebar-detail-staging-20261021",
+      "head": "8bb3eb3681593a543361599dd53750f748e50da2",
+      "branch_ref": "refs/heads/docs/customer-sidebar-detail-staging-20261021",
+      "pr": 484,
+      "merge_commit": "11304dbae153702253108e1d5c0e87dcbb67352e",
+      "directory_modified": "2026-10-21T02:50:14.5529904+08:00",
+      "ignored": [
+        {"path": "src/tests/.artifacts/pr-sidebar-detail-final.md", "size": 661, "modified": "2026-10-21T11:53:05.9017785+08:00", "sha256": "82752DABBA04D1C9D095F7D32430BAA7454403B8DD9B878D1D0494E71BFDB164"}
+      ]
+    },
+    {
+      "worktree": ".worktrees/customer-sidebar-variant-evidence-20261021",
+      "head": "9d6668bfda4bbc0ba015d1f51395dd17d436d23b",
+      "branch_ref": "refs/heads/docs/customer-sidebar-variant-evidence-20261021",
+      "pr": 499,
+      "merge_commit": "1560757934b3325879b389db79516e7da481b49d",
+      "directory_modified": "2026-10-21T19:10:07.1505923+08:00",
+      "ignored": [
+        {"path": "src/tests/.artifacts/variant-evidence-pr-body.md", "size": 962, "modified": "2026-10-21T19:16:43.5321944+08:00", "sha256": "3642820733789AD1843BB513C86065A391455900C2C7E00293A8FF36B7ED3D99"}
+      ]
+    },
+    {
+      "worktree": ".worktrees/tiktok-empty-orders-close-20261021",
+      "head": "e4a43d3359e996d9fe9e01fc1f9941fd9231eeff",
+      "branch_ref": "refs/heads/docs/tiktok-empty-orders-close-20261021",
+      "pr": 487,
+      "merge_commit": "d27b133e719dd115ad8ec5386c943b1c83ee2ed5",
+      "directory_modified": "2026-10-21T09:30:01.1681312+08:00",
+      "ignored": [
+        {"path": "src/tests/.artifacts/pr-empty-orders-close.md", "size": 594, "modified": "2026-10-21T09:33:09.0467867+08:00", "sha256": "E5E877C8BEF5898A4C0AB6B9CDC7D3A5F17411D15EE313444CA2236A6C8FCF30"}
+      ]
+    },
+    {
+      "worktree": ".worktrees/customer-sidebar-variant-close-20261021",
+      "head": "558cc63c753b392393f786beac6bf0fdfdd73b05",
+      "branch_ref": "refs/heads/docs/customer-sidebar-variant-close-20261021",
+      "pr": 500,
+      "merge_commit": "1da0aff58f99f0756da45d1a11135525b5d4470e",
+      "directory_modified": "2026-10-21T19:17:31.4258466+08:00",
+      "ignored": [
+        {"path": "src/tests/.artifacts/variant-close-pr-body.md", "size": 653, "modified": "2026-10-21T19:18:40.5947477+08:00", "sha256": "54FA51C1BBB6961F7359207A4957B3212299A6A3E0634FB20E173E0DF07B2FD2"}
+      ]
+    },
+    {
+      "worktree": ".worktrees/knowledge-all-category-finalize-20261023",
+      "head": "fbb932ee4b83887f605b92a6c7ecd6ae241f60e6",
+      "branch_ref": "refs/heads/docs/knowledge-all-category-close-20261023",
+      "pr": 549,
+      "merge_commit": "8d9f2c86bf0cfaa8651ce8b30f92570b4c9ccba2",
+      "directory_modified": "2026-10-23T17:36:28.5053247+08:00",
+      "ignored": [
+        {"path": "src/tests/.artifacts/knowledge-all-finalize/pr-body-close.md", "size": 743, "modified": "2026-10-23T17:43:53.4724409+08:00", "sha256": "D70650CDD483E345B04D6BE4E0249E0E52E0D7287DC592B1AA7667D73F615A31"},
+        {"path": "src/tests/.artifacts/knowledge-all-finalize/pr-body.md", "size": 1291, "modified": "2026-10-23T17:41:25.9962657+08:00", "sha256": "C98EBB004F7A2DE45F11E717EE935385D64E611F70801F12A7BCF16B78591569"}
+      ]
+    }
+  ]
+}
