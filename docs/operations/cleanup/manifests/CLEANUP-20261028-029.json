@@ -1,0 +1,1766 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-029",
+  "state": "candidate",
+  "base_sha": "54fd04192ae8a6c58c87c50a7260e03c21921224",
+  "scope": "two exact merged-PR old deployment and sidebar worktrees and branches; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-029",
+  "candidates": [
+    {
+      "worktree": ".worktrees/direct-staging-deploy-20261023",
+      "head": "e568f3faa57a165790362045add284cd8eb3b9b0",
+      "branch_ref": "refs/heads/docs/finalize-direct-deploy-index-20261023",
+      "pr": 552,
+      "merge_commit": "5b619a754c3c7cdecb652b6872aeb3e3691d5a9c",
+      "directory_modified": "2026-10-23T19:36:57.4487982+08:00",
+      "untracked": [],
+      "ignored_count": 226,
+      "ignored_paths_sha256": "355C4A0FF3FC44AEF643D9D4814F0B5EA6E1CDD123EF5A8A1C8B7DE36B52C30D",
+      "cache_file_count": 1,
+      "cache_bytes": 25953,
+      "archive_file_count": 225,
+      "archive_bytes": 597222953,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3",
+          "size": 15931748,
+          "modified": "2026-10-23T20:00:40.2563169+08:00",
+          "sha256": "02C0EA4DBD74DC2CD360B9825EBB70C494B7BE1D109139E62933DABDD6E8D1E3"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/03efd0861f06e2c1f012bbb7f019270d0a48f0f50461478664e0881f30f3d1d2",
+          "size": 785074,
+          "modified": "2026-10-23T20:01:38.5300849+08:00",
+          "sha256": "03EFD0861F06E2C1F012BBB7F019270D0A48F0F50461478664E0881F30F3D1D2"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345",
+          "size": 22786669,
+          "modified": "2026-10-23T20:00:57.2903901+08:00",
+          "sha256": "07BBAD0C9F2012FE1102FC534BE4A764FD5E67CA9B9B64A7956941AA6FC11345"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/181bda88a893d63d8852fbcdda5e3b8497284da15176b961be6f291e696eb023",
+          "size": 104408,
+          "modified": "2026-10-23T20:01:10.7175609+08:00",
+          "sha256": "181BDA88A893D63D8852FBCDDA5E3B8497284DA15176B961BE6F291E696EB023"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/250b06eccdf2952960ef5952aa0d1e54d661edc032cf3ee051d932cab6ab8d67",
+          "size": 526852,
+          "modified": "2026-10-23T20:01:41.7063964+08:00",
+          "sha256": "250B06ECCDF2952960EF5952AA0D1E54D661EDC032CF3EE051D932CAB6AB8D67"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/3b0b485a4ce36425dccb61a229c17ecabd422ce4b7194c8817bb0dc95109fde3",
+          "size": 3517386,
+          "modified": "2026-10-23T20:00:25.4070262+08:00",
+          "sha256": "3B0B485A4CE36425DCCB61A229C17ECABD422CE4B7194C8817BB0DC95109FDE3"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9",
+          "size": 28228487,
+          "modified": "2026-10-23T20:00:19.6781295+08:00",
+          "sha256": "4831516DD0CB86845F5F902CB9B9D25B5C853152C337EB57E4737A9B7E2A2EB9"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/5bdb74402756e9945be3f4e4cb25eb25d9be8d127e7f9157b078925cb02f04d9",
+          "size": 9678,
+          "modified": "2026-10-23T20:00:00.2218728+08:00",
+          "sha256": "5BDB74402756E9945BE3F4E4CB25EB25D9BE8D127E7F9157B078925CB02F04D9"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/6e2af341804867aaacd128badb80bb720016c823462ba6656c9c98a215e3858b",
+          "size": 250,
+          "modified": "2026-10-23T20:00:42.6188680+08:00",
+          "sha256": "6E2AF341804867AAACD128BADB80BB720016C823462BA6656C9C98A215E3858B"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/9b1a5e2de3e572bbd8b8a60ea1fc68bc32ca39689994b0ae54ff0d7a927abe62",
+          "size": 2582,
+          "modified": "2026-10-23T19:59:58.0613990+08:00",
+          "sha256": "9B1A5E2DE3E572BBD8B8A60EA1FC68BC32CA39689994B0AE54FF0D7A927ABE62"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/a2d66d9193758fc23bf45971055aca8d28c8f4b5d33f4820d0066388479f1c59",
+          "size": 93,
+          "modified": "2026-10-23T20:00:58.9406555+08:00",
+          "sha256": "A2D66D9193758FC23BF45971055ACA8D28C8F4B5D33F4820D0066388479F1C59"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/a5628dc078c6fea7d69e2e472372b7d5f73de9f15b7dd846bd8ff1f4d4bd6361",
+          "size": 375,
+          "modified": "2026-10-23T19:59:57.0973815+08:00",
+          "sha256": "A5628DC078C6FEA7D69E2E472372B7D5F73DE9F15B7DD846BD8FF1F4D4BD6361"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/a9b4df696b8be9f12c38f5a0829d090d505fa8d59cd014910bc0c3d41590d3fe",
+          "size": 1202,
+          "modified": "2026-10-23T20:01:07.7327441+08:00",
+          "sha256": "A9B4DF696B8BE9F12C38F5A0829D090D505FA8D59CD014910BC0C3D41590D3FE"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9",
+          "size": 33267677,
+          "modified": "2026-10-23T20:01:33.0090721+08:00",
+          "sha256": "E0D0BD60BFD20A3CA809DD10B9891DD3317E1BA8F784FF07D9A917AB982587E9"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/blobs/sha256/fecceb262e6722d606bb8a8ddbc6d053913840b9381356368c9689b443525dc3",
+          "size": 5188275,
+          "modified": "2026-10-23T20:01:04.4884862+08:00",
+          "sha256": "FECCEB262E6722D606BB8A8DDBC6D053913840B9381356368C9689B443525DC3"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/index.json",
+          "size": 559,
+          "modified": "2026-10-23T20:01:41.7083970+08:00",
+          "sha256": "6FBEB4180D666972837875DAB3F097F236EC62F1FF26EB3F896F4CCC95D7DD77"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/oci-layout",
+          "size": 30,
+          "modified": "2026-10-23T20:01:41.7083970+08:00",
+          "sha256": "18F0797EAB35A4597C1E9624AA4F15FD91F6254E5538C1E0D193B2A95DD4ACC6"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:30.8237305+08:00",
+          "sha256": "B01A2846D9394E65F3755723967ED7589DED96B8B31DAF2B6CA739A360B4E163"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:34.2385021+08:00",
+          "sha256": "F24C1EF7222D3F9811E6144768B1597D5A48F167F3A3001D37312F37F22155C7"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:31.1265835+08:00",
+          "sha256": "E3BFEC742361F497CB9382D14663425B345B8990E5C5DCFE2D820BEF8122F27D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:30.8949288+08:00",
+          "sha256": "20E52C2641C5B72D4015BCE3AC4BB75902E476B20F027E259CFDEA7F56223115"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000004.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:29.4198720+08:00",
+          "sha256": "F9C640803B42E9FBC11159487D5DB0973B8380E78EAC921F5FB4127897B963CD"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:31.9761282+08:00",
+          "sha256": "3B80150DF859A9598DFBD495ABA3B03FF86048BBF6723BC8E3F86C4FC75726D1"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:32.5632774+08:00",
+          "sha256": "FEFD236F76AADAF1483D818B24C914BD7BAFA4D9104F7D3547614A07C1617CC6"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:30.1588762+08:00",
+          "sha256": "AFFB54CF9F0F13F7E5DEA7199AB4A4250432AD306E080AE7253EBE54EBD69DB8"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:33.9323774+08:00",
+          "sha256": "63AE17818505F5F5C73B0840E1C92E8515B43230A49EC195E3D256C49DC2A89E"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:34.6114410+08:00",
+          "sha256": "677A1FF3F10EE03434E46C4BA5AACB971F60FD215FDBDD548A2CE4D70FA11159"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:34.5246495+08:00",
+          "sha256": "B0E0F3EA109DE73BE21F67F915D8E876356BCCF47829DFA6813263B2B9C5B21A"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:34.9224672+08:00",
+          "sha256": "45AE49CCDC4A48C77B55B9A55B9BCA52283BF8BDA3CBF3227923973005911742"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:35.9092225+08:00",
+          "sha256": "5264B2F25A492A074C6166E68D231FC5290F6BF6450DBDD60E8302804912B00C"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:37.3307180+08:00",
+          "sha256": "3ABC5F489EC927674673DE732728E34FA9E6134F96268982C8FA9F190DBA86CA"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000014.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:36.0935820+08:00",
+          "sha256": "C507552764F70BD4BB4EF97D969BB3B4B1B24E1CFED46D90F617539EF7C20722"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/02c0ea4dbd74dc2cd360b9825ebb70c494b7be1d109139e62933dabdd6e8d1e3/000015.part",
+          "size": 203108,
+          "modified": "2026-10-23T20:00:40.1675291+08:00",
+          "sha256": "A4335B107163A6BF80300B1DFE5EEDD2B98550C74412F42067993817A1AB7B1F"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:48.0409482+08:00",
+          "sha256": "186F99BD10B3E3FD14069277E04DE60EEFD993E6DF874084A6DFDD306A91B46D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:46.2188398+08:00",
+          "sha256": "AB421BDEF54A34BFCBA05B570F5D97266112055AD0C86A7C22B6C6B046C03D06"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:46.4403870+08:00",
+          "sha256": "C32DBDBD0E8DA7A2E35DBA0DE108A71C152A31C0516E2BE74745F31D7795472F"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:46.4544528+08:00",
+          "sha256": "7D98E642E0E6454D9906C39967D89BD7632D61F45B0FFD4FA4A9D0AEA0146A7D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000004.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:48.2740456+08:00",
+          "sha256": "6432D635733893BD3D3C72F901378CF0B205CE432495040D3F04CC28A664425F"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:48.5422306+08:00",
+          "sha256": "79EF243AA5C49B8264FF542476AE799149A6AD6445C902BB1EF99221A1AE74A0"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:46.3246608+08:00",
+          "sha256": "5A6C0D422E00A6636084BDDC61370A577D2D6890B94BF5FCCEB1BC85D8F99F91"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:49.9655399+08:00",
+          "sha256": "CE0C4D68688B4B27BB1131301677CB8C95967E51CFC635A5B60E9BF0C52311B1"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:49.7712965+08:00",
+          "sha256": "26DC93FA9BC5F653E710FA22A0DACE4914212E8F4285D6738B6836F880EDC949"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:50.4312923+08:00",
+          "sha256": "FAB262E8762BD92864252342424A606A8617DDCE326473F6595776732DB5FB60"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:51.6297457+08:00",
+          "sha256": "6AD5FE4E04F275D8B792F6D135BD5BE76E616F3A6BA09A77DC81770BDD0F316B"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:51.0219782+08:00",
+          "sha256": "7BF5BBD1D87B030629591EA107FCDA053A7DBC416E3420968FC0E74023F4E56C"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:52.0297326+08:00",
+          "sha256": "6681DB8AEB278BCAE83803BFE90FF703D5958468BF1C88A08CD624E6D3521D83"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:53.5900922+08:00",
+          "sha256": "BA1013E59EF0B4CCD4F14653509A2EAACBB0606DD6F1EC9D34D0A04732AD5300"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000014.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:52.0210913+08:00",
+          "sha256": "B1CD2570C0CFD54489133B5F65B2ACB59B1B6101DC589B0CE3CA8BAC3EB28A2B"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000015.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:53.9152328+08:00",
+          "sha256": "B38B1CCC3D17646C2BE656F27840433D88757E8954A3E3A1AFD7816C2DF5D305"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000016.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:53.8055918+08:00",
+          "sha256": "812766D5FF20D9F1688D1BD4F2BF360DB49B701CE13781C074307877758A7BD2"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000017.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:55.7591981+08:00",
+          "sha256": "39902D0F638BF1012035A6AE165AF2E34247A01C4AEB64270B7ED07F20662C4E"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000018.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:54.9931644+08:00",
+          "sha256": "494A948629B4250148FA7EC7BDB366FCC93E93DC7967FA40AB64FCF9AE9E2920"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000019.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:55.5931325+08:00",
+          "sha256": "16A9B23008ADB0B9E254B92D8281FBD2503CCA98BEF56C8E45AD97B9EC0C9BE8"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000020.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:57.1836549+08:00",
+          "sha256": "AD13850528B2A5CBFBE3319166F150195FADAE05B70FD7AF8C4CE6BAF2187F65"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/07bbad0c9f2012fe1102fc534be4a764fd5e67ca9b9b64a7956941aa6fc11345/000021.part",
+          "size": 766573,
+          "modified": "2026-10-23T20:00:55.0096645+08:00",
+          "sha256": "54C048117C85DCC02EFD336079CE55E96F9DAFDC24D2716EEECDC9287B5A9EBD"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/3b0b485a4ce36425dccb61a229c17ecabd422ce4b7194c8817bb0dc95109fde3/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:25.3819428+08:00",
+          "sha256": "2473FC4FAADE86E85B0AD2E0E2B1ED9F76AE3531F9D2F805C1C5605DAAAFF64D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/3b0b485a4ce36425dccb61a229c17ecabd422ce4b7194c8817bb0dc95109fde3/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:23.9906267+08:00",
+          "sha256": "44F30F45D9C8B1D61E1B6146A1EB8769482164B7EA74975F0A46F83731542DB6"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/3b0b485a4ce36425dccb61a229c17ecabd422ce4b7194c8817bb0dc95109fde3/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:23.3126849+08:00",
+          "sha256": "F1277687698B0EB28A8FA1367B3228AFAA2CB5E62140BD4C712E74457993F52A"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/3b0b485a4ce36425dccb61a229c17ecabd422ce4b7194c8817bb0dc95109fde3/000003.part",
+          "size": 371658,
+          "modified": "2026-10-23T20:00:22.8726773+08:00",
+          "sha256": "CA86F7ABDCCEE0757C086C7CC27660E3FF227D4FD9E9E2AE126CD135C150BE21"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:04.6768133+08:00",
+          "sha256": "3E9DB378DFB48FF58AAE967305FE1A3E06DAEF7EF89A1908C4B59B71071A615A"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:05.4468737+08:00",
+          "sha256": "444F66D0E4220EEAD77DE3BF0B1935DA80C489D92D2C6FBCFAAB489C373E4114"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:06.3347388+08:00",
+          "sha256": "7A61F10D8F15D5CAEA999F63D86F9CAD9104FC7ECF0A733197C0AEF597C21512"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:06.1666198+08:00",
+          "sha256": "1400BB832367F8746341338C7D100B0C5D061BFC91A859C492932E280ECA57D3"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000004.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:04.3632795+08:00",
+          "sha256": "44C41D214A70D84B3AD14D057CAA0934654F6849E03A6264D6C0D21CCD7C7974"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:04.7575764+08:00",
+          "sha256": "86BBDB012D54DD56271DEF041F370501D6F102F888753FE049596BBAEDC6F8E8"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:04.5083010+08:00",
+          "sha256": "EB9F4A6172A0F8AD81B831C06644FA6A83A456B5B241C53082A672318347E679"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:03.9656113+08:00",
+          "sha256": "3BF894838AD196A55E180CBFA22DB188B5520459FB62345D07286E0327B7AC56"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:11.4970922+08:00",
+          "sha256": "3F631D18C8E275C7513755FD0DAC9C2EB2656DE86D7FC47EB68D29DB7521E47D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:09.3214215+08:00",
+          "sha256": "54075C4AADC3AA08D43F4E927979858F34892B38489376E4877271DDD2C6971C"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:10.6915216+08:00",
+          "sha256": "EF97C9A8854BA6B67E92F7A97E5FDA9AA8FC8BE1608C668380D636F13D1D1148"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:10.8949882+08:00",
+          "sha256": "53A1710F7DDE1F0678BACB0C821EA065001A01C963BAC837E9A154766676AF7A"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:09.6939567+08:00",
+          "sha256": "C8A7B1C0941566AA75C7C313C210554718CB7B80340CF65D30EEE0B0E6DE7267"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:09.8400366+08:00",
+          "sha256": "3D4E060C6D8E17F749C7EBAA4A1722443098E86FF72575E93DFF42406922098E"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000014.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:11.5654403+08:00",
+          "sha256": "EC39F2ED8C9546DF148DEDBE85DECF8111843955177DE945817B038B526F239D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000015.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:11.2869806+08:00",
+          "sha256": "D2FE116DE1D674EC0A226DF262227C4A156B1CAD518EEE29319002867ED1EAFB"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000016.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:13.2493401+08:00",
+          "sha256": "5D9F48FFB0CBD195B52CB580AEAAB0A3C1BBD4E348C405603749297767CFB243"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000017.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:13.4454785+08:00",
+          "sha256": "38AB2D09A6F07AB0C7064E37D9EB18184649233C3EF06E4208C9B1A51342A19B"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000018.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:15.2907179+08:00",
+          "sha256": "6A647C34579515A4B08CD6D80E20C9CAF1CE560D788BF0DE42F1187158B1D4CE"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000019.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:15.2762964+08:00",
+          "sha256": "9DD04BB7B0D7E045D9985E11362EA9CD5D8801DCD9D545B95D0B6F15F2A97610"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000020.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:14.6479008+08:00",
+          "sha256": "240EC635F00F2FD923EB58CB2AA438121377C95BADFAC6134107A14812204474"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000021.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:15.8193671+08:00",
+          "sha256": "D6EB6CB56D7B38B431C025E295D92A7B09F66B97492AE1C435C8CFD5633A64A7"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000022.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:14.7124771+08:00",
+          "sha256": "6330BA0BE619AA704B37FB0CC0E4C5CBB0D0BFFD132C1B3205925E8A5D84DECC"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000023.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:15.6476554+08:00",
+          "sha256": "F65820D71A4EFF68499295E4CAE06D50FB2FB6ACACD30FC19DE80FEE9F1F639D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000024.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:17.3025117+08:00",
+          "sha256": "DBE8688157B29A608E3136049811766E6AD98723196DCB70AEE67B3D37B1ECDC"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000025.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:00:17.5084690+08:00",
+          "sha256": "7BB506969E1DA25947802666630FE83A7DF8FF84C3EB1650E4D389FA96FD17D8"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/4831516dd0cb86845f5f902cb9b9d25b5c853152c337eb57e4737a9b7e2a2eb9/000026.part",
+          "size": 965511,
+          "modified": "2026-10-23T20:00:19.5483981+08:00",
+          "sha256": "FF417141EE66E05AA1F5CA8D6E8A7B857BFCC4E0154579D0A865E12B66D39B9A"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:15.3429944+08:00",
+          "sha256": "A9283F379E97F8BAF5324CF9F980AE8AC45DA350FEA9A5BF52A93D7719471B59"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:14.8376302+08:00",
+          "sha256": "EDE1B9A84D5E17A7BAC6E0444FF9E0BC20DA980C77B61DC2C33E3D607BC09E8E"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:14.9617871+08:00",
+          "sha256": "DBA2B5BB781044AB3A8CBF51E72AB560CB08E1BD234CC9F077208E95DA39F20E"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:14.9122957+08:00",
+          "sha256": "C8F88B12A90FC254DADA0F63003126D41EE7F05D6E1FC68080C48A134D206B5D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000004.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:15.7497749+08:00",
+          "sha256": "6781D72240DD2DE4C02C1C823F2B672C76CC9E4FA2AD8D67A6B73824F3C2E96A"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:15.5948123+08:00",
+          "sha256": "EE8E990AB0CD1F63ED60951E49D86805001E521845FD17096B5804D54089E634"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:14.6066501+08:00",
+          "sha256": "37BDA56382665A96383CA20B7E3CBF880FD418E8D63ADC8FC02A624E96131B37"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:14.7757031+08:00",
+          "sha256": "558571C3650EE6AA74E521D5BD3E8204F74C49070C88C9B2F69F9A3AE8AC6BDE"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:19.4750223+08:00",
+          "sha256": "85ABF92DEBFF9687AC19FF5528DFE3D78C27EC5982F0099344D347D6A798CEAF"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:19.7195214+08:00",
+          "sha256": "4EBAD85B2DFDAEFE990E868695647DAE62F3AA25A4A4EED3801C868838A90261"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:19.7635323+08:00",
+          "sha256": "55C87705C77B14757F51689DB8DB53083A55C5624110F442DFE980B9543F26DA"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:19.7856834+08:00",
+          "sha256": "B9EFF8796B26F124983322656AF0C68026E551B83D12863B32B800D09EB16EB3"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:22.1931348+08:00",
+          "sha256": "1B621DE3BFBE7E462BC7ADD904F5454EDEC32A682C01DF6B8080850A89424D8F"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:22.0295412+08:00",
+          "sha256": "876FBBD5C76E0674B73E19AF6BEDCEA823E023923CE266C61840DF40063D30DB"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000014.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:20.5417241+08:00",
+          "sha256": "F5164E092CE8EBC8CB677E01209117345EAFA9426098C7868AF1C991ED4C2E24"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000015.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:19.3306187+08:00",
+          "sha256": "016AC04D88B746A91F6E1BF54BBF508A53AF09846EC835EFF5AA2B13E8740372"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000016.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:23.9796194+08:00",
+          "sha256": "B372F5AD0A1F9053553E266955DF5688783D92D10547C9C3B0B7279027F09BB2"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000017.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:24.3948866+08:00",
+          "sha256": "AEDC804B35D7748AA84378D2449CE718046A0ACD34F8877DBACD6A42A55DD933"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000018.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:24.6238472+08:00",
+          "sha256": "8875017C6970E829B27F348BB92339F2E7960B461F009C3D774704F4A5965D94"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000019.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:24.2822238+08:00",
+          "sha256": "B4244115A8422168FFD34632664720E6A3F45D7563B3D64F656F5C42510317A6"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000020.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:23.5969739+08:00",
+          "sha256": "9C3ACEB068163739A15FFB5AD60466B970CCD9CAA46F3F9B2EB4CB771A548BF1"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000021.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:24.8263116+08:00",
+          "sha256": "086ADCB0D5D2D64ED76273B41132F8A5D86BEDB9C6F45167002A0F75E5AF4568"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000022.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:25.9227898+08:00",
+          "sha256": "8AC18560F4FB5A522E955D53B9D86D2E0D64E33E0FFC1EF7A2381A65C4ED6926"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000023.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:25.4423091+08:00",
+          "sha256": "B833BE04F61DDCC0381987A273ED63340BBD11B4981F0B166420BCD9DA40DA6A"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000024.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:27.3059896+08:00",
+          "sha256": "65DE10A6230C9EAEFC9914A5F48A182918A00B5C1A777ECEDDA312D9A24E2B1D"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000025.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:28.4397958+08:00",
+          "sha256": "34F273DE929E1390EA31AC316D608CF7271ACDE6C7C02FA511106069BBD750CD"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000026.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:28.1623727+08:00",
+          "sha256": "91D9C12FB8FED5F8BEB235732F6062EDC9BE7B331468F809E6FCD0D6EB0732C6"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000027.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:29.8049247+08:00",
+          "sha256": "897259A22CE8913B3136F1CEBBD711AD3191DBBC97D6182ED04EDEE7FC3C2367"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000028.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:28.9749527+08:00",
+          "sha256": "3D4EB4C2CBF5D34320604173E2B56F806BD84567CF60E6D0786665844C664B24"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000029.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:29.2203585+08:00",
+          "sha256": "0DF3C73EEC964CBDD5DC34304466DA437B4F2668E15CF358F4C5ADBAA893BA56"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000030.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:29.5282358+08:00",
+          "sha256": "3C44D84BDD8D4C304DFCC83D07034D65CEDEA568C88953324692915FC317A3E2"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/e0d0bd60bfd20a3ca809dd10b9891dd3317e1ba8f784ff07d9a917ab982587e9/000031.part",
+          "size": 761821,
+          "modified": "2026-10-23T20:01:31.5730210+08:00",
+          "sha256": "F13D3DD51C2DF55B11A90C471A8A4386F9B9F92598074E668AC1F260F21BEFC1"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/fecceb262e6722d606bb8a8ddbc6d053913840b9381356368c9689b443525dc3/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:02.9552643+08:00",
+          "sha256": "1AD874D546C164E198411081A44A04106B3AEC04E134658BA6F788D106C15408"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/fecceb262e6722d606bb8a8ddbc6d053913840b9381356368c9689b443525dc3/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:04.4620742+08:00",
+          "sha256": "AAA2CFF2FC1D7E0949D3658F6265982171175D0EC7D7599888EAA7C5699B743E"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/fecceb262e6722d606bb8a8ddbc6d053913840b9381356368c9689b443525dc3/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:03.0737160+08:00",
+          "sha256": "C52B06F260C91486716F8217202EBEF7B40FD34C4E891EA6B89CD785BB2B68F9"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/fecceb262e6722d606bb8a8ddbc6d053913840b9381356368c9689b443525dc3/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-23T20:01:03.1379754+08:00",
+          "sha256": "9640BAA9843BF1C29BD2A500CD3FE23302D13C2D5CE34FDCF0AEAA687A1A0AEA"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-cache/parts/fecceb262e6722d606bb8a8ddbc6d053913840b9381356368c9689b443525dc3/000004.part",
+          "size": 993971,
+          "modified": "2026-10-23T20:01:02.9706683+08:00",
+          "sha256": "C0C36886B0B16289F86C38C79F6C899EC9BD48664A9FD650DD1E36E9CFBCD459"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci-download.log",
+          "size": 1571,
+          "modified": "2026-10-23T20:01:41.8950015+08:00",
+          "sha256": "A624C41A15A85D1281F61BA4F2A7F826F1085B878FF1AF68824082ACFD552866"
+        },
+        {
+          "path": "src/tests/.artifacts/backend-oci.tar",
+          "size": 110387200,
+          "modified": "2026-10-23T20:01:41.8940040+08:00",
+          "sha256": "685545CF40847FF2D3CA3605E8863271FCDF65AD325E6D0E8B1EFB92A62FF0FF"
+        },
+        {
+          "path": "src/tests/.artifacts/candidate-public-vhost.conf",
+          "size": 5901,
+          "modified": "2026-10-23T19:44:17.8217405+08:00",
+          "sha256": "6B478AE2C95B99E5E86813EC97CA52F4549650F8DA22561C720D38F7296B5F8E"
+        },
+        {
+          "path": "src/tests/.artifacts/current-public-vhost.conf",
+          "size": 5377,
+          "modified": "2026-10-23T19:43:50.7160901+08:00",
+          "sha256": "6E7670FE1DC6194CCFE8B9BF2FA5133B6AF3BC37348F29A060102E7D4A90A342"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/.token_seed",
+          "size": 61,
+          "modified": "2026-10-23T19:41:30.3781202+08:00",
+          "sha256": "E4AA25E208C774580CAAE00621540D86A0BD46ACDB8D68C444AA8FC38C59CC7B"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-23T19:38:56.9347900+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-23T19:38:37.9107961+08:00",
+          "sha256": "93C7D7B720A9FFC6817A65D3A788914C381F0A40235F56C3BA2829BC0A01AD91"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-23T19:38:27.0175923+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-23T19:40:29.7628214+08:00",
+          "sha256": "DE308F1AE87709956AA847DB8D7686EBA4FE632147FF2E97E9C4D8F0817018D4"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/buildx/current",
+          "size": 65,
+          "modified": "2026-10-23T19:57:01.6120962+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/buildx/refs/default/default/qqbzsg02mbyvr4u770798f99f",
+          "size": 265,
+          "modified": "2026-10-23T19:40:30.1962333+08:00",
+          "sha256": "D03826FA782DE846799C688084ADBD750299C003C4752F9631ECB2938722BB9E"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/buildx/refs/default/default/zlnp2qk1xod5v3lylunqrkk5p",
+          "size": 258,
+          "modified": "2026-10-23T19:38:38.9899917+08:00",
+          "sha256": "0A498C128D8C5142CD853C3126CD63940D22CDF09C235A706B10C2C9A05EB80E"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/cli-plugins/docker-buildx.exe",
+          "size": 67230128,
+          "modified": "2026-08-06T23:31:42.0219998+08:00",
+          "sha256": "2613A23FCA0673BD3858035E32B172147E3DF4B71C613114C85DCE673C235FE2"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-docker-config/config.json",
+          "size": 60,
+          "modified": "2026-10-23T19:37:42.0748967+08:00",
+          "sha256": "61EC0DC9C370A5AC3BB8A9744E397C568EFCA756EC18F8C70C1E6FA791F52676"
+        },
+        {
+          "path": "src/tests/.artifacts/direct-staging-index-pr-body.md",
+          "size": 523,
+          "modified": "2026-10-23T20:29:11.6743529+08:00",
+          "sha256": "B62320677EE231F5C6D75F561A508121A9405968DB2627D5A7C3AF86B70FD2F3"
+        },
+        {
+          "path": "src/tests/.artifacts/direct-staging-pr-body.md",
+          "size": 1224,
+          "modified": "2026-10-23T20:27:04.9265747+08:00",
+          "sha256": "DD685F5097712F08583B2747ED677D7BB892843A7EAA933BC20A6EB9B3976EAD"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/16df03999cc3f9b94d0c99a7e24aaf47366e2fa16d4c7b45500e9b9f04cd82f0",
+          "size": 380053,
+          "modified": "2026-10-23T19:59:14.8340761+08:00",
+          "sha256": "16DF03999CC3F9B94D0C99A7E24AAF47366E2FA16D4C7B45500E9B9F04CD82F0"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/3720781a7cd62559fbf91ec31e3245077ecb30d6d0f3b7cf56998545c9329b75",
+          "size": 8445,
+          "modified": "2026-10-23T19:58:15.3407506+08:00",
+          "sha256": "3720781A7CD62559FBF91EC31E3245077ECB30D6D0F3B7CF56998545C9329B75"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/54225bd601967a0aa669ec9be621c24d8eeac874b698d55874018070898685c2",
+          "size": 1260579,
+          "modified": "2026-10-23T19:58:51.6363383+08:00",
+          "sha256": "54225BD601967A0AA669EC9BE621C24D8EEAC874B698D55874018070898685C2"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/6881c064daee8dd0eb84ba6d86b8c46c108049f6af6c2d8a85ca695e45d43c3c",
+          "size": 126,
+          "modified": "2026-10-23T19:59:00.3942911+08:00",
+          "sha256": "6881C064DAEE8DD0EB84BA6D86B8C46C108049F6AF6C2D8A85CA695E45D43C3C"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3",
+          "size": 15886005,
+          "modified": "2026-10-23T19:59:10.7980878+08:00",
+          "sha256": "765310CA0EDBF6ACBA605F2F732338F40BD71BA439896C2AF5F60A3FAECADFE3"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/8133d3fd83dcfe8352de274f43c4cf0a43beadce6e3c5e8f268a9c7113aeb4c8",
+          "size": 2001,
+          "modified": "2026-10-23T19:58:13.6195148+08:00",
+          "sha256": "8133D3FD83DCFE8352DE274F43C4CF0A43BEADCE6E3C5E8F268A9C7113AEB4C8"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/8b056b8fe9944ff566afc8611dd2f6f4b3d5aba3af931214d6463445e00bec06",
+          "size": 970,
+          "modified": "2026-10-23T19:58:57.9962969+08:00",
+          "sha256": "8B056B8FE9944FF566AFC8611DD2F6F4B3D5ABA3AF931214D6463445E00BEC06"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e",
+          "size": 42989014,
+          "modified": "2026-10-23T19:58:46.1577488+08:00",
+          "sha256": "8C59D92D6FC9F01AF4AAA86824BE72B74BD4D940C4C46AA95D9710BFA46C975E"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8",
+          "size": 3799689,
+          "modified": "2026-10-23T19:58:20.0801032+08:00",
+          "sha256": "9824C27679D3B27C5E1CB00A73ADB6F4F8D556994111C12DB3C5D61A0C843DF8"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/a9e48ad1219d4d11c6456a8db0fd5c11af46242d52edf84e17ab84a7bfd93809",
+          "size": 445,
+          "modified": "2026-10-23T19:58:53.2391561+08:00",
+          "sha256": "A9E48AD1219D4D11C6456A8DB0FD5C11AF46242D52EDF84E17AB84A7BFD93809"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/ae92b0df33b2969028112302fdf1e7dc97891423276909750e6ca7d282b488b2",
+          "size": 375,
+          "modified": "2026-10-23T19:58:11.5664492+08:00",
+          "sha256": "AE92B0DF33B2969028112302FDF1E7DC97891423276909750E6CA7D282B488B2"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/blobs/sha256/afa4ac9221f31c6030e92bab7f217371f2501687ee89c9f5b8347a5eb77bc233",
+          "size": 93,
+          "modified": "2026-10-23T19:58:54.8614372+08:00",
+          "sha256": "AFA4AC9221F31C6030E92BAB7F217371F2501687EE89C9F5B8347A5EB77BC233"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/index.json",
+          "size": 561,
+          "modified": "2026-10-23T19:59:14.8360748+08:00",
+          "sha256": "1E7A673E638092650B2ADFB5E028E600738988FBB3C1DDBCF3DF1F26ED2B56CF"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/oci-layout",
+          "size": 30,
+          "modified": "2026-10-23T19:59:14.8360748+08:00",
+          "sha256": "18F0797EAB35A4597C1E9624AA4F15FD91F6254E5538C1E0D193B2A95DD4ACC6"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/54225bd601967a0aa669ec9be621c24d8eeac874b698d55874018070898685c2/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:51.6215009+08:00",
+          "sha256": "A6F794A8614FD315E8148D7253971DA357F8B747392E27044D1A0982B3692C86"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/54225bd601967a0aa669ec9be621c24d8eeac874b698d55874018070898685c2/000001.part",
+          "size": 212003,
+          "modified": "2026-10-23T19:58:49.4856976+08:00",
+          "sha256": "97168E6A564F507929F5655E4D93A213C9DD1A6286D4A55BA321D777F7C9BF70"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:04.0074671+08:00",
+          "sha256": "204A1C16E2C104AA0D71DDF3C52EC12B60E7E55695F3BC4AD4CB148DC13C24D5"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:06.4900232+08:00",
+          "sha256": "0919E0D80AB07EDCBD9B8C58D454731788C28C8CB0E40AED08304884C85F4EA5"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:06.3900888+08:00",
+          "sha256": "1B95FC4967DF7C2CB453F33629317D82BC8E77CDBB3A1307135E7B40955C8A7D"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:04.9915738+08:00",
+          "sha256": "EA9DDA88FC69F02FE994123FD5B2006BA61CDC358F4C6779854BEEBD1C5D710D"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000004.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:04.7710638+08:00",
+          "sha256": "C81CC815FB71F4A96FA45380CB2760578C30AD85D7574D2132367A6D2BD1C40E"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:04.3753794+08:00",
+          "sha256": "1B2D74D954CDA48D7268DD8D95CDDD7A546C7C3026B07457691E946190BD0224"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:04.0871611+08:00",
+          "sha256": "5A7AC8341732EB22B9FEA2F4694E8261D8FD0FDB16C6D212A4AFD8CE05B1A16D"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:05.2261934+08:00",
+          "sha256": "913F152027821DD5BD90321B239B2BB93EFD7DBE0C06BD039411EAE0C1CD5BE8"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:09.5703070+08:00",
+          "sha256": "8D8272995CDA81FA604EDD42DC91F484ED3E1CC57C4C1FD771050C9CA60047D1"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:07.7620232+08:00",
+          "sha256": "822957F8FB0CC40B238CED034AA5D18036569010196DAF2FEC940C42ECD61607"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:10.3655678+08:00",
+          "sha256": "646644DBF89111D4223711EE0016E20DF4DF6EC73079CAE5EDF304C23ACDBB1D"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:10.4074718+08:00",
+          "sha256": "29F5B2E7A964F1E545DEF6DEBB4B553601DC8CD3AADC800F5645E8BB43EC7193"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:09.7045932+08:00",
+          "sha256": "9A319AD795C774FE2C33F299409D855CDC2C6EF96D3F311B2E1AE09174C691FB"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:09.1087898+08:00",
+          "sha256": "B27FD6795B5F3125AF03061CDDFB991A1E25EDAEBEC0644F6D1B7536832E75B1"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000014.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:59:10.7245844+08:00",
+          "sha256": "2D119D07E1D6C7F4D2677B7920C7ACEDD07C0CFE20ED4DC10FD9C1EA59B3118F"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/765310ca0edbf6acba605f2f732338f40bd71ba439896c2af5f60a3faecadfe3/000015.part",
+          "size": 157365,
+          "modified": "2026-10-23T19:59:09.4277234+08:00",
+          "sha256": "63A541E3AE93F9395B0823C8708499DED506CE5335F5050F05471FEEA47D1B2E"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:27.4919145+08:00",
+          "sha256": "0C9272A5C0B503ED9C87ADFDBA472153541134248C4FD434F96D15B8D4BA66D8"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:23.8096748+08:00",
+          "sha256": "ED3F1244930108271E4A5A180B871BB2BFD2BAD041A5A2355642F53B1BE1918A"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:24.1952298+08:00",
+          "sha256": "4EBD6E7E0544E10C66398BBE8A184F409235521104BF24549116108F9EB709F2"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000003.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:23.2889543+08:00",
+          "sha256": "33D27F7E91C266A57948A09B01FDDEA865E925437CBB255F3FA8F41F5209C27A"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000004.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:24.6137318+08:00",
+          "sha256": "5946090E0520F32D3EDBB6DB5FFD9073AA774BD1F20E6AEB2536C07316BC27B0"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000005.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:23.9397928+08:00",
+          "sha256": "BCA49664E98AA2113A8D86D0C11615F6DC2D3224203B9A172E6C35CBA4F7B3F2"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000006.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:24.0989307+08:00",
+          "sha256": "476F5C12DBE2AA51F8A84DF0ABF7D93C071C221D49B598E9C21937CCA9BF00BC"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000007.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:27.4133210+08:00",
+          "sha256": "EA008F072AFCF24C803571D7729020CD4568395C753C01B9A7096E9F17C6DAE5"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000008.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:27.2082295+08:00",
+          "sha256": "5B994CFADB64ECB64EAB96F9D17BB26E002E9DFC840C029438110BCEEA86F775"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000009.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:29.3869877+08:00",
+          "sha256": "C1DEBAD3F2F311EA3C075E640B8DBDEF6B5FFA1827C0A6D7DDBE71C1BAD0C3F9"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000010.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:28.3988452+08:00",
+          "sha256": "0611228018D7E96E7F653D5C30572ADDC1E29528A306B70DA31302964398DF8D"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000011.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:28.5459501+08:00",
+          "sha256": "CEAC183A34DA4A76D9061A57D66558208ADB1800E6F02B926202DA99AE9081AE"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000012.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:29.5657005+08:00",
+          "sha256": "16FB359B76E23E1830289890DD61C1287E1A06B0394F5E4DE2E9E266E50E2425"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000013.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:28.3318259+08:00",
+          "sha256": "F4E7D4C2EF4C4DE9E96E93BDA406435AFE735701DD85E3FC4F252C2056501D9A"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000014.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:32.0228034+08:00",
+          "sha256": "F8A6B7C4BC9D0E693883E83293620E5A3E3E01F4CAE02A4BAD79A898145963D9"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000015.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:34.8867966+08:00",
+          "sha256": "82E4A92161B44DB36C0424572AC5FF8E699A796746E5AD48EC2D695118A071B6"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000016.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:31.8247020+08:00",
+          "sha256": "5C38DFA82FCA4CC903F90D2C984812137A2E1A63F92147521BE1E638F5F2F6AD"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000017.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:33.3033198+08:00",
+          "sha256": "FCEF7138CAA72E47ABFCC5D762F255E4BF564C35712E0F956E1131F020E9F405"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000018.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:32.1177254+08:00",
+          "sha256": "C28B08A6C848C9F22BEA545EE1A56D20B11B837448A08FB003EE4BDE9042746C"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000019.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:33.1690183+08:00",
+          "sha256": "403193D4178071765B613D942B4057E7BA61469D31210BF61AB58DA3FC7F284B"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000020.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:33.9753792+08:00",
+          "sha256": "6FD16A86A83C2A3B7CF2870F2A73EB7C4DADB411998CB32E66DA3C239CC2E233"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000021.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:33.3046593+08:00",
+          "sha256": "76BC99FE142F159B15816ED3809BC1BAA42E98574488E11FF675675091A777F3"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000022.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:35.7671580+08:00",
+          "sha256": "0AC8B68B006699CAAD58E22F1D9B4C442555E1C7DBB6A90FE5FC651C540233EB"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000023.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:35.7694863+08:00",
+          "sha256": "8B134862ED4C7B36E7D7A3946BB7A1A3E84691A4815FCDB582EC4B3087DDF661"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000024.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:37.3593168+08:00",
+          "sha256": "F3C8179C0613C47E0958447701E8632693BBDDA087397435C3234C8CA56D714F"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000025.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:38.8426424+08:00",
+          "sha256": "76E2823A76DF6F3BDA7DB89547C6664CD87B66BEAEEB0D6DD58D5790D82118E8"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000026.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:38.0205512+08:00",
+          "sha256": "1AE11FCD9907DE5BE3DFB97262CDC142EBE604ED4129A75F14AB55150A8FD8DB"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000027.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:37.7529325+08:00",
+          "sha256": "2CAE18F3AA570EC5BDD210527C583E1324FF73FBD04389CEA1725DF156667C54"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000028.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:38.4372088+08:00",
+          "sha256": "4F0FA311EB0940BDFE07082929B7BAC8F11E39B56A576F31F1F9E66ADD636470"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000029.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:40.7267935+08:00",
+          "sha256": "4447BDF790C61841567CC54388A04621E304DDD2D0F2D45B850137EA6FDB5192"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000030.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:40.8227925+08:00",
+          "sha256": "BE41EEDF1EFD5E44C37BE449FDD2DE59D34E9086AA38F64806B8672AAAE5B5C9"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000031.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:40.4041103+08:00",
+          "sha256": "AFBB57A49901C34FC1C29DF0D08A9F5FB94DDBBE712F348471674DB4C39A899B"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000032.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:42.0183874+08:00",
+          "sha256": "79F1344E2527D2AB13E1586952C8DE62DE8EE10481C9069BCB39AAD7AC68593A"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000033.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:43.4269566+08:00",
+          "sha256": "748E3E031F09B8A939CEC7FD36A0DA52D4F8CC9EF05C0F25B95DBEAE647C87C9"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000034.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:42.5753841+08:00",
+          "sha256": "9C004A29AB0153DFDBEA10653502BDEF778563EF2C9ACF1CA8FF43537B6260AD"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000035.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:45.2421078+08:00",
+          "sha256": "652747C009C511551DEA674B20B5085F5F01F88C749DB5013E1965D0A85342FE"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000036.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:43.7514899+08:00",
+          "sha256": "F369771865B9E3A884D3ED3EEE5822BB4C62946D39A2493516BDA1ED27568B08"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000037.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:44.2817158+08:00",
+          "sha256": "94DC5FBF76CC409CF677980AD1785F59950B5FA351B067CC456E1ADB3C5D2898"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000038.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:45.3941887+08:00",
+          "sha256": "09BBC44742FD8181A552A1E41DC2A4A2C36F0AC98FD0DD363527E1B96923EEAF"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000039.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:44.7282887+08:00",
+          "sha256": "2CABFDCD8CAD56F76A8080C9ADFA997AACA4E2FECDDFAE48B96B8AC87BB9311B"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/8c59d92d6fc9f01af4aaa86824be72b74bd4d940c4c46aa95d9710bfa46c975e/000040.part",
+          "size": 1045974,
+          "modified": "2026-10-23T19:58:45.9589669+08:00",
+          "sha256": "2AE761B7659A13B176D2A0D6BCE44B2E7A825069819EBF8D5F9BCE23FF4C227A"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8/000000.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:19.4892608+08:00",
+          "sha256": "1BEE28B2BFB1DCF83FE2DEBE25451B9FBC24C759F7387DC345F811F9599EDD26"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8/000001.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:19.8280596+08:00",
+          "sha256": "B0AF59A85EB5F0E4E2C0BDE9314A8EAF90F9CC322C2808EB22E3BCA87D008A9A"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8/000002.part",
+          "size": 1048576,
+          "modified": "2026-10-23T19:58:20.0592345+08:00",
+          "sha256": "35DA70998E365E16D60800F08A4AE931C63639CBF80741010AC54C340CE4AD1B"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-cache/parts/9824c27679d3b27c5e1cb00a73adb6f4f8d556994111c12db3c5d61a0c843df8/000003.part",
+          "size": 653961,
+          "modified": "2026-10-23T19:58:18.6679243+08:00",
+          "sha256": "AD77E1D0CF9FD8FDD29B9256C6DF81A687F54D8B247CD26F6B24E7F99A88E195"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci-download.log",
+          "size": 1159,
+          "modified": "2026-10-23T19:59:14.9525950+08:00",
+          "sha256": "671A543BF5F0377F80423A87D9BE512D1CB6C70280A9E706094EB52E0807C087"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-oci.tar",
+          "size": 64358400,
+          "modified": "2026-10-23T19:59:14.9515876+08:00",
+          "sha256": "B1CE31CC50A6212CF721C718524C5E4FEF4212CF56A500034AF28D9180F87FC4"
+        },
+        {
+          "path": "src/tests/.artifacts/insert-direct-deploy-index-rows.py",
+          "size": 1521,
+          "modified": "2026-10-23T20:25:16.2011382+08:00",
+          "sha256": "EB3799474A8A59DC958F0993F8DC0225A976461C5B57DF1898AABA6B03C3065D"
+        },
+        {
+          "path": "src/tests/.artifacts/manual-staging-gate.ps1",
+          "size": 4197,
+          "modified": "2026-10-23T19:51:43.5723080+08:00",
+          "sha256": "2CF460E0B5962E058999ECEE468E8429D125F38B1061957372A8BD27CFA4C324"
+        },
+        {
+          "path": "src/tests/.artifacts/prepare-frontend-oci.py",
+          "size": 2550,
+          "modified": "2026-10-23T19:59:48.7751108+08:00",
+          "sha256": "3D1E150A44510F49D20ADFFAAD88B141C2E986980F565E70068815BE602D1FAD"
+        },
+        {
+          "path": "src/tests/.artifacts/rebuild-record-indexes.py",
+          "size": 2309,
+          "modified": "2026-10-23T20:24:42.2057569+08:00",
+          "sha256": "4EC094CF6DBA456BAC21C05719C6FEDB7838B120B750B8B6AF5C1F4CD4C91827"
+        },
+        {
+          "path": "src/tests/.artifacts/source-db16111d.bundle",
+          "size": 7674468,
+          "modified": "2026-10-23T19:40:41.3444649+08:00",
+          "sha256": "B4FE1331FD2309BAB1320EB21491C26BB4AA864CB1C9B46E2980DD936AE7F27B"
+        },
+        {
+          "path": "src/tests/.artifacts/update-direct-deploy-tasks.py",
+          "size": 2268,
+          "modified": "2026-10-23T20:22:44.6301886+08:00",
+          "sha256": "B6EA1A4505AC998BED93E7D20A57A5E864CD4D4793D3FB6EEC3BD4C6D5146C1C"
+        },
+        {
+          "path": "src/tests/.artifacts/write-direct-deploy-records.py",
+          "size": 8152,
+          "modified": "2026-10-23T20:22:14.5834304+08:00",
+          "sha256": "58F63ADE37A3D1F8F4598DCFCA501906A70939D98EA3F17F5170DB12C0EA2AF3"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/customer-sidebar-order-details-20261021",
+      "head": "d3f62931df15a9e039d865285aba3515d7780770",
+      "branch_ref": "refs/heads/fix/customer-sidebar-order-details-20261021",
+      "pr": 483,
+      "merge_commit": "3e01d7fc752e46c3105946ca3f3165b44c5c8aba",
+      "directory_modified": "2026-10-21T02:08:51.6225051+08:00",
+      "untracked": [],
+      "ignored_count": 46454,
+      "ignored_paths_sha256": "4086AC2E207B2587B047B87F0534FE17BA8E5661BB3E6096A833928F68286245",
+      "cache_file_count": 46392,
+      "cache_bytes": 858938311,
+      "archive_file_count": 62,
+      "archive_bytes": 74469947,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/deploy-gh-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:52:30.4650835+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-login-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:38:13.9578731+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-auth-status-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:38:05.6524959+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-main-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:06:05.8331071+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-pr-create-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:07:45.5727919+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-pr-create-stderr.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:33:00.4123549+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-pr-list-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:07:26.7220753+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-pr-merge-stderr.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:33:43.1299382+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-pr-verify-stderr.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:33:55.8707942+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-pr-view-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:09:51.4705482+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-pr-view-stderr.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:33:16.5804989+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-run-view-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:09:59.5706332+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-run-view-stderr.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:33:24.9462853+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-token-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:38:13.9060342+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/gh-user-error.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:37:47.8967458+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-logout-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:02:33.4757246+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/.token_seed",
+          "size": 133,
+          "modified": "2026-10-21T02:46:19.2430320+08:00",
+          "sha256": "21814C0160B9D17219A971A8B7945079C2C5D2AD5AA48BDAC062BD756AEC5EE7"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-21T02:39:04.4721427+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-21T02:38:50.7870202+08:00",
+          "sha256": "BA54199BB454B42880B206EE672E1F92085FA24EEBF82B88C2AE85AAC93549D5"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-21T02:38:50.7155036+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-21T02:44:44.1755231+08:00",
+          "sha256": "4B198D61548773C55979E6AAABDA8F0CF8DD6255B1DD72081C2575F8AEEEB69A"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/current",
+          "size": 65,
+          "modified": "2026-10-21T02:46:47.9065468+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/refs/default/default/58fomw4g8542d7dn07sqqw3lx",
+          "size": 276,
+          "modified": "2026-10-21T02:44:21.6671853+08:00",
+          "sha256": "B1103C937FA4C61AEBB0E4A2B877935043B4A8D6DADA6345B872E2ADFB305BCF"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/refs/default/default/5ryf1gtgeaijyclef77lnwpvs",
+          "size": 283,
+          "modified": "2026-10-21T02:44:44.6882596+08:00",
+          "sha256": "17A8D220F776B0AC18EDFAE8C2B184C769E23314C345805CD3A7C6DFD93939D5"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/refs/default/default/nqz04vtxz6ymic6gg7skt5g97",
+          "size": 276,
+          "modified": "2026-10-21T02:38:51.3604057+08:00",
+          "sha256": "B1103C937FA4C61AEBB0E4A2B877935043B4A8D6DADA6345B872E2ADFB305BCF"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/buildx/refs/default/default/wf1586px56ct04hsi9i4dz88j",
+          "size": 283,
+          "modified": "2026-10-21T02:39:59.6072479+08:00",
+          "sha256": "17A8D220F776B0AC18EDFAE8C2B184C769E23314C345805CD3A7C6DFD93939D5"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/cli-plugins/docker-buildx.exe",
+          "size": 67230128,
+          "modified": "2026-08-06T23:31:42.0219998+08:00",
+          "sha256": "2613A23FCA0673BD3858035E32B172147E3DF4B71C613114C85DCE673C235FE2"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-sidebar-detail-20261021/config.json",
+          "size": 42,
+          "modified": "2026-10-21T03:02:33.7141336+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/main-3e01d7fc.bundle",
+          "size": 6854609,
+          "modified": "2026-10-21T02:39:24.5158973+08:00",
+          "sha256": "271CAEB3F1DDE6178AA78AC95091063EF3ECB9291BF23F5D8F0AE0DFE363352F"
+        },
+        {
+          "path": "src/tests/.artifacts/main-bundle-verify-private.log",
+          "size": 316,
+          "modified": "2026-10-21T02:39:24.5882780+08:00",
+          "sha256": "E9977FC978166CC27D8FCF8E09460C7AAE16607A713C4EB7B6781B56F3810B17"
+        },
+        {
+          "path": "src/tests/.artifacts/order-detail-pr-body.md",
+          "size": 846,
+          "modified": "2026-10-21T02:32:53.2514310+08:00",
+          "sha256": "CEEF2B2DC29D609B3FB63D66F6452703A94752AAA81747B07FF31E266434660B"
+        },
+        {
+          "path": "src/tests/.artifacts/prefetch-gh-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:48:46.3067504+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/preflight-gh-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:48:32.1675537+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/preflight-ssh-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:48:32.1685541+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/probe-sidebar-catalog-service.py",
+          "size": 1798,
+          "modified": "2026-10-21T03:08:36.0103305+08:00",
+          "sha256": "339A23AE6B419CBDAE853D83C74DE6349C63EC1CB390514C3E6D1EEB31CEDEC0"
+        },
+        {
+          "path": "src/tests/.artifacts/probe-sidebar-detail-cross-buyer.py",
+          "size": 1330,
+          "modified": "2026-10-21T03:00:58.1130991+08:00",
+          "sha256": "522CB79459A95E251FA6439FFF4777B72AEB1B2F00B64FF47BD0104478F06960"
+        },
+        {
+          "path": "src/tests/.artifacts/probe-sidebar-detail-service.py",
+          "size": 1380,
+          "modified": "2026-10-21T02:49:56.5839966+08:00",
+          "sha256": "4342881AE30B6FA6C9EB0698AA6F805B0CDAB225CC4A6B3FBC6A0D3983D63F7E"
+        },
+        {
+          "path": "src/tests/.artifacts/probe-sidebar-error-current.py",
+          "size": 3443,
+          "modified": "2026-10-21T08:56:06.4508948+08:00",
+          "sha256": "F05013F0E34BE9AF72CDFE1D97BB471D8EEC8E84A8908D5F63628CF40901BD03"
+        },
+        {
+          "path": "src/tests/.artifacts/probe-sidebar-order-detail.py",
+          "size": 2381,
+          "modified": "2026-10-21T02:29:04.9505652+08:00",
+          "sha256": "922E874330EB04609EA682848A54E1BEBBC566837BFFBF2761A6D4C4EE2EC059"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-catalog-service-probe-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:08:43.4363263+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-backend-build-private.log",
+          "size": 2925,
+          "modified": "2026-10-21T02:39:11.4472997+08:00",
+          "sha256": "5106A5A9C6953DB5C8220F632CF9B2B6019A743987F0D449E4E5A5E5E9DF16B4"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-backend-index-build-private.log",
+          "size": 3237,
+          "modified": "2026-10-21T02:44:42.3367539+08:00",
+          "sha256": "DFD44D5137E81AE907298A6920655D22BFFBA3054BAB41FE47B7E400AC9655DE"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-cross-buyer-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T03:01:08.3656458+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-deploy-error-private.log",
+          "size": 9060,
+          "modified": "2026-10-21T02:55:18.5814323+08:00",
+          "sha256": "7F44EB97FB41A359B004F979ED232B8329A1D256E48B4F2C9B65FAFCB4A31FB8"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-deploy-private.log",
+          "size": 351,
+          "modified": "2026-10-21T02:55:18.4512056+08:00",
+          "sha256": "F3D765C8984353CF0D525A1500FB62095507D3F4B215162A1E433B4A1835C808"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-frontend-build-private.log",
+          "size": 4978,
+          "modified": "2026-10-21T02:43:49.8377055+08:00",
+          "sha256": "5E1F5E2D861617D11BB3EE51235B294BAED9C960F9EB2241BC5BA8101D3EB61E"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-frontend-index-build-private.log",
+          "size": 4383,
+          "modified": "2026-10-21T02:46:29.8393487+08:00",
+          "sha256": "E2F4219A77A9914F14BA65C3ECCAE3BBF0273CBDF8219A2E8515F1003D341095"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-prefetch-error-private.log",
+          "size": 0,
+          "modified": "2026-10-21T02:48:46.3082619+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-prefetch-private.log",
+          "size": 4008,
+          "modified": "2026-10-21T02:51:54.6433667+08:00",
+          "sha256": "49FAB805B5BE74BF83828078BBC63CF6F91E7981C639AB81450545DD8C5226D3"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-private-evidence/deploy.json",
+          "size": 2911,
+          "modified": "2026-10-21T03:00:04.6148459+08:00",
+          "sha256": "1301969976D839FF26ED064099ECBCED7E7B549A71D0E03539D2EF7130F6CEB7"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-private-evidence/prefetch.json",
+          "size": 944,
+          "modified": "2026-10-21T02:59:57.1912313+08:00",
+          "sha256": "0B604DDA978419DF3E26F9D6FCEE92ED51AD3196C8E94E95E8F18F1ECBA45287"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-private-evidence/validate.json",
+          "size": 2589,
+          "modified": "2026-10-21T03:00:04.6153662+08:00",
+          "sha256": "62E0CC10FC3A68D9A832C789754FAB88DD1C2883D4F0A6E1D5CC1EAFAE95F924"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-service-probe-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:56:10.1462175+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-staging-pr-body-private.md",
+          "size": 1030,
+          "modified": "2026-10-21T03:07:38.5286965+08:00",
+          "sha256": "20EB4BE230AD4D0B98EF7FCA6675B033679CC90A7D309CCBB6F107DEB7442AAA"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-staging-screenshots/coupons.png",
+          "size": 74569,
+          "modified": "2026-10-21T02:57:44.9566961+08:00",
+          "sha256": "F8F6A3D5D94AD54B40BE39DC824852CC3265B730E7CD5D0ED097AFB35C01754B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-staging-screenshots/order-detail.png",
+          "size": 90991,
+          "modified": "2026-10-21T02:58:33.0158795+08:00",
+          "sha256": "DE99674496B84799590C154AD5624B0FDC3B463B1812157FD5A8076F09F436F7"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-staging-screenshots/orders.png",
+          "size": 88091,
+          "modified": "2026-10-21T02:57:36.7055094+08:00",
+          "sha256": "82F801908745A0533E53CF1DF7080E513C512085143895E941AF7A8340202CA6"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-staging-screenshots/products.png",
+          "size": 76794,
+          "modified": "2026-10-21T02:57:44.7286049+08:00",
+          "sha256": "377358451C4751F86DF16B32BE8363E9FA32B96D9301CC265E4568CD9B6AB41B"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-validate-error-private.log",
+          "size": 0,
+          "modified": "2026-10-21T02:52:09.5493990+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-detail-validate-private.log",
+          "size": 215,
+          "modified": "2026-10-21T02:52:14.1840360+08:00",
+          "sha256": "8F0C258252150DC4507D158A54B276E03D6BF36057FE76274786F353A1E4369C"
+        },
+        {
+          "path": "src/tests/.artifacts/sidebar-details-staging-deploy.sh",
+          "size": 5246,
+          "modified": "2026-10-21T02:48:18.3677925+08:00",
+          "sha256": "0EBD9D103BA894E20B39DB1D29A3E35EE922D1E3A9ACFC2712B493392B5D8B09"
+        },
+        {
+          "path": "src/tests/.artifacts/validate-gh-error-private.txt",
+          "size": 0,
+          "modified": "2026-10-21T02:52:09.5403975+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        }
+      ]
+    }
+  ]
+}
