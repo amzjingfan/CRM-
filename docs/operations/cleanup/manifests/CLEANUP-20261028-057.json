@@ -1,0 +1,14 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-057",
+  "state": "deleted",
+  "execution_main_sha": "88b01efb716a03eb74be78307a474595e168a79f",
+  "deleted_branch_count": 1,
+  "scope": "unoccupied source branch of merged PR #588; local main contains the PR merge and reconciled indexes; archive original SHA and remove local name only",
+  "ref": "refs/heads/docs/staging-nginx-keepalive-index-20261028",
+  "head": "f7794e87e549d6b9fca98d397ab80e9ef4048fe4",
+  "archive_ref": "refs/archive/CLEANUP-20261028-057/docs/staging-nginx-keepalive-index-20261028",
+  "merged_pr": 588,
+  "merged_pr_commit": "23eb8f961c663a2067e22b40e450243066d36e5c",
+  "changed_paths": 4
+}
