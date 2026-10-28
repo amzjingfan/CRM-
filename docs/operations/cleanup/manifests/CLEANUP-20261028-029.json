@@ -1,7 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-029",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "138987810cbb2a36c95b8829fd803d8b6f5f09da",
+  "deleted_worktree_count": 2,
+  "deleted_branch_count": 2,
+  "archived_file_count": 287,
+  "deleted_cache_file_count": 46393,
   "base_sha": "54fd04192ae8a6c58c87c50a7260e03c21921224",
   "scope": "two exact merged-PR old deployment and sidebar worktrees and branches; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-029",
