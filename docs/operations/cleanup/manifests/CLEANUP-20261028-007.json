@@ -1,0 +1,188 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-007",
+  "state": "candidate",
+  "base_sha": "da4aa68b04a4e5241cab21c33c9fa2f59cf0a0d4",
+  "scope": "four exact local worktrees and branches; ignored cache classes deleted after authorization; other ignored files archived; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-007",
+  "candidates": [
+    {
+      "worktree": ".worktrees/tiktok-customer-name-20261019",
+      "head": "bd268b2e32a059b075bcc3b9a87b4213a956fbb2",
+      "branch_ref": "refs/heads/docs/tiktok-customer-name-close-20261019",
+      "pr": 416,
+      "merge_commit": "aec80dc4878333b59dcab914d44e676f99660148",
+      "directory_modified": "2026-10-19T09:06:58.8611343+08:00",
+      "ignored_count": 13033,
+      "ignored_paths_sha256": "307E7DF511E616A85D403CED76380557BD2F27415B5C8D8CC3427E24949BBF61",
+      "cache_file_count": 13026,
+      "cache_bytes": 244030108,
+      "archive_file_count": 7,
+      "archive_bytes": 6369871,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/tiktok-customer-name-evidence-pr-body.md",
+          "size": 684,
+          "modified": "2026-10-19T09:38:05.9821006+08:00",
+          "sha256": "2E5BB621AE399C4886CDFEF74C12A8492780AD3AC69B19E03ACA48A7B7652389"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-customer-name-pr-body.md",
+          "size": 1074,
+          "modified": "2026-10-19T09:25:29.1478686+08:00",
+          "sha256": "E8F05CA211F1B6168FA551EF83367F5DF7027F29D34C2747FD20CE1D2E09BFBE"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-name-close-pr-body.md",
+          "size": 577,
+          "modified": "2026-10-19T10:06:33.3394737+08:00",
+          "sha256": "3046E483C8399E74463D0AB77ADE7E54414F576026922F11C262421110834E2E"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-name-deploy-1476253.json",
+          "size": 2840,
+          "modified": "2026-10-19T09:57:29.4628845+08:00",
+          "sha256": "CA6F8EDB5477863465BCC8E1EA116E63F87C27FD05E9B325F283EE66AC845012"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-name-evidence-pr-body.md",
+          "size": 1078,
+          "modified": "2026-10-19T10:04:11.3892953+08:00",
+          "sha256": "94AD44F5D72DC538C269EE19E6469FF796DE61B45F6D14F589CE952C2601FC98"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-name-main-1476253.bundle",
+          "size": 6356491,
+          "modified": "2026-10-19T09:46:14.2305349+08:00",
+          "sha256": "ED191E45FCEEDEA9700E8AD831AA698F901419C76E73926D0D40F0A29EA0EC34"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-name-staging.ps1",
+          "size": 7127,
+          "modified": "2026-10-19T09:50:17.0112315+08:00",
+          "sha256": "3A95D8E735FD0E36A1A47684248D01CE16F630CC8D259F62CBF2EED605893D40"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/tiktok-store-manual-send-20261018",
+      "head": "049e614d99aab1212c88f64538f8fdadaa0a7449",
+      "branch_ref": "refs/heads/docs/tiktok-store-send-index-current-20261018",
+      "pr": 368,
+      "merge_commit": "97c9036f4f28ae9562a3a43a362345567b6473da",
+      "directory_modified": "2026-10-18T09:19:59.9952231+08:00",
+      "ignored_count": 13036,
+      "ignored_paths_sha256": "2A343DDD3C055DE668127EA53A27F857DF433951955A8D45601C09AC5304199D",
+      "cache_file_count": 13027,
+      "cache_bytes": 243889895,
+      "archive_file_count": 9,
+      "archive_bytes": 11799929,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/staging-store-send-6394282.bundle",
+          "size": 5898026,
+          "modified": "2026-10-18T09:57:40.6174752+08:00",
+          "sha256": "A3FF9C1CE72A5BA6DBCFDFC7300FE8143B53BC5678EEE5532D8D464517BE589C"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-store-send-bbaac98.bundle",
+          "size": 5893157,
+          "modified": "2026-10-18T09:50:45.9932855+08:00",
+          "sha256": "B5FA4BF76BBE92E308DDBA690F5706A18C3822ED2E1E5576D1252B97AF4BEBA4"
+        },
+        {
+          "path": "src/tests/.artifacts/store-send-deploy-6394282.json",
+          "size": 2840,
+          "modified": "2026-10-18T10:02:50.1989040+08:00",
+          "sha256": "744A5B7CBC6F7D1A59D74D03985CCD7CBFA97A0E7F2B762DAFD5E26EFB0682BD"
+        },
+        {
+          "path": "src/tests/.artifacts/store-send-validate-6394282.json",
+          "size": 2518,
+          "modified": "2026-10-18T10:02:49.9965161+08:00",
+          "sha256": "98F3BCAC6BFD52D9881E6E112BC306A9DF52DBBFF73336759E04FA24B3A1C1B0"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-empty-pr-body.txt",
+          "size": 754,
+          "modified": "2026-10-18T09:56:38.7405051+08:00",
+          "sha256": "E2D33882675E85EA7163A42624ECBBCD5BBD3F7EA3E40E22096092E96E7BA08E"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-send-evidence-pr-body.txt",
+          "size": 934,
+          "modified": "2026-10-18T12:17:44.9671796+08:00",
+          "sha256": "36B2DF3014893E744F2B1ED32D1C9C5E55A4E9646B9A07747FE79857E1ADB315"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-send-final-pr-body.txt",
+          "size": 479,
+          "modified": "2026-10-18T12:19:19.0857833+08:00",
+          "sha256": "E77A5214C8376B9FB6A937E29AB345DAC55548EAD72EAA4A4BE8F505F57F5339"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-send-index-pr-body.txt",
+          "size": 426,
+          "modified": "2026-10-18T12:20:46.6389446+08:00",
+          "sha256": "C7FABBB0EE544C9DCA02323C25D1B8D619216F4750F93C4A39E910EC294C5E8B"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-send-pr-body.txt",
+          "size": 795,
+          "modified": "2026-10-18T09:48:00.3368710+08:00",
+          "sha256": "DD1B92A68372E92C5FC7DAF73F7D2853F9FB7689F5B84BAD23770F2D4774C4B1"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/g1l-generic-tracking-evidence-20261019",
+      "head": "5b38f6d8f06c815b22d1d573b4ad9b03842980dd",
+      "branch_ref": "refs/heads/docs/g2-staging-finalize-20261019",
+      "pr": 439,
+      "merge_commit": "37b8a6973fd8efd45666f40de5f1818bc41db42f",
+      "directory_modified": "2026-10-19T16:07:23.3988948+08:00",
+      "ignored_count": 13049,
+      "ignored_paths_sha256": "6350911C8DBA19FB1B78C164C140DB9D4CF660630C1460E86307ABF1FC93D456",
+      "cache_file_count": 13047,
+      "cache_bytes": 244786051,
+      "archive_file_count": 2,
+      "archive_bytes": 1305,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/g1l-general-finalize-pr-body.md",
+          "size": 520,
+          "modified": "2026-10-19T16:44:20.3288475+08:00",
+          "sha256": "A4C9C29B7E557FC80EE044692A02CB0530C4BA65283A9039C74F73DCD6B52403"
+        },
+        {
+          "path": "src/tests/.artifacts/g1l-general-tracking-pr-body.md",
+          "size": 785,
+          "modified": "2026-10-19T16:40:01.9559564+08:00",
+          "sha256": "46D51A33FA2FC5DACC1F5ED35046A1DB544BE91F69C906FCCA80AF5A61424026"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/tiktok-empty-orders-20261021",
+      "head": "d0f887e701954776e20459e3969e41c2e749ab47",
+      "branch_ref": "refs/heads/fix/tiktok-empty-orders-20261021",
+      "pr": 485,
+      "merge_commit": "f487ea1b6723e4fc1afbc2601e43ce64ac3db911",
+      "directory_modified": "2026-10-21T08:57:12.9018169+08:00",
+      "ignored_count": 13049,
+      "ignored_paths_sha256": "98A7B4EF589FB59EE21BF94ECB64ACB2A13ED2C0E1B2B0B8A4F296B283522999",
+      "cache_file_count": 13048,
+      "cache_bytes": 196389132,
+      "archive_file_count": 1,
+      "archive_bytes": 959,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/tiktok-empty-orders-pr-body.md",
+          "size": 959,
+          "modified": "2026-10-21T09:08:38.5632977+08:00",
+          "sha256": "D10F732B8FA978FC55C27C9B9BE6E33C10BBC7DC2757D861C4C9AF7AE4C06177"
+        }
+      ]
+    }
+  ]
+}
