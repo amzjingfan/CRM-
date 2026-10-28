@@ -1,0 +1,42 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-015",
+  "state": "candidate",
+  "base_sha": "c7b1509f9914a91584df66523977659cb93eab60",
+  "scope": "two exact merged-PR worktrees and local branch refs; two ignored PR-body drafts archived; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-015",
+  "candidates": [
+    {
+      "worktree": ".worktrees/agent-live-debug-completion-20261027",
+      "head": "62ca083d728499990231c98017888a4b5f6a8773",
+      "branch_ref": "refs/heads/docs/agent-live-debug-completion-20261027",
+      "pr": 566,
+      "merge_commit": "dea7707d7862c0910337c82a9289c1d27dd4607b",
+      "directory_modified": "2026-10-27T16:44:43.9722584+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/agent-live-debug-completion-pr-20261027.md",
+          "size": 442,
+          "modified": "2026-10-27T16:45:32.7919377+08:00",
+          "sha256": "99649E414CED0FEDBA0A5664D8EBBE6625E9DF23A472163988ABA806DACD27C3"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/agent-live-debug-evidence-20261027",
+      "head": "75581db9da21559f80f01ca87cdd6830b0f715c8",
+      "branch_ref": "refs/heads/docs/agent-live-debug-evidence-20261027",
+      "pr": 565,
+      "merge_commit": "96f6280a3575abb61903569a8300dce40b612f9d",
+      "directory_modified": "2026-10-27T16:34:20.4574226+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/agent-live-debug-evidence-pr-20261027.md",
+          "size": 925,
+          "modified": "2026-10-27T16:42:00.5149087+08:00",
+          "sha256": "71754CA254E7C225E3BE4E8BFB28C5FF2E253FF81C712FC710224353B6E25F1F"
+        }
+      ]
+    }
+  ]
+}
