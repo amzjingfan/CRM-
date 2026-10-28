@@ -1,0 +1,770 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-027",
+  "state": "candidate",
+  "base_sha": "ce2a064c6bd40fffa998c546e03c0e46e174a48e",
+  "scope": "two exact merged-PR Agent worktrees and branches; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-027",
+  "candidates": [
+    {
+      "worktree": ".worktrees/agent-debug-staging-deploy-20261027",
+      "head": "2ba99d55a2f3dc36c3d25c6ef082929a966d9644",
+      "branch_ref": "refs/heads/docs/ci-zero-step-done-20261028",
+      "pr": 577,
+      "merge_commit": "2015ccaac558e5548ca866bffd648d510fe6b6f5",
+      "directory_modified": "2026-10-27T19:27:36.9909760+08:00",
+      "untracked": [],
+      "ignored_count": 13143,
+      "ignored_paths_sha256": "4C05B4C17C5DD87776D5D609087E39E59D41E3865D606E3140B423EE231F286E",
+      "cache_file_count": 13119,
+      "cache_bytes": 247792145,
+      "archive_file_count": 24,
+      "archive_bytes": 366322041,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/agent-debug-backend-30b29c96.tar",
+          "size": 111446528,
+          "modified": "2026-10-28T08:04:43.1680493+08:00",
+          "sha256": "41CBAA18B491C863B7EA48685442F1257F4F689251E2AFA07D08BB5EB31FDBEF"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-backend-5f0feb7f.tar",
+          "size": 111446528,
+          "modified": "2026-10-28T08:36:50.5449290+08:00",
+          "sha256": "8372A3F7FDF7064D430FE8E2F3663B3441F671B32D9774C8657FF12696951864"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-backend-8096728f.tar",
+          "size": 111446528,
+          "modified": "2026-10-27T23:42:28.1255637+08:00",
+          "sha256": "BEF5D8328CACBA04A32D866A35200075CCA4639554C0EE83D05163CFB5BF9B76"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-knowledge-review-pr-body.md",
+          "size": 1169,
+          "modified": "2026-10-27T23:11:02.5010277+08:00",
+          "sha256": "A6BB8CA9D04C4B3C2FA50CB66A74312E71C5CE0662FA634C90389D15BD21E577"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-main-30b29c96.bundle",
+          "size": 7982100,
+          "modified": "2026-10-28T08:03:36.3331211+08:00",
+          "sha256": "033F150D84E1FBC8B70B7A5F59F4D8F272BC8743FD7830C78D89B8B55E3A01C9"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-main-5f0feb7f.bundle",
+          "size": 8017862,
+          "modified": "2026-10-28T08:36:47.3638621+08:00",
+          "sha256": "8AD58EB2AF425D0D0A7E162B58DDCF4A4DB5AB70CAA52938D491BFFFD16ECBB9"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-main-8096728f.bundle",
+          "size": 7990951,
+          "modified": "2026-10-27T23:37:39.9909980+08:00",
+          "sha256": "C2821D41475ABD9A6D3CB7744D20F2637C284B92B330E0B0A4F8CDB9EDD147BB"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-main-c2448dbd.bundle",
+          "size": 7967010,
+          "modified": "2026-10-27T21:38:34.8767086+08:00",
+          "sha256": "733F799B6B3D9DACB8FE8A15223367A6044BFB180C864EFDB12618E2568EF8A3"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-prepare-30b29c96.sh",
+          "size": 1903,
+          "modified": "2026-10-28T08:03:45.2801409+08:00",
+          "sha256": "B833FB05BF9E969A312EAAC6EE1B07AD3504D229007C1B68401979AD6E88BF55"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-prepare-5f0feb7f.sh",
+          "size": 1903,
+          "modified": "2026-10-28T08:37:03.2180433+08:00",
+          "sha256": "C8050708B7BB67583537D3FD2BA5EC73E2CE7BB2196CA84380C899C33629306F"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-prepare-8096728f.sh",
+          "size": 1903,
+          "modified": "2026-10-27T23:38:02.4075219+08:00",
+          "sha256": "44B133FBD72CAA39D0B3A26FF6FEAAF9F9AF1E4F44EED97BF70D79B0A95FCD47"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-prepare-c2448dbd.sh",
+          "size": 1812,
+          "modified": "2026-10-27T21:39:40.7561017+08:00",
+          "sha256": "F5C332D54AC6A19C8485F6B7F187843871C1A8E568307F693135DE8D29F49047"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-run-30b29c96.sh",
+          "size": 1519,
+          "modified": "2026-10-28T08:03:45.2821408+08:00",
+          "sha256": "85ADCD0D4094883FEC9FD4C782732D37B133A6CE4916AAE4A18E8189ECA8B82C"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-run-5f0feb7f.sh",
+          "size": 1519,
+          "modified": "2026-10-28T08:37:03.2190447+08:00",
+          "sha256": "2252CEA12F26C189F6B30C27DADDF88C0E77CA4A8124C5359661B95DDAABA73F"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-run-8096728f.sh",
+          "size": 1519,
+          "modified": "2026-10-27T23:38:02.4075219+08:00",
+          "sha256": "CB2FDEE1ED2063918C4CB4DFE604F83DDB04D6DFD33779197163E4B921A85737"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-run-c2448dbd.sh",
+          "size": 1457,
+          "modified": "2026-10-27T21:40:30.8212893+08:00",
+          "sha256": "60FED582EC3DD44E8639FDDE31D687CA047D99F658B3214BDB1A62827181E263"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-redeploy-synthetic-policy-20261027.txt",
+          "size": 140,
+          "modified": "2026-10-27T21:56:24.6337248+08:00",
+          "sha256": "DE4E7DEAE7028961E2C54B8BCA67F72F10631C0214030E078E4080CF63645FFF"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-staging-evidence-pr-body.md",
+          "size": 1182,
+          "modified": "2026-10-27T20:47:11.5617166+08:00",
+          "sha256": "A7E278FBC23B975EA4CE979AB75D113C1625528C7BAF0B9CEC6640828CABC3C4"
+        },
+        {
+          "path": "src/tests/.artifacts/diagnose-agent-faq-candidate.py",
+          "size": 3409,
+          "modified": "2026-10-28T08:18:41.9739198+08:00",
+          "sha256": "98C6E4D7FA03D437CE926718DE102F2063805BF1FBCA8289007F7D26B68868D4"
+        },
+        {
+          "path": "src/tests/.artifacts/ghcr-agent-debug-redeploy-c2448dbd/config.json",
+          "size": 60,
+          "modified": "2026-10-27T21:38:01.3701552+08:00",
+          "sha256": "61EC0DC9C370A5AC3BB8A9744E397C568EFCA756EC18F8C70C1E6FA791F52676"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-agent-debug-grounded-acceptance-20261028.md",
+          "size": 1335,
+          "modified": "2026-10-28T09:03:13.3415363+08:00",
+          "sha256": "AC799F888800391E5E273A045FF4DD65CC8347EE649D8AB5C28BDCAF92210A7F"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-agent-debug-grounded-done-20261028.md",
+          "size": 803,
+          "modified": "2026-10-28T09:06:48.3761210+08:00",
+          "sha256": "5CDDA76C6DC6AE16F8EC29242C0180BC5937B1EF7A7D0F9B01F641F0BDDA568F"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-ci-zero-step-done-20261028.md",
+          "size": 1097,
+          "modified": "2026-10-28T09:17:20.3738835+08:00",
+          "sha256": "B92CDA7BB7480B229ACE9725BCC72F8DA577FD14513F4B1D323BE5BF8E40A3C3"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-ci-zero-step-standing-20261028.md",
+          "size": 1804,
+          "modified": "2026-10-28T09:15:31.0844966+08:00",
+          "sha256": "FB0B179CC8AF28D4DF7F3DED5991F33A9E494637097828ADA06E3B8E9245D81E"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/agent-management-prototype-20261026",
+      "head": "8330b26748e7051b61059b51d1cca2fcad715972",
+      "branch_ref": "refs/heads/fix/agent-live-debug-20261026",
+      "pr": 564,
+      "merge_commit": "7e59ab743f29ca501890c52f7ba121f4268a6c44",
+      "directory_modified": "2026-10-27T14:48:28.6736468+08:00",
+      "untracked": [],
+      "ignored_count": 47585,
+      "ignored_paths_sha256": "12AD86E55A2E0DC99F8384EF5F35CE6798DFDF9B9717C1B3A266EA64F5DCA3D1",
+      "cache_file_count": 47488,
+      "cache_bytes": 1153572286,
+      "archive_file_count": 97,
+      "archive_bytes": 427264836,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/agent-combined-local-rerun-20261027.log",
+          "size": 8078,
+          "modified": "2026-10-27T10:43:51.2926507+08:00",
+          "sha256": "AA1A15BD12873D2E0B41E58F533D5D965E24E3062B5A9EEE990AA82AF3E2C3E0"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-combined-route-probe.py",
+          "size": 806,
+          "modified": "2026-10-27T10:41:20.8275959+08:00",
+          "sha256": "623655AFF65564E9FAA67748EA09D197FFE7319664608248B9F683B19DA25620"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-200e8246.bundle",
+          "size": 1372,
+          "modified": "2026-10-27T10:11:45.1603818+08:00",
+          "sha256": "FCC6D93938839E0AEAA46F12AF28376CC623E5986B8216D4B511DCDA1772970B"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-21132757.bundle",
+          "size": 4688,
+          "modified": "2026-10-26T17:44:25.4758769+08:00",
+          "sha256": "899AD3D9576EB4933B81F043D78CB3AEB1CF1239DAB4F6DA7CD373F0F8D1284C"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-2e57-backend-image.json",
+          "size": 2296,
+          "modified": "2026-10-26T13:02:56.1008775+08:00",
+          "sha256": "FC7842FCFC892822DE0D52B20553B3AEFE468FD5CC65FB677D51E445CC94D5C0"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-2e57-frontend-image.json",
+          "size": 2538,
+          "modified": "2026-10-26T13:04:28.4363103+08:00",
+          "sha256": "12B5A165002290B5C4DDC3BD58403E38D4B664E1BE49567C025CE29A943C5080"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-2e57-images.tar",
+          "size": 175834112,
+          "modified": "2026-10-26T13:04:57.9293146+08:00",
+          "sha256": "0FCAE9B55B808DCDF0626C062FE914FB7F384D06C20E4F5456518AE8FA98A9EB"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-2e57b7af.bundle",
+          "size": 33487,
+          "modified": "2026-10-26T12:59:06.8471622+08:00",
+          "sha256": "A4EB4D3318FDBD3718A521EB39175919D488053A95AD9C6BAFBE877D52754D2F"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-4147390c.bundle",
+          "size": 4118,
+          "modified": "2026-10-26T18:18:22.4722931+08:00",
+          "sha256": "A429198A8A7A82ABA220596833D014FCB60E03E690DB1009016959826E66F781"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-62c7009c.bundle",
+          "size": 1979,
+          "modified": "2026-10-27T10:30:35.3772639+08:00",
+          "sha256": "D75CD448ABB1CF87E796FBE873F03BE9406DB7CEB1EFB3E70D4E6F076B4FAD9C"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-7c71f4e0.bundle",
+          "size": 18742,
+          "modified": "2026-10-26T12:38:59.4003281+08:00",
+          "sha256": "B05F1E8327E08B88BF27B541D717A07813445D0FF345875ABF40A77AD66201B5"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-9302-backend-metadata.json",
+          "size": 2035,
+          "modified": "2026-10-26T13:28:53.6699530+08:00",
+          "sha256": "AFECB471574138BA59333988FE63135DD7A7D7B4A37DC88C13A71BDB9290A1E0"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-9302-deploy.json",
+          "size": 3253,
+          "modified": "2026-10-26T14:06:31.5528480+08:00",
+          "sha256": "68A7EDACEDF2D0730228DF0572F4CE3EEEAF8A99F80A8788A9D2B18A711B5B0E"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-9302-frontend-metadata.json",
+          "size": 2027,
+          "modified": "2026-10-26T13:30:56.4381969+08:00",
+          "sha256": "90FA375482BFD86FA5ACBB488D9B38DEA3D1C1A5056873E23FFC0E7B68651AF6"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-9302-images.tar",
+          "size": 175848448,
+          "modified": "2026-10-26T13:31:30.2247248+08:00",
+          "sha256": "1D1E84D4435F3786E93754E4A1E23D8456B28604805393FFAB2ED7A030405678"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-9302-incremental.bundle",
+          "size": 17524,
+          "modified": "2026-10-26T13:31:13.0756024+08:00",
+          "sha256": "BFF5803E5DD64FEFCDFE0E661EB002A4BCE51A447AC1A8D7C8EE159FF43B3CE0"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-9302-validateonly.json",
+          "size": 2931,
+          "modified": "2026-10-26T14:06:31.3161128+08:00",
+          "sha256": "5075B05768B78BF0F7DCF1C09CD5EAD8CF9B9ACBE693EF4B0F36D16AEABB709B"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-backend-image.json",
+          "size": 2308,
+          "modified": "2026-10-26T12:42:39.1446520+08:00",
+          "sha256": "18673E0443CD126A74ADDC877749D2962832076E6FFD0FF7D924822C62A76633"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-backup-4147390c.sh",
+          "size": 925,
+          "modified": "2026-10-26T18:20:41.0297140+08:00",
+          "sha256": "180A3CFCC26E3C78A1DB5C665B2288DB61F5330E61CDB8A20925D2236849510C"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-backup-62c7009c.sh",
+          "size": 927,
+          "modified": "2026-10-27T10:31:01.8421513+08:00",
+          "sha256": "D946E8C8672E05213DBAD9591BBB93947792E79FDEC43D80F86A52A1B063D4FC"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-deploy-200e8246.ps1",
+          "size": 2829,
+          "modified": "2026-10-27T10:12:11.5622638+08:00",
+          "sha256": "DED05986CEFAF20E293E4758866C34E31907A2DBCA5557B152A205D21667BD85"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-deploy-21132757.ps1",
+          "size": 2825,
+          "modified": "2026-10-26T17:46:02.7142509+08:00",
+          "sha256": "CB8B3801B017A4D8890837BB76F0826010FDDE27A2A3D065FDC87A5407DA2540"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-deploy-4147390c.ps1",
+          "size": 2827,
+          "modified": "2026-10-26T18:21:23.9633216+08:00",
+          "sha256": "61DBC4A2ECF3C426F86CCD73D6F1F4FDFFF58493CACA6F209835AEBB5788F4ED"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-deploy-62c7009c.ps1",
+          "size": 2831,
+          "modified": "2026-10-27T10:31:01.8401549+08:00",
+          "sha256": "BCC1C0418183C00DBE89B354F96C2F938BCB3196FA1419FC43723F4CB4250D4F"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-deploy-9302.ps1",
+          "size": 2821,
+          "modified": "2026-10-26T13:33:50.3174578+08:00",
+          "sha256": "2EDA0C6B18C76AE9C48E767E3005253CB56334D998108B594D35CD8DF6D4C5AB"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-deploy-eb105474.ps1",
+          "size": 2823,
+          "modified": "2026-10-26T16:45:45.0052123+08:00",
+          "sha256": "FBB374A46B1DD9A63CD60AEE04B96B8A3E5AA149211C2377B3E168CA3DEECA26"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-deploy.ps1",
+          "size": 2767,
+          "modified": "2026-10-26T13:06:30.0748334+08:00",
+          "sha256": "70A0E78B103E3F1F7E1378C0598B016D0620EDDBA84AA7A2B4CC193230261521"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-eb105474.bundle",
+          "size": 40730,
+          "modified": "2026-10-26T16:35:36.9014902+08:00",
+          "sha256": "1B9F364797AF8A39A06CF0E389027F8FCD53AB1F920A3E6E6212648E77F76451"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-frontend-image.json",
+          "size": 2550,
+          "modified": "2026-10-26T12:44:24.9858790+08:00",
+          "sha256": "30C46A013C6B75877406881ECDCCC28308EB9650A48FF0F5505D455EACCD7AAC"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-local-62c7009c.json",
+          "size": 1123,
+          "modified": "2026-10-27T10:31:24.2837858+08:00",
+          "sha256": "2DE9DB59D878A17079EAC090587D2853534A1FC43BC2EBEA16E3C29714AE1910"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-tiktok-us-fixture-20261026.txt",
+          "size": 543,
+          "modified": "2026-10-26T15:03:36.5640267+08:00",
+          "sha256": "4DF8B1FC02941553A0432DB98D09DBEC6A9527C3C3ECCF2F6A7D7576BF90E9C1"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-tiktok-us-fixture.py",
+          "size": 5883,
+          "modified": "2026-10-26T15:25:50.0382149+08:00",
+          "sha256": "BFBEB3152B23804D3F585DE274FAB6E223E3B84A8215F0C108AA1FE5B24ECB5C"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-debug-tiktok-us-staging.png",
+          "size": 65889,
+          "modified": "2026-10-26T14:19:54.6744883+08:00",
+          "sha256": "47622A2B738F921B68CD7971772DF1C7A28187BEC05364CD77F0C3818E13239D"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-dlp-main-7e59ab74.bundle",
+          "size": 7926793,
+          "modified": "2026-10-27T15:42:37.2026070+08:00",
+          "sha256": "D5B1A881F9F3D78F0D88DCC63E28DFE7FCE622E7F75479788C24CFAB73BAEEEA"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-live-debug-pr-body.md",
+          "size": 1222,
+          "modified": "2026-10-27T15:06:52.1067677+08:00",
+          "sha256": "1FD8775495D334B742959E6862CD354D89BA6111BB3EC493753AE4066B3338F6"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-management-progress.md",
+          "size": 419,
+          "modified": "2026-10-26T09:32:42.9863018+08:00",
+          "sha256": "231CADDF02513EF7342A3A03C16736FDB43D970F4BCCE99B76BC4441D5313D4C"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-page.png",
+          "size": 107676,
+          "modified": "2026-10-26T09:49:24.8795252+08:00",
+          "sha256": "58BC3867A103AC480245F221C13F0CC43D16FC5ED6C5ADFA0FF2889F7C32A6B8"
+        },
+        {
+          "path": "src/tests/.artifacts/agent-rag-synthetic-20261027.txt",
+          "size": 516,
+          "modified": "2026-10-27T13:29:04.6926623+08:00",
+          "sha256": "1C981188465926AEE4AB9237321533A25F4C7A81B9CECE9819B9D3A814928052"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-200e8246-retry.ps1",
+          "size": 1431,
+          "modified": "2026-10-27T09:39:05.3698112+08:00",
+          "sha256": "3E6D2279CB6B0CF89966D77E32BFE725E79D9CD4953E7B37E4CF74CD11415399"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-200e8246.json",
+          "size": 2035,
+          "modified": "2026-10-27T09:39:36.3179228+08:00",
+          "sha256": "26738CD546C55B346313DA602809C61F96DFFEA376A7E847688720EE300B2528"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-200e8246.ps1",
+          "size": 1734,
+          "modified": "2026-10-26T18:38:14.2945730+08:00",
+          "sha256": "49137620046826FB641CE5C9CAAE0AB1B2D4F2F13EC227E169C209E172A9DA3F"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-21132757.json",
+          "size": 2035,
+          "modified": "2026-10-26T17:44:22.2922806+08:00",
+          "sha256": "BA525DB8524225B77180EA8B9F2A3A22784874B38CEB4282C4C81E6B2AC6E9C0"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-21132757.ps1",
+          "size": 1730,
+          "modified": "2026-10-26T17:43:38.5734388+08:00",
+          "sha256": "CDBC13748CB1B9F9035DBB1566121DCB799EA444FF6F96BDE7CD2CA74A95AE1B"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-4147390c.json",
+          "size": 2035,
+          "modified": "2026-10-26T18:17:44.2381241+08:00",
+          "sha256": "8365243B6AC4CC3D3549498997116BDA6B564B71E4C1A8EFD7E667931076492C"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-4147390c.ps1",
+          "size": 1732,
+          "modified": "2026-10-26T18:16:57.2449861+08:00",
+          "sha256": "12A88497F617D483CAD2877C186A8BF6441494498E4EBEF423C3E242498EED3A"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-62c7009c.json",
+          "size": 2035,
+          "modified": "2026-10-27T10:29:57.4174195+08:00",
+          "sha256": "8C6C4B68CDD5756DF27C6B3AC5E3B47A496C2007119890F46EE405558F95CDA3"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-62c7009c.ps1",
+          "size": 1435,
+          "modified": "2026-10-27T10:29:03.9574986+08:00",
+          "sha256": "2F912AB4A546DD73D9DF30E80F8813C3D95BEABA851509DF0CA132D0DB30628C"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-eb105474.json",
+          "size": 2035,
+          "modified": "2026-10-26T16:42:37.0865749+08:00",
+          "sha256": "03CABA386121534A26DD6D68C3D8BB0FD00AC240229E745BCCFA93106E588D9D"
+        },
+        {
+          "path": "src/tests/.artifacts/build-agent-debug-eb105474.ps1",
+          "size": 1756,
+          "modified": "2026-10-26T16:41:54.1472505+08:00",
+          "sha256": "02BFFFA37DB1A892C5C4AFF1900BBD374D8D3C6A45F92DC5415C94FEE5B964C6"
+        },
+        {
+          "path": "src/tests/.artifacts/check-buyer-live-orders.py",
+          "size": 1662,
+          "modified": "2026-10-26T16:14:23.9143687+08:00",
+          "sha256": "5F8CCDE00E31A8DE721C1AAA1544241926FF349B4DCBB150BA1D4C73328E7923"
+        },
+        {
+          "path": "src/tests/.artifacts/diagnose-tool-review-dlp.py",
+          "size": 8286,
+          "modified": "2026-10-26T17:36:19.9752601+08:00",
+          "sha256": "A5BA401E4A563252695A47AF3A163DDFBCAE29490A6758152127806BD8723BE4"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/.token_seed",
+          "size": 61,
+          "modified": "2026-10-27T15:31:54.1844708+08:00",
+          "sha256": "E06218FC2558C783F92150E2D1C23C484CAEFABE8D3F0BC3077CB2EC5258E3B0"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-27T15:31:54.1724304+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-27T15:31:22.5036521+08:00",
+          "sha256": "BAA07A7CABBA6524ECB8A2403B53AE96F782C90D1BAF5A234F7ABA483AB85CBD"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-27T15:30:51.5408832+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-27T15:31:22.6637578+08:00",
+          "sha256": "929118066A9C5E8699165D7E61E3C5A5F4D9F41EC0143CC105975728EE846A5D"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/buildx/current",
+          "size": 65,
+          "modified": "2026-10-27T15:33:28.9419467+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/buildx/refs/default/default/u59zj9ym96v93j9za4zowxc2d",
+          "size": 268,
+          "modified": "2026-10-27T15:31:23.0214915+08:00",
+          "sha256": "64477ABAA2395354C99C00071459E0F78D2CC8214E08D04B27EF412B43021E61"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/cli-plugins/docker-buildx.exe",
+          "size": 67230128,
+          "modified": "2026-08-06T23:31:42.0219998+08:00",
+          "sha256": "2613A23FCA0673BD3858035E32B172147E3DF4B71C613114C85DCE673C235FE2"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-agent-dlp-20261027/config.json",
+          "size": 42,
+          "modified": "2026-10-27T15:34:45.6536780+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/.token_seed",
+          "size": 61,
+          "modified": "2026-10-27T10:29:39.9395098+08:00",
+          "sha256": "0AB6B52881F4C7BB2A7521C7E01EA3768FCD95471B3382A86140871C3377BE36"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-27T09:39:26.1850538+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-26T18:38:22.9891473+08:00",
+          "sha256": "EA58F1544EBF8DE7BECCBEF7810534CB769EEBF1942E2496E5834AFB72528F8E"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-26T18:38:22.8657573+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-27T10:29:30.7201588+08:00",
+          "sha256": "8B05DED93D6A155DC26CD4A94C7220BC6343B734975D364CFD015F48D6982C9F"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/buildx/current",
+          "size": 65,
+          "modified": "2026-10-27T10:29:30.6842166+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/buildx/refs/default/default/phsn144bkeypftse73s40zgp6",
+          "size": 268,
+          "modified": "2026-10-27T09:39:14.1862008+08:00",
+          "sha256": "64477ABAA2395354C99C00071459E0F78D2CC8214E08D04B27EF412B43021E61"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/buildx/refs/default/default/vqj3l1zsnt2xmanofw13rt0m1",
+          "size": 268,
+          "modified": "2026-10-26T18:38:24.2335834+08:00",
+          "sha256": "64477ABAA2395354C99C00071459E0F78D2CC8214E08D04B27EF412B43021E61"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/buildx/refs/default/default/y6yqmgk9x0fkgmxrgao6wz9zl",
+          "size": 268,
+          "modified": "2026-10-27T10:29:31.1315439+08:00",
+          "sha256": "64477ABAA2395354C99C00071459E0F78D2CC8214E08D04B27EF412B43021E61"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-200e8246/config.json",
+          "size": 123,
+          "modified": "2026-10-27T10:29:57.6664958+08:00",
+          "sha256": "D7B2E7B1F35A192CC901ADD49F0FBAF048F71D5962089DFF2ACF5DF9E78AFDC5"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-21132757/.token_seed",
+          "size": 61,
+          "modified": "2026-10-26T17:44:11.1453908+08:00",
+          "sha256": "ED6861D86665FA366C94B6CF829557256149A753BCDAFD63EF4089F95DBFCDEF"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-21132757/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-26T17:44:11.1405622+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-21132757/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-26T17:43:48.7388183+08:00",
+          "sha256": "9D10E79BFE8F483F9806D3249CC167CA789CB54BC524BAA7A1ECA62D6523F71A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-21132757/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-26T17:43:48.6745529+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-21132757/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-26T17:43:48.8129717+08:00",
+          "sha256": "80A2CA14C8AF2B476027C8E87EB4CEDDFBEBE3417D1E06673A1143D0A552C3B0"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-21132757/buildx/current",
+          "size": 65,
+          "modified": "2026-10-26T17:43:48.7726625+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-21132757/buildx/refs/default/default/3h4cguk97ryqr985d0esu74yo",
+          "size": 268,
+          "modified": "2026-10-26T17:43:49.7491503+08:00",
+          "sha256": "64477ABAA2395354C99C00071459E0F78D2CC8214E08D04B27EF412B43021E61"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-4147390c/.token_seed",
+          "size": 61,
+          "modified": "2026-10-26T18:17:34.7082257+08:00",
+          "sha256": "4EAF5BBF4408879E7A3B78326FD9E0996DED061917E324C1CB9F22A4914AFCAA"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-4147390c/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-26T18:17:34.3297591+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-4147390c/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-26T18:17:11.2985426+08:00",
+          "sha256": "547D7C1B23FD22E7C7F304094C642B511D95F8107E743F03E325AFE00F1F24DF"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-4147390c/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-26T18:17:11.2416846+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-4147390c/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-26T18:17:11.3876257+08:00",
+          "sha256": "4B0F9AF99865BFD71AFF70C182579EF66F1F0438923761E56D025A0990D8F92D"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-4147390c/buildx/current",
+          "size": 65,
+          "modified": "2026-10-26T18:17:11.3385050+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-4147390c/buildx/refs/default/default/jiuiz00s9ilzvuri9rzw1p43h",
+          "size": 268,
+          "modified": "2026-10-26T18:17:12.3678024+08:00",
+          "sha256": "64477ABAA2395354C99C00071459E0F78D2CC8214E08D04B27EF412B43021E61"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-eb105474/.token_seed",
+          "size": 61,
+          "modified": "2026-10-26T16:42:26.7134398+08:00",
+          "sha256": "BBB5ABD6C26D04AAD556529560C0CA759940EB5C782CB9C6520057387C459EC7"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-eb105474/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-26T16:42:26.7124403+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-eb105474/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-26T16:42:08.9812566+08:00",
+          "sha256": "D0115C00EBE642BA4827A9FFBECBBCCB3EE92314194E90EC321F7FE55D97F83F"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-eb105474/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-26T16:42:08.9105627+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-eb105474/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-26T16:42:09.0852804+08:00",
+          "sha256": "2114FFE573FADD76E65ED1EF88660A66CC558F093C4F6ACF4ED7A46E4A201D77"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-eb105474/buildx/current",
+          "size": 65,
+          "modified": "2026-10-26T16:42:09.0406333+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-agent-eb105474/buildx/refs/default/default/rn5yxsbn2p93hxy88z7b5rmr9",
+          "size": 268,
+          "modified": "2026-10-26T16:42:09.8159784+08:00",
+          "sha256": "64477ABAA2395354C99C00071459E0F78D2CC8214E08D04B27EF412B43021E61"
+        },
+        {
+          "path": "src/tests/.artifacts/filter-agent-logs.py",
+          "size": 552,
+          "modified": "2026-10-26T17:05:03.5677953+08:00",
+          "sha256": "3F759397AAF55075B77E5E163CF4ABF52FCD852BFF7BCF5A7A9C489FC1330A6C"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-contract.log",
+          "size": 29761,
+          "modified": "2026-10-26T10:02:24.2944971+08:00",
+          "sha256": "179C5AB052E6825DE1B49ED6FD696E5665D81248DB0D079175CBC2EA8709748E"
+        },
+        {
+          "path": "src/tests/.artifacts/inspect-agent-trace.py",
+          "size": 1502,
+          "modified": "2026-10-26T16:58:15.5597745+08:00",
+          "sha256": "62ED1809730F2639D793B74C38F183C9FC2538F63ACFE9B7DFF7820AC87B19BE"
+        },
+        {
+          "path": "src/tests/.artifacts/inspect-existing-buyer.py",
+          "size": 1859,
+          "modified": "2026-10-26T15:40:43.2201905+08:00",
+          "sha256": "852A1555D1B0DBD2CE917C0D306B501E9430DAB311F82B45CC0DBB67A5201847"
+        },
+        {
+          "path": "src/tests/.artifacts/resolve-agent-merge.py",
+          "size": 828,
+          "modified": "2026-10-26T16:30:07.5100845+08:00",
+          "sha256": "A78DC2F6B03733AA82A3432B834BD68CFBD97A8FD07FB095E92CF3053B26976E"
+        },
+        {
+          "path": "src/tests/.artifacts/run-agent-local-chain-probe.ps1",
+          "size": 1753,
+          "modified": "2026-10-27T10:42:20.2898668+08:00",
+          "sha256": "36D2CF1F8FF2CD3B5866571432F54FB98D12ED81654A6F4D293ECAE124F67481"
+        }
+      ]
+    }
+  ]
+}
