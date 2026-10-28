@@ -1,0 +1,33 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-035",
+  "state": "candidate",
+  "base_sha": "d730415cefb01af38e1578ff04564483072927fb",
+  "scope": "unlink three exact reparse points in two old worktrees, preserving link metadata and targets; no worktree, branch, remote, or external target changes",
+  "links": [
+    {
+      "worktree": ".worktrees/agent-debug-grounded-answer-20261027",
+      "head": "2983118c2397651aaf04506f84dfe1e0be241fd2",
+      "path": "src/tests/.artifacts/ghcr-agent-debug-417c6762/cli-plugins/docker-buildx.exe",
+      "link_type": "SymbolicLink",
+      "target": "C:\\Users\\Administrator\\.docker\\cli-plugins\\docker-buildx.exe",
+      "target_exists": true
+    },
+    {
+      "worktree": ".worktrees/customer-sidebar-ui-20261020",
+      "head": "433f340de451202e776c41ae1a59739f90dc385e",
+      "path": "src/frontend/node_modules",
+      "link_type": "Junction",
+      "target": "E:\\develop\\CRM智能聊天系统\\src\\frontend\\node_modules",
+      "target_exists": true
+    },
+    {
+      "worktree": ".worktrees/customer-sidebar-ui-20261020",
+      "head": "433f340de451202e776c41ae1a59739f90dc385e",
+      "path": "src/frontend/.next/standalone/node_modules",
+      "link_type": "SymbolicLink",
+      "target": "E:\\develop\\CRM智能聊天系统\\src\\frontend\\node_modules",
+      "target_exists": true
+    }
+  ]
+}
