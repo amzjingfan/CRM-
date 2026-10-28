@@ -1,0 +1,286 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-012",
+  "state": "candidate",
+  "base_sha": "e363b2a9f346f68a7fd86325aec3e2f9a7528001",
+  "scope": "two exact merged-PR worktrees and branches; four untracked rule files and other ignored non-cache files archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-012",
+  "candidates": [
+    {
+      "worktree": ".worktrees/basic-reception-policy-20261023",
+      "head": "376aaff64deb22c35cbc01c21ec119a97582a00f",
+      "branch_ref": "refs/heads/fix/basic-reception-policy-20261023",
+      "pr": 545,
+      "merge_commit": "0568e96a5b1855c5b4c6e807747ed8aa84795a1b",
+      "directory_modified": "2026-10-23T16:29:05.0718959+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-23T15:39:23.0684382+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-23T15:39:23.0684382+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "ignored_count": 47058,
+      "ignored_paths_sha256": "1C344F10C5F0A8915554954AC9427B30E1F6C028ECEB03F51742D8C53899B0BB",
+      "cache_file_count": 47037,
+      "cache_bytes": 982078822,
+      "archive_file_count": 21,
+      "archive_bytes": 164464,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/reception-policy-browser.log",
+          "size": 8275,
+          "modified": "2026-10-23T16:21:51.9510801+08:00",
+          "sha256": "126E6D68EC08AE6EF97843DA542E5A4205B6A3EEE43AA12C783AAE5FE2140B6D"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-editor.png",
+          "size": 60615,
+          "modified": "2026-10-23T15:55:31.9324845+08:00",
+          "sha256": "5C0E649AB82430FF0E48BDD14DE8C968A3EEDF9F92806B9F0ABF8614DE0228E0"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-browser.log",
+          "size": 8472,
+          "modified": "2026-10-23T16:40:14.8595545+08:00",
+          "sha256": "D526DCFE5EDBEB6929A22CE388FE8F37AF97B7FEC1B83845D9E3027B5AD07F9E"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-build.log",
+          "size": 906,
+          "modified": "2026-10-23T16:36:37.0104349+08:00",
+          "sha256": "A4FD2AE42B6E5E4D95748CD3E135509529E43CC83EAAAC5ABACFDF0F6B800EE2"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-contract.log",
+          "size": 4186,
+          "modified": "2026-10-23T16:35:52.2177311+08:00",
+          "sha256": "4A53FA5987833829BB7B620B15A96FCC178983727158D769EBA3D368163F7D68"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-format-all.log",
+          "size": 29,
+          "modified": "2026-10-23T16:41:02.6408302+08:00",
+          "sha256": "52DF893E3D68299005983B4A1ADDD2E20CEFC5917771D3FDECFC803AEBD1A741"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-lint.log",
+          "size": 2262,
+          "modified": "2026-10-23T16:36:11.7766767+08:00",
+          "sha256": "83C1B0EA70AE389667D8A4590E7EE72AC249E1365E8ED66B364F3B0CA12C01ED"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-mypy-all.log",
+          "size": 46,
+          "modified": "2026-10-23T16:41:01.2808246+08:00",
+          "sha256": "B810388ED13574EC220C30CDFF909E17CF1FDBC7DB227FC923B0F3CCF9EB5EC3"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-pytest.log",
+          "size": 4209,
+          "modified": "2026-10-23T16:43:59.8866050+08:00",
+          "sha256": "DF47E82A79B1784B3F4639458889926040C64EBDC697AC5C64E8A88F0C2E5999"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-ruff-all.log",
+          "size": 20,
+          "modified": "2026-10-23T16:40:40.2140448+08:00",
+          "sha256": "A4443AFDCFB6D7363ADB285762515CCF7CF50473B1A05C20C1A50F6BED4D26B0"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-final-typecheck.log",
+          "size": 57,
+          "modified": "2026-10-23T16:35:50.9691318+08:00",
+          "sha256": "DFF992437196D6354CEC4A329EB55ABB00B17EBAAF4F712FB98558F79AD2161A"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-list.png",
+          "size": 59435,
+          "modified": "2026-10-23T16:03:42.0629770+08:00",
+          "sha256": "42F37EB658B2C84263D08B88BF7D385FE5B2901F9A423F50B4542EADEABD6F5C"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-migration-current.log",
+          "size": 416,
+          "modified": "2026-10-23T16:11:09.5256495+08:00",
+          "sha256": "4817ACBA8DF524FC9990D8D90B21B4BEE0E4B8BDFA13BF088CBCC7740FBC51BA"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-migration-down.log",
+          "size": 567,
+          "modified": "2026-10-23T16:11:07.8061881+08:00",
+          "sha256": "36DE9C94B4980C8594B34EE759E1DDAE109AA7F0AE813E5A6CD0D7C04593846B"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-migration-reup.log",
+          "size": 567,
+          "modified": "2026-10-23T16:11:08.7067336+08:00",
+          "sha256": "390F4C834EB6E1EDCA835DF72FE045C528E953E9040676F5D005D4BAB109E9AC"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-migration-roundtrip.log",
+          "size": 1134,
+          "modified": "2026-10-23T16:38:48.2105920+08:00",
+          "sha256": "4BBA0682217D6C1FEB18DC922082AE929425F632A3D9A84D914D6EBA3B006AE4"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-migration.log",
+          "size": 6048,
+          "modified": "2026-10-23T16:11:06.6966094+08:00",
+          "sha256": "D913C3019CC32A617B65DBE71F3CCE94B69193357CA8CA18D8EC0CA7060EBCD5"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-npm-ci.log",
+          "size": 417,
+          "modified": "2026-10-23T16:35:18.4903115+08:00",
+          "sha256": "96FCDDFE610524B9FFA02F5D9BDED60B3DBE015CFAAA05955A9F8247DCE2E934"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-pr-body.md",
+          "size": 787,
+          "modified": "2026-10-23T16:47:13.6420032+08:00",
+          "sha256": "39E0F3A9D00E2D0D9856073990AF102815210D0EA61396EEE2B9768263532EC9"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-pytest.log",
+          "size": 3736,
+          "modified": "2026-10-23T16:20:55.2878504+08:00",
+          "sha256": "BD195B59597EA06743BDFF9AC238DF7E574D6D2DCC8D21DA2D94E3994DA41E02"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-policy-uv-sync.log",
+          "size": 2280,
+          "modified": "2026-10-23T16:30:41.5634767+08:00",
+          "sha256": "C14E7669801406BBE72602D6F690B9710429FA7EFC317F656B767A12AF5974E4"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/basic-reception-ui-20261023",
+      "head": "99075397fecc75e23e9c571aed5cb9a611547797",
+      "branch_ref": "refs/heads/feature/basic-reception-ui-20261023",
+      "pr": 539,
+      "merge_commit": "d19f683558c1d186478fb4f4a0682d8af95f5a15",
+      "directory_modified": "2026-10-23T09:57:06.8562836+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-23T10:08:55.7046200+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-23T10:08:55.7046200+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "ignored_count": 46835,
+      "ignored_paths_sha256": "0A66BBB3A1561540593F1240E6A36FAB3A0F0DEF5A4A59F465887A1A16B8B285",
+      "cache_file_count": 46820,
+      "cache_bytes": 1169935827,
+      "archive_file_count": 15,
+      "archive_bytes": 182109647,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/backend-build.log",
+          "size": 3076,
+          "modified": "2026-10-23T11:25:08.9551492+08:00",
+          "sha256": "361A8D283EADBC04BA6AE8CA341F245D0AB134FE86A7DDDB11251A3BC846B571"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/backup.sh",
+          "size": 864,
+          "modified": "2026-10-23T11:19:10.5133980+08:00",
+          "sha256": "F65E44EE3932A83635BB4256F11027A0D3885FBB05A439EE88396EB6E88FE106"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/frontend-build.log",
+          "size": 5381,
+          "modified": "2026-10-23T11:27:47.9437317+08:00",
+          "sha256": "012B7E9CD4E676DA3BDAEB23C8F9D53FFAB0941C934DA16BB9D92E45823DF95E"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/gate.ps1",
+          "size": 9151,
+          "modified": "2026-10-23T11:18:46.5198891+08:00",
+          "sha256": "9C480D9506E3CE615BBD01AD86DFBFA1BB995012F695135288EBFFC366DB3391"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/images.tar",
+          "size": 174424064,
+          "modified": "2026-10-23T11:28:23.5254774+08:00",
+          "sha256": "6574BA7287A68371820467D535E2E5DE8AE3442E64B5AD83E8E60F97BF6B2075"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/runbook.md",
+          "size": 9135,
+          "modified": "2026-10-23T11:22:06.2122280+08:00",
+          "sha256": "546BAD3AE7BE9FA2F8EDCBBEBCB7962164DD83B9B267763A1362C9E3AB2B3260"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/source.bundle",
+          "size": 7421328,
+          "modified": "2026-10-23T11:24:15.9894519+08:00",
+          "sha256": "C04ADC3B9726A38EC7624E6AEF4F0DBCE19D65D29BB676FD7A4A20DBDA0C4FAB"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/staging-quick-replies.jpg",
+          "size": 45356,
+          "modified": "2026-10-23T11:46:17.7876145+08:00",
+          "sha256": "00CE57938229F9334D8356B88A839C60F9FDF7C9A566F040D0BF81348E074EAA"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-direct-staging-20261023/staging-welcome.jpg",
+          "size": 50109,
+          "modified": "2026-10-23T11:44:20.4564616+08:00",
+          "sha256": "F7B08A91A0359CA4E2980A3BAE1A98CD39FF9194157408ED2C00EDC4FD5E1B23"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-evidence-pr-body.md",
+          "size": 1849,
+          "modified": "2026-10-23T11:48:11.9630883+08:00",
+          "sha256": "BE33007F011944B590F3F74405699CEBCCAD6D5123A3F548F9E5EF1488AFDE80"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-finalize-pr-body.md",
+          "size": 905,
+          "modified": "2026-10-23T11:54:03.3495646+08:00",
+          "sha256": "4A02049AEBDBD725519CBFDE6FF35DA2F4F4DEAD5A50AA923C0024007D1365C5"
+        },
+        {
+          "path": "src/tests/.artifacts/basic-reception-pr-body.md",
+          "size": 1883,
+          "modified": "2026-10-23T11:19:47.4609958+08:00",
+          "sha256": "2B75BCE64397D568DB0193AA357FC0E7011E29117EF824038511CEAD7945ACFB"
+        },
+        {
+          "path": "src/tests/.artifacts/capture-reception.mjs",
+          "size": 3924,
+          "modified": "2026-10-23T10:24:59.9098142+08:00",
+          "sha256": "2B171F811BB7AC22AA114932821237059F9896BE55B1F94766DE765293E4A118"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-quick-replies.png",
+          "size": 62150,
+          "modified": "2026-10-23T10:25:00.6771461+08:00",
+          "sha256": "F73CD00C334B186A8D7683828F32319DE7EE66C1E83CCA4EEC320EF3B811DAF1"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-timeout.png",
+          "size": 70472,
+          "modified": "2026-10-23T10:25:01.0044146+08:00",
+          "sha256": "01758D02F4B2A293127FF52F0B20A356A1B53F38BE8F49BF7CAF25593CD43D23"
+        }
+      ]
+    }
+  ]
+}
