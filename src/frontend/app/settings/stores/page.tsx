@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowClockwise, Copy, MagnifyingGlass, PencilSimple, Plus, X } from "@phosphor-icons/react";
 import { SettingsFrame } from "../../../components/SettingsFrame";
 import { EmptyState, ErrorState, LoadingState } from "../../../components/States";
 import {
-  deleteChannel, getTikTokOAuthJobStatus, listChannels, listStores,
+  deleteChannel, getTikTokOAuthJobStatus, listStoreAuthorizations,
   startNewTikTokStoreOAuth, startTikTokOAuth, updateStoreAlias,
+  ApiError,
   type ChannelView, type StoreView,
 } from "../../../lib/api";
 import { useLanguage } from "../../../lib/i18n";
@@ -40,9 +41,12 @@ function showDate(value: string | null | undefined, en: boolean): string {
 
 export default function StoresPage() {
   const en = useLanguage() === "en";
-  const [stores, setStores] = useState<StoreView[]>([]);
-  const [channels, setChannels] = useState<ChannelView[]>([]);
+  const [rows, setRows] = useState<StoreRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const loadedRef = useRef(false);
+  const loadRequestId = useRef(0);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -62,15 +66,34 @@ export default function StoresPage() {
   }, [deleteRow, working]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    const requestId = ++loadRequestId.current;
+    if (loadedRef.current) setRefreshing(true);
+    else setLoading(true);
+    setError("");
     try {
-      const [storeItems, channelItems] = await Promise.all([listStores(), listChannels()]);
-      setStores(storeItems);
-      setChannels(channelItems.filter((item) => item.platform === "tiktok"));
+      const result = await listStoreAuthorizations();
+      if (requestId !== loadRequestId.current) return;
+      // 仅隐藏使用者主动删除的授权；平台侧撤销仍显示异常以便重新添加。
+      setRows(result.filter(({ store, channel }) => channel.store_id === store.id
+        && !(channel.status === "disconnected" && channel.authorization_status === "revoked"))
+        .map(({ store, channel }) => ({ store, channel, state: rowState(channel) })));
+      loadedRef.current = true;
+      setHasLoaded(true);
       setError("");
     } catch (caught) {
+      if (requestId !== loadRequestId.current) return;
+      if (caught instanceof ApiError && (caught.status === 401 || caught.status === 403)) {
+        setRows([]);
+        loadedRef.current = false;
+        setHasLoaded(false);
+      }
       setError(caught instanceof Error ? caught.message : en ? "Failed to load stores" : "店铺加载失败");
-    } finally { setLoading(false); }
+    } finally {
+      if (requestId === loadRequestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
   }, [en]);
 
   useEffect(() => { void load(); }, [load]);
@@ -115,12 +138,6 @@ export default function StoresPage() {
     window.history.replaceState({}, "", window.location.pathname);
   }, [en, load]);
 
-  const rows = useMemo<StoreRow[]>(() => stores.flatMap((store) => {
-    const channel = channels.find((item) => item.store_id === store.id) ?? null;
-    // 仅隐藏使用者主动删除的授权；平台侧撤销仍显示异常以便重新添加。
-    if (!channel || (channel.status === "disconnected" && channel.authorization_status === "revoked")) return [];
-    return [{ store, channel, state: rowState(channel) }];
-  }), [stores, channels]);
   const visible = useMemo(() => rows.filter((row) => {
     const search = query.trim().toLocaleLowerCase();
     return (filter === "all" || row.state === filter)
@@ -147,7 +164,8 @@ export default function StoresPage() {
     if (working) return;
     setWorking(true);
     try {
-      await updateStoreAlias(storeId, aliasDraft.trim() || null);
+      const updatedStore = await updateStoreAlias(storeId, aliasDraft.trim() || null);
+      setRows((current) => current.map((row) => row.store.id === storeId ? { ...row, store: updatedStore } : row));
       setEditingId(null);
       setNotice(en ? "Alias saved." : "别名已保存。");
       await load();
@@ -161,6 +179,7 @@ export default function StoresPage() {
     setWorking(true);
     try {
       await deleteChannel(deleteRow.channel.id);
+      setRows((current) => current.filter((row) => row.channel?.id !== deleteRow.channel?.id));
       setDeleteRow(null);
       setNotice(en ? "Saved authorization removed. Store history was kept." : "本系统保存的授权已删除，店铺历史数据已保留。");
       await load();
@@ -184,9 +203,11 @@ export default function StoresPage() {
       <div className="settings-card-heading"><h2>{en ? "Store list" : "店铺列表"}</h2><button className="primary-button" disabled={working} onClick={() => void authorize()} type="button"><Plus size={16} />{working ? en ? "Redirecting…" : "正在处理…" : en ? "Add store" : "添加店铺"}</button></div>
       <div className="settings-toolbar">
         <div className="settings-segments" aria-label={en ? "Store authorization status" : "店铺授权状态"}>{(["all", "abnormal", "expiring", "expired"] as Filter[]).map((value) => <button aria-pressed={filter === value} className={filter === value ? "active" : ""} key={value} onClick={() => setFilter(value)} type="button">{en ? { all: "All", abnormal: "Abnormal", expiring: "Expiring", expired: "Expired" }[value] : { all: "全部", abnormal: "异常", expiring: "即将失效", expired: "已失效" }[value]} ({counts[value]})</button>)}</div>
-        <div className="settings-toolbar-actions"><button aria-label={en ? "Refresh stores" : "刷新店铺"} className="settings-icon-button" onClick={() => void load()} type="button"><ArrowClockwise size={18} /></button><label className="settings-search"><MagnifyingGlass size={17} /><input aria-label={en ? "Search stores" : "搜索店铺"} onChange={(event) => setQuery(event.target.value)} placeholder={en ? "Store name or alias" : "输入店铺名称/别名"} value={query} /></label></div>
+        <div className="settings-toolbar-actions"><button aria-label={en ? "Refresh stores" : "刷新店铺"} className="settings-icon-button" disabled={refreshing} onClick={() => void load()} type="button"><ArrowClockwise size={18} /></button><label className="settings-search"><MagnifyingGlass size={17} /><input aria-label={en ? "Search stores" : "搜索店铺"} onChange={(event) => setQuery(event.target.value)} placeholder={en ? "Store name or alias" : "输入店铺名称/别名"} value={query} /></label></div>
       </div>
-      {loading ? <LoadingState label={en ? "Loading stores…" : "正在加载店铺…"} /> : error ? <ErrorState message={error} retry={() => void load()} /> : visible.length ? <div className="settings-table-wrap"><table className="settings-table store-list-table"><thead><tr><th>{en ? "Store name" : "店铺名称"}</th><th>{en ? "Store alias" : "店铺别名"}</th><th>{en ? "Platform ID" : "店铺平台 ID"}</th><th>{en ? "System ID" : "系统 ID"}</th><th>{en ? "Site" : "所属站点"}</th><th>{en ? "Status" : "状态"}</th><th>{en ? "Authorization expires" : "授权到期时间"}</th><th>{en ? "Recently added" : "最近添加时间"}</th><th>{en ? "Actions" : "操作"}</th></tr></thead><tbody>{visible.map((row) => <tr key={row.store.id}>
+      {refreshing ? <p role="status">{en ? "Refreshing stores…" : "正在刷新店铺…"}</p> : null}
+      {error && hasLoaded ? <div className="store-refresh-error" role="alert">{error} <button onClick={() => void load()} type="button">{en ? "Retry" : "重试"}</button></div> : null}
+      {loading ? <LoadingState label={en ? "Loading stores…" : "正在加载店铺…"} /> : error && !hasLoaded ? <ErrorState message={error} retry={() => void load()} /> : visible.length ? <div className="settings-table-wrap"><table className="settings-table store-list-table"><thead><tr><th>{en ? "Store name" : "店铺名称"}</th><th>{en ? "Store alias" : "店铺别名"}</th><th>{en ? "Platform ID" : "店铺平台 ID"}</th><th>{en ? "System ID" : "系统 ID"}</th><th>{en ? "Site" : "所属站点"}</th><th>{en ? "Status" : "状态"}</th><th>{en ? "Authorization expires" : "授权到期时间"}</th><th>{en ? "Recently added" : "最近添加时间"}</th><th>{en ? "Actions" : "操作"}</th></tr></thead><tbody>{visible.map((row) => <tr key={row.store.id}>
         <td><strong>{row.channel?.display_name ?? row.store.name}</strong></td>
         <td>{editingId === row.store.id ? <form className="store-alias-edit" onSubmit={(event) => { event.preventDefault(); void saveAlias(row.store.id); }}><input aria-label={en ? "Store alias" : "店铺别名"} autoFocus maxLength={100} onChange={(event) => setAliasDraft(event.target.value)} value={aliasDraft} /><button disabled={working} type="submit">{en ? "Save" : "保存"}</button><button aria-label={en ? "Cancel editing" : "取消编辑"} onClick={() => setEditingId(null)} type="button"><X size={14} /></button></form> : <span className="store-alias-value">{row.store.alias || "—"}<button aria-label={en ? `Edit alias for ${row.store.name}` : `编辑${row.store.name}的别名`} className="store-small-action" onClick={() => { setEditingId(row.store.id); setAliasDraft(row.store.alias ?? ""); }} type="button"><PencilSimple size={15} /></button></span>}</td>
         <td>{row.channel?.external_store_id ?? "—"}</td>

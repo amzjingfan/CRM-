@@ -21,6 +21,23 @@ async def get_stores(session: AsyncSession, user: User) -> list[Store]:
     return await list_stores(session, await allowed_store_ids(session, user))
 
 
+async def get_store_authorizations(session: AsyncSession, user: User) -> list[tuple[Store, ChannelAccount]]:
+    """用一次授权范围核验聚合店铺与渠道，减少店铺页的公网请求。"""
+    store_ids = await allowed_store_ids(session, user)
+    stores = await list_stores(session, store_ids)
+    channels = await list_channels(session, store_ids)
+    tiktok_channels: dict[uuid.UUID, ChannelAccount] = {}
+    for channel in channels:
+        if channel.store_id not in store_ids or channel.platform != "tiktok":
+            continue
+        if channel.status == "disconnected" and channel.authorization_status == "revoked":
+            continue
+        tiktok_channels.setdefault(channel.store_id, channel)
+    return [
+        (store, tiktok_channels[store.id]) for store in stores if store.id in store_ids and store.id in tiktok_channels
+    ]
+
+
 async def create_store(session: AsyncSession, user: User, payload: StoreCreate) -> Store:
     """管理员创建店铺并记录审计。"""
     store = Store(**payload.model_dump())

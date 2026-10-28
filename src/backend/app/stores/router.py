@@ -9,12 +9,20 @@ from app.auth.dependencies import get_current_user, require_csrf, require_permis
 from app.shared.database.base import User
 from app.shared.database.session import DbSession
 from app.shared.schemas.responses import ApiResponse
-from app.stores.schemas import ChannelCreate, ChannelView, StoreAliasUpdate, StoreCreate, StoreView
+from app.stores.schemas import (
+    ChannelCreate,
+    ChannelView,
+    StoreAliasUpdate,
+    StoreAuthorizationView,
+    StoreCreate,
+    StoreView,
+)
 from app.stores.service import (
     create_channel,
     create_store,
     delete_channel,
     get_channels,
+    get_store_authorizations,
     get_stores,
     update_store_alias,
 )
@@ -26,6 +34,24 @@ router = APIRouter(prefix="/settings", tags=["店铺与渠道"])
 async def stores(session: DbSession, user: Annotated[User, Depends(get_current_user)]) -> ApiResponse[list[StoreView]]:
     """查询当前用户可访问店铺。"""
     return ApiResponse(data=[StoreView.model_validate(item) for item in await get_stores(session, user)])
+
+
+@router.get(
+    "/store-authorizations",
+    response_model=ApiResponse[list[StoreAuthorizationView]],
+    dependencies=[Depends(require_permission("settings.channels"))],
+)
+async def store_authorizations(
+    session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[list[StoreAuthorizationView]]:
+    """一次返回当前用户可见的 TikTok 店铺及渠道展示字段。"""
+    rows = await get_store_authorizations(session, user)
+    return ApiResponse(
+        data=[
+            StoreAuthorizationView(store=StoreView.model_validate(store), channel=ChannelView.model_validate(channel))
+            for store, channel in rows
+        ]
+    )
 
 
 @router.post(

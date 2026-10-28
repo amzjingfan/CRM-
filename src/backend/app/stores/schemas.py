@@ -80,3 +80,10 @@ class ChannelView(BaseModel):
     last_authorized_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class StoreAuthorizationView(BaseModel):
+    """店铺列表一次返回已授权店铺及其 TikTok 渠道展示字段。"""
+
+    store: StoreView
+    channel: ChannelView

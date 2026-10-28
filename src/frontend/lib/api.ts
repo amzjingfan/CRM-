@@ -56,6 +56,7 @@ export type MarketingEventPage = { items: MarketingEvent[]; page: number; page_s
 export type Logistics = { order_id: string; external_order_id: string; tracking_number: string | null; tracking_status: string | null; shipped_at: string | null; delivered_at: string | null };
 export type StoreView = { id: string; name: string; alias: string | null; code: string; status: string; timezone: string; currency: string; created_at: string };
 export type ChannelView = { id: string; store_id: string; platform: string; external_store_id: string; display_name: string; status: string; scopes: string[]; last_sync_at: string | null; created_at: string; site: string | null; authorization_expires_at: string | null; authorization_status: string | null; last_authorized_at: string | null };
+export type StoreAuthorizationView = { store: StoreView; channel: ChannelView };
 export type TikTokOAuthStart = { authorization_url: string; expires_in: number };
 export type TikTokOAuthJobStatus = { status: "pending" | "processing" | "connected" | "denied" | "failed" };
 export type DashboardMetrics = { total_sessions: number; transfer_rate: number; avg_response_time: number | null; recovered_gmv: string; currency: string; period: "today" | "7d" | "30d"; updated_at: string | null };
@@ -262,6 +263,7 @@ export const getLogistics = (orderId: string) => requestApi<Logistics>(`/workspa
 export const updateShippingAddress = (orderId: string, payload: Record<string, string>, idempotencyKey: string) => requestApi<{ tool_call_id: string; status: "pending_confirmation"; mocked: true; replayed: boolean }>(`/workspace/actions/order/${encodeURIComponent(orderId)}/shipping-address`, { method: "PATCH", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(payload) });
 export const issueCoupon = (customerId: string, couponCode: string, idempotencyKey: string) => requestApi<{ issuance_id: string; tool_call_id: string; coupon_code: string; status: string; mocked: boolean; replayed: boolean }>(`/workspace/actions/customer/${customerId}/coupon`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ coupon_code: couponCode }) });
 export const listStores = () => requestApi<StoreView[]>("/settings/stores");
+export const listStoreAuthorizations = () => requestApi<StoreAuthorizationView[]>("/settings/store-authorizations");
 export const updateStoreAlias = (storeId: string, alias: string | null) => requestApi<StoreView>(`/settings/stores/${encodeURIComponent(storeId)}/alias`, { method: "PATCH", body: JSON.stringify({ alias }) });
 export const createStore = (payload: { name: string; code: string; timezone: string; currency: string }) => requestApi<StoreView>("/settings/stores", { method: "POST", body: JSON.stringify(payload) });
 export const listChannels = () => requestApi<ChannelView[]>("/settings/channels");

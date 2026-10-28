@@ -90,7 +90,7 @@
 - `POST /auth/login` 与 `/auth/browser/login` 接受 `identifier`（登录账号或邮箱），旧 `email` 请求字段继续兼容；新界面登录名 6–16 位且创建后不可修改，旧 API 调用仍可仅用邮箱创建。`POST /settings/team` 可保存可选邮箱、手机号码、工作时区、账号并发数、初始部门；`PATCH /settings/team/{user_id}/password` 修改密码并使旧 Access/Refresh Token 失效。账号并发数不施加运行限制。
 - `GET/POST /settings/departments`、`GET/PATCH/DELETE /settings/departments/{department_id}`、`GET/POST /settings/departments/{department_id}/members` 和 `DELETE /settings/departments/{department_id}/members/{member_id}` 管理部门与组织成员。读取需 `settings.team` 并按店铺范围过滤；写入需系统级 `admin` 与 CSRF，写入审计。部门成员增删不更改 `user_roles`；空部门才可删除。角色切换和权限修改暂无写入接口。
 - `DELETE /settings/team/{user_id}/permanent` 仅能删除已禁用且无受保护业务引用的用户。
-- 店铺与渠道位于 `/settings/stores`、`/settings/channels`；通用渠道创建仅用于 Shopee/Amazon 契约级 Mock，禁止创建 TikTok 真实记录。`PATCH /settings/stores/{store_id}/alias` 仅更新目标店铺的展示别名，要求系统级或目标店铺管理员、CSRF 与审计；店铺列表返回别名，TikTok 渠道列表返回站点、平台授权与刷新凭证两者更早的到期时间、低敏授权状态及最近授权时间，无数据时为 `null`。
+- 店铺与渠道位于 `/settings/stores`、`/settings/channels`；`GET /settings/store-authorizations` 要求 `settings.channels`，在同一次服务端授权范围核验后返回当前用户可见且未被本地删除的 TikTok 店铺及其渠道展示字段，供店铺页一次请求回显；平台侧撤权仍保留异常行。通用渠道创建仅用于 Shopee/Amazon 契约级 Mock，禁止创建 TikTok 真实记录。`PATCH /settings/stores/{store_id}/alias` 仅更新目标店铺的展示别名，要求系统级或目标店铺管理员、CSRF 与审计；店铺列表返回别名，TikTok 渠道列表返回站点、平台授权与刷新凭证两者更早的到期时间、低敏授权状态及最近授权时间，无数据时为 `null`。
 
 ### TikTok OAuth 与 Webhook
 

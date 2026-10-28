@@ -810,9 +810,89 @@ test("add store starts direct TikTok OAuth without a manual store form", async (
   }
 });
 
+test("store list renders after one authorization request without waiting for legacy requests", async () => {
+  let releaseLegacy = () => {};
+  const legacyPending = new Promise((resolve) => { releaseLegacy = resolve; });
+  const { context, page } = await openPage("/settings/stores", {}, async (browserContext) => {
+    for (const path of ["stores", "channels"]) {
+      await browserContext.route(`**/v1/settings/${path}`, async (route) => {
+        await legacyPending;
+        await route.fulfill({ status: 200, contentType: "application/json", headers: {
+          "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+        }, body: JSON.stringify({ code: 0, message: "ok", data: path === "stores" ? [store] : [storeChannel] }) });
+      });
+    }
+    await browserContext.route("**/v1/settings/store-authorizations", async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      }, body: JSON.stringify({ code: 0, message: "ok", data: [{ store, channel: storeChannel }] }) });
+    });
+  });
+  try {
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor({ timeout: 5000 });
+    assert.equal(await page.getByRole("button", { name: "全部 (1)" }).count(), 1);
+  } finally {
+    releaseLegacy();
+    await context.close();
+  }
+});
+
+test("store refresh keeps verified rows visible while the network is slow or fails", async () => {
+  let releaseRefresh = () => {};
+  let signalRefresh = () => {};
+  const refreshPending = new Promise((resolve) => { releaseRefresh = resolve; });
+  const refreshStarted = new Promise((resolve) => { signalRefresh = resolve; });
+  let slowRefresh = false;
+  const { context, page } = await openPage("/settings/stores", {}, async (browserContext) => {
+    await browserContext.route("**/v1/settings/store-authorizations", async (route) => {
+      if (slowRefresh) {
+        signalRefresh();
+        await refreshPending;
+      }
+      await route.fulfill({ status: slowRefresh ? 503 : 200, contentType: "application/json", headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      }, body: JSON.stringify(!slowRefresh
+        ? { code: 0, message: "ok", data: [{ store, channel: storeChannel }] }
+        : { code: 503, message: "店铺服务暂不可用", data: null }) });
+    });
+  });
+  try {
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
+    slowRefresh = true;
+    await page.getByRole("button", { name: "刷新店铺" }).click();
+    await refreshStarted;
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor({ timeout: 1000 });
+    releaseRefresh();
+    await page.getByRole("alert").getByText("店铺服务暂不可用").waitFor();
+    assert.equal(await page.getByRole("row", { name: /US Demo Store/ }).count(), 1);
+  } finally {
+    releaseRefresh();
+    await context.close();
+  }
+});
+
+test("store refresh removes prior rows when channel access is revoked", async () => {
+  const { context, page } = await openPage("/settings/stores", {
+    "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }],
+  });
+  try {
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
+    await context.route("**/v1/settings/store-authorizations", async (route) => {
+      await route.fulfill({ status: 403, contentType: "application/json", headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      }, body: JSON.stringify({ code: 403, message: "没有查看店铺授权的权限", data: null }) });
+    });
+    await page.getByRole("button", { name: "刷新店铺" }).click();
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor({ state: "detached", timeout: 1500 });
+    await page.getByText("没有查看店铺授权的权限").waitFor();
+  } finally {
+    await context.close();
+  }
+});
+
 test("store alias can be edited without changing its platform identity", async () => {
   const { context, page } = await openPage("/settings/stores", {
-    "GET /v1/settings/stores": [store], "GET /v1/settings/channels": [storeChannel],
+    "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }],
   });
   try {
     let alias = "";
@@ -837,8 +917,10 @@ test("store settings filter actual authorization status and search aliases", asy
   const expiredChannel = { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c2", store_id: pausedStore.id,
     display_name: pausedStore.name, authorization_expires_at: "2020-01-01T00:00:00Z" };
   const { context, page } = await openPage("/settings/stores", {
-    "GET /v1/settings/stores": [{ ...store, alias: "客服店" }, pausedStore],
-    "GET /v1/settings/channels": [storeChannel, expiredChannel],
+    "GET /v1/settings/store-authorizations": [
+      { store: { ...store, alias: "客服店" }, channel: storeChannel },
+      { store: pausedStore, channel: expiredChannel },
+    ],
   });
   try {
     await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
@@ -857,14 +939,14 @@ test("store settings filter actual authorization status and search aliases", asy
 test("store list hides local deletions but retains platform deauthorizations for re-add", async () => {
   const platformStore = { ...store, id: "00000000-0000-4000-8000-0000000000f3", name: "Platform revoked" };
   const deletedStore = { ...store, id: "00000000-0000-4000-8000-0000000000f4", name: "Locally deleted" };
-  const mockStore = { ...store, id: "00000000-0000-4000-8000-0000000000f5", name: "Mock only" };
   const { context, page } = await openPage("/settings/stores", {
-    "GET /v1/settings/stores": [store, platformStore, deletedStore, mockStore],
-    "GET /v1/settings/channels": [storeChannel,
-      { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c3", store_id: platformStore.id,
-        display_name: platformStore.name, status: "disconnected", authorization_status: "deauthorized" },
-      { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c4", store_id: deletedStore.id,
-        display_name: deletedStore.name, status: "disconnected", authorization_status: "revoked" }],
+    "GET /v1/settings/store-authorizations": [
+      { store, channel: storeChannel },
+      { store: platformStore, channel: { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c3", store_id: platformStore.id,
+        display_name: platformStore.name, status: "disconnected", authorization_status: "deauthorized" } },
+      { store: deletedStore, channel: { ...storeChannel, id: "00000000-0000-4000-8000-0000000000c4", store_id: deletedStore.id,
+        display_name: deletedStore.name, status: "disconnected", authorization_status: "revoked" } },
+    ],
   });
   try {
     await page.getByRole("row", { name: /Platform revoked/ }).waitFor();
@@ -880,7 +962,7 @@ test("store list hides local deletions but retains platform deauthorizations for
 
 test("store settings keep readable columns in a narrow desktop window", async () => {
   const { context, page } = await openPage("/settings/stores", {
-    "GET /v1/settings/stores": [store], "GET /v1/settings/channels": [storeChannel],
+    "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }],
   });
   try {
     await page.setViewportSize({ width: 820, height: 900 });
@@ -902,13 +984,26 @@ test("store settings keep readable columns in a narrow desktop window", async ()
 });
 
 test("re-add uses the same store and deletion needs a second confirmation", async () => {
+  let releaseReload = () => {};
+  let signalReload = () => {};
+  const reloadPending = new Promise((resolve) => { releaseReload = resolve; });
+  const reloadStarted = new Promise((resolve) => { signalReload = resolve; });
   const { context, page } = await openPage("/settings/stores", {
-    "GET /v1/settings/stores": [store], "GET /v1/settings/channels": [storeChannel],
+    "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }],
   });
   try {
     let oauthStoreId = "";
     let returnTo = "";
     let deletions = 0;
+    await context.route("**/v1/settings/store-authorizations", async (route) => {
+      if (deletions) {
+        signalReload();
+        await reloadPending;
+      }
+      await route.fulfill({ status: 200, contentType: "application/json", headers: {
+        "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
+      }, body: JSON.stringify({ code: 0, message: "ok", data: deletions ? [] : [{ store, channel: storeChannel }] }) });
+    });
     await context.route("**/v1/settings/channels/tiktok/oauth/start?*", async (route) => {
       const params = new URL(route.request().url()).searchParams;
       oauthStoreId = params.get("store_id");
@@ -934,9 +1029,13 @@ test("re-add uses the same store and deletion needs a second confirmation", asyn
     assert.equal(deletions, 0);
     await page.getByRole("button", { name: "删除", exact: true }).click();
     await page.getByRole("button", { name: "确认删除" }).click();
+    await reloadStarted;
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor({ state: "detached", timeout: 1000 });
+    releaseReload();
     await page.getByRole("status").getByText(/历史数据已保留/).waitFor();
     assert.equal(deletions, 1);
   } finally {
+    releaseReload();
     await context.close();
   }
 });
