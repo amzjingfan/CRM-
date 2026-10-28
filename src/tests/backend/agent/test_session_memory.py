@@ -58,3 +58,38 @@ def test_business_fact_must_match_verified_tool_output_exactly() -> None:
         verified_tool_facts={tool_id: {"order_status": "shipped"}},
     )
     assert verified.facts[0].value == "shipped"
+
+
+@pytest.mark.asyncio
+async def test_scoped_order_memory_does_not_overwrite_another_order_or_replay_candidate_refs(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from app.agents.memory import service
+    from app.agents.tools.loop import ToolObservation
+
+    message_id, agent_id = uuid.uuid4(), uuid.uuid4()
+    snapshot = SimpleNamespace(
+        debug_without_conversation=False,
+        trigger_message_id=message_id,
+        message_ids=(message_id,),
+        snapshot_hash="memory-two-orders",
+        memory_revision=0,
+    )
+    commit = AsyncMock(return_value=1)
+    monkeypatch.setattr(service, "commit_memory", commit)
+    observations = tuple(
+        (
+            agent_id,
+            ToolObservation(
+                f"call-{i}", "query_order", "succeeded", {"order_ref": f"o{i}", "status": status}, str(i) * 16
+            ),
+        )
+        for i, status in [(1, "SHIPPED"), (2, "CANCELLED")]
+    )
+    await service.remember_session_question(
+        AsyncMock(), snapshot, service.SessionMemoryView(0, "", (), ()), "请查两笔订单", observations
+    )
+    facts = commit.await_args.args[2].facts
+    assert {item.value for item in facts} == {"SHIPPED", "CANCELLED"}
+    assert len({item.key for item in facts}) == 2
+    assert all(not item.key.endswith("_ref") for item in facts)

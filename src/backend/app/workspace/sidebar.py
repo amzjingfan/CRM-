@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import AwareDatetime, BaseModel, Field, ValidationError, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
@@ -18,7 +18,13 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.auth.store_access import allowed_store_ids
 from app.conversations.models import Conversation
 from app.customers.models import Customer
-from app.integrations.tiktok_read import TikTokCoupon, TikTokOrder, TikTokProduct, TikTokReadClient
+from app.integrations.tiktok_read import (
+    TikTokCoupon,
+    TikTokCouponDuration,
+    TikTokOrder,
+    TikTokProduct,
+    TikTokReadClient,
+)
 from app.orders.models import Order, OrderItem
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
@@ -42,6 +48,14 @@ class SidebarSearch(BaseModel):
     page: int = Field(default=1, ge=1, le=10_000)
     page_token: str | None = Field(default=None, max_length=1000)
     refresh: bool = False
+    created_after: AwareDatetime | None = None
+    created_before: AwareDatetime | None = None
+
+    @model_validator(mode="after")
+    def valid_order_window(self) -> "SidebarSearch":
+        if self.created_after and self.created_before and self.created_after >= self.created_before:
+            raise ValueError("下单时间范围无效")
+        return self
 
 
 class SidebarOrderItem(BaseModel):
@@ -207,6 +221,7 @@ class SidebarOrderDetail(BaseModel):
     latest_tracking_description: str | None
     latest_tracking_at: datetime | None
     tracking_packages: list["SidebarTrackingPackage"] = Field(default_factory=list)
+    order_packages: list["SidebarTrackingPackage"] = Field(default_factory=list)
     enhanced_tracking_available: bool = False
     tracking_loaded: bool = True
 
@@ -279,6 +294,9 @@ class SidebarProduct(BaseModel):
     status: str | None
     image_url: str | None
     skus: list[SidebarSku]
+    brand: str | None = None
+    description_html: str | None = None
+    attributes: list[dict[str, object]] = Field(default_factory=list)
 
 
 class SidebarProducts(BaseModel):
@@ -298,6 +316,11 @@ class SidebarCoupon(BaseModel):
     discount_value: str | None
     claim_end_time: int | None
     chat_shareable: bool
+    claim_start_time: int | None = None
+    redemption_duration: dict[str, object] = Field(default_factory=dict)
+    target_buyer_segment: str | None = None
+    product_scope: str | None = None
+    threshold: dict[str, object] = Field(default_factory=dict)
 
 
 class SidebarCoupons(BaseModel):
@@ -351,6 +374,10 @@ def _live_order_matches(order: SidebarOrder, payload: SidebarSearch) -> bool:
         "cancel": ("CANCELLED", "CANCELED"),
     }
     if payload.status != "all" and order.status not in statuses[payload.status]:
+        return False
+    if payload.created_after and (order.ordered_at is None or order.ordered_at < payload.created_after):
+        return False
+    if payload.created_before and (order.ordered_at is None or order.ordered_at >= payload.created_before):
         return False
     query = payload.query.strip().casefold()
     if not query:
@@ -569,6 +596,16 @@ async def get_sidebar_order_detail(
         latest_tracking_description=tracking.latest_tracking_description,
         latest_tracking_at=tracking.latest_tracking_at,
         tracking_packages=tracking.packages,
+        order_packages=[
+            SidebarTrackingPackage(
+                package_id=package_id, tracking_number=tracking_number, carrier_name=order.shipping_provider, events=[]
+            )
+            for package_id, tracking_number in dict.fromkeys(
+                (item.package_id, item.tracking_number)
+                for item in order.line_items
+                if item.package_id or item.tracking_number
+            )
+        ],
         enhanced_tracking_available=(
             getattr(getattr(client, "channel", None), "metadata_json", {}).get("seller_type") == "CROSS_BORDER"
         ),
@@ -695,6 +732,10 @@ async def search_sidebar_orders(
         Order.customer_id == conversation.customer_id,
         Order.platform == conversation.platform,
     ]
+    if payload.created_after:
+        filters.append(Order.ordered_at >= payload.created_after)
+    if payload.created_before:
+        filters.append(Order.ordered_at < payload.created_before)
     status_condition = _order_status_condition(payload.status)
     if status_condition is not None:
         filters.append(status_condition)
@@ -784,7 +825,7 @@ async def search_sidebar_orders(
     )
 
 
-def _product_view(product: TikTokProduct) -> SidebarProduct:
+def _product_view(product: TikTokProduct, *, include_details: bool = False) -> SidebarProduct:
     image_url = None
     if product.main_images:
         urls = product.main_images[0].get("urls")
@@ -805,7 +846,20 @@ def _product_view(product: TikTokProduct) -> SidebarProduct:
                 else None,
             )
         )
-    return SidebarProduct(id=product.id, title=product.title, status=product.status, image_url=image_url, skus=skus)
+    return SidebarProduct(
+        id=product.id,
+        title=product.title,
+        status=product.status,
+        image_url=image_url,
+        skus=skus,
+        brand=product.brand.name if include_details and product.brand else None,
+        description_html=product.description if include_details else None,
+        attributes=[
+            {"name": attr.name, "values": [value.name for value in attr.values]} for attr in product.product_attributes
+        ]
+        if include_details
+        else [],
+    )
 
 
 async def search_sidebar_products(
@@ -817,9 +871,14 @@ async def search_sidebar_products(
     conversation = await _conversation(session, user, session_id)
     if conversation.platform != "tiktok":
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "当前平台没有商品目录", 404)
+    return await search_store_products(session, conversation.store_id, payload)
+
+
+async def search_store_products(session: AsyncSession, store_id: uuid.UUID, payload: SidebarSearch) -> SidebarProducts:
+    """调用方先校验店铺和读取权限；不要求创建买家会话。"""
     if payload.field not in {"name", "productId", "sku", "sellerSku"}:
         raise AppError(ErrorCode.VALIDATION_ERROR, "不支持的商品搜索字段", 422)
-    client = await _tiktok_client(session, conversation.store_id)
+    client = await _tiktok_client(session, store_id)
     query = payload.query.strip()
     if payload.field == "productId" and query:
         product = await client.get_product(query)
@@ -850,8 +909,13 @@ async def get_sidebar_product(
     conversation = await _conversation(session, user, session_id)
     if conversation.platform != "tiktok":
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "当前平台没有商品目录", 404)
-    client = await _tiktok_client(session, conversation.store_id)
-    return _product_view(await client.get_product(product_id))
+    return await get_store_product(session, conversation.store_id, product_id)
+
+
+async def get_store_product(session: AsyncSession, store_id: uuid.UUID, product_id: str) -> SidebarProduct:
+    """调用方先校验店铺和读取权限；不要求创建买家会话。"""
+    client = await _tiktok_client(session, store_id)
+    return _product_view(await client.get_product(product_id), include_details=True)
 
 
 def _coupon_view(coupon: TikTokCoupon) -> SidebarCoupon:
@@ -884,6 +948,7 @@ def _coupon_view(coupon: TikTokCoupon) -> SidebarCoupon:
     else:
         discount_value = None
     end_time = coupon.claim_duration.get("end_time")
+    start_time = coupon.claim_duration.get("start_time")
     return SidebarCoupon(
         id=coupon.id,
         title=coupon.title,
@@ -893,6 +958,13 @@ def _coupon_view(coupon: TikTokCoupon) -> SidebarCoupon:
         discount_type=str(discount_type) if discount_type is not None else None,
         discount_value=str(discount_value) if discount_value is not None else None,
         claim_end_time=end_time if isinstance(end_time, int) else None,
+        claim_start_time=start_time if type(start_time) is int else None,
+        redemption_duration=TikTokCouponDuration.model_validate(coupon.redemption_duration).model_dump(
+            exclude_none=True
+        ),
+        target_buyer_segment=coupon.target_buyer_segment,
+        product_scope=coupon.product_scope,
+        threshold=coupon.threshold.model_dump(mode="json", exclude_none=True) if coupon.threshold else {},
         chat_shareable=(
             coupon.status == "ONGOING"
             and coupon.display_type in {"CHAT", "REGULAR"}
@@ -910,9 +982,14 @@ async def search_sidebar_coupons(
     conversation = await _conversation(session, user, session_id)
     if conversation.platform != "tiktok":
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "当前平台没有优惠券目录", 404)
+    return await search_store_coupons(session, conversation.store_id, payload)
+
+
+async def search_store_coupons(session: AsyncSession, store_id: uuid.UUID, payload: SidebarSearch) -> SidebarCoupons:
+    """调用方先校验店铺和读取权限；不要求创建买家会话。"""
     if payload.field not in {"name", "code"}:
         raise AppError(ErrorCode.VALIDATION_ERROR, "不支持的优惠券搜索字段", 422)
-    client = await _tiktok_client(session, conversation.store_id)
+    client = await _tiktok_client(session, store_id)
     query = payload.query.strip()
     coupons, next_token, total = await client.search_coupons(
         page_token=payload.page_token,

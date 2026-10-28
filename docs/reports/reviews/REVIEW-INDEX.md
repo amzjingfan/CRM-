@@ -1,11 +1,14 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
 | RR-MAINT-CLEANUP-20261028-003-20261028-R03 | MAINT-CLEANUP-20261028-003 | R03 | APPROVE | `c6c435b6763b5410e3054faba0a54cb0140f6d7e` | log_sensitivity, ingress_scope, evidence, restore | 2026-10-28T19:57:29+08:00 | [`RR-MAINT-CLEANUP-20261028-003-20261028-R03.md`](RR-MAINT-CLEANUP-20261028-003-20261028-R03.md) |
 | RR-MAINT-CLEANUP-20261028-003-20261028-R02 | MAINT-CLEANUP-20261028-003 | R02 | APPROVE | `b6db3abfdd58ec1549cb727b663102fb545b1b37` | ingress_target, tls_boundary, sse, cache_scope, evidence, restore | 2026-10-28T19:16:49+08:00 | [`RR-MAINT-CLEANUP-20261028-003-20261028-R02.md`](RR-MAINT-CLEANUP-20261028-003-20261028-R02.md) |
+| RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03 | MVP-AGENT-TOOL-SUITE-001 | R03 | APPROVE | `01975ab2471adfe2a704116367c34d27415a3240` | correctness, spec, source_identity, store_isolation, privacy, integration | 2026-10-28T19:52:02+08:00 | [`RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md`](RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md) |
+| RR-MVP-AGENT-TOOL-SUITE-001-20261028-R02 | MVP-AGENT-TOOL-SUITE-001 | R02 | APPROVE | `84702ae0e59edc54fd6ba1ea8755c1cf79c1f4be` | correctness, spec, source_identity, store_isolation, privacy, idempotency, grounding, migration | 2026-10-28T19:41:40+08:00 | [`RR-MVP-AGENT-TOOL-SUITE-001-20261028-R02.md`](RR-MVP-AGENT-TOOL-SUITE-001-20261028-R02.md) |
+| RR-MVP-AGENT-TOOL-SUITE-001-20261028-R01 | MVP-AGENT-TOOL-SUITE-001 | R01 | APPROVE | `6f40179ceab9ace571232b94a158366c592aed19` | correctness, spec, store_isolation, privacy, idempotency, deadlines, grounding, migration | 2026-10-28T19:23:59+08:00 | [`RR-MVP-AGENT-TOOL-SUITE-001-20261028-R01.md`](RR-MVP-AGENT-TOOL-SUITE-001-20261028-R01.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R04 | MVP-STAGING-LATENCY-001 | R04 | APPROVE | `9415044da2848877a722a4b790c2e6734a0ecec4` | log_sensitivity, source_identity, nginx_syntax, rollback, latency_claims, deployment_scope | 2026-10-28T19:38:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R04.md`](RR-MVP-STAGING-LATENCY-001-20261028-R04.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R03 | MVP-STAGING-LATENCY-001 | R03 | APPROVE | `81c851bf53b7216ef6f5bf4ee8d125aefacb0eaa` | ingress_scope, connection_reuse, security_headers, cache_boundary, activate_deny, sse, recovery, latency_claims | 2026-10-28T18:52:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R03.md`](RR-MVP-STAGING-LATENCY-001-20261028-R03.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R02 | MVP-STAGING-LATENCY-001 | R02 | APPROVE | `e64ef52c9702540a5c5eb3a151cd19afce97b0e0` | release_scope, source_identity, backup, gateway_cache, store_isolation, fixed_egress, safety_switches, recovery | 2026-10-28T18:07:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R02.md`](RR-MVP-STAGING-LATENCY-001-20261028-R02.md) |

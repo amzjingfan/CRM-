@@ -175,6 +175,70 @@ class TikTokOrder(TikTokModel):
     line_items: list[TikTokOrderLineItem] = Field(default_factory=list, max_length=500)
 
 
+class TikTokMoney(TikTokModel):
+    amount: Decimal | None = Field(default=None, ge=0, allow_inf_nan=False)
+    currency: str | None = Field(default=None, max_length=10)
+
+
+class TikTokRefundAmount(TikTokModel):
+    currency: str | None = Field(default=None, max_length=10)
+    refund_total: Decimal | None = Field(default=None, ge=0, allow_inf_nan=False)
+    refund_subtotal: Decimal | None = Field(default=None, ge=0, allow_inf_nan=False)
+    refund_tax: Decimal | None = Field(default=None, ge=0, allow_inf_nan=False)
+    refund_shipping_fee: Decimal | None = Field(default=None, ge=0, allow_inf_nan=False)
+
+
+class TikTokReturnAction(TikTokModel):
+    action: str = Field(max_length=100)
+    deadline: int | None = Field(default=None, ge=0)
+
+
+class TikTokReturnLine(TikTokModel):
+    product_name: str | None = Field(default=None, max_length=1000)
+    sku_name: str | None = Field(default=None, max_length=500)
+    seller_sku: str | None = Field(default=None, max_length=200)
+    refund_amount: TikTokRefundAmount | None = None
+
+
+class TikTokReturnRecord(TikTokModel):
+    create_time: int = Field(ge=0)
+    event: str = Field(max_length=100)
+    description: str | None = Field(default=None, max_length=2000)
+    role: str | None = Field(default=None, max_length=100)
+    note: str | None = Field(default=None, max_length=2000)
+    reason_text: str | None = Field(default=None, max_length=2000)
+
+
+class TikTokReturn(TikTokModel):
+    """202602 Search Returns 的低敏白名单；不透传平台原始响应。"""
+
+    order_id: str = Field(pattern=r"^\d+$", max_length=200)
+    return_id: str = Field(pattern=r"^\d+$", max_length=200)
+    return_type: str = Field(max_length=100)
+    return_status: str = Field(max_length=100)
+    arbitration_status: str | None = Field(default=None, max_length=100)
+    return_reason_text: str | None = Field(default=None, max_length=2000)
+    return_tracking_number: str | None = Field(default=None, max_length=200)
+    return_provider_name: str | None = Field(default=None, max_length=200)
+    update_time: int | None = None
+    create_time: int | None = None
+    refund_amount: TikTokRefundAmount | None = None
+    seller_next_action_response: list[TikTokReturnAction] = Field(default_factory=list, max_length=100)
+    return_line_items: list[TikTokReturnLine] = Field(default_factory=list, max_length=1000)
+
+
+class TikTokCouponThreshold(TikTokModel):
+    type: str | None = Field(default=None, max_length=50)
+    min_spend: TikTokMoney | None = None
+
+
+class TikTokCouponDuration(TikTokModel):
+    type: str | None = Field(default=None, max_length=50)
+    start_time: int | None = Field(default=None, ge=0)
+    end_time: int | None = Field(default=None, ge=0)
+    relative_time: int | None = Field(default=None, ge=0)
+
+
 class TikTokProductInventory(TikTokModel):
     quantity: int | None = Field(default=None, ge=0)
 
@@ -192,12 +256,24 @@ class TikTokProductSku(TikTokModel):
     sales_attributes: list[dict[str, object]] = Field(default_factory=list)
 
 
+class TikTokProductNamedValue(TikTokModel):
+    name: str | None = Field(default=None, max_length=1000)
+
+
+class TikTokProductAttribute(TikTokModel):
+    name: str | None = Field(default=None, max_length=1000)
+    values: list[TikTokProductNamedValue] = Field(default_factory=list)
+
+
 class TikTokProduct(TikTokModel):
     id: str = Field(min_length=1, max_length=200)
     title: str = Field(min_length=1, max_length=1000)
     status: str | None = None
     skus: list[TikTokProductSku] = Field(default_factory=list)
     main_images: list[dict[str, object]] = Field(default_factory=list)
+    description: str | None = Field(default=None, max_length=100000)
+    product_attributes: list[TikTokProductAttribute] = Field(default_factory=list)
+    brand: TikTokProductNamedValue | None = None
 
 
 class TikTokCoupon(TikTokModel):
@@ -211,6 +287,8 @@ class TikTokCoupon(TikTokModel):
     discount: dict[str, object] = Field(default_factory=dict)
     claim_duration: dict[str, object] = Field(default_factory=dict)
     redemption_duration: dict[str, object] = Field(default_factory=dict)
+    product_scope: str | None = Field(default=None, max_length=100)
+    threshold: TikTokCouponThreshold | None = None
 
 
 class TikTokTrackingEntry(TikTokModel):
@@ -535,6 +613,36 @@ class TikTokReadClient:
         envelope = await self._request("GET", "/order/202507/orders", {"ids": ",".join(order_ids)})
         items = self._validated_list(envelope.data or {}, "orders", TikTokOrder)
         return [item for item in items if isinstance(item, TikTokOrder)], envelope.request_id
+
+    async def search_returns(
+        self, order_id: str, *, page_token: str | None = None
+    ) -> tuple[list[TikTokReturn], str | None]:
+        """官方202602版本；本地OAS仅覆盖202309，按当前docv2契约接入。"""
+        self._require_scope("seller.return_refund.basic")
+        if not order_id.isascii() or not order_id.isdigit() or len(order_id) > 19 or int(order_id) > 2**63 - 1:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "售后订单标识无效", 422)
+        query: dict[str, str | int] = {"page_size": 10, "sort_field": "update_time", "sort_order": "DESC"}
+        if page_token:
+            query["page_token"] = page_token
+        envelope = await self._request("POST", "/return_refund/202602/returns/search", query, {"order_ids": [order_id]})
+        data = envelope.data or {}
+        rows = self._validated_list(data, "return_orders", TikTokReturn)
+        items = [item for item in rows if isinstance(item, TikTokReturn)]
+        if any(item.order_id != order_id for item in items):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "售后订单归属异常", 502)
+        token = data.get("next_page_token")
+        if token is not None and not isinstance(token, str):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "售后分页结构异常", 502)
+        return items, token or None
+
+    async def get_return_records(self, return_id: str) -> list[TikTokReturnRecord]:
+        """读取官方售后处理历史；资源引用来自已经核验订单的售后搜索。"""
+        self._require_scope("seller.return_refund.basic")
+        if not return_id.isascii() or not return_id.isdigit() or len(return_id) > 19 or int(return_id) > 2**63 - 1:
+            raise AppError(ErrorCode.VALIDATION_ERROR, "售后申请标识无效", 422)
+        envelope = await self._request("GET", f"/return_refund/202309/returns/{return_id}/records", {})
+        rows = self._validated_list(envelope.data or {}, "records", TikTokReturnRecord)
+        return [item for item in rows if isinstance(item, TikTokReturnRecord)]
 
     async def search_products(
         self,

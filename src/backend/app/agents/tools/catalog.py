@@ -9,6 +9,7 @@ from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agents.safety.tool_projection import project_tool_result
+from app.agents.tools.metadata import TOOL_METADATA
 from app.tools.contracts import (
     TOOL_DEFINITIONS,
     WRITE_TOOL_NAMES,
@@ -18,18 +19,6 @@ from app.tools.contracts import (
     ToolName,
     ToolResult,
 )
-
-READ_TOOL_DESCRIPTIONS = {
-    "query_order": "只读查询当前授权会话对应的订单状态、金额和履约事实。订单标识由服务端绑定。",
-    "query_logistics": "只读查询当前授权订单的物流轨迹、最新状态和时间。订单标识由服务端绑定。",
-    "query_customer_profile": "只读查询当前授权会话客户的最小画像信息。客户标识由服务端绑定。",
-}
-WRITE_TOOL_DESCRIPTIONS = {
-    "update_shipping_address": "提出修改收件地址的人工确认请求；本工具不会执行地址变更。",
-    "send_coupon": "提出发放优惠券的人工确认请求；本工具不会发放优惠券。",
-    "transfer_to_human": "提出转人工请求；本工具不会修改会话状态。",
-    "send_platform_message": "提出平台消息发送的人工确认请求；本工具不会发送消息。",
-}
 
 
 class NoModelArguments(StrictToolArguments):
@@ -46,6 +35,12 @@ class KnowledgeSearchArguments(StrictToolArguments):
 
 class ToolExecutionPort(Protocol):
     async def execute(self, invocation: ToolInvocation) -> ToolResult: ...
+
+
+class BusinessToolPort(Protocol):
+    async def invoke(self, name: str, arguments: dict[str, object]) -> dict[str, object]: ...
+
+    async def permits(self, permission: str) -> bool: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,16 +62,18 @@ def _tool_arguments(name: str, context: AgentToolContext) -> dict[str, object] |
 
 
 def _build_one(name: str, context: AgentToolContext, executor: ToolExecutionPort) -> BaseTool:
-    description = READ_TOOL_DESCRIPTIONS.get(name) or WRITE_TOOL_DESCRIPTIONS.get(name)
-    if description is None:
+    metadata = TOOL_METADATA.get(name)
+    if metadata is None:
         raise ValueError(f"未知 Agent 工具: {name}")
 
-    @tool(name, args_schema=NoModelArguments, description=description)
+    @tool(name, args_schema=NoModelArguments, description=metadata.description)
     async def invoke() -> dict[str, object]:
         """服务端重新检查权限并绑定可信对象，写工具只提出人工确认。"""
-        definition = TOOL_DEFINITIONS[name]
         if name in WRITE_TOOL_NAMES:
             return {"status": "human_confirmation_required", "tool_name": name}
+        if name not in TOOL_DEFINITIONS:
+            return {"status": "context_unavailable", "tool_name": name}
+        definition = TOOL_DEFINITIONS[name]
         if definition.permission not in context.permissions:
             return {"status": "permission_denied", "tool_name": name}
         arguments = _tool_arguments(name, context)
@@ -108,24 +105,47 @@ def build_agent_tools(
     context: AgentToolContext,
     executor: ToolExecutionPort,
     knowledge_search: Callable[[str], Awaitable[dict[str, object]]] | None = None,
+    business_executor: BusinessToolPort | None = None,
 ) -> tuple[BaseTool, ...]:
     """不按数量或预设意图裁剪配置；未知工具显式拒绝发布/运行。"""
     if len(set(configured_names)) != len(configured_names):
         raise ValueError("Agent 工具配置包含重复名称")
-    catalog = [_build_one(name, context, executor) for name in configured_names]
-    if knowledge_search is not None:
+    catalog: list[BaseTool] = []
+    for name in configured_names:
+        if name not in TOOL_METADATA:
+            raise ValueError(f"未知 Agent 工具: {name}")
+        if name == "search_knowledge":
+            continue
+        if business_executor is not None and name not in WRITE_TOOL_NAMES:
+            catalog.append(_build_business_tool(name, business_executor))
+        else:
+            catalog.append(_build_one(name, context, executor))
+    if knowledge_search is not None or "search_knowledge" in configured_names:
 
         @tool(
             "search_knowledge",
             args_schema=KnowledgeSearchArguments,
-            description="检索当前 Agent 显式绑定且仍获内部审批的知识文件；只返回有来源的片段。",
+            description=TOOL_METADATA["search_knowledge"].description,
         )
         async def search_knowledge(query: str) -> dict[str, object]:
             """知识范围和版本由可信回调冻结，模型不能指定文件或店铺 ID。"""
+            if knowledge_search is None:
+                return {"status": "no_knowledge_bound", "hits": []}
             return await knowledge_search(query)
 
         catalog.append(search_knowledge)
     return tuple(catalog)
+
+
+def _build_business_tool(name: str, executor: BusinessToolPort) -> BaseTool:
+    metadata = TOOL_METADATA[name]
+
+    @tool(name, args_schema=metadata.arguments, description=metadata.description)
+    async def invoke(**arguments: object) -> dict[str, object]:
+        """具体业务服务在每次调用前重新核验授权与冻结上下文。"""
+        return await executor.invoke(name, arguments)
+
+    return invoke
 
 
 async def invoke_selected_tool(selected: BaseTool, raw_arguments: dict[str, object]) -> object:

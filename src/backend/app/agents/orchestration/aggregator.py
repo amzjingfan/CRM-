@@ -5,6 +5,7 @@ import json
 import time
 import uuid
 from dataclasses import dataclass
+from typing import cast
 
 from app.agents.core.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
 from app.agents.orchestration.coordinator import SpecialistResult
@@ -114,11 +115,25 @@ async def aggregate_results(
     except AppError:
         return ReviewedSuggestion(None, "human_review", "sensitive_aggregate_output", agent_ids, citations)
     successful_tools = {tool for item in results for tool in item.successful_tools}
+    # 售后查询是本轮对象级只读证据；名称或历史记忆不能解除旧退款词法阻断。
+    # 模型草稿仍无自动交付资格，申请状态/金额/对象是否支持原文交由下方独立复核。
+    has_aftersales_status = any(
+        observation.name == "query_aftersales"
+        and observation.status == "succeeded"
+        and observation.scope
+        and isinstance(observation.facts.get("returns"), list)
+        and any(
+            isinstance(row, dict) and isinstance(row.get("return_status"), str) and row["return_status"]
+            for row in cast(list[object], observation.facts["returns"])
+        )
+        for item in results
+        for observation in item.observations
+    )
     decision = ReplySafetyPolicy().evaluate(
         safe_answer,
         evidence_kind=ReplyEvidenceKind.TOOL,
         successful_tools=successful_tools,
-        content_origin=ReplyContentOrigin.UNSTRUCTURED,
+        content_origin=ReplyContentOrigin.MODEL_GENERATED if has_aftersales_status else ReplyContentOrigin.UNSTRUCTURED,
         expected_store_id=store_id,
     )
     if not decision.is_safe:

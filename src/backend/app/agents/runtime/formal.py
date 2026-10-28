@@ -24,11 +24,10 @@ from app.agents.runtime.models import AgentRun
 from app.agents.runtime.snapshot import freeze_run_context
 from app.agents.safety.grounding import GROUNDING_PROMPT_VERSION
 from app.conversations.models import Conversation, Message
-from app.orders.models import Order
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.workspace.sidebar import SidebarOrder, latest_verified_live_order
+from app.workspace.sidebar import SidebarOrder
 
 
 async def run_formal_suggestion(
@@ -77,23 +76,8 @@ async def run_formal_suggestion(
         memory_revision=memory_revision,
     )
     memory = await load_memory(session, snapshot)
-    recent_order = await session.scalar(
-        select(Order)
-        .where(Order.store_id == conversation.store_id, Order.customer_id == conversation.customer_id)
-        .order_by(Order.created_at.desc())
-        .limit(1)
-    )
-    order_id = str(recent_order.id) if recent_order is not None else None
+    order_id: str | None = None
     live_order: SidebarOrder | None = None
-    needs_order = any(set(agent.tool_names) & {"query_order", "query_logistics"} for agent in agents)
-    if user is not None and conversation.platform == "tiktok" and settings.real_tiktok_read_enabled and needs_order:
-        try:
-            async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
-                live_order = await latest_verified_live_order(session, conversation)
-        except TimeoutError as error:
-            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Agent 建议已超时", 504) from error
-        if live_order is not None:
-            order_id = str(live_order.id)
 
     run = AgentRun(
         store_id=conversation.store_id,

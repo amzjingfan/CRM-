@@ -28,6 +28,9 @@ from app.agents.management.schemas import (
     AgentRunLogPage,
 )
 from app.agents.management.service import publish_agent
+from app.agents.tools.access import tool_catalog
+from app.agents.tools.collaboration import CollaborationView, list_collaboration
+from app.agents.tools.metadata import ToolCatalogView
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
@@ -65,6 +68,31 @@ async def add_agent(
     payload: AgentConfigCreate, session: DbSession, user: Annotated[User, Depends(get_current_user)]
 ) -> ApiResponse[AgentConfigView]:
     return ApiResponse(data=await create_config(session, user, payload))
+
+
+@router.get(
+    "/tool-catalog",
+    response_model=ApiResponse[ToolCatalogView],
+    dependencies=[Depends(require_permission("agent.view"))],
+)
+async def agent_tool_catalog(
+    store_id: uuid.UUID, session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[ToolCatalogView]:
+    return ApiResponse(data=await tool_catalog(session, user, store_id))
+
+
+@router.get(
+    "/collaboration",
+    response_model=ApiResponse[list[CollaborationView]],
+    dependencies=[Depends(require_permission("workspace.view"))],
+)
+async def agent_collaboration(
+    conversation_id: uuid.UUID,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> ApiResponse[list[CollaborationView]]:
+    return ApiResponse(data=await list_collaboration(session, user, conversation_id, offset))
 
 
 @router.get(

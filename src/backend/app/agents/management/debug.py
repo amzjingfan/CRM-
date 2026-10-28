@@ -19,11 +19,10 @@ from app.agents.runtime.snapshot import freeze_debug_context
 from app.audit.models import AuditLog
 from app.chat.service import user_permissions
 from app.conversations.models import Conversation
-from app.orders.models import Order
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.workspace.sidebar import SidebarOrder, latest_verified_live_order
+from app.workspace.sidebar import SidebarOrder
 
 
 async def run_agent_debug_v2(
@@ -72,22 +71,6 @@ async def run_agent_debug_v2(
         )
         if conversation is None:
             raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "当前店铺会话不存在", 404)
-        recent_order = await session.scalar(
-            select(Order)
-            .where(Order.store_id == config.store_id, Order.customer_id == conversation.customer_id)
-            .order_by(Order.created_at.desc())
-            .limit(1)
-        )
-        order_id = str(recent_order.id) if recent_order is not None else None
-        needs_order_context = any(set(agent.tool_names) & {"query_order", "query_logistics"} for agent in agents)
-        if conversation.platform == "tiktok" and settings.real_tiktok_read_enabled and needs_order_context:
-            try:
-                async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
-                    live_order = await latest_verified_live_order(session, conversation)
-            except TimeoutError as error:
-                raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Agent 调试已超时，请稍后重试", 504) from error
-            if live_order is not None:
-                order_id = str(live_order.id)
     snapshot = await freeze_debug_context(
         session,
         store_id=config.store_id,

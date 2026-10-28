@@ -15,7 +15,15 @@
 - 模型服务：本地 BGE-M3 Embedding、bge-reranker-large 和受控 DeepSeek Provider。
 - 通用文档解析 Worker：独立 MinerU 4.0.12 CPU 容器，读取私有 MinIO 源文件，调用内部 BGE-M3 后将完整版本的向量写入 pgvector；不对公网提供端口。
 
-当前本地源码迁移头为 `040_merge_agent_multishop`，合流从 `034_agent_debug_runs` 分出的多店授权 `035_tiktok_seller_multishop` 与动态 Agent `035_dynamic_agent_versions`～`039_agent_run_hierarchy` 两条迁移链。多店授权迁移新增卖家级加密凭证、渠道可空关联和 OAuth 待选择材料，既有单店凭证保持；共享授权或待选择任务存在时降级失败关闭。动态 Agent 迁移增加多 Agent 发布版本、七段提示词草稿、运行快照、会话记忆和父子运行阶段；旧配置回填版本 1，存在新版配置或同店多个已启用 Agent 时不得盲目降级。`030_merge_rag_reception` 已合流文档导入与基础接待两条 `029` 历史。staging 已部署迁移头以实际发布证据为准，动态 Agent 与多店授权本地改动尚未部署；部署须按真实迁移图执行并保护业务增量，不得跳过迁移或手工修改生产结构。
+当前本地源码迁移头为 `041_merge_agent_multishop_collab`，合流从 `034_agent_debug_runs` 分出的多店授权 `035_tiktok_seller_multishop` 与动态 Agent `035_dynamic_agent_versions`～`039_agent_run_hierarchy` 两条迁移链。多店授权迁移新增卖家级加密凭证、渠道可空关联和 OAuth 待选择材料，既有单店凭证保持；共享授权或待选择任务存在时降级失败关闭。动态 Agent 迁移增加多 Agent 发布版本、七段提示词草稿、运行快照、会话记忆和父子运行阶段；旧配置回填版本 1，存在新版配置或同店多个已启用 Agent 时不得盲目降级。`030_merge_rag_reception` 已合流文档导入与基础接待两条 `029` 历史。staging 已部署迁移头以实际发布证据为准，动态 Agent 与多店授权本地改动尚未部署；部署须按真实迁移图执行并保护业务增量，不得跳过迁移或手工修改生产结构。
+
+`041_merge_agent_multishop_collab` 以 `040_merge_agent_multishop` 和 `040_agent_collaboration` 为双亲，无额外结构变更；它只统一本地迁移图，不能代替逐环境的备份和升级验证。
+
+## Agent 工具与内部协作本地候选
+
+Agent 业务适配、元数据、模型参数、候选选择、商品文本处理与内部协作均位于 app.agents.tools；复用 workspace.sidebar 的同买家订单与店铺目录服务，平台协议保留在 integrations.tiktok_read，不增加服务或消息总线。每个子 Agent 有独立数据库会话与候选映射；只携带操作者标识，角色、账号状态和店铺权限每次从数据库读取。
+
+040 新增 agent_collaboration_entries，绑定 store/conversation/customer/parent run、类型、AI建议正文摘要哈希和创建人。store+conversation+run+kind+content_hash 唯一键处理并发重放；正文保留在内部记录，审计只含类型和来源。查询依次验证当前店铺权限、会话客户及业务读取权限。表与平台 messages、会话分配状态分离。回滚优先保留040迁移定义与业务数据；不能直接启动不认识040的旧迁移程序。需要降级数据库时先导出该表增量并按部署批准执行，不能静默丢弃新内部记录。当前仅在隔离数据库做迁移往返，不涉及 staging 数据。
 
 ## 请求与消息流
 

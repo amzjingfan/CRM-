@@ -175,7 +175,8 @@ test("Agent configuration edits model and seven-section prompt but keeps automat
   assert.match(agentSource, /七段式系统提示词 · 可编辑/);
   assert.match(agentSource, /发布版本/);
   assert.match(agentSource, /model_provider/);
-  assert.match(agentSource, /白名单工具/);
+  assert.match(agentSource, /AgentToolCatalog/);
+  assert.match(apiSource, /\/agents\/tool-catalog/);
   assert.match(apiSource, /\/agents/);
   assert.doesNotMatch(agentSource, /name="llm_model"/);
   assert.doesNotMatch(agentSource, /name="auto_reply_threshold"/);

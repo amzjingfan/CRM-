@@ -20,13 +20,18 @@ def test_independently_deployed_reception_and_document_migrations_join_one_head(
     """两条 029 已分别在环境落地，合流必须保留两个历史 revision。"""
     migration_path = Path(__file__).resolve().parents[3] / "backend" / "migrations"
     scripts = ScriptDirectory(str(migration_path))
-    assert scripts.get_heads() == ["040_merge_agent_multishop"]
+    assert scripts.get_heads() == ["041_merge_agent_multishop_collab"]
+    assert set(scripts.get_revision("041_merge_agent_multishop_collab").down_revision) == {
+        "040_merge_agent_multishop",
+        "040_agent_collaboration",
+    }
     assert set(scripts.get_revision("040_merge_agent_multishop").down_revision) == {
         "035_tiktok_seller_multishop",
         "039_agent_run_hierarchy",
     }
     assert scripts.get_revision("035_tiktok_seller_multishop").down_revision == "034_agent_debug_runs"
     assert scripts.get_revision("035_dynamic_agent_versions").down_revision == "034_agent_debug_runs"
+    assert scripts.get_revision("040_agent_collaboration").down_revision == "039_agent_run_hierarchy"
     assert scripts.get_revision("034_agent_debug_runs").down_revision == "033_file_version_approval"
     assert scripts.get_revision("032_knowledge_file_archive").down_revision == "031_reception_policy_schedule"
     assert scripts.get_revision("031_reception_policy_schedule").down_revision == "030_merge_rag_reception"

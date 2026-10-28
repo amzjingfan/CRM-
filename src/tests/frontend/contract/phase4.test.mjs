@@ -42,7 +42,7 @@ test("Agent prototype keeps managed tools while workspace SSE content remains ac
     read("app/agents/page.tsx"),
     read("app/workspace/page.tsx"),
   ]);
-  assert.match(agent, /白名单工具/);
+  assert.match(agent, /AgentToolCatalog/);
   assert.match(agent, /保存配置/);
   assert.match(workspace, /AI reply suggestion/);
   assert.match(workspace, /Suggestion inserted; review it before sending/);
@@ -65,12 +65,16 @@ test("application shell exposes a retryable authentication error state", async (
 });
 
 test("Agent tool codes use readable Chinese labels", async () => {
-  const agent = await read("app/agents/page.tsx");
-  for (const label of ["查询订单", "查询物流", "查询客户资料", "修改收货地址", "发送优惠券", "转人工", "发送平台消息"]) {
-    assert.match(agent, new RegExp(label));
-  }
-  assert.match(agent, /name=\{tool\.code\}/);
-  assert.match(agent, /checked=\{draft\.enabled_tools\.includes\(tool\.code\)\}/);
+  const [agent, catalog] = await Promise.all([read("app/agents/page.tsx"), read("components/AgentToolCatalog.tsx")]);
+  assert.match(agent, /enabled=\{draft\.enabled_tools\}/);
+  assert.doesNotMatch(agent, /const tools = \[/);
+  assert.match(catalog, /getAgentToolCatalog\(storeId\)/);
+  assert.match(catalog, /\{item\.title\}/);
+  assert.match(catalog, /name=\{item\.name\}/);
+  assert.match(catalog, /checked=\{checked\}/);
+  assert.match(catalog, /只读查询/);
+  assert.match(catalog, /内部写入/);
+  assert.match(catalog, /需人工确认/);
 });
 
 test("interactive filters and compact fields meet the 44px touch target", async () => {
