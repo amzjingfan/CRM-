@@ -1,0 +1,25 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-064",
+  "state": "deleted_branch_only",
+  "base_sha": "5f636db8e6d28ff93c7fff9f1716d27144dcfaf3",
+  "deleted_branch_count": 2,
+  "deleted_worktree_count": 0,
+  "branches": [
+    {
+      "ref": "refs/heads/fix/workspace-refresh-evidence-20261028",
+      "head": "2036240092ddc41e22cd05d4c2a7390b6831ece1",
+      "archive_ref": "refs/archive/CLEANUP-20261028-064/fix/workspace-refresh-evidence-20261028",
+      "merged_pr": 593,
+      "merged_commit": "73ef0852672145855ff12e2b1395ea46a5b35ae7",
+      "local_main_merge": "5f636db8e6d28ff93c7fff9f1716d27144dcfaf3",
+      "restore_method": "git branch fix/workspace-refresh-evidence-20261028 refs/archive/CLEANUP-20261028-064/fix/workspace-refresh-evidence-20261028"
+    },
+    {
+      "ref": "refs/heads/docs/local-merge-workspace-refresh-20261028",
+      "archive_ref": "refs/archive/CLEANUP-20261028-064/docs/local-merge-workspace-refresh-20261028",
+      "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+      "restore_method": "git branch docs/local-merge-workspace-refresh-20261028 refs/archive/CLEANUP-20261028-064/docs/local-merge-workspace-refresh-20261028"
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 
 | Batch ID | Task ID | State | Scope | Retention until | Updated | Record |
 |---|---|---|---|---|---|---|
+| CLEANUP-20261028-064 | MAINT-CLEANUP-20261028-003 | DELETED（两个本地分支名；归档保留） | 已合入 PR #593 的工作台刷新旧本地分支与本批短期合并分支归档移除 | 归档引用长期保留 | 2026-10-28 | [记录](CLEANUP-20261028-064.md) |
 | CLEANUP-20261028-063 | MAINT-CLEANUP-20261028-003 | DELETED（两个本地分支名；归档保留） | staging 性能专用 release 与本批短期清理分支归档移除；旧 Agent release 行为不覆盖主线 | 归档引用长期保留 | 2026-10-28 | [记录](CLEANUP-20261028-063.md) |
 | CLEANUP-20261028-062 | MAINT-CLEANUP-20261028-003 | DELETED（原分支名；工作树保留） | 清理分支合入本地 main 并归档原分支名，受阻 junction 原位保留 | 归档引用长期保留 | 2026-10-28 | [记录](CLEANUP-20261028-062.md) |
 | CLEANUP-20261028-061 | MAINT-CLEANUP-20261028-003 | DELETED（旧工作树与原分支名；归档保留） | 已合入 PR #582 的动态 Agent 旧副本，46,882 个缓存文件归档隔离 | 缓存归档至少至 2026-11-04 15:46 +08:00；提交引用长期保留 | 2026-10-28 | [记录](CLEANUP-20261028-061.md) |
