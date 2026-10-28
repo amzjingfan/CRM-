@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_latency_readonly_page_observation",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "environment": "staging",
+  "runtime_release_sha": "4edddffb176c1797065d437e5dea7a67c2a9c39f",
+  "source_evidence_main_sha": "888b2fcdcd2a027207eabaf6753dc7cb01a75b7e",
+  "gateway_log": {
+    "source": "active staging safe JSON Nginx access log; read-only remote aggregation",
+    "window_start_utc": "2026-10-28T18:50:00+00:00",
+    "last_entry_utc": "2026-10-28T19:18:45+00:00",
+    "entries": 134,
+    "http_2xx": 134,
+    "http_other": 0,
+    "raw_log_exported": false,
+    "ip_or_query_recorded_in_evidence": false,
+    "groups": {
+      "workspace_sessions": {"n": 18, "gateway_request_ms_p50_p95": [754, 2363], "application_ms_p50_p95": [16, 124], "tiktok_ms_p95": 0},
+      "workspace_messages": {"n": 17, "gateway_request_ms_p50_p95": [500, 1781], "application_ms_p50_p95": [19, 116], "tiktok_ms_p95": 0},
+      "settings_stores_api": {"n": 4, "gateway_request_ms_p50_p95": [167, 506], "application_ms_p50_p95": [14, 16], "tiktok_ms_p95": 0},
+      "settings_authorizations_api": {"n": 2, "gateway_request_ms_p50_p95": [161, 165], "application_ms_p50_p95": [9, 10], "tiktok_ms_p95": 0},
+      "knowledge_files_api": {"n": 3, "gateway_request_ms_p50_p95": [538, 656], "application_ms_p50_p95": [31, 31], "tiktok_ms_p95": 0},
+      "dashboard_metrics_api": {"n": 2, "gateway_request_ms_p50_p95": [174, 538], "application_ms_p50_p95": [25, 47], "tiktok_ms_p95": 0},
+      "dashboard_trend_api": {"n": 2, "gateway_request_ms_p50_p95": [157, 452], "application_ms_p50_p95": [6, 7], "tiktok_ms_p95": 0},
+      "html_dashboard": {"n": 8, "gateway_request_ms_p50_p95": [225, 638]},
+      "html_workspace": {"n": 8, "gateway_request_ms_p50_p95": [300, 651]},
+      "html_knowledge": {"n": 8, "gateway_request_ms_p50_p95": [159, 765]},
+      "html_agents": {"n": 8, "gateway_request_ms_p50_p95": [349, 719]},
+      "html_settings_stores": {"n": 4, "gateway_request_ms_p50_p95": [567, 632]}
+    }
+  },
+  "authenticated_browser_readonly": {
+    "stores": "one authorized row visible; see deployment R12",
+    "dashboard": "selected store changed from test store to TikTok US; currency and consultation categories changed with selected store",
+    "workspace": "conversation list, selected buyer messages and customer sidebar visible",
+    "knowledge": "current store, categories and empty-document state visible",
+    "agent_management": "current store and zero-agent state visible",
+    "browser_tool_wall_time_is_page_latency": false
+  },
+  "interpretation": "In this small non-paired window, application timing was much lower than gateway request timing on the sampled APIs; this does not decompose each request's entire public WAN delay or prove an end-user speedup.",
+  "not_verified": ["real expired-session concurrent 401", "matched user-visible cold/warm latency", "whole-site cross-store and cross-buyer data correctness", "real failure or 429 behavior"],
+  "temporary_local_key_copy_cleanup": "automatic approval review blocked removal; copy was ACL-restricted to the current Windows user and requires manual cleanup",
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false,
+  "overall_latency_acceptance": "partial"
+}
