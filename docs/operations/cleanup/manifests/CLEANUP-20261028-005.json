@@ -1,8 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-005",
-  "state": "candidate",
+  "state": "deleted",
   "base_sha": "3eff24cca5d8afd28bf16ac3b38cc3c7e9af2523",
+  "execution_main_sha": "a59bb86a0c9fed2cb59b9f011a3e7b1c575073b5",
+  "deleted_worktree_count": 5,
+  "deleted_branch_count": 5,
+  "archived_file_count": 6,
   "scope": "five exact local worktrees, five local branch refs, six ignored PR draft files; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-005",
   "candidates": [
