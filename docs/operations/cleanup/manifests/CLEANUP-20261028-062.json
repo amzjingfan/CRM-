@@ -1,0 +1,14 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-062",
+  "state": "deleted_branch_only",
+  "base_sha": "d3c1765a2b2e01356fe4f94fe28faf69404e215c",
+  "deleted_branch_count": 1,
+  "deleted_worktree_count": 0,
+  "ref": "refs/heads/docs/worktree-consolidation-20261028",
+  "archive_ref": "refs/archive/CLEANUP-20261028-062/docs/worktree-consolidation-20261028",
+  "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+  "retained_worktree": ".worktrees/worktree-consolidation-20261028",
+  "retained_reparse_path": ".worktrees/worktree-consolidation-20261028/src/frontend/node_modules",
+  "restore_method": "git branch docs/worktree-consolidation-20261028 refs/archive/CLEANUP-20261028-062/docs/worktree-consolidation-20261028"
+}
