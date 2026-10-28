@@ -5,10 +5,10 @@ from collections import deque
 
 import pytest
 
-from app.agent.errors import LLMErrorCode, LLMProviderError
-from app.agent.providers.base import LLMProvider, ProviderResult, StructuredRequest
-from app.agent.repository import AgentRunRecorder, AgentRunStart
-from app.agent.schemas import (
+from app.agents.core.errors import LLMErrorCode, LLMProviderError
+from app.agents.core.providers.base import LLMProvider, ProviderResult, StructuredRequest
+from app.agents.core.repository import AgentRunRecorder, AgentRunStart
+from app.agents.core.schemas import (
     AgentAction,
     AgentRunStatus,
     ClassificationCommand,
@@ -17,7 +17,7 @@ from app.agent.schemas import (
     IntentModelOutput,
     IntentName,
 )
-from app.agent.service import IntentClassificationService
+from app.agents.core.service import IntentClassificationService
 
 
 class ScriptedProvider(LLMProvider):

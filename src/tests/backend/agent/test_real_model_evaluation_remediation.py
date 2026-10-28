@@ -10,8 +10,8 @@ import pytest
 from _support import TESTS_ROOT
 from pydantic import ValidationError
 
-from app.agent.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
-from app.agent.real_model_evaluation import (
+from app.agents.core.providers.base import LLMProvider, OutputT, ProviderResult, StructuredRequest
+from app.agents.core.real_model_evaluation import (
     REAL_MODEL_DATASET_VERSION,
     RealModelEvaluationOutput,
     RealModelSampleResult,
@@ -24,7 +24,7 @@ from app.agent.real_model_evaluation import (
     run_real_model_evaluation,
     validate_real_model_evaluation_environment,
 )
-from app.agent.security import (
+from app.agents.core.security import (
     PROMPT_DLP_POLICY_VERSION,
     REAL_MODEL_EVALUATION_PROMPT_VERSION,
     REAL_MODEL_EVALUATION_REASON_CODES,

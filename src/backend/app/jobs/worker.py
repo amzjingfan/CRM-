@@ -5,7 +5,7 @@ import logging
 import time
 import uuid
 
-from app.agent.factory import build_knowledge_vectorization_service
+from app.agents.core.factory import build_knowledge_vectorization_service
 from app.integrations.oauth_service import (
     cleanup_tiktok_oauth_jobs,
     process_tiktok_oauth_job,

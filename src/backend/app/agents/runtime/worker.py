@@ -1,0 +1,203 @@
+"""单个已发布 Agent 的工具、绑定文件和模型回答运行边界。"""
+
+import json
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import cast
+
+import tiktoken
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.agents.core.schemas import AgentCitation
+from app.agents.management.repository import PublishedAgent
+from app.agents.memory.service import MemoryFact
+from app.agents.orchestration.coordinator import SpecialistResult
+from app.agents.orchestration.router import RoutedAgent, RouteModelPort
+from app.agents.prompts.compiler import verify_published_prompt
+from app.agents.rag.retriever import (
+    EvidenceBundle,
+    FileRagPort,
+    project_evidence_for_model,
+    retrieve_bound_files,
+    revalidate_evidence,
+)
+from app.agents.rag.search import RagRetrievalTimeout
+from app.agents.runtime.context import LiteralFact, ModelLimits, build_context
+from app.agents.runtime.snapshot import RunSnapshot
+from app.agents.safety.input import prepare_untrusted_text
+from app.agents.tools.catalog import AgentToolContext, ToolExecutionPort, build_agent_tools
+from app.agents.tools.loop import run_tool_loop
+from app.knowledge_base.schemas import KnowledgeRetrievalHit
+from app.shared.exceptions.errors import AppError
+from app.tools.contracts import TOOL_DEFINITIONS
+
+_TOKENIZER = tiktoken.get_encoding("cl100k_base")
+
+
+def _verified_facts(observations: object) -> dict[str, str]:
+    """只从成功的受控只读工具投影读取事实，模型文字不成为事实来源。"""
+    from app.agents.tools.loop import ToolObservation
+
+    facts: dict[str, str] = {}
+    if not isinstance(observations, tuple):
+        return facts
+    for item in observations:
+        if not isinstance(item, ToolObservation) or item.status != "succeeded":
+            continue
+        for key, value in item.facts.items():
+            if isinstance(value, str | int | float | bool):
+                facts[f"{item.name}.{key}"] = str(value)
+    return facts
+
+
+async def run_specialist(
+    *,
+    snapshot: RunSnapshot,
+    agent: PublishedAgent,
+    selection: RoutedAgent,
+    provider: RouteModelPort,
+    executor: ToolExecutionPort,
+    rag_service: FileRagPort | None,
+    session: AsyncSession,
+    tool_context: AgentToolContext,
+    deadline: float,
+    model_limits: ModelLimits,
+    recent_history: tuple[str, ...] = (),
+    session_summary: str = "",
+    session_facts: tuple[MemoryFact, ...] = (),
+    max_output_tokens: int = 1024,
+) -> SpecialistResult:
+    """Agent 发布版本、工具对象与知识范围均按运行快照校验。"""
+    if (
+        agent.id != selection.agent_id
+        or agent.store_id != snapshot.store_id
+        or agent not in snapshot.published_agents
+        or not agent.ready_for_v2
+        or agent.prompt_hash is None
+        or tool_context.store_id != snapshot.store_id
+        or (
+            tool_context.customer_id != snapshot.customer_id
+            and not (snapshot.debug_without_conversation and tool_context.customer_id is None)
+        )
+    ):
+        return SpecialistResult(selection.agent_id, None, reason_code="invalid_agent_scope")
+    prompt = verify_published_prompt(agent.prompt_sections, agent.prompt_hash)
+    safe_question = prepare_untrusted_text(selection.subquestion, source="user_message").text
+    base_tokens = len(_TOKENIZER.encode(prompt.text + safe_question))
+    fresh_facts = tuple(
+        LiteralFact(item.key, item.value, f"{item.source_ref}@{item.observed_at.isoformat()}")
+        for item in session_facts
+        if item.observed_at is not None
+        and datetime.now(UTC) - item.observed_at <= timedelta(minutes=15)
+        and item.key.partition(".")[0] in agent.tool_names
+        and item.key.partition(".")[0] in TOOL_DEFINITIONS
+        and TOOL_DEFINITIONS[item.key.partition(".")[0]].permission in tool_context.permissions
+    )
+    context = build_context(
+        literal_facts=fresh_facts,
+        evidence=(),
+        recent_history=recent_history,
+        session_summary=session_summary,
+        limits=model_limits,
+        base_prompt_tokens=base_tokens,
+    )
+    searched: list[EvidenceBundle] = []
+
+    async def search_knowledge(query: str) -> dict[str, object]:
+        if rag_service is None:
+            return {"status": "rag_unavailable", "hits": []}
+        bundle = await retrieve_bound_files(
+            session=session,
+            snapshot=snapshot,
+            agent=agent,
+            query=query,
+            deadline=deadline,
+            rag_service=rag_service,
+        )
+        projected = project_evidence_for_model(bundle)
+        visible_ids = {uuid.UUID(str(item["chunk_id"])) for item in cast(list[dict[str, object]], projected["hits"])}
+        searched.append(
+            EvidenceBundle(
+                hits=tuple(hit for hit in bundle.hits if hit.chunk_id in visible_ids),
+                excluded_file_count=bundle.excluded_file_count,
+            )
+        )
+        return projected
+
+    if agent.file_ids and rag_service is None:
+        return SpecialistResult(agent.id, None, reason_code="rag_unavailable")
+    tools = build_agent_tools(
+        agent.tool_names,
+        context=tool_context,
+        executor=executor,
+        knowledge_search=search_knowledge if agent.file_ids else None,
+    )
+    messages: tuple[dict[str, object], ...] = (
+        {"role": "system", "content": prompt.text},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {"untrusted_question": safe_question, "untrusted_context": context.rendered},
+                ensure_ascii=False,
+            ),
+        },
+    )
+    try:
+        result = await run_tool_loop(
+            provider=provider,
+            messages=messages,
+            tools=tools,
+            deadline=deadline,
+            max_output_tokens=max_output_tokens,
+        )
+    except RagRetrievalTimeout:
+        return SpecialistResult(agent.id, None, reason_code="rag_retrieval_timeout")
+    except TimeoutError:
+        return SpecialistResult(agent.id, None, reason_code="agent_deadline_exceeded")
+    if not result.answer:
+        return SpecialistResult(agent.id, None, reason_code=result.reason_code or "no_agent_answer")
+    try:
+        safe_answer = prepare_untrusted_text(result.answer, source="agent_draft").text
+    except AppError:
+        return SpecialistResult(agent.id, None, reason_code="sensitive_agent_output")
+    citations: list[str] = []
+    citation_details: list[AgentCitation] = []
+    knowledge_hits: list[KnowledgeRetrievalHit] = []
+    grounding_evidence = {}
+    for bundle in searched:
+        current = await revalidate_evidence(session=session, snapshot=snapshot, agent=agent, bundle=bundle)
+        if len(current.hits) != len(bundle.hits):
+            return SpecialistResult(agent.id, None, reason_code="knowledge_approval_changed")
+        citations.extend(str(hit.chunk_id) for hit in current.hits)
+        knowledge_hits.extend(current.hits)
+        projected = project_evidence_for_model(current)
+        grounding_evidence.update(
+            {str(item["chunk_id"]): str(item["content"]) for item in cast(list[dict[str, object]], projected["hits"])}
+        )
+        citation_details.extend(
+            AgentCitation(
+                document_id=hit.document_id,
+                chunk_id=hit.chunk_id,
+                category_id=hit.category_id,
+                document_version=hit.document_version,
+                chunk_index=hit.chunk_index,
+                score=hit.score,
+                source_label=hit.source_label,
+            )
+            for hit in current.hits
+        )
+    successful_tools = tuple(dict.fromkeys(item.name for item in result.events if item.status == "succeeded"))
+    return SpecialistResult(
+        agent.id,
+        safe_answer,
+        verified_facts=_verified_facts(result.observations),
+        citations=tuple(dict.fromkeys(citations)),
+        successful_tools=successful_tools,
+        citation_details=tuple(citation_details),
+        tool_events=result.events,
+        observations=result.observations,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        grounding_evidence=grounding_evidence,
+        knowledge_hits=tuple(knowledge_hits),
+    )

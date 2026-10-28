@@ -216,6 +216,8 @@ class Settings(BaseSettings):
     )
     llm_enabled: bool = Field(default=False, validation_alias="LLM_ENABLED")
     agent_debug_enabled: bool = Field(default=False, validation_alias="AGENT_DEBUG_ENABLED")
+    agent_v2_debug_enabled: bool = Field(default=False, validation_alias="AGENT_V2_DEBUG_ENABLED")
+    agent_v2_formal_enabled: bool = Field(default=False, validation_alias="AGENT_V2_FORMAL_ENABLED")
     agent_debug_timeout_seconds: float = Field(
         default=45.0, gt=0, le=120, validation_alias="AGENT_DEBUG_TIMEOUT_SECONDS"
     )
@@ -229,6 +231,12 @@ class Settings(BaseSettings):
     llm_primary_model: str | None = Field(default=None, validation_alias="LLM_PRIMARY_MODEL")
     llm_fallback_provider: str | None = Field(default="anthropic", validation_alias="LLM_FALLBACK_PROVIDER")
     llm_fallback_model: str | None = Field(default=None, validation_alias="LLM_FALLBACK_MODEL")
+    llm_primary_context_window_tokens: int = Field(
+        default=8192, ge=4096, le=2_000_000, validation_alias="LLM_PRIMARY_CONTEXT_WINDOW_TOKENS"
+    )
+    llm_fallback_context_window_tokens: int = Field(
+        default=8192, ge=4096, le=2_000_000, validation_alias="LLM_FALLBACK_CONTEXT_WINDOW_TOKENS"
+    )
     openai_api_key: SecretStr | None = Field(default=None, validation_alias="OPENAI_API_KEY")
     anthropic_api_key: SecretStr | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
     deepseek_api_key: SecretStr | None = Field(default=None, validation_alias="DEEPSEEK_API_KEY")

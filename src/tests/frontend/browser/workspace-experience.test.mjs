@@ -21,6 +21,12 @@ before(async () => { browser = await chromium.launch({ channel: "chrome", headle
 after(async () => { await browser?.close(); });
 
 async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false, orderSellerSku = "PAD-BLK", syncedOrderStatus = orderStatus) {
+  const fixtureOptions = typeof messageCount === "object" ? messageCount : {};
+  if (typeof messageCount === "object") {
+    orderStatus = fixtureOptions.orderStatus ?? orderStatus;
+    syncedOrderStatus = orderStatus;
+    messageCount = fixtureOptions.messageCount ?? 70;
+  }
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } },
@@ -29,6 +35,8 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
   const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, extraDetailEvent: false, enhancedTracking: 0 };
+  // 页面会预取订单详情；必须在首次请求前固定样例，不能依赖导航后的赋值时序。
+  calls.extraDetailEvent = fixtureOptions.extraDetailEvent ?? false;
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -232,9 +240,8 @@ test("buyer stage follows verified sidebar orders when synced orders are missing
 });
 
 test("order details and receipt are read-only and refund is explicitly unavailable", async () => {
-  const { context, page, calls } = await openWorkspace(2, "DELIVERED");
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, orderStatus: "DELIVERED", extraDetailEvent: true });
   try {
-    calls.extraDetailEvent = true;
     await page.getByRole("button", { name: "客户信息" }).click();
     const card = page.getByTestId("customer-order-card").first();
     await card.getByRole("button", { name: "详情", exact: true }).click();

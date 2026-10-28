@@ -8,12 +8,12 @@ import pytest
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.agent.models import AgentRun
-from app.agent.repository import (
+from app.agents.core.repository import (
     AgentRunStart,
     MarketingAgentRunCompletion,
     SqlAlchemyAgentRunRecorder,
 )
+from app.agents.runtime.models import AgentRun
 from app.conversations.models import Conversation
 from app.customers.models import Customer
 from app.dashboard.aggregation import aggregate_store_day, store_zone, utc_bounds

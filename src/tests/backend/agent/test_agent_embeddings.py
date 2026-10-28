@@ -9,8 +9,8 @@ import pytest
 from openai import APITimeoutError, AsyncOpenAI
 from pydantic import SecretStr
 
-from app.agent.chunking import FaqTokenChunker
-from app.agent.embeddings import (
+from app.agents.rag.chunking import FaqTokenChunker
+from app.agents.rag.embeddings import (
     EmbeddingErrorCode,
     EmbeddingProviderError,
     EmbeddingService,

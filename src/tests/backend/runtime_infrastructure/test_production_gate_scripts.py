@@ -1493,6 +1493,10 @@ sys.exit(0)
     environment["FAKE_DOCKER_PYTHON"] = sys.executable
     environment["FAKE_DOCKER_SCRIPT"] = str(fake_runtime)
     if os.name == "nt":
+        # 模拟部署使用独立临时根，避免不同工作树测试竞争真实 Windows 全局锁。
+        # 产品脚本仍以 FileShare.None 对同一目标目录互斥，不修改生产锁语义。
+        environment["TEMP"] = str(tmp_path)
+        environment["TMP"] = str(tmp_path)
         wrapper = '@echo off\r\n"%FAKE_DOCKER_PYTHON%" "%FAKE_DOCKER_SCRIPT%" %*\r\n'
         (fake_bin / "docker.cmd").write_text(wrapper, encoding="utf-8")
     else:

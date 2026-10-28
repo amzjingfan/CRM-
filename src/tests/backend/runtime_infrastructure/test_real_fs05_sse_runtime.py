@@ -9,38 +9,12 @@ import pytest
 from _support import SOURCE_ROOT
 from pydantic import ValidationError
 
-from app.agent.workflow import AgentWorkflowExecutionError
 from app.chat import router as chat_router
-from app.chat.router import _agent_error_payload
 from app.chat.schemas import ChatQueryRequest
 from app.shared.config.settings import Settings
 from app.shared.database import redis as redis_module
+from app.shared.exceptions.errors import AppError, ErrorCode
 from app.shared.health import check_llm_provider_configuration
-
-
-@pytest.mark.parametrize(
-    ("error_code", "public_code", "retryable"),
-    [
-        ("LLM_RATE_LIMITED", 42901, True),
-        ("LLM_TIMEOUT", 50003, True),
-        ("LLM_CONNECTION_ERROR", 50003, True),
-        ("LLM_AUTHENTICATION_ERROR", 50003, False),
-        ("EMBEDDING_RATE_LIMITED", 42901, True),
-        ("RERANK_TIMEOUT", 50003, True),
-        ("RERANK_CONFIGURATION_ERROR", 50003, False),
-        ("AGENT_WORKFLOW_ERROR", 50001, False),
-    ],
-)
-def test_agent_errors_map_to_stable_low_sensitivity_sse_errors(
-    error_code: str,
-    public_code: int,
-    retryable: bool,
-) -> None:
-    payload = _agent_error_payload(error_code)
-
-    assert payload["code"] == public_code
-    assert payload["retryable"] is retryable
-    assert error_code not in str(payload)
 
 
 def test_sse_runtime_configuration_is_bounded_and_heartbeat_precedes_timeout() -> None:
@@ -306,7 +280,6 @@ async def test_provider_rate_limit_uses_error_done_without_raw_internal_code(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     user = SimpleNamespace(id=uuid.uuid4())
-    run_id = uuid.uuid4()
 
     async def allow_limits(*_args: object) -> None:
         return None
@@ -318,7 +291,7 @@ async def test_provider_rate_limit_uses_error_done_without_raw_internal_code(
         return None
 
     async def rate_limited(*_args: object) -> Any:
-        raise AgentWorkflowExecutionError(run_id, "LLM_RATE_LIMITED")
+        raise AppError(ErrorCode.RATE_LIMITED, "模型请求暂时受限", 429)
 
     async def connected() -> bool:
         return False

@@ -8,9 +8,9 @@ from pathlib import Path
 
 from _support import TESTS_ROOT
 
-from app.agent import real_model_evaluation
-from app.agent.real_model_evaluation import RealModelEvaluationOutput, load_verified_real_model_evaluation_dataset
-from app.agent.security import PromptSafetyState, evaluate_prompt_safety
+from app.agents.core import real_model_evaluation
+from app.agents.core.real_model_evaluation import RealModelEvaluationOutput, load_verified_real_model_evaluation_dataset
+from app.agents.core.security import PromptSafetyState, evaluate_prompt_safety
 
 DATASET_PATH = TESTS_ROOT / "ai/datasets/real-model-v1.0.0.jsonl"
 MANIFEST_PATH = Path(str(DATASET_PATH).replace(".jsonl", ".manifest.json"))

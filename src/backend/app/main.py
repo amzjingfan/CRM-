@@ -11,7 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.agent.factory import build_shared_agent_runtime
+from app.agents.core.factory import build_shared_agent_runtime
 from app.api.v1.router import router as v1_router
 from app.shared.config.settings import get_settings
 from app.shared.exceptions.errors import AppError

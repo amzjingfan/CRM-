@@ -10,10 +10,10 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.errors import LLMProviderError
-from app.agent.factory import build_marketing_copy_service
-from app.agent.marketing_generation import MarketingActionType, MarketingCopyCommand
-from app.agent.reply_policy import (
+from app.agents.core.errors import LLMProviderError
+from app.agents.core.factory import build_marketing_copy_service
+from app.agents.core.marketing_generation import MarketingActionType, MarketingCopyCommand
+from app.agents.core.reply_policy import (
     AgentReplyProfile,
     CustomerLanguage,
     ReplyTone,
@@ -21,13 +21,13 @@ from app.agent.reply_policy import (
     resolve_reply_language,
     resolve_store_reply_profile,
 )
-from app.agent.repository import (
+from app.agents.core.repository import (
     AgentRunStart,
     MarketingAgentRunCompletion,
     SqlAlchemyAgentRunRecorder,
 )
-from app.agent.schemas import AgentAction, AgentRunStatus
-from app.agent_management.models import AgentConfig
+from app.agents.core.schemas import AgentAction, AgentRunStatus
+from app.agents.management.config_models import AgentConfig
 from app.conversations.models import Conversation, Message
 from app.integrations.adapters import get_platform_adapter
 from app.integrations.schemas import SendMessageCommand

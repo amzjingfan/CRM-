@@ -105,7 +105,7 @@ class LocalDocumentParser:
 
 async def run_queue_worker() -> None:
     """一个解析镜像只运行一个消费循环，所有外部能力均为内部私有端点。"""
-    from app.agent.retrieval_models import LocalRetrievalModelClient
+    from app.agents.rag.retrieval_models import LocalRetrievalModelClient
     from app.knowledge_base.document_chunking import BgeM3Tokenizer
     from app.knowledge_base.document_indexer import process_document_version
     from app.shared.config.settings import get_settings

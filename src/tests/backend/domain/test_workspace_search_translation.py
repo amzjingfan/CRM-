@@ -8,7 +8,7 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.draft_translation import (
+from app.agents.core.draft_translation import (
     DraftTranslationModelOutput,
     DraftTranslationService,
 )

@@ -5,7 +5,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from app.agent.security import (
+from app.agents.core.security import (
     SYNTHETIC_DEMO_SCENARIOS,
     SYNTHETIC_DEMO_SYSTEM_PROMPT,
     PromptSafetyState,
@@ -13,7 +13,7 @@ from app.agent.security import (
     evaluate_prompt_safety,
     evaluate_system_prompt_safety,
 )
-from app.agent.synthetic_demo import resolve_synthetic_demo_scenario
+from app.agents.core.synthetic_demo import resolve_synthetic_demo_scenario
 from app.shared.config.settings import Settings
 
 

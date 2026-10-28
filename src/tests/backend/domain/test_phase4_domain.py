@@ -8,9 +8,9 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.agent.models import AgentRun
-from app.agent.reply_policy import AgentReplyProfile, ReplyTone
-from app.agent_management.schemas import AgentConfigCreate, AgentConfigUpdate
+from app.agents.core.reply_policy import AgentReplyProfile, ReplyTone
+from app.agents.management.schemas import AgentConfigCreate, AgentConfigUpdate
+from app.agents.runtime.models import AgentRun
 from app.chat.router import _event
 from app.dashboard.aggregation import utc_bounds
 from app.dashboard.models import MetricDaily

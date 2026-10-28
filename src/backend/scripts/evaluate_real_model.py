@@ -7,9 +7,9 @@ import sys
 import uuid
 from pathlib import Path
 
-from app.agent.errors import LLMProviderError
-from app.agent.providers.factory import build_provider
-from app.agent.real_model_evaluation import (
+from app.agents.core.errors import LLMProviderError
+from app.agents.core.providers.factory import build_provider
+from app.agents.core.real_model_evaluation import (
     load_verified_real_model_evaluation_dataset,
     run_real_model_evaluation,
 )

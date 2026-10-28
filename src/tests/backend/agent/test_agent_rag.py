@@ -1,4 +1,4 @@
-"""验证 FAQ RAG 查询脱敏、租户边界和上下文预算。"""
+"""验证绑定文件 RAG 查询脱敏、租户边界和上下文预算。"""
 
 import asyncio
 import uuid
@@ -11,9 +11,9 @@ from typing import cast
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.embeddings import EmbeddingResult
-from app.agent.rag import RagRetrievalService
-from app.agent.retrieval_models import RerankingResult, RerankScore
+from app.agents.rag.embeddings import EmbeddingResult
+from app.agents.rag.retrieval_models import RerankingResult, RerankScore
+from app.agents.rag.search import RagRetrievalService
 from app.knowledge_base.schemas import (
     KnowledgeCustomerScope,
     KnowledgePublicationApproval,
@@ -56,10 +56,11 @@ class MemorySearchPort:
         self.candidate_top_k: int | None = None
         self.rrf_k: int | None = None
 
-    async def hybrid_search(
+    async def hybrid_search_files(
         self,
         session: AsyncSession,
         store_id: uuid.UUID,
+        file_ids: tuple[uuid.UUID, ...],
         query_text: str,
         query_embedding: list[float],
         *,
@@ -151,10 +152,10 @@ async def test_independent_search_reports_connection_wait_separately_from_query(
             return object()
 
     class TimedSearchPort(MemorySearchPort):
-        async def hybrid_search(self, *args: object, **kwargs: object) -> list[KnowledgeRetrievalHit]:
+        async def hybrid_search_files(self, *args: object, **kwargs: object) -> list[KnowledgeRetrievalHit]:
             events.append("query")
             await asyncio.sleep(0.004)
-            return await super().hybrid_search(*args, **kwargs)  # type: ignore[arg-type]
+            return await super().hybrid_search_files(*args, **kwargs)  # type: ignore[arg-type]
 
     @asynccontextmanager
     async def search_session_factory() -> AsyncIterator[AsyncSession]:
@@ -179,7 +180,7 @@ async def test_independent_search_reports_connection_wait_separately_from_query(
         max_context_tokens=100,
     )
 
-    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？")
+    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？", file_ids=(uuid.uuid4(),))
 
     assert events == ["opened", "acquire", "query", "closed"]
     assert result.search_acquire_ms is not None and result.search_acquire_ms >= 2
@@ -236,6 +237,7 @@ async def test_rag_retrieval_sanitizes_query_and_forwards_store_scope() -> None:
         cast(AsyncSession, object()),
         store_id,
         "订单 AB123456789 怎么退货？请联系 buyer@example.com",
+        file_ids=(uuid.uuid4(),),
     )
 
     assert port.store_id == store_id
@@ -293,7 +295,7 @@ async def test_rag_closes_own_search_session_before_model_reranking() -> None:
         max_context_tokens=100,
     )
 
-    result = await service.retrieve(caller_session, uuid.uuid4(), "退货流程？")
+    result = await service.retrieve(caller_session, uuid.uuid4(), "退货流程？", file_ids=(uuid.uuid4(),))
 
     assert len(result.hits) == 2
     assert port.session is search_session
@@ -315,10 +317,11 @@ async def test_rag_search_session_closes_on_query_failure() -> None:
             events.append("closed")
 
     class FailingSearchPort(MemorySearchPort):
-        async def hybrid_search(
+        async def hybrid_search_files(
             self,
             session: AsyncSession,
             store_id: uuid.UUID,
+            file_ids: tuple[uuid.UUID, ...],
             query_text: str,
             query_embedding: list[float],
             *,
@@ -345,7 +348,7 @@ async def test_rag_search_session_closes_on_query_failure() -> None:
     )
 
     with pytest.raises(RuntimeError, match="search unavailable"):
-        await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？")
+        await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？", file_ids=(uuid.uuid4(),))
     assert events == ["opened", "closed"]
 
 
@@ -364,10 +367,11 @@ async def test_rag_search_session_closes_when_stream_is_cancelled() -> None:
             events.append("closed")
 
     class BlockingSearchPort(MemorySearchPort):
-        async def hybrid_search(
+        async def hybrid_search_files(
             self,
             session: AsyncSession,
             store_id: uuid.UUID,
+            file_ids: tuple[uuid.UUID, ...],
             query_text: str,
             query_embedding: list[float],
             *,
@@ -394,7 +398,9 @@ async def test_rag_search_session_closes_when_stream_is_cancelled() -> None:
         min_lexical_score=0.10,
         max_context_tokens=100,
     )
-    task = asyncio.create_task(service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？"))
+    task = asyncio.create_task(
+        service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货流程？", file_ids=(uuid.uuid4(),))
+    )
     await search_started.wait()
     task.cancel()
 
@@ -422,7 +428,9 @@ async def test_single_candidate_skips_ordering_only_rerank_without_weakening_sco
         max_context_tokens=100,
     )
 
-    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货政策是什么？")
+    result = await service.retrieve(
+        cast(AsyncSession, object()), uuid.uuid4(), "退货政策是什么？", file_ids=(uuid.uuid4(),)
+    )
 
     assert [item.chunk_id for item in result.hits] == [candidate.chunk_id]
     assert result.top_score == 0.91
@@ -472,7 +480,9 @@ async def test_same_store_query_coalesces_local_embedding_across_workflows() -> 
         for port in ports
     ]
     tasks = [
-        asyncio.create_task(service.retrieve(cast(AsyncSession, object()), store_id, "本店的退货流程？"))
+        asyncio.create_task(
+            service.retrieve(cast(AsyncSession, object()), store_id, "本店的退货流程？", file_ids=(uuid.uuid4(),))
+        )
         for service in services
     ]
     await embedding.started.wait()
@@ -484,10 +494,12 @@ async def test_same_store_query_coalesces_local_embedding_across_workflows() -> 
     assert all(result.hits for result in results)
     assert all(port.store_id == store_id for port in ports)
     assert sum(result.embedding_input_tokens for result in results) == 8
-    cached = await services[0].retrieve(cast(AsyncSession, object()), store_id, "本店的退货流程？")
+    cached = await services[0].retrieve(
+        cast(AsyncSession, object()), store_id, "本店的退货流程？", file_ids=(uuid.uuid4(),)
+    )
     assert cached.embedding_input_tokens == 0
     assert embedding.calls == 1
-    await services[0].retrieve(cast(AsyncSession, object()), uuid.uuid4(), "本店的退货流程？")
+    await services[0].retrieve(cast(AsyncSession, object()), uuid.uuid4(), "本店的退货流程？", file_ids=(uuid.uuid4(),))
     assert embedding.calls == 2
 
 
@@ -528,8 +540,8 @@ async def test_failed_local_embedding_is_not_shared_with_later_request() -> None
     store_id = uuid.uuid4()
 
     with pytest.raises(RuntimeError, match="local model unavailable"):
-        await service.retrieve(cast(AsyncSession, object()), store_id, "退款规则")
-    result = await service.retrieve(cast(AsyncSession, object()), store_id, "退款规则")
+        await service.retrieve(cast(AsyncSession, object()), store_id, "退款规则", file_ids=(uuid.uuid4(),))
+    result = await service.retrieve(cast(AsyncSession, object()), store_id, "退款规则", file_ids=(uuid.uuid4(),))
 
     assert result.hits == []
     assert embedding.calls == 2
@@ -574,7 +586,9 @@ async def test_last_cancelled_waiter_stops_unused_local_embedding() -> None:
         min_lexical_score=0.10,
         max_context_tokens=100,
     )
-    task = asyncio.create_task(service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "本店退货流程"))
+    task = asyncio.create_task(
+        service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "本店退货流程", file_ids=(uuid.uuid4(),))
+    )
     await embedding.started.wait()
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
@@ -608,7 +622,9 @@ async def test_rag_retrieval_respects_context_token_budget() -> None:
         max_context_tokens=100,
     )
 
-    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货政策是什么？")
+    result = await service.retrieve(
+        cast(AsyncSession, object()), uuid.uuid4(), "退货政策是什么？", file_ids=(uuid.uuid4(),)
+    )
 
     assert [item.source_label for item in result.hits] == ["第一条", "第三条"]
     assert result.context_tokens == 90
@@ -636,7 +652,7 @@ async def test_rag_uses_reranker_order_before_final_top_k() -> None:
         max_context_tokens=100,
     )
 
-    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货")
+    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "退货", file_ids=(uuid.uuid4(),))
 
     assert [item.source_label for item in result.hits] == ["Reranker 第一"]
     assert result.top_score == 0.82
@@ -662,7 +678,9 @@ async def test_rag_rejects_candidates_below_dense_and_lexical_gates() -> None:
         max_context_tokens=100,
     )
 
-    result = await service.retrieve(cast(AsyncSession, object()), uuid.uuid4(), "完全无关的问题")
+    result = await service.retrieve(
+        cast(AsyncSession, object()), uuid.uuid4(), "完全无关的问题", file_ids=(uuid.uuid4(),)
+    )
 
     assert result.hits == []
     assert result.top_score == 0

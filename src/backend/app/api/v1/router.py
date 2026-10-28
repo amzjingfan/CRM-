@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.agent_management.router import router as agent_management_router
+from app.agents.management.router import router as agent_management_router
 from app.auth.router import router as auth_router
 from app.chat.router import router as chat_router
 from app.dashboard.router import router as dashboard_router

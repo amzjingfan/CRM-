@@ -4,7 +4,7 @@ from importlib import import_module
 
 
 def _validator():
-    return import_module("app.agent.policy_draft_validation").validate_policy_draft
+    return import_module("app.agents.core.policy_draft_validation").validate_policy_draft
 
 
 def _check(

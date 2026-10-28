@@ -7,8 +7,8 @@ from decimal import Decimal
 
 from sqlalchemy import select
 
-from app.agent.security import SYNTHETIC_DEMO_SCENARIOS
-from app.agent_management.models import AgentConfig
+from app.agents.core.security import SYNTHETIC_DEMO_SCENARIOS
+from app.agents.management.config_models import AgentConfig
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.orders.models import Order

@@ -16,10 +16,10 @@ from urllib.parse import urlsplit
 import httpx
 from openai import AsyncOpenAI
 
-from app.agent.errors import LLMProviderError
-from app.agent.providers.base import LLMProvider
-from app.agent.providers.deepseek_provider import DeepSeekProvider
-from app.agent.real_model_evaluation import (
+from app.agents.core.errors import LLMProviderError
+from app.agents.core.providers.base import LLMProvider
+from app.agents.core.providers.deepseek_provider import DeepSeekProvider
+from app.agents.core.real_model_evaluation import (
     RealModelEvaluationOutput,
     VerifiedRealModelEvaluationDataset,
     build_real_model_evaluation_request,

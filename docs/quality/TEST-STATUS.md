@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 动态Agent本地候选 [TR](../reports/tests/TR-MVP-AGENT-DYNAMIC-REWRITE-001-20261028-R01.md) **PASS（本地范围）**：subject `7594a1a53ede8e0b65f8987e352d78662bb04c41`；完整后端/隔离PostgreSQL-pgvector 2335 passed / 3 POSIX平台条件跳过，前端48契约/114生产浏览器、typecheck/build、Ruff/mypy245文件、迁移034↔039、16动态边界与237安全样本通过。依赖审计无已知漏洞，两轴审查无剩余阻断。已移除旧FAQ执行/正则与LangGraph依赖；asyncio项目编排＋langchain-core @tool。没有部署或真实模型/TikTok现场验收，G5/G6/G8现场结论不变。
+
 2026-10-28 订单详情 UI [TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-DETAIL-UI-001-20261028-R02.md) staging 范围 **PASS**：合并主线 `0e4100b2` 前端类型/构建、契约 48/48、生产浏览器 113/113；手动私有备份、`ValidateOnly`/`Deploy`、12 容器、迁移头 034、四个公网路径 200。已登录真实订单电话、完整地址、规格、卖家 SKU 可见，物流默认 2 条、展开 8 条；不记录买家具体值。后端与 Agent 模式保持，无真实外发、退款或 production 发布。见[低敏证据](../../release/evidence/staging/crm-staging-order-detail-redeploy-20261028.json)。
 
 2026-10-28 Agent 调试工具加知识 [TR R08](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R08.md) **PASS**：`main=5f0feb7f` 的后端 `sha256:6d50f5dd…f7a20` 手动部署 staging，来源、私有备份、迁移头和健康检查通过。TikTok US 店铺同一审批绑定合成文件的纯知识 trace `ae1d5d67` 显示七天回答与引用；授权会话物流加知识 trace `35c0f2fd` 同时显示已送达、七天规则、`query_logistics:succeeded` 与文件引用，两条均为 `succeeded / human_review`。测试后 Agent 已保存解绑且文件软删除；无平台发送。原本地隔离数据库 2460 passed/3 skipped，237 样本安全评测通过。GitHub #573 两作业零步骤失败，经用户仅本 PR 批准本地替代。知识库旧文案仍误称文档检索未接入，另行修正；production G8 No-Go。
