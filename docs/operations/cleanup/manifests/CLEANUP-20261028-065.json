@@ -1,0 +1,26 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-065",
+  "state": "deleted_branch_only",
+  "base_sha": "4839e23ecdc7b7502d80e9f4df97e8a6d1c3e797",
+  "deleted_branch_count": 2,
+  "deleted_worktree_count": 0,
+  "branches": [
+    {
+      "ref": "refs/heads/docs/frontend-staging-deploy-evidence-20261008",
+      "head": "80bc7a28c205e15ebe28cf50a86d79046f8e9a81",
+      "archive_ref": "refs/archive/CLEANUP-20261028-065/docs/frontend-staging-deploy-evidence-20261008",
+      "merged_pr": 97,
+      "merged_commit": "09557ddf9c5d1332ca5958c62a83c018dd890e83",
+      "worktree": ".worktrees/mvp008-staging-recovery-20260929",
+      "worktree_final_state": "detached_at_original_head_with_untracked_and_ignored_files_preserved",
+      "restore_method": "git branch docs/frontend-staging-deploy-evidence-20261008 refs/archive/CLEANUP-20261028-065/docs/frontend-staging-deploy-evidence-20261008"
+    },
+    {
+      "ref": "refs/heads/docs/mvp008-branch-cleanup-20261028",
+      "archive_ref": "refs/archive/CLEANUP-20261028-065/docs/mvp008-branch-cleanup-20261028",
+      "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+      "restore_method": "git branch docs/mvp008-branch-cleanup-20261028 refs/archive/CLEANUP-20261028-065/docs/mvp008-branch-cleanup-20261028"
+    }
+  ]
+}
