@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-STAGING-LATENCY-001-20261028-R02 | MVP-STAGING-LATENCY-001 | R02 | APPROVE | `e64ef52c9702540a5c5eb3a151cd19afce97b0e0` | release_scope, source_identity, backup, gateway_cache, store_isolation, fixed_egress, safety_switches, recovery | 2026-10-28T18:07:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R02.md`](RR-MVP-STAGING-LATENCY-001-20261028-R02.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R01 | MVP-STAGING-LATENCY-001 | R01 | APPROVE | `2c77b8d9a729e467d702c116ad7403e94660f979` | correctness, store_isolation, privacy, fixed_egress, cache, rate_limits, deployment_boundary | 2026-10-28T16:35:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R01.md`](RR-MVP-STAGING-LATENCY-001-20261028-R01.md) |
 | RR-MVP-AGENT-DYNAMIC-REWRITE-001-20261028-R01 | MVP-AGENT-DYNAMIC-REWRITE-001 | R01 | APPROVE | `7594a1a53ede8e0b65f8987e352d78662bb04c41` | correctness, spec, store_isolation, prompt_safety, concurrency, restore | 2026-10-28T16:08:00+08:00 | [`RR-MVP-AGENT-DYNAMIC-REWRITE-001-20261028-R01.md`](RR-MVP-AGENT-DYNAMIC-REWRITE-001-20261028-R01.md) |
 | RR-MAINT-CLEANUP-20261028-002-20261028-R01 | MAINT-CLEANUP-20261028-002 | R01 | APPROVE | `7594a1a53ede8e0b65f8987e352d78662bb04c41` | legacy_code, regression, restore, reference_scan | 2026-10-28T16:08:00+08:00 | [`RR-MAINT-CLEANUP-20261028-002-20261028-R01.md`](RR-MAINT-CLEANUP-20261028-002-20261028-R01.md) |
