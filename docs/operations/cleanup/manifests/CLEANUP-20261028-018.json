@@ -1,0 +1,29 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-018",
+  "state": "candidate",
+  "base_sha": "29511bed90c937dc50b1933ab57aad6cb9d7756b",
+  "scope": "two unattached local branches whose exact heads were merged by PR #580 and #581; archive refs before deleting original names; no worktree or remote operations",
+  "candidates": [
+    {
+      "ref": "refs/heads/docs/order-detail-staging-evidence-20261028",
+      "head": "655146a7bd54a0e36941b51238a72dabf98bc159",
+      "proof": "exact head of merged PR #580 with merge commit in local main",
+      "pr": 580,
+      "merge_commit": "de3ccedfdcc20e11417e38d3f983db8cf66f2d64",
+      "archive_ref": "refs/archive/CLEANUP-20261028-018/docs/order-detail-staging-evidence-20261028",
+      "deletion": "git branch -D after exact authorization",
+      "restore_method": "git branch docs/order-detail-staging-evidence-20261028 refs/archive/CLEANUP-20261028-018/docs/order-detail-staging-evidence-20261028"
+    },
+    {
+      "ref": "refs/heads/docs/order-detail-task-close-20261028",
+      "head": "9213d857b1e2397237f550bfde7531f72428101c",
+      "proof": "exact head of merged PR #581 with merge commit in local main",
+      "pr": 581,
+      "merge_commit": "0b14b1d1be1a68e607d0665807048c81ca7fb01c",
+      "archive_ref": "refs/archive/CLEANUP-20261028-018/docs/order-detail-task-close-20261028",
+      "deletion": "git branch -D after exact authorization",
+      "restore_method": "git branch docs/order-detail-task-close-20261028 refs/archive/CLEANUP-20261028-018/docs/order-detail-task-close-20261028"
+    }
+  ]
+}
