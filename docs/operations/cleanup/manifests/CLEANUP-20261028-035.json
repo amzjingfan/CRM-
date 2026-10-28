@@ -1,7 +1,10 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-035",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "8750eb6027b9a5fe0877ae14e30982dfbec67482",
+  "deleted_link_count": 3,
+  "targets_preserved": true,
   "base_sha": "d730415cefb01af38e1578ff04564483072927fb",
   "scope": "unlink three exact reparse points in two old worktrees, preserving link metadata and targets; no worktree, branch, remote, or external target changes",
   "links": [
