@@ -1,0 +1,18 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-067",
+  "state": "deleted_registration_only",
+  "base_sha": "54823167b63ac91404c25ebfd33ee005d2dea322",
+  "user_deleted_worktree": ".worktrees/mvp008-staging-recovery-20260929",
+  "codex_deleted_worktree_count": 0,
+  "pruned_stale_registration_count": 1,
+  "deleted_branch_count": 1,
+  "original_head_archive_ref": "refs/archive/CLEANUP-20261028-065/docs/frontend-staging-deploy-evidence-20261008",
+  "original_head": "80bc7a28c205e15ebe28cf50a86d79046f8e9a81",
+  "cleanup_branch": {
+    "ref": "refs/heads/docs/prune-mvp008-registration-20261028",
+    "archive_ref": "refs/archive/CLEANUP-20261028-067/docs/prune-mvp008-registration-20261028",
+    "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+    "restore_method": "git branch docs/prune-mvp008-registration-20261028 refs/archive/CLEANUP-20261028-067/docs/prune-mvp008-registration-20261028"
+  }
+}
