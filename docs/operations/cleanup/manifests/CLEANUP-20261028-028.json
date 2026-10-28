@@ -1,0 +1,123 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-028",
+  "state": "candidate",
+  "base_sha": "d3f9093b09c808d9f533c88136cb26f8eec24dad",
+  "scope": "one exact merged-PR knowledge-store worktree and branch; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-028",
+  "candidates": [
+    {
+      "worktree": ".worktrees/knowledge-store-detail-deploy-main-20261025",
+      "head": "9db43cb119d2585463823ea6224bd1ee36f58d58",
+      "branch_ref": "refs/heads/docs/store-view-consistency-index-current-20261025",
+      "pr": 555,
+      "merge_commit": "c755716e8efeb99538c366a185747df2dc836216",
+      "directory_modified": "2026-10-25T11:30:59.8524817+08:00",
+      "untracked": [],
+      "ignored_count": 16,
+      "ignored_paths_sha256": "1F5B0298ECA0DB43D57B50F3AC6E23ACB3C60A96E3879039D135B0027A7A1919",
+      "cache_file_count": 0,
+      "cache_bytes": 0,
+      "archive_file_count": 16,
+      "archive_bytes": 74967132,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/backend-build-metadata-20261025.json",
+          "size": 2124,
+          "modified": "2026-10-25T11:33:01.4894095+08:00",
+          "sha256": "2329F769A35225EF6562B91AD082E5DF77EC339E48E7C89E92FC0BF2C677AEA0"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/.token_seed",
+          "size": 61,
+          "modified": "2026-10-25T11:34:12.0452299+08:00",
+          "sha256": "0BE2890481DCC42A4A601A8383A9583C8680688A2694D269E4D2C4EB96540043"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-25T11:32:53.1473130+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-25T11:32:34.6701868+08:00",
+          "sha256": "5E571B0B2AB10D5B0F8F54F7E1AE657ABC6921CA735476C6460BE58EC354E7B1"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-25T11:32:34.5967790+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-25T11:33:07.7857384+08:00",
+          "sha256": "1AC9D39946021C7C420A249B510260EEF8DE99A67D485792B5B17D2CBDE5D93B"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/buildx/current",
+          "size": 76,
+          "modified": "2026-10-25T11:34:47.1081748+08:00",
+          "sha256": "AD4436223BFADF60E9921A9BE166DA1D9C454921DB007F16B8F21E5553CDE791"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/buildx/refs/default/default/ovkxs2lnejoij9m6muq8lxsvy",
+          "size": 284,
+          "modified": "2026-10-25T11:32:35.3349870+08:00",
+          "sha256": "9BED020E85F3B9AC3E9649C7385C5F466975EA3D385BFA63AE480D822138506E"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/buildx/refs/default/default/rnzwmd4wokosdzd3wco05i1i2",
+          "size": 291,
+          "modified": "2026-10-25T11:33:08.1375490+08:00",
+          "sha256": "EAFDDE629C9D08C752DCE8B385035AE0FF9C78C5F9088E572503AA989BF25CB6"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/cli-plugins/docker-buildx.exe",
+          "size": 67230128,
+          "modified": "2026-08-06T23:31:42.0219998+08:00",
+          "sha256": "2613A23FCA0673BD3858035E32B172147E3DF4B71C613114C85DCE673C235FE2"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-config-store-consistency-20261025/config.json",
+          "size": 42,
+          "modified": "2026-10-25T11:51:54.8668906+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/frontend-build-metadata-20261025.json",
+          "size": 2230,
+          "modified": "2026-10-25T11:34:23.7454123+08:00",
+          "sha256": "DB17280D4501FBA626C25965665EB064858F3C36DD9721EA9AB77C7D05B6710C"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-store-view-current-index-20261025.md",
+          "size": 543,
+          "modified": "2026-10-25T11:55:04.5181527+08:00",
+          "sha256": "FA6C70BB3463B635C168A6937BC57E36BE63AA6B1324D67672729684FBE945BC"
+        },
+        {
+          "path": "src/tests/.artifacts/pr-store-view-staging-evidence-20261025.md",
+          "size": 1293,
+          "modified": "2026-10-25T11:52:48.4095516+08:00",
+          "sha256": "2B144444AC2F39E050BC130780ADDF7EEAE6C0D7E943B6273869D3BD8E5FF082"
+        },
+        {
+          "path": "src/tests/.artifacts/run-staging-store-consistency.ps1",
+          "size": 5358,
+          "modified": "2026-10-25T11:42:23.1359366+08:00",
+          "sha256": "7DC5FFB814463A63C8BCD4F6E1DB191FEF79CE6890D828978547BC8C0DAF7C60"
+        },
+        {
+          "path": "src/tests/.artifacts/store-consistency-main-aadf5087.bundle",
+          "size": 7724666,
+          "modified": "2026-10-25T11:35:54.6703313+08:00",
+          "sha256": "DADB2ACBB8700D7455A2F8D6F93E91D9DA336FB68E65B0661982F4614C9077F9"
+        }
+      ]
+    }
+  ]
+}
