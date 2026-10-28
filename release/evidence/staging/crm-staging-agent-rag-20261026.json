@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "evidence_type": "agent_rag_manual_staging_deployment",
+  "environment": "staging",
+  "task_id": "MVP-AGENT-PROTOTYPE-RAG-001",
+  "deployed_at_utc": "2026-10-26T03:14:00Z",
+  "source_sha": "cef8646ad599856b4b19b7207ef38cc8daa4c1da",
+  "source_bundle_sha256": "bc421d3115e8acd17b17dae747daaafccdeac3ee47574e096be97f5ff51e8be2",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:23e8a3a81378a57ac1afa0b3ba3c5e5002de322a71be34532846d65a84b84bb6",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:0b2173969cf11fc8c92a2ab1751ec18bba89384c8c785ea1cbdd80b83c975c98",
+    "retrieval_model_service_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "oci_revision_verified": true,
+    "platform": "linux/amd64"
+  },
+  "previous_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:46fe1edcc6a20bd628f8b353fe8a8a3881b5788968ca37dce09eb2dd66d6697c",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:92744d145906205aa9b66045f21f0e92806dfd17199964802cd606d5d8f236a8"
+  },
+  "private_backups": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "postgresql_sha256": "94724114911f19c82fe276390c3eceb3ec43f941a91b0c4d7f0526219b6a6cb7",
+    "postgresql_bytes": 675965,
+    "pg_restore_list_readable": true,
+    "minio_sha256": "67d3737bc62cb0e5b0f41b9a05dac209acfbeb442e50747f10261ebf60d239ab",
+    "minio_bytes": 389120,
+    "environment_snapshot_private": true
+  },
+  "manual_gates": {
+    "validate": "validated",
+    "validate_private_evidence_sha256": "710e8ac338b17aa08647c7cc9b4d1eb4d0e6ba0b6c4b7390ba35fa772e13964e",
+    "deploy": "passed",
+    "deploy_private_evidence_sha256": "ee5486dcacab66ce1790f6c53ed5edc1ef503441cad1ff4a0888037ea8a3f014"
+  },
+  "postdeploy": {
+    "crm_running_container_count": 12,
+    "database_migration_head": "033_file_version_approval",
+    "document_retrieval_indexes_found": 2,
+    "backend_and_frontend_running_digests_match": true,
+    "public_http_200": ["/healthz", "/v1/health", "/v1/health/ready", "/login", "/agents", "/knowledge", "/workspace"],
+    "fingerprinted_js_http_200": true,
+    "tiktok_webhook_read_enabled": true,
+    "tiktok_manual_send_store_count": 1,
+    "workspace_translation_enabled": true,
+    "document_ingestion_enabled": true,
+    "auto_reply_enabled": false,
+    "ai_marketing_enabled": false,
+    "llm_enabled": false,
+    "authenticated_agent_ui": "NOT_RUN: public route and asset checks do not establish logged-in Agent interactions; local production-browser tests 110/110 were previously recorded"
+  },
+  "github_actions": "not_used_for_this_direct_staging_deployment",
+  "ci_cd_pipeline": false,
+  "real_tiktok_message_sent_for_smoke": false,
+  "production_release": false
+}

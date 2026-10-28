@@ -1,0 +1,15 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-045",
+  "state": "deleted",
+  "execution_main_sha": "2a61bb1786dc282c9986cf1244a0eda133f5c7d1",
+  "deleted_branch_count": 1,
+  "scope": "integrate one historical staging evidence JSON into local main, archive original branch commit, then delete the unattached branch name; no worktree or remote operation",
+  "ref": "refs/heads/feature/staging-agent-rag-deploy-20261026",
+  "head": "1b80028e3ed644d103fd948dc0a600f775b4fcad",
+  "archive_ref": "refs/archive/CLEANUP-20261028-045/feature/staging-agent-rag-deploy-20261026",
+  "proof_task": "MVP-AGENT-PROTOTYPE-RAG-001",
+  "integrated_evidence_path": "release/evidence/staging/crm-staging-agent-rag-20261026.json",
+  "integrated_evidence_blob": "096f43e698c52b294cd89bdc09e9887506a0a335",
+  "documentation_path": "docs/operations/DEPLOYMENT.md"
+}
