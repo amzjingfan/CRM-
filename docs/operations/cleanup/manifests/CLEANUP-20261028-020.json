@@ -1,0 +1,255 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-020",
+  "state": "candidate",
+  "base_sha": "86ea3eb681a64739e4ade0560992b066a6323acf",
+  "scope": "one exact merged-PR worktree and branch; ignored cache classes deleted; other ignored files archived; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-020",
+  "candidates": [
+    {
+      "worktree": ".worktrees/tracking-bulk-deploy-20261022",
+      "head": "042708031bd10638e9fcb75a861a041a2f0a2731",
+      "branch_ref": "refs/heads/feature/team-account-department-ui-20261022",
+      "pr": 519,
+      "merge_commit": "e6322efd0deb51497e1b7b831d9417accad6a513",
+      "directory_modified": "2026-10-22T11:12:52.558869+08:00",
+      "ignored_count": 46567,
+      "ignored_paths_sha256": "AB6724D9E5D3DF1B9948BD07E4FF614B95AEB46E665830B2B9F3CE61E3927238",
+      "cache_file_count": 46529,
+      "cache_bytes": 1035784041,
+      "archive_file_count": 38,
+      "archive_bytes": 615877597,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/account-drawer-preview.png",
+          "size": 64873,
+          "modified": "2026-10-22T14:51:05.8670743+08:00",
+          "sha256": "EF39E328D5905C10589AB036A52EA183FCAE9B8BEC89B8CC40056F88C5CFB6D2"
+        },
+        {
+          "path": "src/tests/.artifacts/department-preview.png",
+          "size": 48106,
+          "modified": "2026-10-22T14:51:05.9991943+08:00",
+          "sha256": "A13D82148A1B8FA8F38B899E572443494E3672B8332A2CBA405931BD0BD11C61"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/backup.sh",
+          "size": 554,
+          "modified": "2026-10-22T12:56:28.1662901+08:00",
+          "sha256": "AEF0B6267F2B438803DE647A5AFDFD03052B4866A1582D025C5D921C4C60A682"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/frontend.tar",
+          "size": 64057344,
+          "modified": "2026-10-22T12:54:25.8524555+08:00",
+          "sha256": "2A2779F07B366555198B26B979952BDA3ADEBFCEFB0A76208B5169BD0775BE7B"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/pr-body.md",
+          "size": 812,
+          "modified": "2026-10-22T12:49:41.7360631+08:00",
+          "sha256": "D05968A740241161530F62756B58F71222FED04AB30CB2A3B506ED74FABB1B7A"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/pr-staging-body.md",
+          "size": 955,
+          "modified": "2026-10-22T13:02:59.8899404+08:00",
+          "sha256": "735617A1415807440E6C27AB6DEE9334F0A0B8E28E6DFB9984701623CA0C86F9"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/prepare.sh",
+          "size": 1686,
+          "modified": "2026-10-22T12:55:39.0045122+08:00",
+          "sha256": "B293964987A367C2E92F5CE261532F7C81F99D85D612129EBEC1CBC893C92D0E"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/run.ps1",
+          "size": 6708,
+          "modified": "2026-10-22T12:56:28.1642832+08:00",
+          "sha256": "43751ACB7FC52DAB1E6DA6C85A26B96E62C37B514CDF557D99A14B8CAACAC293"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/seller-sku-close-pr.md",
+          "size": 832,
+          "modified": "2026-10-22T13:16:01.4011811+08:00",
+          "sha256": "BEF1841F7677555E65BE6B75150BC8A60ACE1402A7F8F54F2230D7B10E22237D"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/seller-sku-confirm-pr.md",
+          "size": 1042,
+          "modified": "2026-10-22T13:14:45.6733865+08:00",
+          "sha256": "2FDE74D3A85D6B287B18E6EE9B08FAEB2F1E17751ACD4F4BB89DD916BB3F29F3"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/source.bundle",
+          "size": 7141837,
+          "modified": "2026-10-22T12:52:33.5657187+08:00",
+          "sha256": "4F3E60C20D20F7DD417625F58AAD49ABA1828A16EE83B1BACBCE860F33F2EEA6"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/tracking-close-pr.md",
+          "size": 842,
+          "modified": "2026-10-22T13:12:40.7024288+08:00",
+          "sha256": "E6B19E75BE9E1DF7E0D2C94BA15CE0107D9C451DF1B3BB6DBE7D0D3CF0EA83EF"
+        },
+        {
+          "path": "src/tests/.artifacts/seller-sku-wrap-20261022/validate-index.py",
+          "size": 1874,
+          "modified": "2026-10-22T13:07:38.5195655+08:00",
+          "sha256": "4A5790A944FC537F58ECF1D8DF10C0311DB719213D65AC5B370F96A566798586"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/backup.sh",
+          "size": 546,
+          "modified": "2026-10-22T15:12:35.1580265+08:00",
+          "sha256": "37FE32F73264957C382491BC1A7456C56E219471BD194AC5DB0D2B11951EF353"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/images.tar",
+          "size": 174336512,
+          "modified": "2026-10-22T15:09:45.916521+08:00",
+          "sha256": "39D2F2118EE5E926B4FF8B22293C8E4F28731677A921A728FF27461DF80DDC43"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/inspect.sh",
+          "size": 983,
+          "modified": "2026-10-22T15:07:39.0209706+08:00",
+          "sha256": "257FF341755BBA79248D95780B1C2B5F6D222E7D769F4BEDA316980B202CECA6"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/load-push.sh",
+          "size": 1244,
+          "modified": "2026-10-22T15:10:51.372433+08:00",
+          "sha256": "527D7696996E1F58720DB7D81D7A8BDCCD66658FD25A09875C3C1ED2521D155A"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/pr-body.md",
+          "size": 1117,
+          "modified": "2026-10-22T15:26:27.1743676+08:00",
+          "sha256": "B747CB191778E3091231FE8FF70901698FDAAC56827DA76C0EFE928AAF760DAB"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/pr-index-body.md",
+          "size": 518,
+          "modified": "2026-10-22T15:30:45.7019588+08:00",
+          "sha256": "DF30DC211F100D646A8F93D2328F42122798E0FC7ECFD981899BE4978D61A9C2"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/run.ps1",
+          "size": 6694,
+          "modified": "2026-10-22T15:12:12.9472055+08:00",
+          "sha256": "E76A20179647F897B8F50E3B5A5A1157CFE5A517DA4BCA101DFE62EBE0FEC148"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/source.bundle",
+          "size": 7185065,
+          "modified": "2026-10-22T15:06:35.0390072+08:00",
+          "sha256": "6011665CE916F010567FF34F6792FD2F8D0DE2BA5961D10897E1C78CB18BBD79"
+        },
+        {
+          "path": "src/tests/.artifacts/team-deploy-20261022/ui-stage.test.mjs",
+          "size": 42630,
+          "modified": "2026-10-22T15:17:06.2032856+08:00",
+          "sha256": "1E1ABC96A00354C7A2D96F2D277479E71CE0FDB6A22334523706288449B0E67A"
+        },
+        {
+          "path": "src/tests/.artifacts/team-pr-body.md",
+          "size": 1655,
+          "modified": "2026-10-22T14:58:58.3145318+08:00",
+          "sha256": "EF1C97D3AF6FE1E1FF68CA9FA5E682A52DBA497DA6AE7C1B7BD343B5AD9658F0"
+        },
+        {
+          "path": "src/tests/.artifacts/team-preview.mjs",
+          "size": 2575,
+          "modified": "2026-10-22T14:50:56.1050485+08:00",
+          "sha256": "68091B11E1CCD59145A11CF7254AA62158BE95C3B9422524535E53E020A0AE39"
+        },
+        {
+          "path": "src/tests/.artifacts/team-preview.png",
+          "size": 44247,
+          "modified": "2026-10-22T14:51:05.7625892+08:00",
+          "sha256": "C87AD8144C63CD0D0D198BF154BF3D347D0567161EFAB92AFDCC456665DE30DA"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-bulk-deploy/backup.sh",
+          "size": 555,
+          "modified": "2026-10-22T11:19:22.6043608+08:00",
+          "sha256": "CE6A22D82E77CB54776D8DCB007FED7E9989E1D857BAA72C5BFC7C1763312D14"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-bulk-deploy/images.tar",
+          "size": 174287872,
+          "modified": "2026-10-22T11:16:01.8701116+08:00",
+          "sha256": "A0A8D515D094C908FBAC9110D9057FE3CA6B79F168A507F3B7B212D84EA644BD"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-bulk-deploy/pr-native-card.md",
+          "size": 1743,
+          "modified": "2026-10-22T12:09:51.2591656+08:00",
+          "sha256": "301914F34D4B2E393124B0727751EB55B6D532A8EE519AC9DB8AD5E46DF202F0"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-bulk-deploy/run.ps1",
+          "size": 6784,
+          "modified": "2026-10-22T11:18:31.2534071+08:00",
+          "sha256": "6B03B559AF681665E35232AE7B926F83B29BB4242945B481F99A052A3850A40F"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-bulk-deploy/source.bundle",
+          "size": 7090130,
+          "modified": "2026-10-22T11:15:55.439113+08:00",
+          "sha256": "581C3907CFCA25B7547EEFC6F3DAFBE2EDF0CC0FCC75E0E68B8C8D081B22F7B3"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/backup.sh",
+          "size": 553,
+          "modified": "2026-10-22T12:18:15.2684466+08:00",
+          "sha256": "9BB0849CDB215F8973882C691B07D04D0691DB284A95FCC3DC77CBACD9BBF19A"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/images.tar",
+          "size": 174298624,
+          "modified": "2026-10-22T12:16:14.9892211+08:00",
+          "sha256": "235F1DB1CE11DB5BE95099D08BBA5E4D58C0F15E854CBB0E7BE0FAA947402242"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/pr-index-body.md",
+          "size": 757,
+          "modified": "2026-10-22T13:09:08.0951695+08:00",
+          "sha256": "623E1E6EB90BBBD4A54858C15F8E3182D99852C98429FAC789270A2CF84F6F31"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/pr-r05-body.md",
+          "size": 901,
+          "modified": "2026-10-22T12:28:03.8960916+08:00",
+          "sha256": "85C169C80FBC666BE4F7F285D544532960D79DE2F008E30BAA896028D9527A93"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/pr-r06-body.md",
+          "size": 705,
+          "modified": "2026-10-22T13:06:18.0992231+08:00",
+          "sha256": "DEEEDD84B6FA2E8170ECC1A96895230B03DE374FBBA2ED9382C427940CFEEB99"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/prepare.sh",
+          "size": 1299,
+          "modified": "2026-10-22T12:17:08.1680275+08:00",
+          "sha256": "9099D65CD1082E9991CFF52A94D5AAA514AF1256D6D0399EA467E90F3A67F3B0"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/run.ps1",
+          "size": 6708,
+          "modified": "2026-10-22T12:18:15.2674473+08:00",
+          "sha256": "5D39DB5CC5D7FCF3A3571ECA7ED9823AC9540A0359AF0413881C64B0E72184AE"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-native-card-deploy-20261022/source.bundle",
+          "size": 7229715,
+          "modified": "2026-10-22T12:16:06.7277674+08:00",
+          "sha256": "79A24CC21E578B95DF01050252099C9D15709F0B32540D6ECE952821E1C4CBDC"
+        }
+      ],
+      "untracked": []
+    }
+  ]
+}
