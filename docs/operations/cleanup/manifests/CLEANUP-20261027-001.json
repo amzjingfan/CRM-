@@ -1,0 +1,507 @@
+{
+  "task_id": "MAINT-CLEANUP-20261027-001",
+  "batch_id": "CLEANUP-20261027-001",
+  "base_sha": "8ee98830026990ad1b0ee1c382eb309a4aeb4ea0",
+  "merge_target": "origin/main",
+  "state": "QUARANTINED_DELETE_BLOCKED",
+  "authorized_scope": "Two downloaded model directories and ten generated test files in the Agent worktree",
+  "items": [
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/deploy/models/bge-m3/",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "ignored",
+      "size_bytes": 609377683.0,
+      "file_count": 17,
+      "sha256": "N/A: directory; per-file SHA-256 listed in files",
+      "modified_at": "2026-10-27T11:16:51.4334108+08:00",
+      "reason": "Created by this turn while attempting official pinned BGE download; weights incomplete",
+      "reference_checks": [
+        "Target did not exist before this turn",
+        "No reparse points",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/deploy/models/bge-m3/",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Re-download official pinned model revision and verify manifest SHA-256",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ],
+      "files": [
+        {
+          "path": ".cache/huggingface/.gitignore",
+          "bytes": 1,
+          "sha256": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1"
+        },
+        {
+          "path": ".cache/huggingface/CACHEDIR.TAG",
+          "bytes": 195,
+          "sha256": "e8893e2dcb3f4545ef67a0a5b7b769113d38eef1aa61c7c7ba14659b02af955f"
+        },
+        {
+          "path": ".cache/huggingface/download/config.json.metadata",
+          "bytes": 103,
+          "sha256": "cadd7777319f22442b130cb82388b8dc38f7bb70e37f08fe25a12f1a420f7f8b"
+        },
+        {
+          "path": ".cache/huggingface/download/pytorch_model.bin.lock",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".cache/huggingface/download/Q1p2l2BzM1m6P5jKvr8WTq1TUio=.b5e0ce3470abf5ef3831aa1bd5553b486803e83251590ab7ff35a117cf6aad38.54a2e0e8.incomplete",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".cache/huggingface/download/Q1p2l2BzM1m6P5jKvr8WTq1TUio=.b5e0ce3470abf5ef3831aa1bd5553b486803e83251590ab7ff35a117cf6aad38.7dd8240a.incomplete",
+          "bytes": 104857600,
+          "sha256": "663eb1d945f2d3af0e45b6fba016d7c78acf93ddf0036fa20a0acb9052d28f7b"
+        },
+        {
+          "path": ".cache/huggingface/download/Q1p2l2BzM1m6P5jKvr8WTq1TUio=.b5e0ce3470abf5ef3831aa1bd5553b486803e83251590ab7ff35a117cf6aad38.7fc4679e.incomplete",
+          "bytes": 482344960,
+          "sha256": "772279ae4befd0f64f5e7e03673cbdd9ecffb9c0f4a0ed6236e354eebc03c25b"
+        },
+        {
+          "path": ".cache/huggingface/download/sentencepiece.bpe.model.metadata",
+          "bytes": 128,
+          "sha256": "926c5f8bfc1f95d980cd0388263b0470b3188ca1ef511f75494802933ad4c3df"
+        },
+        {
+          "path": ".cache/huggingface/download/special_tokens_map.json.metadata",
+          "bytes": 104,
+          "sha256": "98976e31e02c4b0224cedcee82b69754b4913332f037f1d0fbc27e31d2248a7f"
+        },
+        {
+          "path": ".cache/huggingface/download/tokenizer_config.json.metadata",
+          "bytes": 104,
+          "sha256": "64487b4c123f31f0b17728933e56ad2ace98d26d7bb14bba34441d43ceaf159a"
+        },
+        {
+          "path": ".cache/huggingface/download/tokenizer.json.metadata",
+          "bytes": 127,
+          "sha256": "303fb6ab1eac85f5da19fd3e46b447d471e7e79bec0c62dd56c50755719f13e3"
+        },
+        {
+          "path": ".cache/huggingface/trees/5617a9f61b028005a4858fdac845db406aefb181.json",
+          "bytes": 5107,
+          "sha256": "ac6ca8029902de127d9a870d2712776240dc51eb9156b5d35844ea462c46db9d"
+        },
+        {
+          "path": "config.json",
+          "bytes": 687,
+          "sha256": "26159e7ad065073448460117eb24b7a4572f6f4e78eadff65dc0a11c052449fa"
+        },
+        {
+          "path": "sentencepiece.bpe.model",
+          "bytes": 5069051,
+          "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "bytes": 964,
+          "sha256": "8c785abebea9ae3257b61681b4e6fd8365ceafde980c21970d001e834cf10835"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 444,
+          "sha256": "a62b2b6784f990259fddef5f16388693a8043be4f69179e6a5257eeb3f9abac4"
+        },
+        {
+          "path": "tokenizer.json",
+          "bytes": 17098108,
+          "sha256": "21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08"
+        }
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/deploy/models/bge-reranker-large/",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "ignored",
+      "size_bytes": 273830115.0,
+      "file_count": 16,
+      "sha256": "N/A: directory; per-file SHA-256 listed in files",
+      "modified_at": "2026-10-27T11:17:47.0085517+08:00",
+      "reason": "Created by this turn while attempting official pinned BGE download; weights incomplete",
+      "reference_checks": [
+        "Target did not exist before this turn",
+        "No reparse points",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/deploy/models/bge-reranker-large/",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Re-download official pinned model revision and verify manifest SHA-256",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ],
+      "files": [
+        {
+          "path": ".cache/huggingface/.gitignore",
+          "bytes": 1,
+          "sha256": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1"
+        },
+        {
+          "path": ".cache/huggingface/CACHEDIR.TAG",
+          "bytes": 195,
+          "sha256": "e8893e2dcb3f4545ef67a0a5b7b769113d38eef1aa61c7c7ba14659b02af955f"
+        },
+        {
+          "path": ".cache/huggingface/download/config.json.metadata",
+          "bytes": 103,
+          "sha256": "e04c92e0755382059aa402cfcf13e866370f23b93cabdd699fea21712580aff8"
+        },
+        {
+          "path": ".cache/huggingface/download/model.safetensors.lock",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".cache/huggingface/download/sentencepiece.bpe.model.metadata",
+          "bytes": 128,
+          "sha256": "542aa5e993eb30ecca55c88cc9cdc97a7a6625296941efb502954241c321c00e"
+        },
+        {
+          "path": ".cache/huggingface/download/special_tokens_map.json.metadata",
+          "bytes": 103,
+          "sha256": "ce3cc470cd093f853717e2b8f92358244b0917cfe5ba34de7f5d9627b0a4f501"
+        },
+        {
+          "path": ".cache/huggingface/download/tokenizer_config.json.metadata",
+          "bytes": 104,
+          "sha256": "ca4e4fe21a08035fcccad60581899b682c365edcee89b610831d5bda320a21b1"
+        },
+        {
+          "path": ".cache/huggingface/download/tokenizer.json.metadata",
+          "bytes": 128,
+          "sha256": "7bda5f8b61b7fce600538e1ff51bd1b05845168ceff0e6f9a20681a462fdf108"
+        },
+        {
+          "path": ".cache/huggingface/download/xGOKKLRSlIhH692hSVvI1-gpoa8=.c5ae4e262c60ed2fb507ec587358285377ec36ee0a2e6da029f0534272b06d36.e84673a8.incomplete",
+          "bytes": 251658240,
+          "sha256": "9231786df29b78045109681f538b76b8aebed829674fd556a5e1f15adb5a4c20"
+        },
+        {
+          "path": ".cache/huggingface/download/xGOKKLRSlIhH692hSVvI1-gpoa8=.c5ae4e262c60ed2fb507ec587358285377ec36ee0a2e6da029f0534272b06d36.fd443422.incomplete",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": ".cache/huggingface/trees/55611d7bca2a7133960a6d3b71e083071bbfc312.json",
+          "bytes": 2432,
+          "sha256": "122827384462558bf2e392a824c235484e2b450d3094e500f5f36a5e947b4802"
+        },
+        {
+          "path": "config.json",
+          "bytes": 801,
+          "sha256": "25dda0319f57e9de243c32eb7ecefa0768271afac6b5d8a94ba7f779198ab102"
+        },
+        {
+          "path": "sentencepiece.bpe.model",
+          "bytes": 5069051,
+          "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "bytes": 279,
+          "sha256": "d5469a60db23249c7f8945013d78df30b44b6bf686c6bb4740f4223f77b1b535"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 443,
+          "sha256": "a1d6bc8734a6f635dc158508bef000f8e2e5a759c7d92f984b2c86e5ff53425b"
+        },
+        {
+          "path": "tokenizer.json",
+          "bytes": 17098107,
+          "sha256": "9eb652ac4e40cc093272bbbe0f55d521cf67570060227109b5cdc20945a4489e"
+        }
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-browser-20261027.log",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 11121,
+      "sha256": "3031555ffbdd291eb672713813bf679f39a7f0f89dc2fc960c5cf52a1a4707a6",
+      "modified_at": "2026-10-27T11:11:17.5169317+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-browser-20261027.log",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-browser-focused-20261027.log",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 217,
+      "sha256": "8bf54d11a3eb6ff6ee9a1fd78626b3514b94f176c9bbf929c68cd4eaf7f593c4",
+      "modified_at": "2026-10-27T11:11:31.1231898+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-browser-focused-20261027.log",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-deepseek-smoke-20261027.py",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 1809,
+      "sha256": "6cbfb0233fba45e5342e48a40361595e9656975deac1914fef2503368f79a37f",
+      "modified_at": "2026-10-27T11:14:17.1503393+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-deepseek-smoke-20261027.py",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-0-20261027.log",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 4189,
+      "sha256": "0aa587da94476c15859e74af248eea6576f4e36c9f982ca7afb93320cc88cb56",
+      "modified_at": "2026-10-27T11:09:06.3009028+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-0-20261027.log",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-1-20261027.log",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 57,
+      "sha256": "dff992437196d6354cec4a329eb55abb00b17ebaaf4f712fb98558f79ad2161a",
+      "modified_at": "2026-10-27T11:09:05.9002445+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-1-20261027.log",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-2-20261027.log",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 3505,
+      "sha256": "fa4e5a04255683343bb7bef2ab544aa5849262fce26464c834518022c3f1df24",
+      "modified_at": "2026-10-27T11:09:11.7406791+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-2-20261027.log",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-build-20261027.log",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 938,
+      "sha256": "8230964ada7b2277307754ed8ce466a40f7e7e05d971c59e9e5c7910a6a936e1",
+      "modified_at": "2026-10-27T11:12:13.0990598+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-frontend-build-20261027.log",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-full-backend-20261027.log",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 11624,
+      "sha256": "65ebc175a6ec2a87f82a7c549e05b808dff1e92bc86524fae7cbe7fc42439b5f",
+      "modified_at": "2026-10-27T11:11:48.6103885+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-full-backend-20261027.log",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-real-model-20261027.json",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 34908,
+      "sha256": "0bfc344bce4b6784a7d9dde427b27c3ab259a0a5c8fe821dc776cd2e0d38492f",
+      "modified_at": "2026-10-27T11:15:40.9873119+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-real-model-20261027.json",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    },
+    {
+      "original_path": ".worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-real-tool-workflow-20261027.py",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 4919,
+      "sha256": "70114859a0e9a09db0520d72a83be88af78b9bc3697ff0e8a0f067ce15ac5ba8",
+      "modified_at": "2026-10-27T11:30:16.884502+08:00",
+      "reason": "Generated by this local Agent verification turn",
+      "reference_checks": [
+        "Exact file created by this turn",
+        "No tracked changes"
+      ],
+      "related_tasks_or_worktrees": [
+        "MAINT-CLEANUP-20261027-001",
+        "agent-management-prototype-20261026"
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261027-001/.worktrees/agent-management-prototype-20261026/src/tests/.artifacts/agent-local-real-tool-workflow-20261027.py",
+      "retention_until": "N/A: user explicitly authorized immediate deletion of this exact group",
+      "restore_method": "Rerun the corresponding local test",
+      "verification": [
+        "Original path absent after same-volume move",
+        "Quarantine file hashes matched manifest",
+        "Permanent delete blocked by automatic approval policy"
+      ]
+    }
+  ]
+}
