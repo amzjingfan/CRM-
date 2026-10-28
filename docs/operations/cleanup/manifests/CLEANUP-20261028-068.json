@@ -1,0 +1,25 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-068",
+  "state": "deleted_branch_only",
+  "base_sha": "e230c6256bb857b99ebc29210dfc0e344d3f13b9",
+  "deleted_branch_count": 2,
+  "deleted_worktree_count": 0,
+  "branches": [
+    {
+      "ref": "refs/heads/docs/staging-workspace-refresh-index-20261028",
+      "head": "f2b56fbee1884a0b8e8e94c933aa98551bbc9be4",
+      "archive_ref": "refs/archive/CLEANUP-20261028-068/docs/staging-workspace-refresh-index-20261028",
+      "merged_pr": 594,
+      "merged_commit": "dd427267094a17f46f33d8d961e967c66d4e879d",
+      "local_main_merge": "e230c6256bb857b99ebc29210dfc0e344d3f13b9",
+      "restore_method": "git branch docs/staging-workspace-refresh-index-20261028 refs/archive/CLEANUP-20261028-068/docs/staging-workspace-refresh-index-20261028"
+    },
+    {
+      "ref": "refs/heads/docs/local-merge-workspace-index-20261028",
+      "archive_ref": "refs/archive/CLEANUP-20261028-068/docs/local-merge-workspace-index-20261028",
+      "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+      "restore_method": "git branch docs/local-merge-workspace-index-20261028 refs/archive/CLEANUP-20261028-068/docs/local-merge-workspace-index-20261028"
+    }
+  ]
+}
