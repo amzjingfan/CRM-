@@ -1,0 +1,94 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-017",
+  "state": "candidate",
+  "base_sha": "028c9313185900ab5158ccf187ea0a58a28f73d4",
+  "scope": "one exact merged-PR worktree and branch; two untracked rule files and other ignored non-cache files archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-017",
+  "candidates": [
+    {
+      "worktree": ".worktrees/team-deploy-e6322efd",
+      "head": "2458efd3c5bf493026c4df9e40c497712fa9e69b",
+      "branch_ref": "refs/heads/feature/settings-tiktok-stores-direct-oauth-20261022",
+      "pr": 526,
+      "merge_commit": "3483feac9f2fed39126d0e7afe9e6a102e17efe0",
+      "directory_modified": "2026-10-22T15:05:39.8759851+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-22T17:51:56.5907107+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-22T17:51:56.5907107+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "ignored_count": 46516,
+      "ignored_paths_sha256": "58751A604D2BAAE3348B02AC716854EF7D5B3C6C4466359C415E21B8B3D68B9F",
+      "cache_file_count": 46507,
+      "cache_bytes": 1031849318,
+      "archive_file_count": 9,
+      "archive_bytes": 118397290,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/team-list-browser-confirmation-pr-body.md",
+          "size": 501,
+          "modified": "2026-10-22T17:24:29.4146230+08:00",
+          "sha256": "E8BD952F3D361C0E9AC14EB01669E7CFDDAD28AF89FF082F578F2AAAD8EF7868"
+        },
+        {
+          "path": "src/tests/.artifacts/team-list-index-pr-body.md",
+          "size": 528,
+          "modified": "2026-10-22T17:29:03.0933824+08:00",
+          "sha256": "04BC4544FB1A486A67F9EF8D86A92C73530B4CCBC286BF1B7F4B0A61E3A33801"
+        },
+        {
+          "path": "src/tests/.artifacts/team-role-fix-20261022/backend-image.tar",
+          "size": 111140352,
+          "modified": "2026-10-22T17:06:26.8272594+08:00",
+          "sha256": "2B7AB3B69DA991F380A58247658D26546783F82DABEAFA8A9D2A638B88A72210"
+        },
+        {
+          "path": "src/tests/.artifacts/team-role-fix-20261022/backup.sh",
+          "size": 555,
+          "modified": "2026-10-22T17:09:42.6033537+08:00",
+          "sha256": "024B324AC6A6FD979BD868EFEFAC1BEAFE3827990284BD28A57508A3F8A8E94F"
+        },
+        {
+          "path": "src/tests/.artifacts/team-role-fix-20261022/pr-body.md",
+          "size": 1290,
+          "modified": "2026-10-22T17:02:15.3103172+08:00",
+          "sha256": "228A8D23FF371D847D49DC3983CABE64DF07E672C060A701AD163C5EF8B3220B"
+        },
+        {
+          "path": "src/tests/.artifacts/team-role-fix-20261022/pr-evidence-body.md",
+          "size": 1157,
+          "modified": "2026-10-22T17:16:53.7932505+08:00",
+          "sha256": "56C5883D917D32A3D1CB596705A5CC09CE11FA932EF7210CDB4751835D303436"
+        },
+        {
+          "path": "src/tests/.artifacts/team-role-fix-20261022/run.ps1",
+          "size": 6712,
+          "modified": "2026-10-22T17:08:52.3343067+08:00",
+          "sha256": "9D901C559FCF387064CD15CE318F5FF75811EB8026A57145E4FE5C502169B815"
+        },
+        {
+          "path": "src/tests/.artifacts/team-role-fix-20261022/source.bundle",
+          "size": 7245026,
+          "modified": "2026-10-22T17:05:00.3018161+08:00",
+          "sha256": "A29803F4153EE0F4276F0248D79D7860B7CABC80120768124F6F3D31BAE1D1C2"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-pr-body.txt",
+          "size": 1169,
+          "modified": "2026-10-22T18:25:47.4132630+08:00",
+          "sha256": "FED8C7FA17E90149C9122FB873AE0CF39095F5660C020B3E2E51B6DF7AAA6A1E"
+        }
+      ]
+    }
+  ]
+}
