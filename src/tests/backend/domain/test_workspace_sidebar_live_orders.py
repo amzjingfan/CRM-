@@ -99,6 +99,138 @@ async def test_live_orders_show_official_buyer_order_and_search(monkeypatch: pyt
 
 
 @pytest.mark.asyncio
+async def test_live_order_cache_is_short_lived_and_scoped_to_store_and_authorization(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first = conversation()
+    second = conversation()
+    customers = {
+        first.customer_id: SimpleNamespace(store_id=first.store_id, platform="tiktok", external_customer_id="800001"),
+        second.customer_id: SimpleNamespace(store_id=second.store_id, platform="tiktok", external_customer_id="800001"),
+    }
+    session = SimpleNamespace(get=AsyncMock(side_effect=lambda _model, customer_id: customers[customer_id]))
+    channel = SimpleNamespace(id=uuid.uuid4(), access_token_ref="first-token-version")
+    client = SimpleNamespace(
+        channel=channel,
+        shop_cipher="one-shop",
+        get_conversation=AsyncMock(return_value=remote_conversation()),
+        search_orders=AsyncMock(return_value=([live_order()], None, None)),
+    )
+    monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
+    payload = SidebarSearch(section="orders", field="order")
+
+    await sidebar._search_live_orders(session, first, payload)
+    await sidebar._search_live_orders(session, first, payload)
+    assert client.get_conversation.await_count == 1
+    assert client.search_orders.await_count == 1
+
+    await sidebar._search_live_orders(session, second, payload)
+    assert client.get_conversation.await_count == 2
+    assert client.search_orders.await_count == 2
+
+    channel.access_token_ref = "rotated-token-version"
+    await sidebar._search_live_orders(session, first, payload)
+    assert client.get_conversation.await_count == 3
+    assert client.search_orders.await_count == 3
+
+    await sidebar._search_live_orders(session, first, payload.model_copy(update={"refresh": True}))
+    assert client.get_conversation.await_count == 4
+    assert client.search_orders.await_count == 4
+
+    third = conversation()
+    customers[third.customer_id] = SimpleNamespace(
+        store_id=third.store_id, platform="tiktok", external_customer_id="800001"
+    )
+    monkeypatch.setattr(sidebar, "_LIVE_ORDER_CACHE_TTL_SECONDS", 0)
+    await sidebar._search_live_orders(session, third, payload)
+    await sidebar._search_live_orders(session, third, payload)
+    assert client.get_conversation.await_count == 6
+    assert client.search_orders.await_count == 6
+
+    fourth = conversation()
+    customers[fourth.customer_id] = SimpleNamespace(
+        store_id=fourth.store_id, platform="tiktok", external_customer_id="800001"
+    )
+    client.search_orders.side_effect = [
+        AppError(ErrorCode.RATE_LIMITED, "synthetic rate limit", 429),
+        ([live_order()], None, None),
+    ]
+    with pytest.raises(AppError) as raised:
+        await sidebar._search_live_orders(session, fourth, payload)
+    assert raised.value.status_code == 429
+    await sidebar._search_live_orders(session, fourth, payload)
+    assert client.get_conversation.await_count == 8
+    assert client.search_orders.await_count == 8
+
+
+@pytest.mark.asyncio
+async def test_large_buyer_list_is_not_retained_in_process_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    selected = conversation()
+    customer = SimpleNamespace(store_id=selected.store_id, platform="tiktok", external_customer_id="800001")
+    session = SimpleNamespace(get=AsyncMock(return_value=customer))
+    first_order = live_order()
+    second_order = first_order.model_copy(update={"id": "600002"})
+    client = SimpleNamespace(
+        channel=SimpleNamespace(id=uuid.uuid4(), access_token_ref="limited-cache-token"),
+        shop_cipher="one-shop",
+        get_conversation=AsyncMock(return_value=remote_conversation()),
+        search_orders=AsyncMock(return_value=([first_order, second_order], None, None)),
+    )
+    monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
+    monkeypatch.setattr(sidebar, "_LIVE_ORDER_CACHE_ITEM_LIMIT", 1)
+
+    await sidebar._search_live_orders(session, selected, SidebarSearch(section="orders", field="order"))
+    await sidebar._search_live_orders(session, selected, SidebarSearch(section="orders", field="order"))
+
+    client.get_conversation.assert_awaited_once()
+    assert client.search_orders.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_basic_order_detail_returns_before_independent_tracking(monkeypatch: pytest.MonkeyPatch) -> None:
+    selected = conversation()
+    session = SimpleNamespace(
+        get=AsyncMock(
+            return_value=SimpleNamespace(store_id=selected.store_id, platform="tiktok", external_customer_id="800001")
+        )
+    )
+    channel = SimpleNamespace(id=uuid.uuid4(), access_token_ref="detail-token", metadata_json={})
+    client = SimpleNamespace(
+        channel=channel,
+        shop_cipher="one-shop",
+        get_conversation=AsyncMock(return_value=remote_conversation()),
+        get_order_details=AsyncMock(return_value=([live_order()], None)),
+        get_standard_tracking=AsyncMock(
+            return_value=(
+                [
+                    TikTokStandardTrackingEntry(
+                        description="Delivered", update_time_millis=1_700_000_000_000, action_code=2
+                    )
+                ],
+                None,
+            )
+        ),
+    )
+    monkeypatch.setattr(sidebar, "_conversation", AsyncMock(return_value=selected))
+    monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
+    monkeypatch.setattr(sidebar, "get_settings", lambda: SimpleNamespace(real_tiktok_read_enabled=True))
+
+    basic = await sidebar.get_sidebar_order_detail(
+        session, SimpleNamespace(), selected.id, "600001", include_tracking=False
+    )
+    assert basic.tracking_loaded is False
+    assert basic.tracking_packages == []
+    client.get_standard_tracking.assert_not_awaited()
+
+    tracking = await sidebar.get_sidebar_standard_tracking(session, SimpleNamespace(), selected.id, "600001")
+    assert tracking.latest_tracking_description == "Delivered"
+    assert tracking.packages[0].tracking_number == "TRACK-1"
+    client.get_conversation.assert_awaited_once()
+    client.get_order_details.assert_awaited_once()
+    client.get_standard_tracking.assert_awaited_once_with("600001")
+
+
+@pytest.mark.asyncio
 async def test_live_orders_reject_mismatched_im_identity_before_order_request(monkeypatch: pytest.MonkeyPatch) -> None:
     selected = conversation()
     session = SimpleNamespace(

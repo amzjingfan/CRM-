@@ -16,6 +16,8 @@ def test_health_endpoint_returns_ok() -> None:
     assert response.status_code == 200
     assert response.json()["code"] == 0
     assert response.json()["data"]["status"] == "ok"
+    assert response.headers["Server-Timing"].startswith("app;dur=")
+    assert ", tiktok;dur=0" in response.headers["Server-Timing"]
 
 
 @pytest.mark.asyncio

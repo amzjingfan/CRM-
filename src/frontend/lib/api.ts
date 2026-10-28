@@ -20,7 +20,8 @@ export type SidebarTrackingPackage = { package_id?: string | null; tracking_numb
 export type LogisticsCardDraft = { card: LogisticsCardView; packages: SidebarTrackingPackage[]; enhancedAvailable: boolean; selected: number };
 export type SidebarTrackingTimeline = { packages: SidebarTrackingPackage[] };
 export type SidebarTrackingTimelineTranslation = { events: Array<{ source_description: string; translated_text: string; occurred_at: string; tracking_number: string | null }> };
-export type SidebarOrderDetail = { payment_method_name: string | null; recipient_address: { name: string | null; phone_number: string | null; full_address: string | null } | null; shipping_provider: string | null; latest_tracking_description: string | null; latest_tracking_at: string | null; tracking_packages: SidebarTrackingPackage[]; enhanced_tracking_available: boolean };
+export type SidebarOrderDetail = { payment_method_name: string | null; recipient_address: { name: string | null; phone_number: string | null; full_address: string | null } | null; shipping_provider: string | null; latest_tracking_description: string | null; latest_tracking_at: string | null; tracking_packages: SidebarTrackingPackage[]; enhanced_tracking_available: boolean; tracking_loaded?: boolean };
+export type SidebarStandardTracking = { latest_tracking_description: string | null; latest_tracking_at: string | null; packages: SidebarTrackingPackage[] };
 export type SidebarTrackingTranslation = { source_description: string; translated_text: string };
 export type SidebarOrders = { items: SidebarOrder[]; pagination: { page: number; page_size: number; total: number } };
 export type SidebarSku = { id: string; seller_sku: string | null; name: string | null; currency: string | null; sale_price: string | null; quantity: number | null };
@@ -28,7 +29,7 @@ export type SidebarProduct = { id: string; title: string; status: string | null;
 export type SidebarProducts = { items: SidebarProduct[]; next_page_token: string | null; total_count: number | null; partial_search: boolean };
 export type SidebarCoupon = { id: string; title: string; status: string | null; display_type: string | null; promo_code: string | null; discount_type: string | null; discount_value: string | null; claim_end_time: number | null; chat_shareable: boolean };
 export type SidebarCoupons = { items: SidebarCoupon[]; next_page_token: string | null; total_count: number | null; partial_search: boolean };
-export type SidebarSearch = { section: "orders" | "products" | "coupons"; field: string; query: string; status?: "all" | "unpaid" | "ship" | "transit" | "done" | "cancel"; page?: number; page_token?: string | null };
+export type SidebarSearch = { section: "orders" | "products" | "coupons"; field: string; query: string; status?: "all" | "unpaid" | "ship" | "transit" | "done" | "cancel"; page?: number; page_token?: string | null; refresh?: boolean };
 export type SessionListData = { items: SessionSummary[]; pagination: { page: number; page_size: number; total: number }; unread_messages_total: number };
 export type SessionMessagesData = { session: SessionSummary; messages: MessageView[]; customer: CustomerSummary; recent_orders: OrderSummary[]; ai_suggestion: null; pagination: { page: number; page_size: number; total: number }; send_mode: "disabled" | "mock" | "real"; requires_confirmation: true; translation_enabled?: boolean; draft_translation_enabled?: boolean };
 export type KnowledgeCategory = { id: string; store_id: string; parent_id: string | null; name: string; code: string; layer: string; sort_order: number; status: string };
@@ -116,11 +117,25 @@ async function rawRequest(path: string, init: RequestInit = {}): Promise<Respons
   const headers = new Headers(init.headers);
   if (!isForm && init.body !== undefined && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (csrf && !headers.has("X-CSRF-Token")) headers.set("X-CSRF-Token", decodeURIComponent(csrf));
-  return fetch(`${API_BASE_URL}${path}`, {
+  const started = typeof window === "undefined" ? 0 : performance.now();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",
     headers,
   });
+  if (started) {
+    const elapsedMs = Math.round(performance.now() - started);
+    if (elapsedMs >= 1500) {
+      // 不输出路径参数、查询、请求体或买家资料；耗时可与入口日志和服务端 Trace ID 对照。
+      const group = path.startsWith("/workspace/sessions/") ? "workspace-session"
+        : path.startsWith("/workspace/") ? "workspace"
+        : path.startsWith("/auth/") ? "auth"
+        : path.startsWith("/integrations/") ? "integrations"
+        : path.split("/")[1] || "api";
+      console.warn("Slow API response", { group, elapsedMs, status: response.status, serverTiming: response.headers.get("Server-Timing"), traceId: response.headers.get("X-Trace-Id") });
+    }
+  }
+  return response;
 }
 
 export async function requestApi<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
@@ -163,7 +178,8 @@ export const listSessions = (query: URLSearchParams) => {
 };
 export const getSessionMessagesPage = (sessionId: string, page: number) => requestApi<SessionMessagesData>(`/workspace/sessions/${sessionId}/messages?page=${page}&page_size=100`);
 export const searchCustomerSidebar = <T extends SidebarOrders | SidebarProducts | SidebarCoupons>(sessionId: string, payload: SidebarSearch) => requestApi<T>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/search`, { method: "POST", body: JSON.stringify(payload) });
-export const getCustomerSidebarOrderDetail = (sessionId: string, orderId: string) => requestApi<SidebarOrderDetail>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/detail`, { method: "POST", body: JSON.stringify({ order_id: orderId }) });
+export const getCustomerSidebarOrderDetail = (sessionId: string, orderId: string, signal?: AbortSignal, includeTracking = true) => requestApi<SidebarOrderDetail>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/detail`, { method: "POST", body: JSON.stringify({ order_id: orderId, include_tracking: includeTracking }), signal });
+export const getCustomerSidebarStandardTracking = (sessionId: string, orderId: string, signal?: AbortSignal) => requestApi<SidebarStandardTracking>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/standard-tracking`, { method: "POST", body: JSON.stringify({ order_id: orderId }), signal });
 export const getCustomerSidebarEnhancedTracking = (sessionId: string, orderId: string) => requestApi<SidebarTrackingTimeline>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/enhanced-tracking`, { method: "POST", body: JSON.stringify({ order_id: orderId }) });
 export const getCustomerSidebarProduct = (sessionId: string, productId: string) => requestApi<SidebarProduct>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/products/${encodeURIComponent(productId)}`);
 export const getSessionMessages = async (sessionId: string): Promise<SessionMessagesData> => {

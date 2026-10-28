@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -13,6 +14,7 @@ from fastapi.responses import JSONResponse
 
 from app.agents.core.factory import build_shared_agent_runtime
 from app.api.v1.router import router as v1_router
+from app.integrations.tiktok_read import close_tiktok_read_http_pool, read_timing
 from app.shared.config.settings import get_settings
 from app.shared.exceptions.errors import AppError
 from app.shared.health import ReadinessReport, collect_readiness
@@ -41,10 +43,13 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
-        if runtime is not None:
-            await runtime.aclose()
-        application.state.agent_runtime = None
-        logger.info("应用关闭", extra={"trace_id": lifecycle_trace_id, "event": "application_stopped"})
+        try:
+            if runtime is not None:
+                await runtime.aclose()
+        finally:
+            await close_tiktok_read_http_pool()
+            application.state.agent_runtime = None
+            logger.info("应用关闭", extra={"trace_id": lifecycle_trace_id, "event": "application_stopped"})
 
 
 app = FastAPI(
@@ -81,22 +86,42 @@ async def add_trace_id(request: Request, call_next: Callable[[Request], Awaitabl
     except (ValueError, AttributeError):
         trace_id = str(uuid.uuid4())
     request.state.trace_id = trace_id
+    started = time.perf_counter()
+    timing = {"count": 0, "ms": 0}
+    token = read_timing.set(timing)
     timeout_exempt = (
         request.url.path == "/v1/chat/query"
         or request.url.path.startswith("/v1/webhooks/")
         or request.url.path == "/v1/knowledge/imports"
     )
     try:
-        if timeout_exempt:
-            response = await call_next(request)
-        else:
-            response = await asyncio.wait_for(call_next(request), timeout=settings.request_timeout_seconds)
-    except TimeoutError:
-        logger.warning("请求超时", extra={"trace_id": trace_id, "event": "request_timeout"})
-        response = JSONResponse(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            content=ApiResponse(code=50003, message="请求处理超时", data=None).model_dump(),
-        )
+        try:
+            if timeout_exempt:
+                response = await call_next(request)
+            else:
+                response = await asyncio.wait_for(call_next(request), timeout=settings.request_timeout_seconds)
+        except TimeoutError:
+            logger.warning("请求超时", extra={"trace_id": trace_id, "event": "request_timeout"})
+            response = JSONResponse(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                content=ApiResponse(code=50003, message="请求处理超时", data=None).model_dump(),
+            )
+    finally:
+        read_timing.reset(token)
+    elapsed_ms = round((time.perf_counter() - started) * 1000)
+    route = request.scope.get("route")
+    route_template = getattr(route, "path", "unmatched")
+    logger.info(
+        "api_request_timing route=%s method=%s status=%s app_ms=%s tiktok_ms=%s tiktok_calls=%s",
+        route_template,
+        request.method,
+        response.status_code,
+        elapsed_ms,
+        timing["ms"],
+        timing["count"],
+        extra={"trace_id": trace_id, "event": "api_request_timing"},
+    )
+    response.headers["Server-Timing"] = f"app;dur={elapsed_ms}, tiktok;dur={timing['ms']}"
     response.headers["X-Trace-Id"] = trace_id
     return response
 

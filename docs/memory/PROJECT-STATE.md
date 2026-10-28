@@ -1,5 +1,7 @@
 # 项目状态与恢复入口
 
+2026-10-28 `MVP-STAGING-LATENCY-001 VERIFYING`：性能源码从 `BASE_SHA=0b14b1d1` 重放到 `main=ac7216d4`，`CANDIDATE_SUBJECT_SHA=2c77b8d9a729e467d702c116ad7403e94660f979`、`EVIDENCE_HEAD_SHA=READ_AT_GATE`。只读 20 次复测业务机/隧道/公网健康 TTFB p50/p95 分别为 0.000833/0.004535、0.905597/3.727746、1.782162/9.107670 秒；公网 TCP connect p95 7.199228 秒，隧道累计重启 969 次且当天多次超时。后端 2289 passed/54 skipped、前端契约 48/48、生产构建与合成浏览器 118/118、Ruff/mypy/typecheck 通过；完整证据见 [TR R01](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R01.md)。最新主线的动态 Agent 改写仍需独立 staging 部署批准，不得随性能候选自动发布；现网保持原 Agent 调试、安全开关及单店人工发送，未向买家发送、退款或发布 production。Workspace hygiene: ATTENTION（活动 worktree 和未知文件保留）。下一步：①完成性能 PR 本地替代门禁与合并；②确定动态 Agent 部署边界；③满足发布门禁后进行 staging 性能部署和前后实测。
+
 2026-10-28，治理档位 STANDARD，产品仍为TikTok人工辅助v0.1。仓库 CP11-gh/CRM；授权远端 origin，目标main。产品、架构、治理和任务事实源分别见 docs/product/PRODUCT.md、docs/architecture/AI.md、docs/governance/GOVERNANCE.md 和 docs/tasks/TASKS.md。
 
 当前任务 `MVP-AGENT-DYNAMIC-REWRITE-001` 与 `MAINT-CLEANUP-20261028-002` 处于 DONE；源码PR #582已squash合入main `ac7216d42ec5b56fbda618ca95826b9b7d075600`，状态收尾分支 `docs/dynamic-agent-local-close-20261028`。CANDIDATE_SUBJECT_SHA=`7594a1a53ede8e0b65f8987e352d78662bb04c41`，EVIDENCE_HEAD_SHA=READ_AT_GATE；已从合并主线读取全部源记录并核对src树与受测subject一致；已包含主线订单详情文档0b14b1d1，根checkout已有未共享历史和未知文件，未改写。

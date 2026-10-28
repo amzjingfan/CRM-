@@ -1,9 +1,13 @@
 """TikTok Shop 真实只读 API 客户端和官方响应契约。"""
 
 import asyncio
+import hashlib
 import json
 import logging
 import time
+import uuid
+from contextvars import ContextVar
+from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
 
@@ -27,6 +31,70 @@ PERMISSION_DENIED_CODES = {105005, 36009033}
 TRANSIENT_PLATFORM_CODES = {36009003}
 
 logger = logging.getLogger(__name__)
+
+# 请求上下文只保存次数和耗时；子任务共享当前请求的可变计数器。
+read_timing: ContextVar[dict[str, int] | None] = ContextVar("tiktok_read_timing", default=None)
+
+
+@dataclass
+class _PooledReadClient:
+    client: httpx.AsyncClient
+    in_flight: int = 0
+
+
+# 按事件循环和渠道隔离连接池；HTTP 客户端可能保存 Cookie，不跨店铺共享。
+_read_clients: dict[tuple[asyncio.AbstractEventLoop, uuid.UUID, str, bytes], _PooledReadClient] = {}
+_READ_CLIENT_LIMIT = 64
+
+
+async def close_tiktok_read_http_pool() -> None:
+    """关闭当前事件循环持有的只读连接，供应用与 Worker 生命周期调用。"""
+    loop = asyncio.get_running_loop()
+    clients = [entry.client for key, entry in list(_read_clients.items()) if key[0] is loop]
+    for key in list(_read_clients):
+        if key[0] is loop:
+            del _read_clients[key]
+    await asyncio.gather(*(client.aclose() for client in clients))
+
+
+async def _pooled_read_request(
+    settings: Settings,
+    channel: ChannelAccount,
+    method: str,
+    url: str,
+    params: dict[str, str | int],
+    headers: dict[str, str],
+    body: bytes,
+) -> httpx.Response:
+    loop = asyncio.get_running_loop()
+    # 渠道重新授权或刷新 Token 后另建连接，不沿用旧授权期间的 Cookie。
+    credential_version = hashlib.sha256(channel.access_token_ref.encode()).digest()
+    key = (loop, channel.id, settings.tiktok_egress_proxy_url or "", credential_version)
+    entry = _read_clients.get(key)
+    evicted: httpx.AsyncClient | None = None
+    if entry is None:
+        if sum(candidate[0] is loop for candidate in _read_clients) >= _READ_CLIENT_LIMIT:
+            idle_key = next(
+                (
+                    candidate
+                    for candidate, value in _read_clients.items()
+                    if candidate[0] is loop and value.in_flight == 0
+                ),
+                None,
+            )
+            if idle_key is None:
+                async with create_tiktok_http_client(settings) as one_off:
+                    return await one_off.request(method, url, params=params, headers=headers, content=body)
+            evicted = _read_clients.pop(idle_key).client
+        entry = _PooledReadClient(create_tiktok_http_client(settings))
+        _read_clients[key] = entry
+    entry.in_flight += 1
+    try:
+        if evicted is not None:
+            await evicted.aclose()
+        return await entry.client.request(method, url, params=params, headers=headers, content=body)
+    finally:
+        entry.in_flight -= 1
 
 
 class TikTokModel(BaseModel):
@@ -363,12 +431,18 @@ class TikTokReadClient:
         headers: dict[str, str],
         body: bytes,
     ) -> httpx.Response:
-        """发送一次请求；注入客户端用于确定性测试，正式运行由上下文管理器关闭连接。"""
+        """发送一次请求；正式只读调用复用当前店铺的固定出口连接。"""
         url = f"{API_BASE_URL}{path}"
-        if self.client is not None:
-            return await self.client.request(method, url, params=params, headers=headers, content=body)
-        async with create_tiktok_http_client(self.settings) as client:
-            return await client.request(method, url, params=params, headers=headers, content=body)
+        started = time.perf_counter()
+        try:
+            if self.client is not None:
+                return await self.client.request(method, url, params=params, headers=headers, content=body)
+            return await _pooled_read_request(self.settings, self.channel, method, url, params, headers, body)
+        finally:
+            timing = read_timing.get()
+            if timing is not None:
+                timing["count"] += 1
+                timing["ms"] += round((time.perf_counter() - started) * 1000)
 
     @staticmethod
     def _log_envelope_error(envelope: TikTokApiEnvelope) -> None:

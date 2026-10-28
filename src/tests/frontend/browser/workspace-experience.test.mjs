@@ -20,23 +20,24 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false, orderSellerSku = "PAD-BLK", syncedOrderStatus = orderStatus) {
+async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conversationCount = 2, latestTrackingDescription = null, orderDetailDelay = 0, translationEnabled = false, orderVariant = "Black with handrail", enhancedTracking = false, orderSellerSku = "PAD-BLK", syncedOrderStatus = orderStatus, trackingDelay = 0, orderCount = 1) {
   const fixtureOptions = typeof messageCount === "object" ? messageCount : {};
   if (typeof messageCount === "object") {
     orderStatus = fixtureOptions.orderStatus ?? orderStatus;
     syncedOrderStatus = orderStatus;
     messageCount = fixtureOptions.messageCount ?? 70;
   }
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1440, height: orderCount > 1 ? 2400 : 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } },
     { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [], buyer_stage_override: null } },
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, extraDetailEvent: false, enhancedTracking: 0 };
+  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, activeOrderDetails: 0, maxActiveOrderDetails: 0, standardTracking: 0, extraDetailEvent: false, enhancedTracking: 0 };
   // 页面会预取订单详情；必须在首次请求前固定样例，不能依赖导航后的赋值时序。
   calls.extraDetailEvent = fixtureOptions.extraDetailEvent ?? false;
+  const trackingData = () => ({ latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", packages: [{ tracking_number: "878696895644", carrier_name: "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }, ...(calls.extraDetailEvent ? [{ description: "Order placed", occurred_at: "2026-10-14T08:00:00Z", tracking_number: null, action_code: 0, action_code_name: null }] : [])] }] });
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -83,19 +84,31 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
       const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: orderSellerSku, sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45", package_id: "123457", tracking_number: "OLD-2" }] };
+      const orders = Array.from({ length: orderCount }, (_, index) => ({ ...order, id: `order-${index + 1}`, external_order_id: `57760000000000000${index + 1}` }));
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
       const coupon = { id: "789", title: "Shop coupon", status: "EXPIRED", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
       if (payload.section === "orders") {
         const category = { UNPAID: "unpaid", AWAITING_SHIPMENT: "ship", IN_TRANSIT: "transit", DELIVERED: "done", CANCELLED: "cancel" }[orderStatus];
-        data = { items: (payload.status === "all" || payload.status === category) && (!payload.query || [order.external_order_id, order.tracking_number, order.items[0].name, order.items[0].sku, order.items[0].sku_id, order.items[0].product_id].some((value) => value?.toLowerCase().includes(payload.query.toLowerCase()))) ? [order] : [], pagination: { page: payload.page, page_size: 20, total: 1 } };
+        const matches = orders.filter((item) => (payload.status === "all" || payload.status === category) && (!payload.query || [item.external_order_id, item.tracking_number, item.items[0].name, item.items[0].sku, item.items[0].sku_id, item.items[0].product_id].some((value) => value?.toLowerCase().includes(payload.query.toLowerCase()))));
+        data = { items: matches, pagination: { page: payload.page, page_size: 20, total: matches.length } };
       }
       else if (payload.section === "products") data = { items: !payload.query || product.title.toLowerCase().includes(payload.query.toLowerCase()) ? [product] : [], next_page_token: null, total_count: 1, partial_search: false };
       else data = { items: !payload.query || coupon.title.toLowerCase().includes(payload.query.toLowerCase()) || coupon.promo_code.toLowerCase().includes(payload.query.toLowerCase()) ? [coupon] : [], next_page_token: null, total_count: 1, partial_search: false };
     } else if (path.endsWith("/sidebar/orders/detail") && method === "POST") {
       calls.orderDetails++;
-      assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
+      const payload = JSON.parse(request.postData());
+      assert.match(payload.order_id, /^57760000000000000[1-3]$/);
+      calls.activeOrderDetails++;
+      calls.maxActiveOrderDetails = Math.max(calls.maxActiveOrderDetails, calls.activeOrderDetails);
       if (orderDetailDelay) await new Promise((resolve) => setTimeout(resolve, orderDetailDelay));
-      data = { payment_method_name: "Card", recipient_address: { name: "A***", phone_number: "***1234", full_address: "Masked Street, TX 78247" }, shipping_provider: "Carrier A", latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", tracking_packages: [{ tracking_number: "878696895644", carrier_name: "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }, ...(calls.extraDetailEvent ? [{ description: "Order placed", occurred_at: "2026-10-14T08:00:00Z", tracking_number: null, action_code: 0, action_code_name: null }] : [])] }], enhanced_tracking_available: enhancedTracking };
+      calls.activeOrderDetails--;
+      const tracking = trackingData();
+      data = { payment_method_name: "Card", recipient_address: { name: "A***", phone_number: "***1234", full_address: "Masked Street, TX 78247" }, shipping_provider: "Carrier A", latest_tracking_description: payload.include_tracking === false ? null : tracking.latest_tracking_description, latest_tracking_at: payload.include_tracking === false ? null : tracking.latest_tracking_at, tracking_packages: payload.include_tracking === false ? [] : tracking.packages, enhanced_tracking_available: enhancedTracking, tracking_loaded: payload.include_tracking !== false };
+    } else if (path.endsWith("/sidebar/orders/standard-tracking") && method === "POST") {
+      calls.standardTracking++;
+      assert.match(JSON.parse(request.postData()).order_id, /^57760000000000000[1-3]$/);
+      if (trackingDelay) await new Promise((resolve) => setTimeout(resolve, trackingDelay));
+      data = trackingData();
     } else if (path.endsWith("/sidebar/orders/enhanced-tracking") && method === "POST") {
       calls.enhancedTracking++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
@@ -920,16 +933,65 @@ test("missing order variant stays unavailable instead of using its SKU identifie
   } finally { await context.close(); }
 });
 
-test("order card reveals payment and logistics fields together after detail arrives", async () => {
-  const { context, page } = await openWorkspace(2, "IN_TRANSIT", 2, null, 400);
+test("order summary remains visible while live detail loads", async () => {
+  const { context, page } = await openWorkspace(2, "IN_TRANSIT", 2, null, 1500);
   try {
     const card = page.getByTestId("customer-order-card");
     await card.getByText("正在读取订单详情…").waitFor();
-    assert.equal(await card.getByText("付款时间").count(), 0);
-    assert.equal(await card.getByText("物流单号").count(), 0);
+    assert.equal(await card.getByText("577600000000000001").count(), 1);
+    assert.equal(await card.getByText("付款时间").count(), 1);
+    assert.equal(await card.getByText("物流单号").count(), 1);
+    assert.equal(await card.getByText("Card").count(), 0);
     await card.getByText("付款时间").waitFor();
     await card.getByText("物流单号").waitFor();
     await card.getByText("Card").waitFor();
+  } finally { await context.close(); }
+});
+
+test("visible order cards limit automatic detail reads to two at a time", async () => {
+  const { context, page, calls } = await openWorkspace(2, "DELIVERED", 2, null, 1200, false, "Black with handrail", false, "PAD-BLK", "DELIVERED", 0, 3);
+  try {
+    const cards = page.getByTestId("customer-order-card");
+    await cards.nth(2).getByText("577600000000000003").waitFor();
+    await page.waitForFunction(() => document.querySelectorAll("[data-testid='customer-order-card'] .customer-side-muted[role='status']").length >= 2);
+    await cards.nth(2).getByText("Card").waitFor();
+    assert.equal(calls.orderDetails, 3);
+    assert.equal(calls.maxActiveOrderDetails, 2);
+  } finally { await context.close(); }
+});
+
+test("opening order details during card loading still resolves the full detail", async () => {
+  const { context, page } = await openWorkspace(2, "DELIVERED", 2, null, 1200);
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByText("正在读取订单详情…").waitFor();
+    await card.getByRole("button", { name: "详情", exact: true }).click();
+    const details = page.getByRole("region", { name: "订单详情" });
+    await details.getByText("正在读取订单详情…").waitFor();
+    await details.locator("#customer-order-overview").getByText("***1234").first().waitFor();
+  } finally { await context.close(); }
+});
+
+test("order basics render before delayed tracking", async () => {
+  const { context, page, calls } = await openWorkspace(2, "DELIVERED", 2, null, 0, false, "Black with handrail", false, "PAD-BLK", "DELIVERED", 1500);
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByText("Card").waitFor();
+    await card.getByText("正在读取物流…").waitFor();
+    assert.equal(await card.getByText("577600000000000001").count(), 1);
+    assert.equal(calls.standardTracking, 1);
+    await card.getByText("Package dispatched").waitFor();
+  } finally { await context.close(); }
+});
+
+test("customer can bypass the short order cache with refresh", async () => {
+  const { context, page, calls } = await openWorkspace(2);
+  try {
+    await page.getByTestId("customer-order-card").getByText("577600000000000001").waitFor();
+    const refreshed = page.waitForResponse((response) => response.url().endsWith("/sidebar/search") && response.request().postDataJSON()?.refresh === true);
+    await page.getByRole("button", { name: "刷新订单" }).click();
+    await refreshed;
+    assert.equal(calls.sidebarQueries.at(-1).refresh, true);
   } finally { await context.close(); }
 });
 

@@ -1,7 +1,11 @@
 """客户侧栏只读投影。平台目录按当前会话的店铺授权读取。"""
 
 import hashlib
+import json
+import time
 import uuid
+from collections import OrderedDict
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Literal
@@ -37,6 +41,7 @@ class SidebarSearch(BaseModel):
     status: OrderStatus = "all"
     page: int = Field(default=1, ge=1, le=10_000)
     page_token: str | None = Field(default=None, max_length=1000)
+    refresh: bool = False
 
 
 class SidebarOrderItem(BaseModel):
@@ -74,8 +79,114 @@ class SidebarOrders(BaseModel):
     pagination: PageMeta
 
 
+@dataclass(frozen=True)
+class _CachedLiveOrders:
+    expires_at: float
+    buyer_user_id: str
+    items: tuple[SidebarOrder, ...] | None
+
+
+@dataclass(frozen=True)
+class _VerifiedOrderTracking:
+    expires_at: float
+    tracking_number: str | None
+    shipping_provider: str | None
+    package_id: str | None
+    item_tracking_numbers: tuple[str, ...]
+
+
+_LIVE_ORDER_CACHE_TTL_SECONDS = 20
+_LIVE_ORDER_CACHE_LIMIT = 64
+_LIVE_ORDER_CACHE_ITEM_LIMIT = 100
+_live_order_cache: OrderedDict[str, _CachedLiveOrders] = OrderedDict()
+_verified_order_cache: OrderedDict[str, _VerifiedOrderTracking] = OrderedDict()
+
+
+def _live_order_cache_key(conversation: Conversation, customer: Customer, client: TikTokReadClient) -> str | None:
+    channel = getattr(client, "channel", None)
+    channel_id = getattr(channel, "id", None)
+    access_token_ref = getattr(channel, "access_token_ref", None)
+    if not isinstance(channel_id, uuid.UUID) or not isinstance(access_token_ref, str):
+        return None
+    scope = [
+        str(conversation.store_id),
+        str(conversation.id),
+        str(conversation.customer_id),
+        conversation.external_conversation_id,
+        customer.external_customer_id,
+        str(channel_id),
+        access_token_ref,
+        client.shop_cipher,
+    ]
+    digest = hashlib.sha256(json.dumps(scope, separators=(",", ":")).encode()).hexdigest()
+    return f"workspace:live-orders:{conversation.store_id}:{digest}"
+
+
+def _cached_live_orders(key: str | None) -> _CachedLiveOrders | None:
+    if key is None:
+        return None
+    cached = _live_order_cache.get(key)
+    if cached is None:
+        return None
+    if cached.expires_at <= time.monotonic():
+        del _live_order_cache[key]
+        return None
+    _live_order_cache.move_to_end(key)
+    return cached
+
+
+def _remember_live_orders(key: str | None, buyer_user_id: str, items: tuple[SidebarOrder, ...] | None) -> None:
+    if key is None:
+        return
+    # 大买家列表不进入进程内存，仍可短时复用核验过的买家 ID。
+    if items is not None and len(items) > _LIVE_ORDER_CACHE_ITEM_LIMIT:
+        items = None
+    _live_order_cache[key] = _CachedLiveOrders(time.monotonic() + _LIVE_ORDER_CACHE_TTL_SECONDS, buyer_user_id, items)
+    _live_order_cache.move_to_end(key)
+    while len(_live_order_cache) > _LIVE_ORDER_CACHE_LIMIT:
+        _live_order_cache.popitem(last=False)
+
+
+def _verified_order_key(cache_key: str | None, order_id: str) -> str | None:
+    return f"{cache_key}:{order_id}" if cache_key is not None else None
+
+
+def _tracking_from_order(order: TikTokOrder) -> _VerifiedOrderTracking:
+    package_ids = {item.package_id for item in order.line_items if item.package_id}
+    return _VerifiedOrderTracking(
+        expires_at=time.monotonic() + _LIVE_ORDER_CACHE_TTL_SECONDS,
+        tracking_number=order.tracking_number,
+        shipping_provider=order.shipping_provider,
+        package_id=next(iter(package_ids)) if len(package_ids) == 1 else None,
+        item_tracking_numbers=tuple(item.tracking_number for item in order.line_items if item.tracking_number),
+    )
+
+
+def _remember_verified_order(key: str | None, tracking: _VerifiedOrderTracking) -> None:
+    if key is None:
+        return
+    _verified_order_cache[key] = tracking
+    _verified_order_cache.move_to_end(key)
+    while len(_verified_order_cache) > _LIVE_ORDER_CACHE_LIMIT:
+        _verified_order_cache.popitem(last=False)
+
+
+def _cached_verified_order(key: str | None) -> _VerifiedOrderTracking | None:
+    if key is None:
+        return None
+    cached = _verified_order_cache.get(key)
+    if cached is None:
+        return None
+    if cached.expires_at <= time.monotonic():
+        del _verified_order_cache[key]
+        return None
+    _verified_order_cache.move_to_end(key)
+    return cached
+
+
 class SidebarOrderDetailRequest(BaseModel):
     order_id: str = Field(min_length=1, max_length=200, pattern=r"^[0-9]+$")
+    include_tracking: bool = True
 
 
 class SidebarTrackingTranslationRequest(SidebarOrderDetailRequest):
@@ -97,6 +208,13 @@ class SidebarOrderDetail(BaseModel):
     latest_tracking_at: datetime | None
     tracking_packages: list["SidebarTrackingPackage"] = Field(default_factory=list)
     enhanced_tracking_available: bool = False
+    tracking_loaded: bool = True
+
+
+class SidebarStandardTracking(BaseModel):
+    latest_tracking_description: str | None = None
+    latest_tracking_at: datetime | None = None
+    packages: list["SidebarTrackingPackage"] = Field(default_factory=list)
 
 
 class SidebarRecipientAddress(BaseModel):
@@ -224,7 +342,7 @@ def _order_status_condition(status: OrderStatus) -> ColumnElement[bool] | None:
     return Order.status.in_(statuses[status]) if status != "all" else None
 
 
-def _live_order_matches(order: TikTokOrder, payload: SidebarSearch) -> bool:
+def _live_order_matches(order: SidebarOrder, payload: SidebarSearch) -> bool:
     statuses: dict[str, tuple[str, ...]] = {
         "unpaid": ("UNPAID",),
         "ship": ("AWAITING_SHIPMENT", "AWAITING_COLLECTION"),
@@ -238,12 +356,12 @@ def _live_order_matches(order: TikTokOrder, payload: SidebarSearch) -> bool:
     if not query:
         return True
     values: dict[str, list[str | None]] = {
-        "order": [order.id],
-        "tracking": [order.tracking_number, *(item.tracking_number for item in order.line_items)],
-        "product": [item.product_name for item in order.line_items],
-        "spu": [item.product_id for item in order.line_items],
-        "sku": [item.sku_id for item in order.line_items],
-        "sellerSku": [item.seller_sku for item in order.line_items],
+        "order": [order.external_order_id],
+        "tracking": [order.tracking_number, *(item.tracking_number for item in order.items)],
+        "product": [item.name if item.name != "商品名称未提供" else None for item in order.items],
+        "spu": [item.product_id for item in order.items],
+        "sku": [item.sku_id for item in order.items],
+        "sellerSku": [item.sku for item in order.items],
     }
     return any(query in value.casefold() for value in values[payload.field] if value)
 
@@ -314,37 +432,51 @@ async def _search_live_orders(
     session: AsyncSession, conversation: Conversation, payload: SidebarSearch
 ) -> SidebarOrders:
     client = await _tiktok_client(session, conversation.store_id)
-    buyer_user_id = await _verified_buyer_user_id(session, conversation, client)
-    orders: list[TikTokOrder] = []
-    token: str | None = None
-    seen_tokens: set[str] = set()
-    seen_order_ids: set[str] = set()
-    # 买家订单超过安全上限时显式失败，避免把不完整搜索结果当成全部订单。
-    for _ in range(20):
-        page, next_token, _ = await client.search_orders(page_size=100, page_token=token, buyer_user_id=buyer_user_id)
-        if any(order.user_id != buyer_user_id for order in page):
-            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单买家身份不匹配", 502)
-        if len({order.id for order in page}) != len(page) or any(order.id in seen_order_ids for order in page):
-            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单分页异常", 502)
-        seen_order_ids.update(order.id for order in page)
-        orders.extend(page)
-        if not next_token:
-            break
-        if next_token in seen_tokens:
-            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单分页异常", 502)
-        seen_tokens.add(next_token)
-        token = next_token
+    customer = await _local_verified_customer(session, conversation)
+    cache_key = _live_order_cache_key(conversation, customer, client)
+    cached = None if payload.refresh else _cached_live_orders(cache_key)
+    if cached is not None and cached.items is not None:
+        items = cached.items
     else:
-        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "买家订单超过当前查询上限", 502)
+        buyer_user_id = (
+            cached.buyer_user_id
+            if cached is not None
+            else await _verified_buyer_user_id(session, conversation, client, customer)
+        )
+        orders: list[TikTokOrder] = []
+        token: str | None = None
+        seen_tokens: set[str] = set()
+        seen_order_ids: set[str] = set()
+        # 买家订单超过安全上限时显式失败，避免把不完整搜索结果当成全部订单。
+        for _ in range(20):
+            page, next_token, _ = await client.search_orders(
+                page_size=100, page_token=token, buyer_user_id=buyer_user_id
+            )
+            if any(order.user_id != buyer_user_id for order in page):
+                raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单买家身份不匹配", 502)
+            if len({order.id for order in page}) != len(page) or any(order.id in seen_order_ids for order in page):
+                raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单分页异常", 502)
+            seen_order_ids.update(order.id for order in page)
+            orders.extend(page)
+            if not next_token:
+                break
+            if next_token in seen_tokens:
+                raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 订单分页异常", 502)
+            seen_tokens.add(next_token)
+            token = next_token
+        else:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "买家订单超过当前查询上限", 502)
+        items = tuple(_live_order_view(order) for order in orders)
+        _remember_live_orders(cache_key, buyer_user_id, items)
     matches = sorted(
-        (order for order in orders if _live_order_matches(order, payload)),
-        key=lambda order: (order.create_time or 0, order.id),
+        (order for order in items if _live_order_matches(order, payload)),
+        key=lambda order: (order.ordered_at or datetime.min.replace(tzinfo=UTC), order.external_order_id),
         reverse=True,
     )
     page_size = 20
     selected = matches[(payload.page - 1) * page_size : payload.page * page_size]
     return SidebarOrders(
-        items=[_live_order_view(order) for order in selected],
+        items=[order.model_copy(deep=True) for order in selected],
         pagination=PageMeta(page=payload.page, page_size=page_size, total=len(matches)),
     )
 
@@ -354,12 +486,12 @@ async def latest_verified_live_order(session: AsyncSession, conversation: Conver
     result = await _search_live_orders(
         session,
         conversation,
-        SidebarSearch(section="orders", field="order", query="", page=1),
+        SidebarSearch(section="orders", field="order", query="", page=1, refresh=True),
     )
     return result.items[0] if result.items else None
 
 
-async def _verified_buyer_user_id(session: AsyncSession, conversation: Conversation, client: TikTokReadClient) -> str:
+async def _local_verified_customer(session: AsyncSession, conversation: Conversation) -> Customer:
     customer = await session.get(Customer, conversation.customer_id)
     if (
         customer is None
@@ -368,6 +500,13 @@ async def _verified_buyer_user_id(session: AsyncSession, conversation: Conversat
         or not customer.external_customer_id
     ):
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "会话买家身份不可验证", 502)
+    return customer
+
+
+async def _verified_buyer_user_id(
+    session: AsyncSession, conversation: Conversation, client: TikTokReadClient, customer: Customer | None = None
+) -> str:
+    customer = customer or await _local_verified_customer(session, conversation)
     remote = await client.get_conversation(conversation.external_conversation_id)
     buyers = [participant for participant in remote.participants if participant.role == "BUYER"]
     if len(buyers) != 1 or buyers[0].im_user_id != customer.external_customer_id or not buyers[0].user_id:
@@ -384,10 +523,20 @@ async def _verified_sidebar_order(
     if not order_id.isascii() or not order_id.isdigit() or len(order_id) > 200:
         raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 订单 ID 无效", 422)
     client = await _tiktok_client(session, conversation.store_id)
-    buyer_user_id = await _verified_buyer_user_id(session, conversation, client)
+    customer = await _local_verified_customer(session, conversation)
+    cache_key = _live_order_cache_key(conversation, customer, client)
+    cached = _cached_live_orders(cache_key)
+    buyer_user_id = (
+        cached.buyer_user_id
+        if cached is not None
+        else await _verified_buyer_user_id(session, conversation, client, customer)
+    )
     orders, _ = await client.get_order_details([order_id])
     if len(orders) != 1 or orders[0].id != order_id or orders[0].user_id != buyer_user_id:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在", 404)
+    if cached is None:
+        _remember_live_orders(cache_key, buyer_user_id, None)
+    _remember_verified_order(_verified_order_key(cache_key, order_id), _tracking_from_order(orders[0]))
     return conversation, client, orders[0]
 
 
@@ -399,38 +548,14 @@ def _tracking_time(millis: int) -> datetime:
 
 
 async def get_sidebar_order_detail(
-    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
+    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str, *, include_tracking: bool = True
 ) -> SidebarOrderDetail:
     _conversation_view, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
-    latest_description: str | None = None
-    latest_at: datetime | None = None
-    tracking_packages: list[SidebarTrackingPackage] = []
-    if order.tracking_number or any(item.tracking_number for item in order.line_items):
-        events, _ = await client.get_standard_tracking(order_id)
-        if events:
-            events.sort(key=lambda event: event.update_time_millis, reverse=True)
-            latest = events[0]
-            latest_at = _tracking_time(latest.update_time_millis)
-            latest_description = latest.description
-            item_numbers = {item.tracking_number for item in order.line_items if item.tracking_number}
-            tracking_packages = [
-                SidebarTrackingPackage(
-                    package_id=next(iter({item.package_id for item in order.line_items if item.package_id}), None)
-                    if len({item.package_id for item in order.line_items if item.package_id}) == 1
-                    else None,
-                    tracking_number=order.tracking_number
-                    or (next(iter(item_numbers)) if len(item_numbers) == 1 else None),
-                    carrier_name=order.shipping_provider,
-                    events=[
-                        SidebarTrackingEvent(
-                            description=event.description,
-                            occurred_at=_tracking_time(event.update_time_millis),
-                            action_code=event.action_code,
-                        )
-                        for event in events
-                    ],
-                )
-            ]
+    tracking = (
+        await _read_standard_tracking(client, order_id, _tracking_from_order(order))
+        if include_tracking
+        else SidebarStandardTracking()
+    )
     return SidebarOrderDetail(
         payment_method_name=order.payment_method_name,
         recipient_address=SidebarRecipientAddress(
@@ -441,13 +566,69 @@ async def get_sidebar_order_detail(
         if order.recipient_address
         else None,
         shipping_provider=order.shipping_provider,
-        latest_tracking_description=latest_description,
-        latest_tracking_at=latest_at,
-        tracking_packages=tracking_packages,
+        latest_tracking_description=tracking.latest_tracking_description,
+        latest_tracking_at=tracking.latest_tracking_at,
+        tracking_packages=tracking.packages,
         enhanced_tracking_available=(
             getattr(getattr(client, "channel", None), "metadata_json", {}).get("seller_type") == "CROSS_BORDER"
         ),
+        tracking_loaded=include_tracking,
     )
+
+
+async def _read_standard_tracking(
+    client: TikTokReadClient, order_id: str, proof: _VerifiedOrderTracking
+) -> SidebarStandardTracking:
+    latest_description: str | None = None
+    latest_at: datetime | None = None
+    tracking_packages: list[SidebarTrackingPackage] = []
+    if proof.tracking_number or proof.item_tracking_numbers:
+        events, _ = await client.get_standard_tracking(order_id)
+        if events:
+            events.sort(key=lambda event: event.update_time_millis, reverse=True)
+            latest = events[0]
+            latest_at = _tracking_time(latest.update_time_millis)
+            latest_description = latest.description
+            item_numbers = set(proof.item_tracking_numbers)
+            tracking_packages = [
+                SidebarTrackingPackage(
+                    package_id=proof.package_id,
+                    tracking_number=proof.tracking_number
+                    or (next(iter(item_numbers)) if len(item_numbers) == 1 else None),
+                    carrier_name=proof.shipping_provider,
+                    events=[
+                        SidebarTrackingEvent(
+                            description=event.description,
+                            occurred_at=_tracking_time(event.update_time_millis),
+                            action_code=event.action_code,
+                        )
+                        for event in events
+                    ],
+                )
+            ]
+    return SidebarStandardTracking(
+        latest_tracking_description=latest_description,
+        latest_tracking_at=latest_at,
+        packages=tracking_packages,
+    )
+
+
+async def get_sidebar_standard_tracking(
+    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
+) -> SidebarStandardTracking:
+    """仅对当前授权会话已核验买家订单读取通用物流；短时证明失效时重新核验。"""
+    conversation = await _conversation(session, user, session_id)
+    if conversation.platform != "tiktok" or not get_settings().real_tiktok_read_enabled:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "物流详情不可用", 404)
+    if not order_id.isascii() or not order_id.isdigit() or len(order_id) > 200:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 订单 ID 无效", 422)
+    client = await _tiktok_client(session, conversation.store_id)
+    customer = await _local_verified_customer(session, conversation)
+    proof = _cached_verified_order(_verified_order_key(_live_order_cache_key(conversation, customer, client), order_id))
+    if proof is None:
+        _verified_conversation, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
+        proof = _tracking_from_order(order)
+    return await _read_standard_tracking(client, order_id, proof)
 
 
 async def get_sidebar_enhanced_tracking(

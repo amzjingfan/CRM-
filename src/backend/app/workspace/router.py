@@ -79,6 +79,7 @@ from app.workspace.sidebar import (
     SidebarProduct,
     SidebarProducts,
     SidebarSearch,
+    SidebarStandardTracking,
     SidebarTrackingTimeline,
     SidebarTrackingTimelineTranslation,
     SidebarTrackingTimelineTranslationRequest,
@@ -87,6 +88,7 @@ from app.workspace.sidebar import (
     get_sidebar_enhanced_tracking,
     get_sidebar_order_detail,
     get_sidebar_product,
+    get_sidebar_standard_tracking,
     search_sidebar_coupons,
     search_sidebar_orders,
     search_sidebar_products,
@@ -129,7 +131,26 @@ async def sidebar_order_detail(
     user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[SidebarOrderDetail]:
     """仅在会话买家身份经官方核对后读取该订单的只读物流详情。"""
-    return ApiResponse(data=await get_sidebar_order_detail(session, user, session_id, payload.order_id))
+    return ApiResponse(
+        data=await get_sidebar_order_detail(
+            session, user, session_id, payload.order_id, include_tracking=payload.include_tracking
+        )
+    )
+
+
+@router.post(
+    "/sessions/{session_id}/sidebar/orders/standard-tracking",
+    response_model=ApiResponse[SidebarStandardTracking],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.view"))],
+)
+async def sidebar_standard_tracking(
+    session_id: uuid.UUID,
+    payload: SidebarOrderDetailRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[SidebarStandardTracking]:
+    """当前用户与店铺授权内，独立读取已核验订单的通用物流。"""
+    return ApiResponse(data=await get_sidebar_standard_tracking(session, user, session_id, payload.order_id))
 
 
 @router.post(
