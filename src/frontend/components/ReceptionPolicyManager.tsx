@@ -128,13 +128,17 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     try {
       const user = await currentUser();
       setPermissions(user.permissions);
+      const authorizedStores: StoreView[] = user.store_ids.map((id) => ({ id, name: id, alias: null, code: id, status: "active", timezone: "UTC", currency: "", created_at: "" }));
+      const requested = new URLSearchParams(window.location.search).get("store_id");
+      setDefaultStoreId(requested && user.store_ids.includes(requested) ? requested : user.store_ids[0] ?? "");
+      // 配置列表按服务端授权店铺读取；店铺名称仅补齐显示，不参与授权判断。
+      setStores(authorizedStores);
+      setBooting(false);
       const storeNames = await storeNamesRequest;
       if (!storeNames) setNotice("店铺名称暂时无法读取，仍可按授权店铺编号管理配置。");
       const names: StoreView[] = (storeNames ?? []).filter((store) => user.store_ids.includes(store.id));
       const byId = new Map(names.map((store) => [store.id, store]));
-      setStores(user.store_ids.map((id) => byId.get(id) ?? { id, name: id, alias: null, code: id, status: "active", timezone: "UTC", currency: "", created_at: "" }));
-      const requested = new URLSearchParams(window.location.search).get("store_id");
-      setDefaultStoreId(requested && user.store_ids.includes(requested) ? requested : user.store_ids[0] ?? "");
+      setStores(authorizedStores.map((store) => byId.get(store.id) ?? store));
     } catch (caught) { setBootError(errorText(caught)); }
     finally { setBooting(false); }
   }, []);

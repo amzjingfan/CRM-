@@ -90,6 +90,26 @@ test("reception pages request store names while identity is pending", async () =
   }
 });
 
+test("reception content appears from authorized stores before store names return", async () => {
+  for (const [path, rowName] of [
+    ["/marketing/reception/quick-replies", /hello/],
+    ["/marketing/reception/timeout", /夜间值守/],
+  ]) {
+    let releaseStoreNames = () => {};
+    const storeNamesGate = new Promise((resolve) => { releaseStoreNames = resolve; });
+    const { context, tab, writes } = await open(path, { skipNavWait: true, beforeResponse: async (requestPath) => {
+      if (requestPath === "/v1/settings/stores") await storeNamesGate;
+    } });
+    try {
+      await tab.getByRole("row", { name: rowName }).waitFor({ timeout: 2000 });
+      assert.equal(writes.length, 0);
+    } finally {
+      releaseStoreNames();
+      await context.close();
+    }
+  }
+});
+
 test("marketing sidebar has two entries and reception pages use in-page tabs", async () => {
   const { context, tab } = await open("/marketing/reception/quick-replies");
   try {

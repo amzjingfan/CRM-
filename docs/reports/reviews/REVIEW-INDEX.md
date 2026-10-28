@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-STAGING-LATENCY-001-20261029-R13 | MVP-STAGING-LATENCY-001 | R13 | APPROVE | `86e5c4e48862da445932ad50529c3a85bd3801f5` | authorization, tenant_isolation, request_order, failure_state, release_scope, latency_claims | 2026-10-29T06:05:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R13.md`](RR-MVP-STAGING-LATENCY-001-20261029-R13.md) |
 | RR-MVP-STAGING-LATENCY-001-20261029-R12 | MVP-STAGING-LATENCY-001 | R12 | APPROVE | `40f39665b03a67712384dec13fec06c0c25ba2bf` | read_only_retry, tenant_isolation, failure_state, release_scope, immutable_image, private_backup, safety_switches, latency_claims | 2026-10-29T05:20:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R12.md`](RR-MVP-STAGING-LATENCY-001-20261029-R12.md) |
 | RR-MVP-STAGING-LATENCY-001-20261029-R11 | MVP-STAGING-LATENCY-001 | R11 | APPROVE | `eab7e2c207308fde34be1ca50f25d32be1670cfa` | release_scope, source_identity, immutable_image, private_backup, authentication, tenant_isolation, safety_switches, latency_claims | 2026-10-29T02:58:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R11.md`](RR-MVP-STAGING-LATENCY-001-20261029-R11.md) |
 | RR-MVP-STAGING-LATENCY-001-20261029-R10 | MVP-STAGING-LATENCY-001 | R10 | APPROVE | `eab7e2c207308fde34be1ca50f25d32be1670cfa` | authentication, readonly_routes, csrf, idempotency, tenant_isolation, retry_failure, release_scope | 2026-10-29T02:18:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261029-R10.md`](RR-MVP-STAGING-LATENCY-001-20261029-R10.md) |

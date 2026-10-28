@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-29 [TR R16](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R16.md) **PARTIAL（基础接待渐进回显源码验证）**：延迟店铺名称的浏览器用例先红后绿，最终 132/132 生产浏览器、51/51 契约、类型与构建通过，lint 0 error/8 既有 warning。只读 30 次健康分段显示业务机回环 p50/p95 约 0.6/1.1 毫秒、入口隧道 446/1170 毫秒、公网 787/1760 毫秒；非配对请求不可相减。源码尚未发布，真实用户回显与全站冷热/跨店/失败限流仍未验。
+
 2026-10-29 [TR R15](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R15.md) **PARTIAL（已登录订单 UI 有限补测）**：性能专用 release `eb0eedc7` 下，一个已有已送达订单的会话只读回显“售后买家”及订单、物流、商品、付款详情；另一无订单会话显示“售前买家”和空订单提示。两会话属于同一测试店铺，详情已预先打开；浏览器绑定及截图接口耗时不能当作页面加载耗时。真实跨店、冷/热回显、并发 401、429/失败与可归因的整体提速仍待验。R14 发布门禁与合成回归结论不变。
 
 2026-10-29 [TR R14](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R14.md) **PARTIAL（订单限流重试局部发布通过）**：主线 [PR #612](https://github.com/CP11-gh/CRM/pull/612) 已合并，性能专用 release `eb0eedc7` 仅改前端详情组件与浏览器测试，51/51 契约、50/50 生产工作台浏览器、类型及构建通过，lint 0 error/8 既有 warning。最终 PR head 的 GitHub 两作业 runner 空/0 steps 失败，CI 未运行，按已批准本地替代门禁；私有备份、精确镜像、`ValidateOnly/Deploy`、12 容器、四公网入口和原安全开关通过。详情与物流 429 恢复为合成响应验证，已登录 staging 订单 UI 工具超时记 `UI_UNAVAILABLE`；真实限流、全站冷热/跨店/并发 401 和整体提速仍待验。见[低敏证据](../../release/evidence/staging/crm-staging-order-detail-retry-20261029.json)。
