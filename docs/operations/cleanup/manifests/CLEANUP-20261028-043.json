@@ -1,0 +1,18 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-043",
+  "state": "deleted",
+  "execution_main_sha": "b8534251b7d3ffde5c537316688e1183119ad086",
+  "deleted_branch_count": 1,
+  "scope": "one unattached branch containing only superseded G5 R30 candidate evidence; archive original commit ref before deleting branch name; no worktree or remote operation",
+  "ref": "refs/heads/feature/mvp006-g5-r30-window-20261017",
+  "head": "7c7688ea498edad6e6e6d5ff590e08f48540bd0d",
+  "archive_ref": "refs/archive/CLEANUP-20261028-043/feature/mvp006-g5-r30-window-20261017",
+  "proof_task": "MVP-006",
+  "superseding_revision": "R101",
+  "historical_evidence_paths": [
+    "release/evidence/staging/crm-staging-g5-r30-auth-preflight-20261017.json",
+    "release/evidence/staging/crm-staging-g5-r30-image-1abc9d3-20261017.json",
+    "release/evidence/staging/crm-staging-g5-r30-image-20261017.json"
+  ]
+}
