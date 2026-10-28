@@ -1,0 +1,24 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-024",
+  "state": "candidate",
+  "base_sha": "48cc1e283c1ea6a7454b3aaf5bb098fcc51463d1",
+  "scope": "one clean historical documentation worktree and branch after its unique quarantine record was integrated into local main; no quarantine or remote changes",
+  "worktree": ".worktrees/cleanup-agent-local-downloads-20261027",
+  "branch_ref": "refs/heads/docs/cleanup-agent-local-downloads-20261027",
+  "head": "98cc90c15704e8ff00f3374cd37be83415d44ed7",
+  "archive_ref": "refs/archive/CLEANUP-20261028-024/docs/cleanup-agent-local-downloads-20261027",
+  "integrated_documents": [
+    {
+      "path": "docs/operations/cleanup/CLEANUP-20261027-001.md",
+      "blob": "250dbc2010ccdf667fa9bf41073222d40b028ca5"
+    },
+    {
+      "path": "docs/operations/cleanup/manifests/CLEANUP-20261027-001.json",
+      "blob": "003ed17e50835587de00cccf23b8fc5799ad9ec1"
+    }
+  ],
+  "quarantine_batch": "CLEANUP-20261027-001",
+  "quarantine_verified_file_count": 43,
+  "quarantine_verified_bytes": 883281085
+}
