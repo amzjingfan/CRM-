@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_oauth_redirect_rollout_attempt",
+  "captured_at_utc": "2026-09-24T09:21:13Z",
+  "environment": "staging",
+  "production_release": false,
+  "task_id": "MVP-OAUTH-REDIRECT-DEPLOY-001",
+  "source_main_sha": "c72406349c56f55f9e433b64523b3626682c4adb",
+  "image_publish_run_id": 35975910518,
+  "validate_run_id": 35977258653,
+  "validate_status": "success",
+  "deploy_run_id": 35977511412,
+  "deploy_attempt": 1,
+  "deploy_status": "cancelled_before_migration_or_container_switch",
+  "reason": "The first GHCR backend pull made negligible local image-store progress for approximately 30 minutes; the operator cancelled the run before any migration or container switch.",
+  "second_attempt": {
+    "deploy_run_id": 35977511412,
+    "deploy_attempt": 2,
+    "deploy_status": "cancelled_before_migration_or_container_switch",
+    "reason": "The same full-new-image run again remained on the first backend pull. The user then explicitly authorized retaining the existing retrieval digest for this staging rollout only; the run was cancelled before changing the deployment inputs."
+  },
+  "scoped_mixed_image_preflight": {
+    "authorization": "User explicitly approved retaining the old retrieval digest for this staging OAuth rollout only on 2026-09-24; production and future rollouts are not covered.",
+    "validate_run_id": 35981557122,
+    "validate_status": "success",
+    "backend_and_frontend_new": true,
+    "retrieval_digest_retained": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:bc99dfa3ce36bc3332480b456da5d82a0d1495a2f9bbfd1b2bb56d4df2f02112",
+    "retrieval_dependency_lock_deviation": "Old retrieval image is not equivalent to the new source build because the backend dependency manifest and lock differ.",
+    "database_migration": "not_executed_by_preflight"
+  },
+  "requested_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:3421003e18d6fcaaa653eb672bb79776906f9538d4ce9809fa3450fa1aa5287a",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:33d7f388da4a54b1db0e7d6f0a517cb5bbbe02b6fdb6f879d7ecf22d375f49c9",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:21234b82739eeeeeb95774fcc9b6bafea8f3b97321f4e3a4ca99a13f79b156c3"
+  },
+  "pre_and_post_cancel_checks": {
+    "running_backend_image_short_id": "772c3ff342dd",
+    "running_frontend_image_short_id": "86fe5f16b37a",
+    "running_retrieval_image_short_id": "bc99dfa3ce36",
+    "database_migration_head": "023_marketing_review_idempotency",
+    "public_healthz": 200,
+    "public_v1_health": 200,
+    "public_v1_health_ready": 200,
+    "company_system_docker_sha256": "c4839bffe12df13fa09c79c0eff5d4ebd2caa4b1b6c8da001176669cba79bc23",
+    "edge_nginx_vhost_set_sha256": "c9a5122a21b40026acdaccd76910e8d187b70431ea1ded68c098952fcd42b042"
+  },
+  "recovery": {
+    "business_root_only_directory": "/var/backups/crm-staging/releases/20260924T0835Z-c724063-oauth",
+    "postgres_dump_listed_with_pg_restore": true,
+    "minio_archive_listed_with_tar": true,
+    "staging_env_backup_byte_equal_before_digest_update": true,
+    "database_or_object_restore_drill": "not_executed_separate_MVP-008"
+  },
+  "real_tiktok_browser_callback": "not_executed_partner_center_seller_type_rejection",
+  "sensitive_values_included": false
+}

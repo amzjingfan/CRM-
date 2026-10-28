@@ -1,0 +1,28 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-066",
+  "state": "deleted_branch_only",
+  "base_sha": "138a780d47881fd85c84c706ca0f6fa0c21c2d89",
+  "deleted_branch_count": 2,
+  "deleted_worktree_count": 0,
+  "source_branch": {
+    "ref": "refs/heads/fix/mvp002-oauth-redirect-staging-20260924",
+    "head": "6035e4037adaf34f6ecb6f706a9fcfba96c22de6",
+    "archive_ref": "refs/archive/CLEANUP-20261028-066/fix/mvp002-oauth-redirect-staging-20260924",
+    "imported_paths": [
+      "docs/records/implementation/IR-MVP-OAUTH-REDIRECT-DEPLOY-001-20260924-R01.md",
+      "docs/reports/tests/TR-MVP-OAUTH-REDIRECT-DEPLOY-001-20260924-R01.md",
+      "release/evidence/staging/crm-staging-oauth-redirect-rollout-20260924.json",
+      "release/evidence/staging/crm-staging-oauth-redirect-rollout-attempt-20260924.json"
+    ],
+    "worktree": ".worktrees/fix-mvp002-oauth-redirect-staging-20260924",
+    "worktree_final_state": "detached_at_original_head_with_ignored_private_files_preserved",
+    "restore_method": "git branch fix/mvp002-oauth-redirect-staging-20260924 refs/archive/CLEANUP-20261028-066/fix/mvp002-oauth-redirect-staging-20260924"
+  },
+  "cleanup_branch": {
+    "ref": "refs/heads/docs/oauth-history-cleanup-20261028",
+    "archive_ref": "refs/archive/CLEANUP-20261028-066/docs/oauth-history-cleanup-20261028",
+    "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+    "restore_method": "git branch docs/oauth-history-cleanup-20261028 refs/archive/CLEANUP-20261028-066/docs/oauth-history-cleanup-20261028"
+  }
+}
