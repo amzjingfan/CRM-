@@ -1,15 +1,15 @@
 # 项目状态与恢复入口
 
-2026-10-28，STANDARD。当前任务 MVP-AGENT-TOOL-SUITE-001 进入 VERIFYING，唯一状态源见 docs/tasks/TASKS.md。BASE_SHA=9d6a9182ec7e9e29712e670654b757f8c767ef5d；分支 feature/agent-tool-suite-20261028，目标 origin/main；最终subject=01975ab2471adfe2a704116367c34d27415a3240。根 checkout 未共享历史与未知私有文件保留。
+2026-10-28，治理STANDARD，TikTok人工辅助v0.1；仓库CP11-gh/CRM，目标origin/main。十二工具任务的唯一状态源为docs/tasks/TASKS.md；产品源码PR #589经用户人工审阅批准后已合并，合并提交6d29190195f356b5fe004692746ebe3b13c8e58c。仅状态文档收尾使用docs/agent-tool-suite-close-20261028，恢复时以权威主线和任务表为准；产品候选未部署。
 
-已接通十二项业务工具、六类统一目录、三种操作标签及原四项人工确认提议；原生 @tool/function calling 自动选择配置工具，后端目录驱动 UI，订单/商品/售后使用本轮不透明候选引用。商品/优惠按店铺授权，无需买家会话；其他业务对象及内部写入绑定当前会话。040新增内部协作记录、幂等和审计，不发送平台消息或转交会话；知识仅显式绑定获批文件，保留撤权检查。此前动态多Agent源码PR #582与状态PR #583已合并；编排继续采用 asyncio，未恢复旧 FAQ。
+CANDIDATE_SUBJECT_SHA=01975ab2471adfe2a704116367c34d27415a3240，EVIDENCE_HEAD_SHA=READ_AT_GATE。最新工具IR/TR/RR为MVP-AGENT-TOOL-SUITE-001-20261028-R03。已从权威合并主线逐条核对278份IR、299份TR、261份RR与对应索引，三索引CURRENT；没有新增产品行为或改写既有记录。
 
-最终本地验收：subject `01975ab2471adfe2a704116367c34d27415a3240`，应用树与84702完整后端2375 passed/3平台条件跳过的受测树相同，当前候选入口增量38 passed/3平台跳过；生产浏览器121、前端契约48、Ruff/格式/mypy252源文件、040往返、16动态/237安全评测和依赖审计通过；两轴审查已闭环。IR/TR/RR为MVP-AGENT-TOOL-SUITE-001-20261028-R03，三索引CANDIDATE_VIEW。EVIDENCE_HEAD_SHA=READ_AT_GATE；任务仍VERIFYING，PR https://github.com/CP11-gh/CRM/pull/589 已创建；源码和证据已推送，部署未批准。用户本轮贴出的AGENTS指令要求人工审阅，现等待用户对本PR的人审决定；既有GitHub零步骤本地替代授权继续适用。合并复核后才能DONE。
+十二业务工具、六类目录、三种操作标签和原四项人工确认提议已在本地验收。后端/前端/测试与完整受测84702ae0同树，完整后端2375 passed/3 POSIX跳过；生产浏览器121、前端契约48、Ruff/格式/mypy252源文件、040往返、16动态协议/237安全样本和依赖审计通过。最终01975ab2仅导入既有入口低敏日志字段，受影响入口38 passed/3平台跳过；未冒充在该提交重跑全量。两轴技术审查闭环。PR #589精确head的CI两作业均终止于runner=0/steps=0，CI未运行，按用户持续批准采用本地替代；用户另已明确批准本PR合并及仅任务/索引/恢复摘要文档收尾。
 
-主线另新增性能R04日志证据release/evidence/staging/crm-staging-server-timing-20261028.json，已保留；该改动仅入口低敏耗时日志，不是Agent部署。
+原生@tool/function calling选择发布的完整工具集；订单不默认最新，店铺/买家/会话在服务端核验；商品/优惠可仅按店铺授权。知识仅绑定获批文件，没有旧FAQ回退；内部备注和接管请求真实保存、幂等审计，不转交或发送。历史工具记忆区分scope并去除临时引用，只作需重查线索。040正式协作数据及迁移定义不可在回滚时随意删除。
 
-本阶段未部署，用户要求完成本地验证后等统一批准。性能任务MVP-STAGING-LATENCY-001仍在VERIFYING；独立release e64ef52c仅将性能修复部署staging，动态Agent未部署。性能入口连接复用R03证据见release/evidence/staging/crm-staging-nginx-keepalive-20261028.json；入口回环改善但公网未证实改善，AC-01/AC-06仍待该任务复测。本阶段未访问真实模型、TikTok数据或密钥，真实站点联合链路与性能仍待获批后验收；production G8 No-Go。欢迎语/超时回复工具未纳入本阶段。
+部署状态：本轮动态Agent重写和工具扩展尚未部署，等待用户统一批准。性能任务MVP-STAGING-LATENCY-001仍由任务表和性能R04证据维护；其既有入口日志/连接复用部署不代表Agent已发布。公网性能尚未证实整体改善；production G8 No-Go。真实模型语义、TikTok字段及联合链路、现场时延未在本轮验收。欢迎语/超时回复仍只有原基础接待配置，未新增触发或发送工具。
 
-Workspace hygiene: ATTENTION。根未知需求/私有文件和其他活动工作树保留；本次 Next 开发服务生成了未跟踪的前端AGENTS文件，未提交或删除；临时日志/截图在 src/tests/.artifacts，未作为发布证据。公开官方文档UI读取失败记为 UI_UNAVAILABLE，端点参考来自本机官方OAS与可读取docv2搜索结果。
+Workspace hygiene: ATTENTION。根checkout未共享历史、未知需求/私有文件和其他活动工作树保留；前端工具生成的未跟踪AGENTS文件保持原状。临时日志、截图和收尾差异在src/tests/.artifacts，不提交或删除未知内容。官方公开文档UI不可用记UI_UNAVAILABLE，既有端点依据OAS和官方docv2。
 
-下一动作：①取得本轮AGENTS要求的PR人工审阅决定；②按精确head门禁合并并核对索引/关闭任务；③等待用户批准统一部署。
+下一动作：①等待用户批准统一部署；②获批后核对真实主线、私有备份并按手动门禁部署；③完成真实模型/平台联合验收。
