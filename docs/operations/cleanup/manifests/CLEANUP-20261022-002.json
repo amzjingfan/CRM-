@@ -1,0 +1,527 @@
+{
+  "task_id": "MAINT-CLEANUP-20261022-002",
+  "batch_id": "CLEANUP-20261022-002",
+  "base_sha": "64003ad69e3016170fb4836a993f12de4bb8a9cd",
+  "merge_target": "origin/main",
+  "server": "192.168.110.210",
+  "docker_host": "unix:///run/user/1004/docker.sock",
+  "state": "DELETED",
+  "discovered_at": "2026-10-22T13:56:40+08:00",
+  "user_direction": "Retain only images from the most recent 10 days; delete older images (2026-10-22 chat)",
+  "cutoff": "2026-10-12T13:56:40+08:00",
+  "scope": "16 exact Rootless Docker image IDs older than 10 days and referenced by zero containers; 5 older container-active images excluded; all volumes and current images excluded",
+  "estimated_unique_size_gb_decimal": 10.04905,
+  "recovery_archive": {
+    "path": "/home/crmdeploy/cache/.quarantine/CLEANUP-20261022-002/rollback-retrieval.tar.zst",
+    "image_id": "sha256:4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9",
+    "size_bytes": 2810077928,
+    "sha256": "7d3245414d8786fca09c2bac9d7e3fd9ef36953b962a4908f274d9cd4f126432",
+    "permissions": "0600",
+    "verification": [
+      "zstd -t passed",
+      "OCI index contains exactly the rollback retrieval image ID"
+    ],
+    "deletion_scope": "excluded; retain as recovery asset"
+  },
+  "items": [
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:0a07365ef1c266b67bc42e77e73b074118911cb54841f504160503e03f8f77e5",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:0a07365ef1c266b67bc42e77e73b074118911cb54841f504160503e03f8f77e5",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:0a07365ef1c266b67bc42e77e73b074118911cb54841f504160503e03f8f77e5",
+      "size_bytes": 110072791,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-10-10T01:43:58Z",
+      "retention_until": "2026-10-20T01:43:58Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:b889525ff1b68b33ed01894d47973e520f08a40017ac8f3440eb04951c807f53",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:b889525ff1b68b33ed01894d47973e520f08a40017ac8f3440eb04951c807f53",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:b889525ff1b68b33ed01894d47973e520f08a40017ac8f3440eb04951c807f53",
+      "size_bytes": 110069737,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-10-09T02:41:00Z",
+      "retention_until": "2026-10-19T02:41:00Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:c56443c8a291c84b2437190f6ce120c8cb29544f98d503f6a660722a29d0248a",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:c56443c8a291c84b2437190f6ce120c8cb29544f98d503f6a660722a29d0248a",
+      "repo_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:c56443c8a291c84b2437190f6ce120c8cb29544f98d503f6a660722a29d0248a",
+      "size_bytes": 63965526,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "68.53MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-10-08T07:15:14Z",
+      "retention_until": "2026-10-18T07:15:14Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9",
+      "repo_digest": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:4c2dfe3d9cdea3e0c0719231021080a234734606674bc920a90e4d5f9f8bfbc9",
+      "size_bytes": 2879425115,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "7.89GB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-30T02:44:54Z",
+      "retention_until": "2026-10-10T02:44:54Z",
+      "reason": "Previous retrieval rollback image; older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001",
+        "MVP-008"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Load verified local rollback-retrieval.tar.zst through crmdeploy Rootless Docker, verify exact ID; immutable GHCR digest is secondary",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:8a0b99aff74251c083362eeef57cefa91e8cc930c92182b06a37a18cfea54d56",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:8a0b99aff74251c083362eeef57cefa91e8cc930c92182b06a37a18cfea54d56",
+      "repo_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:8a0b99aff74251c083362eeef57cefa91e8cc930c92182b06a37a18cfea54d56",
+      "size_bytes": 63965168,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "68.52MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-30T02:38:31Z",
+      "retention_until": "2026-10-10T02:38:31Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:fb1bffecd3de94b125be657bf2908cec2f2d1ff3c2980a002e0f2a2e12a2e2ed",
+      "size_bytes": 110068712,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-30T02:37:55Z",
+      "retention_until": "2026-10-10T02:37:55Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:0ba70aa97ca7c0629c0907a931c53d7d5925afd286513bac245b54b63a903556",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:0ba70aa97ca7c0629c0907a931c53d7d5925afd286513bac245b54b63a903556",
+      "repo_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:0ba70aa97ca7c0629c0907a931c53d7d5925afd286513bac245b54b63a903556",
+      "size_bytes": 63965507,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "68.53MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-28T02:02:04Z",
+      "retention_until": "2026-10-08T02:02:04Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:46a126cf0747c074dfb7201500ae5c184c98c869422d44643bed6ecc2c2cae06",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:46a126cf0747c074dfb7201500ae5c184c98c869422d44643bed6ecc2c2cae06",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:46a126cf0747c074dfb7201500ae5c184c98c869422d44643bed6ecc2c2cae06",
+      "size_bytes": 110069654,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-28T02:01:28Z",
+      "retention_until": "2026-10-08T02:01:28Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:33d7f388da4a54b1db0e7d6f0a517cb5bbbe02b6fdb6f879d7ecf22d375f49c9",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:33d7f388da4a54b1db0e7d6f0a517cb5bbbe02b6fdb6f879d7ecf22d375f49c9",
+      "repo_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:33d7f388da4a54b1db0e7d6f0a517cb5bbbe02b6fdb6f879d7ecf22d375f49c9",
+      "size_bytes": 63965447,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "68.53MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-24T08:34:41Z",
+      "retention_until": "2026-10-04T08:34:41Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:3421003e18d6fcaaa653eb672bb79776906f9538d4ce9809fa3450fa1aa5287a",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:3421003e18d6fcaaa653eb672bb79776906f9538d4ce9809fa3450fa1aa5287a",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:3421003e18d6fcaaa653eb672bb79776906f9538d4ce9809fa3450fa1aa5287a",
+      "size_bytes": 110067124,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-24T08:33:41Z",
+      "retention_until": "2026-10-04T08:33:41Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:86fe5f16b37a92e94e1ac0fa9e9e66b55e70065a9309cb7898809fc3b5112a83",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:86fe5f16b37a92e94e1ac0fa9e9e66b55e70065a9309cb7898809fc3b5112a83",
+      "repo_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:86fe5f16b37a92e94e1ac0fa9e9e66b55e70065a9309cb7898809fc3b5112a83",
+      "size_bytes": 63969053,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "68.53MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-24T02:44:25Z",
+      "retention_until": "2026-10-04T02:44:25Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:772c3ff342dd179f307d3a7f25bfadc6ca3cac43abd9aa50008af23f9ddfcdd5",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:772c3ff342dd179f307d3a7f25bfadc6ca3cac43abd9aa50008af23f9ddfcdd5",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:772c3ff342dd179f307d3a7f25bfadc6ca3cac43abd9aa50008af23f9ddfcdd5",
+      "size_bytes": 110066438,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-24T02:44:04Z",
+      "retention_until": "2026-10-04T02:44:04Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:e5d6bbfc6cab8ba9c912ac3c95d8ff43f4ae9d8f6d12927124686b07cd9c1f0f",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:e5d6bbfc6cab8ba9c912ac3c95d8ff43f4ae9d8f6d12927124686b07cd9c1f0f",
+      "repo_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:e5d6bbfc6cab8ba9c912ac3c95d8ff43f4ae9d8f6d12927124686b07cd9c1f0f",
+      "size_bytes": 64041308,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "69.15MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-23T09:40:57Z",
+      "retention_until": "2026-10-03T09:40:57Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:a3bb63c47acee9f78682e9ea8837d415a7008635aa3a8c91e76dfe49b423f6c7",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:a3bb63c47acee9f78682e9ea8837d415a7008635aa3a8c91e76dfe49b423f6c7",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:a3bb63c47acee9f78682e9ea8837d415a7008635aa3a8c91e76dfe49b423f6c7",
+      "size_bytes": 110063663,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-23T09:39:58Z",
+      "retention_until": "2026-10-03T09:39:58Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:f18724708567209da7bc3e5dfb339b1e83955f034df2f4cc5802d2a758956d13",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:f18724708567209da7bc3e5dfb339b1e83955f034df2f4cc5802d2a758956d13",
+      "repo_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:f18724708567209da7bc3e5dfb339b1e83955f034df2f4cc5802d2a758956d13",
+      "size_bytes": 63983102,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "68.86MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-22T05:43:34Z",
+      "retention_until": "2026-10-02T05:43:34Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    },
+    {
+      "original_path": "docker-image://unix:///run/user/1004/docker.sock/sha256:38fbb3f118a59101ad5ce1f3583850c1777d0b84a56e56491b55459d7b599bee",
+      "kind": "docker-image",
+      "category": "obsolete-deployment-image",
+      "git_status": "N/A remote Docker image",
+      "image_id": "sha256:38fbb3f118a59101ad5ce1f3583850c1777d0b84a56e56491b55459d7b599bee",
+      "repo_digest": "ghcr.io/cp11-gh/crm-backend@sha256:38fbb3f118a59101ad5ce1f3583850c1777d0b84a56e56491b55459d7b599bee",
+      "size_bytes": 110065672,
+      "size_basis": "docker image inspect .Size; not filesystem blocks",
+      "unique_size_estimate": "209.8MB (docker system df -v; rounded)",
+      "sha256": "N/A; content-addressed image ID recorded above",
+      "modified_at": "2026-09-22T05:43:10Z",
+      "retention_until": "2026-10-02T05:43:10Z",
+      "reason": "Historical deployment image older than user-selected 10-day window; zero container references",
+      "reference_checks": [
+        "2026-10-22T13:56:40+08:00 image inspect: exact ID and RepoDigest match",
+        "docker ps -a / container inspect: zero references",
+        "not among seven container-active images"
+      ],
+      "related_tasks_or_worktrees": [
+        "MVP-STAGING-001"
+      ],
+      "action": "deleted",
+      "quarantine_path": "N/A Docker-managed image",
+      "restore_method": "Pull exact private GHCR RepoDigest and verify image ID; network access/availability not verified",
+      "verification": [
+        "Pre-delete exact ID, RepoDigest, older-than-10-days age and zero container references confirmed",
+        "Post-delete exact ID absent; 11 running containers, five volumes and three loopback/public health endpoints unchanged"
+      ]
+    }
+  ],
+  "deletion_authorization": "User approved permanent deletion of all 16 exact image IDs in CLEANUP-20261022-002 and retention of both recovery archives in this chat",
+  "deleted_at": "2026-10-22T14:05:55+08:00",
+  "filesystem_free_before_bytes": 203797196800,
+  "filesystem_free_after_bytes": 213846609920,
+  "filesystem_delete_step_freed_bytes": 10049413120,
+  "filesystem_whole_task_net_freed_bytes": 7239335192,
+  "running_container_ids_sha256_before_after": "7b73b358805d0215e811afc57262fa8bb5301638ebe3b6e82d1fb2725831dc77",
+  "post_delete_loopback_and_public_health": {
+    "healthz": 200,
+    "v1_health": 200,
+    "v1_health_ready": 200
+  },
+  "post_delete_image_summary": {
+    "total": 106,
+    "active": 7,
+    "size": "15.87GB",
+    "reclaimable": "6.167GB"
+  }
+}
