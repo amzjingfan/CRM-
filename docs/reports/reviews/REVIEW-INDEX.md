@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-STAGING-LATENCY-001-20261028-R04 | MVP-STAGING-LATENCY-001 | R04 | APPROVE | `9415044da2848877a722a4b790c2e6734a0ecec4` | log_sensitivity, source_identity, nginx_syntax, rollback, latency_claims, deployment_scope | 2026-10-28T19:38:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R04.md`](RR-MVP-STAGING-LATENCY-001-20261028-R04.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R03 | MVP-STAGING-LATENCY-001 | R03 | APPROVE | `81c851bf53b7216ef6f5bf4ee8d125aefacb0eaa` | ingress_scope, connection_reuse, security_headers, cache_boundary, activate_deny, sse, recovery, latency_claims | 2026-10-28T18:52:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R03.md`](RR-MVP-STAGING-LATENCY-001-20261028-R03.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R02 | MVP-STAGING-LATENCY-001 | R02 | APPROVE | `e64ef52c9702540a5c5eb3a151cd19afce97b0e0` | release_scope, source_identity, backup, gateway_cache, store_isolation, fixed_egress, safety_switches, recovery | 2026-10-28T18:07:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R02.md`](RR-MVP-STAGING-LATENCY-001-20261028-R02.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R01 | MVP-STAGING-LATENCY-001 | R01 | APPROVE | `2c77b8d9a729e467d702c116ad7403e94660f979` | correctness, store_isolation, privacy, fixed_egress, cache, rate_limits, deployment_boundary | 2026-10-28T16:35:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R01.md`](RR-MVP-STAGING-LATENCY-001-20261028-R01.md) |

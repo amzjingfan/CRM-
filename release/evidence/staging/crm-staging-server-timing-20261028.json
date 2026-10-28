@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_ingress_server_timing",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "source_sha": "9415044da2848877a722a4b790c2e6734a0ecec4",
+  "runtime_change": "public Nginx safe JSON access log adds upstream Server-Timing; no application image or safety switch changes",
+  "vhost_before_sha256": "5e733a1dcd8b7a09323093b5a26634fe53f91c3b44349f55ee1a796d401229d2",
+  "vhost_after_sha256": "b32a1da759acb0f0c218ae3082acbc3ca3d37f359c3765a84b11f22baa794fd7",
+  "private_backup": {
+    "directory": "/var/backups/crm-staging-server-timing-9415044d-20261028",
+    "directory_mode": "0700",
+    "backup_mode": "0600",
+    "candidate_mode": "0600",
+    "backup_sha256": "5e733a1dcd8b7a09323093b5a26634fe53f91c3b44349f55ee1a796d401229d2"
+  },
+  "validation": {
+    "candidate_diff": "one server_timing log field only",
+    "isolated_nginx_test": "passed",
+    "first_reload": "rolled back because an immediate log check saw an old worker",
+    "second_reload": "passed; numeric Server-Timing seen on attempt 2",
+    "active_nginx_test": "passed",
+    "health_http": 200,
+    "runtime_file_sha_matches_source": true,
+    "server_timing_sample_shape": "app;dur=<integer>, tiktok;dur=<integer>"
+  },
+  "public_health_measurement": {
+    "samples": 30,
+    "http_200": 30,
+    "public_ttfb_p50_p95_seconds": [1.749812, 5.188974],
+    "gateway_total_p50_p95_ms": [171, 1175],
+    "app_p50_p95_ms": [1, 2],
+    "gateway_nonapp_p50_p95_ms": [170, 1174],
+    "tiktok_ms_max": 0,
+    "limit": "Sequential public samples in a shared network; gateway total includes response transfer, so percentile differences are not a per-request network decomposition."
+  },
+  "authenticated_page_observation": {
+    "time_window_utc": ["2026-10-28T11:28:31+00:00", "2026-10-28T11:36:11+00:00"],
+    "workspace_sessions": {"n": 23, "http_200": 23, "gateway_p50_p95_ms": [885, 2167], "app_p50_p95_ms": [20, 25], "tiktok_ms_max": 0},
+    "workspace_messages": {"n": 22, "http_200": 22, "gateway_p50_p95_ms": [366, 1239], "app_p50_p95_ms": [16, 23], "tiktok_ms_max": 0},
+    "settings_stores": {"n": 2, "http_200": 2, "gateway_p50_p95_ms": [188, 905], "app_p50_p95_ms": [12, 15], "tiktok_ms_max": 0},
+    "settings_channels": {"n": 1, "http_200": 1, "gateway_ms": 781, "app_ms": 17, "tiktok_ms": 0},
+    "limit": "Settings samples are diagnostic only; cold/warm and cross-store 30-sample acceptance is still outstanding."
+  },
+  "application_images_unchanged": {
+    "backend": "sha256:a1f05c91bb6061a0bb2ed6080175ec89d404d96402eafa7c8490921a08428c36",
+    "frontend": "sha256:eeb53b2d0ff82e682054e0ddcdb688f409fbeb3bd8e28977ff168532a6910b63"
+  },
+  "github_actions_used_for_deployment": false,
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false
+}
