@@ -1,7 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-027",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "45d9c8cf428508ac0f9ccf11ad2225af6991a2e8",
+  "deleted_worktree_count": 2,
+  "deleted_branch_count": 2,
+  "archived_file_count": 121,
+  "deleted_cache_file_count": 60607,
   "base_sha": "ce2a064c6bd40fffa998c546e03c0e46e174a48e",
   "scope": "two exact merged-PR Agent worktrees and branches; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-027",
