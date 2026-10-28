@@ -1,0 +1,34 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-069",
+  "state": "deleted_branch_only",
+  "base_sha": "1f59528ade9cd34b73afde7d3cd3ebdb4c097da5",
+  "deleted_branch_count": 3,
+  "deleted_worktree_count": 0,
+  "branches": [
+    {
+      "ref": "refs/heads/fix/workspace-parallel-refresh-20261028",
+      "head": "5201417eab9c4a67543e9bf8e839a03a3868a62a",
+      "archive_ref": "refs/archive/CLEANUP-20261028-069/fix/workspace-parallel-refresh-20261028",
+      "worktree": ".worktrees/staging-latency-evidence-20261028",
+      "worktree_final_state": "detached_at_original_head_with_untracked_files_preserved",
+      "main_source_file_equivalence": "workspace page and browser test blobs identical",
+      "restore_method": "git branch fix/workspace-parallel-refresh-20261028 refs/archive/CLEANUP-20261028-069/fix/workspace-parallel-refresh-20261028"
+    },
+    {
+      "ref": "refs/heads/hotfix/staging-workspace-refresh-20261028",
+      "head": "9d6ccc208ce3b31342c8aedea98ed16181047048",
+      "archive_ref": "refs/archive/CLEANUP-20261028-069/hotfix/staging-workspace-refresh-20261028",
+      "worktree": ".worktrees/staging-feedback-deploy-20261026",
+      "worktree_final_state": "detached_at_original_head_with_release_files_preserved",
+      "main_workspace_page_equivalence": "workspace page blob identical; release-only Agent and browser test not imported",
+      "restore_method": "git branch hotfix/staging-workspace-refresh-20261028 refs/archive/CLEANUP-20261028-069/hotfix/staging-workspace-refresh-20261028"
+    },
+    {
+      "ref": "refs/heads/docs/performance-branches-cleanup-20261028",
+      "archive_ref": "refs/archive/CLEANUP-20261028-069/docs/performance-branches-cleanup-20261028",
+      "final_tip_verification": "archive_ref equals local main after fast-forward and before branch deletion",
+      "restore_method": "git branch docs/performance-branches-cleanup-20261028 refs/archive/CLEANUP-20261028-069/docs/performance-branches-cleanup-20261028"
+    }
+  ]
+}
