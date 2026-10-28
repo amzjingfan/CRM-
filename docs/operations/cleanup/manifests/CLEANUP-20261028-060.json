@@ -1,0 +1,26 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-060",
+  "state": "deleted",
+  "execution_main_sha": "596341c5bbc7338a0df48c64f5b84f075f44c7e1",
+  "deleted_branch_count": 2,
+  "branches": [
+    {
+      "ref": "refs/heads/feature/agent-tool-suite-20261028",
+      "head": "6c0abdeedceddf57cf46d407586469f3498d90c2",
+      "archive_ref": "refs/archive/CLEANUP-20261028-060/feature/agent-tool-suite-20261028",
+      "merged_pr": 589,
+      "merged_pr_commit": "6d29190195f356b5fe004692746ebe3b13c8e58c",
+      "pr_changed_paths": 68,
+      "identical_to_main": 56
+    },
+    {
+      "ref": "refs/heads/docs/staging-server-timing-index-20261028",
+      "head": "5457190da0a82be1f0d7e29afa7ed0f4f9d1a777",
+      "archive_ref": "refs/archive/CLEANUP-20261028-060/docs/staging-server-timing-index-20261028",
+      "merged_pr": 591,
+      "merged_pr_commit": "10d9eab99d13fa602a2833b9886e5f5a790d4de5",
+      "changed_paths": 5
+    }
+  ]
+}
