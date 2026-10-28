@@ -1,0 +1,229 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-033",
+  "state": "candidate",
+  "base_sha": "3bd60151af4e6bcef97e18744c316dd823ae4860",
+  "scope": "three exact detached main-ancestor worktrees and ignored artifacts archived; no branch or remote operation",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-033",
+  "candidates": [
+    {
+      "worktree": ".worktrees/customer-sidebar-variant-build-20261021",
+      "head": "5e11f7b6eb3381b57869db5daf6abcbdfbe193a9",
+      "directory_modified": "2026-10-21T18:51:21.3412878+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/build-customer-sidebar-variant-display.ps1",
+          "size": 2119,
+          "modified": "2026-10-21T18:51:50.5320219+08:00",
+          "sha256": "929D93BCBD5D65129085AD5DA68BA507376205414523A1709AE085814681EF75"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-variant-5e11f7b6.bundle",
+          "size": 7031958,
+          "modified": "2026-10-21T18:55:33.7813571+08:00",
+          "sha256": "4BEB954D8D0BBD0C865B640544F40C53B15A7A197DCABEED1961581AFFC39F4F"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-variant-display-backend-build.log",
+          "size": 3469,
+          "modified": "2026-10-21T18:55:06.9607283+08:00",
+          "sha256": "82E0E5559A58C576A851F69E503ECFE8CA3B4DA719127753EC81CDCE2E5D9E51"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-variant-display-backend-metadata.json",
+          "size": 2056,
+          "modified": "2026-10-21T18:55:06.9607283+08:00",
+          "sha256": "726F8F7482817924D8551127C04FD1400D300B56F1AB1867E9F839C388DF87EE"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-variant-display-frontend-build.log",
+          "size": 5599,
+          "modified": "2026-10-21T18:54:43.5816678+08:00",
+          "sha256": "B3C7E63DA6EF1AFE26CF7A93F0AAE1149123B3632C4A36C4017CCF1C0B8C5935"
+        },
+        {
+          "path": "src/tests/.artifacts/customer-sidebar-variant-display-frontend-metadata.json",
+          "size": 2162,
+          "modified": "2026-10-21T18:54:43.5816678+08:00",
+          "sha256": "E08593F2DF96A8988FC2D98982C4A8C4038DCAD6539B865284A08476582BF002"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/.token_seed",
+          "size": 133,
+          "modified": "2026-10-21T18:54:57.1890228+08:00",
+          "sha256": "423902055CEEDD078BCCEBD8871F0090F0D572DC4AB9AE4FFB97C73C5E847CA9"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/.token_seed.lock",
+          "size": 0,
+          "modified": "2026-10-21T18:52:04.6545103+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/buildx/.buildNodeID",
+          "size": 16,
+          "modified": "2026-10-21T18:52:01.3599698+08:00",
+          "sha256": "2C7BA7203F698F5DD18073223AFFFAD551C4ABB0AD27EF733FB2CBDC5BDA4370"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/buildx/.lock",
+          "size": 0,
+          "modified": "2026-10-21T18:52:01.2547658+08:00",
+          "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/buildx/activity/default",
+          "size": 20,
+          "modified": "2026-10-21T18:54:44.0266387+08:00",
+          "sha256": "BC07F97A8A82DE54C7191C8F8C7FD178287C79E4670FB11E920FD8900423020C"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/buildx/current",
+          "size": 65,
+          "modified": "2026-10-21T18:54:43.9367902+08:00",
+          "sha256": "341C58D6069B1510E923BBCC7064143743FF3A7CDC5B664702C3FF0B575FBE0A"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/buildx/refs/default/default/iuzlvvqrcbk31s69os327aebb",
+          "size": 276,
+          "modified": "2026-10-21T18:54:45.8039437+08:00",
+          "sha256": "5B8BC48D8B8DC5E3CA0A955A3CA1709C4F2C8F19711CCE721987CBAD0152734E"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/buildx/refs/default/default/t00phnxqn7qmtigbnn6y7qvs1",
+          "size": 283,
+          "modified": "2026-10-21T18:52:02.4402253+08:00",
+          "sha256": "8D40A20CBE482674C276A72B53EB2A23CD8FD32A54CB9FEC6F64C4AE2D6BFADE"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-auth-customer-sidebar-variant-display/config.json",
+          "size": 123,
+          "modified": "2026-10-21T18:55:07.1321886+08:00",
+          "sha256": "D7B2E7B1F35A192CC901ADD49F0FBAF048F71D5962089DFF2ACF5DF9E78AFDC5"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-backup-variant.sh",
+          "size": 513,
+          "modified": "2026-10-21T18:56:30.4187383+08:00",
+          "sha256": "D9026674192A45D97ED5C57AFA89B68F21E1DCB64D86CED460D15B8C6DD0D070"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-check-variant.sh",
+          "size": 1281,
+          "modified": "2026-10-21T18:56:30.6490361+08:00",
+          "sha256": "CFB7A972A7D3443408778AE041D9D36B7A28992DBD5E759AEDC24C54250C9649"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-gate-variant.sh",
+          "size": 3495,
+          "modified": "2026-10-21T18:56:30.8897531+08:00",
+          "sha256": "BFEF475B4E60A546508C5481368C2E1FA06F165BD2B45D470571E96D7A1F1039"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-prefetch-variant.sh",
+          "size": 1611,
+          "modified": "2026-10-21T18:56:31.1399979+08:00",
+          "sha256": "BEC06B4D613F488CC84850C75B5213B3A6C226004CECB7305643F2CEA03EDCC7"
+        },
+        {
+          "path": "src/tests/.artifacts/stage-source-variant.sh",
+          "size": 658,
+          "modified": "2026-10-21T18:56:31.3921126+08:00",
+          "sha256": "F99104C9429CA60383B34ACF635A6E92037B11B90EB29015A5ADED3469240FE6"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/tiktok-empty-orders-build-20261021",
+      "head": "f487ea1b6723e4fc1afbc2601e43ce64ac3db911",
+      "directory_modified": "2026-10-21T09:10:26.6691729+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/bootstrap-empty-orders-source.sh",
+          "size": 1014,
+          "modified": "2026-10-21T09:13:53.6099868+08:00",
+          "sha256": "65DDAD0933ADA1BED872041DE6B027D8C7B5349CFD5E16A8407A4B91A913C0A3"
+        },
+        {
+          "path": "src/tests/.artifacts/crm-empty-orders-f487.bundle",
+          "size": 6868125,
+          "modified": "2026-10-21T09:13:21.7843545+08:00",
+          "sha256": "A88E21224C67B13513D786423D2DA33919B4E91AEAE6020BDA231D668DDCA57F"
+        },
+        {
+          "path": "src/tests/.artifacts/deploy-empty-orders-staging.sh",
+          "size": 5446,
+          "modified": "2026-10-21T09:15:26.3394038+08:00",
+          "sha256": "044B3F1CCFD2EFE236DF459E8389A137EA2BCD7F86D982A1FD2630042A57BE07"
+        },
+        {
+          "path": "src/tests/.artifacts/docker-empty-orders-ghcr/config.json",
+          "size": 42,
+          "modified": "2026-10-21T09:12:08.4692474+08:00",
+          "sha256": "C14A1E5BBF586A6CE5BF939BFD66436433391E03B6FDBAB8A691F1849C446E17"
+        },
+        {
+          "path": "src/tests/.artifacts/empty-orders-deploy.json",
+          "size": 2911,
+          "modified": "2026-10-21T09:20:50.7547207+08:00",
+          "sha256": "3CBE156D7A96E906F9A88FB9883514D8E8190C02789D1C5CB44601A89940734E"
+        },
+        {
+          "path": "src/tests/.artifacts/push-empty-orders-ghcr.ps1",
+          "size": 623,
+          "modified": "2026-10-21T09:11:50.2537857+08:00",
+          "sha256": "A39C8834E83690F829FDCAA5301E84274D578B650828F1C216CF0E0453CED92F"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/tiktok-store-build-3483feac",
+      "head": "3483feac9f2fed39126d0e7afe9e6a102e17efe0",
+      "directory_modified": "2026-10-22T18:49:52.1449064+08:00",
+      "ignored": [
+        {
+          "path": "src/tests/.artifacts/tiktok-store-manual-build-20261022/backend-build.log",
+          "size": 2973,
+          "modified": "2026-10-22T18:51:35.9393813+08:00",
+          "sha256": "8930EB6FFB654C47E30A45E9D1FBF7E7AAD9646049D84B595E9E7705946F64D6"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-manual-build-20261022/backend.tar",
+          "size": 110252032,
+          "modified": "2026-10-22T18:54:57.8782681+08:00",
+          "sha256": "040F794166988DDCE98681BEE511180C7A21CFB85C65F7208503B775C6808798"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-manual-build-20261022/frontend-build.log",
+          "size": 3162,
+          "modified": "2026-10-22T18:58:15.5094696+08:00",
+          "sha256": "DD1D0ED4FCEA0DB83C139CC30931F4BFD523C7257CBB3304F9FF98A13020E097"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-manual-build-20261022/frontend-prod-build.log",
+          "size": 5253,
+          "modified": "2026-10-22T19:10:24.1584018+08:00",
+          "sha256": "8DD8DF29FDA28390D8B2D48A2578D4199D389759EF8AF29899575C93490D324D"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-manual-build-20261022/frontend-prod.tar",
+          "size": 64097280,
+          "modified": "2026-10-22T19:11:05.7819258+08:00",
+          "sha256": "C9E6E93AD096599778D7DDAE9D06A2A6861A72074BDF12DE877AF8B397404B1E"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-manual-build-20261022/frontend.tar",
+          "size": 289690624,
+          "modified": "2026-10-22T18:58:46.5162365+08:00",
+          "sha256": "40B80D7492C4B99AB6CB5A3F1EF162CDD99678009A4A0781BB0907AB336C0E95"
+        },
+        {
+          "path": "src/tests/.artifacts/tiktok-store-manual-build-20261022/source.bundle",
+          "size": 7274742,
+          "modified": "2026-10-22T18:50:55.6794468+08:00",
+          "sha256": "62156597C9469E1A925B9AC84F839806D691DFA2B46094C7975B46B75A337625"
+        }
+      ]
+    }
+  ]
+}
