@@ -1,6 +1,7 @@
 """G5 手动 staging 入口在接触凭据或 Docker 前必须失败关闭。"""
 
 import json
+import os
 import shutil
 import subprocess
 
@@ -13,6 +14,9 @@ BACKEND = "ghcr.io/cp11-gh/crm-backend@sha256:" + "a" * 64
 FRONTEND = "ghcr.io/cp11-gh/crm-frontend@sha256:" + "b" * 64
 RETRIEVAL = "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:" + "c" * 64
 PREVIOUS_BACKEND = "ghcr.io/cp11-gh/crm-backend@sha256:" + "d" * 64
+
+# CI Linux 已满足操作系统门禁，须在非 crmdeploy UID 门禁失败关闭。
+NON_STAGING_HOST_ERROR = "staging linux host" if os.name == "nt" else "crmdeploy uid 1004"
 
 
 def invoke(
@@ -93,10 +97,10 @@ def test_rejects_invalid_source_sha_before_host_access() -> None:
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
-def test_refuses_to_run_outside_staging_linux_host() -> None:
+def test_refuses_to_run_outside_staging_host_identity() -> None:
     result = invoke(mode="CheckOnly")
     assert result.returncode != 0
-    assert "staging linux host" in (result.stdout + result.stderr).lower()
+    assert NON_STAGING_HOST_ERROR in (result.stdout + result.stderr).lower()
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
@@ -132,7 +136,7 @@ def test_accepts_restore_of_existing_read_and_translation_mode() -> None:
         pre_window_evidence_directory="/home/crmdeploy/.cache/crm-g5-manual/prior-g5-window",
     )
     assert result.returncode != 0
-    assert "staging linux host" in (result.stdout + result.stderr).lower()
+    assert NON_STAGING_HOST_ERROR in (result.stdout + result.stderr).lower()
 
 
 def test_read_and_translation_restore_uses_both_existing_gate_switches() -> None:
@@ -148,7 +152,7 @@ def test_manual_send_restore_takes_conversation_only_from_private_snapshot() -> 
         mode="RestoreManualSend", pre_window_evidence_directory="/home/crmdeploy/.cache/crm-g5-manual/prior-g5-window"
     )
     assert valid.returncode != 0
-    assert "staging linux host" in (valid.stdout + valid.stderr).lower()
+    assert NON_STAGING_HOST_ERROR in (valid.stdout + valid.stderr).lower()
 
     source = SCRIPT.read_text("utf-8")
     assert "[string]$AllowedTikTokConversationId," not in source
@@ -236,7 +240,7 @@ def test_content_modes_reach_host_gate_only_with_exact_confirmation(mode: str, c
     runtime_source_sha = "f" * 40 if mode == "ReconcileFixture" else None
     result = invoke(mode=mode, confirm_content=confirmation, runtime_source_sha=runtime_source_sha)
     assert result.returncode != 0
-    assert "staging linux host" in (result.stdout + result.stderr).lower()
+    assert NON_STAGING_HOST_ERROR in (result.stdout + result.stderr).lower()
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
@@ -275,7 +279,7 @@ def test_replacement_requires_runtime_image_revision_before_host_access() -> Non
         runtime_source_sha="f" * 40,
     )
     assert provided.returncode != 0
-    assert "staging linux host" in (provided.stdout + provided.stderr).lower()
+    assert NON_STAGING_HOST_ERROR in (provided.stdout + provided.stderr).lower()
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell unavailable")
@@ -354,7 +358,7 @@ def test_one_faq_vectorization_requires_exact_confirmation_and_image_revision() 
         runtime_source_sha="f" * 40,
     )
     assert valid.returncode != 0
-    assert "staging linux host" in (valid.stdout + valid.stderr).lower()
+    assert NON_STAGING_HOST_ERROR in (valid.stdout + valid.stderr).lower()
 
 
 def test_manual_content_runner_uses_reviewed_workdir_and_private_mounts() -> None:

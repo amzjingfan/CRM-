@@ -35,6 +35,8 @@ Set-Location ../..
 
 从 `src/backend/` 执行 `uv run pytest`，会按 `src/backend/pyproject.toml` 同时发现 `src/tests/backend/` 和 `src/tests/integration/postgres/`。如果只运行相关用例，必须在测试记录中写出精确路径和未运行范围，不能把局部结果描述为完整后端回归。
 
+GitHub 托管 Linux runner 的后端 CI 在运行测试前创建仅 runner 可写的 `/run/user/1004` 目录，供隔离 Compose 门禁测试使用与正式 staging 相同的锁路径；这不改变正式机器的 UID 1004、锁或 Docker 校验。手动 G5 入口的负例在 Windows 应停于 Linux 宿主机检查，在 Linux runner 应停于 `crmdeploy` UID 检查；两者都不能进入真实部署。
+
 ## 前端质量命令
 
 从仓库根执行：

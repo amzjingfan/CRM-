@@ -49,6 +49,15 @@ jobs:
       - name: Run mypy
         run: uv run mypy app scripts
 
+      - name: Prepare test-only rootless deployment lock directory
+        run: |
+          test "$(id -u)" != 1004
+          if [ -e /run/user/1004 ]; then
+            test -d /run/user/1004 && test -w /run/user/1004
+          else
+            sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" /run/user/1004
+          fi
+
       - name: Run backend tests
         run: uv run pytest
 
