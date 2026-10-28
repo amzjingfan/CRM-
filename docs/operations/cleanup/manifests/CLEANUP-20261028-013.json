@@ -1,0 +1,111 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-013",
+  "state": "candidate",
+  "base_sha": "2406e2debf9426f5e886fd09c5c6a2f4a9c9c626",
+  "scope": "three exact merged-PR worktrees and branches; six untracked rule files and other ignored non-cache files archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-013",
+  "candidates": [
+    {
+      "worktree": ".worktrees/customer-sidebar-logistics-card-20261021",
+      "head": "e42300261a0625d52adbc70ea8058bddf7d56047",
+      "branch_ref": "refs/heads/fix/customer-sidebar-logistics-card-20261021",
+      "pr": 489,
+      "merge_commit": "4f32c04e2cc2f92170f30c91b8a2ca4d1bf75266",
+      "directory_modified": "2026-10-21T10:53:43.7753933+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-21T10:59:51.4406567+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-21T10:59:51.4406567+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "ignored_count": 33384,
+      "ignored_paths_sha256": "A9A92EEDC0E06C6BE7234F6FC5634DB69F5252DDBA3C66FD9D917E6B8B1689CC",
+      "cache_file_count": 33383,
+      "cache_bytes": 758899985,
+      "archive_file_count": 1,
+      "archive_bytes": 774,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/pr-logistics-card-20261021.md",
+          "size": 774,
+          "modified": "2026-10-21T11:11:22.1762432+08:00",
+          "sha256": "4D1706E18AE7842EF6B538AC9293B9E2F6D3EF8C22F0D87DA627C1BFCAEE2EB4"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/customer-sidebar-variant-display-20261021",
+      "head": "64aefa1206497c9bf2d003b9698a3e906e78e185",
+      "branch_ref": "refs/heads/fix/customer-sidebar-variant-display-20261021",
+      "pr": 498,
+      "merge_commit": "5e11f7b6eb3381b57869db5daf6abcbdfbe193a9",
+      "directory_modified": "2026-10-21T18:40:48.5453092+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-21T18:44:10.4016334+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-21T18:44:10.4016334+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "ignored_count": 33379,
+      "ignored_paths_sha256": "6EC64F00DA6D5C4B9F03B0970545A3B995AE5A98A8AA27668A98EB699383F529",
+      "cache_file_count": 33378,
+      "cache_bytes": 759049113,
+      "archive_file_count": 1,
+      "archive_bytes": 1004,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/variant-pr-body.md",
+          "size": 1004,
+          "modified": "2026-10-21T18:49:53.3797818+08:00",
+          "sha256": "4B1D7D8CFFD5CE5B5ACADCEAA53DE46CE3248053EAC3CD219B1CC13B44AB7B9E"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-close-dialog-20261022",
+      "head": "3afb15f8f5465a3e8c25fb7cfe801e147bd0b2e9",
+      "branch_ref": "refs/heads/fix/workspace-close-dialog-20261022",
+      "pr": 503,
+      "merge_commit": "56ea8d4e5d95951c9052220b26b3b54d051992b4",
+      "directory_modified": "2026-10-22T08:54:02.6617505+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-22T08:56:45.5163686+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-22T08:56:45.5163686+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "ignored_count": 33193,
+      "ignored_paths_sha256": "33098ECE2FDEDA474A14DDFD31BE9EE7C3BDFE9A50597E9863615BBFBBFFF36B",
+      "cache_file_count": 33193,
+      "cache_bytes": 611459438,
+      "archive_file_count": 0,
+      "archive_bytes": 0,
+      "archive_files": []
+    }
+  ]
+}
