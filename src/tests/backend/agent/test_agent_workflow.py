@@ -142,7 +142,7 @@ class ScriptedGenerator:
         outcome = self.outcomes.popleft()
         if isinstance(outcome, LLMProviderError):
             raise outcome
-        output = response_schema.model_validate(outcome)
+        output = response_schema.model_validate(outcome.model_dump() if isinstance(outcome, BaseModel) else outcome)
         return ProviderResult(
             provider="fake-llm",
             model="fake-answer",
@@ -2285,7 +2285,7 @@ async def test_debug_shows_grounded_bound_knowledge_that_requires_human() -> Non
     hit = rag_result.hits[0]
     hit.source_type = "file"
     hit.content = "测试退货政策：签收后七天内可申请退货，具体订单需坐席核对。"
-    answer = "该测试政策写明签收后七天内可申请退货，具体订单仍需坐席核对。"
+    answer = "该测试政策写明签收后七天内可申请退货且具体订单需坐席核对。"
     workflow, rag, generator, _ = service(
         message_intent=IntentModelOutput(
             intent=IntentName.RETURN_POLICY,

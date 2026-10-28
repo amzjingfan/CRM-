@@ -205,6 +205,12 @@ class FaqAnswerModelOutput(BaseModel):
         return self
 
 
+class ConciseFaqAnswerModelOutput(FaqAnswerModelOutput):
+    """调试文件草稿在模型 Schema 层限制逗号串列，避免误触位置 DLP。"""
+
+    answer: str = Field(min_length=1, max_length=2000, pattern=r"^[^,，、;；\r\n]*$")
+
+
 class CombinedFaqModelOutput(BaseModel):
     """同一次严格结构化请求返回意图和 FAQ 草稿，应用分别执行原门禁。"""
 

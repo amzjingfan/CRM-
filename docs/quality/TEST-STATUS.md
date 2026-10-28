@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 Agent 调试知识输出候选 [TR R06](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06.md) 综合 `PARTIAL`：subject `d368b529` 的隔离 PostgreSQL/pgvector 全套 2460 passed/3 skipped，Ruff、mypy、锁文件及 237 样本确定性安全评测通过。主线 `8096728f` 已手动部署 staging，但保留的文件知识单问 trace `4bb7170b` 在独立复核前因草稿两个逗号被位置 DLP 低置信拒绝；新候选通过严格输出 Schema 的受控 DeepSeek 单次探针，完整 Agent 工具加知识现场链路仍待新版本部署验证。保留唯一合成文件的审批与绑定直至成功后统一清理；零平台发送，production No-Go。
+
 2026-10-27 Agent 调试知识候选 [TR R05](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R05.md) 综合 `PARTIAL`：最终 subject `b55847f8` 的隔离 PostgreSQL/pgvector 全套 2459 passed/3 skipped，Ruff、mypy 和锁文件检查通过。当前 staging 主线物流单问的真实只读工具和模型回答通过，混合与知识单问检索命中后仍被模型 Schema 或 Prompt DLP 拒绝；R04 修复候选尚未部署现场验证。按用户要求，同一份合成文件保持审批与绑定直至完整验收后统一清理；零平台发送，production No-Go。
 
 2026-10-27 Agent 调试物流轨迹 [TR R04](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R04.md) 综合 `PARTIAL`：用户仅对 PR #569 批准本地 2455 passed/3 skipped 替代零步骤 CI，合并主线并手动部署 staging 后，已登录 TikTok US 店铺的只读物流工具读到官方 `delivered` 轨迹，页面显示模型“已送达”建议；但工具加已审批绑定知识同轮仅显示固定物流提示，无知识引用，知识复核失败。合成文档已撤销审批、解绑并软删除；无平台发送，production No-Go。

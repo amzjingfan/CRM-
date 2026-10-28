@@ -13,7 +13,7 @@ from app.tools.contracts import TOOL_OUTPUT_SCHEMAS
 
 WORKFLOW_PROMPT_VERSION = "faq-agent-workflow-v1.8.7"
 FAQ_ANSWER_PROMPT_VERSION = "faq-answer-v1.6.3"
-FAQ_ANSWER_CONCISE_PROMPT_VERSION = "faq-answer-debug-file-v1.0.0"
+FAQ_ANSWER_CONCISE_PROMPT_VERSION = "faq-answer-debug-file-v1.1.0"
 COMBINED_FAQ_PROMPT_VERSION = "faq-classified-draft-v1.0.2"
 GROUNDING_REVIEW_PROMPT_VERSION = "faq-grounding-review-v1.5.1"
 TRUSTED_FAQ_REVIEW_PROMPT_VERSION = "faq-trusted-review-v1.0.1"
@@ -49,6 +49,7 @@ FAQ_ANSWER_CONCISE_SYSTEM_PROMPT = (
     + "\n仅在 Agent 调试已绑定文件时使用：只回答当前知识问题，用一小句概括已引用片段。"
     + "不要回答订单或物流个案，不要增加与问题无关的解释；必要条件仍须保留。"
     + "正文与 business_claims 中的自然语言尽量避免逗号串列，不能为此删去安全条件或事实。"
+    + "answer 必须是一句不含逗号、顿号、分号或换行的完整短句；必要条件仍必须写清，不能据此省略。"
 )
 
 COMBINED_FAQ_SYSTEM_PROMPT = (

@@ -52,6 +52,7 @@ from app.agent.schemas import (
     AgentWorkflowResult,
     ClassificationState,
     CombinedFaqModelOutput,
+    ConciseFaqAnswerModelOutput,
     FaqAnswerModelOutput,
     GroundingReviewOutput,
     IntentInferenceResult,
@@ -1232,7 +1233,9 @@ class AgentWorkflowService:
             business_prompt_id=BusinessPromptId.FAQ_ANSWER_CONCISE if debug_file else BusinessPromptId.FAQ_ANSWER,
         )
         try:
-            generated = await self.generator.generate(request, FaqAnswerModelOutput)
+            generated = await self.generator.generate(
+                request, ConciseFaqAnswerModelOutput if debug_file else FaqAnswerModelOutput
+            )
         except LLMProviderError as error:
             if error.code != LLMErrorCode.LLM_REFUSAL:
                 error.failure_stage = LLMFailureStage.FAQ_DRAFT
