@@ -465,6 +465,54 @@ test("dashboard ignores late metrics from the previous store", async () => {
   } finally { await context.close(); }
 });
 
+test("dashboard shows core metrics while slower widgets are pending", async () => {
+  let releaseSlowWidgets = () => {};
+  const slowWidgets = new Promise((resolve) => { releaseSlowWidgets = resolve; });
+  const { context, page } = await openPage("/dashboard", { "GET /v1/settings/stores": [store] }, async (browserContext) => {
+    await browserContext.route("**/v1/dashboard/**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith("/trend") || path.endsWith("/alerts")) await slowWidgets;
+      const data = path.endsWith("/metrics")
+        ? { total_sessions: 101, transfer_rate: 0, avg_response_time: null, recovered_gmv: "0", currency: "USD", period: "7d", updated_at: null }
+        : path.endsWith("/trend") || path.endsWith("/channels") ? { items: [] }
+        : path.endsWith("/alerts") ? { refund_requests: { total: 0 }, bad_reviews: { total: 0, golden_window: false }, abandoned_carts: { total: 0, potential_gmv: "0" } }
+        : [];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByRole("region", { name: "核心指标" }).getByText("101", { exact: true }).waitFor({ timeout: 5000 });
+    assert.equal(await page.getByText("正在加载会话趋势").count(), 1);
+    assert.equal(await page.getByText("正在加载实时预警").count(), 1);
+  } finally {
+    releaseSlowWidgets();
+    await context.close();
+  }
+});
+
+test("dashboard keeps core metrics when a secondary widget fails", async () => {
+  const { context, page } = await openPage("/dashboard", { "GET /v1/settings/stores": [store] }, async (browserContext) => {
+    await browserContext.route("**/v1/dashboard/**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith("/alerts")) {
+        await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "UNAVAILABLE", message: "Alert service unavailable" }) });
+        return;
+      }
+      const data = path.endsWith("/metrics")
+        ? { total_sessions: 101, transfer_rate: 0, avg_response_time: null, recovered_gmv: "0", currency: "USD", period: "7d", updated_at: null }
+        : path.endsWith("/trend") || path.endsWith("/channels") ? { items: [] }
+        : [];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+  });
+  try {
+    await page.getByRole("region", { name: "核心指标" }).getByText("101", { exact: true }).waitFor();
+    await page.locator(".error-state").waitFor();
+    assert.equal(await page.getByRole("region", { name: "核心指标" }).getByText("101", { exact: true }).count(), 1);
+    assert.equal(await page.getByText("退款 / 退货订单").count(), 0);
+  } finally { await context.close(); }
+});
+
 test("marketing store switch closes an editor from another store", async () => {
   const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Demo Store" };
   const { context, page } = await openPage("/marketing", {

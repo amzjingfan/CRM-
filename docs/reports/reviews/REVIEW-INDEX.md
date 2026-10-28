@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-STAGING-LATENCY-001-20261028-R07 | MVP-STAGING-LATENCY-001 | R07 | APPROVE | `fe627e4f3d7246e57cc4e7e0dd9c766c8e47d862` | request_isolation, stale_responses, error_feedback, release_scope, safety_switches, latency_claims | 2026-10-28T23:35:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R07.md`](RR-MVP-STAGING-LATENCY-001-20261028-R07.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R06 | MVP-STAGING-LATENCY-001 | R06 | APPROVE | `ef4beff3bb0d26b86195b7b36b590eb5153cfd2e` | request_order, store_authorization, failure_handling, release_scope, safety_switches, backup, latency_claims | 2026-10-28T22:45:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R06.md`](RR-MVP-STAGING-LATENCY-001-20261028-R06.md) |
 | RR-MVP-STAGING-LATENCY-001-20261028-R05 | MVP-STAGING-LATENCY-001 | R05 | APPROVE | `921e3c051a0bf54d942531947faff9f98c04009c` | request_order, stale_response, release_scope, safety_switches, backup, latency_claims | 2026-10-28T21:15:00+08:00 | [`RR-MVP-STAGING-LATENCY-001-20261028-R05.md`](RR-MVP-STAGING-LATENCY-001-20261028-R05.md) |
 | RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03 | MVP-AGENT-TOOL-SUITE-001 | R03 | APPROVE | `01975ab2471adfe2a704116367c34d27415a3240` | correctness, spec, source_identity, store_isolation, privacy, integration | 2026-10-28T19:52:02+08:00 | [`RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md`](RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md) |

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_dashboard_progressive_feedback",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "mainline_code_sha": "fe627e4f3d7246e57cc4e7e0dd9c766c8e47d862",
+  "release_source_sha": "f9bfc109215215a4ce87344a7e34780b9b68b4e9",
+  "release_base_sha": "97ac71ef2fa6ef662cd613c3270dce192eda433e",
+  "release_diff": [
+    "src/frontend/app/dashboard/page.tsx",
+    "src/tests/frontend/browser/ui-regressions.test.mjs"
+  ],
+  "release_blobs_equal_mainline": true,
+  "frontend_image_digest": "sha256:ea586aa4f2531c489a32077951eb750a00951715b8db9b3d68b76fd8cd9ac292",
+  "previous_frontend_digest": "sha256:7bfce9ae5bd2ccc9b83b4c43beccad76bbf39b3fd3b16bf2b527c35ce22ba74c",
+  "backend_image_unchanged": "sha256:a1f05c91bb6061a0bb2ed6080175ec89d404d96402eafa7c8490921a08428c36",
+  "supply_chain": {
+    "source_bundle_sha256": "f4d09d51846ffbde914bcfbb5a48b153d8a83fab43368fb2aa49dd7a83745144",
+    "oci_archive_sha256": "bd26775f4d4ab1eba4e0e518b609d27baa81dd3acf79ee151b081cc39c1c07ca",
+    "compressed_layer_bytes": 64408970,
+    "layer_count": 9,
+    "linux_amd64": true,
+    "revision_label_matches_release": true,
+    "remote_repo_digest_matches": true
+  },
+  "private_backup": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "environment_sha256": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+    "postgres_custom_dump_sha256": "6dd13f382812093a7d64108580471742020642dcc747591642357aadf38c6589",
+    "minio_tar_sha256": "54cb6f12704088b036c3faaab7891f3ef477750a67b826692be1abf5fa315808",
+    "postgres_catalog_readable": true,
+    "minio_tar_readable": true
+  },
+  "gates": {
+    "validate_only": "validated",
+    "validate_only_sha256": "f6ee194827a4fe9318faa2329ac0807e29fc0b2668b472611be54ea4c4419b4e",
+    "deploy": "passed",
+    "deploy_sha256": "faa4d7fc2053d1b0a6156076766ee82327d76956b3f073cf6bc953c6d495f15b",
+    "containers_running": 12,
+    "manual_send_store_count": 1,
+    "temporary_ghcr_login_removed": true
+  },
+  "verification": {
+    "mainline_typecheck": "passed",
+    "mainline_lint": "0 errors, 8 pre-existing warnings",
+    "mainline_frontend_contract": "48/48",
+    "mainline_frontend_browser": "125/125",
+    "release_typecheck": "passed",
+    "release_lint": "0 errors, 8 pre-existing warnings",
+    "release_frontend_contract": "48/48",
+    "release_frontend_browser": "121/121",
+    "both_production_builds": "passed",
+    "authenticated_dashboard": "default authorized store showed core metrics, trend, channel distribution, alerts and top-query empty state",
+    "authenticated_cross_store": "UI_UNAVAILABLE after store-switch browser timeout; synthetic stale-response regression passed",
+    "public_http": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/dashboard": 200
+    },
+    "public_dashboard_single_ttfb_seconds": 6.475737
+  },
+  "network_diagnostic": "The public dashboard route still had a 6.48 s TTFB in one post-deploy request. Earlier segmented samples place much of the wait on the gateway/tunnel path; this release proves progressive display under delayed or failed widget APIs but does not establish real-user p50/p95 improvement.",
+  "github_actions_used_for_deployment": false,
+  "dynamic_agent_deployed": false,
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false,
+  "overall_latency_acceptance": "partial"
+}
