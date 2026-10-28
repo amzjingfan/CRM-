@@ -1,7 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-034",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "a38e967550d2785ce20baf9052653fb3c2830e50",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
+  "archived_file_count": 959,
+  "deleted_cache_file_count": 47080,
   "base_sha": "52ce7100cafa0a38009c302e5ffadee66031e48f",
   "scope": "one exact merged-PR old RAG ingestion worktree and branch; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-034",
