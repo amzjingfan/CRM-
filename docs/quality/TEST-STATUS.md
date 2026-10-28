@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 工作台并行刷新 [TR R05](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R05.md) **PARTIAL**：主线候选 `921e3c05` 类型/生产构建、48 契约、122 生产浏览器通过；独立 staging release `9d6ccc20` 仅摘取同一前端修复，私有备份、ValidateOnly/Deploy、12 容器及只读 UI 通过。公网 30 次健康 TTFB p50/p95 2.678/5.601 秒，入口近 90 条同路由有 1 条 504；不能宣称全站速度改善。Agent 新版本未部署，单店人工发送范围保持。见[低敏证据](../../release/evidence/staging/crm-staging-workspace-refresh-20261028.json)。
+
 2026-10-28 Agent工具扩展本地候选 [TR R03](../reports/tests/TR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md) **PASS（本地范围）**：subject `01975ab2471adfe2a704116367c34d27415a3240`，应用/测试树同84702，复用2375后端/隔离PostgreSQL通过、3项平台跳过；当前入口增量38/3通过；121生产浏览器、48契约、Ruff/mypy252源文件、040迁移往返、16动态协议/237安全样本通过。十二工具、六类目录、内部协作及依据修正已审查闭环。未部署、未真实模型/TikTok联合验收；不改变G5/G6/G8现场结论。
 
 2026-10-28 staging 入口分段日志 [TR R04](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R04.md) **PARTIAL**：Nginx 候选隔离语法、原配置私有备份、首次回滚与第二次重载、健康 200、数值 `Server-Timing` 日志验证通过；应用镜像未变。30 次公网健康 TTFB p50/p95 1.750/5.189 秒，入口总耗时 171/1175 毫秒，应用 1/2 毫秒。工作台和设置页样本显示网络/隧道等待明显大于应用处理，但后两页样本不足完整验收。见[低敏证据](../../release/evidence/staging/crm-staging-server-timing-20261028.json)。

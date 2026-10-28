@@ -298,18 +298,18 @@ export default function WorkspacePage() {
       refreshing = true;
       const query = buildListQuery(1);
       try {
-        const freshList = await listSessions(query);
-        if (!active || requestId !== listRequestId.current) return;
-        // 保留已加载的较早会话与当前选中项；后台新消息只更新列表顶部。
-        setList((current) => current ? {
-          ...freshList,
-          items: current.pagination.page > 1
-            ? [...freshList.items, ...current.items.filter((item) => !freshList.items.some((fresh) => fresh.id === item.id))]
-            : freshList.items,
-          pagination: { ...freshList.pagination, page: current.pagination.page },
-        } : freshList);
-        if (selectedId) {
-          const freshDetail = await getSessionMessages(selectedId);
+        const listRequest = listSessions(query).then((freshList) => {
+          if (!active || requestId !== listRequestId.current) return;
+          // 保留已加载的较早会话与当前选中项；后台新消息只更新列表顶部。
+          setList((current) => current ? {
+            ...freshList,
+            items: current.pagination.page > 1
+              ? [...freshList.items, ...current.items.filter((item) => !freshList.items.some((fresh) => fresh.id === item.id))]
+              : freshList.items,
+            pagination: { ...freshList.pagination, page: current.pagination.page },
+          } : freshList);
+        });
+        const detailRequest = selectedId ? getSessionMessages(selectedId).then((freshDetail) => {
           if (!active || requestId !== listRequestId.current) return;
           setDetail((current) => {
             if (current?.session.id !== selectedId) return current;
@@ -324,7 +324,8 @@ export default function WorkspacePage() {
           if (freshDetail.session.unread_count && stickToBottomRef.current && document.visibilityState === "visible") {
             void markSessionRead(selectedId).then(() => setList((current) => markReadInList(current, selectedId))).catch(() => {});
           }
-        }
+        }) : Promise.resolve();
+        await Promise.allSettled([listRequest, detailRequest]);
       } catch {
         // 后台刷新失败时保留可操作的当前会话，下一轮继续尝试。
       } finally {

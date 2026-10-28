@@ -10,6 +10,8 @@
 
 `MVP-STAGING-LATENCY-001 VERIFYING`：性能源码 PR #584 已合入远端主线；用户选择的性能专用 release `e64ef52c9702540a5c5eb3a151cd19afce97b0e0` 已单独部署 staging，动态 Agent 重写未部署。私有备份、摘要、ValidateOnly/Deploy、固定出口、12 容器、网关缓存与已登录订单只读 UI 验收见[IR R02](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261028-R02.md)、[TR R02](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R02.md)、[RR R02](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261028-R02.md)及[低敏证据](../../release/evidence/staging/crm-staging-latency-performance-only-20261028.json)。公网/隧道仍有秒级抖动，20 次样本未控制并发和冷热，AC-01/AC-06 待网络修复与同批受控复测；production G8 No-Go。
 
+部署状态：本轮动态Agent重写和工具扩展尚未部署，等待用户统一批准。性能任务MVP-STAGING-LATENCY-001仍由任务表和性能R05证据维护；工作台并行刷新已从性能专用release 9d6ccc20单独手动部署，后端和Agent未变，私有备份及ValidateOnly/Deploy通过。30次公网健康TTFB p50/p95为2.678/5.601秒，入口近90条同路由有1条504；公网整体改善尚未证实；production G8 No-Go。真实模型语义、TikTok字段及联合链路、现场时延未在本轮验收。欢迎语/超时回复仍只有原基础接待配置，未新增触发或发送工具。
+
 入口连接复用已由远端 PR #587 合入主线并在 staging 验证，PR #588 已将主线证据索引标为 `CURRENT`；[IR R03](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261028-R03.md)、[TR R03](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R03.md)、[RR R03](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261028-R03.md)及[低敏证据](../../release/evidence/staging/crm-staging-nginx-keepalive-20261028.json)记录入口 Nginx 配置。入口回环各 30 次 p50/p95 由 1.042/2.061 秒至 0.400/1.161 秒；公网由 1.564/4.002 秒至 1.742/4.028 秒，公网改善未证实。网络重传与隧道超时风险、AC-01/AC-06 待验收。
 
 入口日志字段由 PR #590 合入、PR #591 对齐主线索引；[IR R04](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261028-R04.md)、[TR R04](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R04.md)、[RR R04](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261028-R04.md)及[低敏证据](../../release/evidence/staging/crm-staging-server-timing-20261028.json)记录 staging 部署与分段耗时。30 次公网健康 TTFB p50/p95 为 1.750/5.189 秒，入口总耗时 0.171/1.175 秒，应用报告 0.001/0.002 秒；全站和跨店故障场景仍待验收。
@@ -18,4 +20,6 @@
 
 Agent 业务工具套件 PR #589 经用户人工审阅批准后合入远端主线，收尾 PR #592 已将源任务标记为 DONE；十二项业务工具、统一目录与内部协作记录仍未部署；[IR R03](../records/implementation/IR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md)、[TR R03](../reports/tests/TR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md)、[RR R03](../reports/reviews/RR-MVP-AGENT-TOOL-SUITE-001-20261028-R03.md)及[低敏评测](../../release/evidence/ai/agent-tool-suite-local-20261028-r03.json)记录源分支验收。本地与多店授权迁移以 `041_merge_agent_multishop_collab` 合流，部署仍须按当前迁移图、备份和单独授权执行；本整合任务未操作 staging。
 
-下一动作：①逐支验收开放 PR 和独有提交，再合入本地 main 清理旧副本；②处理自动审批阻断的两个原位保留项目；③性能任务完成网络与公网受控复测，动态 Agent 部署单独决策。
+性能 R05 源证据、工作台并行刷新及主线索引经 PR #593 合入远端主线；[IR R05](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261028-R05.md)、[TR R05](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R05.md)、[RR R05](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261028-R05.md)记录仍待验收项。
+
+下一动作：①逐支验收开放 PR 和独有提交，再合入本地 main 清理旧副本；②处理自动审批阻断的两个原位保留项目；③定位入口/隧道偶发 504 与全站慢路径，完成公网受控复测；动态 Agent 部署及真实模型/平台联合验收须另行决策。

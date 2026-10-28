@@ -177,6 +177,30 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   return { context, page, messages, records, calls };
 }
 
+test("background refresh shows new messages without waiting for the session list", async () => {
+  const { context, page, messages } = await openWorkspace(2);
+  let releaseList = () => {};
+  try {
+    messages.push({ ...messages.at(-1), id: "message-new", content: "New background message", created_at: "2026-10-20T00:02:00Z" });
+    let listStarted;
+    const listRequest = new Promise((resolve) => { listStarted = resolve; });
+    await page.route("**/v1/workspace/sessions?*", async (route) => {
+      listStarted();
+      await new Promise((resolve) => { releaseList = resolve; });
+      await route.fallback();
+    });
+    const messageRequest = page.waitForRequest((request) =>
+      new URL(request.url()).pathname === `/v1/workspace/sessions/${firstId}/messages`, { timeout: 2500 });
+    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await listRequest;
+    await messageRequest;
+    await page.getByText("New background message").waitFor({ timeout: 2500 });
+  } finally {
+    releaseList();
+    await context.close();
+  }
+});
+
 test("image is reviewed before upload and manual TikTok send", async () => {
   const { context, page, calls } = await openWorkspace(2);
   try {
