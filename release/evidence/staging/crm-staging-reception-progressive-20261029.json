@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_reception_progressive_performance_only",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "mainline_pr": 617,
+  "mainline_subject_sha": "86e5c4e48862da445932ad50529c3a85bd3801f5",
+  "mainline_merge_sha": "fd836af1d175616570ddeb77bfdc703e03ffec53",
+  "release_base_sha": "eb0eedc722a552b05eb685fcc15dd84ab7f0af59",
+  "release_source_sha": "82e9fd8365d09b0a2bd2cc8a44f82ed89c40d2fc",
+  "release_git_bundle_sha256": "5f09b2cc451474ea1600408d1ef42d0b8bc18855d4bafacee697f8229e074403",
+  "release_diff": [
+    "src/frontend/components/QuickReplyManager.tsx",
+    "src/frontend/components/ReceptionPolicyManager.tsx",
+    "src/tests/frontend/browser/reception-management.test.mjs"
+  ],
+  "images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:7ff0098991f96845df0099ebaea931bebbe4edf658eaeb7a3a56626c4dc01a30",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:73304958f59522608eaf0d332f7e83b461dda6910e6fa81694ec9f6b991fdff9",
+    "backend_unchanged": "ghcr.io/cp11-gh/crm-backend@sha256:60e9b795a3a1f58ea220667982f4bf29a3032e59fab6255f320a2e20a2a816a2",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "frontend_linux_amd64": true,
+    "frontend_oci_revision_matches_release": true,
+    "local_and_remote_repo_digests_match": true,
+    "dynamic_agent_v2_deployed": false
+  },
+  "private_backup": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "environment_sha256": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+    "postgres_custom_dump_sha256": "4f8d22884fc3010f0ca500e8ed5db6f969a3e38eecc8b81bd7249ff175293835",
+    "minio_tar_sha256": "4e2be2dc4632033ef72a4c01267666febfc88d7d7d1c3ac8cd760fb08aa7a69b",
+    "postgres_catalog_readable": true,
+    "minio_tar_readable": true
+  },
+  "gates": {
+    "validate_only": "validated",
+    "validate_only_sha256": "45b8f13f85fa041436d080439d70d28653b9af4b9c9c1e271babd6d1c107a4a3",
+    "deploy": "passed",
+    "deploy_sha256": "10a196909e891e189750a83c87a0738f36f80e7beba2ae822f6b89de247c75fa",
+    "database_migration": "heads_applied",
+    "containers_running": 12,
+    "fixed_egress_verified": true,
+    "manual_send_scope": "one existing authorized store",
+    "webhook_read_enabled": true,
+    "workspace_translation_enabled": true,
+    "existing_agent_debug_enabled": true,
+    "document_ingestion_enabled": true,
+    "auto_reply_enabled": false,
+    "llm_enabled": false,
+    "high_risk_write_enabled": false,
+    "temporary_local_and_remote_ghcr_auth_removed": true
+  },
+  "verification": {
+    "release_frontend_contract": "51/51",
+    "release_frontend_production_browser": "128/128",
+    "release_typecheck_and_build": "passed",
+    "release_lint": "0 errors, 8 pre-existing warnings",
+    "public_http": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/marketing/reception/quick-replies": 200,
+      "/marketing/reception/timeout": 200,
+      "/marketing/reception/welcome": 200
+    },
+    "authenticated_quick_reply_ui": "rendered authorized store selector and empty-state; no write",
+    "authenticated_timeout_ui": "rendered existing strategy and configuration-only warning; no write",
+    "authenticated_welcome_ui": "UI_UNAVAILABLE: browser navigation timed out; public route 200",
+    "ui_tool_wall_clock_is_not_page_latency": true
+  },
+  "github_ci": {
+    "head_sha": "256545fc2cb4b9edc3a970de37dca3b3865aa681",
+    "run_id": 40777570858,
+    "backend_job_id": 123130703875,
+    "frontend_job_id": 123130703256,
+    "both_jobs_runner_empty_and_zero_steps": true,
+    "ci_executed": false,
+    "local_substitute_used": true
+  },
+  "github_actions_used_for_deployment": false,
+  "real_tiktok_message_sent": false,
+  "refund_executed": false,
+  "production_release": false,
+  "overall_latency_acceptance": "partial"
+}
