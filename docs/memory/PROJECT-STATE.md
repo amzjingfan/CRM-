@@ -2,7 +2,7 @@
 
 2026-10-28，治理STANDARD，TikTok人工辅助v0.1；仓库CP11-gh/CRM，目标origin/main。十二工具任务的唯一状态源为docs/tasks/TASKS.md；产品源码PR #589经用户人工审阅批准后已合并，合并提交6d29190195f356b5fe004692746ebe3b13c8e58c。仅状态文档收尾使用docs/agent-tool-suite-close-20261028，恢复时以权威主线和任务表为准；产品候选未部署。
 
-CANDIDATE_SUBJECT_SHA=c1fcc1c74dbb073b2d560c178499b2ac5ec99f2e，EVIDENCE_HEAD_SHA=READ_AT_GATE。最新性能IR/TR/RR为MVP-STAGING-LATENCY-001-20261029-R08；工具IR/TR/RR为MVP-AGENT-TOOL-SUITE-001-20261028-R03。本性能候选分支新增门店授权聚合接口和页面回显行为，索引为CANDIDATE_VIEW；合入权威主线后需重建为CURRENT。
+CANDIDATE_SUBJECT_SHA=c1fcc1c74dbb073b2d560c178499b2ac5ec99f2e，EVIDENCE_HEAD_SHA=READ_AT_GATE。最新性能IR/TR/RR为MVP-STAGING-LATENCY-001-20261029-R08；工具IR/TR/RR为MVP-AGENT-TOOL-SUITE-001-20261028-R03。门店授权聚合源码经[PR #599](https://github.com/CP11-gh/CRM/pull/599)合入主线 `0eda03197efe81c271ae3de180507e9d222d3f2b`，当前三索引已从权威主线源记录重建为CURRENT；发布仍待办。
 
 十二业务工具、六类目录、三种操作标签和原四项人工确认提议已在本地验收。后端/前端/测试与完整受测84702ae0同树，完整后端2375 passed/3 POSIX跳过；生产浏览器121、前端契约48、Ruff/格式/mypy252源文件、040往返、16动态协议/237安全样本和依赖审计通过。最终01975ab2仅导入既有入口低敏日志字段，受影响入口38 passed/3平台跳过；未冒充在该提交重跑全量。两轴技术审查闭环。PR #589精确head的CI两作业均终止于runner=0/steps=0，CI未运行，按用户持续批准采用本地替代；用户另已明确批准本PR合并及仅任务/索引/恢复摘要文档收尾。
 
@@ -10,7 +10,7 @@ CANDIDATE_SUBJECT_SHA=c1fcc1c74dbb073b2d560c178499b2ac5ec99f2e，EVIDENCE_HEAD_S
 
 部署状态：本轮动态Agent重写和工具扩展尚未部署，等待用户统一批准。性能任务MVP-STAGING-LATENCY-001仍由任务表和性能R07证据维护；PR #593已合入main（73ef0852），工作台并行刷新release 9d6ccc20已单独发布；基础接待并行请求PR #595已合入main（b84cbb6d），对应专用release 97ac71ef单独手动发布。数据看板渐进回显源码PR #597已合入main（f440fb64），该PR两项CI均runner空/0步骤失败、不计通过；独立release f9bfc109已仅更新前端并通过本地门禁、私有备份、ValidateOnly/Deploy、12容器与已登录默认店铺看板只读核对；跨店现场工具超时，公网单次仍秒级，不声称整体加速。PR #595两项CI均为runner空/0步骤失败，不计通过，以本地验证记录为准。后端和Agent未变，私有备份及ValidateOnly/Deploy通过，12容器和已登录三页面只读核对通过。分段探测显示业务机回环远快于入口隧道和公网，WAN重传及偶发504仍在；用户明确将网络异常期间公网p50/p95改为诊断记录，不作为应用改动绝对阈值，整体提速尚未证实。production G8 No-Go。真实模型语义、TikTok字段及联合链路、现场时延未在本轮验收。欢迎语/超时回复仍只有原基础接待配置，未新增触发或发送工具。
 
-门店页R08：本地源与专用release的生产浏览器分别128/128、124/124，后端授权安全17/17，前端契约48/48；发布镜像本机构建成功，但GHCR临时登录命令被自动策略拒绝，现有Docker凭据推送unauthorized。**staging仍运行R07镜像**，没有本轮备份、ValidateOnly或Deploy；不声称现场回显改善。Agent现有调试开关与单店人工发送保持原状，动态Agent新主线代码未随此release部署。
+门店页R08：本地源与专用release的生产浏览器分别128/128、124/124，后端授权安全17/17，前端契约48/48；主线源全量后端2325 passed/55 skipped，Ruff/格式/mypy通过。PR #599两项GitHub CI均在runner启动前0步骤失败，不计通过，本地等价门禁已记录。发布镜像本机构建成功，但GHCR临时登录命令被自动策略拒绝，现有Docker凭据推送unauthorized。**staging仍运行R07镜像**，没有本轮备份、ValidateOnly或Deploy；不声称现场回显改善。Agent现有调试开关与单店人工发送保持原状，动态Agent新主线代码未随此release部署。
 
 Workspace hygiene: ATTENTION。根checkout未共享历史、未知需求/私有文件和其他活动工作树保留；前端工具生成的未跟踪AGENTS文件保持原状。临时日志、截图和收尾差异在src/tests/.artifacts，不提交或删除未知内容。官方公开文档UI不可用记UI_UNAVAILABLE，既有端点依据OAS和官方docv2。
 
