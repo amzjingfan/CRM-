@@ -1,0 +1,28 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-052",
+  "state": "deleted",
+  "execution_main_sha": "80716ec98fa4b7bbebd9a72b2953efce472cd9f0",
+  "deleted_branch_count": 2,
+  "scope": "two unoccupied local source branches whose Agent and staging latency deliveries have merged PR commits and local main regression gates; original commits archived; no worktree, file or remote operation",
+  "branches": [
+    {
+      "ref": "refs/heads/chore/agent-code-cleanup-20261028",
+      "head": "f0491376808940219b7eb1abffcac1402547a92f",
+      "archive_ref": "refs/archive/CLEANUP-20261028-052/chore/agent-code-cleanup-20261028",
+      "merged_pr_commit": "ac7216d42ec5b56fbda618ca95826b9b7d075600",
+      "changed_paths": 220,
+      "identical_to_main": 197,
+      "later_main_or_reconciled_paths": 23
+    },
+    {
+      "ref": "refs/heads/fix/staging-loading-latency-20261028",
+      "head": "34abcda9a69746383a487fb785898e04ed580760",
+      "archive_ref": "refs/archive/CLEANUP-20261028-052/fix/staging-loading-latency-20261028",
+      "merged_pr_commit": "9d6a9182ec7e9e29712e670654b757f8c767ef5d",
+      "changed_paths": 25,
+      "identical_to_main": 14,
+      "later_main_or_reconciled_paths": 11
+    }
+  ]
+}
