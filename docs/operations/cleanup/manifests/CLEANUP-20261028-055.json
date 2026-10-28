@@ -1,0 +1,28 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-055",
+  "state": "worktree_deleted_cache_quarantined",
+  "execution_main_sha": "fabc786fab431ca639e71f9bc38d834eaf42c7af",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 0,
+  "worktree": ".worktrees/basic-reception-migration-check-20261023",
+  "detached_head": "2afced8d0cfef03a0389d1f7f1a85c164ba1a2d2",
+  "archive_ref": "refs/archive/CLEANUP-20261028-055/detached/basic-reception-migration-check-20261023",
+  "merged_source_prs": [543, 544],
+  "source_path_proof": "58 changed paths from merge-base; 53 byte-identical at merged PR #543; remaining five are deployment/status/task/test migration records superseded by PR #544 and later main; product source remains current on main",
+  "tracked_status": "clean",
+  "ignored_cache_file_count": 12110,
+  "ignored_cache_categories": {
+    "src/backend/.venv": 11915,
+    "src/.pytest_cache": 4,
+    "python_pycache": 191
+  },
+  "ignored_paths_sha256": "83C370C4D20BF20BA47819BFF02DF75E36CE30E44D2D926697ABEA2FDE492B3C",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-055",
+  "cache_archive": "ignored-cache.tar.gz",
+  "cache_archive_size_bytes": 51003117,
+  "cache_archive_sha256": "B027B583B1ED15A1174EBEBAED4DFC8F59086DF8FD12D3780D287D29B5697658",
+  "cache_archive_entry_count": 12110,
+  "cache_retention_until": "2026-10-30T15:10:00+08:00",
+  "scope": "removed one clean detached worktree after exact archive verification; cache files remain in persistent ignored quarantine until retention expires; no other worktree, branch, remote or server operation"
+}
