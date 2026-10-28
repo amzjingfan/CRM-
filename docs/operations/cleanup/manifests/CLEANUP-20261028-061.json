@@ -1,0 +1,22 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-061",
+  "state": "deleted",
+  "execution_main_sha": "5dd456d80e8c556077d9a1feeb4d9f969e61f585",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
+  "worktree": ".worktrees/agent-dead-faq-path-20261028",
+  "ref": "refs/heads/feature/dynamic-agent-rewrite-20261028",
+  "head": "7b8dbff26bf5ac9ac63657579b8d61349d97c409",
+  "archive_ref": "refs/archive/CLEANUP-20261028-061/feature/dynamic-agent-rewrite-20261028",
+  "merged_pr": 582,
+  "merged_pr_head": "7594a1a53ede8e0b65f8987e352d78662bb04c41",
+  "merged_pr_commit": "ac7216d42ec5b56fbda618ca95826b9b7d075600",
+  "ignored_file_count": 46882,
+  "ignored_total_bytes": 858512688,
+  "ignored_archive_bytes": 264597314,
+  "ignored_archive_sha256": "A7FC977514DCF8FFBAE4186682869DD46CA2EB3B659C4F07467E6912CD5BBEDA",
+  "ignored_path_list_sha256": "4B7BAE6486C59417E27EADCBCD8BAE21D669DD8C545D5E25210028D74B1F3059",
+  "ignored_archive_retention_until": "2026-11-04T15:46:18+08:00",
+  "restore_method": "git branch feature/dynamic-agent-rewrite-20261028 refs/archive/CLEANUP-20261028-061/feature/dynamic-agent-rewrite-20261028; extract ignored-files.tar.gz into a newly registered worktree at the original path"
+}
