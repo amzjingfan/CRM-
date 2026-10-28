@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01 | MVP-TIKTOK-MULTISHOP-AUTH-001 | R01 | APPROVE | `bfb470e5e76d1ddc52facee21708ffead73c16d3` | authorization, store_isolation, token_lifecycle, migration, regression | 2026-10-28T09:09:46Z | [`RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md`](RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md) |
 | RR-MAINT-CLEANUP-20261028-001-20261028-R01 | MAINT-CLEANUP-20261028-001 | R01 | APPROVE | `4daa2f8949dd67d7772bcb43dbc3703aed5cde7d` | correctness, prompt_registry, DLP, store_isolation, regression, restore | 2026-10-28T10:30:00+08:00 | [`RR-MAINT-CLEANUP-20261028-001-20261028-R01.md`](RR-MAINT-CLEANUP-20261028-001-20261028-R01.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07 | MVP-AGENT-DEBUG-ANSWER-001 | R07 | APPROVE | `c63421fa4bf19b92c66aa57b8298b75dcc83a9a5` | correctness, model_format, DLP, store_isolation, read_only_tools, timeout, no_send, cleanup | 2026-10-28T01:00:00Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07.md) |
 | RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06 | MVP-AGENT-DEBUG-ANSWER-001 | R06 | APPROVE | `c63421fa4bf19b92c66aa57b8298b75dcc83a9a5` | correctness, model_format, prompt_registry, DLP, store_isolation, read_only_tools, timeout, no_send | 2026-10-28T00:21:14Z | [`RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06.md`](RR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06.md) |

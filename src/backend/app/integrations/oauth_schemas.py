@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+MAX_TIKTOK_AUTHORIZED_SHOPS = 200
+
 
 class TikTokOAuthStart(BaseModel):
     """卖家授权跳转信息，不包含任何平台凭证。"""
@@ -13,10 +15,28 @@ class TikTokOAuthStart(BaseModel):
     expires_in: int
 
 
+class TikTokOAuthShopChoice(BaseModel):
+    """管理端可见的店铺选择摘要，不包含平台调用标识或凭证。"""
+
+    id: str
+    code: str
+    name: str
+    region: str
+    seller_type: str
+
+
 class TikTokOAuthJobStatus(BaseModel):
     """管理端可见的低敏后台授权结果。"""
 
-    status: Literal["pending", "processing", "connected", "denied", "failed"]
+    status: Literal["pending", "processing", "selection_required", "connected", "denied", "failed"]
+    shops: list[TikTokOAuthShopChoice] = Field(default_factory=list)
+    selection_expires_at: str | None = None
+
+
+class TikTokOAuthShopSelection(BaseModel):
+    """管理员明确勾选的本次授权店铺 ID。"""
+
+    shop_ids: list[str] = Field(min_length=1, max_length=MAX_TIKTOK_AUTHORIZED_SHOPS)
 
 
 class TikTokOAuthState(BaseModel):
@@ -64,7 +84,7 @@ class TikTokAuthorizedShop(BaseModel):
 class TikTokShopData(BaseModel):
     """已授权店铺列表容器。"""
 
-    shops: list[TikTokAuthorizedShop] = Field(max_length=20)
+    shops: list[TikTokAuthorizedShop] = Field(max_length=MAX_TIKTOK_AUTHORIZED_SHOPS)
 
 
 class TikTokShopResponse(BaseModel):
@@ -79,6 +99,6 @@ class TikTokShopResponse(BaseModel):
 class TikTokOAuthCompletion(BaseModel):
     """OAuth 回调完成后的内部跳转决策。"""
 
-    status: Literal["connected", "denied"]
+    status: Literal["connected", "selection_required", "denied"]
     return_to: str
     store_id: uuid.UUID | None = None

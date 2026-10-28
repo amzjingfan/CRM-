@@ -90,11 +90,12 @@
 
 ### TikTok OAuth 与 Webhook
 
-- `POST /settings/stores/tiktok/oauth/start` 要求系统级管理员和 CSRF，直接发起 Custom 应用卖家授权；成功回调的 worker 核对唯一店铺后才创建内部店铺，取消、失败和重复授权不留下空店。已断开的同一平台店铺复用原系统 ID，已连接的店铺提示使用重新添加。
-- `GET /settings/channels/tiktok/oauth/start` 用于原店铺重新添加；发起、排队、进度读取及完成均重新校验系统级或目标店铺的渠道管理权限，不能借用其他店铺的角色。两种入口均创建默认 600 秒随机 `state`，哈希键绑定发起用户、可选店铺与白名单站内回跳地址。公开 callback 不依赖 CRM Cookie；成功路径只创建一次短期加密任务并立即 303 至对应设置页的 `?oauth=tiktok&status=processing&job=<UUID>`，不等待 TikTok 外部 API。已有任务的重复 callback 不二次交换 Token。拒绝/缺失 code 沿用即时失败回跳。
-- `GET /settings/channels/tiktok/oauth/jobs/{job_id}` 需要 `settings.channels`、原发起用户，以及原店铺访问权或新店授权时的系统级管理员身份；仅返回 `pending/processing/connected/denied/failed`。jobs worker 原子消费 `state`，完成 Token 与店铺校验并清除临时密文；失败或中断要求重新授权，不重放 code。
-- Token 刷新是内部能力，没有公开 Refresh API；解密、刷新或契约校验失败时渠道转为 `expired`。
-- `DELETE /settings/channels/{channel_id}` 对 TikTok 渠道要求系统级或目标店铺管理员，撤销本地 Token 可用性并保留渠道绑定、系统店铺、历史订单/会话及审计；店铺列表只隐藏用户主动删除的渠道，平台侧解除授权仍显示异常以供重新添加。未来同店再授权可复用系统 ID。该操作不调用 TikTok 平台的远端取消授权接口。
+- `POST /settings/stores/tiktok/oauth/start` 要求系统级管理员和 CSRF，直接发起 Custom 应用卖家授权。平台仅返回一家店时沿用自动连接；返回多家店时 worker 进入 `selection_required`，限时加密保存本次卖家授权，不自动创建店铺。管理员明确勾选后才原子创建或复用各店铺与渠道；取消、失败和重复授权不留下空店。已断开的同一平台店铺复用原系统 ID，已连接的其他卖家店铺拒绝覆盖。
+- `GET /settings/channels/tiktok/oauth/start` 用于原店铺重新添加；发起、排队、进度读取及完成均重新校验系统级或目标店铺的渠道管理权限，不能借用其他店铺的角色。若重新授权会轮换卖家共享凭证，还须具备每家受影响在线店铺的渠道管理权限。两种入口均创建默认 600 秒随机 `state`，哈希键绑定发起用户、可选店铺与白名单站内回跳地址。公开 callback 不依赖 CRM Cookie；成功路径只创建一次短期加密任务并立即 303 至对应设置页的 `?oauth=tiktok&status=processing&job=<UUID>`，不等待 TikTok 外部 API。已有任务的重复 callback 不二次交换 Token。拒绝/缺失 code 沿用即时失败回跳。
+- `GET /settings/channels/tiktok/oauth/jobs/{job_id}` 需要 `settings.channels`、原发起用户，以及原店铺访问权或新店授权时的系统级管理员身份；状态增加 `selection_required`，此时仅返回店铺 ID、名称、编码、站点、卖家类型和选择到期时间，不返回 Token、`shop_cipher` 或 `open_id`。jobs worker 原子消费 `state`；单店完成或多店待选择时清除一次性 state/code 密文，失败或中断要求重新授权，不重放 code。
+- `POST /settings/channels/tiktok/oauth/jobs/{job_id}/shops` 需要 CSRF、系统级管理员、`settings.channels` 和原任务发起人；请求 `shop_ids` 为不重复的本次候选店铺 ID，单次最多 200 家。服务端解密限时 Token，重新核对卖家、实际授予 Scope、最新授权店铺、站点和已有租户绑定，再以单事务连接勾选的店铺。重复提交或过期返回冲突，不跨店部分成功。
+- Token 刷新是内部能力，没有公开 Refresh API；多店渠道引用同一卖家级加密凭证，按卖家行锁轮换一次，再逐店核对当前平台授权清单；失去授权的店铺单独过期，旧单店渠道继续按原店铺级密文读取与刷新。解密、刷新或契约校验失败时受影响渠道转为 `expired`。
+- `DELETE /settings/channels/{channel_id}` 对 TikTok 渠道要求系统级或目标店铺管理员，撤销该店本地 Token 可用性并保留渠道绑定、系统店铺、历史订单/会话及审计；共享授权仍有其他已连接店铺时不影响它们，最后一家删除时销毁卖家级本地凭证。店铺列表只隐藏用户主动删除的渠道，平台侧解除授权仍显示异常以供重新添加。未来同店再授权可复用系统 ID。该操作不调用 TikTok 平台的远端取消授权接口。
 - `POST /webhooks/tiktok` 在真实模式只接受官方 `Authorization` 签名，以原始请求体进行常量时间校验；签名失败在数据库查询/写入前返回 401，不占用通知 ID。相同通知 ID 只有原始正文摘要一致且已绑定店铺时返回成功的重复回执；不同正文返回 409，未知店铺的首次及重复通知均返回 404 且不保存载荷。乱序送达的旧消息照常入库，但不覆盖较新消息的会话排序字段。公网版本前缀为 `/v1`。
 - G2 真实重投诊断仅可在 staging 的精确店铺与受控买家会话中显式开启。已验签、已绑定且结构有效的首个新消息通知可在落库前或落库后返回一次 HTTP 503；Redis 原子一次性标记与绝对失效时间阻止再次触发。后续同一正文重投仍走原有幂等回执，诊断审计仅保留正文 SHA-256、固定结果和内部资源引用。默认及 production 不开启；503/200 聚合数不能代替同一通知的真实重投证据。
 - 内部只读适配器覆盖有效店铺、订单、订单详情、客服会话、消息和 Webhook 订阅核对；普通承运商订单的物流轨迹读取固定为 `GET /fulfillment/202309/orders/{order_id}/tracking`，要求 `seller.logistics`、当前授权渠道签名与 `shop_cipher`，并校验 `data.tracking[]`。CBT 首程增强读取保留独立的 `GET /logistics/202604/orders/{order_id}/tracking` 契约，不用前者的证据声称后者通过。

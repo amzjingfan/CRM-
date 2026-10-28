@@ -8,11 +8,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
 
 from app.auth.dependencies import get_current_user, require_csrf, require_permission, require_role
-from app.integrations.oauth_schemas import TikTokOAuthJobStatus, TikTokOAuthStart
+from app.integrations.oauth_schemas import TikTokOAuthJobStatus, TikTokOAuthShopSelection, TikTokOAuthStart
 from app.integrations.oauth_service import (
     complete_tiktok_oauth,
     get_tiktok_oauth_job_status,
     queue_tiktok_oauth,
+    select_tiktok_oauth_shops,
     start_new_tiktok_store_oauth,
     start_tiktok_oauth,
     validate_return_to,
@@ -63,8 +64,27 @@ async def tiktok_oauth_job_status(
     user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[TikTokOAuthJobStatus]:
     """只把当前用户的低敏授权进度返回给管理端。"""
-    status = await get_tiktok_oauth_job_status(session, user, job_id)
-    return ApiResponse(data=TikTokOAuthJobStatus.model_validate({"status": status}))
+    return ApiResponse(data=await get_tiktok_oauth_job_status(session, user, job_id))
+
+
+@router.post(
+    "/settings/channels/tiktok/oauth/jobs/{job_id}/shops",
+    response_model=ApiResponse[TikTokOAuthJobStatus],
+    dependencies=[
+        Depends(require_csrf),
+        Depends(require_role("admin")),
+        Depends(require_permission("settings.channels")),
+    ],
+)
+async def confirm_tiktok_oauth_shops(
+    job_id: uuid.UUID,
+    payload: TikTokOAuthShopSelection,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[TikTokOAuthJobStatus]:
+    """只允许原授权发起管理员确认本次要接入的店铺。"""
+    result = await select_tiktok_oauth_shops(session, user, job_id, payload.shop_ids)
+    return ApiResponse(data=TikTokOAuthJobStatus(status=result.status))
 
 
 @router.get(TIKTOK_OAUTH_CALLBACK_ROUTE, response_model=None)

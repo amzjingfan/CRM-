@@ -717,6 +717,13 @@ button, a, label.file-button { cursor: pointer; }
 .store-confirm-dialog h2 { font-size: 17px; font-weight: 700; }
 .store-confirm-dialog p { margin: 12px 0 22px; color: var(--muted); font-size: 13px; line-height: 1.65; }
 .store-confirm-dialog > div { display: flex; justify-content: flex-end; gap: 8px; }
+.store-selection-dialog { width: min(560px, 100%); }
+.store-selection-dialog .store-selection-options { display: grid; justify-content: stretch; gap: 8px; max-height: min(42vh, 360px); overflow-y: auto; margin: 0 0 20px; }
+.store-selection-option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.store-selection-option input { margin-top: 3px; }
+.store-selection-option span { display: grid; gap: 3px; min-width: 0; }
+.store-selection-option small { overflow-wrap: anywhere; color: var(--muted); }
+.store-selection-dialog .store-selection-error { color: var(--danger); margin: 0 0 12px; }
 .settings-create-form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 0 0 16px; padding: 16px 0; }
 .settings-create-form .field-label { min-width: 155px; flex: 1 1 180px; }
 .account-table { min-width: 960px; }

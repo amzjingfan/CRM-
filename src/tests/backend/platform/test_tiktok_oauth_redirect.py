@@ -277,13 +277,22 @@ async def test_worker_completes_once_and_scrubs_temporary_credentials(monkeypatc
     calls = 0
 
     async def complete(
-        _: object, state: str, code: str, __: object, ___: object, ____: object, *, commit: bool = True
+        _: object,
+        state: str,
+        code: str,
+        __: object,
+        ___: object,
+        ____: object,
+        *,
+        commit: bool = True,
+        job: TikTokOAuthJob | None = None,
     ) -> SimpleNamespace:
         nonlocal calls
         calls += 1
         assert state == "unit-test-state"
         assert code == "unit-test-code"
         assert commit is False
+        assert job is not None
         return SimpleNamespace(status="connected")
 
     monkeypatch.setattr(oauth_service, "complete_tiktok_oauth", complete)

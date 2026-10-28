@@ -56,7 +56,8 @@ export type Logistics = { order_id: string; external_order_id: string; tracking_
 export type StoreView = { id: string; name: string; alias: string | null; code: string; status: string; timezone: string; currency: string; created_at: string };
 export type ChannelView = { id: string; store_id: string; platform: string; external_store_id: string; display_name: string; status: string; scopes: string[]; last_sync_at: string | null; created_at: string; site: string | null; authorization_expires_at: string | null; authorization_status: string | null; last_authorized_at: string | null };
 export type TikTokOAuthStart = { authorization_url: string; expires_in: number };
-export type TikTokOAuthJobStatus = { status: "pending" | "processing" | "connected" | "denied" | "failed" };
+export type TikTokOAuthShopChoice = { id: string; code: string; name: string; region: string; seller_type: string };
+export type TikTokOAuthJobStatus = { status: "pending" | "processing" | "selection_required" | "connected" | "denied" | "failed"; shops: TikTokOAuthShopChoice[]; selection_expires_at: string | null };
 export type DashboardMetrics = { total_sessions: number; transfer_rate: number; avg_response_time: number | null; recovered_gmv: string; currency: string; period: "today" | "7d" | "30d"; updated_at: string | null };
 export type DashboardTrend = { items: Array<{ date: string; sessions: number }> };
 export type DashboardChannels = { items: Array<{ platform: string; count: number; percentage: number }> };
@@ -252,6 +253,7 @@ export const listChannels = () => requestApi<ChannelView[]>("/settings/channels"
 export const startTikTokOAuth = (storeId: string, returnTo?: "/settings/stores") => requestApi<TikTokOAuthStart>(`/settings/channels/tiktok/oauth/start?store_id=${encodeURIComponent(storeId)}${returnTo ? `&return_to=${encodeURIComponent(returnTo)}` : ""}`);
 export const startNewTikTokStoreOAuth = () => requestApi<TikTokOAuthStart>("/settings/stores/tiktok/oauth/start", { method: "POST" });
 export const getTikTokOAuthJobStatus = (jobId: string) => requestApi<TikTokOAuthJobStatus>(`/settings/channels/tiktok/oauth/jobs/${encodeURIComponent(jobId)}`);
+export const selectTikTokOAuthShops = (jobId: string, shopIds: string[]) => requestApi<TikTokOAuthJobStatus>(`/settings/channels/tiktok/oauth/jobs/${encodeURIComponent(jobId)}/shops`, { method: "POST", body: JSON.stringify({ shop_ids: shopIds }) });
 export const createChannel = (payload: { store_id: string; platform: string; external_store_id: string; display_name: string; access_token_ref: string; scopes: string[] }) => requestApi<ChannelView>("/settings/channels", { method: "POST", body: JSON.stringify(payload) });
 export const deleteChannel = (channelId: string) => requestApi<void>(`/settings/channels/${channelId}`, { method: "DELETE" });
 export const getDashboardMetrics = (storeId: string, period: string) => requestApi<DashboardMetrics>(`/dashboard/metrics?store_id=${encodeURIComponent(storeId)}&period=${period}`);
