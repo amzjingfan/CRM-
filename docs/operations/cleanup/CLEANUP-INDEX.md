@@ -4,6 +4,7 @@
 
 | Batch ID | Task ID | State | Scope | Retention until | Updated | Record |
 |---|---|---|---|---|---|---|
+| CLEANUP-20261028-002 | MAINT-CLEANUP-20261028-002 | DELETED（记录待合入） | 两个已交付且无独有内容的本地 worktree；保留提交与分支 | 2026-10-27T20:43:40+08:00（唯一缓存） | 2026-10-28 | [记录](CLEANUP-20261028-002.md) |
 | CLEANUP-20261028-001 | MAINT-CLEANUP-20261028-001 | DELETED（Git 历史保留） | Agent 已停用 FAQ 合并试验路径及其专属契约测试 | N/A（Git 历史保留可恢复） | 2026-10-28 | [记录](CLEANUP-20261028-001.md) |
 | CLEANUP-20260916-001 | MAINT-CLEANUP-20260916-001 | VERIFIED_UNUSED | 根目录本地生成残留 | 2026-09-23T14:00:00+08:00 | 2026-09-16 | [记录](CLEANUP-20260916-001.md) |
 | CLEANUP-20260916-002 | MAINT-CLEANUP-20260916-002 | VERIFIED_UNUSED | 旧后端测试根 pytest 缓存 | 2026-09-23T18:05:00+08:00 | 2026-09-16 | [记录](CLEANUP-20260916-002.md) |

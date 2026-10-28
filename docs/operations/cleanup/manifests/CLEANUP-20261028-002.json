@@ -1,0 +1,41 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-002",
+  "batch_id": "CLEANUP-20261028-002",
+  "base_sha": "0e4100b2b83012692ac2fb368707946687c9cde8",
+  "items": [
+    {
+      "original_path": ".worktrees/customer-sidebar-fields-build-20261021",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "ignored Git worktree; clean tracked and untracked state",
+      "size_bytes": 9651585,
+      "sha256": "N/A: Git checkout content recoverable from HEAD 15ceabf8eac90f2fe8c7843e24af26381c3e0499",
+      "modified_at": "2026-10-21T10:13:42.9878630+08:00",
+      "reason": "Detached build worktree; HEAD is ancestor of origin/main; no ignored or untracked files",
+      "reference_checks": ["Git common dir matches repository", "HEAD ancestor of origin/main", "git status empty", "git ls-files ignored empty"],
+      "related_tasks_or_worktrees": ["MVP-WORKSPACE-CUSTOMER-SIDEBAR-FIELDS-001"],
+      "action": "deleted",
+      "quarantine_path": "N/A: Git checkout can be recreated from retained commit",
+      "retention_until": "2026-10-28T10:13:42+08:00",
+      "restore_method": "git worktree add --detach <new-path> 15ceabf8eac90f2fe8c7843e24af26381c3e0499",
+      "verification": ["Exact directory absent", "Git worktree registration absent", "origin/main unchanged", "Commit retained"]
+    },
+    {
+      "original_path": ".worktrees/composer-staging-deploy",
+      "kind": "directory",
+      "category": "generated",
+      "git_status": "ignored Git worktree; clean tracked and untracked state; one ignored Python bytecode file",
+      "size_bytes": 9495837,
+      "sha256": "N/A: Git checkout content recoverable from HEAD cccfc245406e0b38067d239979273e297616c51d; sole ignored bytecode SHA-256 CD52F630B49FAFD4B94205C9B6B27E973BE330DA30D2B57C8DA6A500CCB86ED9",
+      "modified_at": "2026-10-20T21:15:30.0527857+08:00",
+      "reason": "Patch-equivalent closeout commit in origin/main; retained local branch; sole ignored content is rebuildable Python bytecode",
+      "reference_checks": ["Git common dir matches repository", "git cherry origin/main HEAD has no positive commits", "git status empty", "ignored files inspected and hashed"],
+      "related_tasks_or_worktrees": ["docs/composer-staging-close-20261020"],
+      "action": "deleted",
+      "quarantine_path": "N/A: Git checkout can be recreated from retained branch; cache can be rebuilt",
+      "retention_until": "2026-10-27T20:43:40+08:00",
+      "restore_method": "git worktree add <new-path> docs/composer-staging-close-20261020; regenerate Python bytecode if needed",
+      "verification": ["Exact directory absent", "Git worktree registration absent", "Local branch retained", "origin/main unchanged"]
+    }
+  ]
+}
