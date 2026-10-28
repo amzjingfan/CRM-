@@ -4,6 +4,7 @@
 
 | Batch ID | Task ID | State | Scope | Retention until | Updated | Record |
 |---|---|---|---|---|---|---|
+| CLEANUP-20261028-004 | MAINT-CLEANUP-20261028-003 | CANDIDATE | 470 条本地已合入引用，先建本地归档引用再删旧分支名 | 归档引用长期保留；删除前逐条复核 | 2026-10-28 | [记录](CLEANUP-20261028-004.md) |
 | CLEANUP-20261028-003 | MAINT-CLEANUP-20261028-003 | DELETED（分支保留） | 四个无独有文件、提交已纳入本地 main 的工作树 | N/A（Git 工作副本；提交或合并 PR 可恢复） | 2026-10-28 | [记录](CLEANUP-20261028-003.md) |
 | CLEANUP-20261028-002 | MAINT-CLEANUP-20261028-002 | DELETED（记录待合入） | 两个已交付且无独有内容的本地 worktree；保留提交与分支 | 2026-10-27T20:43:40+08:00（唯一缓存） | 2026-10-28 | [记录](CLEANUP-20261028-002.md) |
 | CLEANUP-20261028-001 | MAINT-CLEANUP-20261028-001 | DELETED（Git 历史保留） | Agent 已停用 FAQ 合并试验路径及其专属契约测试 | N/A（Git 历史保留可恢复） | 2026-10-28 | [记录](CLEANUP-20261028-001.md) |
