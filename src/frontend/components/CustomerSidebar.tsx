@@ -285,18 +285,21 @@ function OrderDetailsView({ order, detail: initialDetail, buyerName, storeName, 
   const [detail, setDetail] = useState(initialDetail);
   const [detailError, setDetailError] = useState("");
   const [detailLoading, setDetailLoading] = useState(!initialDetail && order.live_detail_available);
+  const [detailRetry, setDetailRetry] = useState(0);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState("");
   const [trackingRetry, setTrackingRetry] = useState(0);
   useEffect(() => {
     if (initialDetail || !order.live_detail_available) return;
     const controller = new AbortController();
+    setDetailLoading(true);
+    setDetailError("");
     getCustomerSidebarOrderDetail(sessionId, order.external_order_id, controller.signal, false)
       .then((value) => { if (!controller.signal.aborted) setDetail(value); })
       .catch((cause) => { if (!controller.signal.aborted) setDetailError(cause instanceof Error ? cause.message : "订单详情加载失败"); })
       .finally(() => { if (!controller.signal.aborted) setDetailLoading(false); });
     return () => controller.abort();
-  }, [initialDetail, order.external_order_id, order.live_detail_available, sessionId]);
+  }, [initialDetail, order.external_order_id, order.live_detail_available, sessionId, detailRetry]);
   useEffect(() => {
     if (!detail || detail.tracking_loaded !== false) return;
     if (!["IN_TRANSIT", "SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status) && !order.tracking_number && !order.items.some((item) => item.tracking_number)) {
@@ -336,7 +339,7 @@ function OrderDetailsView({ order, detail: initialDetail, buyerName, storeName, 
     {detailLoading ? <p className="customer-side-muted" role="status">{en ? "Loading order details…" : "正在读取订单详情…"}</p> : null}
     {trackingLoading ? <p className="customer-side-muted" role="status">{en ? "Loading tracking…" : "正在读取物流…"}</p> : null}
     {trackingError ? <p className="customer-side-muted" role="alert">{trackingError} <button onClick={() => setTrackingRetry((value) => value + 1)} type="button">{en ? "Retry tracking" : "重试物流"}</button></p> : null}
-    {detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}
+    {detailError ? <p className="customer-side-muted" role="alert">{detailError} <button disabled={detailLoading} onClick={() => setDetailRetry((value) => value + 1)} type="button">{en ? "Retry details" : "重试详情"}</button></p> : null}
     <div className="customer-order-detail-scroll">
       <section id="customer-order-overview"><h3>{en ? "Order" : "订单"}</h3><div className="customer-info-line"><span>{en ? "Order ID" : "订单编号"}</span><span className="customer-order-overview-value"><CopyableValue en={en} label={en ? "order ID" : "订单编号"} value={order.external_order_id} />{detail?.payment_method_name ? <small>[{detail.payment_method_name}]</small> : null}</span></div><div className="customer-info-line"><span>{en ? "Phone" : "电话"}</span><CopyableValue en={en} label={en ? "phone" : "电话"} value={recipient?.phone_number} /></div><div className="customer-info-line customer-order-address-line"><span>{en ? "Shipping address" : "收货地址"}</span><span className="customer-order-address"><span>{recipient?.name ?? "—"}</span><span>{recipient?.phone_number ?? "—"}</span><CopyableValue en={en} label={en ? "shipping address" : "收货地址"} value={recipient?.full_address} /></span></div></section>
       <section id="customer-order-tracking"><h3>{en ? "Logistics" : "物流"}</h3><div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><CopyableValue en={en} label={en ? "tracking number" : "物流单号"} value={order.tracking_number} /></div><div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail?.shipping_provider ?? "—"}</span></div><div className="customer-info-line"><span>{en ? "Latest update" : "最新物流"}</span><span>{detail?.latest_tracking_description ?? "—"}</span></div>{trackingEvents.length ? <><ol className="customer-order-timeline">{(trackingExpanded ? trackingEvents : trackingEvents.slice(0, 2)).map((event, index) => <li key={`${event.occurred_at}-${index}`}><span>{event.description}</span><time>{dateTime(event.occurred_at, en)}</time></li>)}</ol>{trackingEvents.length > 2 ? <button aria-expanded={trackingExpanded} className="customer-order-expand" onClick={() => setTrackingExpanded((value) => !value)} type="button">{trackingExpanded ? (en ? "Show less" : "收起") : (en ? "Show more" : "展开更多")}</button> : null}</> : <p className="customer-side-muted">{en ? "Tracking events are unavailable." : "暂无可用物流节点。"}</p>}</section>

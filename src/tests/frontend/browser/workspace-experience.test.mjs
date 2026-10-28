@@ -37,6 +37,8 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, activeOrderDetails: 0, maxActiveOrderDetails: 0, standardTracking: 0, extraDetailEvent: false, enhancedTracking: 0 };
   // 页面会预取订单详情；必须在首次请求前固定样例，不能依赖导航后的赋值时序。
   calls.extraDetailEvent = fixtureOptions.extraDetailEvent ?? false;
+  calls.detailRateLimited = fixtureOptions.detailRateLimited ?? false;
+  calls.trackingRateLimited = fixtureOptions.trackingRateLimited ?? false;
   const trackingData = () => ({ latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", packages: [{ tracking_number: "878696895644", carrier_name: "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }, ...(calls.extraDetailEvent ? [{ description: "Order placed", occurred_at: "2026-10-14T08:00:00Z", tracking_number: null, action_code: 0, action_code_name: null }] : [])] }] });
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
@@ -102,12 +104,14 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       calls.maxActiveOrderDetails = Math.max(calls.maxActiveOrderDetails, calls.activeOrderDetails);
       if (orderDetailDelay) await new Promise((resolve) => setTimeout(resolve, orderDetailDelay));
       calls.activeOrderDetails--;
+      if (calls.detailRateLimited) return route.fulfill({ status: 429, contentType: "application/json", headers, body: JSON.stringify({ code: 429, message: "平台限流，请稍后重试", data: null }) });
       const tracking = trackingData();
       data = { payment_method_name: "Card", recipient_address: { name: "A***", phone_number: "***1234", full_address: "Masked Street, TX 78247" }, shipping_provider: "Carrier A", latest_tracking_description: payload.include_tracking === false ? null : tracking.latest_tracking_description, latest_tracking_at: payload.include_tracking === false ? null : tracking.latest_tracking_at, tracking_packages: payload.include_tracking === false ? [] : tracking.packages, enhanced_tracking_available: enhancedTracking, tracking_loaded: payload.include_tracking !== false };
     } else if (path.endsWith("/sidebar/orders/standard-tracking") && method === "POST") {
       calls.standardTracking++;
       assert.match(JSON.parse(request.postData()).order_id, /^57760000000000000[1-3]$/);
       if (trackingDelay) await new Promise((resolve) => setTimeout(resolve, trackingDelay));
+      if (calls.trackingRateLimited) return route.fulfill({ status: 429, contentType: "application/json", headers, body: JSON.stringify({ code: 429, message: "物流限流，请稍后重试", data: null }) });
       data = trackingData();
     } else if (path.endsWith("/sidebar/orders/enhanced-tracking") && method === "POST") {
       calls.enhancedTracking++;
@@ -996,6 +1000,24 @@ test("opening order details during card loading still resolves the full detail",
   } finally { await context.close(); }
 });
 
+test("rate-limited order details keep the summary and recover by retrying inside the detail view", async () => {
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, detailRateLimited: true });
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByRole("alert").getByText("平台限流，请稍后重试").waitFor();
+    await card.getByText("577600000000000001").waitFor();
+    await card.getByRole("button", { name: "详情", exact: true }).click();
+    const details = page.getByRole("region", { name: "订单详情" });
+    await details.getByRole("alert").getByText("平台限流，请稍后重试").waitFor();
+    calls.detailRateLimited = false;
+    const requestsBeforeRetry = calls.orderDetails;
+    await details.getByRole("button", { name: "重试详情" }).click();
+    await details.locator("#customer-order-overview").getByText("***1234").first().waitFor();
+    assert.equal(calls.orderDetails, requestsBeforeRetry + 1);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
 test("order basics render before delayed tracking", async () => {
   const { context, page, calls } = await openWorkspace(2, "DELIVERED", 2, null, 0, false, "Black with handrail", false, "PAD-BLK", "DELIVERED", 1500);
   try {
@@ -1005,6 +1027,22 @@ test("order basics render before delayed tracking", async () => {
     assert.equal(await card.getByText("577600000000000001").count(), 1);
     assert.equal(calls.standardTracking, 1);
     await card.getByText("Package dispatched").waitFor();
+  } finally { await context.close(); }
+});
+
+test("rate-limited tracking keeps order basics visible and recovers by retrying tracking", async () => {
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, trackingRateLimited: true });
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByText("Card").waitFor();
+    await card.getByRole("alert").getByText("物流限流，请稍后重试").waitFor();
+    await card.getByText("577600000000000001").waitFor();
+    calls.trackingRateLimited = false;
+    const requestsBeforeRetry = calls.standardTracking;
+    await card.getByRole("button", { name: "重试物流" }).click();
+    await card.getByText("Package dispatched").waitFor();
+    assert.equal(calls.standardTracking, requestsBeforeRetry + 1);
+    assert.equal(calls.send, 0);
   } finally { await context.close(); }
 });
 
