@@ -1,7 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-031",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "ac9ab85deb6aeba02f4b3383e6072ec2a77f4714",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
+  "archived_file_count": 3347,
+  "deleted_cache_file_count": 46277,
   "base_sha": "d438899b731b069035233388b41d6ed93868e922",
   "scope": "one exact merged-PR old webhook worktree and branch; all ignored non-cache files including private auth artifacts archived; cache classes deleted; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-031",
