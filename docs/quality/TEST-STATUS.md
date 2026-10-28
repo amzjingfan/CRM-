@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 Agent 调试文件知识格式修复候选 [TR R07](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R07.md) 综合 `PARTIAL`：已部署主线 `30b29c96` 的纯知识回答在 staging 显示七天事实与文件引用，混合物流加知识问题因模型输出 `answer:other` 未显示建议。新 subject `c63421fa` 仅将绑定文件调试草稿温度固定为 0；隔离 PostgreSQL/pgvector 全套 2460 passed/3 skipped，Ruff、mypy、锁文件和 237 样本确定性安全评测通过，受控真实模型格式探针 3/3 有效。本 subject 尚未部署，完整同轮链路需 staging 复测；按用户要求保留同一测试文件至成功后统一清理，零平台发送，production No-Go。
+
 2026-10-28 Agent 调试知识输出候选 [TR R06](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261028-R06.md) 综合 `PARTIAL`：subject `d368b529` 的隔离 PostgreSQL/pgvector 全套 2460 passed/3 skipped，Ruff、mypy、锁文件及 237 样本确定性安全评测通过。主线 `8096728f` 已手动部署 staging，但保留的文件知识单问 trace `4bb7170b` 在独立复核前因草稿两个逗号被位置 DLP 低置信拒绝；新候选通过严格输出 Schema 的受控 DeepSeek 单次探针，完整 Agent 工具加知识现场链路仍待新版本部署验证。保留唯一合成文件的审批与绑定直至成功后统一清理；零平台发送，production No-Go。
 
 2026-10-27 Agent 调试知识候选 [TR R05](../reports/tests/TR-MVP-AGENT-DEBUG-ANSWER-001-20261027-R05.md) 综合 `PARTIAL`：最终 subject `b55847f8` 的隔离 PostgreSQL/pgvector 全套 2459 passed/3 skipped，Ruff、mypy 和锁文件检查通过。当前 staging 主线物流单问的真实只读工具和模型回答通过，混合与知识单问检索命中后仍被模型 Schema 或 Prompt DLP 拒绝；R04 修复候选尚未部署现场验证。按用户要求，同一份合成文件保持审批与绑定直至完整验收后统一清理；零平台发送，production No-Go。

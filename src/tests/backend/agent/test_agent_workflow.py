@@ -1603,6 +1603,7 @@ async def test_reply_prompt_applies_store_tone_and_explicit_language() -> None:
     assert result.detected_language == CustomerLanguage.EN
     assert generator.requests[0].system_prompt == FAQ_ANSWER_SYSTEM_PROMPT
     assert generator.requests[0].business_prompt_id == BusinessPromptId.FAQ_ANSWER
+    assert generator.requests[0].temperature is None
     assert generator.requests[0].prompt_safety_state.value == "allowed"
     assert generator.requests[1].business_prompt_id == BusinessPromptId.FAQ_GROUNDING_REVIEW
     assert generator.requests[1].prompt_safety_state.value == "allowed"
@@ -2272,6 +2273,7 @@ async def test_debug_combines_safe_tool_and_bound_knowledge_answers() -> None:
     assert len(generator.requests) == 4
     knowledge_request = generator.requests[2]
     assert knowledge_request.business_prompt_id == BusinessPromptId.FAQ_ANSWER_CONCISE
+    assert knowledge_request.temperature == 0.0
     assert "一小句" in knowledge_request.system_prompt
     assert json.loads(knowledge_request.user_prompt.split("\n", 1)[1])["message"] == "退货期限是多久？"
     review_request = generator.requests[3]
@@ -2324,6 +2326,7 @@ async def test_debug_shows_grounded_bound_knowledge_that_requires_human() -> Non
     assert rag.calls == 1
     assert len(generator.requests) == 2
     assert generator.requests[0].business_prompt_id == BusinessPromptId.FAQ_ANSWER_CONCISE
+    assert generator.requests[0].temperature == 0.0
 
 
 @pytest.mark.asyncio

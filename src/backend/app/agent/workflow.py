@@ -1230,6 +1230,7 @@ class AgentWorkflowService:
             user_prompt=build_faq_answer_prompt(knowledge_command, state["hits"], state["reply_language"]),
             trace_id=command.trace_id,
             max_output_tokens=1024,
+            temperature=0.0 if debug_file else None,
             business_prompt_id=BusinessPromptId.FAQ_ANSWER_CONCISE if debug_file else BusinessPromptId.FAQ_ANSWER,
         )
         try:
