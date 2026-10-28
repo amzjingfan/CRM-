@@ -1,0 +1,182 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-008",
+  "state": "candidate",
+  "base_sha": "e9806b32e2410aaa8eda802c172476cf3f5ea27c",
+  "scope": "four exact local worktrees and branches; ignored cache classes deleted after authorization; other ignored files archived; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-008",
+  "candidates": [
+    {
+      "worktree": ".worktrees/workspace-composer-evidence-20261018",
+      "head": "bd8ca4240be0789fafa23bfb00d07c8147348335",
+      "branch_ref": "refs/heads/docs/workspace-composer-index-current-r2-20261018",
+      "pr": 363,
+      "merge_commit": "760c340fd1f319da7d3e5bf86ed9e61c291ccd98",
+      "directory_modified": "2026-10-18T10:47:09.6988295+08:00",
+      "ignored_count": 33080,
+      "ignored_paths_sha256": "CFC53112A810994AAD101E81097090D27EEB34291E03BF0537E724021EAFE4D5",
+      "cache_file_count": 33068,
+      "cache_bytes": 546684914,
+      "archive_file_count": 12,
+      "archive_bytes": 5941807,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/staging-clone-workspace-composer.sh",
+          "size": 866,
+          "modified": "2026-10-18T10:53:17.0466932+08:00",
+          "sha256": "B6D727256C358B024BCA1326E4DB0AE1DDF4874839994C4AF0E0DCE3D34CB3CF"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-gate-workspace-composer.ps1",
+          "size": 6182,
+          "modified": "2026-10-18T11:00:40.1036254+08:00",
+          "sha256": "77BC89B249021020A4CDB58E706E543F785222F257586C719EA39EB52DBF6068"
+        },
+        {
+          "path": "src/tests/.artifacts/staging-prefetch-workspace-composer.sh",
+          "size": 2013,
+          "modified": "2026-10-18T10:57:59.7749727+08:00",
+          "sha256": "0F81D4F0B149812FAC7F83936B85C54122B63B8ED700B349ECCF0C2C725139EF"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-07dede2.bundle",
+          "size": 5922005,
+          "modified": "2026-10-18T10:56:38.2299424+08:00",
+          "sha256": "EF91D74D255DE71A97EACE8A761449EF51D78D7F4A1D3E60EF6F8A1B70642E8E"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-build-metadata.json",
+          "size": 2054,
+          "modified": "2026-10-18T10:51:09.8691151+08:00",
+          "sha256": "4A10A6512C398F6A3CF352BDD44FCE55F0B32CE21672BF8E2AF7C3F28D85F73E"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-closeout-pr-body.txt",
+          "size": 701,
+          "modified": "2026-10-18T11:49:44.7320782+08:00",
+          "sha256": "EEAF47B535E96130CF5BF22D0D2AFF5848D24D877F0B9BE2B7A190B0A210A2DF"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-deploy.json",
+          "size": 2840,
+          "modified": "2026-10-18T11:08:56.6289883+08:00",
+          "sha256": "28B5E10C006A89920C05C50DA54C8C3DAD8CC19F58CA1A371B6002B7652EDE94"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-evidence-pr-body.md",
+          "size": 915,
+          "modified": "2026-10-18T11:33:23.7533446+08:00",
+          "sha256": "5E015AA4881B2C7F2C36ED0D353EAF77227BE6684680A1773766855A676F1088"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-index-pr-body.txt",
+          "size": 429,
+          "modified": "2026-10-18T11:51:22.3719153+08:00",
+          "sha256": "B082F3DB426364F6A0134D4F27588815EEEEFE4E4DF5EDFEF4A3D10A25599C93"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-prefetch.json",
+          "size": 944,
+          "modified": "2026-10-18T11:08:56.2409474+08:00",
+          "sha256": "B5A2184C7A21866D59C180BA6FB06432A34CE51EC57B0389BC9CCA015A9AA611"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-summary-pr-body.txt",
+          "size": 340,
+          "modified": "2026-10-18T11:55:41.6710875+08:00",
+          "sha256": "067BED7FCE872E370C8A1DF6F0045840FA663394FF3098DB2941D9CAB9D397D4"
+        },
+        {
+          "path": "src/tests/.artifacts/workspace-composer-validate.json",
+          "size": 2518,
+          "modified": "2026-10-18T11:08:56.4396819+08:00",
+          "sha256": "A4E0A7B2F5FD991F8CA16498432428547F18EF0236ACAFCB29E97CBAB4578D7F"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-composer-viewport",
+      "head": "72c59dcb3712fd02b3eb00f47b184af238dfba2a",
+      "branch_ref": "refs/heads/fix/workspace-composer-viewport-20261018",
+      "pr": 355,
+      "merge_commit": "07dede246c793cf5252624f59e35938f0ae46244",
+      "directory_modified": "2026-10-18T10:31:48.0266845+08:00",
+      "ignored_count": 33372,
+      "ignored_paths_sha256": "FF29A151596D88162538A0DC6A5217F5B360A57306AF185E6011163C2FFF2EFE",
+      "cache_file_count": 33371,
+      "cache_bytes": 720967172,
+      "archive_file_count": 1,
+      "archive_bytes": 853,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/pr-body-workspace-draft.md",
+          "size": 853,
+          "modified": "2026-10-18T10:45:45.0606240+08:00",
+          "sha256": "E1709603071D495891958E2D2BA2374BF659008FA7E70914DA5949BEEA350ED5"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/workspace-store-filter-name-20261019",
+      "head": "3f952e7708ca0efb9d5f24ec5ae51b5694530104",
+      "branch_ref": "refs/heads/docs/workspace-store-label-done-20261019",
+      "pr": 422,
+      "merge_commit": "a8018e8dd4930b0a1551b4b7754cda76ec701a7d",
+      "directory_modified": "2026-10-19T10:19:53.6191659+08:00",
+      "ignored_count": 33386,
+      "ignored_paths_sha256": "E35CC8AE6D13CECD9E143FBA1F35B1C0798225CACB6903A4832EB43A167B016B",
+      "cache_file_count": 33383,
+      "cache_bytes": 722461553,
+      "archive_file_count": 3,
+      "archive_bytes": 4292,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/store-label-done-pr.md",
+          "size": 604,
+          "modified": "2026-10-19T11:50:45.7191513+08:00",
+          "sha256": "FCB9946AD792F60E2AF8BFE0A1A6E7DDFE64017560DC1845CF600A2133FDCF4B"
+        },
+        {
+          "path": "src/tests/.artifacts/store-label-evidence-pr.md",
+          "size": 1265,
+          "modified": "2026-10-19T11:47:27.4100971+08:00",
+          "sha256": "016112C41849F6E35FDE91B4357038E999D00FE2AA7D72F63E035210C9F52946"
+        },
+        {
+          "path": "src/tests/.artifacts/store-label-frontend-image.json",
+          "size": 2423,
+          "modified": "2026-10-19T10:41:00.2253606+08:00",
+          "sha256": "7F6FD6A73C45AE01EAD4D5D75F362E8414CE9B43F06BAB8604DBF9D507060B9D"
+        }
+      ]
+    },
+    {
+      "worktree": ".worktrees/tracking-bulk-translate-20261022",
+      "head": "98ab8ffb0f15ffc58ea593243dd45f03da2043c0",
+      "branch_ref": "refs/heads/fix/workspace-tracking-bulk-translate-20261022",
+      "pr": 508,
+      "merge_commit": "218befe0113291d14fd3bde98a4f95a1e9ac8718",
+      "directory_modified": "2026-10-22T10:56:19.3168199+08:00",
+      "ignored_count": 33518,
+      "ignored_paths_sha256": "CDBE62641A78C256516A8391EB027467EDA991D5B637F45774F736AF7BCF4FA6",
+      "cache_file_count": 33516,
+      "cache_bytes": 672497351,
+      "archive_file_count": 2,
+      "archive_bytes": 12437,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/tracking-bulk-dialog.png",
+          "size": 10945,
+          "modified": "2026-10-22T11:06:18.9236809+08:00",
+          "sha256": "C118CDEC972121AD28D7AE6DF81630C6D3DEB3651E89176768BD6696D14C8AA5"
+        },
+        {
+          "path": "src/tests/.artifacts/tracking-bulk-pr.md",
+          "size": 1492,
+          "modified": "2026-10-22T11:11:26.9735069+08:00",
+          "sha256": "D2C50049DC69ADA9B415C047589C6842AF9AF01488E1D3FAB9AD29234534CAAE"
+        }
+      ]
+    }
+  ]
+}
