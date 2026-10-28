@@ -1,0 +1,28 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-040",
+  "state": "candidate",
+  "base_sha": "7d116fbd118d4dfd6b6658c118a2d19e943396b1",
+  "scope": "one unattached local branch with four exact evidence blobs already in local main and later task/index closure; archive original commit ref before deleting local branch name; no worktree or remote operation",
+  "ref": "refs/heads/docs/workspace-tracking-bulk-evidence-20261022",
+  "head": "ed8238924aa6e992e6a7ab5b6781e01b1946ad95",
+  "archive_ref": "refs/archive/CLEANUP-20261028-040/docs/workspace-tracking-bulk-evidence-20261022",
+  "proof_files": [
+    {
+      "path": "docs/records/implementation/IR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R03.md",
+      "blob": "c6fc1c31f22b806d69dcabcf72cb92dca937832b"
+    },
+    {
+      "path": "docs/reports/tests/TR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R03.md",
+      "blob": "404ab902a0ee7699f0b2f70189f331e15ba46f21"
+    },
+    {
+      "path": "docs/reports/reviews/RR-MVP-WORKSPACE-TRACKING-TIMELINE-001-20261022-R03.md",
+      "blob": "7c2bc23228bb746aa9a74a6f40174b6465cec99b"
+    },
+    {
+      "path": "release/evidence/staging/crm-staging-workspace-tracking-bulk-20261022.json",
+      "blob": "c1549b73aa47bb7ed198d8c2617bd19b6e8c4dd3"
+    }
+  ]
+}
