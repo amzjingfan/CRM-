@@ -1,7 +1,10 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-024",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "dffc01f0e99a1e2e23b4d4625f847a3373365e69",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
   "base_sha": "48cc1e283c1ea6a7454b3aaf5bb098fcc51463d1",
   "scope": "one clean historical documentation worktree and branch after its unique quarantine record was integrated into local main; no quarantine or remote changes",
   "worktree": ".worktrees/cleanup-agent-local-downloads-20261027",
