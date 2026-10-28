@@ -73,7 +73,7 @@
 
 ## 当前状态
 
-2026-10-28 本地 worktree 整合：`MAINT-CLEANUP-20261028-003 DOING`。本地 `main` 已包含经核验的清理记录，批次索引见[清理索引](../operations/cleanup/CLEANUP-INDEX.md)；当前有 33 个工作树（含主 checkout）、38 条本地分支。已归档并核验 4,119 份现场文件及旧分支恢复引用，累计移除 41 个旧工作树、39 条本地分支；另有 470 条原分支名按[批次 004](../operations/cleanup/CLEANUP-20261028-004.md)归档后移除。Workspace hygiene: ATTENTION（指定会话活动工作、开放 PR、独有提交、凭证和部署现场资料保留）。下一步：①逐支验收剩余独有提交；②待开放 PR 达到门禁后合入本地 main；③仅对可恢复且无活动占用的旧工作树继续精确清理。
+2026-10-28 本地 worktree 整合：`MAINT-CLEANUP-20261028-003 DOING`。本地 `main` 已包含经核验的清理记录，批次索引见[清理索引](../operations/cleanup/CLEANUP-INDEX.md)；当前有 32 个工作树（含主 checkout）、37 条本地分支。已归档并核验 4,141 份现场文件及旧分支恢复引用，累计移除 42 个旧工作树、40 条本地分支；另有 470 条原分支名按[批次 004](../operations/cleanup/CLEANUP-20261028-004.md)归档后移除。Workspace hygiene: ATTENTION（指定会话活动工作、开放 PR、独有提交、凭证和部署现场资料保留）。下一步：①逐支验收剩余独有提交；②待开放 PR 达到门禁后合入本地 main；③仅对可恢复且无活动占用的旧工作树继续精确清理。
 
 2026-10-28 本地 worktree 清理：用户对两个精确目录授权；`MAINT-CLEANUP-20261028-002` 的本地删除已执行，两个路径与 Git 注册项消失，提交及一个本地分支保留，见 [清理批次](../operations/cleanup/CLEANUP-20261028-002.md)。记录分支 `docs/cleanup-worktrees-20261028-002` 待合入，任务保持 `VERIFYING`。Workspace hygiene: ATTENTION（其余活动、带独有提交或含现场资料的 worktree 与根 checkout 未跟踪文件均保留）。
 

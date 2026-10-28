@@ -1,7 +1,12 @@
 {
   "task_id": "MAINT-CLEANUP-20261028-003",
   "batch_id": "CLEANUP-20261028-022",
-  "state": "candidate",
+  "state": "deleted",
+  "execution_main_sha": "6425676051dd81de912fbcc9d88fd44515175f75",
+  "deleted_worktree_count": 1,
+  "deleted_branch_count": 1,
+  "archived_file_count": 22,
+  "deleted_cache_file_count": 46442,
   "base_sha": "f61864e7fc9d016d979a9b7420d614acdfdac8fe",
   "scope": "one exact merged-PR worktree and branch; two untracked rule files and other ignored non-cache files archived; cache classes deleted; no remote operations",
   "archive_root": ".maintenance/archives/CLEANUP-20261028-022",
