@@ -1,6 +1,6 @@
 # 项目状态与恢复入口
 
-2026-10-28 本地 worktree 整合：`MAINT-CLEANUP-20261028-003 DOING`，批次见[清理索引](../operations/cleanup/CLEANUP-INDEX.md)。截至远端三项交付合流前有 13 个工作树、15 条本地分支；累计移除 62 个旧工作树、67 条本地分支，另有批次 004 的 470 条原分支名已归档移除。三个指定会话的最新工作保留；开放 PR、独有提交和旧 OCI 缓存仍待处理，后者的精确删除被自动审批审查以 `blocked by policy` 拒绝并原位保留。Workspace hygiene: ATTENTION。
+2026-10-28 本地 worktree 整合：`MAINT-CLEANUP-20261028-003 DOING`，批次见[清理索引](../operations/cleanup/CLEANUP-INDEX.md)。本地 `main=24472913439acb522cd3ee71774238f6d16307b4` 已合流 PR #582–#584 和迁移 040；当前有 13 个工作树、16 条本地分支（并行会话新增两条，批次 050 移除一条）；累计移除 62 个旧工作树、68 条本地分支，另有批次 004 的 470 条原分支名已归档移除。三个指定会话的最新工作保留；开放 PR、独有提交和旧 OCI 缓存仍待处理，后者及整合工作树临时依赖 junction 的精确删除均被自动审批审查以 `blocked by policy` 拒绝并原位保留；本地合流 [IR](../records/implementation/IR-MAINT-CLEANUP-20261028-003-20261028-R01.md)、[TR](../reports/tests/TR-MAINT-CLEANUP-20261028-003-20261028-R01.md)、[RR](../reports/reviews/RR-MAINT-CLEANUP-20261028-003-20261028-R01.md)记录 2304/4 后端、49/49 前端契约、119/119 浏览器通过。Workspace hygiene: ATTENTION。
 
 2026-10-28 `MVP-TIKTOK-MULTISHOP-AUTH-001 DONE`：卖家级多店授权在本地 `main=74e4b38a3018892904b2f97d7391328e579f3e12` 已合并，当前未部署 staging/production；正式[IR](../records/implementation/IR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md)、[TR](../reports/tests/TR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md)、[RR](../reports/reviews/RR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261028-R01.md)保留。与动态 Agent 独立迁移链在本地 `040_merge_agent_multishop` 合流，部署须另行验证备份和迁移门禁。
 

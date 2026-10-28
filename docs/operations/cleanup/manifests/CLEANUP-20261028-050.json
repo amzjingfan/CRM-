@@ -1,0 +1,12 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-050",
+  "state": "deleted",
+  "execution_main_sha": "24472913439acb522cd3ee71774238f6d16307b4",
+  "deleted_branch_count": 1,
+  "scope": "unoccupied local evidence branch with one patch-equivalent commit on main; no worktree, file, or remote operation",
+  "ref": "refs/heads/docs/dynamic-agent-local-close-20261028",
+  "head": "8aa466699d5f16a14e158a4f33c4ec7b3986d4ef",
+  "archive_ref": "refs/archive/CLEANUP-20261028-050/docs/dynamic-agent-local-close-20261028",
+  "proof": "git cherry main docs/dynamic-agent-local-close-20261028 returned exactly - 8aa466699d5f16a14e158a4f33c4ec7b3986d4ef; branch absent from git worktree list"
+}
