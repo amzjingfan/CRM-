@@ -4,7 +4,7 @@
 
 CANDIDATE_SUBJECT_SHA=eab7e2c207308fde34be1ca50f25d32be1670cfa，EVIDENCE_HEAD_SHA=READ_AT_GATE。最新性能IR/RR为MVP-STAGING-LATENCY-001-20261029-R10、TR为R11；工具IR/TR/RR为MVP-AGENT-TOOL-SUITE-001-20261028-R03。门店授权聚合源码经[PR #599](https://github.com/CP11-gh/CRM/pull/599)合入主线 `0eda03197efe81c271ae3de180507e9d222d3f2b`，R08索引经PR #600成为CURRENT；R09发布证据经[PR #601](https://github.com/CP11-gh/CRM/pull/601)合入主线 `b0c3efcf05ab1633972c419675755cc96dd2226f`，R09三索引经PR #602从权威主线源记录核对为CURRENT；TR R10补测经[PR #603](https://github.com/CP11-gh/CRM/pull/603)合入主线 `0896fb757a1acce92ae8ca1b636402208a17efae`，三索引已从权威主线源记录核对为CURRENT。
 
-浏览器并发认证刷新 eab7e2c2 的 51 契约、129 生产浏览器、类型、构建及双轴审查已通过；迟到订单只读 POST 复用已刷新 Cookie，写请求仍保留刷新和原幂等键。候选三索引为 CANDIDATE_VIEW，待主线合并后重建为 CURRENT；staging 仍运行性能专用 release 18cea7f2，本次前端修复尚待独立部署，主线动态 Agent 不纳入。全站现场回显未完成。
+浏览器并发认证刷新 eab7e2c2 的 51 契约、129 生产浏览器、类型、构建及双轴审查已通过；迟到订单只读 POST 复用已刷新 Cookie，写请求仍保留刷新和原幂等键。源码经 PR #605 合入 main f8c3be74；三索引从权威主线源记录重建为 CURRENT；staging 仍运行性能专用 release 18cea7f2，本次前端修复尚待独立部署，主线动态 Agent 不纳入。全站现场回显未完成。
 
 十二业务工具、六类目录、三种操作标签和原四项人工确认提议已在本地验收。后端/前端/测试与完整受测84702ae0同树，完整后端2375 passed/3 POSIX跳过；生产浏览器121、前端契约48、Ruff/格式/mypy252源文件、040往返、16动态协议/237安全样本和依赖审计通过。最终01975ab2仅导入既有入口低敏日志字段，受影响入口38 passed/3平台跳过；未冒充在该提交重跑全量。两轴技术审查闭环。PR #589精确head的CI两作业均终止于runner=0/steps=0，CI未运行，按用户持续批准采用本地替代；用户另已明确批准本PR合并及仅任务/索引/恢复摘要文档收尾。
 
@@ -16,4 +16,4 @@ CANDIDATE_SUBJECT_SHA=eab7e2c207308fde34be1ca50f25d32be1670cfa，EVIDENCE_HEAD_S
 
 Workspace hygiene: ATTENTION。根checkout未共享历史、未知需求/私有文件和其他活动工作树保留；前端工具生成的未跟踪AGENTS文件保持原状。临时日志、截图和收尾差异在src/tests/.artifacts，不提交或删除未知内容。官方公开文档UI不可用记UI_UNAVAILABLE，既有端点依据OAS和官方docv2。
 
-下一动作：①合并本次认证修复并仅将其摘取到性能专用 staging release；随后补已登录门店刷新与全站冷/热、跨店、故障/限流真实回显对照，保留公网p50/p95诊断记录；②入口/隧道WAN异常待网络条件改善后复测；③Agent主线新版本仅在用户另行批准后部署。
+下一动作：①仅将已合入的认证修复摘取到性能专用 staging release；随后补已登录门店刷新与全站冷/热、跨店、故障/限流真实回显对照，保留公网p50/p95诊断记录；②入口/隧道WAN异常待网络条件改善后复测；③Agent主线新版本仅在用户另行批准后部署。
