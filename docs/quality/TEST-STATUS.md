@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-28 staging 入口连接复用 [TR R03](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R03.md) **PARTIAL**：原活动 vhost 私有备份、源码哈希、独立 20 组对照、`nginx -t`/reload 与健康/安全/缓存只读回归通过；活动入口回环 30 次 p50/p95 `1.042/2.061` → `0.400/1.161` 秒，公网 30 次 `1.564/4.002` → `1.742/4.028` 秒，未证实公网整体改善。两机广域网重传仍显著，前后端镜像和 Agent 不变，未外发或发布 production。见[低敏证据](../../release/evidence/staging/crm-staging-nginx-keepalive-20261028.json)。
+
 2026-10-28 staging 性能专用发布 [TR R02](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261028-R02.md) **PARTIAL（部署通过，公网性能未达完整验收）**：release `e64ef52c` 的后端 2407/43、前端合同 48/48、静态门禁和 Docker 构建通过；私有备份、六摘要、ValidateOnly/Deploy、12 容器、固定出口与已登录订单只读 UI 通过。指纹 JS 冷 MISS 1.728 秒、热 HIT 0.000 秒；20 样本公网健康 TTFB p50/p95 前后为 1.782/9.108 和 2.472/4.819 秒，非受控对照，不声称因果改善。动态 Agent 未部署，生产 No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-latency-performance-only-20261028.json)。
 
 2026-10-28 动态Agent本地候选 [TR](../reports/tests/TR-MVP-AGENT-DYNAMIC-REWRITE-001-20261028-R01.md) **PASS（本地范围）**：subject `7594a1a53ede8e0b65f8987e352d78662bb04c41`；完整后端/隔离PostgreSQL-pgvector 2335 passed / 3 POSIX平台条件跳过，前端48契约/114生产浏览器、typecheck/build、Ruff/mypy245文件、迁移034↔039、16动态边界与237安全样本通过。依赖审计无已知漏洞，两轴审查无剩余阻断。已移除旧FAQ执行/正则与LangGraph依赖；asyncio项目编排＋langchain-core @tool。没有部署或真实模型/TikTok现场验收，G5/G6/G8现场结论不变。

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "evidence_type": "staging_ingress_upstream_keepalive",
+  "environment": "staging",
+  "task_id": "MVP-STAGING-LATENCY-001",
+  "source_sha": "81c851bf53b7216ef6f5bf4ee8d125aefacb0eaa",
+  "runtime_change": "public Nginx vhost only; application containers and tunnel service unchanged",
+  "vhost_before_sha256": "82669bd7aab93e6986ba3d81f17fa1959e981e6236b528569a6da76a3329da9d",
+  "vhost_after_sha256": "5e733a1dcd8b7a09323093b5a26634fe53f91c3b44349f55ee1a796d401229d2",
+  "private_backup": {
+    "directory": "/var/backups/crm-staging-keepalive-81c851bf-20261028",
+    "directory_mode": "0700",
+    "backup_mode": "0600",
+    "backup_sha256": "82669bd7aab93e6986ba3d81f17fa1959e981e6236b528569a6da76a3329da9d"
+  },
+  "configuration": {
+    "upstream": "127.0.0.1:18080",
+    "keepalive_connections_per_worker": 8,
+    "keepalive_idle_seconds": 10,
+    "proxied_locations_checked": 8,
+    "activate_deny_preserved": true,
+    "sse_buffering_off_preserved": true,
+    "manual_media_limit_preserved": true,
+    "fingerprinted_static_shared_cache_only": true,
+    "html_and_api_shared_cache": false,
+    "nginx_test_before_reload": "passed",
+    "nginx_reload": "passed",
+    "nginx_test_after_reload": "passed",
+    "runtime_file_sha_matches_source": true
+  },
+  "loopback_canary": {
+    "paired_samples": 20,
+    "status_200_count": 40,
+    "new_upstream_connection_ttfb_p50_p95_seconds": [0.490801, 1.415573],
+    "reused_upstream_connection_ttfb_p50_p95_seconds": [0.3138125, 0.687018],
+    "isolated_listener_removed": true
+  },
+  "active_vhost_measurement": {
+    "samples_per_segment_per_phase": 30,
+    "gateway_loopback_https_before_ttfb_p50_p95_seconds": [1.0422075, 2.060646],
+    "gateway_loopback_https_after_ttfb_p50_p95_seconds": [0.4004355, 1.16052],
+    "public_https_before_ttfb_p50_p95_seconds": [1.56377, 4.002153],
+    "public_https_after_ttfb_p50_p95_seconds": [1.741761, 4.028143],
+    "all_http_200": true,
+    "measurement_limit": "Sequential time windows and shared WAN load do not prove a causal public improvement; public p50/p95 did not improve in this sample"
+  },
+  "postdeploy_read_only_smoke": {
+    "healthz_http": 200,
+    "api_health_http": 200,
+    "api_ready_http": 200,
+    "settings_stores_http": 200,
+    "activate_reserved_http": 404,
+    "unauthenticated_chat_get_http": 405,
+    "fingerprinted_static_http": 200,
+    "fingerprinted_static_gateway_cache": "HIT",
+    "api_gateway_cache": "empty",
+    "html_no_store": true,
+    "backend_image_prefix_unchanged": "a1f05c91bb60",
+    "frontend_image_prefix_unchanged": "eeb53b2d0ff8",
+    "backend_frontend_healthy": true
+  },
+  "network_residual": {
+    "business_lan_gateway_mtr_samples": 20,
+    "business_lan_gateway_icmp_loss_percent": 0,
+    "wan_icmp_destination_loss_percent_in_20_samples": 30,
+    "wan_icmp_loss_interpretation": "ICMP may be rate-limited; not a direct TCP loss estimate",
+    "wan_tcp_mtr_destination_samples": 20,
+    "wan_tcp_mtr_destination_loss_percent": 0,
+    "wan_tcp_mtr_destination_max_rtt_ms": 2266,
+    "tunnel_tcp_bytes_sent_before_after": [10328806, 12555478],
+    "tunnel_tcp_bytes_retrans_before_after": [1488396, 1860984],
+    "tunnel_service_restart_count": 969,
+    "tunnel_timeout_events_observed_today": true
+  },
+  "github_actions_used_for_deployment": false,
+  "real_tiktok_message_sent_for_smoke": false,
+  "refund_executed": false,
+  "production_release": false
+}

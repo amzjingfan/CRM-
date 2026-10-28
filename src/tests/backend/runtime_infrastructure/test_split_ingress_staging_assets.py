@@ -588,7 +588,20 @@ def test_public_vhost_never_targets_gitlab_or_private_host() -> None:
     assert "ssl_protocols TLSv1.2 TLSv1.3;" in source
     assert "/www/server/panel/vhost/cert/staging.overselfx.com/fullchain.pem" in source
     assert "/www/server/panel/vhost/cert/staging.overselfx.com/privkey.pem" in source
-    assert "proxy_pass http://127.0.0.1:18080" in source
+    upstream = source.split("upstream crm_staging_tunnel {", 1)[1].split("}", 1)[0]
+    upstream_servers = [
+        line.strip()
+        for line in upstream.splitlines()
+        if line.strip().startswith("server ")
+    ]
+    assert upstream_servers == ["server 127.0.0.1:18080;"]
+    proxy_passes = [
+        line.strip()
+        for line in source.splitlines()
+        if line.strip().startswith("proxy_pass ")
+    ]
+    assert proxy_passes
+    assert set(proxy_passes) == {"proxy_pass http://crm_staging_tunnel;"}
     healthz_location = source.split("location = /healthz {", 1)[1].split("}", 1)[0]
     assert "access_log /www/wwwlogs/staging.overselfx.com.log crm_staging_safe_json;" in healthz_location
     assert "proxy_set_header Host staging.overselfx.com" in source
