@@ -1,0 +1,65 @@
+{
+  "task_id": "MAINT-CLEANUP-20261028-003",
+  "batch_id": "CLEANUP-20261028-023",
+  "state": "candidate",
+  "base_sha": "0cba2171c096fd1a10eb50e5d1fe98f4da4b03b0",
+  "scope": "one exact merged-PR worktree and branch; two untracked rule files, one tracked generated modification and other ignored non-cache files archived; cache classes deleted; no remote operations",
+  "archive_root": ".maintenance/archives/CLEANUP-20261028-023",
+  "candidates": [
+    {
+      "worktree": ".worktrees/basic-reception-ui-followup-20261023",
+      "head": "8c88d6e5b2f2e3a29f13af06766348efa3460b6f",
+      "branch_ref": "refs/heads/fix/basic-reception-ui-followup-20261023",
+      "pr": 542,
+      "merge_commit": "d82a3445cb00db50182fbadd45b977614e59ab5e",
+      "directory_modified": "2026-10-23T13:52:30.7660127+08:00",
+      "untracked": [
+        {
+          "path": "src/frontend/AGENTS.md",
+          "size": 678,
+          "modified": "2026-10-23T14:09:24.9473074+08:00",
+          "sha256": "63F2C50380ED6303237CCE215CE27AF1D620D094C215E28D1B1538A3C070E3BB"
+        },
+        {
+          "path": "src/frontend/CLAUDE.md",
+          "size": 11,
+          "modified": "2026-10-23T14:09:24.9473074+08:00",
+          "sha256": "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+        }
+      ],
+      "tracked_modified": [
+        {
+          "path": "src/frontend/next-env.d.ts",
+          "size": 296,
+          "modified": "2026-10-23T15:37:56.1617597+08:00",
+          "sha256": "0F70629890B72A0A82E91972CC032C04B658B26C265373CB711CF576BFBF8FCC"
+        }
+      ],
+      "expected_dirty": [
+        " M src/frontend/next-env.d.ts",
+        "?? src/frontend/AGENTS.md",
+        "?? src/frontend/CLAUDE.md"
+      ],
+      "ignored_count": 46680,
+      "ignored_paths_sha256": "522AD33F230CB7B455277AB0968EF9A5918BEA10438E0585F99142665CE6D092",
+      "cache_file_count": 46678,
+      "cache_bytes": 1051131183,
+      "archive_file_count": 2,
+      "archive_bytes": 48068,
+      "archive_files": [
+        {
+          "path": "src/tests/.artifacts/basic-reception-ui-pr-body.md",
+          "size": 1294,
+          "modified": "2026-10-23T14:46:01.9935888+08:00",
+          "sha256": "BDBFA323A1BEE59ED207EC9CD51FE50E71F5FAAF6C75AFBB023C15BEDE7ADFE9"
+        },
+        {
+          "path": "src/tests/.artifacts/reception-ui-followup/quick-replies.png",
+          "size": 46774,
+          "modified": "2026-10-23T14:28:23.9971642+08:00",
+          "sha256": "BE3DAEDFA2EC0D21CBE8A0A107C02D7969F38B5227399DF1C912DE33F2723C80"
+        }
+      ]
+    }
+  ]
+}
