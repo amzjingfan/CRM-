@@ -1,0 +1,54 @@
+{
+  "task_id": "MVP-AGENT-STAGING-DEPLOY-001",
+  "stage": "local_predeploy_rag",
+  "base_sha": "47bec42bac3293225d098bf745994f6e32cc81ef",
+  "subject_sha": "3bfd55ee91d654ad69c63b73907285c3a0a4c4d3",
+  "backend": {
+    "passed": 2535,
+    "skipped_windows_posix": 3,
+    "seconds": 223.51
+  },
+  "rag_tdd": {
+    "red_failed": 4,
+    "red_passed": 9,
+    "green_passed": 13,
+    "focused_passed": 55
+  },
+  "frontend": {
+    "contract_passed": 52,
+    "lint_errors": 0,
+    "existing_warnings": 8,
+    "typecheck": true,
+    "production_build": true
+  },
+  "static": {
+    "ruff_check": true,
+    "ruff_format_files": 412,
+    "mypy_files": 255,
+    "lock": true
+  },
+  "deterministic": {
+    "dynamic_cases": 16,
+    "safety_cases": 237
+  },
+  "review": {
+    "blocking": 0,
+    "minor_fixed": 1
+  },
+  "deployment": "not_yet",
+  "live_rag": "not_yet",
+  "platform_send_count": 0,
+  "failed_attempts_preserved": {
+    "wrong_in_repo_basetemp": {
+      "passed": 2381,
+      "failed": 99,
+      "skipped": 58
+    },
+    "agent_only_timing": {
+      "passed": 1340,
+      "failed": 1,
+      "file_recheck_passed": 9
+    }
+  },
+  "cleanup_batch": "CLEANUP-20261029-001"
+}

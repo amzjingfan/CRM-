@@ -27,7 +27,7 @@ from app.agents.runtime.context import LiteralFact, ModelLimits, build_context
 from app.agents.runtime.snapshot import RunSnapshot
 from app.agents.safety.input import prepare_untrusted_text
 from app.agents.tools.catalog import AgentToolContext, BusinessToolPort, ToolExecutionPort, build_agent_tools
-from app.agents.tools.loop import ToolLoopTimeout, run_tool_loop
+from app.agents.tools.loop import MAX_TOOL_RESULT_CHARS, ToolLoopTimeout, run_tool_loop, serialize_tool_result
 from app.agents.tools.metadata import TOOL_METADATA
 from app.knowledge_base.schemas import KnowledgeRetrievalHit
 
@@ -140,7 +140,13 @@ async def run_specialist(
             rag_service=rag_service,
         )
         projected = project_evidence_for_model(bundle)
-        visible_ids = {uuid.UUID(str(item["chunk_id"])) for item in cast(list[dict[str, object]], projected["hits"])}
+        projected_hits = cast(list[dict[str, object]], projected["hits"])
+        # 只能整块舍弃尾部知识；未真正送入模型的片段不能成为引用或复核依据。
+        while projected_hits and len(serialize_tool_result(projected)) > MAX_TOOL_RESULT_CHARS:
+            projected_hits.pop()
+        if not projected_hits and projected["status"] == "retrieved":
+            return {"status": "tool_result_too_large", "hits": []}
+        visible_ids = {uuid.UUID(str(item["chunk_id"])) for item in projected_hits}
         searched.append(
             EvidenceBundle(
                 hits=tuple(hit for hit in bundle.hits if hit.chunk_id in visible_ids),

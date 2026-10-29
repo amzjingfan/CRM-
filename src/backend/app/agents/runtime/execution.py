@@ -208,7 +208,18 @@ async def persist_dynamic_result(
         for index, event in enumerate(specialist.tool_events):
             name = event.name if event.name in TOOL_METADATA else "unavailable_tool"
             digest = hashlib.sha256(f"{run.id}:{agent.id}:{index}:{event.call_id}:{name}".encode()).hexdigest()
-            status = event.status if event.status in {"succeeded", "timeout", "unknown"} else "failed"
+            # 知识命中与零命中都是已完成查询，不应记作执行失败。
+            knowledge_query_completed = name == "search_knowledge" and event.status in {"retrieved", "no_hits"}
+            status = (
+                "succeeded"
+                if knowledge_query_completed
+                else event.status
+                if event.status in {"succeeded", "timeout", "unknown"}
+                else "failed"
+            )
+            output_summary: dict[str, object] = {"succeeded": status == "succeeded"}
+            if knowledge_query_completed:
+                output_summary["result_status"] = event.status
             # 只保留能力、阶段与配置关联，不复制模型参数、平台响应或正文。
             await session.execute(
                 insert(ToolCall)
@@ -222,7 +233,7 @@ async def persist_dynamic_result(
                     request_hash=digest,
                     status=status,
                     input_summary={"mode": mode, "config_version": agent.config_version},
-                    output_summary={"succeeded": status == "succeeded"},
+                    output_summary=output_summary,
                     error_code=None if status == "succeeded" else "DYNAMIC_TOOL_" + status.upper(),
                     trace_id=run.trace_id,
                     mocked=False,

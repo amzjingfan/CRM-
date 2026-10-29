@@ -15,6 +15,13 @@ from app.agents.providers.tool_calling import FunctionCall, ToolTurn
 from app.agents.runtime.context import ContextBudgetExceeded
 from app.agents.tools.catalog import invoke_selected_tool
 
+MAX_TOOL_RESULT_CHARS = 16_000
+
+
+def serialize_tool_result(result: object) -> str:
+    """所有工具与知识预投影共用同一 JSON 编码和字符预算。"""
+    return json.dumps(result, ensure_ascii=False, default=str, separators=(",", ":"))
+
 
 class ToolCallingPort(Protocol):
     async def complete(
@@ -144,8 +151,8 @@ async def run_tool_loop(
                             tuple(observations),
                         )
                     invalid_signatures.add(signature)
-                result_text = json.dumps(result, ensure_ascii=False, default=str, separators=(",", ":"))
-                if len(result_text) > 16_000:
+                result_text = serialize_tool_result(result)
+                if len(result_text) > MAX_TOOL_RESULT_CHARS:
                     result_text = '{"status":"tool_result_too_large"}'
                     events[-1] = ToolEvent(call_id=call.id, name=call.name, status="tool_result_too_large")
                     # 未送入模型的数据不能进入最终依据复核或会话事实记忆。

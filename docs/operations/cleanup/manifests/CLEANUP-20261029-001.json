@@ -1,0 +1,71 @@
+{
+  "task_id": "MAINT-CLEANUP-20261029-001",
+  "batch_id": "CLEANUP-20261029-001",
+  "base_sha": "47bec42bac3293225d098bf745994f6e32cc81ef",
+  "state": "QUARANTINED",
+  "reason": "本次pytest相对cache路径按仓库根解析产生的10个已知缓存；不含用户或未知文件",
+  "retention_until": "2026-11-05",
+  "files": [
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/.gitignore",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/.gitignore",
+      "size": 37,
+      "sha256": "3ed731b65d06150c138e2dadb0be0697550888a6b47eb8c45ecc9adba8b8e9bd"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/CACHEDIR.TAG",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/CACHEDIR.TAG",
+      "size": 191,
+      "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/README.md",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/README.md",
+      "size": 302,
+      "sha256": "73fd6fccdd802c419a6b2d983d6c3173b7da97558ac4b589edec2dfe443db9ad"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/v/cache/lastfailed",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/v/cache/lastfailed",
+      "size": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/v/cache/nodeids",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/agent-pytest-cache/v/cache/nodeids",
+      "size": 238877,
+      "sha256": "bc552905132e0a6ae65df2b6b12a7b1acb08da2df8b19d42e20f27582d56e02a"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/pytest-cache/.gitignore",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/pytest-cache/.gitignore",
+      "size": 37,
+      "sha256": "3ed731b65d06150c138e2dadb0be0697550888a6b47eb8c45ecc9adba8b8e9bd"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/pytest-cache/CACHEDIR.TAG",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/pytest-cache/CACHEDIR.TAG",
+      "size": 191,
+      "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/pytest-cache/README.md",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/pytest-cache/README.md",
+      "size": 302,
+      "sha256": "73fd6fccdd802c419a6b2d983d6c3173b7da97558ac4b589edec2dfe443db9ad"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/pytest-cache/v/cache/lastfailed",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/pytest-cache/v/cache/lastfailed",
+      "size": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "original_path": "tests/.artifacts/agent-rag-staging-20261029/pytest-cache/v/cache/nodeids",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261029-001/tests/.artifacts/agent-rag-staging-20261029/pytest-cache/v/cache/nodeids",
+      "size": 7762,
+      "sha256": "b2a898cd4c07bca0a03c903e68723ef05d92da5ff5eafc5a0cbdd628930da9ef"
+    }
+  ],
+  "verification": "10/10 hashes unchanged; root tests absent"
+}
