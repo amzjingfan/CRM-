@@ -94,12 +94,28 @@ async def add_trace_id(request: Request, call_next: Callable[[Request], Awaitabl
         or request.url.path.startswith("/v1/webhooks/")
         or request.url.path == "/v1/knowledge/imports"
     )
+    request_budget = settings.request_timeout_seconds
+    path_parts = request.url.path.split("/")
+    run_resource_id: str | None = None
+    if len(path_parts) == 5 and path_parts[1:3] == ["v1", "agents"] and path_parts[4] == "debug":
+        run_resource_id = path_parts[3]
+    elif len(path_parts) == 6 and path_parts[1:4] == ["v1", "workspace", "sessions"] and path_parts[5] == "suggest":
+        run_resource_id = path_parts[4]
+    if request.method == "POST" and run_resource_id is not None:
+        try:
+            resource_id = uuid.UUID(run_resource_id)
+        except ValueError:
+            pass
+        else:
+            if str(resource_id) == run_resource_id:
+                # Agent 自己执行统一截止时间；HTTP 层另留原有请求预算处理鉴权、快照和落库，不能先于模型截断。
+                request_budget += settings.agent_debug_timeout_seconds
     try:
         try:
             if timeout_exempt:
                 response = await call_next(request)
             else:
-                response = await asyncio.wait_for(call_next(request), timeout=settings.request_timeout_seconds)
+                response = await asyncio.wait_for(call_next(request), timeout=request_budget)
         except TimeoutError:
             logger.warning("请求超时", extra={"trace_id": trace_id, "event": "request_timeout"})
             response = JSONResponse(

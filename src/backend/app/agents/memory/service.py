@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.memory.models import AgentSessionMemory
 from app.agents.runtime.snapshot import RunSnapshot
 from app.agents.safety.input import prepare_untrusted_text
+from app.agents.tools.business_identifiers import BUSINESS_IDENTIFIER_FIELDS
 from app.agents.tools.loop import ToolObservation
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation
@@ -66,8 +67,8 @@ async def remember_session_question(
             continue
         source_id = uuid.uuid5(uuid.NAMESPACE_URL, f"{snapshot.snapshot_hash}:{agent_id}:{observation.call_id}")
         for key, value in observation.facts.items():
-            # 候选引用仅在本轮执行器有效，恢复记忆不能把旧引用当成当前选单。
-            if key in run_refs or not isinstance(value, str | int | float | bool):
+            # 编号和候选引用仅供本轮核验；后续须重查，不能复用资源标识或污染通用文本记忆。
+            if key in run_refs | BUSINESS_IDENTIFIER_FIELDS or not isinstance(value, str | int | float | bool):
                 continue
             fact_key = (
                 f"{observation.name}.{observation.scope}.{key}" if observation.scope else f"{observation.name}.{key}"

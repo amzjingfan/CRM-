@@ -284,6 +284,7 @@ async def execute_model_run(
                     snapshot=snapshot,
                     agent=selected,
                     selection=selection,
+                    customer_question=question,
                     provider=provider,
                     executor=executor,
                     rag_service=rag_service,

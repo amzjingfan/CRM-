@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.management.config_models import AgentConfig
 from app.agents.management.models import AgentConfigVersion
 from app.agents.prompts.compiler import compile_prompt
+from app.agents.prompts.review import PROMPT_CONFIGURATION_REVIEW_VERSION, review_configured_prompt
 from app.agents.providers.factory import validate_tool_model
 from app.audit.models import AuditLog
 from app.shared.config.settings import get_settings
@@ -31,6 +32,7 @@ async def publish_agent(
             AgentConfig.deleted_at.is_(None),
         )
         .with_for_update()
+        .execution_options(populate_existing=True)
     )
     if config is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "Agent 配置不存在", 404)
@@ -42,6 +44,13 @@ async def publish_agent(
     except ValueError as error:
         raise AppError(ErrorCode.VALIDATION_ERROR, "模型不在当前项目原生工具配置中", 422) from error
     compiled = compile_prompt(config.draft_prompt_sections)
+    # 结构编译与自然语言判断分开；未通过独立模型复核就不写发布版本。
+    provider_name, model_name = config.draft_model_provider, config.draft_model_name
+    if provider_name is None or model_name is None:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "尚未配置模型", 422)
+    review_input, review_output = await review_configured_prompt(
+        sections=compiled.sections, settings=settings, provider_name=provider_name, model_name=model_name
+    )
 
     scope = config.knowledge_scope if isinstance(config.knowledge_scope, dict) else {}
     raw_file_ids = scope.get("file_ids", [])
@@ -73,7 +82,13 @@ async def publish_agent(
             action="agent.config.publish",
             resource_type="agent_config",
             resource_id=config.id,
-            after_data={"version": next_version, "prompt_hash": compiled.content_sha256},
+            after_data={
+                "version": next_version,
+                "prompt_hash": compiled.content_sha256,
+                "privacy_review_version": PROMPT_CONFIGURATION_REVIEW_VERSION,
+                "privacy_review_input_tokens": review_input,
+                "privacy_review_output_tokens": review_output,
+            },
             result="succeeded",
         )
     )

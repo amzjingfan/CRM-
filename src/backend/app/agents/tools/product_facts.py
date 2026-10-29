@@ -41,13 +41,17 @@ def product_facts(product: SidebarProduct, args: ProductSelectionArguments) -> d
     )
     return {
         "product_ref": args.product_ref,
+        "product_number": product.id,
         "title": product.title,
         "status": product.status,
         "brand": product.brand,
         "description": text[text_start : text_start + 3000],
         "attributes": product.attributes[start : start + args.page_size],
         "attribute_count": len(product.attributes),
-        "skus": [sku.model_dump(exclude={"id"}) for sku in product.skus[start : start + args.page_size]],
+        "skus": [
+            {"sku_number": sku.id, **sku.model_dump(exclude={"id"})}
+            for sku in product.skus[start : start + args.page_size]
+        ],
         "sku_count": len(product.skus),
         "page": args.page,
         "next_page": args.page + 1 if args.page < pages else None,

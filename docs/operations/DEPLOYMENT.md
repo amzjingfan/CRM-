@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-10-29 第一批详细回答修复 #634 已手动部署 e3fcbd1a，backend digest `sha256:ba62531a9f43b8a5ead46ce9a5d0562b0b0038a240ccb30c379a0eaba8878c55`；041、12容器和三健康检查通过。backend正式人工建议开启、后台自动模式关闭。第二批原始语言/编号/过滤重组/HTTP预算/完整编辑修复尚未部署，最终统一发布须同时更新前后端；v4提示词草稿需在新编译器生效后正常发布，不提前修改发布版本。
+
 人工 AI 建议的受控 staging 发布：受审门禁新增 `-EnableAgentSuggestions`，加载 `src/compose/docker-compose.rootless-staging-agent-suggestions.yml`，仅 backend 开启 `LLM_ENABLED`、`AGENT_V2_FORMAL_ENABLED` 和 `EMBEDDING_ENABLED`；与 `-EnableAgentDebug` 可同时使用。模型原生工具协议、凭证、检索共享令牌、合并 Compose 和实际容器均必须校验；worker/jobs/agent-worker 仍保持正式建议及模型关闭，自动回复/营销/高风险写入保持关闭，不改变既有单店人工发送范围。此模式禁止与 G5 负载测试同时开启。
 
 `LLM_MAX_OUTPUT_TOKENS` 由配置控制，上述人工建议及调试 overlay 未指定时默认 2048；不修改其他服务的默认预算。启用建议只生成待人工审阅草稿，不能调用平台消息发送。发布前完成源码/镜像绑定、私有备份、ValidateOnly 与协调单点切换；发布后以 Codex 浏览器分别验证三工具、详细回答和工作台草稿，核对无平台外发。回退可关闭正式建议入口或恢复上一受审镜像/部署参数，保留 041 后业务、配置和运行记录，不盲目恢复旧库。

@@ -24,10 +24,11 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   const fixtureOptions = typeof messageCount === "object" ? messageCount : {};
   if (typeof messageCount === "object") {
     orderStatus = fixtureOptions.orderStatus ?? orderStatus;
+    translationEnabled = fixtureOptions.translationEnabled ?? translationEnabled;
     syncedOrderStatus = orderStatus;
     messageCount = fixtureOptions.messageCount ?? 70;
   }
-  const context = await browser.newContext({ viewport: { width: 1440, height: orderCount > 1 ? 2400 : 900 } });
+  const context = await browser.newContext({ viewport: fixtureOptions.viewport ?? { width: 1440, height: orderCount > 1 ? 2400 : 900 } });
   const records = [
     { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } },
     { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [], buyer_stage_override: null } },
@@ -48,7 +49,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     const headers = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET,POST,PATCH,OPTIONS", "access-control-allow-headers": "content-type,idempotency-key,x-csrf-token" };
     if (method === "OPTIONS") return route.fulfill({ status: 204, headers });
     if (path === "/v1/chat/query") {
-      const body = ["event: result", 'data: {"content":"AI draft ready","confidence":0.8,"intent":"general","requires_human":false,"demo_mode":false}', "", "event: done", 'data: {"reason":"completed"}', ""].join("\n");
+      const body = ["event: result", `data: ${JSON.stringify({ content: fixtureOptions.aiDraft ?? "AI draft ready", confidence: 0.8, intent: "general", requires_human: false, demo_mode: false })}`, "", "event: done", 'data: {"reason":"completed"}', ""].join("\n");
       return route.fulfill({ status: 200, headers: { ...headers, "content-type": "text/event-stream" }, body });
     }
     let data;
@@ -137,6 +138,8 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/products/123") && method === "GET") {
       calls.productDetails++;
       data = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: "https://example.invalid/product.png", skus: [{ id: "456", seller_sku: "PAD-BLK", name: "Black with handrail", currency: "USD", sale_price: "90.45", quantity: 4 }] };
+    } else if (path.match(/\/messages\/[^/]+\/translation$/) && method === "POST") {
+      data = { message_id: path.split("/").at(-2), target_language: "zh-CN", translated_text: "您的包裹正在运输中，请查看最新物流详情。" };
     } else if (path.endsWith("/draft/translation") && method === "POST") {
       calls.translation++;
       if (calls.translationDelay) await new Promise((resolve) => setTimeout(resolve, calls.translationDelay));
@@ -537,6 +540,150 @@ test("late quick reply pages cannot leak into a newly selected scope", async () 
     assert.equal(await picker.locator(".quick-reply-item").count(), 1);
     assert.equal(await picker.getByText("Personal reply 100").count(), 0);
   } finally { releasePageTwo(); await context.close(); }
+});
+
+test("long conversation and AI draft keep the header visible and composer at the viewport bottom", async () => {
+  const aiDraft = Array.from({ length: 24 }, (_, index) => `Reply ${index}: Your parcel is on its way. Please check the tracking details.`).join("\n");
+  for (const viewport of [{ width: 904, height: 892 }, { width: 1440, height: 900 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
+    const { context, page, calls } = await openWorkspace({ messageCount: 70, viewport, aiDraft, translationEnabled: true });
+    try {
+      await page.getByRole("link", { name: "Agent 管理", exact: true }).click();
+      await page.waitForURL("**/agents");
+      await page.getByRole("link", { name: "客服工作台", exact: true }).click();
+      await page.waitForURL("**/workspace");
+      await page.getByRole("heading", { name: "Alice", exact: true }).first().waitFor();
+      await page.locator(".message-scroll .message").last().getByRole("button", { name: "译成中文", exact: true }).click();
+      await page.locator(".message-scroll .message").last().locator(".message-translation").waitFor();
+      await page.getByRole("button", { name: "生成", exact: true }).click();
+      const draft = page.getByRole("textbox", { name: "回复内容" });
+      await page.waitForFunction((value) => document.querySelector('textarea[aria-label="回复内容"]')?.value === value, aiDraft);
+      await draft.click();
+      await draft.press("Control+End");
+      // 浏览器定位译文辅助文本时，也只能滚动消息列表，不能带走工作台标题和输入栏。
+      await page.locator(".message-translation .sr-only").last().scrollIntoViewIfNeeded();
+      const layout = await page.evaluate(() => {
+        const measure = (selector) => {
+          const node = document.querySelector(selector);
+          const box = node.getBoundingClientRect();
+          return { top: box.top, bottom: box.bottom, height: box.height, scrollTop: node.scrollTop, scrollHeight: node.scrollHeight, clientHeight: node.clientHeight };
+        };
+        return { grid: measure(".workspace-grid"), header: measure(".chat-heading"), composer: measure(".composer"), messages: measure(".message-scroll"), draft: measure(".composer textarea"), footer: measure(".workspace-composer-footer") };
+      });
+      assert.equal(layout.grid.scrollTop, 0, `outer workspace must not scroll: ${JSON.stringify({ viewport, layout })}`);
+      assert.equal(layout.grid.scrollHeight, layout.grid.clientHeight, `message overflow must stay within the history: ${JSON.stringify({ viewport, layout })}`);
+      assert.ok(layout.header.top >= 0, `conversation header must remain visible: ${JSON.stringify({ viewport, layout })}`);
+      assert.ok(Math.abs(layout.composer.bottom - layout.grid.bottom) <= 1, `composer must fill the viewport bottom: ${JSON.stringify({ viewport, layout })}`);
+      assert.ok(layout.messages.scrollHeight > layout.messages.clientHeight, "message history must have its own scroll area");
+      assert.ok(layout.messages.scrollTop > 0, "locating a translation must scroll the message history itself");
+      assert.ok(layout.draft.scrollHeight > layout.draft.clientHeight, "long drafts must scroll within the textarea");
+      assert.ok(layout.draft.scrollTop > 0, "moving to the draft end must scroll the textarea itself");
+      assert.ok(layout.footer.bottom <= layout.grid.bottom, "send controls must remain visible");
+      assert.equal(calls.send, 0);
+    } finally { await context.close(); }
+  }
+});
+
+test("expanded reply editor preserves complete drafts, keyboard editing and manual review in every viewport", async () => {
+  const aiDraft = Array.from({ length: 24 }, (_, index) => `Reply ${index}: Your parcel is on its way. Please check the tracking details.`).join("\n");
+  for (const viewport of [{ width: 904, height: 892 }, { width: 1440, height: 900 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
+    const { context, page, calls } = await openWorkspace({ messageCount: 70, viewport, aiDraft });
+    try {
+      await page.getByRole("button", { name: "生成", exact: true }).click();
+      const compact = page.getByRole("textbox", { name: "回复内容", exact: true });
+      await page.waitForFunction((value) => document.querySelector('textarea[aria-label="回复内容"]')?.value === value, aiDraft);
+      await page.getByRole("button", { name: "翻译", exact: true }).click();
+      await page.getByLabel("译文预览", { exact: true }).waitFor();
+      const compactLayout = await page.evaluate(() => ({ composer: document.querySelector(".composer").getBoundingClientRect().bottom, grid: document.querySelector(".workspace-grid").getBoundingClientRect().bottom, header: document.querySelector(".chat-heading").getBoundingClientRect().top }));
+      assert.ok(compactLayout.header >= 0 && compactLayout.composer <= compactLayout.grid + 1, `translation preview must stay within the workspace: ${JSON.stringify({ viewport, compactLayout })}`);
+      const expand = page.getByRole("button", { name: "展开编辑", exact: true });
+      await expand.click();
+      const dialog = page.getByRole("dialog", { name: "完整回复编辑", exact: true });
+      const editor = dialog.getByRole("textbox", { name: "完整草稿", exact: true });
+      await dialog.waitFor();
+      assert.equal(await editor.inputValue(), aiDraft);
+      assert.equal(await editor.evaluate((node) => getComputedStyle(node).whiteSpace), "pre-wrap");
+      assert.equal(await editor.evaluate((node) => document.activeElement === node), true);
+      assert.equal(await editor.evaluate((node) => node.scrollTop), 0, "opening the full editor must begin at the start of the reply");
+      for (let step = 0; step < 6; step++) {
+        await page.keyboard.press("Tab");
+        const focus = await dialog.evaluate((node) => ({ inside: node.contains(document.activeElement), tag: document.activeElement?.tagName, label: document.activeElement?.getAttribute("aria-label"), modal: node.matches(":modal"), hasFocus: document.hasFocus() }));
+        // 原生弹窗允许 Tab 进入浏览器控件，但不能进入被遮罩的工作台。
+        assert.ok(focus.modal && (focus.inside || (focus.tag === "BODY" && !focus.hasFocus)), `keyboard focus must not enter the background workspace: ${JSON.stringify({ step, focus })}`);
+      }
+      await dialog.getByText("完整译文预览", { exact: true }).click();
+      const translated = dialog.getByLabel("完整译文", { exact: true });
+      assert.equal(await translated.textContent(), `Translated: ${aiDraft}`);
+      assert.equal(await translated.evaluate((node) => getComputedStyle(node).whiteSpace), "pre-wrap");
+      const box = await dialog.boundingBox();
+      assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height, "expanded editor must remain inside the viewport");
+      const editorBox = await editor.boundingBox();
+      assert.ok(editorBox.height > Math.min(160, viewport.height / 4), `expanded editing must provide more room than the compact composer: ${JSON.stringify({ viewport, editorBox })}`);
+      const edited = `${aiDraft}\nEdited`;
+      await editor.fill(edited);
+      await editor.press("Control+End");
+      await editor.press("Enter");
+      assert.equal(await editor.inputValue(), `${edited}\n`, "Enter must insert a line break without opening send review");
+      assert.equal(await page.getByRole("dialog", { name: "审阅外发消息" }).count(), 0);
+      await editor.press("Escape");
+      await dialog.waitFor({ state: "hidden" });
+      assert.equal(await compact.inputValue(), `${edited}\n`);
+      assert.equal(await expand.evaluate((node) => document.activeElement === node), true);
+      await expand.click();
+      assert.equal(await editor.inputValue(), `${edited}\n`);
+      await dialog.getByRole("button", { name: "完成编辑", exact: true }).click();
+      await dialog.waitFor({ state: "hidden" });
+      await page.getByRole("button", { name: "选择发送方式" }).click();
+      await page.getByRole("menuitemradio", { name: "直接发送", exact: true }).click();
+      await page.getByRole("button", { name: "直接发送", exact: true }).click();
+      const review = page.getByRole("dialog", { name: "审阅外发消息" });
+      await review.waitFor();
+      assert.equal(await review.locator(".workspace-review-content p").textContent(), edited);
+      await review.getByRole("button", { name: "返回修改" }).click();
+      assert.equal(calls.send, 0);
+      assert.equal(await page.locator(".workspace-grid").evaluate((node) => node.scrollTop), 0);
+    } finally { await context.close(); }
+  }
+});
+
+test("oversized AI drafts stay complete and editable while translation and send review remain blocked", async () => {
+  const aiDraft = "Complete draft\n" + "Your parcel details remain available for review.\n".repeat(90);
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, aiDraft });
+  try {
+    await page.getByRole("button", { name: "生成", exact: true }).click();
+    const compact = page.getByRole("textbox", { name: "回复内容", exact: true });
+    await page.waitForFunction((value) => document.querySelector('textarea[aria-label="回复内容"]')?.value === value, aiDraft);
+    assert.equal(await compact.inputValue(), aiDraft, "AI content must never be silently truncated at the platform limit");
+    await page.locator(".composer").getByRole("alert").filter({ hasText: /2000.*精简/ }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "翻译", exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "翻译后发送", exact: true }).isDisabled(), true);
+    await compact.press("Enter");
+    assert.equal(await page.getByRole("dialog", { name: "审阅外发消息" }).count(), 0);
+    assert.equal(calls.translation, 0);
+    await page.getByRole("button", { name: "展开编辑", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "完整回复编辑", exact: true });
+    const editor = dialog.getByRole("textbox", { name: "完整草稿", exact: true });
+    assert.equal(await editor.inputValue(), aiDraft);
+    await dialog.getByRole("alert").filter({ hasText: /2000.*精简/ }).waitFor();
+    await editor.press("Control+End");
+    await editor.press("End");
+    await editor.press("X");
+    assert.equal(await editor.inputValue(), `${aiDraft}X`, "editing an oversized draft must retain every character");
+    await editor.press("Escape");
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(await compact.inputValue(), `${aiDraft}X`);
+    await page.getByRole("button", { name: "展开编辑", exact: true }).click();
+    await editor.fill("R".repeat(2000));
+    await dialog.getByRole("button", { name: "完成编辑", exact: true }).click();
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(await page.locator(".composer").getByRole("alert").count(), 0);
+    await page.getByRole("button", { name: "选择发送方式" }).click();
+    await page.getByRole("menuitemradio", { name: "直接发送", exact: true }).click();
+    await compact.press("Enter");
+    const review = page.getByRole("dialog", { name: "审阅外发消息" });
+    await review.waitFor();
+    assert.equal((await review.locator(".workspace-review-content p").textContent()).length, 2000);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
 });
 
 test("conversation opens at newest message and offers a return button while reading history", async () => {

@@ -111,7 +111,8 @@ async def test_entry_outer_deadline_persists_partial_tool_metadata(monkeypatch, 
             router=SimpleNamespace(),
             aggregator=SimpleNamespace(),
             worker=worker,
-            deadline=kwargs["deadline"],
+            # 此例专测入口外层取消，避免内外同一时刻到期导致竞态改走正常超时返回。
+            deadline=kwargs["deadline"] + 1,
             max_catalog_tokens=1000,
             progress=kwargs["progress"],
         )

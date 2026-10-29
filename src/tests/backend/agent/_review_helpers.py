@@ -15,6 +15,7 @@ def accepted_review_turn(messages) -> ToolTurn:
             "evidence_ids": list(payload["evidence"]),
             "reason_code": "supported",
             "privacy_reviewed": True,
+            "output_rewrite_required": False,
             "redactions": [],
         },
     )

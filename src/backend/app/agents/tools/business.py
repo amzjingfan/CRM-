@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -11,6 +12,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.core.security import EVALUATION_SECRET_PATTERN
 from app.agents.runtime.snapshot import RunSnapshot
 from app.agents.safety.input import prepare_untrusted_text
 from app.agents.tools.access import current_permissions
@@ -25,6 +27,7 @@ from app.agents.tools.arguments import (
     ProductSearchArguments,
     ProductSelectionArguments,
 )
+from app.agents.tools.business_identifiers import BUSINESS_IDENTIFIER_PATHS, safe_business_identifier
 from app.agents.tools.metadata import TOOL_METADATA
 from app.agents.tools.product_facts import product_facts
 from app.audit.models import AuditLog
@@ -48,18 +51,28 @@ from app.workspace.sidebar import (
     search_store_products,
 )
 
+_CREDENTIAL_VALUE = re.compile(r"[A-Za-z0-9._~+/=-]{8,}")
+
 
 def safe_text(value: str | None) -> str | None:
     if not value:
         return value
+    # 复用生产凭证语法，但标签后必须带值，避免仅提及 Token/API key 就隐藏业务文字。
+    if any(
+        match.group().lower().startswith("bearer") or _CREDENTIAL_VALUE.match(value[match.end() :].lstrip())
+        for match in EVALUATION_SECRET_PATTERN.finditer(value)
+    ):
+        return "[敏感内容已隐藏]"
     try:
         return prepare_untrusted_text(value, source="tool_result").text
     except AppError:
         return "[敏感内容已隐藏]"
 
 
-def safe_data(value: object) -> object:
+def safe_data(value: object, path: tuple[str, ...] = ()) -> object:
     """只处理调用方已经按字段白名单构造的数据；不处理原始平台响应。"""
+    if path in BUSINESS_IDENTIFIER_PATHS:
+        return safe_business_identifier(value)
     if isinstance(value, str):
         return safe_text(value)
     if isinstance(value, datetime):
@@ -67,10 +80,12 @@ def safe_data(value: object) -> object:
     if isinstance(value, Decimal):
         return str(value)
     if isinstance(value, list | tuple):
-        return [safe_data(item) for item in value]
+        return [safe_data(item, (*path, "*")) for item in value]
     if isinstance(value, dict):
         return {
-            str(key): item if key in {"order_ref", "product_ref", "return_ref", "next_page_ref"} else safe_data(item)
+            str(key): item
+            if key in {"order_ref", "product_ref", "return_ref", "next_page_ref"}
+            else safe_data(item, (*path, str(key)))
             for key, item in value.items()
         }
     return value
@@ -288,6 +303,8 @@ class AgentBusinessExecutor:
     def order_facts(self, order: SidebarOrder) -> dict[str, object]:
         return {
             "order_ref": self.order_ref(order),
+            "order_number": order.external_order_id,
+            "tracking_number": order.tracking_number,
             "status": order.status,
             "payment_status": order.payment_status,
             "currency": order.currency,
@@ -297,6 +314,8 @@ class AgentBusinessExecutor:
             "items": [
                 {
                     "name": item.name,
+                    "product_number": item.product_id,
+                    "sku_number": item.sku_id,
                     "sku": item.sku,
                     "specification": item.sku_name,
                     "quantity": item.quantity,
@@ -328,6 +347,7 @@ class AgentBusinessExecutor:
         candidates = [
             {
                 "order_ref": self.order_ref(order),
+                "order_number": order.external_order_id,
                 "status": order.status,
                 "ordered_at": order.ordered_at,
                 "total_amount": order.total_amount,
@@ -407,7 +427,9 @@ class AgentBusinessExecutor:
             if ref in self.products and self.products[ref] != product.id:
                 raise AppError(ErrorCode.RESOURCE_CONFLICT, "商品候选引用冲突，请重试", 409)
             self.products[ref] = product.id
-            candidates.append({"product_ref": ref, "title": product.title, "status": product.status})
+            candidates.append(
+                {"product_ref": ref, "product_number": product.id, "title": product.title, "status": product.status}
+            )
         return {
             "products": candidates,
             "platform_total_count": result.total_count,
@@ -441,6 +463,8 @@ class AgentBusinessExecutor:
         if not get_settings().real_tiktok_read_enabled:
             return {
                 "order_ref": self.order_ref(order),
+                "order_number": order.external_order_id,
+                "tracking_number": order.tracking_number,
                 "tracking_status": order.tracking_status,
                 "tracking_source": "crm_local_snapshot",
                 "packages": [],
@@ -506,6 +530,7 @@ class AgentBusinessExecutor:
         package_page, next_package = _bounded_facts_page(package_facts, args.package_offset, 4000)
         return {
             "order_ref": self.order_ref(order),
+            "order_number": order.external_order_id,
             "enhanced": args.enhanced,
             "enhanced_available": detail.enhanced_tracking_available,
             "packages": package_page,
@@ -564,6 +589,7 @@ class AgentBusinessExecutor:
             rows.append(row)
         return {
             "order_ref": self.order_ref(order),
+            "order_number": order.external_order_id,
             "returns": rows,
             "records_selection_required": args.include_records and args.return_ref is None and len(cases) > 1,
             "next_detail_page": args.page + 1 if has_more_details else None,

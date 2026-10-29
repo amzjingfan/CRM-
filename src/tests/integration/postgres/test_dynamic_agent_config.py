@@ -17,6 +17,57 @@ from app.stores.models import Store
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="未提供隔离的 PostgreSQL 测试数据库")
 
+
+@pytest.mark.asyncio
+async def test_publish_refreshes_preloaded_draft_after_another_transaction_updates(monkeypatch):
+    from app.agents.management import service
+
+    engine = create_async_engine(TEST_DATABASE_URL)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    store = Store(id=uuid.uuid4(), name="并发发布测试", code=f"agent-publish-race-{uuid.uuid4().hex}")
+    store_id = store.id
+    config = AgentConfig(
+        id=uuid.uuid4(),
+        store_id=store.id,
+        name="原稿",
+        code="race",
+        draft_revision=1,
+        draft_model_provider="deepseek",
+        draft_model_name="deepseek-v4-flash",
+        draft_prompt_sections=SECTIONS,
+    )
+    review = AsyncMock(return_value=(3, 1))
+    monkeypatch.setattr(service, "review_configured_prompt", review)
+    monkeypatch.setattr(service, "get_settings", lambda: SimpleNamespace())
+    monkeypatch.setattr(service, "validate_tool_model", lambda *_: None)
+    try:
+        async with sessions() as session:
+            session.add(store)
+            await session.flush()
+            session.add(config)
+            await session.commit()
+            assert await session.get(AgentConfig, config.id) is config
+            async with sessions() as writer:
+                changed = await writer.get(AgentConfig, config.id)
+                changed.draft_revision = 2
+                changed.draft_prompt_sections = {**SECTIONS, "identity": "新稿"}
+                await writer.commit()
+            try:
+                with pytest.raises(AppError) as error:
+                    await service.publish_agent(
+                        session, store_id=store.id, config_id=config.id, expected_revision=1, publisher_id=None
+                    )
+                assert error.value.status_code == 409
+                review.assert_not_awaited()
+            finally:
+                await session.rollback()
+    finally:
+        async with sessions() as cleanup:
+            await cleanup.execute(delete(Store).where(Store.id == store_id))
+            await cleanup.commit()
+        await engine.dispose()
+
+
 SECTIONS = {
     "identity": "你是本店物流专员。",
     "service_scope": "只解释订单物流，不承诺送达。",
@@ -108,6 +159,7 @@ async def test_published_agent_version_is_immutable_and_rejects_stale_revision(
                     llm_fallback_model=None,
                 ),
             )
+            monkeypatch.setattr(service, "review_configured_prompt", AsyncMock(return_value=(11, 2)))
             first = await service.publish_agent(
                 session,
                 store_id=store.id,
@@ -241,6 +293,7 @@ async def test_saved_draft_publishes_exact_revision_and_keeps_prior_version(
             )
             assert saved.draft_revision == 2
             assert saved.prompt_sections == SECTIONS
+            monkeypatch.setattr(publish_service, "review_configured_prompt", AsyncMock(return_value=(11, 2)))
             first = await publish_service.publish_agent(
                 session,
                 store_id=store.id,

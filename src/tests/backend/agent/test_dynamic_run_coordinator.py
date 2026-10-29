@@ -30,7 +30,9 @@ async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion
             agent_type="service",
             model_provider="deepseek",
             model_name="deepseek-chat",
-            prompt_sections=MappingProxyType({}),
+            prompt_sections=MappingProxyType(
+                {"language_format": f"{name}: follow buyer language; plain text; match requested detail"}
+            ),
             prompt_hash="hash",
             tool_names=(),
             file_ids=(),
@@ -61,6 +63,12 @@ async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion
     async def aggregate_model(*, messages, tools, max_output_tokens):
         if tools:
             return accepted_review_turn(messages)
+        import json
+
+        payload = json.loads(messages[1]["content"])
+        assert set(payload["published_output_policies"]) == {
+            agent.prompt_sections["language_format"] for agent in agents
+        }
         return ToolTurn(
             "已查询订单和物流，请坐席复核。",
             (),

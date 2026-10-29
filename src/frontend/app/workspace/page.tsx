@@ -8,6 +8,7 @@ import { MessageBubble } from "../../components/MessageBubble";
 import { buyerAvatarText } from "../../lib/message-display";
 import { stageFromOrders, stageLabel } from "../../lib/buyer-stage";
 import { QuickReplyPicker } from "../../components/QuickReplyPicker";
+import { ReplyDraftEditor } from "../../components/ReplyDraftEditor";
 import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
@@ -402,10 +403,15 @@ export default function WorkspacePage() {
   }
 
   const messageLimit = 2000;
+  const draftExceedsLimit = draft.length > messageLimit;
   const activeSendChoice: SendChoice = detail?.draft_translation_enabled ? sendChoice : "direct";
 
   async function submitMessage(content: string, key: string, sessionId: string) {
     if (!selectedId || selectedId !== sessionId || !content.trim() || sending) return;
+    if (content.length > messageLimit) {
+      setAnnouncement(en ? "Message exceeds the sending limit" : "消息超过发送字数上限");
+      return;
+    }
     if (!detail || detail.send_mode === "disabled") {
       setAnnouncement(en ? "Message delivery is disabled" : "当前平台消息发送已关闭");
       return;
@@ -464,7 +470,7 @@ export default function WorkspacePage() {
   }
 
   async function previewTranslation(): Promise<string | null> {
-    if (!selectedId || !draft.trim() || previewLoading || !detail?.draft_translation_enabled) return null;
+    if (!selectedId || !draft.trim() || draftExceedsLimit || previewLoading || !detail?.draft_translation_enabled) return null;
     const requestId = ++previewRequestId.current;
     const sessionId = selectedId;
     const source = draft;
@@ -490,6 +496,11 @@ export default function WorkspacePage() {
       return;
     }
     if (!selectedId || !detail || !draft.trim() || detail.send_mode === "disabled" || sending) return;
+    // 超限原稿先由坐席精简，不能通过翻译或键盘入口绕过平台限制。
+    if (draftExceedsLimit) {
+      setAnnouncement(en ? `Draft exceeds ${messageLimit} characters; shorten it before review.` : `草稿超过 ${messageLimit} 字，请精简后再审阅发送。`);
+      return;
+    }
     const sessionId = selectedId;
     const source = draft;
     const language = replyLanguage;
@@ -733,13 +744,14 @@ export default function WorkspacePage() {
         {emojiOpen ? <div aria-label={en ? "Choose emoji" : "选择表情"} className="workspace-emoji-picker" ref={emojiPickerRef} role="menu">{replyEmojis.map((emoji) => <button aria-label={emoji} key={emoji} onClick={() => { setDraft(`${draft}${emoji}`); setEmojiOpen(false); }} role="menuitem" type="button">{emoji}</button>)}</div> : null}
         {composerNotice ? <p className="workspace-composer-notice" role="status">{composerNotice}</p> : null}
         {quickReplyOpen ? <QuickReplyPicker en={en} favoritesOnly={quickReplyFavoritesOnly} initialQuery={quickReplyQuery} onClose={() => setQuickReplyOpen(false)} onDraft={(text) => applyQuickReply(text, false)} onReview={(text) => applyQuickReply(text, true)} storeId={detail.session.store_id} /> : null}
-        {cardDraft ? <div className="workspace-card-draft"><TrackingCard card={cardDraft.card} en={en} enhancedAvailable={cardDraft.enhancedAvailable} packages={cardDraft.packages} selected={cardDraft.selected} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} /><button className="text-button" onClick={() => { setCardDrafts((current) => ({ ...current, [detail.session.id]: undefined })); setCardReview(null); }} type="button">{en ? "Remove card" : "移除卡片"}</button></div> : <textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} maxLength={messageLimit} onChange={(event) => updateComposerDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a message, Enter to review, Shift+Enter for a new line" : "请输入消息，Enter 进入发送审阅 / Shift+Enter 换行")} value={draft} />}
+        {cardDraft ? <div className="workspace-card-draft"><TrackingCard card={cardDraft.card} en={en} enhancedAvailable={cardDraft.enhancedAvailable} packages={cardDraft.packages} selected={cardDraft.selected} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} /><button className="text-button" onClick={() => { setCardDrafts((current) => ({ ...current, [detail.session.id]: undefined })); setCardReview(null); }} type="button">{en ? "Remove card" : "移除卡片"}</button></div> : <textarea aria-label={en ? "Reply content" : "回复内容"} disabled={detail.send_mode === "disabled"} onChange={(event) => updateComposerDraft(event.target.value)} onKeyDown={composerKey} placeholder={detail.send_mode === "disabled" ? (en ? "Message delivery is disabled" : "当前平台消息发送已关闭") : (en ? "Type a message, Enter to review, Shift+Enter for a new line" : "请输入消息，Enter 进入发送审阅 / Shift+Enter 换行")} value={draft} />}
+        {!cardDraft && draftExceedsLimit ? <p className="workspace-draft-limit" role="alert">{en ? `Draft exceeds ${messageLimit} characters; shorten before review or sending.` : `草稿超过 ${messageLimit} 字，请精简后再审阅发送。`}</p> : null}
         {previewError ? <p className="workspace-translation-error" role="alert">{previewError}</p> : null}
         {preview && preview.sessionId === selectedId && preview.source === draft && preview.language === replyLanguage ? <div className="workspace-translation-preview" aria-label={en ? "Translation preview" : "译文预览"}><strong>{en ? "Translation preview · review before sending" : "译文预览 · 发送前请核对"}</strong><p>{preview.content}</p><small>{en ? "Original draft" : "原始草稿"}：{draft}</small></div> : null}
         {failedDraft?.sessionId === selectedId ? <button className="text-button text-red-600" onClick={() => setReview({ sessionId: failedDraft.sessionId, source: failedDraft.content, language: "original", content: failedDraft.content, key: failedDraft.key })} type="button">{en ? "Request interrupted; review exact retry" : "请求中断，审阅原内容后重试"}</button> : null}
         {failedCard?.sessionId === selectedId && failedCard.draft === cardDraft ? <button className="text-button text-red-600" onClick={() => setCardReview(failedCard)} type="button">{en ? "Request interrupted; review exact card retry" : "请求中断，审阅原卡片后重试"}</button> : null}
         <div className="workspace-composer-footer" ref={composerMenusRef}>
-          <small className="workspace-composer-count">{cardDraft ? (en ? "Logistics card · review before sending" : "物流卡片 · 确认后发送") : `${draft.length}/${messageLimit}`}</small>
+          <div className="workspace-composer-summary"><small className="workspace-composer-count">{cardDraft ? (en ? "Logistics card · review before sending" : "物流卡片 · 确认后发送") : `${draft.length}/${messageLimit}`}</small><ReplyDraftEditor disabled={!!cardDraft || detail.send_mode === "disabled"} draft={draft} en={en} key={detail.session.id} limit={messageLimit} onChange={setDraft} translation={preview?.sessionId === selectedId && preview.source === draft && preview.language === replyLanguage ? preview.content : undefined} /></div>
           <div className="workspace-composer-actions">
             <div className="workspace-menu-anchor">
               <button aria-expanded={languageMenuOpen} aria-haspopup="menu" aria-label={en ? "Target language" : "目标语言"} className="workspace-toolbar-button" disabled={!!cardDraft || !detail.draft_translation_enabled || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(!languageMenuOpen); setSendMenuOpen(false); }} type="button">{replyLanguages.find((item) => item.value === replyLanguage)?.[en ? "en" : "zh"]}<CaretDown size={14} /></button>
@@ -749,9 +761,9 @@ export default function WorkspacePage() {
                 {moreLanguagesOpen ? <div aria-label={en ? "More target languages" : "更多目标语言"} className="workspace-more-languages" data-side={moreLanguagesLeft ? "left" : "right"} role="menu">{replyLanguages.slice(2).map((item) => <button aria-checked={replyLanguage === item.value} key={item.value} onClick={() => { setReplyLanguage(item.value as DraftTargetLanguage); setLanguageMenuOpen(false); setMoreLanguagesOpen(false); }} role="menuitemradio" type="button">{en ? item.en : item.zh}</button>)}</div> : null}
               </div> : null}
             </div>
-            <button className="workspace-toolbar-button" disabled={!!cardDraft || !draft.trim() || previewLoading || !detail.draft_translation_enabled || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(false); setMoreLanguagesOpen(false); setSendMenuOpen(false); void previewTranslation(); }} type="button">{previewLoading ? (en ? "Translating…" : "翻译中…") : (en ? "Translate" : "翻译")}</button>
+            <button className="workspace-toolbar-button" disabled={!!cardDraft || !draft.trim() || draftExceedsLimit || previewLoading || !detail.draft_translation_enabled || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(false); setMoreLanguagesOpen(false); setSendMenuOpen(false); void previewTranslation(); }} type="button">{previewLoading ? (en ? "Translating…" : "翻译中…") : (en ? "Translate" : "翻译")}</button>
             <div className="workspace-menu-anchor workspace-send-split">
-              <button className="workspace-send-main" disabled={(!cardDraft && !draft.trim()) || sending || previewLoading || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(false); setMoreLanguagesOpen(false); setSendMenuOpen(false); void openReview(activeSendChoice); }} type="button">{sending ? (en ? "Sending…" : "发送中…") : cardDraft ? (en ? "Send logistics card" : "发送物流卡片") : activeSendChoice === "direct" ? (en ? "Send directly" : "直接发送") : (en ? "Translate & send" : "翻译后发送")}</button>
+              <button className="workspace-send-main" disabled={(!cardDraft && (!draft.trim() || draftExceedsLimit)) || sending || previewLoading || detail.send_mode === "disabled"} onClick={() => { setLanguageMenuOpen(false); setMoreLanguagesOpen(false); setSendMenuOpen(false); void openReview(activeSendChoice); }} type="button">{sending ? (en ? "Sending…" : "发送中…") : cardDraft ? (en ? "Send logistics card" : "发送物流卡片") : activeSendChoice === "direct" ? (en ? "Send directly" : "直接发送") : (en ? "Translate & send" : "翻译后发送")}</button>
               <button aria-expanded={sendMenuOpen} aria-haspopup="menu" aria-label={en ? "Choose send mode" : "选择发送方式"} className="workspace-send-toggle" disabled={!!cardDraft || sending || detail.send_mode === "disabled"} onClick={() => { setSendMenuOpen(!sendMenuOpen); setLanguageMenuOpen(false); }} type="button"><CaretDown size={14} /></button>
               {sendMenuOpen ? <div aria-label={en ? "Send mode options" : "发送方式选项"} className="workspace-popover workspace-send-menu" role="menu">
                 <button aria-checked={activeSendChoice === "direct"} onClick={() => { setSendChoice("direct"); setSendMenuOpen(false); }} role="menuitemradio" type="button">{en ? "Send directly" : "直接发送"}</button>

@@ -34,13 +34,19 @@ def test_config_accepts_all_catalog_names_but_rejects_unknown_names() -> None:
 
 
 def test_selection_uses_candidate_refs_not_trusted_identifiers() -> None:
-    from app.agents.tools.arguments import OrderSelectionArguments
+    from app.agents.tools.arguments import OrderSelectionArguments, ProductSelectionArguments
 
     assert OrderSelectionArguments(order_ref="o1").order_ref == "o1"
     with pytest.raises(ValidationError):
         OrderSelectionArguments(order_id="other-store")
     with pytest.raises(ValidationError):
         OrderSelectionArguments(order_ref="1234567890123456789")
+    with pytest.raises(ValidationError):
+        OrderSelectionArguments(order_number="5764296284738123456")
+    with pytest.raises(ValidationError):
+        ProductSelectionArguments(product_ref="1729382256910270465")
+    with pytest.raises(ValidationError):
+        ProductSelectionArguments(product_ref="p1", product_number="1729382256910270465")
 
 
 @pytest.mark.asyncio

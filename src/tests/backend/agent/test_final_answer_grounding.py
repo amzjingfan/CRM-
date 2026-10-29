@@ -39,6 +39,7 @@ class ReviewedModel:
                 "evidence_ids": list(payload["evidence"]) if self.supported else [],
                 "reason_code": "supported" if self.supported else "unsupported",
                 "privacy_reviewed": True,
+                "output_rewrite_required": False,
                 "redactions": [],
             },
         )

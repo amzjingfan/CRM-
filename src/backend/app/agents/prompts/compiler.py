@@ -5,7 +5,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from app.agents.core.security import PromptSafetyState, evaluate_prompt_safety
 from app.agents.prompts.sections import SECTION_TITLES
 from app.shared.exceptions.errors import AppError, ErrorCode
 
@@ -30,7 +29,7 @@ class CompiledPrompt:
 
 
 def compile_prompt(sections: Mapping[str, str]) -> CompiledPrompt:
-    """七段完整且无明显敏感资料时，按固定顺序附加平台安全策略。"""
+    """仅编译七段结构和哈希；自然语言的隐私复核在发布服务执行。"""
     keys = {key for key, _ in SECTION_TITLES}
     if set(sections) != keys:
         raise AppError(ErrorCode.VALIDATION_ERROR, "系统提示词必须包含且仅包含七个指定段落", 422)
@@ -40,9 +39,6 @@ def compile_prompt(sections: Mapping[str, str]) -> CompiledPrompt:
         if not isinstance(value, str) or not value.strip() or len(value) > 4000:
             raise AppError(ErrorCode.VALIDATION_ERROR, "系统提示词段落不能为空或超过长度限制", 422)
         value = value.strip()
-        decision = evaluate_prompt_safety(value)
-        if decision.state == PromptSafetyState.BLOCKED or decision.sanitized_text != value:
-            raise AppError(ErrorCode.VALIDATION_ERROR, "系统提示词包含不可发布的敏感资料", 422)
         normalized[key] = value
     parts = [f"[平台安全策略 {PLATFORM_POLICY_VERSION}]\n{PLATFORM_POLICY}", "[以下为店铺发布的业务配置]"]
     parts.extend(f"{index}. {title}\n{normalized[key]}" for index, (key, title) in enumerate(SECTION_TITLES, 1))

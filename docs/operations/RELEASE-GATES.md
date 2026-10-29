@@ -1,6 +1,6 @@
 # 真实环境发布门禁
 
-2026-10-29 详细工具回答续作正在 VERIFYING 前收尾，当前源码与发布候选尚未提交/部署。语义脱敏、失败轨迹和人工建议发布模式的验证以本轮最终 IR/TR/RR 为准；前次 R03 的失败结论保留历史边界，不表示本轮修复已在运行服务生效。production G8 仍 No-Go。
+2026-10-29 第二批本地门禁通过，subject `ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba`；新候选未部署。后端2514/3与新增统计8、前端52/105、真实候选5/5、输出语义14+1补测及配置16复用见[TR R05](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R05.md)。用户要求等待明确批准才部署/发布v4，staging仍e3fc，production G8 No-Go。
 
 2026-10-29 统一 Agent 与多店授权发布仅关闭此次 staging 镜像/迁移/入口检查，`45d872c0` 的 041、12 容器、备份和公网项通过。Agent 两条真实业务请求未通过，文件 RAG/真实新店 OAuth 未验收；MVP-AGENT-STAGING-DEPLOY-001 保持 VERIFYING，production G8 继续 No-Go，不将本地或供应商协议探针计为全链路放行。见[TR R03](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R03.md)。
 

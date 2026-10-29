@@ -20,7 +20,8 @@ def test_product_facts_preserve_attributes_brand_and_description_without_script(
     assert result["brand"] == "Demo"
     assert result["attributes"][0]["values"] == ["Latex"]
     assert "20 lb." in result["description"]
-    assert "untrustedScript" not in str(result) and "platform-id" not in str(result)
+    assert "untrustedScript" not in str(result)
+    assert result["product_number"] == "platform-id"
 
 
 def test_long_product_description_is_explicitly_paged_without_losing_text() -> None:

@@ -34,6 +34,13 @@ class RunProgress:
 
     route: RoutePlan = field(default_factory=lambda: RoutePlan((), 0, 0, 0))
     specialists: tuple[SpecialistResult, ...] = ()
+    aggregate_input_tokens: int = 0
+    aggregate_output_tokens: int = 0
+
+    def capture_aggregate_usage(self, input_tokens: int, output_tokens: int) -> None:
+        """每轮完成即记录数值，后续外层取消也不丢失已知用量。"""
+        self.aggregate_input_tokens += input_tokens
+        self.aggregate_output_tokens += output_tokens
 
     def capture(self, results: tuple[SpecialistResult, ...]) -> None:
         self.specialists = tuple(
@@ -53,7 +60,15 @@ class RunProgress:
             RunPhase.TIMEOUT if reason == "deadline_exceeded" else RunPhase.REVIEW_REQUIRED,
             self.route,
             self.specialists,
-            ReviewedSuggestion(None, "human_review", reason, tuple(item.agent_id for item in self.specialists), ()),
+            ReviewedSuggestion(
+                None,
+                "human_review",
+                reason,
+                tuple(item.agent_id for item in self.specialists),
+                (),
+                self.aggregate_input_tokens,
+                self.aggregate_output_tokens,
+            ),
             reason,
         )
 
@@ -149,6 +164,12 @@ async def execute_dynamic_run(
             for agent in snapshot.published_agents
             if any(item.agent_id == agent.id for item in specialists) and "compliance" in agent.prompt_sections
         ),
+        output_policies=tuple(
+            agent.prompt_sections["language_format"]
+            for agent in snapshot.published_agents
+            if any(item.agent_id == agent.id for item in specialists) and "language_format" in agent.prompt_sections
+        ),
+        on_usage=progress.capture_aggregate_usage if progress is not None else None,
     )
     phase = (
         RunPhase.REVIEW_READY

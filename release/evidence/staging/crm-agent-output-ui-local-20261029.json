@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "evidence_type": "local_candidate_readiness",
+  "generated_at": "2026-10-29T17:11:09+08:00",
+  "task_id": "MVP-AGENT-STAGING-DEPLOY-001",
+  "subject_sha": "ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba",
+  "base_sha": "e3fcbd1a7df18ab5d5df7b64e45b65e02c93773e",
+  "application_validation_source_sha": "fa18072e9ab550ffe33627f107cb91c3e0bbd756",
+  "app_tree_sha": "32466bf50d8f3662dd7ac86c201ee9a53da7758c",
+  "same_app_source": true,
+  "backend": {
+    "full_passed": 2514,
+    "platform_skipped": 3,
+    "full_source_sha": "fa18072e9ab550ffe33627f107cb91c3e0bbd756",
+    "new_evaluation_reporting_tests_passed": 8,
+    "new_tests_source_sha": "ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba",
+    "single_combined_2522_run_claimed": false,
+    "ruff_files": 437,
+    "mypy_files": 255,
+    "lock_passed": true
+  },
+  "frontend": {
+    "contract_passed": 52,
+    "browser_passed": 105,
+    "lint_errors": 0,
+    "existing_lint_warnings": 8,
+    "typecheck_passed": true,
+    "production_image_build_passed": true,
+    "source_sha": "fa18072e9ab550ffe33627f107cb91c3e0bbd756",
+    "same_frontend_tree": true
+  },
+  "deterministic": {
+    "dynamic": {
+      "gate": "dynamic_agent_contract_v1",
+      "dataset_sha256": "5d2794b04ed7fac51ac318a1114398745a1ecde21207f1f6dc5113935637e77e",
+      "sample_count": 16,
+      "failed_case_ids": [],
+      "passed": true,
+      "live_model_evaluation": false,
+      "semantic_routing_accuracy_measured": false,
+      "platform_send_count": 0
+    },
+    "shared_legacy_safety": {
+      "gate": "deterministic_safety_gate",
+      "sample_count": 237,
+      "safety_accuracy": 1.0,
+      "reason_code_accuracy": 1.0,
+      "unsafe_escape_count": 0,
+      "failed_case_ids": [],
+      "passed": true,
+      "live_model_evaluation": false
+    }
+  },
+  "candidate_live": {
+    "execution": "isolated_process_with_authorized_real_context",
+    "source_sha": "fa18072e9ab550ffe33627f107cb91c3e0bbd756",
+    "draft_only_not_published": true,
+    "passed": 5,
+    "total": 5,
+    "outbound_delta": 0,
+    "cases": [
+      {
+        "case": "order_list_en",
+        "trace": "candidate-final-465cc35e-83b7-479f-be1d-6cbcfa549efb",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 1638,
+        "passed": true,
+        "order_number_present": true,
+        "tracking_number_present": true,
+        "no_markdown": true,
+        "no_privacy_placeholder": true,
+        "no_internal_technical": true,
+        "send_performed": false
+      },
+      {
+        "case": "order_detail_en",
+        "trace": "candidate-final-8c80d0c5-81ff-48d1-8556-f0660480bbd1",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 1715,
+        "passed": true,
+        "order_number_present": true,
+        "tracking_number_present": true,
+        "no_markdown": true,
+        "no_privacy_placeholder": true,
+        "no_internal_technical": true,
+        "send_performed": false
+      },
+      {
+        "case": "full_logistics_en",
+        "trace": "candidate-final-d4860830-3abe-4d0b-b454-cf05e1504d65",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 1834,
+        "passed": true,
+        "order_number_present": true,
+        "tracking_number_present": true,
+        "no_markdown": true,
+        "no_privacy_placeholder": true,
+        "no_internal_technical": true,
+        "send_performed": false
+      },
+      {
+        "case": "simple_logistics_en",
+        "trace": "candidate-final-17a93216-2338-44b6-8f67-1488bd137739",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 465,
+        "passed": true,
+        "order_number_present": true,
+        "tracking_number_present": true,
+        "no_markdown": true,
+        "no_privacy_placeholder": true,
+        "no_internal_technical": true,
+        "send_performed": false
+      },
+      {
+        "case": "formal_fixture_en",
+        "trace": "candidate-final-formal-f0f29434-fe56-42ec-8cd0-e42e4a337435",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 1745,
+        "passed": true,
+        "order_number_present": true,
+        "tracking_number_present": true,
+        "no_markdown": true,
+        "no_privacy_placeholder": true,
+        "no_internal_technical": true,
+        "send_performed": false
+      }
+    ],
+    "logistics": {
+      "source_event_count": 8,
+      "source_package_count": 1,
+      "description_present_count": 8,
+      "date_and_clock_present_count": 8,
+      "seconds_clock_present_count": 0,
+      "source_events_with_nonzero_seconds": 2,
+      "all_event_descriptions_and_times_present": true,
+      "explicit_utc_or_zero_offset": true,
+      "order_literal_matches": true,
+      "tracking_literal_matches": true
+    },
+    "persisted_usage_matches_sdk": true
+  },
+  "output_semantics": {
+    "prompt_version": "agent-evidence-review-v2.3.0",
+    "parent_dataset_sha256": "b166e777b7dadcd09340e9862b193c43cb4e8e8ce183358cd742f29b99a1bc99",
+    "initial_completed": 14,
+    "initial_infrastructure_incomplete": 1,
+    "initial_15_pass_print_was_incorrect": true,
+    "single_retest_source_sha": "ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba",
+    "single_retest": {
+      "probe": "synthetic_eval",
+      "candidate": "ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba",
+      "cli_live": true,
+      "parent_dataset_sha256": "b166e777b7dadcd09340e9862b193c43cb4e8e8ce183358cd742f29b99a1bc99",
+      "selected_case_id": "unknown-order-identifier",
+      "dataset_sha256": "60bece15975191e73651bdfc41f3a1e23e9939119cb2d01074f6f060bf251d55",
+      "prompt_version": "agent-evidence-review-v2.3.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4-flash",
+      "results": [
+        {
+          "id": "unknown-order-identifier",
+          "passed": true,
+          "supported": false,
+          "answer_length": 0,
+          "semantic_review_completed": true,
+          "reason": "answer_not_grounded"
+        }
+      ],
+      "passed": true,
+      "send_performed": false
+    },
+    "coverage": {
+      "original_completed": 14,
+      "new_single_completed": 1,
+      "covered_distinct_cases": 15,
+      "parent_case_count": 15,
+      "single_full_15_run_claimed": false,
+      "same_app_source": true,
+      "other_14_not_rerun": true,
+      "same_original_question_expectations": true
+    },
+    "timed_out_attempt_token_usage_unknown": true
+  },
+  "configuration_semantics": {
+    "passed": 16,
+    "total": 16,
+    "source_sha": "3e1594043fed6aecb9d7bb96295c29c63e6599b4",
+    "helper_and_script_and_dataset_identical_to_subject": true,
+    "cli_outer_exit": 0,
+    "dataset_sha256": "4c4b68be7056b91446bd1fc8bdf1693d116388c94f0f3502ee33779f554558fc"
+  },
+  "local_images": {
+    "source_sha": "fa18072e9ab550ffe33627f107cb91c3e0bbd756",
+    "backend_id": "sha256:3c6cf8d80dcbc19d3de5be9a89a53d07410b1c30ab7aac67911a35a9c2a3d23d",
+    "frontend_id": "sha256:7b38f2ab5f29208f1b2ba56291aa33621ad882da5fa3ab5552db6da562f37f5f",
+    "platform": "linux/amd64",
+    "production_import_smoke": true,
+    "registry_push_performed": false
+  },
+  "security": {
+    "frontend_audit_vulnerabilities": 0,
+    "new_markdown_dependencies_reported_vulnerabilities": 0,
+    "backend_audit_existing_finding": "Mako 1.4.1 / CVE-2026-102991; Windows TemplateLookup URI issue; no user-controlled template lookup found in this application; production image Linux; not introduced by this change"
+  },
+  "deployment": {
+    "performed": false,
+    "requires_new_user_approval": true,
+    "running_source_sha": "e3fcbd1a7df18ab5d5df7b64e45b65e02c93773e",
+    "agent_published_version": 3,
+    "new_draft_published": false,
+    "test_fixture_retained_until_final_acceptance": true,
+    "production_release": false
+  }
+}

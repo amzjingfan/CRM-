@@ -50,6 +50,7 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
     snapshot = RunSnapshot(store, conversation, customer, uuid.uuid4(), now, (), (agent,), (), 0, now, "synthetic-hash")
     calls = []
     answer = "您问的是29元商品还是39元商品？" if selection else "订单已发货，请坐席复核。"
+    customer_question = "Where is my order?" if not selection else "¿Cuál es el estado de mi pedido?"
     tool_facts = (
         {
             "selection_required": True,
@@ -73,6 +74,11 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
                 )
                 return ToolTurn(None, (call,), {"role": "assistant", "content": None}, 5, 3)
             if names == ["query_order"] and not any(message.get("role") == "tool" for message in messages):
+                import json
+
+                payload = json.loads(messages[1]["content"])
+                assert payload["untrusted_question"] == customer_question
+                assert payload["untrusted_subquestion"] == "订单现在怎样"
                 call = FunctionCall("tool-1", "query_order", {})
                 return ToolTurn(
                     None, (call,), {"role": "assistant", "content": None, "tool_calls": [{"id": "tool-1"}]}, 5, 3
@@ -117,7 +123,7 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
     monkeypatch.setattr(execution, "current_permissions", AsyncMock(return_value={"orders.view", "knowledge.view"}))
     result = await execution.execute_model_run(
         snapshot=snapshot,
-        question="我的订单现在怎么样？",
+        question=customer_question,
         agents=(agent,),
         run_id=run_id,
         permissions={"orders.view", "knowledge.view"},

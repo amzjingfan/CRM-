@@ -93,3 +93,47 @@ async def test_scoped_order_memory_does_not_overwrite_another_order_or_replay_ca
     assert {item.value for item in facts} == {"SHIPPED", "CANCELLED"}
     assert len({item.key for item in facts}) == 2
     assert all(not item.key.endswith("_ref") for item in facts)
+
+
+@pytest.mark.asyncio
+async def test_customer_visible_identifiers_are_used_this_run_and_not_added_to_derived_memory(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from app.agents.memory import service
+    from app.agents.tools.loop import ToolObservation
+
+    message_id, agent_id = uuid.uuid4(), uuid.uuid4()
+    snapshot = SimpleNamespace(
+        debug_without_conversation=False,
+        trigger_message_id=message_id,
+        message_ids=(message_id,),
+        snapshot_hash="memory-authorized-identifiers",
+        memory_revision=1,
+    )
+    prior_source = uuid.uuid4()
+    prior = service.SessionMemoryView(
+        1, "", (), (service.MemoryFact("query_order.prior_status", "PAID", f"tool:{prior_source}"),)
+    )
+    commit = AsyncMock(return_value=2)
+    monkeypatch.setattr(service, "commit_memory", commit)
+    observation = ToolObservation(
+        "call-one",
+        "query_order",
+        "succeeded",
+        {
+            "order_ref": "o123",
+            "order_number": "AUTH-ABC",
+            "tracking_number": "TRACK-123",
+            "product_number": "PROD-ABC",
+            "sku_number": "SKU-ABC",
+            "sku": "AB*12*XY",
+            "seller_sku": "SELLER-ABC",
+            "return_tracking_number": "RETURN-ABC",
+            "status": "SHIPPED",
+        },
+        "a" * 16,
+    )
+    await service.remember_session_question(AsyncMock(), snapshot, prior, "请核对发货情况", ((agent_id, observation),))
+    facts = commit.await_args.args[2].facts
+    assert {item.value for item in facts} == {"PAID", "SHIPPED"}
+    assert prior.facts[0] in facts
