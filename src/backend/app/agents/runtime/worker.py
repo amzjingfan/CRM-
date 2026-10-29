@@ -2,6 +2,7 @@
 
 import json
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
@@ -26,10 +27,9 @@ from app.agents.runtime.context import LiteralFact, ModelLimits, build_context
 from app.agents.runtime.snapshot import RunSnapshot
 from app.agents.safety.input import prepare_untrusted_text
 from app.agents.tools.catalog import AgentToolContext, BusinessToolPort, ToolExecutionPort, build_agent_tools
-from app.agents.tools.loop import run_tool_loop
+from app.agents.tools.loop import ToolLoopTimeout, run_tool_loop
 from app.agents.tools.metadata import TOOL_METADATA
 from app.knowledge_base.schemas import KnowledgeRetrievalHit
-from app.shared.exceptions.errors import AppError
 
 _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
@@ -162,16 +162,34 @@ async def run_specialist(
             deadline=deadline,
             max_output_tokens=max_output_tokens,
         )
+    except ToolLoopTimeout as error:
+        return SpecialistResult(
+            agent.id,
+            None,
+            reason_code=error.result.reason_code,
+            tool_events=error.result.events,
+            input_tokens=error.result.input_tokens,
+            output_tokens=error.result.output_tokens,
+        )
     except RagRetrievalTimeout:
         return SpecialistResult(agent.id, None, reason_code="rag_retrieval_timeout")
     except TimeoutError:
         return SpecialistResult(agent.id, None, reason_code="agent_deadline_exceeded")
+    # 回答失败不能抹去已经完成的工具调用；拒绝的正文和事实仍不进入汇总或记忆。
+    incomplete = SpecialistResult(
+        agent.id,
+        None,
+        tool_events=result.events,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+    )
     if not result.answer:
-        return SpecialistResult(agent.id, None, reason_code=result.reason_code or "no_agent_answer")
-    try:
-        safe_answer = prepare_untrusted_text(result.answer, source="agent_draft").text
-    except AppError:
-        return SpecialistResult(agent.id, None, reason_code="sensitive_agent_output")
+        return replace(incomplete, reason_code=result.reason_code or "no_agent_answer")
+    # 模型草稿仍是不可信数据；最终展示前由独立模型语义识别隐私并核验剩余事实。
+    # 不把输入端的整段地址启发式用于业务回答，避免正常字段和时间被连带隐藏。
+    safe_answer = result.answer.strip()
+    if not safe_answer or len(safe_answer) > 16_000:
+        return replace(incomplete, reason_code="invalid_agent_answer")
     citations: list[str] = []
     citation_details: list[AgentCitation] = []
     knowledge_hits: list[KnowledgeRetrievalHit] = []
@@ -179,7 +197,7 @@ async def run_specialist(
     for bundle in searched:
         current = await revalidate_evidence(session=session, snapshot=snapshot, agent=agent, bundle=bundle)
         if len(current.hits) != len(bundle.hits):
-            return SpecialistResult(agent.id, None, reason_code="knowledge_approval_changed")
+            return replace(incomplete, reason_code="knowledge_approval_changed")
         citations.extend(str(hit.chunk_id) for hit in current.hits)
         knowledge_hits.extend(current.hits)
         projected = project_evidence_for_model(current)

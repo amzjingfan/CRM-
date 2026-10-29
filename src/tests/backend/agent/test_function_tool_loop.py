@@ -115,6 +115,102 @@ async def test_repeated_invalid_call_stops_without_executing() -> None:
 
 
 @pytest.mark.asyncio
+async def test_model_generation_failure_keeps_completed_tool_events_and_known_usage() -> None:
+    from langchain_core.tools import tool
+
+    from app.agents.core.errors import LLMErrorCode, LLMProviderError
+    from app.agents.tools.loop import run_tool_loop
+
+    @tool
+    async def read_order() -> dict:
+        """查询合成订单状态。"""
+        return {"status": "succeeded", "facts": {"status": "shipped"}}
+
+    provider = SimpleNamespace(
+        complete=AsyncMock(
+            side_effect=[
+                ToolTurn(None, (FunctionCall("order", "read_order", {}),), {}, 10, 5),
+                LLMProviderError(
+                    LLMErrorCode.LLM_OUTPUT_INVALID, "模型输出未完成", retriable=False, output_failure_kind="unfinished"
+                ),
+            ]
+        )
+    )
+    result = await run_tool_loop(
+        provider=provider, messages=(), tools=(read_order,), deadline=time.monotonic() + 2, max_output_tokens=1024
+    )
+    assert result.answer is None
+    assert result.reason_code == "llm_output_unfinished"
+    assert [(event.name, event.status) for event in result.events] == [("read_order", "succeeded")]
+    assert (result.input_tokens, result.output_tokens) == (10, 5)
+
+
+@pytest.mark.asyncio
+async def test_cancellation_keeps_completed_tool_progress_and_stops_provider() -> None:
+    from langchain_core.tools import tool
+
+    from app.agents.tools.loop import run_tool_loop
+
+    called = asyncio.Event()
+    cancelled = asyncio.Event()
+
+    @tool
+    async def read_order() -> dict:
+        """读取合成订单状态。"""
+        return {"status": "succeeded", "facts": {"status": "shipped"}}
+
+    class Model:
+        async def complete(self, *, messages, tools, max_output_tokens):
+            if not any(item.get("role") == "tool" for item in messages):
+                return ToolTurn(None, (FunctionCall("order", "read_order", {}),), {}, 10, 5)
+            called.set()
+            try:
+                await asyncio.sleep(30)
+            finally:
+                cancelled.set()
+
+    task = asyncio.create_task(
+        run_tool_loop(
+            provider=Model(), messages=(), tools=(read_order,), deadline=time.monotonic() + 20, max_output_tokens=1024
+        )
+    )
+    await called.wait()
+    task.cancel()
+    result = await task
+    assert cancelled.is_set()
+    assert result.reason_code == "cancelled"
+    assert [(event.name, event.status) for event in result.events] == [("read_order", "succeeded")]
+    assert (result.input_tokens, result.output_tokens) == (10, 5)
+
+
+@pytest.mark.asyncio
+async def test_timeout_carries_completed_tool_progress_to_the_worker() -> None:
+    from langchain_core.tools import tool
+
+    from app.agents.tools.loop import run_tool_loop
+
+    @tool
+    async def read_order() -> dict:
+        """读取合成订单状态。"""
+        return {"status": "succeeded", "facts": {"status": "shipped"}}
+
+    class Model:
+        async def complete(self, *, messages, tools, max_output_tokens):
+            if not any(item.get("role") == "tool" for item in messages):
+                return ToolTurn(None, (FunctionCall("order", "read_order", {}),), {}, 10, 5)
+            await asyncio.sleep(30)
+
+    with pytest.raises(TimeoutError) as caught:
+        await run_tool_loop(
+            provider=Model(), messages=(), tools=(read_order,), deadline=time.monotonic() + 0.02, max_output_tokens=1024
+        )
+    partial = getattr(caught.value, "result", None)
+    assert partial is not None
+    assert [(event.name, event.status) for event in partial.events] == [("read_order", "succeeded")]
+    assert (partial.input_tokens, partial.output_tokens) == (10, 5)
+
+
+@pytest.mark.asyncio
 async def test_shared_deadline_cancels_waiting_provider() -> None:
     from app.agents.tools.loop import run_tool_loop
 

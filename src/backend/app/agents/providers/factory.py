@@ -21,7 +21,7 @@ def model_limits(settings: Settings, provider: str, model_name: str) -> ModelLim
     validate_tool_model(settings, provider, model_name)
     primary = (provider, model_name) == (settings.llm_primary_provider, settings.llm_primary_model)
     window = settings.llm_primary_context_window_tokens if primary else settings.llm_fallback_context_window_tokens
-    return ModelLimits(window, output_reserve_tokens=1024, safety_margin_tokens=1024)
+    return ModelLimits(window, output_reserve_tokens=settings.llm_max_output_tokens, safety_margin_tokens=1024)
 
 
 def validate_tool_model(settings: Settings, provider: str | None, model_name: str | None) -> None:

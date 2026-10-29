@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-STAGING-DEPLOY-001",
+  "source_sha": "39d09e1ace21493c847930ee79a76cd979042335",
+  "base_sha": "9b22a7ba059a548c690bea367fd76b82ea9836ea",
+  "production_release": false,
+  "staging_deployed": false,
+  "backend": {
+    "postgres_tests_passed": 2438,
+    "skipped_windows_posix": 3,
+    "migration_head": "041_merge_agent_multishop_collab",
+    "ruff": "passed",
+    "format_files": 427,
+    "mypy_source_files": 252,
+    "lock_check": "passed"
+  },
+  "frontend": {
+    "lint": "passed",
+    "typecheck": "passed",
+    "contract_tests_passed": 52,
+    "build": "passed",
+    "browser_full_suite": "not_run_unchanged_frontend"
+  },
+  "dynamic_contract": {
+    "gate": "dynamic_agent_contract_v1",
+    "dataset_sha256": "5d2794b04ed7fac51ac318a1114398745a1ecde21207f1f6dc5113935637e77e",
+    "sample_count": 16,
+    "failed_case_ids": [],
+    "passed": true,
+    "live_model_evaluation": false,
+    "semantic_routing_accuracy_measured": false,
+    "platform_send_count": 0
+  },
+  "shared_legacy_safety": {
+    "gate": "deterministic_safety_gate",
+    "sample_count": 237,
+    "safety_accuracy": 1.0,
+    "reason_code_accuracy": 1.0,
+    "unsafe_escape_count": 0,
+    "failed_case_ids": [],
+    "passed": true,
+    "live_model_evaluation": false
+  },
+  "live_semantic_review": {
+    "dataset_sha256": "17f6b7539ba14fb7303818a2e997f6a7042726e123ce5e635364eb9f4ee2c4f4",
+    "prompt_version": "agent-evidence-review-v2.1.0",
+    "provider": "deepseek",
+    "model": "deepseek-v4-flash",
+    "results": [
+      {
+        "id": "business-labels",
+        "passed": true,
+        "supported": true,
+        "answer_length": 75
+      },
+      {
+        "id": "email",
+        "passed": true,
+        "supported": true,
+        "answer_length": 30
+      },
+      {
+        "id": "phone",
+        "passed": true,
+        "supported": true,
+        "answer_length": 35
+      },
+      {
+        "id": "postal-address",
+        "passed": true,
+        "supported": true,
+        "answer_length": 33
+      },
+      {
+        "id": "repeated-contact",
+        "passed": true,
+        "supported": true,
+        "answer_length": 38
+      },
+      {
+        "id": "complete-order-identifier",
+        "passed": true,
+        "supported": true,
+        "answer_length": 34
+      },
+      {
+        "id": "public-logistics-city",
+        "passed": true,
+        "supported": true,
+        "answer_length": 27
+      },
+      {
+        "id": "unsupported-refund",
+        "passed": true,
+        "supported": false,
+        "answer_length": 0
+      },
+      {
+        "id": "unsupported-delivery-promise",
+        "passed": true,
+        "supported": false,
+        "answer_length": 0
+      },
+      {
+        "id": "clarification",
+        "passed": true,
+        "supported": true,
+        "answer_length": 30
+      }
+    ],
+    "passed": true,
+    "send_performed": false
+  },
+  "grounding_source_sha256": "2c9be0e2a15e9b394a799ab6162790213618b185b50860db4c1969235b2ea841",
+  "candidate_real_tools": {
+    "candidate_probe": true,
+    "runtime_service_modified": false,
+    "agent_config_version": 3,
+    "cases": [
+      {
+        "case": "order_list",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 1047,
+        "send_performed": false,
+        "passed": true,
+        "tools": [
+          {
+            "name": "search_customer_orders",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_order",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_logistics",
+            "status": "succeeded",
+            "event_count": 8,
+            "package_count": 1,
+            "next_event_offset": null
+          }
+        ]
+      },
+      {
+        "case": "order_detail",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 1112,
+        "send_performed": false,
+        "passed": true,
+        "tools": [
+          {
+            "name": "search_customer_orders",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_order",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_logistics",
+            "status": "succeeded",
+            "event_count": 8,
+            "package_count": 1,
+            "next_event_offset": null
+          }
+        ]
+      },
+      {
+        "case": "full_logistics",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 970,
+        "send_performed": false,
+        "passed": true,
+        "tools": [
+          {
+            "name": "search_customer_orders",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_order",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_logistics",
+            "status": "succeeded",
+            "event_count": 8,
+            "package_count": 1,
+            "next_event_offset": null
+          }
+        ]
+      },
+      {
+        "case": "formal_suggestion",
+        "phase": "review_ready",
+        "reason": null,
+        "answer_length": 1309,
+        "send_performed": false,
+        "outbound_delta": 0,
+        "passed": true,
+        "tools": [
+          {
+            "name": "search_customer_orders",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_order",
+            "status": "succeeded",
+            "event_count": null,
+            "package_count": null,
+            "next_event_offset": null
+          },
+          {
+            "name": "query_logistics",
+            "status": "succeeded",
+            "event_count": 8,
+            "package_count": 1,
+            "next_event_offset": null
+          }
+        ]
+      }
+    ]
+  },
+  "review": {
+    "important_findings": 3,
+    "critical_findings": 0,
+    "fixed_important": 3,
+    "red_failures": 9,
+    "green_focused_passed": 38,
+    "raw_model_or_buyer_content_in_evidence": false
+  }
+}

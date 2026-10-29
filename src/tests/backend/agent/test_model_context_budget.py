@@ -41,6 +41,16 @@ def test_selected_model_uses_its_configured_context_window() -> None:
     assert model_limits(settings, "openai", "fallback").context_window_tokens == 32768
 
 
+@pytest.mark.parametrize("budget", [256, 1024, 2048])
+def test_answer_reserve_uses_project_configuration_without_a_hidden_floor(budget) -> None:
+    from app.agents.providers.factory import model_limits
+
+    settings = Settings(
+        _env_file=None, LLM_PRIMARY_PROVIDER="deepseek", LLM_PRIMARY_MODEL="primary", LLM_MAX_OUTPUT_TOKENS=budget
+    )
+    assert model_limits(settings, "deepseek", "primary").output_reserve_tokens == budget
+
+
 @pytest.mark.asyncio
 async def test_budget_rechecks_full_tool_history_before_any_provider_call() -> None:
     from app.agents.providers.budget import BudgetedToolProvider

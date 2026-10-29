@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = "High")]
 param(
@@ -40,6 +40,7 @@ param(
     [string]$AllowedTikTokStoreIds,
     [switch]$EnableWorkspaceTranslation,
     [switch]$EnableAgentDebug,
+    [switch]$EnableAgentSuggestions,
     [switch]$EnableG5SSELoadTest,
     [switch]$EnableDocumentIngestion,
     [switch]$EnableG2WebhookProbe,
@@ -189,7 +190,7 @@ function Assert-EnvironmentContract {
             throw "G2 Webhook probe target must not be stored in the staging environment file."
         }
     }
-    if (($EnableG5SSELoadTest -or $EnableWorkspaceTranslation -or $EnableAgentDebug) -and (
+    if (($EnableG5SSELoadTest -or $EnableWorkspaceTranslation -or $EnableAgentDebug -or $EnableAgentSuggestions) -and (
         -not $Values.ContainsKey("LLM_PRIMARY_PROVIDER") -or $Values["LLM_PRIMARY_PROVIDER"].Trim() -cne "deepseek" -or
         -not $Values.ContainsKey("LLM_PRIMARY_MODEL") -or [string]::IsNullOrWhiteSpace($Values["LLM_PRIMARY_MODEL"]) -or
         -not $Values.ContainsKey("DEEPSEEK_API_KEY") -or [string]::IsNullOrWhiteSpace($Values["DEEPSEEK_API_KEY"])
@@ -413,6 +414,7 @@ function Assert-ProductionComposeContract {
         [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
         [switch]$EnableAgentDebug,
+    [switch]$EnableAgentSuggestions,
         [switch]$EnableG5SSELoadTest,
         [Parameter(Mandatory = $true)][hashtable]$G2ProbeExpected
     )
@@ -441,7 +443,7 @@ function Assert-ProductionComposeContract {
     if ([string]$retrievalService.environment.RETRIEVAL_MODEL_VERIFY_HASHES -ne "true") {
         throw "Production retrieval model service must enable startup weight hash verification."
     }
-    if ($EnableG5SSELoadTest -or $EnableAgentDebug) {
+    if ($EnableG5SSELoadTest -or $EnableAgentDebug -or $EnableAgentSuggestions) {
         $backendTokenProperty = $Config.services.backend.environment.PSObject.Properties["RETRIEVAL_MODEL_SERVICE_TOKEN"]
         $retrievalTokenProperty = $retrievalService.environment.PSObject.Properties["RETRIEVAL_MODEL_SERVICE_TOKEN"]
         $backendToken = if ($null -eq $backendTokenProperty) { "" } else { [string]$backendTokenProperty.Value }
@@ -522,7 +524,7 @@ function Assert-ProductionComposeContract {
                  ($serviceName -eq "worker" -and $capabilityName -eq "TIKTOK_CONVERSATION_SYNC_ENABLED"))) {
                 "true"
             } else { "false" }
-            if ($EnableG5SSELoadTest -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
+            if (($EnableG5SSELoadTest -or $EnableAgentSuggestions) -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
                 $expectedValue = "true"
             }
             if ($EnableTikTokManualSend -and $serviceName -ceq "backend" -and
@@ -549,7 +551,7 @@ function Assert-ProductionComposeContract {
         if ($storeActual -cne $storeExpected) {
             throw "Staging Compose manual send target does not match reviewed mode: $serviceName"
         }
-        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug) -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug -or $EnableAgentSuggestions) -and $serviceName -ceq "backend") { "true" } else { "false" }
         $embeddingProperty = $applicationEnvironment.PSObject.Properties["EMBEDDING_ENABLED"]
         $actualEmbedding = if ($null -eq $embeddingProperty) { "false" } else { [string]$embeddingProperty.Value }
         if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
@@ -559,8 +561,10 @@ function Assert-ProductionComposeContract {
         foreach ($name in @("AGENT_DEBUG_ENABLED", "AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED")) {
             $property = $applicationEnvironment.PSObject.Properties[$name]
             $actual = if ($null -eq $property) { "false" } else { [string]$property.Value }
-            $expected = if ($EnableAgentDebug -and $serviceName -ceq "backend" -and
-                $name -cne "AGENT_V2_FORMAL_ENABLED") { "true" } else { "false" }
+            $expected = if ($serviceName -ceq "backend" -and (
+                ($EnableAgentDebug -and $name -cne "AGENT_V2_FORMAL_ENABLED") -or
+                ($EnableAgentSuggestions -and $name -ceq "AGENT_V2_FORMAL_ENABLED")
+            )) { "true" } else { "false" }
             if ($actual -cne $expected) {
                 throw "Staging Compose Agent capability does not match reviewed mode: $serviceName/$name"
             }
@@ -648,6 +652,7 @@ function Assert-RunningStagingMode {
         [string]$AllowedTikTokStoreIds,
         [switch]$EnableWorkspaceTranslation,
         [switch]$EnableAgentDebug,
+    [switch]$EnableAgentSuggestions,
         [switch]$EnableG5SSELoadTest,
         [Parameter(Mandatory = $true)][hashtable]$G2ProbeExpected
     )
@@ -692,7 +697,7 @@ function Assert-RunningStagingMode {
                  ($serviceName -eq "worker" -and $capabilityName -eq "TIKTOK_CONVERSATION_SYNC_ENABLED"))) {
                 "true"
             } else { "false" }
-            if ($EnableG5SSELoadTest -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
+            if (($EnableG5SSELoadTest -or $EnableAgentSuggestions) -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
                 $expectedValue = "true"
             }
             if ($EnableTikTokManualSend -and $serviceName -ceq "backend" -and
@@ -717,7 +722,7 @@ function Assert-RunningStagingMode {
         if ($storeActual -cne $storeExpected) {
             throw "Staging runtime manual send target does not match reviewed mode: $serviceName"
         }
-        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug) -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug -or $EnableAgentSuggestions) -and $serviceName -ceq "backend") { "true" } else { "false" }
         $actualEmbedding = [string]$runtimeEnvironment["EMBEDDING_ENABLED"]
         if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
         if ($actualEmbedding -cne $expectedEmbedding) {
@@ -726,8 +731,10 @@ function Assert-RunningStagingMode {
         foreach ($name in @("AGENT_DEBUG_ENABLED", "AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED")) {
             $actual = [string]$runtimeEnvironment[$name]
             if ([string]::IsNullOrEmpty($actual)) { $actual = "false" }
-            $expected = if ($EnableAgentDebug -and $serviceName -ceq "backend" -and
-                $name -cne "AGENT_V2_FORMAL_ENABLED") { "true" } else { "false" }
+            $expected = if ($serviceName -ceq "backend" -and (
+                ($EnableAgentDebug -and $name -cne "AGENT_V2_FORMAL_ENABLED") -or
+                ($EnableAgentSuggestions -and $name -ceq "AGENT_V2_FORMAL_ENABLED")
+            )) { "true" } else { "false" }
             if ($actual -cne $expected) {
                 throw "Staging runtime Agent capability does not match reviewed mode: $serviceName/$name"
             }
@@ -913,7 +920,7 @@ function Write-Evidence {
         workspace_message_translation_enabled = [bool]$EnableWorkspaceTranslation
         agent_debug_enabled = [bool]$EnableAgentDebug
         agent_v2_debug_enabled = [bool]$EnableAgentDebug
-        agent_v2_formal_enabled = $false
+        agent_v2_formal_enabled = [bool]$EnableAgentSuggestions
         backend_query_limit = if ($EnableG5SSELoadTest) { 60 } else { 10 }
         runtime_mode_verified = ($Status -ceq "passed")
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
@@ -939,6 +946,10 @@ function Write-Evidence {
         $evidence["workspace_translation_overlay_sha256"] =
             (Get-FileHash -LiteralPath $translationOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
     }
+    if ($EnableAgentSuggestions) {
+        $evidence["agent_suggestions_overlay_sha256"] =
+            (Get-FileHash -LiteralPath $agentSuggestionsOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
     if ($EnableAgentDebug) {
         $evidence["agent_debug_overlay_sha256"] =
             (Get-FileHash -LiteralPath $agentDebugOverlay -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -951,6 +962,9 @@ function Write-Evidence {
 
 Assert-StagingTarget
 Assert-RootlessDockerHost -Value $DockerHost
+if ($EnableAgentSuggestions -and $EnableG5SSELoadTest) {
+    throw "Agent suggestions and G5 load test modes cannot be combined."
+}
 if ($EnableTikTokWebhookRead -and $EnableG5SSELoadTest) {
     throw "G2 Webhook read and G5 SSE modes cannot be combined."
 }
@@ -1065,6 +1079,7 @@ $manualSendOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-stag
 $g5SSEOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-g5-sse.yml"
 $translationOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-translation.yml"
 $agentDebugOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-agent-debug.yml"
+$agentSuggestionsOverlay = Join-Path $sourceRoot "compose/docker-compose.rootless-staging-agent-suggestions.yml"
 if (-not (Test-Path -LiteralPath $egressOverlay -PathType Leaf)) {
     throw "The repository-fixed TikTok egress overlay does not exist."
 }
@@ -1085,6 +1100,9 @@ if ($EnableG5SSELoadTest -and -not (Test-Path -LiteralPath $g5SSEOverlay -PathTy
 }
 if ($EnableWorkspaceTranslation -and -not (Test-Path -LiteralPath $translationOverlay -PathType Leaf)) {
     throw "The repository-fixed staging translation overlay does not exist."
+}
+if ($EnableAgentSuggestions -and -not (Test-Path -LiteralPath $agentSuggestionsOverlay -PathType Leaf)) {
+    throw "The repository-fixed staging Agent suggestions overlay does not exist."
 }
 if ($EnableAgentDebug -and -not (Test-Path -LiteralPath $agentDebugOverlay -PathType Leaf)) {
     throw "The repository-fixed staging Agent debug overlay does not exist."
@@ -1146,6 +1164,9 @@ try {
     if ($EnableAgentDebug) {
         $composeArguments += @("-f", (Resolve-Path -LiteralPath $agentDebugOverlay).Path)
     }
+    if ($EnableAgentSuggestions) {
+        $composeArguments += @("-f", (Resolve-Path -LiteralPath $agentSuggestionsOverlay).Path)
+    }
     Set-DisabledCapabilities
     [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID", $AllowedTikTokConversationId, "Process")
     [Environment]::SetEnvironmentVariable("TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS", $AllowedTikTokStoreIds, "Process")
@@ -1187,6 +1208,7 @@ try {
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -EnableAgentDebug:$EnableAgentDebug `
+        -EnableAgentSuggestions:$EnableAgentSuggestions `
         -G2ProbeExpected $g2ProbeExpected
 
     if ($ValidateOnly) {
@@ -1298,6 +1320,7 @@ try {
         -EnableTikTokManualSend:$EnableTikTokManualSend -AllowedTikTokConversationId $AllowedTikTokConversationId `
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -EnableAgentDebug:$EnableAgentDebug `
+        -EnableAgentSuggestions:$EnableAgentSuggestions `
         -G2ProbeExpected $g2ProbeExpected
     if ($EnableDocumentIngestion) {
         Assert-RunningDocumentWorker -Command $compose -Arguments $composeArguments `

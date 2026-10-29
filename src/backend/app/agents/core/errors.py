@@ -108,5 +108,8 @@ class LLMProviderError(Exception):
         self.retriable = retriable
         self.output_failure_kind = output_failure_kind
         self.output_schema_issues = output_schema_issues
+        # 协议校验失败仍可能已有供应商用量；只携带数值，不携带模型正文。
+        self.input_tokens = 0
+        self.output_tokens = 0
         self.failure_stage: LLMFailureStage | None = None
         super().__init__(message)

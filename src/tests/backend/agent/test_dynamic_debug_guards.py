@@ -97,6 +97,7 @@ async def test_dynamic_run_respects_deadline_and_does_not_prefetch_latest_order(
     )
     monkeypatch.setattr(debug, "load_memory", AsyncMock(return_value=SimpleNamespace(summary="", facts=())))
     monkeypatch.setattr(debug, "execute_model_run", slow_run)
+    monkeypatch.setattr(debug, "persist_dynamic_result", AsyncMock())
 
     with pytest.raises(AppError) as error:
         await debug.run_agent_debug_v2(

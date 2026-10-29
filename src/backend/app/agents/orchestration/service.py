@@ -3,7 +3,7 @@
 import time
 import uuid
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.agents.orchestration.aggregator import ReviewedSuggestion, aggregate_results
 from app.agents.orchestration.coordinator import SpecialistResult, run_selected
@@ -28,6 +28,36 @@ class DynamicRunResult:
     reason_code: str | None
 
 
+@dataclass(slots=True)
+class RunProgress:
+    """入口超时/异常也能持久化的数值诊断；不保存草稿、引用、业务事实或记忆。"""
+
+    route: RoutePlan = field(default_factory=lambda: RoutePlan((), 0, 0, 0))
+    specialists: tuple[SpecialistResult, ...] = ()
+
+    def capture(self, results: tuple[SpecialistResult, ...]) -> None:
+        self.specialists = tuple(
+            SpecialistResult(
+                item.agent_id,
+                None,
+                reason_code=item.reason_code,
+                tool_events=item.tool_events,
+                input_tokens=item.input_tokens,
+                output_tokens=item.output_tokens,
+            )
+            for item in results
+        )
+
+    def failure(self, reason: str) -> DynamicRunResult:
+        return DynamicRunResult(
+            RunPhase.TIMEOUT if reason == "deadline_exceeded" else RunPhase.REVIEW_REQUIRED,
+            self.route,
+            self.specialists,
+            ReviewedSuggestion(None, "human_review", reason, tuple(item.agent_id for item in self.specialists), ()),
+            reason,
+        )
+
+
 def _review_required(reason: str, agent_ids: tuple[uuid.UUID, ...] = ()) -> ReviewedSuggestion:
     clarification = {
         "no_matching_agent": "当前没有适合处理该问题的已启用 Agent，请由人工确认。",
@@ -49,6 +79,8 @@ async def execute_dynamic_run(
     deadline: float,
     max_catalog_tokens: int,
     routing_context: str = "",
+    max_answer_tokens: int = 1024,
+    progress: RunProgress | None = None,
 ) -> DynamicRunResult:
     """同一快照和截止时间贯穿路由、所有专家与最终汇总。"""
     state = RunStateMachine()
@@ -77,11 +109,15 @@ async def execute_dynamic_run(
     except RouteDecisionError as error:
         state.advance(RunPhase.REVIEW_REQUIRED)
         return DynamicRunResult(state.phase, empty_route, (), _review_required(error.reason_code), error.reason_code)
+    if progress is not None:
+        progress.route = route
     if not route.selections:
         state.advance(RunPhase.REVIEW_REQUIRED)
         return DynamicRunResult(state.phase, route, (), _review_required("no_matching_agent"), "no_matching_agent")
     state.advance(RunPhase.EXECUTING)
-    specialists = await run_selected(plan=route, worker=worker, deadline=deadline)
+    specialists = await run_selected(
+        plan=route, worker=worker, deadline=deadline, on_results=progress.capture if progress is not None else None
+    )
     failed = tuple(item for item in specialists if item.reason_code or not item.answer)
     if failed:
         if any(item.reason_code == "context_budget_exceeded" for item in failed):
@@ -107,6 +143,12 @@ async def execute_dynamic_run(
         provider=aggregator,
         deadline=deadline,
         store_id=snapshot.store_id,
+        max_output_tokens=max_answer_tokens,
+        privacy_policies=tuple(
+            agent.prompt_sections["compliance"]
+            for agent in snapshot.published_agents
+            if any(item.agent_id == agent.id for item in specialists) and "compliance" in agent.prompt_sections
+        ),
     )
     phase = (
         RunPhase.REVIEW_READY

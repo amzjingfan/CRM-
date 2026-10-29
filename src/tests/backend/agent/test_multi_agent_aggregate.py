@@ -108,3 +108,34 @@ async def test_global_deadline_cancels_slow_workers() -> None:
     assert cancelled.is_set()
     assert results[0].answer == "已查订单"
     assert results[1].reason_code == "deadline_exceeded"
+
+
+@pytest.mark.asyncio
+async def test_deadline_retains_worker_partial_tool_events_without_publishing_partial_facts() -> None:
+    from app.agents.tools.loop import ToolEvent
+
+    agent = uuid.uuid4()
+
+    async def worker(selection):
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            return SpecialistResult(
+                agent,
+                None,
+                verified_facts={"status": "shipped"},
+                reason_code="cancelled",
+                tool_events=(ToolEvent("read", "query_order", "succeeded"),),
+                input_tokens=10,
+                output_tokens=5,
+            )
+
+    result = (
+        await run_selected(
+            plan=RoutePlan((RoutedAgent(agent, "订单"),), 1, 0, 0), worker=worker, deadline=time.monotonic() + 0.01
+        )
+    )[0]
+    assert result.reason_code == "deadline_exceeded"
+    assert [(event.name, event.status) for event in result.tool_events] == [("query_order", "succeeded")]
+    assert (result.input_tokens, result.output_tokens) == (10, 5)
+    assert result.answer is None and not result.verified_facts

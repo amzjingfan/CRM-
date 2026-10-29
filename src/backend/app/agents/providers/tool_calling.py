@@ -97,55 +97,66 @@ class DeepSeekToolCallingProvider:
                 stream=False,
                 store=False,
             )
-        if len(response.choices) != 1:
-            raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型响应数量异常", retriable=False)
-        choice = response.choices[0]
-        message = choice.message
-        raw_calls = message.tool_calls or []
-        if choice.finish_reason not in {"stop", "tool_calls"} or bool(raw_calls) != (
-            choice.finish_reason == "tool_calls"
-        ):
-            raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型工具调用未完成", retriable=False)
-        reasoning_content = getattr(message, "reasoning_content", None)
-        if self.thinking_enabled and not isinstance(reasoning_content, str):
-            raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型推理上下文缺失", retriable=False)
-        calls: list[FunctionCall] = []
-        wire_calls: list[dict[str, object]] = []
-        seen_ids: set[str] = set()
-        for item in raw_calls:
-            if item.type != "function" or not item.id or item.id in seen_ids or not item.function.name:
-                raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "工具调用标识无效", retriable=False)
-            seen_ids.add(item.id)
-            calls.append(
-                FunctionCall(
-                    id=item.id,
-                    name=item.function.name,
-                    arguments=_parse_arguments(item.function.arguments),
+        try:
+            if len(response.choices) != 1:
+                raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型响应数量异常", retriable=False)
+            choice = response.choices[0]
+            message = choice.message
+            raw_calls = message.tool_calls or []
+            if choice.finish_reason not in {"stop", "tool_calls"} or bool(raw_calls) != (
+                choice.finish_reason == "tool_calls"
+            ):
+                raise LLMProviderError(
+                    LLMErrorCode.LLM_OUTPUT_INVALID,
+                    "模型工具调用未完成",
+                    retriable=False,
+                    output_failure_kind="unfinished" if choice.finish_reason == "length" else "invalid_structure",
                 )
+            reasoning_content = getattr(message, "reasoning_content", None)
+            if self.thinking_enabled and not isinstance(reasoning_content, str):
+                raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型推理上下文缺失", retriable=False)
+            calls: list[FunctionCall] = []
+            wire_calls: list[dict[str, object]] = []
+            seen_ids: set[str] = set()
+            for item in raw_calls:
+                if item.type != "function" or not item.id or item.id in seen_ids or not item.function.name:
+                    raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "工具调用标识无效", retriable=False)
+                seen_ids.add(item.id)
+                calls.append(
+                    FunctionCall(
+                        id=item.id,
+                        name=item.function.name,
+                        arguments=_parse_arguments(item.function.arguments),
+                    )
+                )
+                wire_calls.append(
+                    {
+                        "id": item.id,
+                        "type": "function",
+                        "function": {"name": item.function.name, "arguments": item.function.arguments},
+                    }
+                )
+            content = message.content if isinstance(message.content, str) and message.content.strip() else None
+            if not calls and content is None:
+                raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型未返回回答", retriable=False)
+            assistant_message: dict[str, object] = {"role": "assistant", "content": content}
+            if self.thinking_enabled:
+                assistant_message["reasoning_content"] = reasoning_content
+            if wire_calls:
+                assistant_message["tool_calls"] = wire_calls
+            usage = response.usage
+            return ToolTurn(
+                content=content,
+                calls=tuple(calls),
+                assistant_message=assistant_message,
+                input_tokens=usage.prompt_tokens if usage is not None else 0,
+                output_tokens=usage.completion_tokens if usage is not None else 0,
             )
-            wire_calls.append(
-                {
-                    "id": item.id,
-                    "type": "function",
-                    "function": {"name": item.function.name, "arguments": item.function.arguments},
-                }
-            )
-        content = message.content if isinstance(message.content, str) and message.content.strip() else None
-        if not calls and content is None:
-            raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型未返回回答", retriable=False)
-        assistant_message: dict[str, object] = {"role": "assistant", "content": content}
-        if self.thinking_enabled:
-            assistant_message["reasoning_content"] = reasoning_content
-        if wire_calls:
-            assistant_message["tool_calls"] = wire_calls
-        usage = response.usage
-        return ToolTurn(
-            content=content,
-            calls=tuple(calls),
-            assistant_message=assistant_message,
-            input_tokens=usage.prompt_tokens if usage is not None else 0,
-            output_tokens=usage.completion_tokens if usage is not None else 0,
-        )
+        except LLMProviderError as error:
+            if response.usage is not None:
+                error.input_tokens = response.usage.prompt_tokens
+                error.output_tokens = response.usage.completion_tokens
+            raise
 
 
 class OpenAIToolCallingProvider(DeepSeekToolCallingProvider):

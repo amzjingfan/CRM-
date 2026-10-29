@@ -1,0 +1,71 @@
+# Agent 真实详细回答与语义脱敏实施计划
+
+> **For agentic workers:** Use superpowers:executing-plans in the current session. 用户已授权继续修复、本地验收后集中部署；不逐缺陷创建 PR 或部署。
+
+**Goal:** 配置当前测试店铺 Agent，验证买家订单查询、订单详情和完整物流能够生成详细、可核验的回答，最终启用工作台人工 AI 建议且不发送平台消息。
+
+**Architecture:** 复用原生 function calling、已发布的七段提示词、动态编排与独立证据复核。模型按已发布合规段落识别输出隐私片段，程序校验逐字匹配并原位脱敏；不再使用地址词与数字的组合规则裁决模型回答。权限、租户、输入字段投影、统一超时、证据与人工发送边界保留。
+
+**Tech Stack:** Python/FastAPI、Pydantic、PostgreSQL、原生模型工具协议、Next.js、Rootless Compose。
+
+**Spec:** 用户本轮目标与 2026-10-29 连续修订；任务 MVP-AGENT-STAGING-DEPLOY-001，见 ../../tasks/TASKS.md。
+
+## Global Constraints
+
+- BASE_SHA=9b22a7ba059a548c690bea367fd76b82ea9836ea，MERGE_TARGET=origin/main，分支 fix/agent-detailed-tools-20261029。
+- 已授权的真实买家仅只读验证；必要业务字段可进入当前配置 DeepSeek，不保存真实业务正文到仓库。
+- 自动发送、营销与高风险写入关闭；本轮没有 production 授权。
+- 先收集问题、修复和本地回归，再单次受审发布；配置发布不等于代码部署。
+- 输入 DLP 与业务字段投影保持，不把“模型生成草稿”升级为可信系统指令。
+
+## Review Focus
+
+- 正常字段名、日期、金额与多条轨迹不应因地址词法误判而隐藏。
+- 一个隐私片段不得导致其他有依据的业务说明丢失。
+- 模型漏报复核、返回不存在片段或捏造引用时不能直接返回未经复核的正文。
+- 工具成功但最终生成失败时仍需保留真实工具状态与已知 Token 用量。
+- 工作台建议只能产生人工草稿，原店铺权限和人工发送范围不扩大。
+
+## Task 1：配置与复现
+
+Files: 当前 staging Agent 配置；src/tests/.artifacts/ 下低敏临时输出。
+
+- [x] 从浏览器检查模型、七段草稿、发布版本和三项工具。
+- [x] 保存并发布配置 v2（七段、项目 DeepSeek、三项工具），不绑定无关测试文件。
+- [x] 浏览器复现 v2 仍失败；独立进程观察证实三项工具 succeeded、输出误触 ADDRESS_CONTEXT_AMBIGUOUS。
+- [ ] 用同一真实上下文完成订单列表、详情、物流分页与详细联合回答测试，记录低敏结果。
+
+## Task 2：回答复核与可观察性
+
+Files: agents/runtime/worker.py、agents/orchestration/aggregator.py、agents/orchestration/service.py、agents/safety/grounding.py；测试集中在 src/tests/backend/agent/。
+
+Interfaces: review_answer 返回支持结论、原位脱敏后的文本及 Token 用量；aggregate_results 仅输出受审文本。已发布 compliance 段通过当前快照传给复核模型。
+
+- [x] 先写失败测试，证明 worker 拒绝或缺回答时丢失工具事件；修复后 5 项通过。
+- [x] 为业务字段、模型语义脱敏、非法片段、缺隐私复核、超时和完整执行链写失败测试。
+- [x] 让独立复核模型同时判断事实依据与隐私；只允许程序替换原文已有片段，不允许改写业务事实。
+- [x] 删除模型回答路径中的整段地址启发式裁决，保留输入投影、租户、权限、证据和平台操作门禁。
+- [ ] 完成相关单元/集成、静态和安全评测，再在隔离进程验证候选与真实工具（不改运行服务代码）。
+
+## Task 3：统一发布与工作台建议
+
+Files: Test-StagingProductionGates.ps1、受控 Compose overlay、部署测试与当前 AI/部署/API 文档。
+
+Interfaces: 明确的人工建议发布模式仅为 backend 开启 LLM 与 AGENT_V2_FORMAL_ENABLED；worker/jobs/agent-worker 不开启自动发送。
+
+- [x] 先写部署门禁失败测试，再添加显式人工建议模式，核对合并 Compose 与实际容器。
+- [ ] 全部已发现问题集中验证、审查、创建一个功能 PR；满足门禁后合并并与其他任务协调单点部署。
+- [ ] 浏览器重跑三工具和详细回答，成功后验证工作台生成草稿、无平台发送。
+- [ ] 定稿 IR/TR/RR 与低敏机器证据；只有实际验收通过才将任务标为 DONE。
+
+## 执行账本与决定
+
+- 已发布测试 Agent v3，按用户授权使用真实现有买家上下文；绑定三项只读工具、七段提示词和项目模型，不新增买家。
+- TDD 已覆盖语义脱敏、无证据拒绝、配置预算、失败/超时/取消事件与人工建议隔离；最终候选尚待审查和完整复跑。
+- Ruling：仅移除动态回答路径的旧词法否决；共享旧安全服务仍被其他功能使用，保持原实现。语义复核承担事实与隐私判断，程序保留授权及逐字替换协议。
+- Ruling：真实会话没有买家入站问题，工作台接受一条明确标记的本地合成入站触发，不向 TikTok 写入；工具仍读取真实授权数据。最终测试完成后按私有 manifest 清理本条及仅由其派生的会话记忆，保留真实消息与运行审计。
+- Ruling：默认测试端口被其他任务占用，隔离 PostgreSQL 使用唯一 test profile 项目及临时回环端口覆盖，不停止其他任务容器。
+- 最终审查由独立只读 reviewer 对整体候选执行；全部问题集中修复后仅一个功能 PR 与一次 staging 切换。
+
+- Final: fixed 汇总/复核异常、入口外层超时、已知失败用量三个 Important — test_dynamic_failure_progress 与带 usage 的原生截断测试 RED 9 failures → GREEN 38 passed；最终全量仍待执行。
+- 候选 v3 四类真实隔离进程均成功：订单列表1047、详情1112、全物流970、正式建议1309字符，三工具均 succeeded、1包裹8轨迹、无平台外发。该进程不修改运行服务。

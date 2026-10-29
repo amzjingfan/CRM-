@@ -22,7 +22,18 @@ from app.tools.contracts import ToolResult
 
 
 @pytest.mark.asyncio
-async def test_specialist_calls_configured_logistics_tool_without_regex_route(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "answer,expected_reason",
+    [
+        ("物流仍在运输中。", None),
+        ("Ship to 123 Main Street, New York, NY 10001", None),
+        (None, "no_agent_answer"),
+        (" ", "invalid_agent_answer"),
+    ],
+)
+async def test_specialist_calls_configured_logistics_tool_without_regex_route(
+    monkeypatch, answer, expected_reason
+) -> None:
     store, conversation, customer, agent_id = (uuid.uuid4() for _ in range(4))
     sections = {key: "只按当前授权和证据处理。" for key, _ in SECTION_TITLES}
     prompt = compile_prompt(sections)
@@ -66,7 +77,7 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(mo
                     10,
                     5,
                 ),
-                ToolTurn("物流仍在运输中。", (), {"role": "assistant", "content": "物流仍在运输中。"}, 10, 5),
+                ToolTurn(answer, (), {"role": "assistant", "content": answer}, 10, 5),
             ]
         )
     )
@@ -93,9 +104,15 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(mo
         deadline=time.monotonic() + 5,
         model_limits=ModelLimits(8000, 1024, 256),
     )
-    assert result.answer == "物流仍在运输中。"
-    assert result.verified_facts == {"query_logistics.tracking_status": "in_transit"}
-    assert result.successful_tools == ("query_logistics",)
+    assert result.reason_code == expected_reason
+    assert result.answer == (answer if expected_reason is None else None)
+    assert [(event.name, event.status) for event in result.tool_events] == [("query_logistics", "succeeded")]
+    assert (result.input_tokens, result.output_tokens) == (20, 10)
+    if expected_reason is None:
+        assert result.verified_facts == {"query_logistics.tracking_status": "in_transit"}
+        assert result.successful_tools == ("query_logistics",)
+    else:
+        assert not result.verified_facts
     assert executor.execute.await_count == 1
     first_call = provider.complete.await_args_list[0].kwargs
     assert [tool.name for tool in first_call["tools"]] == ["query_logistics"]

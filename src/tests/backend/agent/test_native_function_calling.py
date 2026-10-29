@@ -74,6 +74,24 @@ async def test_duplicate_or_nonobject_tool_arguments_fail_closed() -> None:
 
 
 @pytest.mark.asyncio
+async def test_incomplete_model_answer_reports_fixed_failure_kind_without_response_text() -> None:
+    from app.agents.providers.tool_calling import DeepSeekToolCallingProvider
+
+    response = SimpleNamespace(
+        choices=[SimpleNamespace(finish_reason="length", message=SimpleNamespace(content="private", tool_calls=[]))],
+        usage=SimpleNamespace(prompt_tokens=17, completion_tokens=1024),
+    )
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=AsyncMock(return_value=response))))
+    with pytest.raises(LLMProviderError) as caught:
+        await DeepSeekToolCallingProvider(model_name="deepseek-v4-flash", client=client).complete(
+            messages=(), tools=(), max_output_tokens=1024
+        )
+    assert caught.value.output_failure_kind == "unfinished"
+    assert (caught.value.input_tokens, caught.value.output_tokens) == (17, 1024)
+    assert "private" not in str(caught.value)
+
+
+@pytest.mark.asyncio
 async def test_openai_native_tool_call_omits_deepseek_thinking_extension() -> None:
     from app.agents.providers.tool_calling import OpenAIToolCallingProvider
 

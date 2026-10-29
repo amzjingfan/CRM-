@@ -12,6 +12,7 @@ from app.agents.management.config_service import get_config, require_knowledge_v
 from app.agents.management.repository import get_published_agent, list_enabled_agents
 from app.agents.management.schemas import AgentDebugRequest, AgentDebugView
 from app.agents.memory.service import MemoryFact, load_memory
+from app.agents.orchestration.service import RunProgress
 from app.agents.providers.factory import validate_tool_model
 from app.agents.runtime.execution import execute_model_run, persist_dynamic_result
 from app.agents.runtime.models import AgentRun
@@ -115,6 +116,7 @@ async def run_agent_debug_v2(
         )
     )
     await session.commit()
+    progress = RunProgress()
     try:
         async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
             result = await execute_model_run(
@@ -132,19 +134,29 @@ async def run_agent_debug_v2(
                 memory_summary=memory_summary,
                 memory_facts=memory_facts,
                 user=user,
+                progress=progress,
             )
-    except TimeoutError as error:
-        run.status = "timeout"
-        run.phase = "timeout"
-        run.error_code = "DYNAMIC_RUN_TIMEOUT"
-        await session.commit()
-        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Agent 调试已超时，请稍后重试", 504) from error
     except Exception as error:
-        run.status = "failed"
-        run.phase = "failed"
-        run.error_code = "DYNAMIC_RUN_FAILED"
+        timed_out = isinstance(error, TimeoutError)
+        # 保留截止前工具轨迹；异常路径不携带答案、事实或记忆写入。
+        await persist_dynamic_result(
+            session,
+            run=run,
+            result=progress.failure("deadline_exceeded" if timed_out else "dynamic_run_failed"),
+            snapshot=snapshot,
+            agents=agents,
+            mode="debug",
+            elapsed_ms=int((time.monotonic() - (deadline - settings.agent_debug_timeout_seconds)) * 1000),
+        )
+        run.status = "timeout" if timed_out else "failed"
+        run.phase = "timeout" if timed_out else "failed"
+        run.error_code = "DYNAMIC_RUN_TIMEOUT" if timed_out else "DYNAMIC_RUN_FAILED"
         await session.commit()
-        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Agent 动态调试失败", 503) from error
+        raise AppError(
+            ErrorCode.THIRD_PARTY_ERROR,
+            "Agent 调试已超时" if timed_out else "Agent 动态调试失败",
+            504 if timed_out else 503,
+        ) from error
     await persist_dynamic_result(
         session,
         run=run,

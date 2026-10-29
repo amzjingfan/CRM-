@@ -35,6 +35,7 @@ async def run_selected(
     plan: RoutePlan,
     worker: Callable[[RoutedAgent], Awaitable[SpecialistResult]],
     deadline: float,
+    on_results: Callable[[tuple[SpecialistResult, ...]], None] | None = None,
 ) -> tuple[SpecialistResult, ...]:
     """所有已选 Agent 均获一次机会；超时取消未完成任务，不留后台调用。"""
     if not plan.selections:
@@ -42,8 +43,13 @@ async def run_selected(
     if deadline <= time.monotonic():
         return tuple(SpecialistResult(item.agent_id, None, reason_code="deadline_exceeded") for item in plan.selections)
     tasks: list[asyncio.Future[SpecialistResult]] = [asyncio.ensure_future(worker(item)) for item in plan.selections]
+    interrupted: asyncio.CancelledError | None = None
     try:
         done, pending = await asyncio.wait(tasks, timeout=max(0.0, deadline - time.monotonic()))
+    except asyncio.CancelledError as error:
+        # 外层同一截止时间可能先触发；先收集子任务的安全进度，再继续传播取消。
+        interrupted = error
+        done, pending = set(), set(tasks)
     except BaseException:
         for task in tasks:
             task.cancel()
@@ -56,6 +62,25 @@ async def run_selected(
     results: list[SpecialistResult] = []
     for selection, task in zip(plan.selections, tasks, strict=True):
         if task not in done:
+            if task.done() and not task.cancelled():
+                try:
+                    partial = task.result()
+                except Exception:
+                    pass
+                else:
+                    if partial.agent_id == selection.agent_id:
+                        # 截止后只保留诊断元数据，迟到回答、引用和事实不能发布或写入记忆。
+                        results.append(
+                            SpecialistResult(
+                                selection.agent_id,
+                                None,
+                                reason_code="deadline_exceeded",
+                                tool_events=partial.tool_events,
+                                input_tokens=partial.input_tokens,
+                                output_tokens=partial.output_tokens,
+                            )
+                        )
+                        continue
             results.append(SpecialistResult(selection.agent_id, None, reason_code="deadline_exceeded"))
             continue
         if task.cancelled():
@@ -73,4 +98,9 @@ async def run_selected(
             results.append(SpecialistResult(selection.agent_id, None, reason_code="agent_identity_mismatch"))
         else:
             results.append(result)
-    return tuple(results)
+    collected = tuple(results)
+    if on_results is not None:
+        on_results(collected)
+    if interrupted is not None:
+        raise interrupted
+    return collected

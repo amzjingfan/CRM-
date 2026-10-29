@@ -5,9 +5,8 @@ import json
 import time
 import uuid
 from dataclasses import dataclass
-from typing import cast
 
-from app.agents.core.reply_safety import ReplyContentOrigin, ReplyEvidenceKind, ReplySafetyPolicy
+from app.agents.core.errors import LLMProviderError
 from app.agents.orchestration.coordinator import SpecialistResult
 from app.agents.orchestration.router import RouteModelPort
 from app.agents.runtime.context import ContextBudgetExceeded
@@ -51,6 +50,7 @@ async def aggregate_results(
     deadline: float,
     store_id: uuid.UUID,
     max_output_tokens: int = 1024,
+    privacy_policies: tuple[str, ...] = (),
 ) -> ReviewedSuggestion:
     """冲突和不可信输出失败关闭；任何结果都不授予自动发送权限。"""
     agent_ids = tuple(item.agent_id for item in results)
@@ -74,7 +74,7 @@ async def aggregate_results(
                 drafts.append(
                     {
                         "agent_id": str(item.agent_id),
-                        "untrusted_draft": prepare_untrusted_text(item.answer, source="agent_draft").text,
+                        "untrusted_draft": item.answer,
                         "verified_facts": dict(item.verified_facts),
                         "citations": list(item.citations),
                         "reason_code": item.reason_code,
@@ -100,6 +100,16 @@ async def aggregate_results(
         )
     except TimeoutError:
         return ReviewedSuggestion(None, "human_review", "deadline_exceeded", agent_ids, citations)
+    except Exception as error:
+        return ReviewedSuggestion(
+            None,
+            "human_review",
+            "aggregate_failed",
+            agent_ids,
+            (),
+            error.input_tokens if isinstance(error, LLMProviderError) else 0,
+            error.output_tokens if isinstance(error, LLMProviderError) else 0,
+        )
     if turn.calls or not turn.content:
         return ReviewedSuggestion(
             None,
@@ -110,36 +120,19 @@ async def aggregate_results(
             turn.input_tokens,
             turn.output_tokens,
         )
-    try:
-        safe_answer = prepare_untrusted_text(turn.content, source="agent_draft").text
-    except AppError:
-        return ReviewedSuggestion(None, "human_review", "sensitive_aggregate_output", agent_ids, citations)
-    successful_tools = {tool for item in results for tool in item.successful_tools}
-    # 售后查询是本轮对象级只读证据；名称或历史记忆不能解除旧退款词法阻断。
-    # 模型草稿仍无自动交付资格，申请状态/金额/对象是否支持原文交由下方独立复核。
-    has_aftersales_status = any(
-        observation.name == "query_aftersales"
-        and observation.status == "succeeded"
-        and observation.scope
-        and isinstance(observation.facts.get("returns"), list)
-        and any(
-            isinstance(row, dict) and isinstance(row.get("return_status"), str) and row["return_status"]
-            for row in cast(list[object], observation.facts["returns"])
-        )
-        for item in results
-        for observation in item.observations
-    )
-    decision = ReplySafetyPolicy().evaluate(
-        safe_answer,
-        evidence_kind=ReplyEvidenceKind.TOOL,
-        successful_tools=successful_tools,
-        content_origin=ReplyContentOrigin.MODEL_GENERATED if has_aftersales_status else ReplyContentOrigin.UNSTRUCTURED,
-        expected_store_id=store_id,
-    )
-    if not decision.is_safe:
+    safe_answer = turn.content.strip()
+    if not safe_answer or len(safe_answer) > 16_000:
         return ReviewedSuggestion(
-            None, "human_review", "unsafe_aggregate_output", agent_ids, citations, turn.input_tokens, turn.output_tokens
+            None,
+            "human_review",
+            "invalid_aggregate_response",
+            agent_ids,
+            citations,
+            turn.input_tokens,
+            turn.output_tokens,
         )
+    # 自然语言的隐私与业务含义统一交给独立模型对照证据复核，不再叠加旧词法裁决。
+    # 此处不会授予任何平台操作权限；权限、租户和工具执行仍在可信服务端校验。
     evidence: dict[str, object] = {}
     for item in results:
         evidence.update({f"{item.agent_id}:{key}": value for key, value in item.verified_facts.items()})
@@ -151,12 +144,28 @@ async def aggregate_results(
             evidence=evidence,
             provider=provider,
             deadline=deadline,
+            privacy_policies=privacy_policies,
+            max_output_tokens=max_output_tokens,
         )
     except TimeoutError:
-        return ReviewedSuggestion(None, "human_review", "deadline_exceeded", agent_ids, ())
+        return ReviewedSuggestion(
+            None, "human_review", "deadline_exceeded", agent_ids, (), turn.input_tokens, turn.output_tokens
+        )
     except ContextBudgetExceeded:
-        return ReviewedSuggestion(None, "human_review", "context_budget_exceeded", agent_ids, ())
-    if not review.supported:
+        return ReviewedSuggestion(
+            None, "human_review", "context_budget_exceeded", agent_ids, (), turn.input_tokens, turn.output_tokens
+        )
+    except Exception as error:
+        return ReviewedSuggestion(
+            None,
+            "human_review",
+            "evidence_review_failed",
+            agent_ids,
+            (),
+            turn.input_tokens + (error.input_tokens if isinstance(error, LLMProviderError) else 0),
+            turn.output_tokens + (error.output_tokens if isinstance(error, LLMProviderError) else 0),
+        )
+    if not review.supported or review.answer is None:
         return ReviewedSuggestion(
             None,
             "human_review",
@@ -167,7 +176,7 @@ async def aggregate_results(
             turn.output_tokens + review.output_tokens,
         )
     return ReviewedSuggestion(
-        safe_answer,
+        review.answer,
         "human_review",
         None,
         agent_ids,

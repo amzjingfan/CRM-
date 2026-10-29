@@ -1,5 +1,7 @@
 # 最新测试状态
 
+2026-10-29 详细工具回答续作正在 VERIFYING 前收尾，当前源码与发布候选尚未提交/部署。语义脱敏、失败轨迹和人工建议发布模式的验证以本轮最终 IR/TR/RR 为准；前次 R03 的失败结论保留历史边界，不表示本轮修复已在运行服务生效。production G8 仍 No-Go。
+
 2026-10-29 统一 Agent 与多店授权发布现场结论为 PARTIAL：精确 staging 发布、041、12 容器、固定出口与12项公网/缓存检查通过，已登录工具目录及原店铺/渠道/工作台只读回归通过；两个实际 Agent 请求仍无已接受业务回答，文件 RAG 未测。局部180项及组合2394/3、前端52/134的源身份和复用保持 R02，不冒充本轮重跑全量。详见[TR R03](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R03.md)。
 
 2026-10-29 [TikTok 多店 TR R02](../reports/tests/TR-MVP-TIKTOK-MULTISHOP-AUTH-001-20261029-R02.md) **PASS（远端主线功能集成本地门禁）**：PR #629 从 `origin/main=7cee8b4c` 合入，功能 subject `c289a9a0`；专属隔离 PostgreSQL/pgvector 全量后端 2394 passed/3 skipped，迁移 `034→041→034→041` 通过，前端契约 52/52、生产构建浏览器 134/134，Ruff、格式、mypy、类型及构建通过。两项 GitHub CI runner 空/0 步失败，记录为未运行并按持续授权使用本地替代。真实多店 OAuth、Webhook、逐店读取和 staging 部署尚未验收；production G8 No-Go。

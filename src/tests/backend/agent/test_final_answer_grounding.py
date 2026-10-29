@@ -38,6 +38,8 @@ class ReviewedModel:
                 "supported": self.supported,
                 "evidence_ids": list(payload["evidence"]) if self.supported else [],
                 "reason_code": "supported" if self.supported else "unsupported",
+                "privacy_reviewed": True,
+                "redactions": [],
             },
         )
         return ToolTurn(None, (call,), {"role": "assistant", "content": None}, 1, 1)
@@ -45,6 +47,7 @@ class ReviewedModel:
 
 @pytest.mark.asyncio
 async def test_order_status_does_not_authorize_refund_completion() -> None:
+    model = ReviewedModel("您的退款已经到账。", False)
     result = await aggregate_results(
         question="我的退款怎么样",
         results=(
@@ -55,12 +58,13 @@ async def test_order_status_does_not_authorize_refund_completion() -> None:
                 successful_tools=("query_order",),
             ),
         ),
-        provider=ReviewedModel("您的退款已经到账。", True),
+        provider=model,
         deadline=time.monotonic() + 2,
         store_id=uuid.uuid4(),
     )
-    assert result.reason_code == "unsafe_aggregate_output"
+    assert result.reason_code == "answer_not_grounded"
     assert result.content is None
+    assert model.review_evidence is not None
 
 
 @pytest.mark.asyncio
@@ -171,7 +175,7 @@ async def test_aftersales_status_requires_current_scoped_facts_and_independent_r
     }
     observation = ToolObservation("aftersales-1", "query_aftersales", "succeeded", facts, "a" * 16)
     observations = (observation,) if with_observation else ()
-    model = ReviewedModel("The refund has been completed.", supported)
+    model = ReviewedModel("The refund has been completed.", supported and with_observation)
     answer = await aggregate_results(
         question="What is the status of refund application r1?",
         results=(
@@ -192,12 +196,24 @@ async def test_aftersales_status_requires_current_scoped_facts_and_independent_r
         assert "r1" in str(model.review_evidence)
         assert all(status in str(model.review_evidence) for status in statuses)
     else:
-        assert model.review_evidence is None
+        assert model.review_evidence is not None
     assert answer.content == ("The refund has been completed." if supported and with_observation else None)
     assert answer.reason_code == (
-        None
-        if supported and with_observation
-        else "answer_not_grounded"
-        if with_observation
-        else "unsafe_aggregate_output"
+        None if supported and with_observation else "answer_not_grounded" if with_observation else "answer_not_grounded"
     )
+
+
+@pytest.mark.asyncio
+async def test_semantic_review_retains_clarification_about_unverified_refund_without_keyword_block() -> None:
+    answer = "订单已发货；本次查询未核实退款是否到账，需由坐席另行确认。"
+    model = ReviewedModel(answer, True)
+    result = await aggregate_results(
+        question="订单和退款进度如何",
+        results=(SpecialistResult(uuid.uuid4(), answer, verified_facts={"query_order.status": "shipped"}),),
+        provider=model,
+        deadline=time.monotonic() + 2,
+        store_id=uuid.uuid4(),
+    )
+    assert model.review_evidence is not None
+    assert result.content == answer
+    assert result.reason_code is None

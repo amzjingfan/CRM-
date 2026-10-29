@@ -14,6 +14,8 @@ def accepted_review_turn(messages) -> ToolTurn:
             "supported": True,
             "evidence_ids": list(payload["evidence"]),
             "reason_code": "supported",
+            "privacy_reviewed": True,
+            "redactions": [],
         },
     )
     return ToolTurn(None, (call,), {"role": "assistant", "content": None}, 2, 2)

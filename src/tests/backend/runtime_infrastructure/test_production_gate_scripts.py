@@ -165,7 +165,10 @@ def test_docker_compose_resolves_g5_and_default_staging_modes(g5_enabled: bool, 
     assert backend_token == (RETRIEVAL_TOKEN_SENTINEL if g5_enabled else None)
 
 
-def test_agent_debug_overlay_only_opens_backend_model_clients(staging_env_file: Path) -> None:
+@pytest.mark.parametrize("suggestions_enabled", [False, True])
+def test_agent_debug_overlay_only_opens_backend_model_clients(
+    staging_env_file: Path, suggestions_enabled: bool
+) -> None:
     """Compose 真实合并后，调试不打开通用 LLM、SSE 或其他服务的检索能力。"""
     if shutil.which("docker") is None:
         pytest.skip("Docker Compose CLI unavailable")
@@ -179,6 +182,8 @@ def test_agent_debug_overlay_only_opens_backend_model_clients(staging_env_file: 
         "docker-compose.rootless-staging.yml",
         "docker-compose.rootless-staging-agent-debug.yml",
     ]
+    if suggestions_enabled:
+        files.append("docker-compose.rootless-staging-agent-suggestions.yml")
     command = ["docker", "compose", "--project-name", "crm-agent-debug-contract", "--profile", "ai"]
     command.extend(["--env-file", str(staging_env_file)])
     for name in files:
@@ -199,11 +204,14 @@ def test_agent_debug_overlay_only_opens_backend_model_clients(staging_env_file: 
     backend = config["services"]["backend"]["environment"]
     assert backend["AGENT_DEBUG_ENABLED"] == "true"
     assert backend["AGENT_V2_DEBUG_ENABLED"] == "true"
-    assert backend["AGENT_V2_FORMAL_ENABLED"] == "false"
+    assert backend["AGENT_V2_FORMAL_ENABLED"] == ("true" if suggestions_enabled else "false")
     assert backend["LLM_PRIMARY_CONTEXT_WINDOW_TOKENS"] == "32768"
     assert backend["LLM_FALLBACK_CONTEXT_WINDOW_TOKENS"] == "16384"
     assert backend["EMBEDDING_ENABLED"] == "true"
-    assert backend["LLM_ENABLED"] == "false"
+    assert backend["LLM_ENABLED"] == ("true" if suggestions_enabled else "false")
+    assert backend["LLM_MAX_OUTPUT_TOKENS"] == "2048"
+    assert backend["AUTO_REPLY_ENABLED"] == "false"
+    assert backend["REAL_TIKTOK_MESSAGE_WRITE_ENABLED"] == "false"
     assert backend["SSE_LOAD_TEST_ENABLED"] == "false"
     retrieval_token = config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"]
     assert backend["RETRIEVAL_MODEL_SERVICE_TOKEN"] == retrieval_token
@@ -1019,6 +1027,65 @@ def test_staging_agent_debug_requires_explicit_mode_and_shared_token(staging_env
     config["services"]["backend"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = "wrong" * 8
     config_path.write_text(json.dumps(config), encoding="utf-8")
     rejected = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentDebug", environment=environment)
+    assert rejected.returncode != 0
+
+
+def test_staging_agent_suggestions_require_explicit_backend_only_mode(staging_env_file: Path, tmp_path: Path) -> None:
+    model_asset_dir = Path(
+        next(
+            line.split("=", 1)[1]
+            for line in staging_env_file.read_text(encoding="utf-8").splitlines()
+            if line.startswith("RETRIEVAL_MODEL_ASSET_DIR=")
+        )
+    )
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = tmp_path / "fake-compose-config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["services"]["backend"]["environment"].update(
+        {
+            "AGENT_V2_FORMAL_ENABLED": "true",
+            "LLM_ENABLED": "true",
+            "EMBEDDING_ENABLED": "true",
+            "RETRIEVAL_MODEL_SERVICE_TOKEN": RETRIEVAL_TOKEN_SENTINEL,
+        }
+    )
+    config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = (
+        RETRIEVAL_TOKEN_SENTINEL
+    )
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    with staging_env_file.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key"
+        )
+    evidence_file = tmp_path / "agent-suggestions-validate.json"
+    args = (
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://staging.overselfx.com",
+        "-EvidenceFile",
+        str(evidence_file),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-ValidateOnly",
+    )
+    denied = run_powershell(PREFLIGHT_SCRIPT, *args, environment=environment)
+    assert denied.returncode != 0
+    accepted = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentSuggestions", environment=environment)
+    assert accepted.returncode == 0, normalized_process_output(accepted)
+    evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
+    assert evidence["agent_v2_formal_enabled"] is True
+    assert evidence["agent_debug_enabled"] is False
+    assert evidence["g5_sse_load_test_enabled"] is False
+    assert evidence["tiktok_manual_send_enabled"] is False
+    config["services"]["agent-worker"]["environment"]["AGENT_V2_FORMAL_ENABLED"] = "true"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    rejected = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentSuggestions", environment=environment)
     assert rejected.returncode != 0
 
 

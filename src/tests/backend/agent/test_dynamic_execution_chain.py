@@ -21,7 +21,10 @@ from app.tools.contracts import ToolResult
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(("use_business", "selection"), [(False, False), (True, False), (True, True)])
-async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeypatch, use_business, selection) -> None:
+@pytest.mark.parametrize("answer_budget", [1024, 2048])
+async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
+    monkeypatch, use_business, selection, answer_budget
+) -> None:
     from app.agents.runtime import execution
 
     store, conversation, customer, agent_id, run_id = (uuid.uuid4() for _ in range(5))
@@ -75,9 +78,11 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeyp
                     None, (call,), {"role": "assistant", "content": None, "tool_calls": [{"id": "tool-1"}]}, 5, 3
                 )
             if names == ["query_order"]:
+                assert max_output_tokens == answer_budget
                 assert ("29.00" if selection else "shipped") in str(messages[-1])
                 return ToolTurn(answer, (), {"role": "assistant", "content": answer}, 5, 3)
             assert names == []
+            assert max_output_tokens == answer_budget
             return ToolTurn(answer, (), {"role": "assistant", "content": answer}, 5, 3)
 
     model = FakeModel()
@@ -118,7 +123,12 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(monkeyp
         permissions={"orders.view", "knowledge.view"},
         trace_id="synthetic-trace",
         deadline=time.monotonic() + 5,
-        settings=Settings(_env_file=None, LLM_PRIMARY_PROVIDER="deepseek", LLM_PRIMARY_MODEL="deepseek-chat"),
+        settings=Settings(
+            _env_file=None,
+            LLM_PRIMARY_PROVIDER="deepseek",
+            LLM_PRIMARY_MODEL="deepseek-chat",
+            LLM_MAX_OUTPUT_TOKENS=answer_budget,
+        ),
         runtime=None,
         order_id="trusted-order",
         live_order=None,

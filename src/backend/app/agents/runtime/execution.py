@@ -13,7 +13,7 @@ from app.agents.management.repository import PublishedAgent
 from app.agents.memory.service import MemoryFact
 from app.agents.orchestration.coordinator import SpecialistResult
 from app.agents.orchestration.router import RoutedAgent
-from app.agents.orchestration.service import DynamicRunResult, execute_dynamic_run
+from app.agents.orchestration.service import DynamicRunResult, RunProgress, execute_dynamic_run
 from app.agents.providers.factory import model_limits, tool_provider
 from app.agents.rag.factory import build_bound_file_rag
 from app.agents.rag.retriever import EvidenceBundle, revalidate_evidence
@@ -248,6 +248,7 @@ async def execute_model_run(
     memory_summary: str,
     memory_facts: tuple[MemoryFact, ...] = (),
     user: User | None = None,
+    progress: RunProgress | None = None,
 ) -> DynamicRunResult:
     """每个子 Agent 独立数据库会话，所有模型和工具共享总截止时间。"""
     rag_service = build_bound_file_rag(settings, runtime) if any(agent.file_ids for agent in agents) else None
@@ -265,6 +266,7 @@ async def execute_model_run(
         selected = next((agent for agent in agents if agent.id == selection.agent_id), None)
         if selected is None or selected.model_provider is None or selected.model_name is None:
             return SpecialistResult(selection.agent_id, None, reason_code="agent_model_unavailable")
+        selected_limits = model_limits(settings, selected.model_provider, selected.model_name)
         async with session_factory() as worker_session:
             executor = (
                 AgentDebugLiveOrderExecutor(
@@ -295,7 +297,8 @@ async def execute_model_run(
                         trace_id=trace_id,
                     ),
                     deadline=deadline,
-                    model_limits=model_limits(settings, selected.model_provider, selected.model_name),
+                    model_limits=selected_limits,
+                    max_output_tokens=selected_limits.output_reserve_tokens,
                     session_summary=memory_summary,
                     recent_history=recent_history,
                     session_facts=memory_facts,
@@ -316,5 +319,9 @@ async def execute_model_run(
             deadline=deadline,
             max_catalog_tokens=catalog_budget,
             routing_context=routing_context,
+            max_answer_tokens=model_limits(
+                settings, settings.llm_primary_provider, settings.llm_primary_model
+            ).output_reserve_tokens,
+            progress=progress,
         )
     return await finalize_result_evidence(result, snapshot, user=user)
