@@ -1,0 +1,340 @@
+{
+  "environment": "staging",
+  "status": "local_pass_live_pending",
+  "subject_sha": "7fce34ef954d398af29de8ef36c62978fa58f8c2",
+  "base_sha": "aa6366d27f7621967407c44725b3df2b58976501",
+  "production_release": false,
+  "backend_passed": 2571,
+  "skipped": 3,
+  "new_tests": 10,
+  "review": "APPROVE",
+  "frontend_same_tree_reuse": {
+    "contracts": 52,
+    "browser": 142
+  },
+  "public_aa_four_cases": [
+    {
+      "trace_id": "1bbe0c37-e616-49a1-92fb-2c02f225a0e7",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 21350,
+          "input_tokens": 24240,
+          "output_tokens": 2202,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 12540,
+          "output_tokens": 1035,
+          "output_summary": "tool_count=4;citation_count=2"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "dc0a9809-be49-4034-a56d-15a0cf07d98b",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 32086,
+          "input_tokens": 35790,
+          "output_tokens": 3198,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 16744,
+          "output_tokens": 1123,
+          "output_summary": "tool_count=5;citation_count=1"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "failed",
+          "result": {
+            "succeeded": false
+          },
+          "error_code": "DYNAMIC_TOOL_FAILED",
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "b99f53b5-91e7-4e1d-ad9a-226cf24bc860",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": null,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 23298,
+          "input_tokens": 23986,
+          "output_tokens": 2276,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 12413,
+          "output_tokens": 1089,
+          "output_summary": "tool_count=4;citation_count=1"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "a1ac1ef5-3c44-463f-80fd-80e208bb5834",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": null,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 27418,
+          "input_tokens": 41080,
+          "output_tokens": 3290,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 21598,
+          "output_tokens": 1166,
+          "output_summary": "tool_count=5;citation_count=3"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "failed",
+          "result": {
+            "succeeded": false
+          },
+          "error_code": "DYNAMIC_TOOL_FAILED",
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    }
+  ],
+  "candidate_cases": [
+    {
+      "case": "formal_en",
+      "trace": "2c001f77-3936-4bfe-bfa5-f07528366090",
+      "seconds": 32.28,
+      "characters": 1875,
+      "cjk": 0,
+      "has_content": true,
+      "unique_document_fact": true,
+      "citations": 1,
+      "send_performed": false
+    },
+    {
+      "case": "missing_en",
+      "trace": "29c0a7cf-1130-487d-ad8c-ad213a4172a4",
+      "seconds": 6.857,
+      "characters": 310,
+      "cjk": 0,
+      "has_content": true,
+      "unique_document_fact": false,
+      "citations": 1,
+      "send_performed": false
+    },
+    {
+      "case": "missing_zh",
+      "trace": "50d106de-cdd6-4d0d-ae13-7233f2e47a0e",
+      "seconds": 6.077,
+      "characters": 75,
+      "cjk": 71,
+      "has_content": true,
+      "unique_document_fact": false,
+      "citations": 0,
+      "send_performed": false
+    }
+  ],
+  "platform_send_count": 0,
+  "fixture_cleanup_pending": true,
+  "prompt_versions": [
+    "agent-answer-output-v2.3.0",
+    "agent-evidence-review-v2.4.0"
+  ]
+}

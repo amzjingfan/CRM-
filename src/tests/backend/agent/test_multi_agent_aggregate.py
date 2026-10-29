@@ -73,7 +73,7 @@ async def test_conflicting_verified_facts_stop_aggregation() -> None:
 
 @pytest.mark.asyncio
 async def test_unverified_specialist_draft_cannot_become_answer() -> None:
-    model = AnswerModel("订单已经送达。")
+    model = AnswerModel("目前没有可核实的订单状态，请由人工确认。")
     result = await aggregate_results(
         question="订单到了吗",
         results=(SpecialistResult(uuid.uuid4(), "订单已经送达。"),),
@@ -82,8 +82,8 @@ async def test_unverified_specialist_draft_cannot_become_answer() -> None:
         store_id=uuid.uuid4(),
     )
     assert result.reason_code == "no_verified_evidence"
-    assert "无法核实" in (result.content or "")
-    assert model.calls == 0
+    assert result.content == model.answer
+    assert model.calls == 2
 
 
 @pytest.mark.asyncio

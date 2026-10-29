@@ -1,5 +1,9 @@
 # 最新测试状态
 
+2026-10-29 [TR R09](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R09.md)：精简与双语澄清本地2571/3、静态和独立审查通过；真实候选英文1875字及双语缺证通过。aa公开中英调试/工作台四正例通过，英文长稿和英文缺证旧兜底未满足新要求；本subject未部署，任务PARTIAL。
+
+2026-10-29 [TR R09](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R09.md)：精简与双语澄清本地2571/3、静态和独立审查通过；真实候选英文1875字及双语缺证通过。aa公开中英调试/工作台四正例通过，英文长稿和英文缺证旧兜底未满足新要求；本subject未部署，任务PARTIAL。
+
 2026-10-29 第二批本地门禁通过，subject `ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba`；新候选未部署。后端2514/3与新增统计8、前端52/105、真实候选5/5、输出语义14+1补测及配置16复用见[TR R05](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R05.md)。用户要求等待明确批准才部署/发布v4，staging仍e3fc，production G8 No-Go。
 
 2026-10-29 统一 Agent 与多店授权发布现场结论为 PARTIAL：精确 staging 发布、041、12 容器、固定出口与12项公网/缓存检查通过，已登录工具目录及原店铺/渠道/工作台只读回归通过；两个实际 Agent 请求仍无已接受业务回答，文件 RAG 未测。局部180项及组合2394/3、前端52/134的源身份和复用保持 R02，不冒充本轮重跑全量。详见[TR R03](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R03.md)。

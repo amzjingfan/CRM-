@@ -1,0 +1,34 @@
+{
+  "batch": "CLEANUP-20261029-002",
+  "task": "MAINT-CLEANUP-20261029-002",
+  "operation": "recoverable_quarantine",
+  "retain_until": "2026-11-05",
+  "file_count": 5,
+  "files": [
+    {
+      "path": "tests/.artifacts/agent-rag-staging-20261029/pytest-fit-cache/.gitignore",
+      "bytes": 37,
+      "sha256": "3ed731b65d06150c138e2dadb0be0697550888a6b47eb8c45ecc9adba8b8e9bd"
+    },
+    {
+      "path": "tests/.artifacts/agent-rag-staging-20261029/pytest-fit-cache/CACHEDIR.TAG",
+      "bytes": 191,
+      "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4"
+    },
+    {
+      "path": "tests/.artifacts/agent-rag-staging-20261029/pytest-fit-cache/README.md",
+      "bytes": 302,
+      "sha256": "73fd6fccdd802c419a6b2d983d6c3173b7da97558ac4b589edec2dfe443db9ad"
+    },
+    {
+      "path": "tests/.artifacts/agent-rag-staging-20261029/pytest-fit-cache/v/cache/lastfailed",
+      "bytes": 53,
+      "sha256": "248664f4699590f8cfcd0f4e9eb0c876cd47fc6e54b42882ca29d78ea0de4951"
+    },
+    {
+      "path": "tests/.artifacts/agent-rag-staging-20261029/pytest-fit-cache/v/cache/nodeids",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ]
+}

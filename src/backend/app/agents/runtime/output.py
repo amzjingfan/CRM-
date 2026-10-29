@@ -6,6 +6,11 @@ from markdown_it.token import Token
 _MARKDOWN = MarkdownIt("commonmark", {"html": False}).enable(["table", "strikethrough"])
 
 
+def platform_character_count(text: str) -> int:
+    """与前端和平台的 UTF-16 字数约束一致，emoji 计两个单元。"""
+    return len(text.encode("utf-16-le")) // 2
+
+
 def _inline(tokens: list[Token]) -> str:
     parts: list[str] = []
     links: list[tuple[str, int]] = []

@@ -17,7 +17,7 @@ from app.agents.safety.input import prepare_untrusted_text
 from app.agents.tools.business_identifiers import business_identifier_values
 from app.shared.exceptions.errors import AppError
 
-AGGREGATE_PROMPT_VERSION = "agent-answer-output-v2.2.0"
+AGGREGATE_PROMPT_VERSION = "agent-answer-output-v2.3.0"
 
 _AGGREGATE_SYSTEM = (
     "你是人工客服的内部建议汇总器。将多个 Agent 的已核验草稿合为一段回答。"
@@ -31,6 +31,11 @@ _AGGREGATE_SYSTEM = (
     "除非已发布要求明确另有语言选择，跟随买家原文语言。简单问题简洁直答；需要明细、完整轨迹或明确要求详细时才展开相关内容，避免重复。"
     "输出可供坐席审阅的买家答复正文，使用纯文本段落和必要的清晰换行。不要 Markdown 标记，"
     "不要加入内部草稿/审核/发送状态、工具名、技术配置、错误码或分页实现说明；这些属于界面元数据。"
+    "max_answer_characters 是平台长度预算（UTF-16单元），回答应在预算内完整表达。"
+    "平台长度优先于详细列举要求；内容过多时精简重复和无关细节，缩写冗长商品标题、合并轨迹节点，"
+    "保留关键事实、结论和必要编号，不输出被截断的句子。目标不超过 target_answer_characters，为排版留出余量。"
+    "evidence_status 为 no_verified_evidence 时只用买家原文语言说明无法确认并澄清或建议人工核实，"
+    "不能从草稿、常识或服务端缺证状态推导任何真实政策、状态或承诺。"
 )
 
 
@@ -66,6 +71,7 @@ async def aggregate_results(
     privacy_policies: tuple[str, ...] = (),
     output_policies: tuple[str, ...] = (),
     on_usage: Callable[[int, int], None] | None = None,
+    max_answer_characters: int = 2000,
 ) -> ReviewedSuggestion:
     """冲突和不可信输出失败关闭；任何结果都不授予自动发送权限。"""
     agent_ids = tuple(item.agent_id for item in results)
@@ -80,20 +86,13 @@ async def aggregate_results(
     citations = tuple(dict.fromkeys(citation for item in results for citation in item.citations))
     if not results or not any(item.answer for item in results):
         return ReviewedSuggestion(None, "human_review", "no_agent_answer", agent_ids, citations)
-    if not citations and not any(item.verified_facts for item in results):
-        return ReviewedSuggestion(
-            "目前没有足够的已核验信息，无法核实具体情况。请补充相关信息或由人工继续确认。",
-            "human_review",
-            "no_verified_evidence",
-            agent_ids,
-            (),
-        )
+    missing_evidence = not citations and not any(item.verified_facts for item in results)
     if _conflicting_facts(results):
         return ReviewedSuggestion(None, "human_review", "conflicting_verified_facts", agent_ids, citations)
     drafts = []
     try:
         for item in results:
-            if item.answer is not None:
+            if item.answer is not None and not missing_evidence:
                 drafts.append(
                     {
                         "agent_id": str(item.agent_id),
@@ -111,7 +110,14 @@ async def aggregate_results(
         {
             "role": "user",
             "content": json.dumps(
-                {"question": safe_question, "drafts": drafts, "published_output_policies": list(output_policies)},
+                {
+                    "question": safe_question,
+                    "drafts": drafts,
+                    "evidence_status": "no_verified_evidence" if missing_evidence else "available",
+                    "published_output_policies": list(output_policies),
+                    "max_answer_characters": max_answer_characters,
+                    "target_answer_characters": max_answer_characters * 4 // 5,
+                },
                 ensure_ascii=False,
             ),
         },
@@ -174,6 +180,9 @@ async def aggregate_results(
     for item in results:
         evidence.update({f"{item.agent_id}:{key}": value for key, value in item.verified_facts.items()})
         evidence.update(item.grounding_evidence)
+    if missing_evidence:
+        # 缺证是可信服务端状态，仅支持澄清，不能成为业务事实或政策引用。
+        evidence = {"evidence_status": "no_verified_evidence"}
 
     async def review_and_regenerate() -> GroundingDecision:
         """不重投被拒旧稿：只从本次证据生成新稿，每稿独立复核，共用原截止时间。"""
@@ -199,6 +208,7 @@ async def aggregate_results(
                     max_output_tokens=max_output_tokens,
                     on_usage=on_usage,
                     reviewed_answers=reviewed_answers,
+                    max_answer_characters=max_answer_characters,
                 )
                 input_tokens += review.input_tokens
                 output_tokens += review.output_tokens
@@ -220,6 +230,9 @@ async def aggregate_results(
                                 "question": safe_question,
                                 "evidence": evidence,
                                 "published_output_policies": list(output_policies),
+                                "evidence_status": "no_verified_evidence" if missing_evidence else "available",
+                                "max_answer_characters": max_answer_characters,
+                                "target_answer_characters": max_answer_characters * 4 // 5,
                             },
                             ensure_ascii=False,
                         ),
@@ -289,7 +302,7 @@ async def aggregate_results(
     return ReviewedSuggestion(
         review.answer,
         "human_review",
-        None,
+        "no_verified_evidence" if missing_evidence else None,
         agent_ids,
         citations,
         input_tokens=turn.input_tokens + review.input_tokens,
