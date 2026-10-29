@@ -116,6 +116,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
   const [busy, setBusy] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const [storeTooltip, setStoreTooltip] = useState<{ id: string; names: string[]; top: number; left: number } | null>(null);
   const [deleting, setDeleting] = useState<ReceptionPolicy | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkPolicyId, setBulkPolicyId] = useState("");
@@ -188,6 +189,13 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     setMenuId(item.id);
   }
 
+  function showStoreTooltip(id: string, names: string[], target: HTMLElement) {
+    const rect = target.getBoundingClientRect();
+    const height = Math.min(window.innerHeight - 16, 36 + names.length * 22);
+    const top = rect.bottom + height + 6 > window.innerHeight ? Math.max(8, rect.top - height - 6) : rect.bottom + 6;
+    setStoreTooltip({ id, names, top, left: Math.max(8, Math.min(rect.left, window.innerWidth - 308)) });
+  }
+
   function openEditor(item?: ReceptionPolicy) {
     setEditing(item ?? "new"); setFormError(""); setMenuId(null);
     if (!item) { setDraft(blankDraft(defaultStoreId)); return; }
@@ -228,15 +236,15 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
       daily_start_time: draft.validity_mode === "fixed_hours" ? draft.daily_start_time : null,
       daily_end_time: draft.validity_mode === "fixed_hours" ? draft.daily_end_time : null,
     };
-    const payload: NewReceptionPolicy = {
-      kind, name, content, timeout_minutes: minutes, schedule,
+    const update: Omit<NewReceptionPolicy, "kind"> = {
+      name, content, timeout_minutes: minutes, schedule,
       valid_from: legacy ? editing.valid_from : null, valid_to: legacy ? editing.valid_to : null,
       enabled: draft.enabled, store_ids: draft.store_ids,
     };
     setBusy(true); setFormError("");
     try {
-      if (editing === "new") await createReceptionPolicy(payload);
-      else await updateReceptionPolicy(editing.id, payload);
+      if (editing === "new") await createReceptionPolicy({ kind, ...update });
+      else await updateReceptionPolicy(editing.id, update);
       setEditing(null); setNotice("配置已保存。自动发送仍未启用。"); setRefreshKey((key) => key + 1);
     } catch (caught) { setFormError(errorText(caught)); }
     finally { setBusy(false); }
@@ -310,12 +318,13 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
         <div className="reception-table-wrap"><table className="reception-table reception-policy-table"><thead><tr><th>执行顺序</th><th>策略名称</th><th>发送内容</th><th><span className="reception-status-help">策略状态 <Info size={14} aria-label="策略状态说明" tabIndex={0} /><span className="reception-status-tooltip">生效中：开关开启且当前时间在有效期内<br />未开始：开关开启且当前时间在开始时间之前<br />已过期：开关开启且当前时间在结束时间之后<br />未启用：策略开关关闭</span></span></th><th>有效期</th><th>适用店铺</th><th>策略开关</th><th>操作</th></tr></thead><tbody>{visible.map((policy) => {
           const state = policyStatus(policy, stores, now);
           const names = policy.store_ids.map((id) => stores.find((store) => store.id === id)?.alias || stores.find((store) => store.id === id)?.name || id);
-          return <tr key={policy.id}><td>{policies.findIndex((item) => item.id === policy.id) + 1}</td><td><strong>{policy.name}</strong>{kind === "timeout" ? <small className="reception-policy-delay">超时 {policy.timeout_minutes} 分钟</small> : null}</td><td><span className="reception-summary" title={policy.content}>{policy.content}</span></td><td><span className={`reception-policy-status ${state}`}><i />{statusLabels[state]}</span></td><td><span className="reception-policy-validity">{validityText(policy)}</span></td><td><span className="reception-policy-store-count" title={names.join("、")}>{names.length} 家店铺 <span>···</span></span></td><td><button aria-label={`${policy.name}配置开关`} aria-pressed={policy.enabled} className={`reception-switch ${policy.enabled ? "on" : ""}`} disabled={!canEdit || busy} onClick={() => void toggle(policy)} title="仅配置状态，不自动发送" type="button"><span />{policy.enabled ? "开" : "关"}</button></td><td><div className="reception-row-actions"><button disabled={!canEdit || busy} onClick={() => openEditor(policy)} type="button">编辑</button><button disabled={!canEdit || busy} onClick={() => void copy(policy)} type="button">复制</button><span className="reception-more-wrap"><button aria-expanded={menuId === policy.id} aria-label={`${policy.name}更多操作`} disabled={!canEdit || busy} onClick={(event) => toggleMenu(policy, event)} type="button"><DotsThree size={17} /> 更多</button></span></div></td></tr>;
+          return <tr key={policy.id}><td>{policies.findIndex((item) => item.id === policy.id) + 1}</td><td><strong>{policy.name}</strong>{kind === "timeout" ? <small className="reception-policy-delay">超时 {policy.timeout_minutes} 分钟</small> : null}</td><td><span className="reception-summary" title={policy.content}>{policy.content}</span></td><td><span className={`reception-policy-status ${state}`}><i />{statusLabels[state]}</span></td><td><span className="reception-policy-validity">{validityText(policy)}</span></td><td><span aria-label={`${names.length} 家店铺：${names.join("、")}`} className="reception-policy-store-count" onBlur={() => setStoreTooltip(null)} onFocus={(event) => showStoreTooltip(policy.id, names, event.currentTarget)} onMouseEnter={(event) => showStoreTooltip(policy.id, names, event.currentTarget)} onMouseLeave={() => setStoreTooltip(null)} tabIndex={0}>{names.length} 家店铺 <span aria-hidden="true">···</span></span></td><td><button aria-label={`${policy.name}配置开关`} aria-pressed={policy.enabled} className={`reception-switch ${policy.enabled ? "on" : ""}`} disabled={!canEdit || busy} onClick={() => void toggle(policy)} title="仅配置状态，不自动发送" type="button"><span />{policy.enabled ? "开" : "关"}</button></td><td><div className="reception-row-actions"><button disabled={!canEdit || busy} onClick={() => openEditor(policy)} type="button">编辑</button><button disabled={!canEdit || busy} onClick={() => void copy(policy)} type="button">复制</button><span className="reception-more-wrap"><button aria-expanded={menuId === policy.id} aria-label={`${policy.name}更多操作`} disabled={!canEdit || busy} onClick={(event) => toggleMenu(policy, event)} type="button"><DotsThree size={17} />更多</button></span></div></td></tr>;
         })}</tbody></table></div>
         <div className="reception-pagination"><span>已为您查询到 {shown.length} 条记录</span><button aria-label="上一页" disabled={page <= 1} onClick={() => setPage(page - 1)} type="button">‹</button><strong>{Math.min(page, pages)}</strong><button aria-label="下一页" disabled={page >= pages} onClick={() => setPage(page + 1)} type="button">›</button><select aria-label="每页条数" onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }} value={pageSize}><option value={10}>10 条/页</option><option value={20}>20 条/页</option><option value={50}>50 条/页</option></select></div>
       </> : <EmptyState label={search || filter !== "all" ? "没有符合条件的策略" : `暂无${title}配置`} />}
     </section>
 
+    {storeTooltip ? <div className="reception-store-tooltip" role="tooltip" style={{ top: storeTooltip.top, left: storeTooltip.left }}><strong>适用店铺</strong>{storeTooltip.names.map((name, index) => <span key={`${storeTooltip.id}-${index}`}>{name}</span>)}</div> : null}
     {menuPolicy ? <div className="reception-more-menu reception-policy-floating-menu" style={menuPosition}><button disabled={policies.at(-1)?.id === menuPolicy.id} onClick={() => void reorder(menuPolicy, "down")} type="button">下移</button><button disabled={policies.at(-1)?.id === menuPolicy.id} onClick={() => void reorder(menuPolicy, "bottom")} type="button">置底</button><button onClick={() => { setDeleting(menuPolicy); setMenuId(null); }} type="button">删除</button></div> : null}
     {editing ? <div className="reception-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}><section aria-label={`${editing === "new" ? "新增" : "编辑"}${title}`} aria-modal="true" className="reception-modal reception-policy-editor" role="dialog"><header><div><h2>{editing === "new" ? "新增" : "编辑"}{title}</h2><p>仅保存策略配置；不会自动向买家发送。</p></div><button aria-label="关闭" className="reception-icon-button" onClick={() => setEditing(null)} type="button"><X size={20} /></button></header><form onSubmit={(event) => void save(event)}><div className="reception-policy-fields">
       <label className="reception-field">策略名称<input aria-label="策略名称" maxLength={100} onChange={(event) => setDraft({ ...draft, name: event.target.value })} required value={draft.name} /></label>

@@ -1505,6 +1505,40 @@ test("team form permits system admin without store and resets to disabled agent 
   }
 });
 
+test("account deletion requires a disabled account and explicit confirmation", async () => {
+  const account = (id, status) => ({
+    id, login_name: `agent_${status}`, name: `Agent ${status}`, email: null, phone: null,
+    timezone: "Asia/Shanghai", max_concurrent_sessions: 50, status,
+    assignments: [{ role: "agent", store_id: store.id }], department_ids: [],
+    last_login_at: null, created_at: "2026-10-22T00:00:00Z",
+  });
+  const active = account("00000000-0000-4000-8000-0000000000c1", "active");
+  const disabled = account("00000000-0000-4000-8000-0000000000c2", "disabled");
+  let deleted = false;
+  const { context, page } = await openPage("/settings/team", {
+    "GET /v1/settings/team": [active, disabled],
+    "GET /v1/settings/stores": [store],
+  }, async (context) => {
+    await context.route(`**/v1/settings/team/${disabled.id}/permanent`, async (route) => {
+      deleted = true;
+      await route.fulfill({ status: 204, headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" } });
+    });
+  });
+  try {
+    await page.getByRole("row", { name: /Agent active/ }).getByRole("button", { name: "Agent active 更多操作" }).click();
+    assert.equal(await page.getByRole("button", { name: "删除账号" }).isDisabled(), true);
+    await page.getByRole("row", { name: /Agent active/ }).getByRole("button", { name: "Agent active 更多操作" }).click();
+    await page.getByRole("row", { name: /Agent disabled/ }).getByRole("button", { name: "Agent disabled 更多操作" }).click();
+    await page.getByRole("button", { name: "删除账号" }).click();
+    const dialog = page.getByRole("alertdialog", { name: "删除账号" });
+    await dialog.getByText(/此操作无法恢复/).waitFor();
+    assert.equal(deleted, false);
+    await dialog.getByRole("button", { name: "确认永久删除" }).click();
+    await page.getByRole("status").getByText("账号已删除").waitFor();
+    assert.equal(deleted, true);
+  } finally { await context.close(); }
+});
+
 test("department members show deferred permission controls and removal uses only membership API", async () => {
   const departmentId = "00000000-0000-4000-8000-0000000000d1";
   const memberId = "00000000-0000-4000-8000-0000000000c1";

@@ -145,22 +145,22 @@
 .reception-policy-actions > button:disabled { color: var(--muted); cursor: not-allowed; }
 .reception-policy-actions .primary-button { min-height: 34px; border-radius: 3px; padding: 7px 13px; }
 .reception-policy-card { min-height: 180px; }
-.reception-policy-table { min-width: 820px; table-layout: fixed; }
+.reception-policy-table { min-width: 1080px; table-layout: fixed; }
 .reception-policy-table th, .reception-policy-table td { padding: 16px 9px; }
 .reception-policy-table td { height: 66px; }
 .reception-policy-table th { color: var(--text); background: var(--surface-soft); font-weight: 600; }
 .reception-policy-table th:nth-child(1) { width: 7%; }
 .reception-policy-table th:nth-child(2) { width: 12%; }
-.reception-policy-table th:nth-child(3) { width: 19%; }
+.reception-policy-table th:nth-child(3) { width: 18%; }
 .reception-policy-table th:nth-child(4) { width: 11%; }
-.reception-policy-table th:nth-child(5) { width: 17%; }
+.reception-policy-table th:nth-child(5) { width: 16%; }
 .reception-policy-table th:nth-child(6) { width: 11%; }
 .reception-policy-table th:nth-child(7) { width: 8%; }
-.reception-policy-table th:nth-child(8) { width: 15%; }
+.reception-policy-table th:nth-child(8) { width: 17%; }
 .reception-policy-table th:last-child, .reception-policy-table td:last-child { position: sticky; right: 0; z-index: 2; background: var(--surface); box-shadow: -8px 0 10px -10px rgb(21 34 63 / 45%); }
 .reception-policy-table th:last-child { z-index: 3; background: var(--surface-soft); }
-.reception-policy-table .reception-row-actions { gap: 0; white-space: nowrap; }
-.reception-policy-table .reception-row-actions > button, .reception-policy-table .reception-more-wrap > button { padding: 4px 3px; font-size: 11px; white-space: nowrap; }
+.reception-policy-table .reception-row-actions { gap: 5px; white-space: nowrap; }
+.reception-policy-table .reception-row-actions > button, .reception-policy-table .reception-more-wrap > button { display: inline-flex; align-items: center; gap: 3px; padding: 4px 5px; font-size: 12px; white-space: nowrap; }
 .reception-policy-table .reception-summary { max-width: 340px; }
 .reception-policy-delay { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
 .reception-policy-status { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
@@ -169,8 +169,10 @@
 .reception-policy-status.not_started i { background: #e5a510; }
 .reception-policy-status.expired i { background: #e45d5d; }
 .reception-policy-validity { display: block; max-width: 215px; line-height: 1.5; }
-.reception-policy-store-count { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.reception-policy-store-count { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; cursor: help; }
 .reception-policy-store-count span { display: inline-grid; width: 17px; height: 17px; place-items: center; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 700; }
+.reception-store-tooltip { position: fixed; z-index: 90; display: grid; gap: 4px; width: max-content; max-width: min(300px, calc(100vw - 16px)); border-radius: 6px; background: #333; padding: 10px 12px; color: #fff; font-size: 12px; line-height: 1.45; box-shadow: var(--shadow); pointer-events: none; white-space: normal; overflow-wrap: anywhere; }
+.reception-store-tooltip strong { margin-bottom: 2px; }
 .reception-policy-page .reception-switch { flex-direction: row-reverse; gap: 0; padding: 2px 3px 2px 7px; background: var(--surface-soft); color: var(--muted); }
 .reception-policy-page .reception-switch.on { background: var(--primary); color: white; }
 .reception-policy-page .reception-switch > span { margin-left: 3px; background: #aab1bd; }

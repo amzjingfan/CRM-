@@ -48,6 +48,7 @@ async function open(path, initial = {}) {
     }
     if (path.includes("/reception/policies")) {
       if (request.method() === "POST") { changed = { ...policy, ...body, id: "00000000-0000-4000-8000-0000000000c2" }; policies.push(changed); }
+      else if (request.method() === "PATCH" && Object.hasOwn(body, "kind")) return route.fulfill({ status: 422, headers, contentType: "application/json", body: JSON.stringify({ code: "VALIDATION_ERROR", message: "请求参数校验失败", data: null }) });
       else if (request.method() === "PATCH") policies = policies.map((item) => item.id === path.split("/").at(-1) ? changed = { ...item, ...body } : item);
       else if (request.method() === "DELETE") policies = policies.filter((item) => item.id !== path.split("/").at(-1));
     }
@@ -187,6 +188,42 @@ test("policy editor saves configuration only", async () => {
     assert.equal(writes.some((write) => write.path.includes("/messages") || write.path.includes("/campaigns")), false);
   } finally { await context.close(); }
 });
+
+for (const kind of ["welcome", "timeout"]) {
+  test(`${kind} policy edit sends only update fields`, async () => {
+    const current = { ...policy, kind, timeout_minutes: kind === "welcome" ? null : 30 };
+    const { context, tab, writes } = await open(`/marketing/reception/${kind}`, { policies: [current] });
+    try {
+      await tab.getByRole("row", { name: /夜间值守/ }).getByRole("button", { name: "编辑" }).click();
+      await tab.getByRole("dialog", { name: `编辑${kind === "welcome" ? "进店欢迎语" : "超时自动回复"}` }).getByRole("button", { name: "保存配置" }).click();
+      await tab.getByText("配置已保存。自动发送仍未启用。").waitFor({ timeout: 3000 });
+      const updated = writes.find((write) => write.method === "PATCH" && write.path.endsWith(`/policies/${current.id}`));
+      assert.equal(Object.hasOwn(updated.body, "kind"), false);
+    } finally { await context.close(); }
+  });
+}
+
+for (const kind of ["welcome", "timeout"]) {
+  test(`${kind} policy store tooltip and row actions remain usable`, async () => {
+    const current = { ...policy, kind, store_ids: [store.id, secondStore.id] };
+    const { context, tab } = await open(`/marketing/reception/${kind}`, { policies: [current], stores: [store, secondStore] });
+    try {
+      const row = tab.getByRole("row", { name: /夜间值守/ });
+      const count = row.locator(".reception-policy-store-count");
+      await count.hover();
+      const tooltip = tab.getByRole("tooltip");
+      await tooltip.getByText(store.name).waitFor();
+      await tooltip.getByText(secondStore.name).waitFor();
+      await count.focus();
+      assert.equal(await tooltip.isVisible(), true);
+      const actions = await row.locator(".reception-row-actions button").all();
+      const boxes = await Promise.all(actions.map((button) => button.boundingBox()));
+      assert.equal(boxes.every((box, index) => index === 0 || (box && boxes[index - 1] && box.x >= boxes[index - 1].x + boxes[index - 1].width)), true);
+      await row.getByRole("button", { name: "夜间值守更多操作" }).click();
+      await tab.getByRole("button", { name: "删除", exact: true }).waitFor();
+    } finally { await context.close(); }
+  });
+}
 
 test("group creation and deletion update visible groups", async () => {
   const { context, tab, writes } = await open("/marketing/reception/quick-replies");
