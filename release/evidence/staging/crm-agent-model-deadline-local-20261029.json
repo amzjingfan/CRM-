@@ -1,0 +1,94 @@
+{
+  "task_id": "MVP-AGENT-STAGING-DEPLOY-001",
+  "subject_sha": "daf879b8bbf7ce293ea773690f8ef1ebc27bcc44",
+  "base_sha": "0fb0f96bdd86298a0b684e0247684f854a94414d",
+  "backend": {
+    "passed": 2561,
+    "windows_conditional_skip": 3,
+    "seconds": 216.09
+  },
+  "static": {
+    "ruff_format_files": 414,
+    "mypy_files": 255,
+    "lock": true
+  },
+  "tdd": {
+    "red_failed": 24,
+    "red_passed": 3,
+    "green_passed": 27,
+    "focused_passed": 86
+  },
+  "frontend_reused_same_tree": {
+    "base": "0fb0f96bdd86298a0b684e0247684f854a94414d",
+    "contract_passed": 52,
+    "production_browser_passed": 142
+  },
+  "agent_published_config": 6,
+  "candidate_four_modes": [
+    {
+      "case": "debug_en",
+      "phase": "review_ready",
+      "reason": null,
+      "seconds": 22.664,
+      "answer_length": 3036,
+      "cjk_characters": 0,
+      "expected_language": true,
+      "unique_document_fact_in_answer": true,
+      "four_tools_success": true,
+      "citations": 3,
+      "send_performed": false,
+      "trace_sha256": "0534ec542a279a84c591f326590195e8ac207745abc135f7f939840ee60948c3"
+    },
+    {
+      "case": "debug_zh",
+      "phase": "review_ready",
+      "reason": null,
+      "seconds": 18.794,
+      "answer_length": 1445,
+      "cjk_characters": 438,
+      "expected_language": true,
+      "unique_document_fact_in_answer": true,
+      "four_tools_success": true,
+      "citations": 2,
+      "send_performed": false,
+      "trace_sha256": "0b60ca234ea3bdc8804d7ed4490cce3ae5f41644529737adae56a3c76773f0f3"
+    },
+    {
+      "case": "formal_en",
+      "phase": "review_ready",
+      "reason": null,
+      "seconds": 24.897,
+      "answer_length": 2206,
+      "cjk_characters": 0,
+      "expected_language": true,
+      "unique_document_fact_in_answer": true,
+      "four_tools_success": true,
+      "citations": 3,
+      "send_performed": false,
+      "trace_sha256": "1a619464e13c0ac2eb356b7307511247fbfcdcf49cf8ebcd4bf8d6862d8af4a4"
+    },
+    {
+      "case": "formal_zh",
+      "phase": "review_ready",
+      "reason": null,
+      "seconds": 35.926,
+      "answer_length": 1257,
+      "cjk_characters": 451,
+      "expected_language": true,
+      "unique_document_fact_in_answer": true,
+      "four_tools_success": true,
+      "citations": 2,
+      "send_performed": false,
+      "trace_sha256": "4337eebc63d7b9dfb63db3c102b1620ad22d7f2eddae5657d9e9757f53be49da"
+    }
+  ],
+  "cited_chunks_checked": 3,
+  "all_cited_chunks_expected_file_version": 1,
+  "formal_public_citations_have_version_field": false,
+  "overall_budget_seconds": 45,
+  "generic_model_timeout_unchanged_seconds": 15,
+  "sdk_automatic_retries": 0,
+  "platform_send_count": 0,
+  "source_deployed": false,
+  "public_bilingual_acceptance": "pending"
+}

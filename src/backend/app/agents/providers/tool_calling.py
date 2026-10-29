@@ -6,7 +6,7 @@ from typing import Literal, cast
 
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from openai import AsyncOpenAI, Omit, omit
+from openai import APITimeoutError, AsyncOpenAI, Omit, omit
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 
 from app.agents.core.errors import LLMErrorCode, LLMProviderError
@@ -77,26 +77,29 @@ class DeepSeekToolCallingProvider:
             raise ValueError("模型输出预算必须为正数")
         schemas = [convert_to_openai_tool(item) for item in tools]
         tool_choice: Literal["auto"] | Omit = "auto" if schemas else omit
-        if self._deepseek_protocol:
-            response = await self._client.chat.completions.create(
-                model=self.model_name,
-                messages=cast(list[ChatCompletionMessageParam], list(messages)),
-                tools=cast(list[ChatCompletionToolParam], schemas) if schemas else omit,
-                tool_choice=tool_choice,
-                max_tokens=max_output_tokens,
-                stream=False,
-                extra_body={"thinking": {"type": "enabled" if self.thinking_enabled else "disabled"}},
-            )
-        else:
-            response = await self._client.chat.completions.create(
-                model=self.model_name,
-                messages=cast(list[ChatCompletionMessageParam], list(messages)),
-                tools=cast(list[ChatCompletionToolParam], schemas) if schemas else omit,
-                tool_choice=tool_choice,
-                max_completion_tokens=max_output_tokens,
-                stream=False,
-                store=False,
-            )
+        try:
+            if self._deepseek_protocol:
+                response = await self._client.chat.completions.create(
+                    model=self.model_name,
+                    messages=cast(list[ChatCompletionMessageParam], list(messages)),
+                    tools=cast(list[ChatCompletionToolParam], schemas) if schemas else omit,
+                    tool_choice=tool_choice,
+                    max_tokens=max_output_tokens,
+                    stream=False,
+                    extra_body={"thinking": {"type": "enabled" if self.thinking_enabled else "disabled"}},
+                )
+            else:
+                response = await self._client.chat.completions.create(
+                    model=self.model_name,
+                    messages=cast(list[ChatCompletionMessageParam], list(messages)),
+                    tools=cast(list[ChatCompletionToolParam], schemas) if schemas else omit,
+                    tool_choice=tool_choice,
+                    max_completion_tokens=max_output_tokens,
+                    stream=False,
+                    store=False,
+                )
+        except APITimeoutError as error:
+            raise LLMProviderError(LLMErrorCode.LLM_TIMEOUT, "模型请求超时", retriable=False) from error
         try:
             if len(response.choices) != 1:
                 raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型响应数量异常", retriable=False)

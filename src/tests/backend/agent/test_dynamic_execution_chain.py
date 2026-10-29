@@ -92,9 +92,12 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
             return ToolTurn(answer, (), {"role": "assistant", "content": answer}, 5, 3)
 
     model = FakeModel()
+    run_deadline = time.monotonic() + 5
+    provider_deadlines = []
 
     @asynccontextmanager
-    async def provider(*_args):
+    async def provider(*_args, deadline=None):
+        provider_deadlines.append(deadline)
         yield model
 
     @asynccontextmanager
@@ -128,7 +131,7 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
         run_id=run_id,
         permissions={"orders.view", "knowledge.view"},
         trace_id="synthetic-trace",
-        deadline=time.monotonic() + 5,
+        deadline=run_deadline,
         settings=Settings(
             _env_file=None,
             LLM_PRIMARY_PROVIDER="deepseek",
@@ -142,6 +145,7 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
         user=SimpleNamespace(id=uuid.uuid4()) if use_business else None,
     )
     assert result.suggestion.content == answer
+    assert provider_deadlines == [run_deadline, run_deadline]
     assert result.phase.value == "review_ready"
     if selection:
         assert "29.00" in str(result.specialists[0].verified_facts)
@@ -258,8 +262,12 @@ async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch,
                 2,
             )
 
+    run_deadline = time.monotonic() + 5
+    provider_deadlines = []
+
     @asynccontextmanager
-    async def provider(*_args):
+    async def provider(*_args, deadline=None):
+        provider_deadlines.append(deadline)
         yield FakeModel()
 
     @asynccontextmanager
@@ -293,7 +301,7 @@ async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch,
         run_id=uuid.uuid4(),
         permissions={"orders.view", "knowledge.view"},
         trace_id="rag-trace",
-        deadline=time.monotonic() + 5,
+        deadline=run_deadline,
         settings=Settings(_env_file=None, LLM_PRIMARY_PROVIDER="deepseek", LLM_PRIMARY_MODEL="deepseek-chat"),
         runtime=None,
         order_id="trusted-order",
@@ -302,6 +310,7 @@ async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch,
         user=SimpleNamespace(id=uuid.uuid4()) if use_business else None,
     )
     assert result.suggestion.content == "订单已发货，按绑定政策需核实物流轨迹，请坐席复核。"
+    assert provider_deadlines == [run_deadline, run_deadline]
     assert result.suggestion.citations == (str(chunk_id),)
     assert result.specialists[0].verified_facts == {
         ("query_order." + "f" * 16 + ".status" if use_business else "query_order.status"): "shipped"

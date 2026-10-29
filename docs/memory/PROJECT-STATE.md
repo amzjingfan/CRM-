@@ -1,19 +1,19 @@
 # 项目状态与恢复入口
 
-2026-10-29；STANDARD；TikTok人工辅助v0.1；仓库CP11-gh/CRM，目标origin/main。
+2026-10-29；STANDARD；TikTok人工辅助v0.1；CP11-gh/CRM；目标origin/main。
 
-MVP-AGENT-STAGING-DEPLOY-001为VERIFYING。用户已批准统一部署并追加知识文件检索全链路；RAG审计与引用补修 #636 已合入 `main=8393602f`，8393602f已手动部署，12容器/三健康和人工模式通过；Agent v4已发布。纯RAG浏览器通过。综合问题暴露路由改写DLP误拦，已补修并做独立候选四工具+文档引用预检，正跑最终回归。实际新基线e71ce680，分支fix/agent-routed-question-fallback-20261029。部署仍由本任务单点协调，不把候选预检等同公开服务复测。
+MVP-AGENT-STAGING-DEPLOY-001为VERIFYING。用户已批准单点手动部署、真实只读买家上下文、必要字段给DeepSeek及合成样本，最新追加中英文都测；不发送平台消息。#636/639已合入，staging当前0fb0f96b，041、12容器/三公网健康及原人工模式通过。自动回复、营销、高风险与后台自动LLM仍关闭；production G8 No-Go。另一协调会话确认无待纳入资产且不并行切换。
 
-MVP-RECEPTION-TEAM-FEEDBACK-001 的前四条页面修复已由 PR #637 合入 `main=ed791b75`，本地验证见关联 IR/TR/RR；staging 尚未部署本次前端，部门角色与店铺咨询分配只形成方案、不改变运行规则。
+公开英文调试四工具（订单列表/详情/物流/RAG）成功19.899秒，1包裹8轨迹、3个文件v1引用及唯一文档名称；纯RAG早前公开15.824秒成功。中文两次四工具成功却在最终SDK请求APITimeoutError：通用15秒先于总45秒。工作台英文问题曾得到中文草稿，不能当双语验收完成。正常页面现发布v6语言要求，文件仍绑定。
 
-本地：最终应用树与fa180完全相同，完整后端2514通过/3Windows条件跳过，新评测统计8项通过；Ruff437、mypy255、锁文件、前端lint/typecheck/52契约/105浏览器及前后端本地镜像构建通过。实际候选隔离进程的三工具五类问题5/5、英文/业务号/无Markdown，正式草稿1745字符；无平台外发。输出v2.3合成语义初轮14完成+1超时，统计缺陷已修并对原行补测1次完成；不声称一次15/15。配置语义16项按相同源码SHA复用。详情见IR/TR/RR 20261029-R05及release/evidence/staging/crm-agent-output-ui-local-20261029.json。
+当前分支fix/agent-model-deadline-20261029，BASE_SHA=0fb0f96bdd86298a0b684e0247684f854a94414d。原生Provider可选绝对deadline，动态执行传入同一deadline，SDK用剩余预算且过期零创建；其他调用默认超时不变，零重试。SDK timeout转LLM_TIMEOUT，保留已完成工具和已知用量。RED24/GREEN27、焦点86、完整隔离PG2561通过/3Windows条件跳过、独立审查无阻断；Ruff414/mypy255/锁通过；真实候选中英调试和中英正式建议四类均通过（22.664/18.794/24.897/35.926秒），正确语言/知识唯一事实/四工具，仍尚未部署本补修。前端树相对0fb未变；最新生产浏览器142、契约52见R07，不伪称本次新跑。
 
-最终Agent输出和配置发布由模型语义判断，不引入新地址正则/词数规则。先过滤、重组、独立复核；仅明确unsupported可证据重生成；无效协议立即停止；已复核正文共享去重，原时限及取消/数值进度保留。语言偏离由模型标记后用安全正文改写。工作台完整草稿编辑/译文预览、超2000先精简后送审发送均已覆盖。
+最新正式记录R07和release/evidence/staging/crm-agent-routed-question-local-20261029.json；当前还需R08及最终现场记录。失败、诊断辅助脚本错误和未完成用量均按真实情况保留。已核实业务号可显示，私密内容由模型过滤/重组/独立复核；本轮未新增地址或语言正则。
 
-运行服务当前8393602f，041、原人工模式/范围及后台自动关闭保持；Agent v4包含三业务工具和获批合成验收文件。GHCR本机上传两次超时后，经逐层校验的OCI传输到服务器再发布精确linux/amd64摘要并通过手动门禁。新发现的路由补修尚未部署。production G8继续No-Go。
+合成文档、同一合成入站及仅由其派生的会话记忆保留到最终中英文现场成功后统一清理。消息已在精确manifest/标记核对后按中英验收改为中文revision3，不修改真实消息或会话摘要；不要重建买家或提前删除。私有和临时材料在src/tests/.artifacts/agent-rag-staging-20261029；原消息manifest见先前验收artifact。
 
-同一合成入站与仅由其派生的记忆保留至最终现场验收后统一清理；manifest在忽略的src/tests/.artifacts/agent-detailed-tools-20261029。不得动真实消息、运行和审计，不重建买家，不发送平台消息。其他RAG文件draft，本次不声称现场RAG检索通过。原超时调用用量未知，未当作完整账单。
+MVP-RECEPTION-TEAM-FEEDBACK-001源码已随0fb前端部署；其本地验证见对应记录，本任务未额外人工验收那些页面。
 
-三索引CANDIDATE_VIEW=300/325/283；正式源记录为事实。Workspace hygiene: ATTENTION。根checkout未知历史/文件、活动worktree、未跟踪src/frontend/AGENTS.md和上个worktree未知逆向diff均保留。临时测试输出仅src/tests/.artifacts，本轮已登记可恢复缓存隔离批次 MAINT-CLEANUP-20261029-001，无永久删除。
+三索引CANDIDATE_VIEW=301/326/284，源记录为事实。Workspace hygiene: ATTENTION。未知主checkout历史、活动worktree、未跟踪src/frontend/AGENTS.md和旧worktree未知diff保留。CLEANUP-20261029-001仅可恢复隔离本次10个误置缓存、hash一致，无永久删除。
 
-下一动作：①完成路由补修的最终本地验证与集成；②精确镜像/备份/手动门禁补充统一部署；③Codex浏览器联合与工作台验收，全部成功后统一清理已知合成夹具。
+下一动作：①冻结最终门禁与集成；②精确镜像/新备份/手动门禁统一更新；③公开中英文调试/工作台和负例验收，最终清理合成夹具、记录证据后完成任务。

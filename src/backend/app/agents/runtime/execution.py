@@ -290,7 +290,9 @@ async def execute_model_run(
                 if live_order is not None
                 else SqlAlchemyToolExecutor(worker_session)
             )
-            async with tool_provider(settings, selected.model_provider, selected.model_name) as provider:
+            async with tool_provider(
+                settings, selected.model_provider, selected.model_name, deadline=deadline
+            ) as provider:
                 return await run_specialist(
                     snapshot=snapshot,
                     agent=selected,
@@ -321,7 +323,9 @@ async def execute_model_run(
                     else None,
                 )
 
-    async with tool_provider(settings, settings.llm_primary_provider, settings.llm_primary_model) as provider:
+    async with tool_provider(
+        settings, settings.llm_primary_provider, settings.llm_primary_model, deadline=deadline
+    ) as provider:
         result = await execute_dynamic_run(
             question=question,
             snapshot=snapshot,

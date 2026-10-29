@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from time import monotonic
 
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
@@ -37,9 +38,15 @@ def validate_tool_model(settings: Settings, provider: str | None, model_name: st
 
 
 @asynccontextmanager
-async def tool_provider(settings: Settings, provider: str, model_name: str) -> AsyncIterator[RouteModelPort]:
+async def tool_provider(
+    settings: Settings, provider: str, model_name: str, *, deadline: float | None = None
+) -> AsyncIterator[RouteModelPort]:
     """请求完成或取消时关闭 Provider 连接；不在日志中输出密钥。"""
     validate_tool_model(settings, provider, model_name)
+    # 动态运行复用剩余总预算；配置发布等旧调用仍使用原模型请求时限。
+    timeout_seconds = settings.llm_timeout_seconds if deadline is None else deadline - monotonic()
+    if timeout_seconds <= 0:
+        raise TimeoutError("agent_deadline_exceeded")
     if provider == "deepseek":
         secret = settings.deepseek_api_key
         if secret is None:
@@ -47,7 +54,7 @@ async def tool_provider(settings: Settings, provider: str, model_name: str) -> A
         client = AsyncOpenAI(
             api_key=secret.get_secret_value(),
             base_url=settings.deepseek_base_url,
-            timeout=settings.llm_timeout_seconds,
+            timeout=timeout_seconds,
             max_retries=0,
         )
         try:
@@ -65,7 +72,7 @@ async def tool_provider(settings: Settings, provider: str, model_name: str) -> A
             raise ValueError("tool_provider_credentials_missing")
         client = AsyncOpenAI(
             api_key=secret.get_secret_value(),
-            timeout=settings.llm_timeout_seconds,
+            timeout=timeout_seconds,
             max_retries=0,
         )
         try:
@@ -81,7 +88,7 @@ async def tool_provider(settings: Settings, provider: str, model_name: str) -> A
             raise ValueError("tool_provider_credentials_missing")
         anthropic_client = AsyncAnthropic(
             api_key=secret.get_secret_value(),
-            timeout=settings.llm_timeout_seconds,
+            timeout=timeout_seconds,
             max_retries=0,
         )
         try:
