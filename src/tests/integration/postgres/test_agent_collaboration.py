@@ -119,7 +119,7 @@ async def test_internal_notes_are_idempotent_scoped_and_never_send_or_transfer()
 
             await session.refresh(user)
             view = await tool_catalog(session, user, store_id)
-            assert len(view.groups) == 6 and len(view.tools) == 16
+            assert len(view.groups) == 6 and len(view.tools) == 17
             with pytest.raises(AppError):
                 await tool_catalog(session, user, other_id)
             first = Message(

@@ -74,6 +74,41 @@ def command(**overrides: object) -> SendMessageCommand:
     return SendMessageCommand.model_validate(values)
 
 
+@pytest.mark.asyncio
+async def test_independent_notification_transport_accepts_only_authorized_text_with_both_flags() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        assert json.loads(request.content)["type"] == "TEXT"
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    settings = real_write_settings(
+        LOGISTICS_NOTIFICATIONS_ENABLED=True,
+        REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED=True,
+        LLM_ENABLED=True,
+    )
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        writer = TikTokMessageClient(settings, connected_channel(), client)
+        authorized = command(human_confirmed=False, logistics_notification_authorized=True)
+        assert (await writer.send_text_message(authorized)).status == "sent"
+        assert (await writer.send_text_message(command(human_confirmed=False))).status == "failed"
+        assert (
+            await writer.send_text_message(
+                command(
+                    human_confirmed=False,
+                    logistics_notification_authorized=True,
+                    message_type="logistics_card",
+                    card_order_id="123",
+                )
+            )
+        ).status == "failed"
+        disabled = TikTokMessageClient(real_write_settings(), connected_channel(), client)
+        assert (await disabled.send_text_message(authorized)).status == "failed"
+    assert attempts == 1
+
+
 def test_text_send_arguments_keep_existing_idempotency_shape() -> None:
     assert validate_tool_arguments(
         "send_platform_message",

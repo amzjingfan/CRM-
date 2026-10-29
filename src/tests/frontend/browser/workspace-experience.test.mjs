@@ -49,7 +49,11 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     const headers = { "access-control-allow-origin": origin, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET,POST,PATCH,OPTIONS", "access-control-allow-headers": "content-type,idempotency-key,x-csrf-token" };
     if (method === "OPTIONS") return route.fulfill({ status: 204, headers });
     if (path === "/v1/chat/query") {
-      const body = ["event: result", `data: ${JSON.stringify({ content: fixtureOptions.aiDraft ?? "AI draft ready", confidence: 0.8, intent: "general", requires_human: false, demo_mode: false })}`, "", "event: done", 'data: {"reason":"completed"}', ""].join("\n");
+      const query = JSON.parse(request.postData());
+      assert.equal(query.reply_mode, "review_plan");
+      assert.equal(query.trigger_message_id, messages.findLast((message) => message.role === "user")?.id ?? null);
+      const content = fixtureOptions.aiDraft ?? "AI draft ready";
+      const body = ["event: result", `data: ${JSON.stringify({ content, reply_parts: [content], logistics_order_numbers: [], trigger_message_id: query.trigger_message_id, reason_codes: [], confidence: 0.8, intent: "general", requires_human: false, demo_mode: false })}`, "", "event: done", 'data: {"reason":"completed"}', "", ""].join("\n");
       return route.fulfill({ status: 200, headers: { ...headers, "content-type": "text/event-stream" }, body });
     }
     let data;

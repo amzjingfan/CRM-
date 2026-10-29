@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAgentToolCatalog, type AgentToolCatalogView } from "../lib/api";
 
-const operationLabels = { read: "只读查询", internal_write: "内部写入", confirmation: "需人工确认" };
+const operationLabels = { read: "只读查询", internal_write: "内部写入", confirmation: "需人工确认", notification: "店铺策略通知" };
 const statusLabels = { available: "可用", unavailable: "暂不可用", requires_context: "需关联会话", requires_knowledge: "需绑定文件", confirmation: "人工确认", bound: "已绑定文件" };
 
 function CategoryIcon({ category }: { category: string }) {

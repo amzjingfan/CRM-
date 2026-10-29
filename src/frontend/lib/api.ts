@@ -18,6 +18,12 @@ export type SidebarOrder = { id: string; external_order_id: string; status: stri
 export type SidebarTrackingEvent = { description: string; occurred_at: string; tracking_number: string | null; action_code: number; action_code_name: string | null };
 export type SidebarTrackingPackage = { package_id?: string | null; tracking_number: string | null; carrier_name: string | null; events: SidebarTrackingEvent[] };
 export type LogisticsCardDraft = { card: LogisticsCardView; packages: SidebarTrackingPackage[]; enhancedAvailable: boolean; selected: number };
+export type ReplyBatchPart = { kind: "text"; content: string } | { kind: "logistics_card"; order_id: string; package_id: string | null };
+export type ReplyBatchRequest = { trigger_message_id: string | null; parts: ReplyBatchPart[]; preview_only: boolean; confirmed: boolean };
+export type ReplyBatchResult = { id: string; preview_only: boolean; status: "previewed" | "completed" | "partial" | "failed" | "unknown"; parts: Array<{ index: number; kind: ReplyBatchPart["kind"]; status: string; message_id: string | null; error_code: string | null }>; messages: MessageView[] };
+export type LogisticsNotificationPolicy = { store_id: string; agent_id: string | null; enabled: boolean; mode: "preview" | "external"; enabled_at: string | null; revision: number; global_enabled: boolean; real_delivery_enabled: boolean; last_scan_at: string | null };
+export type LogisticsNotificationView = { notification_key: string; conversation_id: string; state: string; reason: string | null; mode: "preview" | "external"; event_at: string; buyer_language: string; preview_text: string | null; created_at: string };
+export type LogisticsNotificationPreview = { status: "previewed" | "blocked" | "rejected"; reason?: string | null; preview_text?: string | null; event_at?: string | null; buyer_language?: string | null };
 export type SidebarTrackingTimeline = { packages: SidebarTrackingPackage[] };
 export type SidebarTrackingTimelineTranslation = { events: Array<{ source_description: string; translated_text: string; occurred_at: string; tracking_number: string | null }> };
 export type SidebarOrderDetail = { payment_method_name: string | null; recipient_address: { name: string | null; phone_number: string | null; full_address: string | null } | null; shipping_provider: string | null; latest_tracking_description: string | null; latest_tracking_at: string | null; tracking_packages: SidebarTrackingPackage[]; enhanced_tracking_available: boolean; tracking_loaded?: boolean };
@@ -76,8 +82,8 @@ export type TeamRoleView = { role: string; store_id: string | null };
 export type TeamMember = { id: string; login_name: string | null; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; status: "active" | "disabled"; assignments: TeamRoleView[]; department_ids: string[]; last_login_at: string | null; created_at: string };
 export type Department = { id: string; name: string; store_ids: string[]; created_at: string };
 export type TeamMemberCreate = { login_name: string; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; temporary_password: string; assignments: TeamAssignment[]; department_id: string | null };
-export type Suggestion = { agent_run_id: string; content: string | null; intent: string | null; confidence: number; action: string; terminal_state: string; requires_human: boolean; transfer_performed: boolean; send_performed: false; citations: Array<{ document_id: string; chunk_id: string; score: number; source_label: string }>; trace_id: string; demo_mode: boolean; demo_scenario: string | null };
-export type ChatEvent = { event: "accepted" | "status" | "delta" | "result" | "error" | "done"; data: Record<string, unknown> };
+export type Suggestion = { agent_run_id: string; content: string | null; reply_parts?: string[]; logistics_order_numbers?: string[]; trigger_message_id?: string | null; reason_codes?: string[]; intent: string | null; confidence: number; action: string; terminal_state: string; requires_human: boolean; transfer_performed: boolean; send_performed: false; citations: Array<{ document_id: string; chunk_id: string; score: number; source_label: string }>; trace_id: string; demo_mode: boolean; demo_scenario: string | null };
+export type ChatEvent = { event: "accepted" | "status" | "draft" | "delta" | "result" | "error" | "done"; data: Record<string, unknown> };
 
 export class ApiError extends Error {
   constructor(
@@ -226,6 +232,12 @@ export type MediaUpload = { kind: "image" | "video"; file_name: string; upload_t
 export const uploadMessageMedia = (sessionId: string, file: File, idempotencyKey: string) => { const body = new FormData(); body.set("file", file); return requestApi<MediaUpload>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/media/upload`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body }); };
 export const sendMessageMedia = (sessionId: string, kind: "image" | "video", uploadToken: string, idempotencyKey: string) => requestApi<MessageView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/media`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ kind, upload_token: uploadToken, confirmed: true }) });
 export const sendLogisticsCard = (sessionId: string, orderId: string, packageId: string | null, idempotencyKey: string) => requestApi<MessageView>(`/workspace/sessions/${sessionId}/messages/logistics-card`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ order_id: orderId, package_id: packageId, confirmed: true }) });
+export const getReplyLogisticsPreview = (sessionId: string, orderId: string) => requestApi<Array<{ card: LogisticsCardView; packages: SidebarTrackingPackage[]; enhanced_available: boolean; selected: number }>>(`/workspace/sessions/${encodeURIComponent(sessionId)}/logistics-card-preview?order_id=${encodeURIComponent(orderId)}`);
+export const submitReplyBatch = (sessionId: string, plan: ReplyBatchRequest, idempotencyKey: string) => requestApi<ReplyBatchResult>(`/workspace/sessions/${encodeURIComponent(sessionId)}/reply-batches`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify(plan) });
+export const getLogisticsNotificationPolicy = (storeId: string) => requestApi<LogisticsNotificationPolicy>(`/agents/logistics-notifications/policy?store_id=${encodeURIComponent(storeId)}`);
+export const saveLogisticsNotificationPolicy = (storeId: string, policy: { enabled: boolean; agent_id: string | null; mode: "preview"; expected_revision: number }) => requestApi<LogisticsNotificationPolicy>(`/agents/logistics-notifications/policy?store_id=${encodeURIComponent(storeId)}`, { method: "PATCH", body: JSON.stringify(policy) });
+export const listLogisticsNotifications = (storeId: string, conversationId: string) => requestApi<LogisticsNotificationView[]>(`/agents/logistics-notifications?${new URLSearchParams({ store_id: storeId, conversation_id: conversationId, offset: "0" })}`);
+export const previewLogisticsNotification = (input: { store_id: string; conversation_id: string; order_id: string; package_id?: string }) => requestApi<LogisticsNotificationPreview>("/agents/logistics-notifications/preview", { method: "POST", body: JSON.stringify(input) });
 export const translateMessage = (sessionId: string, messageId: string) => requestApi<MessageTranslationView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}/translation`, { method: "POST" });
 export const translateDraft = (sessionId: string, sourceText: string, targetLanguage: DraftTargetLanguage) => requestApi<DraftTranslationView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/draft/translation`, { method: "POST", body: JSON.stringify({ source_text: sourceText, target_language: targetLanguage }) });
 export const translateSidebarTracking = (sessionId: string, orderId: string, event?: SidebarTrackingEvent & { enhanced: boolean }) => requestApi<SidebarTrackingTranslation>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/tracking-translation`, { method: "POST", body: JSON.stringify({ order_id: orderId, ...(event ? { event_description: event.description, event_at: event.occurred_at, event_tracking_number: event.tracking_number, enhanced: event.enhanced } : {}) }) });
@@ -312,7 +324,7 @@ export const getDashboardChannels = (storeId: string, period: string) => request
 export const getDashboardAlerts = (storeId: string) => requestApi<DashboardAlerts>(`/dashboard/alerts?store_id=${encodeURIComponent(storeId)}`);
 export const getTopQueries = (storeId: string, period: string) => requestApi<TopQuery[]>(`/dashboard/top-queries?store_id=${encodeURIComponent(storeId)}&period=${period}&limit=5`);
 export const listAgents = () => requestApi<AgentConfig[]>("/agents");
-export type AgentToolMetadata = { name: string; title: string; description: string; category: string; operation: "read" | "internal_write" | "confirmation"; requires_context: boolean; availability: "available" | "unavailable" | "requires_context" | "requires_knowledge" | "confirmation"; reason: string; missing_scopes: string[] };
+export type AgentToolMetadata = { name: string; title: string; description: string; category: string; operation: "read" | "internal_write" | "confirmation" | "notification"; requires_context: boolean; availability: "available" | "unavailable" | "requires_context" | "requires_knowledge" | "confirmation"; reason: string; missing_scopes: string[] };
 export type AgentToolCatalogView = { groups: { key: string; title: string; description: string }[]; tools: AgentToolMetadata[] };
 export type AgentCollaborationEntry = { id: string; kind: string; content: string; created_at: string; agent_run_id: string; is_ai_suggestion: true; send_performed: false; transfer_performed: false };
 export const getAgentToolCatalog = (storeId: string) => requestApi<AgentToolCatalogView>(`/agents/tool-catalog?store_id=${encodeURIComponent(storeId)}`);
@@ -342,8 +354,9 @@ export async function streamChatQuery(
   onEvent: (event: ChatEvent) => void,
   signal: AbortSignal,
   triggerMessageId?: string,
+  replyMode: "single" | "review_plan" = "single",
 ): Promise<void> {
-  const init: RequestInit = { method: "POST", body: JSON.stringify({ session_id: sessionId, trigger_message_id: triggerMessageId ?? null }), signal };
+  const init: RequestInit = { method: "POST", body: JSON.stringify({ session_id: sessionId, trigger_message_id: triggerMessageId ?? null, ...(replyMode === "review_plan" ? { reply_mode: replyMode } : {}) }), signal };
   let response = await rawRequest("/chat/query", init);
   if (response.status === 401) {
     const refreshed = await rawRequest("/auth/browser/refresh", { method: "POST" });

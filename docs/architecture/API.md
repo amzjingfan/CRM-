@@ -1,5 +1,16 @@
 # 当前 API 契约
 
+## 有序回复与物流通知（2026-10-29本地候选）
+
+- `POST /v1/chat/query` 新增可选 `reply_mode: single|review_plan`，默认single兼容旧调用。review_plan的SSE新增draft：`{part_index,text,replace:true,unverified:true,sendable:false,trigger_message_id}`，text为当前整段快照；原result新增 `reply_parts/logistics_order_numbers/trigger_message_id/reason_codes`，content仍为首段，所有可用段均经复核。done completed不代表非空可用答复。
+- `GET /v1/workspace/sessions/{id}/logistics-card-preview?order_id=` 需workspace.view及orders.view，返回 `{card,packages,enhanced_available,selected}[]`；订单为TikTok外部数字ID，必须再核对当前买家，预览不依赖发送开启，不创建消息。
+- `POST /v1/workspace/sessions/{id}/reply-batches` 需workspace.reply、CSRF及Idempotency-Key；body为 `{trigger_message_id:null|UUID,parts:[{kind:text,content}|{kind:logistics_card,order_id,package_id?}],preview_only:true,confirmed:false}`。文字在卡片之前，每段2000 UTF-16、计划16000预算。实际人工发送需preview_only=false且confirmed为严格JSON true；卡片另需orders.view。返回 `{id,preview_only,status,parts:[{index,kind,status,message_id,error_code}],messages}`；parent状态previewed/completed/partial/failed/unknown。相同key必须完整同body，已成功文字跳过，已知失败可明确重试，unknown先对账。预演key不能变成真实发送key。
+- `GET/PATCH /v1/agents/logistics-notifications/policy?store_id=` 读取/保存当前店铺策略；PATCH `{enabled,agent_id,mode:preview|external,expected_revision}`，乐观revision防覆盖。返回store_id、agent_id、enabled、mode、enabled_at、revision、global_enabled、real_delivery_enabled、last_scan_at。保存策略不等于全局开启或发送成功。
+- `GET /v1/agents/logistics-notifications?store_id=&conversation_id=&offset=` 及 `GET /v1/agents/logistics-notifications/{key}?store_id=` 只返回授权范围低敏台账和已复核preview_text。
+- `POST /v1/agents/logistics-notifications/preview` 需CSRF及当前店铺workspace.reply/orders.view，body `{store_id,conversation_id,order_id,package_id?}`；此order_id为CRM UUID。返回status previewed/blocked/rejected及reason、preview_text、event_at、buyer_language。不消费通知基线、不启动jobs、不向平台发送。缺CRM订单UUID时前端明确不可预演，不能用外部ID替代。
+
+新物流通知的真实投递为独立默认关闭能力；通用公开自动回复仍关闭。本轮仅本地审阅栏/替身测试，不代表买家原生流或真实通知已验收。
+
 Agent 回答的本轮内部契约更新不改变 HTTP 路径或请求字段：调试和工作台人工建议共用语义事实/隐私复核，只返回过滤、重组并重新复核的纯文本正文；保留授权工具核实的正常业务编号，按买家原始语言与问题详略表达。工具完成后生成失败、超时或取消，运行记录仍保留真实工具状态及逐轮已知用量。`send_performed=false` 仍是固定边界，启用正式建议不等于授权发送。
 
 仅规范 UUID 的 `POST /v1/agents/{agent_id}/debug` 与 `POST /v1/workspace/sessions/{session_id}/suggest` 请求使用通用请求预算加 Agent 预算的外层期限，内部 Agent 仍受原绝对期限限制；其他路由、方法及无效路径仍使用通用预算。工作台建议超过平台2000字符时完整保留草稿，可展开编辑与预览，精简前禁止翻译、送审和发送；后端发送长度及人工确认校验保持。

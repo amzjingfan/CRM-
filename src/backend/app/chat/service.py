@@ -19,6 +19,7 @@ from app.agents.core.security import SYNTHETIC_DEMO_PROMPT_VERSION
 from app.agents.core.synthetic_demo import generate_synthetic_demo, resolve_synthetic_demo_scenario
 from app.agents.management.config_models import AgentConfig
 from app.agents.management.config_repository import find_enabled_config
+from app.agents.orchestration.service import RunProgress
 from app.agents.runtime.models import AgentRun
 from app.auth.store_access import allowed_store_ids
 from app.chat.schemas import SuggestionCitation, SuggestionTranslation, SuggestionView
@@ -81,6 +82,7 @@ async def run_agent_for_message(
     allow_transfer: bool = False,
     runtime: SharedAgentRuntime | None = None,
     user: User | None = None,
+    reply_progress: RunProgress | None = None,
 ) -> AgentWorkflowResult:
     """正式建议只调用动态 Agent；关闭开关时安全失败，不回落旧 FAQ。"""
     settings = get_settings()
@@ -88,6 +90,17 @@ async def run_agent_for_message(
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "动态 Agent 正式建议尚未启用", 503)
     from app.agents.runtime.formal import run_formal_suggestion
 
+    if reply_progress is not None:
+        return await run_formal_suggestion(
+            session,
+            conversation=conversation,
+            trigger=trigger,
+            trace_id=trace_id,
+            permissions=permissions,
+            runtime=runtime,
+            user=user,
+            progress=reply_progress,
+        )
     return await run_formal_suggestion(
         session,
         conversation=conversation,
@@ -181,6 +194,10 @@ def suggestion_view(result: AgentWorkflowResult) -> SuggestionView:
     return SuggestionView(
         agent_run_id=result.agent_run_id,
         content=result.draft_reply,
+        reply_parts=result.reply_parts,
+        logistics_order_numbers=result.logistics_order_numbers,
+        trigger_message_id=result.trigger_message_id,
+        reason_codes=result.safety_reason_codes,
         intent=result.intent.value if result.intent is not None else None,
         confidence=result.final_confidence,
         action=result.action.value,
@@ -270,6 +287,8 @@ async def suggest_for_user(
     trigger_message_id: uuid.UUID | None,
     trace_id: str,
     runtime: SharedAgentRuntime | None = None,
+    *,
+    reply_progress: RunProgress | None = None,
 ) -> SuggestionView:
     settings = get_settings()
     g5_timing_enabled = settings.sse_load_test_enabled
@@ -306,6 +325,19 @@ async def suggest_for_user(
                 trace_id,
                 scenario_id,
             )
+    if reply_progress is not None:
+        result = await run_agent_for_message(
+            session,
+            config,
+            conversation,
+            trigger,
+            trace_id,
+            user_permissions(user),
+            runtime=runtime,
+            user=user,
+            reply_progress=reply_progress,
+        )
+        return suggestion_view(result)
     result = await run_agent_for_message(
         session,
         config,

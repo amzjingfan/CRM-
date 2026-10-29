@@ -3,7 +3,7 @@
 import uuid
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SuggestionRequest(BaseModel):
@@ -12,6 +12,7 @@ class SuggestionRequest(BaseModel):
 
 class ChatQueryRequest(SuggestionRequest):
     session_id: uuid.UUID
+    reply_mode: Literal["single", "review_plan"] = "single"
 
 
 class SuggestionCitation(BaseModel):
@@ -36,6 +37,10 @@ class SuggestionTranslation(BaseModel):
 class SuggestionView(BaseModel):
     agent_run_id: uuid.UUID
     content: str | None
+    reply_parts: list[str] = Field(default_factory=list)
+    logistics_order_numbers: list[str] = Field(default_factory=list)
+    trigger_message_id: uuid.UUID | None = None
+    reason_codes: list[str] = Field(default_factory=list)
     intent: str | None
     confidence: float
     action: str

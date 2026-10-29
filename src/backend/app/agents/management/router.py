@@ -30,6 +30,7 @@ from app.agents.management.schemas import (
 from app.agents.management.service import publish_agent
 from app.agents.tools.access import tool_catalog
 from app.agents.tools.collaboration import CollaborationView, list_collaboration
+from app.agents.tools.logistics_updates.http import router as logistics_notification_router
 from app.agents.tools.metadata import ToolCatalogView
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.shared.config.settings import get_settings
@@ -40,6 +41,7 @@ from app.shared.exceptions.errors import AppError, ErrorCode
 from app.shared.schemas.responses import ApiResponse
 
 router = APIRouter(prefix="/agents", tags=["Agent 运营管理"])
+router.include_router(logistics_notification_router)
 READ_DESCRIPTION = "权限：agent.view；只返回当前用户可访问 store_id 的运营配置和脱敏日志。"
 WRITE_DESCRIPTION = (
     "权限：agent.manage；需 CSRF 并校验 store_id。可编辑模型和七段式 Prompt 草稿，发布后生成不可变版本。"

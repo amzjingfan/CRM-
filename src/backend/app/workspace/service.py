@@ -29,6 +29,12 @@ from app.tools.contracts import ToolExecutionContext, ToolInvocation
 from app.tools.executor import SqlAlchemyToolExecutor
 from app.tools.models import ToolCall
 from app.tools.repository import begin_tool_call, finish_tool_call
+from app.workspace.delivery_errors import DeliveryNotStarted
+from app.workspace.logistics_preview import (
+    LogisticsCardPreview,
+    logistics_card_snapshot,
+    standard_tracking_package,
+)
 from app.workspace.repository import (
     find_conversation,
     find_order,
@@ -55,6 +61,7 @@ from app.workspace.schemas import (
 )
 from app.workspace.sidebar import (
     SidebarTrackingEventTranslation,
+    SidebarTrackingPackage,
     SidebarTrackingTimelineTranslation,
     SidebarTrackingTranslation,
     _verified_sidebar_order,
@@ -650,17 +657,17 @@ async def send_agent_message(
 ) -> MessageView:
     """把已人工确认的消息交给统一工具执行层并返回持久化终态。"""
     if not confirmed:
-        raise AppError(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
+        raise DeliveryNotStarted(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
     conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
     if conversation is None:
-        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+        raise DeliveryNotStarted(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
     if conversation.status == "closed":
-        raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
+        raise DeliveryNotStarted(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
     send_mode = _message_send_mode(conversation, await _connected_send_channel(session, conversation))
     if conversation.platform == "tiktok" and get_settings().real_tiktok_message_write_enabled and send_mode != "real":
-        raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不在真实消息发送范围内", 403)
+        raise DeliveryNotStarted(ErrorCode.PERMISSION_DENIED, "当前会话不在真实消息发送范围内", 403)
     if send_mode == "real" and message_type == "text" and len(content) > TIKTOK_TEXT_MAX_LENGTH:
-        raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 普通文本不能超过 2000 字符", 422)
+        raise DeliveryNotStarted(ErrorCode.VALIDATION_ERROR, "TikTok 普通文本不能超过 2000 字符", 422)
     if message_type in {"image", "video"}:
         if send_mode != "real" or not media_token:
             raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话未开放真实媒体发送", 403)
@@ -688,7 +695,7 @@ async def send_agent_message(
     if result.error_code == "TOOL_IDEMPOTENCY_CONFLICT":
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于不同请求或仍在执行", 409)
     if result.error_code == "TOOL_RECONCILIATION_REQUIRED":
-        raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前店铺存在发送结果未知的消息，请先完成人工对账", 409)
+        raise DeliveryNotStarted(ErrorCode.RESOURCE_CONFLICT, "当前店铺存在发送结果未知的消息，请先完成人工对账", 409)
     if result.error_code == "TOOL_MEDIA_PROOF_INVALID":
         raise AppError(ErrorCode.VALIDATION_ERROR, "媒体上传凭据无效、过期或不属于当前会话", 422)
     existing = await session.scalar(
@@ -702,7 +709,10 @@ async def send_agent_message(
             raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于不同消息", 409)
         return _message_view(existing)
     if result.error_code == "TOOL_RESOURCE_NOT_FOUND":
-        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+        raise DeliveryNotStarted(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if result.status == "failed":
+        # 平台写入前必先提交Message；确定失败且没有记录才可证明尚未写入。
+        raise DeliveryNotStarted(ErrorCode.THIRD_PARTY_ERROR, "发送未开始，请检查授权或发送条件后重试", 503)
     raise AppError(ErrorCode.THIRD_PARTY_ERROR, "消息发送未创建可追踪记录", 503)
 
 
@@ -718,60 +728,40 @@ async def send_agent_logistics_card(
 ) -> MessageView:
     """核对买家和包裹后，经原人工确认工具链发送 TikTok 原生卡片。"""
     if not confirmed:
-        raise AppError(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
-    conversation, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
-    known_package_ids = {item.package_id for item in order.line_items if item.package_id}
-    enhanced_package = None
-    if package_id and client.channel.metadata_json.get("seller_type") == "CROSS_BORDER":
-        # 当前包裹的节点和 ID 都从已核对订单的官方增强轨迹读取。
-        try:
-            enhanced = await get_sidebar_enhanced_tracking(session, user, session_id, order_id)
-            enhanced_package = next((item for item in enhanced.packages if item.package_id == package_id), None)
-        except AppError:
-            if package_id not in known_package_ids:
-                raise
-    if package_id and package_id not in known_package_ids and enhanced_package is None:
-        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "包裹不属于当前订单", 404)
-    if len(known_package_ids) > 1 and not package_id:
-        raise AppError(ErrorCode.VALIDATION_ERROR, "多包裹订单需明确选择包裹", 422)
-    if _message_send_mode(conversation, await _connected_send_channel(session, conversation)) == "disabled":
-        raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话不能发送消息", 403)
-    latest_description = None
-    latest_at = None
-    if enhanced_package and enhanced_package.events:
-        latest_description = enhanced_package.events[0].description
-        latest_at = enhanced_package.events[0].occurred_at
-    elif len(known_package_ids) <= 1:
-        events, _ = await client.get_standard_tracking(order_id)
-        if events:
-            latest = max(events, key=lambda event: event.update_time_millis)
-            latest_description = latest.description
-            latest_at = datetime.fromtimestamp(latest.update_time_millis / 1000, UTC)
-    package_items = [
-        item
-        for item in order.line_items
-        if not package_id
-        or item.package_id == package_id
-        or (enhanced_package and item.tracking_number == enhanced_package.tracking_number)
-    ]
-    first_item = package_items[0] if package_items else None
-    card = LogisticsCardView(
-        order_id=order_id,
-        package_id=package_id,
-        product_name=first_item.product_name if first_item else None,
-        image_url=first_item.sku_image
-        if first_item and first_item.sku_image and first_item.sku_image.startswith("https://")
-        else None,
-        sku_name=first_item.sku_name if first_item else None,
-        quantity=(sum(1 for item in package_items if item.sku_id == first_item.sku_id) if first_item else None),
-        unit_price=first_item.sale_price if first_item else None,
-        currency=first_item.currency if first_item else None,
-        tracking_number=(enhanced_package.tracking_number if enhanced_package else None)
-        or (first_item.tracking_number or order.tracking_number if first_item else order.tracking_number),
-        carrier_name=(enhanced_package.carrier_name if enhanced_package else None) or order.shipping_provider,
-        latest_description=latest_description,
-        latest_at=latest_at,
-    )
+        raise DeliveryNotStarted(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
+    try:
+        conversation, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
+        known_package_ids = {item.package_id for item in order.line_items if item.package_id}
+        enhanced_package = None
+        enhanced_packages: list[SidebarTrackingPackage] = []
+        if package_id and client.channel.metadata_json.get("seller_type") == "CROSS_BORDER":
+            # 当前包裹的节点和 ID 都从已核对订单的官方增强轨迹读取。
+            try:
+                enhanced = await get_sidebar_enhanced_tracking(session, user, session_id, order_id)
+                enhanced_packages = enhanced.packages
+                enhanced_package = next((item for item in enhanced.packages if item.package_id == package_id), None)
+            except AppError:
+                if package_id not in known_package_ids:
+                    raise
+        if package_id and package_id not in known_package_ids and enhanced_package is None:
+            raise DeliveryNotStarted(ErrorCode.RESOURCE_NOT_FOUND, "包裹不属于当前订单", 404)
+        if len(known_package_ids) > 1 and not package_id:
+            raise DeliveryNotStarted(ErrorCode.VALIDATION_ERROR, "多包裹订单需明确选择包裹", 422)
+        if _message_send_mode(conversation, await _connected_send_channel(session, conversation)) == "disabled":
+            raise DeliveryNotStarted(ErrorCode.PERMISSION_DENIED, "当前会话不能发送消息", 403)
+        snapshot_package = enhanced_package
+        if not (snapshot_package and snapshot_package.events) and len(known_package_ids) <= 1:
+            events, _ = await client.get_standard_tracking(order_id)
+            standard_package = standard_tracking_package(package_id, events)
+            snapshot_package = (
+                snapshot_package.model_copy(update={"events": standard_package.events})
+                if snapshot_package is not None
+                else standard_package
+            )
+        snapshot_package = snapshot_package or standard_tracking_package(package_id, ())
+        card = logistics_card_snapshot(order, snapshot_package, packages=enhanced_packages or [snapshot_package])
+    except AppError as error:
+        raise DeliveryNotStarted(error.code, error.message, error.status_code) from error
     result = await send_agent_message(
         session,
         user,
@@ -789,6 +779,66 @@ async def send_agent_logistics_card(
     message.raw_payload = {**message.raw_payload, "logistics_card": card.model_dump(mode="json")}
     await session.commit()
     return _message_view(message)
+
+
+async def get_logistics_card_preview(
+    session: AsyncSession, user: User, session_id: uuid.UUID, order_id: str
+) -> list[LogisticsCardPreview]:
+    """只读核验当前店铺买家订单；预览不依赖写入开关，也不产生消息记录。"""
+    _conversation_view, client, order = await _verified_sidebar_order(session, user, session_id, order_id)
+    enhanced_available = client.channel.metadata_json.get("seller_type") == "CROSS_BORDER"
+    known_ids = list(dict.fromkeys(item.package_id for item in order.line_items if item.package_id))
+    packages: list[SidebarTrackingPackage] = []
+    if enhanced_available:
+        try:
+            packages = (await get_sidebar_enhanced_tracking(session, user, session_id, order_id)).packages
+        except AppError as error:
+            if error.status_code not in {429, 502, 503, 504}:
+                raise
+            # 增强读取仍遵循原八小时缓存/冷却；不可用时只展示可证明的通用信息。
+            packages = []
+    if packages:
+        if (len(packages) > 1 or len(known_ids) > 1) and any(not item.package_id for item in packages):
+            raise AppError(ErrorCode.VALIDATION_ERROR, "多包裹物流缺少可核验的包裹 ID", 422)
+        if len(packages) == 1 and packages[0].package_id is None and len(known_ids) == 1:
+            packages = [packages[0].model_copy(update={"package_id": known_ids[0]})]
+        package_ids = [item.package_id for item in packages if item.package_id]
+        if len(set(package_ids)) != len(package_ids):
+            raise AppError(ErrorCode.VALIDATION_ERROR, "物流包裹映射不唯一", 422)
+        packages = [*packages, *(standard_tracking_package(item, ()) for item in known_ids if item not in package_ids)]
+        if len(packages) == 1 and not packages[0].events:
+            events, _ = await client.get_standard_tracking(order_id)
+            standard_package = standard_tracking_package(packages[0].package_id, events)
+            packages = [packages[0].model_copy(update={"events": standard_package.events})]
+    else:
+        item_numbers = {item.tracking_number for item in order.line_items if item.tracking_number}
+        identified_numbers = {
+            item.tracking_number for item in order.line_items if item.package_id and item.tracking_number
+        }
+        if len(item_numbers) > 1 and any(
+            not item.package_id and item.tracking_number and item.tracking_number not in identified_numbers
+            for item in order.line_items
+        ):
+            raise AppError(ErrorCode.VALIDATION_ERROR, "多包裹物流缺少可核验的包裹 ID", 422)
+        if len(known_ids) > 1:
+            # 通用接口没有包裹分组证据，不能把同一份订单轨迹复制到每个包裹。
+            packages = [standard_tracking_package(item, ()) for item in known_ids]
+        else:
+            events, _ = await client.get_standard_tracking(order_id)
+            packages = [standard_tracking_package(known_ids[0] if known_ids else None, events)]
+    packages = [
+        package.model_copy(update={"events": sorted(package.events, key=lambda event: event.occurred_at, reverse=True)})
+        for package in packages
+    ]
+    cards = [logistics_card_snapshot(order, package, packages=packages) for package in packages]
+    packages = [
+        package.model_copy(update={"tracking_number": card.tracking_number, "carrier_name": card.carrier_name})
+        for package, card in zip(packages, cards, strict=True)
+    ]
+    return [
+        LogisticsCardPreview(card=card, packages=packages, enhanced_available=enhanced_available, selected=index)
+        for index, card in enumerate(cards)
+    ]
 
 
 async def reconcile_unknown_message(

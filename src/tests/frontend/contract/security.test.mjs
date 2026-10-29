@@ -17,13 +17,17 @@ test("browser authentication never stores JWT in localStorage", async () => {
 
 test("workspace SSE suggestion fills the composer without automatic sending", async () => {
   const source = await readFile(new URL("app/workspace/page.tsx", frontendRoot), "utf8");
+  const replyReview = await readFile(new URL("components/ReplyReviewPanel.tsx", frontendRoot), "utf8");
   const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
   assert.equal(api.includes('rawRequest("/chat/query"'), true);
   assert.equal(api.includes("ReadableStream"), false);
   assert.equal(api.includes("response.body.getReader()"), true);
-  assert.equal(source.includes("setDraft(suggestionDraft)"), true);
+  assert.equal(source.includes("<ReplyReviewPanel"), true);
+  assert.equal(source.includes("setDraft(text)"), true);
+  assert.equal(replyReview.includes("latest.current.onUse(verified[0])"), true);
   assert.equal(source.includes("建议已填入输入框，确认后再发送"), true);
   assert.equal(source.includes("submitMessage(suggestionDraft"), false);
+  assert.equal(replyReview.includes("submitMessage("), false);
 });
 
 test("manual platform messages require confirmation and expose uncertain delivery", async () => {

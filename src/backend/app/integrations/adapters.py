@@ -93,7 +93,13 @@ class TikTokAdapter(PlatformAdapter):
         """真实写开关开启时只接受人工确认命令，否则保持明确 Mock。"""
         if not self.settings.real_tiktok_message_write_enabled:
             return await super().send_message(channel_account, command)
-        if not command.human_confirmed:
+        notification_allowed = (
+            command.logistics_notification_authorized
+            and command.message_type == "text"
+            and self.settings.logistics_notifications_enabled
+            and self.settings.real_tiktok_logistics_notifications_enabled
+        )
+        if not command.human_confirmed and not notification_allowed:
             return SendMessageResult(
                 status="failed",
                 mock=False,

@@ -18,8 +18,9 @@ from app.agents.tools.arguments import (
     ProductSearchArguments,
     ProductSelectionArguments,
 )
+from app.agents.tools.logistics_updates.contracts import NotificationArguments
 
-Operation = Literal["read", "internal_write", "confirmation"]
+Operation = Literal["read", "internal_write", "confirmation", "notification"]
 
 
 class ToolGroup(BaseModel):
@@ -54,6 +55,16 @@ class ToolMetadata:
 
 _TOOLS = (
     ToolMetadata(
+        "notify_logistics_update",
+        "物流更新通知",
+        "仅为服务端绑定的新物流节点生成一条买家语言通知；复核和策略授权后交付，默认审阅预览。普通问答不能主动发送。",
+        "orders",
+        "notification",
+        "workspace.reply",
+        NotificationArguments,
+        ("seller.order.info", "seller.customer_service", "seller.logistics"),
+    ),
+    ToolMetadata(
         "search_customer_orders",
         "买家订单查询",
         "按状态、商品、订单号和时间查询当前买家订单，返回候选引用与分页。多订单时先选单。",
@@ -75,8 +86,8 @@ _TOOLS = (
     ),
     ToolMetadata(
         "query_logistics",
-        "完整物流",
-        "读取所选订单的包裹、承运商、完整轨迹与最新节点；大量轨迹需继续分页，增强轨迹按店铺能力提供。",
+        "物流进度",
+        "默认只读所选订单的最新物流节点及时间，客户正文先给最新状态再附随后卡片；完整历史仅内部核查时显式请求并分页，增强轨迹按店铺能力提供。",
         "orders",
         "read",
         "orders.view",

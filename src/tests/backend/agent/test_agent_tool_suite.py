@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 
-def test_catalog_covers_twelve_business_tools_and_four_confirmation_proposals() -> None:
+def test_catalog_covers_business_tools_logistics_notification_and_four_confirmation_proposals() -> None:
     from app.agents.tools.metadata import TOOL_METADATA, ToolCatalogView, catalog_view
 
     result = catalog_view(permissions={item.permission for item in TOOL_METADATA.values()}, scopes=set())
@@ -17,10 +17,11 @@ def test_catalog_covers_twelve_business_tools_and_four_confirmation_proposals() 
         "知识检索",
         "人工协作",
     ]
-    assert len(result.tools) == 16
+    assert len(result.tools) == 17
     assert sum(item.operation == "read" for item in result.tools) == 10
     assert sum(item.operation == "internal_write" for item in result.tools) == 2
     assert sum(item.operation == "confirmation" for item in result.tools) == 4
+    assert sum(item.operation == "notification" for item in result.tools) == 1
     assert result.tools[0].missing_scopes
 
 
@@ -28,7 +29,7 @@ def test_config_accepts_all_catalog_names_but_rejects_unknown_names() -> None:
     from app.agents.management.schemas import AgentConfigUpdate
     from app.agents.tools.metadata import TOOL_METADATA
 
-    assert len(AgentConfigUpdate(enabled_tools=list(TOOL_METADATA)).enabled_tools) == 16
+    assert len(AgentConfigUpdate(enabled_tools=list(TOOL_METADATA)).enabled_tools) == 17
     with pytest.raises(ValidationError):
         AgentConfigUpdate(enabled_tools=["arbitrary_http"])
 
@@ -65,7 +66,7 @@ async def test_complete_configured_catalog_uses_function_call_schemas_without_tr
     tools = build_agent_tools(
         tuple(TOOL_METADATA), context=context, executor=shared, business_executor=business, knowledge_search=search
     )
-    assert len(tools) == 16 and len({item.name for item in tools}) == 16
+    assert len(tools) == 17 and len({item.name for item in tools}) == 17
     for item in tools:
         fields = item.args_schema.model_json_schema().get("properties", {})
         assert not {"store_id", "customer_id", "conversation_id", "order_id", "product_id"}.intersection(fields)

@@ -228,7 +228,10 @@ async def test_complete_logistics_keeps_all_parcels_and_pages_events(monkeypatch
     monkeypatch.setattr(
         business, "get_sidebar_enhanced_tracking", AsyncMock(return_value=SidebarTrackingTimeline(packages=packages))
     )
-    result = await service.invoke("query_logistics", {"enhanced": True})
+    latest = await service.invoke("query_logistics", {"enhanced": True})
+    assert len(latest["facts"]["events"]) == 1
+    assert latest["facts"]["next_event_offset"] is None
+    result = await service.invoke("query_logistics", {"enhanced": True, "detail": "history"})
     assert len(result["facts"]["packages"]) == 2
     assert len(result["facts"]["events"]) == 10
     assert result["facts"]["events"][0]["occurred_at"] == now.isoformat()
@@ -243,7 +246,8 @@ async def test_complete_logistics_keeps_all_parcels_and_pages_events(monkeypatch
     assert result["facts"]["order_number"] == "111"
     assert result["facts"]["next_event_offset"] == 10
     result = await service.invoke(
-        "query_logistics", {"order_ref": result["facts"]["order_ref"], "enhanced": True, "event_offset": 10}
+        "query_logistics",
+        {"order_ref": result["facts"]["order_ref"], "enhanced": True, "detail": "history", "event_offset": 10},
     )
     assert len(result["facts"]["events"]) == 4 and result["facts"]["next_event_offset"] is None
     import json
@@ -281,7 +285,8 @@ async def test_complete_logistics_keeps_all_parcels_and_pages_events(monkeypatch
         seen_packages, seen_events = [], 0
         while True:
             page = await service.invoke(
-                "query_logistics", {"enhanced": True, "package_offset": package_offset, "event_offset": event_offset}
+                "query_logistics",
+                {"enhanced": True, "detail": "history", "package_offset": package_offset, "event_offset": event_offset},
             )
             assert len(json.dumps(page, ensure_ascii=False, default=str, separators=(",", ":"))) < 16000
             assert page["facts"]["package_count"] == len(large)

@@ -5,6 +5,8 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Header, Query, Request, UploadFile
 
+from app.agents.delivery.contracts import ReplyBatchRequest, ReplyBatchView
+from app.agents.delivery.service import deliver_reviewed_batch
 from app.auth.dependencies import (
     get_current_user,
     require_csrf,
@@ -26,6 +28,7 @@ from app.tools.schemas import (
     ShippingAddressUpdate,
 )
 from app.tools.service import issue_coupon, query_logistics, request_address_update
+from app.workspace.logistics_preview import LogisticsCardPreview
 from app.workspace.media import MediaUploadView, upload_media
 from app.workspace.schemas import (
     AssigneeView,
@@ -54,6 +57,7 @@ from app.workspace.schemas import (
 )
 from app.workspace.service import (
     assign_session,
+    get_logistics_card_preview,
     get_order,
     get_session_list,
     get_session_messages,
@@ -95,6 +99,35 @@ from app.workspace.sidebar import (
 )
 
 router = APIRouter(prefix="/workspace", tags=["客服工作台"])
+
+
+@router.get(
+    "/sessions/{session_id}/logistics-card-preview",
+    response_model=ApiResponse[list[LogisticsCardPreview]],
+    dependencies=[Depends(require_permission("workspace.view")), Depends(require_permission("orders.view"))],
+)
+async def logistics_card_preview(
+    session_id: uuid.UUID,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    order_id: Annotated[str, Query(min_length=1, max_length=200, pattern=r"^[0-9]+$")],
+) -> ApiResponse[list[LogisticsCardPreview]]:
+    return ApiResponse(data=await get_logistics_card_preview(session, user, session_id, order_id))
+
+
+@router.post(
+    "/sessions/{session_id}/reply-batches",
+    response_model=ApiResponse[ReplyBatchView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("workspace.reply"))],
+)
+async def reply_batch(
+    session_id: uuid.UUID,
+    payload: ReplyBatchRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+    idempotency_key: Annotated[str, Depends(require_idempotency_key)],
+) -> ApiResponse[ReplyBatchView]:
+    return ApiResponse(data=await deliver_reviewed_batch(session, user, session_id, payload, idempotency_key))
 
 
 @router.post(

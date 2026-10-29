@@ -244,7 +244,13 @@ class TikTokMessageClient:
 
     async def send_text_message(self, command: SendMessageCommand) -> SendMessageResult:
         """按官方 202606 契约发送一次人工消息，不自动重试。"""
-        if not command.human_confirmed:
+        notification_allowed = (
+            command.logistics_notification_authorized
+            and command.message_type == "text"
+            and self.settings.logistics_notifications_enabled
+            and self.settings.real_tiktok_logistics_notifications_enabled
+        )
+        if not command.human_confirmed and not notification_allowed:
             return self._failed("REAL_WRITE_REQUIRES_HUMAN_CONFIRMATION")
         if not command.external_conversation_id.isdigit():
             return self._failed("TIKTOK_CONVERSATION_ID_INVALID")

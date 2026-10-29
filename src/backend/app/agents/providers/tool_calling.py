@@ -1,15 +1,19 @@
 """DeepSeek Chat Completions 原生 function calling 单轮适配。"""
 
+import asyncio
 import json
 from dataclasses import dataclass
 from typing import Literal, cast
 
+import httpx
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from openai import APITimeoutError, AsyncOpenAI, Omit, omit
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam, ChatCompletionToolParam
+from pydantic import ValidationError
 
 from app.agents.core.errors import LLMErrorCode, LLMProviderError
+from app.agents.providers.text_streaming import ModelDeltaCallback, ModelStreamDelta
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +30,14 @@ class ToolTurn:
     assistant_message: dict[str, object]
     input_tokens: int
     output_tokens: int
+
+
+@dataclass(slots=True)
+class _StreamingCall:
+    id: str = ""
+    name: str = ""
+    arguments: str = ""
+    type: str = ""
 
 
 def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
@@ -100,6 +112,134 @@ class DeepSeekToolCallingProvider:
                 )
         except APITimeoutError as error:
             raise LLMProviderError(LLMErrorCode.LLM_TIMEOUT, "模型请求超时", retriable=False) from error
+        return self._parse_response(response)
+
+    async def complete_streaming(
+        self,
+        *,
+        messages: tuple[dict[str, object], ...],
+        tools: tuple[BaseTool, ...],
+        max_output_tokens: int,
+        on_delta: ModelDeltaCallback,
+    ) -> ToolTurn:
+        if max_output_tokens <= 0:
+            raise ValueError("模型输出预算必须为正数")
+        schemas = [convert_to_openai_tool(item) for item in tools]
+        content = ""
+        reasoning = ""
+        reasoning_seen = False
+        calls: dict[int, _StreamingCall] = {}
+        finish_reason: str | None = None
+        input_tokens = output_tokens = 0
+        try:
+            stream = await self._client.chat.completions.create(
+                model=self.model_name,
+                messages=cast(list[ChatCompletionMessageParam], list(messages)),
+                tools=cast(list[ChatCompletionToolParam], schemas) if schemas else omit,
+                tool_choice="auto" if schemas else omit,
+                max_tokens=max_output_tokens if self._deepseek_protocol else omit,
+                max_completion_tokens=omit if self._deepseek_protocol else max_output_tokens,
+                stream=True,
+                stream_options={"include_usage": True},
+                extra_body={"thinking": {"type": "enabled" if self.thinking_enabled else "disabled"}}
+                if self._deepseek_protocol
+                else None,
+                store=omit if self._deepseek_protocol else False,
+            )
+            async with stream:
+                async for chunk in stream:
+                    if chunk.usage is not None:
+                        input_tokens = chunk.usage.prompt_tokens
+                        output_tokens = chunk.usage.completion_tokens
+                    if not chunk.choices:
+                        continue
+                    if len(chunk.choices) != 1 or chunk.choices[0].index != 0 or finish_reason is not None:
+                        raise LLMProviderError(
+                            LLMErrorCode.LLM_OUTPUT_INVALID, "模型响应数量或顺序异常", retriable=False
+                        )
+                    choice = chunk.choices[0]
+                    delta = choice.delta
+                    raw_reasoning = getattr(delta, "reasoning_content", None)
+                    if isinstance(raw_reasoning, str):
+                        reasoning_seen = True
+                        reasoning += raw_reasoning
+                    if delta.content:
+                        content += delta.content
+                        await on_delta(ModelStreamDelta(kind="text", text=delta.content))
+                    for item in delta.tool_calls or ():
+                        if item.index < 0:
+                            raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "工具调用索引无效", retriable=False)
+                        call = calls.setdefault(item.index, _StreamingCall())
+                        if item.id:
+                            call.id += item.id
+                        if item.type:
+                            call.type = item.type
+                        arguments_delta = ""
+                        if item.function is not None:
+                            if item.function.name:
+                                call.name += item.function.name
+                            arguments_delta = item.function.arguments or ""
+                            call.arguments += arguments_delta
+                        if arguments_delta or item.id or (item.function is not None and item.function.name):
+                            await on_delta(
+                                ModelStreamDelta(
+                                    kind="tool_arguments",
+                                    tool_index=item.index,
+                                    tool_id=call.id or None,
+                                    tool_name=call.name or None,
+                                    arguments_delta=arguments_delta,
+                                )
+                            )
+                    finish_reason = choice.finish_reason
+            wire_calls = [
+                {"id": call.id, "type": call.type, "function": {"name": call.name, "arguments": call.arguments}}
+                for _, call in sorted(calls.items())
+            ]
+            # 与非流式路径共用严格校验；草稿回调不构成最终回答或工具执行授权。
+            response = ChatCompletion.model_validate(
+                {
+                    "id": "stream",
+                    "object": "chat.completion",
+                    "created": 0,
+                    "model": self.model_name,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "finish_reason": finish_reason,
+                            "message": {
+                                "role": "assistant",
+                                "content": content or None,
+                                "tool_calls": wire_calls or None,
+                                **({"reasoning_content": reasoning} if reasoning_seen else {}),
+                            },
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": input_tokens,
+                        "completion_tokens": output_tokens,
+                        "total_tokens": input_tokens + output_tokens,
+                    },
+                }
+            )
+            return self._parse_response(response)
+        except (APITimeoutError, httpx.TimeoutException) as error:
+            failure = LLMProviderError(LLMErrorCode.LLM_TIMEOUT, "模型请求超时", retriable=False)
+            failure.input_tokens, failure.output_tokens = input_tokens, output_tokens
+            raise failure from error
+        except ValidationError as error:
+            failure = LLMProviderError(
+                LLMErrorCode.LLM_OUTPUT_INVALID,
+                "模型流响应结构无效",
+                retriable=False,
+                output_failure_kind="invalid_structure",
+            )
+            failure.input_tokens, failure.output_tokens = input_tokens, output_tokens
+            raise failure from error
+        except (LLMProviderError, asyncio.CancelledError) as error:
+            error.__dict__.update(input_tokens=input_tokens, output_tokens=output_tokens)
+            raise
+
+    def _parse_response(self, response: ChatCompletion) -> ToolTurn:
         try:
             if len(response.choices) != 1:
                 raise LLMProviderError(LLMErrorCode.LLM_OUTPUT_INVALID, "模型响应数量异常", retriable=False)

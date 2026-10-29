@@ -281,6 +281,8 @@ class ToolExecutionContext(BaseModel):
     # 只由人工 HTTP Service 在完成二次确认后设置。Agent/Job 即使能构造
     # 工具参数，也不能把普通消息升级为真实平台写操作。
     human_confirmed: bool = False
+    # 仅可信物流服务绑定；执行器仍须独立读取通知台账、策略和当前授权。
+    logistics_notification_key: str | None = Field(default=None, pattern=r"^logistics:[a-f0-9]{64}$")
 
 
 class ToolInvocation(BaseModel):

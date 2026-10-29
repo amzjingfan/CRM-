@@ -9,6 +9,11 @@ from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agents.safety.tool_projection import project_tool_result
+from app.agents.tools.logistics_updates import (
+    BoundLogisticsEvent,
+    LogisticsUpdateService,
+    build_notify_logistics_update_tool,
+)
 from app.agents.tools.metadata import TOOL_METADATA
 from app.tools.contracts import (
     TOOL_DEFINITIONS,
@@ -106,6 +111,8 @@ def build_agent_tools(
     executor: ToolExecutionPort,
     knowledge_search: Callable[[str], Awaitable[dict[str, object]]] | None = None,
     business_executor: BusinessToolPort | None = None,
+    logistics_service: LogisticsUpdateService | None = None,
+    logistics_context: BoundLogisticsEvent | None = None,
 ) -> tuple[BaseTool, ...]:
     """不按数量或预设意图裁剪配置；未知工具显式拒绝发布/运行。"""
     if len(set(configured_names)) != len(configured_names):
@@ -115,6 +122,9 @@ def build_agent_tools(
         if name not in TOOL_METADATA:
             raise ValueError(f"未知 Agent 工具: {name}")
         if name == "search_knowledge":
+            continue
+        if name == "notify_logistics_update":
+            catalog.append(build_notify_logistics_update_tool(logistics_service, context=logistics_context))
             continue
         if business_executor is not None and name not in WRITE_TOOL_NAMES:
             catalog.append(_build_business_tool(name, business_executor))

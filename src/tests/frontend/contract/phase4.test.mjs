@@ -38,13 +38,15 @@ test("settings pages cover stores channels and team", async () => {
 });
 
 test("Agent prototype keeps managed tools while workspace SSE content remains accessible", async () => {
-  const [agent, workspace] = await Promise.all([
+  const [agent, workspace, replyReview] = await Promise.all([
     read("app/agents/page.tsx"),
     read("app/workspace/page.tsx"),
+    read("components/ReplyReviewPanel.tsx"),
   ]);
   assert.match(agent, /AgentToolCatalog/);
   assert.match(agent, /保存配置/);
-  assert.match(workspace, /AI reply suggestion/);
+  assert.match(workspace, /ReplyReviewPanel/);
+  assert.match(replyReview, /AI reply suggestion/);
   assert.match(workspace, /Suggestion inserted; review it before sending/);
   assert.match(workspace, /Transfer conversation/);
 });
@@ -85,9 +87,10 @@ test("interactive filters and compact fields meet the 44px touch target", async 
 });
 
 test("SSE uses cookie CSRF transport and abort support", async () => {
-  const [api, workspace] = await Promise.all([
+  const [api, workspace, replyReview] = await Promise.all([
     read("lib/api.ts"),
     read("app/workspace/page.tsx"),
+    read("components/ReplyReviewPanel.tsx"),
   ]);
   assert.match(api, /X-CSRF-Token/);
   assert.match(api, /credentials: "include"/);
@@ -97,9 +100,10 @@ test("SSE uses cookie CSRF transport and abort support", async () => {
   assert.match(api, /terminalReceived/);
   assert.match(api, /reader\.cancel/);
   assert.match(api, /AI 建议响应格式无效，请重试/);
-  assert.match(workspace, /cancelSuggestion/);
-  assert.match(workspace, /已取消生成/);
-  assert.match(workspace, /aria-live="polite"/);
+  assert.match(workspace, /ReplyReviewPanel/);
+  assert.match(replyReview, /cancelSuggestion/);
+  assert.match(replyReview, /已取消生成/);
+  assert.match(replyReview, /aria-live="polite"/);
 });
 
 test("management shell follows the prototype information architecture", async () => {

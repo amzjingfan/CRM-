@@ -1,0 +1,86 @@
+{
+  "task_id": "MVP-AGENT-REPLY-DELIVERY-001",
+  "subject_sha": "b3ce00a35bda8a1504f7f56cb4d910bc0fa0b865",
+  "base_sha": "c7ba0f4c2ce725b9e7672ce24db73f60b235f4af",
+  "pull_request": "https://github.com/CP11-gh/CRM/pull/644",
+  "created_at": "2026-10-29T15:47:50+00:00",
+  "status": "local_verified_not_deployed",
+  "records": {
+    "ir": "docs/records/implementation/IR-MVP-AGENT-REPLY-DELIVERY-001-20261029-R01.md",
+    "tr": "docs/reports/tests/TR-MVP-AGENT-REPLY-DELIVERY-001-20261029-R01.md",
+    "rr": "docs/reports/reviews/RR-MVP-AGENT-REPLY-DELIVERY-001-20261029-R01.md"
+  },
+  "backend": {
+    "passed": 2711,
+    "skipped_platform": 3,
+    "warnings": 2,
+    "mypy_files": 277
+  },
+  "frontend": {
+    "contracts_passed": 55,
+    "browser_passed": 159,
+    "browser_skipped": 0,
+    "build": true,
+    "typecheck": true,
+    "lint_errors": 0,
+    "existing_lint_warnings": 8
+  },
+  "eval": {
+    "dynamic_contract": 16,
+    "safety": 237,
+    "live_model_evaluation": false
+  },
+  "migration": {
+    "roundtrip": "043->041->043",
+    "new_table_differences": 0,
+    "global_check_passed": false,
+    "existing_differences": 98,
+    "baseline_differences": 98,
+    "baseline_render_sha256": "6019615a30856aa845363725b10ee81282200af52357a13c0d5421908e817225"
+  },
+  "ci": {
+    "run_id": 40904785085,
+    "head_sha": "b3ce00a35bda8a1504f7f56cb4d910bc0fa0b865",
+    "status": "not_run_zero_steps",
+    "local_substitution_authorized": true,
+    "jobs": [
+      {
+        "id": 123556459600,
+        "name": "Frontend quality gates",
+        "runner_id": 0,
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 123556460115,
+        "name": "Backend quality gates",
+        "runner_id": 0,
+        "steps": 0,
+        "conclusion": "failure"
+      }
+    ]
+  },
+  "platform_send_count": 0,
+  "deployed": false,
+  "automatic_reply_enabled": false,
+  "logistics_notification_delivery_enabled": false,
+  "review": {
+    "status": "APPROVE",
+    "open_critical": 0,
+    "open_important": 0,
+    "open_minor": 0
+  },
+  "prompt_versions": {
+    "reply_plan": "agent-reply-plan-v1.0.0",
+    "evidence_review": "agent-evidence-review-v2.4.0"
+  },
+  "file_sha256": {
+    "src/backend/app/agents/delivery/generation.py": "053d41c38849a487a27aaea7e7d5ad05bf2fef004e6dfeb94771704dbfe8a85d",
+    "src/backend/app/agents/delivery/batches.py": "60a72c865f2f1b0958302b29b1c99f5e3fe39a074640845280e1b756b2ee63b9",
+    "src/backend/app/agents/delivery/repository.py": "f93433432f90b1a034ceda0ba71ad0c822674f8fddfc08cd7dad5fe03f3f66d4",
+    "src/backend/app/agents/tools/logistics_updates/worker.py": "c3aa47a415543f0c248b3446fed5ed9279629999fd2d70cf01ff3ce780a01ec5",
+    "src/backend/app/agents/tools/logistics_updates/repository.py": "148012e19969ae77fc6a63c0346c720d2f7850b607268309d342fd453ab32dca",
+    "src/frontend/components/ReplyReviewPanel.tsx": "17553c113b999c106428a4276eb817654399621b6e0e1f3049757e3184cfd1fd"
+  },
+  "file_sha256_mode": "git_blob_bytes"
+}

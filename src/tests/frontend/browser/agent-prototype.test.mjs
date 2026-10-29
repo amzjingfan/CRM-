@@ -25,9 +25,10 @@ let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
 
-async function openAgentPage() {
+async function openAgentPage(options = {}) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const agents = [agent("00000000-0000-4000-8000-0000000000a1", us.id, "美国客服"), agent("00000000-0000-4000-8000-0000000000a2", uk.id, "英国客服")];
+  if (options.notificationAgent) Object.assign(agents[0], { status: "enabled", published_version: 1, enabled_tools: ["notify_logistics_update"] });
   const writes = [];
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
@@ -38,6 +39,11 @@ async function openAgentPage() {
     else if (url.pathname === "/v1/settings/stores") data = [us, uk];
     else if (url.pathname === "/v1/agents/tool-catalog") data = toolCatalog;
     else if (url.pathname === "/v1/agents/collaboration") data = [];
+    else if (url.pathname === "/v1/agents/logistics-notifications/policy") {
+      const policy = { store_id: url.searchParams.get("store_id"), agent_id: null, enabled: false, mode: "preview", enabled_at: null, revision: 0, global_enabled: false, real_delivery_enabled: false, last_scan_at: null };
+      if (request.method() === "PATCH") { const payload = JSON.parse(request.postData()); writes.push({ policy: payload, store_id: policy.store_id }); Object.assign(policy, payload, { revision: 1 }); }
+      data = policy;
+    }
     else if (url.pathname === "/v1/agents" && request.method() === "GET") data = agents;
     else if (url.pathname === "/v1/agents" && request.method() === "POST") {
       const payload = JSON.parse(request.postData() ?? "{}"); writes.push(payload);
@@ -102,6 +108,22 @@ test("Agent prototype tabs, store isolation and bound files", async () => {
   } finally { await context.close(); }
 });
 
+test("logistics notification policy saves only an explicit preview strategy while deployment switches remain off", async () => {
+  const { context, page, writes } = await openAgentPage({ notificationAgent: true });
+  try {
+    await page.getByRole("tab", { name: /工具能力/ }).click();
+    const section = page.getByRole("region", { name: "物流更新通知策略", exact: true });
+    await section.getByText(/全局通知未启用/).waitFor();
+    await section.getByRole("checkbox", { name: "启用本店预演策略", exact: true }).check();
+    await section.getByRole("combobox", { name: "通知 Agent", exact: true }).selectOption("00000000-0000-4000-8000-0000000000a1");
+    await section.getByRole("button", { name: "保存为预演策略", exact: true }).click();
+    await section.getByText("预演策略已保存；未开启真实通知", { exact: true }).waitFor();
+    assert.deepEqual(writes.at(-1), { store_id: us.id, policy: { enabled: true, agent_id: "00000000-0000-4000-8000-0000000000a1", mode: "preview", expected_revision: 0 } });
+    await section.getByText(/真实外发未启用/).waitFor();
+    assert.equal(writes.some((write) => write.policy?.mode === "external"), false);
+  } finally { await context.close(); }
+});
+
 test("tool catalog shows six groups, searchable cards, operation labels and knowledge navigation", async () => {
   const { context, page, writes } = await openAgentPage();
   try {
@@ -109,7 +131,9 @@ test("tool catalog shows six groups, searchable cards, operation labels and know
     for (const name of ["订单与物流", "商品与优惠", "售后服务", "客户与会话", "知识检索", "人工协作"]) {
       await page.getByRole("heading", { name, exact: true }).waitFor();
     }
-    assert.equal(await page.locator(".capability-card").count(), 16);
+    assert.equal(await page.locator(".capability-card").count(), 17);
+    const notification = page.locator(".capability-card").filter({ hasText: "notify_logistics_update" });
+    await notification.getByText("店铺策略通知", { exact: true }).waitFor({ timeout: 1500 });
     if (process.env.AGENT_TOOL_CAPTURE) {
       await page.locator(".capability-panel").evaluate((element) => element.scrollIntoView({ block: "start" }));
       await page.screenshot({ path: process.env.AGENT_TOOL_CAPTURE });

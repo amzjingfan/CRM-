@@ -20,7 +20,9 @@ def test_independently_deployed_reception_and_document_migrations_join_one_head(
     """两条 029 已分别在环境落地，合流必须保留两个历史 revision。"""
     migration_path = Path(__file__).resolve().parents[3] / "backend" / "migrations"
     scripts = ScriptDirectory(str(migration_path))
-    assert scripts.get_heads() == ["041_merge_agent_multishop_collab"]
+    assert scripts.get_heads() == ["043_logistics_updates"]
+    assert scripts.get_revision("043_logistics_updates").down_revision == "042_agent_reply_delivery"
+    assert scripts.get_revision("042_agent_reply_delivery").down_revision == "041_merge_agent_multishop_collab"
     assert set(scripts.get_revision("041_merge_agent_multishop_collab").down_revision) == {
         "040_agent_collaboration",
         "035_tiktok_seller_multishop",

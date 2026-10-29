@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
 from app.agents.core.factory import SharedAgentRuntime
+from app.agents.orchestration.service import RunProgress
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.chat.schemas import ChatQueryRequest, SuggestionRequest, SuggestionView
 from app.chat.service import (
@@ -148,6 +149,33 @@ async def chat_query(
         first_output_latency_ms: int | None = None
         terminal_event_emitted = False
         cancellation_reconcile_needed = False
+        drafts: asyncio.Queue[tuple[int, str]] = asyncio.Queue(maxsize=64)
+
+        async def on_draft(index: int, text: str) -> None:
+            # 快照可合并，避免慢客户端积压逐Token副本；最终答复仍完整交付。
+            if drafts.full():
+                drafts.get_nowait()
+            drafts.put_nowait((index, text))
+
+        async def run_suggestion() -> SuggestionView:
+            if payload.reply_mode == "review_plan":
+                return await suggest_for_user(
+                    session,
+                    user,
+                    payload.session_id,
+                    payload.trigger_message_id,
+                    trace_id,
+                    _agent_runtime(request),
+                    reply_progress=RunProgress(reply_plan=True, on_draft=on_draft),
+                )
+            return await suggest_for_user(
+                session,
+                user,
+                payload.session_id,
+                payload.trigger_message_id,
+                trace_id,
+                _agent_runtime(request),
+            )
 
         async def mark_interrupted(error_code: str) -> None:
             if result is not None and not result_handed_to_transport:
@@ -171,16 +199,7 @@ async def chat_query(
             yield _event("status", sequence, {"stage": "agent_running"})
             sequence += 1
             agent_started_at = time.perf_counter()
-            workflow_task = asyncio.create_task(
-                suggest_for_user(
-                    session,
-                    user,
-                    payload.session_id,
-                    payload.trigger_message_id,
-                    trace_id,
-                    _agent_runtime(request),
-                )
-            )
+            workflow_task = asyncio.create_task(run_suggestion())
             # 允许无 I/O 的工作流测试替身先完成；真实工作流一旦等待外部依赖，
             # 后续循环便可及时感知浏览器断线并取消模型调用。
             await asyncio.sleep(0)
@@ -193,6 +212,23 @@ async def chat_query(
                     terminal_event_emitted = True
                     log_disconnected()
                     return
+                while not drafts.empty():
+                    part_index, text = drafts.get_nowait()
+                    yield _event(
+                        "draft",
+                        sequence,
+                        {
+                            "part_index": part_index,
+                            "text": text,
+                            "replace": True,
+                            "unverified": True,
+                            "sendable": False,
+                            "trigger_message_id": str(payload.trigger_message_id)
+                            if payload.trigger_message_id
+                            else None,
+                        },
+                    )
+                    sequence += 1
                 now = time.perf_counter()
                 if now >= deadline:
                     cancellation_reconcile_needed = True

@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-10-29新增回复交付仍为本地候选，未部署：需统一升级前后端并执行042/043，不能只换前端。`LOGISTICS_NOTIFICATIONS_ENABLED=false`、`REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED=false`与店铺mode preview为默认；新配置示例只说明契约，不修改staging实际环境。前者开启还需LLM，真实通知另需真实普通消息写开关、绑定Agent/现时策略及官方窗口全部满足；保持AUTO_REPLY_ENABLED=false，禁止通过伪造human_confirmed启用通知。本轮测试使用本地合成数据库与平台替身，零真实发送。部署和实际自动通知开启仍分别按用户批准及门禁执行。旧staging验收见R10记录及crm-agent-bilingual-rag-acceptance-20261029证据，不能作为这些新增功能的现场结论。
+
 2026-10-29 第一批详细回答修复 #634 已手动部署 e3fcbd1a，backend digest `sha256:ba62531a9f43b8a5ead46ce9a5d0562b0b0038a240ccb30c379a0eaba8878c55`；041、12容器和三健康检查通过。backend正式人工建议开启、后台自动模式关闭。第二批原始语言/编号/过滤重组/HTTP预算/完整编辑修复尚未部署，最终统一发布须同时更新前后端；v4提示词草稿需在新编译器生效后正常发布，不提前修改发布版本。
 
 人工 AI 建议的受控 staging 发布：受审门禁新增 `-EnableAgentSuggestions`，加载 `src/compose/docker-compose.rootless-staging-agent-suggestions.yml`，仅 backend 开启 `LLM_ENABLED`、`AGENT_V2_FORMAL_ENABLED` 和 `EMBEDDING_ENABLED`；与 `-EnableAgentDebug` 可同时使用。模型原生工具协议、凭证、检索共享令牌、合并 Compose 和实际容器均必须校验；worker/jobs/agent-worker 仍保持正式建议及模型关闭，自动回复/营销/高风险写入保持关闭，不改变既有单店人工发送范围。此模式禁止与 G5 负载测试同时开启。

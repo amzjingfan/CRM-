@@ -48,6 +48,7 @@ class ReviewedSuggestion:
     citations: tuple[str, ...]
     input_tokens: int = 0
     output_tokens: int = 0
+    reply_parts: tuple[str, ...] = ()
 
 
 def _conflicting_facts(results: tuple[SpecialistResult, ...]) -> bool:

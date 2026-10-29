@@ -15,6 +15,7 @@ from app.agents.core.schemas import (
     ClassificationState,
     WorkflowTerminalState,
 )
+from app.agents.delivery.generation import REPLY_PLAN_PROMPT_VERSION
 from app.agents.management.repository import list_enabled_agents
 from app.agents.memory.models import AgentSessionMemory
 from app.agents.memory.service import load_memory, remember_session_question
@@ -41,6 +42,7 @@ async def run_formal_suggestion(
     permissions: set[str],
     runtime: SharedAgentRuntime | None,
     user: User | None = None,
+    progress: RunProgress | None = None,
 ) -> AgentWorkflowResult:
     """所有候选从同店已启用配置读取；旧 FAQ 路径不参与本次运行。"""
     settings = get_settings()
@@ -99,7 +101,7 @@ async def run_formal_suggestion(
     )
     session.add(run)
     await session.commit()
-    progress = RunProgress()
+    progress = progress or RunProgress()
     try:
         async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
             result = await execute_model_run(
@@ -171,6 +173,22 @@ async def run_formal_suggestion(
         classification_state=ClassificationState.UNKNOWN,
         citations=citations,
         draft_reply=result.suggestion.content,
+        reply_parts=list(result.suggestion.reply_parts),
+        logistics_order_numbers=list(
+            dict.fromkeys(
+                value
+                for specialist in result.specialists
+                for observation in specialist.observations
+                if observation.name == "query_logistics"
+                and observation.status == "succeeded"
+                and result.suggestion.content is not None
+                for value in [observation.facts.get("order_number")]
+                if isinstance(value, str) and value.isdigit() and len(value) <= 200
+            )
+        )
+        if progress.reply_plan
+        else [],
+        trigger_message_id=trigger.id,
         required_tools=[],
         intent_confidence=0,
         retrieval_score=0,
@@ -186,6 +204,7 @@ async def run_formal_suggestion(
             "dynamic_router": "v2",
             "evidence_review": GROUNDING_PROMPT_VERSION,
             "answer_output": AGGREGATE_PROMPT_VERSION,
+            **({"reply_plan": REPLY_PLAN_PROMPT_VERSION} if progress.reply_plan else {}),
         },
         input_tokens=run.input_tokens or 0,
         output_tokens=run.output_tokens or 0,

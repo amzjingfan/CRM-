@@ -1,0 +1,25 @@
+.reply-review-panel { flex-shrink: 1; min-width: 0; min-height: 0; max-height: min(34vh, 310px); overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--primary-soft) 58%, var(--surface)); font-size: .8rem; }
+.reply-review-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 16px; }
+.reply-review-heading > div:first-child { min-width: 0; }
+.reply-review-heading p, .reply-review-binding { color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+.reply-review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.reply-review-body { max-height: min(30vh, 260px); overflow-y: auto; padding: 0 16px 10px; overscroll-behavior: contain; }
+.reply-review-parts { display: grid; gap: 10px; margin: 8px 0; padding: 0; list-style: none; }
+.reply-review-parts > li { min-width: 0; padding: 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.reply-review-parts > li > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.reply-review-parts p, .reply-review-unverified p, .reply-review-confirm-parts { white-space: pre-wrap; overflow-wrap: anywhere; }
+.reply-review-unverified { border-left: 3px solid var(--border); margin: 0 16px 8px; color: var(--muted); }
+.reply-review-result, .reply-review-delivery-status { padding: 4px 16px 8px; overflow-wrap: anywhere; }
+.reply-review-confirm-parts { max-height: 45vh; overflow-y: auto; padding-left: 20px; }
+.reply-review-confirm-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; border: 1px solid var(--border); color: var(--text); }
+.reply-review-confirm-dialog::backdrop { background: rgb(20 30 50 / 40%); }
+.reply-review-panel button { min-height: 44px; }
+.reply-notification-review { flex-shrink: 0; border-top: 1px solid var(--border); background: var(--surface); font-size: .75rem; }
+.reply-notification-review summary { padding: 9px 16px; min-height: 36px; cursor: pointer; }
+.reply-notification-body { max-height: min(30vh, 260px); overflow-y: auto; padding: 0 16px 10px; overscroll-behavior: contain; }
+.reply-notification-body p, .reply-notification-policy p { margin: 7px 0; color: var(--muted); overflow-wrap: anywhere; }
+.reply-notification-body label, .reply-notification-policy label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+.reply-notification-body select, .reply-notification-policy select { max-width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: 6px; padding: 6px; background: var(--surface); }
+.reply-notification-preview { margin: 8px 0; padding: 9px; border: 1px solid var(--border); border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reply-notification-policy { margin: 14px 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; font-size: .85rem; }
+@media (max-height: 600px) { .reply-review-body { max-height: 20vh; } .reply-review-heading { padding-block: 4px; } }

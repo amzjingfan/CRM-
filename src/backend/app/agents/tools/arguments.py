@@ -40,6 +40,9 @@ class OrderSelectionArguments(StrictToolArguments):
 
 
 class LogisticsArguments(OrderSelectionArguments):
+    detail: Literal["latest", "history"] = Field(
+        default="latest", description="默认只读最新物流节点；仅核对历史时选择history，全文轨迹通过物流卡片呈现"
+    )
     enhanced: bool = Field(default=False, description="仅受支持的跨境店使用增强多包裹轨迹")
     event_offset: int = Field(
         default=0, ge=0, le=1000000, description="轨迹续读位置，使用返回的next_event_offset；已读完时可设为event_count"

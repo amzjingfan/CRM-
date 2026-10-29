@@ -5,6 +5,7 @@ import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
+from app.agents.delivery.reply_parts import DraftPartSink
 from app.agents.orchestration.aggregator import ReviewedSuggestion, aggregate_results
 from app.agents.orchestration.coordinator import SpecialistResult, run_selected
 from app.agents.orchestration.router import (
@@ -36,6 +37,8 @@ class RunProgress:
     specialists: tuple[SpecialistResult, ...] = ()
     aggregate_input_tokens: int = 0
     aggregate_output_tokens: int = 0
+    reply_plan: bool = False
+    on_draft: DraftPartSink | None = None
 
     def capture_aggregate_usage(self, input_tokens: int, output_tokens: int) -> None:
         """每轮完成即记录数值，后续外层取消也不丢失已知用量。"""
@@ -152,25 +155,50 @@ async def execute_dynamic_run(
             reason,
         )
     state.advance(RunPhase.AGGREGATING)
-    suggestion = await aggregate_results(
-        question=question,
-        results=specialists,
-        provider=aggregator,
-        deadline=deadline,
-        store_id=snapshot.store_id,
-        max_output_tokens=max_answer_tokens,
-        privacy_policies=tuple(
-            agent.prompt_sections["compliance"]
-            for agent in snapshot.published_agents
-            if any(item.agent_id == agent.id for item in specialists) and "compliance" in agent.prompt_sections
-        ),
-        output_policies=tuple(
-            agent.prompt_sections["language_format"]
-            for agent in snapshot.published_agents
-            if any(item.agent_id == agent.id for item in specialists) and "language_format" in agent.prompt_sections
-        ),
-        on_usage=progress.capture_aggregate_usage if progress is not None else None,
-    )
+    aggregate = aggregate_results
+    if progress is not None and progress.reply_plan:
+        from app.agents.delivery.generation import aggregate_reply_plan
+
+        suggestion = await aggregate_reply_plan(
+            question=question,
+            results=specialists,
+            provider=aggregator,
+            deadline=deadline,
+            store_id=snapshot.store_id,
+            max_output_tokens=max_answer_tokens,
+            privacy_policies=tuple(
+                agent.prompt_sections.get("compliance", "")
+                for agent in snapshot.published_agents
+                if agent.id in {item.agent_id for item in specialists}
+            ),
+            output_policies=tuple(
+                agent.prompt_sections.get("language_format", "")
+                for agent in snapshot.published_agents
+                if agent.id in {item.agent_id for item in specialists}
+            ),
+            on_usage=progress.capture_aggregate_usage,
+            on_draft=progress.on_draft,
+        )
+    else:
+        suggestion = await aggregate(
+            question=question,
+            results=specialists,
+            provider=aggregator,
+            deadline=deadline,
+            store_id=snapshot.store_id,
+            max_output_tokens=max_answer_tokens,
+            privacy_policies=tuple(
+                agent.prompt_sections["compliance"]
+                for agent in snapshot.published_agents
+                if any(item.agent_id == agent.id for item in specialists) and "compliance" in agent.prompt_sections
+            ),
+            output_policies=tuple(
+                agent.prompt_sections["language_format"]
+                for agent in snapshot.published_agents
+                if any(item.agent_id == agent.id for item in specialists) and "language_format" in agent.prompt_sections
+            ),
+            on_usage=progress.capture_aggregate_usage if progress is not None else None,
+        )
     phase = (
         RunPhase.REVIEW_READY
         if suggestion.content is not None and suggestion.reason_code is None

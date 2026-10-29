@@ -30,6 +30,7 @@ async def run_worker() -> None:
     next_metrics_at = 0.0
     next_tiktok_refresh_at = 0.0
     next_oauth_cleanup_at = 0.0
+    next_logistics_scan_at = 0.0
     while True:
         processed = False
         try:
@@ -37,6 +38,13 @@ async def run_worker() -> None:
                 processed = await process_tiktok_oauth_job(session, settings)
             async with session_factory() as session:
                 processed = await process_import_job(session) or processed
+            if settings.logistics_notifications_enabled and time.monotonic() >= next_logistics_scan_at:
+                from app.agents.tools.logistics_updates.worker import process_logistics_notification_cycle
+
+                logistics_processed = await process_logistics_notification_cycle(session_factory, settings)
+                processed = logistics_processed or processed
+                # 这里只查本地到期台账；每单真正读取前另有至少八小时持久占位。
+                next_logistics_scan_at = time.monotonic() + (0 if logistics_processed else 60)
             if vectorization_service is not None:
                 async with session_factory() as session:
                     vectorization_result = await vectorization_service.process_cycle(session)

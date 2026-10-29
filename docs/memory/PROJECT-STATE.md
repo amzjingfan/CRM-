@@ -1,15 +1,15 @@
 # 项目状态与恢复入口
 
-2026-10-29；STANDARD；TikTok人工辅助；CP11-gh/CRM；origin/main。
+2026-10-29；STANDARD；TikTok人工辅助；CP11-gh/CRM；origin/main。当前功能分支feature/agent-reply-delivery-20261029，BASE=c7ba0f4c，CANDIDATE_SUBJECT_SHA=b3ce00a35bda8a1504f7f56cb4d910bc0fa0b865，EVIDENCE_HEAD_SHA=READ_AT_GATE。
 
-MVP-AGENT-STAGING-DEPLOY-001 DONE，R10已随#642合入01507731；两个清理任务DONE。新MVP-AGENT-REPLY-DELIVERY-001 READY，规格与计划已建立。CANDIDATE_SUBJECT_SHA=7fce34ef954d398af29de8ef36c62978fa58f8c2，EVIDENCE_HEAD_SHA=READ_AT_GATE；#641源码合入0c566727并手动部署，后端精确摘要60852e50…，前端同树复用aa镜像f1922d0c…。041/12服务/三公网健康、原人工模式通过；自动回复/营销/高风险/后台自动LLM关闭，production未放行。
+回复交付已实现、本地完整验证与独立审查通过，任务状态以TASKS为准，PR644待合并门禁。原生模型草稿流仅坐席未复核显示；模型分段逐条复核；最新物流正文后卡片，持久有序计划/attempt CAS/unknown对账；通知工具、默认双关闭策略、8小时扫描、持久去重和复核租约恢复。当前买家交付仅审阅栏预演，无真实外发或新部署。
 
-本地2571/3、独立46和静态/动态16/安全237通过。CI40877496658两个job runner0/steps0失败未运行，持续授权本地替代。公开中英debug/正式四正例与双语缺政策负例完成；英文正式1668、中文834，实际四工具+RAG、正确语言、文件事实和引用，完整编辑一致。v6英文超长和v7中文首次复核格式失败后恢复、物流瞬时失败后模型再查成功均保留，不能声称100%稳定。最新R10、release/evidence/staging/crm-agent-bilingual-rag-acceptance-20261029.json。
+本次最终后端2711/3平台skip；前端55/159、构建/类型/静态/mypy277/锁及动态16/安全237通过。043→041→043成功，新五表ORM零差异；全库额外检查98项既有漂移与基线完整生成结果相同，未伪报通过。CI run40904785085两job runner0/steps0未运行，持续授权本地替代。独立审查发现已修复实际trigger角色、旧attempt迟到、Anthropic非零工具块、确定零写入错误恢复及通知中断恢复，无遗留发现。
 
-最后统一清理：同一合成文档软删除，解除绑定发布v8，v7/v8 prompt/model/三业务工具相同；合成消息1、仅其派生记忆rev20恢复性清理，真实消息0改动，出站计数8/8/10未变，平台发送0。实际RAG需绑定业务方审批文件；原分类和运行审计保留。私有备份及恢复副本保留。
+证据入口：IR/TR/RR-MVP-AGENT-REPLY-DELIVERY-001-20261029-R01，release/evidence/agent/agent-reply-delivery-20261029.json。三索引CANDIDATE_VIEW=305/330/288；合并后从主线源核对再标CURRENT。
 
-用户新增：逐条买家问答，多问题分批；真正流式（现仅完整复核后24字符传输分块）；物流文本只最新节点，文本发送成功后再原生物流卡片；新物流节点主动通知对应买家，不要求先订阅。当前已读代码，未实现这些新增范围。新增能力开发测试继续零真实发送，实际启用范围/平台边界单独配置，默认关闭。
+既有staging仍为已验收0c566727后端与同树前端f1922d0c摘要，041/12服务/三健康；双语工具+RAG验收及统一合成夹具清理见旧任务R10和crm-agent-bilingual-rag-acceptance-20261029证据。旧四正例及双语缺政策负例完成，保留超长/复核格式/上游瞬态失败历史，不声称100%稳定。旧合成文件已软删除并解除绑定，真实消息未改，私有恢复备份保留。自动回复/营销/高风险/后台LLM保持关闭，production未放行。
 
-Workspace hygiene: ATTENTION。CLEANUP001/002分别恢复性隔离10/5已知缓存，无永久删除；未知主checkout历史、活动worktree、src/frontend/AGENTS.md与旧diff不动。三索引CURRENT=304/329/287（已合入主线源逐项核对），源记录为事实。
+Workspace hygiene: ATTENTION。已知缓存批次恢复性隔离记录不变，无本轮永久删除；未知主checkout历史、活动worktree和未跟踪frontend/AGENTS.md保护不动。新增测试临时数据、日志、截图仅centralized artifacts，不提交。
 
-下一动作：①进入新增回复交付任务DOING；②按计划行为测试与独立路径并行实现，当前买家端仅消息审阅栏预演；③本地验收后合并，真实外发与部署按批准执行。
+下一动作：①完成PR644证据尾区间及最终CI步骤核对并自动合并；②合并后更新任务DONE及索引CURRENT；③等待用户部署与真实通知实际开启的各自批准。

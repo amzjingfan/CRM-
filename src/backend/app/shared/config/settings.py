@@ -102,6 +102,13 @@ class Settings(BaseSettings):
     )
     sse_load_test_enabled: bool = Field(default=False, validation_alias="SSE_LOAD_TEST_ENABLED")
     auto_reply_enabled: bool = Field(default=False, validation_alias="AUTO_REPLY_ENABLED")
+    logistics_notifications_enabled: bool = Field(default=False, validation_alias="LOGISTICS_NOTIFICATIONS_ENABLED")
+    real_tiktok_logistics_notifications_enabled: bool = Field(
+        default=False, validation_alias="REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED"
+    )
+    logistics_notification_poll_seconds: int = Field(
+        default=8 * 3600, ge=8 * 3600, le=7 * 86400, validation_alias="LOGISTICS_NOTIFICATION_POLL_SECONDS"
+    )
     auto_reply_poll_seconds: float = Field(default=1.0, gt=0, le=60, validation_alias="AUTO_REPLY_POLL_SECONDS")
     auto_reply_max_attempts: int = Field(default=3, ge=1, le=3, validation_alias="AUTO_REPLY_MAX_ATTEMPTS")
     jwt_secret_key: str = Field(
@@ -393,6 +400,12 @@ class Settings(BaseSettings):
             raise ValueError("启用 AI 合成演示时必须同时启用 LLM")
         if self.auto_reply_enabled and not self.llm_enabled:
             raise ValueError("启用自动回复时必须同时启用 LLM")
+        if self.logistics_notifications_enabled and not self.llm_enabled:
+            raise ValueError("启用物流通知后台前必须启用 LLM")
+        if self.real_tiktok_logistics_notifications_enabled and not (
+            self.logistics_notifications_enabled and self.real_tiktok_message_write_enabled
+        ):
+            raise ValueError("真实物流通知须同时开启独立后台及受控 TikTok 消息写入")
         if self.chat_sse_heartbeat_seconds >= self.chat_stream_timeout_seconds:
             raise ValueError("SSE 心跳间隔必须小于 AI 建议总超时时间")
         if self.sse_load_test_enabled:

@@ -136,7 +136,7 @@ async def finalize_result_evidence(
         result,
         phase=RunPhase.REVIEW_REQUIRED,
         reason_code=reason,
-        suggestion=replace(result.suggestion, content=None, citations=(), reason_code=reason),
+        suggestion=replace(result.suggestion, content=None, citations=(), reply_parts=(), reason_code=reason),
         specialists=tuple(
             replace(
                 item,

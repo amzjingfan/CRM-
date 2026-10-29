@@ -529,6 +529,15 @@ class SqlAlchemyToolExecutor:
         )
         if channel is None:
             raise ToolDispatchError("TOOL_CHANNEL_NOT_AVAILABLE")
+        notification_authorized = False
+        if invocation.context.logistics_notification_key is not None:
+            from app.agents.tools.logistics_updates.authorization import authorize_persisted_send
+
+            notification_authorized = await authorize_persisted_send(
+                self.session, get_settings(), invocation, arguments
+            )
+            if not notification_authorized:
+                raise ToolDispatchError("TOOL_LOGISTICS_NOTIFICATION_NOT_AUTHORIZED")
         try:
             adapter = get_message_adapter(conversation.platform)
         except AppError as error:
@@ -540,7 +549,7 @@ class SqlAlchemyToolExecutor:
                 raise ToolDispatchError("TOOL_PLATFORM_DISABLED")
             # 普通消息真实写开关只授权“当前人工用户已二次确认”的入口。
             # Agent/Job 即使伪造 human_confirmed，也必须在创建消息和调用平台前失败关闭。
-            if (
+            if not notification_authorized and (
                 invocation.context.actor_type != "user"
                 or invocation.context.actor_id is None
                 or not invocation.context.human_confirmed
@@ -647,6 +656,7 @@ class SqlAlchemyToolExecutor:
                 media_height=media_claim.height if media_claim else None,
                 idempotency_key=invocation.idempotency_key,
                 human_confirmed=invocation.context.human_confirmed,
+                logistics_notification_authorized=notification_authorized,
             ),
         )
         if result.external_message_id is not None:

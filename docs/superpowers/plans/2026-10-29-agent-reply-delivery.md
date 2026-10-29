@@ -24,4 +24,7 @@
 
 - stream-provider：允许src/backend/app/agents/providers/{tool_calling.py,anthropic_tool_calling.py,budget.py,text_streaming.py}及src/tests/backend/agent/test_native_text_streaming.py；交付可单独行为验证的流式端口，无其他接线。
 - logistics-updates：允许src/backend/app/agents/tools/logistics_updates/**及src/tests/backend/agent/test_logistics_updates.py；交付有类型状态/去重/授权/通知计划接口及替身测试。不能改模型注册、迁移、jobs或前端，接线由主任务完成。
+- reply-review-ui：在已冻结的SSE/JSON契约下独立负责frontend/lib/api.ts、workspace/page.tsx及新增ReplyReviewPanel/对应样式和集中前端测试；不改后端/迁移/共享文档。主任务实现同一契约的服务端。不存在对同一文件并发编辑。
 - 主任务拥有其余路径；审查者只读最终候选。共享契约先沟通，不能同时改相同文件。
+
+物流模块完成后继续独立负责通知生产接线：物流模块、settings、tools/contracts与executor、integrations发送命令与TikTok写适配、jobs、Agent工具metadata/catalog及管理路由、ORM集中注册、043迁移及对应集中测试。主任务只写042有序交付迁移，不并发改这些路径；通知注册完成后再追加交付模型注册。通知默认关闭，独立授权不能伪造人工确认。

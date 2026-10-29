@@ -526,12 +526,15 @@ class AgentBusinessExecutor:
                 {"package": index + 1, "carrier": detail.shipping_provider, "tracking_number": number}
                 for index, (_package_id, number) in enumerate(dict.fromkeys(known))
             ]
-        event_page, next_event = _bounded_facts_page(events, args.event_offset, 9000)
+        event_page, next_event = (
+            _bounded_facts_page(events, args.event_offset, 9000) if args.detail == "history" else (events[:1], None)
+        )
         package_page, next_package = _bounded_facts_page(package_facts, args.package_offset, 4000)
         return {
             "order_ref": self.order_ref(order),
             "order_number": order.external_order_id,
             "enhanced": args.enhanced,
+            "detail": args.detail,
             "enhanced_available": detail.enhanced_tracking_available,
             "packages": package_page,
             "package_count": len(package_facts),

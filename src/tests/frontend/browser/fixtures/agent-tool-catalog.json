@@ -56,13 +56,24 @@
     },
     {
       "name": "query_logistics",
-      "title": "完整物流",
-      "description": "读取所选订单的包裹、承运商、完整轨迹与最新节点；大量轨迹需继续分页，增强轨迹按店铺能力提供。",
+      "title": "物流进度",
+      "description": "默认只读所选订单的最新物流节点及时间，客户正文先给最新状态再附随后卡片；完整历史仅内部核查时显式请求并分页，增强轨迹按店铺能力提供。",
       "category": "orders",
       "operation": "read",
       "requires_context": true,
       "availability": "requires_context",
       "reason": "运行时需关联当前店铺的授权会话",
+      "missing_scopes": []
+    },
+    {
+      "name": "notify_logistics_update",
+      "title": "物流更新通知",
+      "description": "仅为服务端绑定的新物流节点生成一条买家语言通知；复核和策略授权后交付，默认审阅预览。普通问答不能主动发送。",
+      "category": "orders",
+      "operation": "notification",
+      "requires_context": true,
+      "availability": "requires_context",
+      "reason": "需已核验买家、授权会话、已发布通知Agent和店铺策略；真实外发另受部署开关控制",
       "missing_scopes": []
     },
     {

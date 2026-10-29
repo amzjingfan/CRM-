@@ -171,6 +171,9 @@ class AgentWorkflowResult(BaseModel):
     classification_state: ClassificationState
     citations: list[AgentCitation]
     draft_reply: str | None
+    reply_parts: list[str] = Field(default_factory=list)
+    logistics_order_numbers: list[str] = Field(default_factory=list)
+    trigger_message_id: uuid.UUID | None = None
     required_tools: list[RequiredToolName]
     tool_calls: list[AgentToolCallView] = Field(default_factory=list)
     intent_confidence: float = Field(ge=0, le=1)

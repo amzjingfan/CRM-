@@ -1,5 +1,13 @@
 # 系统架构
 
+2026-10-29本地候选在原模块化单体内新增agents/delivery有序审阅交付，及agents/tools/logistics_updates通知深模块，复用现有Provider、统一ToolExecutor、TikTok适配器、审计和jobs，不增加服务或消息总线。原Agent绑定RAG和店铺隔离保持。
+
+迁移042_agent_reply_delivery在041合流后建立agent_reply_batches，按店铺、会话、授权者scope与parent幂等键唯一，冻结请求JSON和逐段状态；短事务行锁领取、外部调用前提交unknown，完成按attempt CAS，消息对账可恢复原段结果。计划正文与消息一样仅授权坐席可见，不写低敏审计或日志。
+
+迁移043_logistics_updates串接042，建立agent_logistics_observations（买家订单包裹最新节点基线）、agent_logistics_notifications（幂等/复核/投递台账）、agent_logistics_notification_policies（店铺授权及revision）、agent_logistics_order_scans（每单到期时间/领取/失败退避）。默认策略关闭、mode preview，持久台账与权限核验共同防重，网络调用期间不持数据库行锁。回滚先停新增入口和通知jobs，保留业务记录；降级043/042会删除这些新台账，仅在已有备份且明确批准的目标环境执行，本轮迁移往返仅针对隔离合成库。
+
+通知台账另含review_claim_token/review_lease_expires_at及恢复索引；复核领取十分钟后可重领，以owner CAS拒绝迟到写回。pending/过期reviewing恢复不提前轮询物流，unknown保持原发送键对账。
+
 2026-10-29 统一 Agent 与多店授权发布已手动部署 staging `45d872c0`：动态 Agent、十二工具和多店授权共享现有模块化单体，041 为唯一迁移 head，12 容器与固定出口正常。调试开启、正式模型建议和自动发送关闭；原店铺/渠道/工作台兼容通过，Agent 工具加 RAG 回答尚未现场验收。详见[当前部署边界](../operations/DEPLOYMENT.md)。
 
 ## 仓库与运行边界

@@ -98,6 +98,8 @@ class SendMessageCommand(BaseModel):
     media_height: int | None = Field(default=None, gt=0)
     idempotency_key: str = Field(min_length=1, max_length=200)
     human_confirmed: bool = False
+    # 只由 ToolExecutor 在持久通知与当前授权全部匹配后设置，不能来自 HTTP/模型参数。
+    logistics_notification_authorized: bool = False
 
 
 class SendMessageResult(BaseModel):
