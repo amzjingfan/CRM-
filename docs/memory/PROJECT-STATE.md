@@ -2,7 +2,9 @@
 
 2026-10-29；STANDARD；TikTok人工辅助v0.1；仓库CP11-gh/CRM，目标origin/main。
 
-MVP-AGENT-STAGING-DEPLOY-001为DOING。用户已批准统一部署并追加知识文件检索全链路；#635已合入47bec42bac3293225d098bf745994f6e32cc81ef。本阶段分支fix/agent-rag-staging-acceptance-20261029，BASE_SHA=47bec42bac3293225d098bf745994f6e32cc81ef，MERGE_TARGET=origin/main。预检补修RAG审计成功映射及模型实际收到块的引用预算；最终候选仍待验证，不把合并等同发布。
+MVP-AGENT-STAGING-DEPLOY-001为VERIFYING。用户已批准统一部署并追加知识文件检索全链路；RAG审计与引用补修 #636 已合入 `main=8393602f`，发布和真实 RAG 联合验收待做。部署仍由该任务单点协调，不把合并等同发布。
+
+MVP-RECEPTION-TEAM-FEEDBACK-001 的前四条页面修复已由 PR #637 合入 `main=ed791b75`，本地验证见关联 IR/TR/RR；staging 尚未部署本次前端，部门角色与店铺咨询分配只形成方案、不改变运行规则。
 
 本地：最终应用树与fa180完全相同，完整后端2514通过/3Windows条件跳过，新评测统计8项通过；Ruff437、mypy255、锁文件、前端lint/typecheck/52契约/105浏览器及前后端本地镜像构建通过。实际候选隔离进程的三工具五类问题5/5、英文/业务号/无Markdown，正式草稿1745字符；无平台外发。输出v2.3合成语义初轮14完成+1超时，统计缺陷已修并对原行补测1次完成；不声称一次15/15。配置语义16项按相同源码SHA复用。详情见IR/TR/RR 20261029-R05及release/evidence/staging/crm-agent-output-ui-local-20261029.json。
 
@@ -12,6 +14,6 @@ MVP-AGENT-STAGING-DEPLOY-001为DOING。用户已批准统一部署并追加知�
 
 同一合成入站与仅由其派生的记忆保留至最终现场验收后统一清理；manifest在忽略的src/tests/.artifacts/agent-detailed-tools-20261029。不得动真实消息、运行和审计，不重建买家，不发送平台消息。其他RAG文件draft，本次不声称现场RAG检索通过。原超时调用用量未知，未当作完整账单。
 
-三索引CANDIDATE_VIEW=298/323/281；正式源记录为事实。Workspace hygiene: ATTENTION。根checkout未知历史/文件、活动worktree、未跟踪src/frontend/AGENTS.md和上个worktree未知逆向diff均保留。临时测试输出仅src/tests/.artifacts，本轮没有文件清理批次。
+三索引CANDIDATE_VIEW=300/325/283；正式源记录为事实。Workspace hygiene: ATTENTION。根checkout未知历史/文件、活动worktree、未跟踪src/frontend/AGENTS.md和上个worktree未知逆向diff均保留。临时测试输出仅src/tests/.artifacts，本轮已登记可恢复缓存隔离批次 MAINT-CLEANUP-20261029-001，无永久删除。
 
-下一动作：①完成RAG补修及本地门禁并集成；②单点手动部署并正常导入/审批/绑定知识文件；③Codex浏览器联合验收，全部成功后统一清理合成夹具。
+下一动作：①从已合并主线核对精确镜像、备份与 ValidateOnly；②单点手动部署并正常导入/审批/绑定知识文件；③Codex浏览器联合验收，全部成功后统一清理合成夹具。
