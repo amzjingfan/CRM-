@@ -1238,6 +1238,60 @@ async def test_seller_deauthorization_destroys_local_token_and_writes_lifecycle_
 
 
 @pytest.mark.asyncio
+async def test_shared_seller_deauthorization_removes_last_local_credential() -> None:
+    """共享卖家只剩一店时，平台撤销通知须立即销毁卖家级 Token。"""
+    from app.stores.models import TikTokSellerAuthorization
+
+    channel = connected_channel()
+    grant_id = uuid.uuid4()
+    grant = TikTokSellerAuthorization(id=grant_id, authorized_shop_ids=[channel.external_store_id])
+    channel.seller_authorization_id = grant_id
+    channel.seller_authorization = grant
+    event = WebhookEvent(
+        id=uuid.uuid4(),
+        platform="tiktok",
+        channel_account_id=channel.id,
+        external_event_id="shared-deauthorization",
+        event_type="SELLER_DEAUTHORIZATION",
+        signature_valid=True,
+        payload_hash="a" * 64,
+        raw_payload={},
+        status="processing",
+        received_at=datetime.now(UTC),
+    )
+
+    class Session:
+        def __init__(self) -> None:
+            self.deleted: list[object] = []
+
+        def add(self, _value: object) -> None:
+            return None
+
+        async def get(self, _model: object, _id: uuid.UUID, **_kwargs: object) -> TikTokSellerAuthorization:
+            return grant
+
+        async def scalar(self, _statement: object) -> None:
+            return None
+
+        async def delete(self, value: object) -> None:
+            self.deleted.append(value)
+
+    session = Session()
+    await integration_service._process_tiktok_authorization(  # type: ignore[arg-type]
+        session,
+        event,
+        channel,
+        TikTokAuthorizationLifecycleEvent(
+            action="deauthorized",
+            event_id="shared-deauthorization",
+            external_store_id=channel.external_store_id,
+        ),
+    )
+    assert grant in session.deleted
+    assert channel.seller_authorization_id is None
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("action", ["deauthorized", "expiring"])
 async def test_authorization_event_does_not_restore_manually_removed_shop(action: str) -> None:
     """手动删除后的平台生命周期通知不能让店铺重新出现在授权列表。"""

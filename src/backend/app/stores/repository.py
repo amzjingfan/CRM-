@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.stores.models import ChannelAccount, Store
+from app.stores.models import ChannelAccount, Store, TikTokSellerAuthorization
 
 
 async def list_stores(session: AsyncSession, store_ids: set[uuid.UUID]) -> list[Store]:
@@ -59,14 +59,17 @@ async def find_channel_by_external_store(
     session: AsyncSession,
     platform: str,
     external_store_id: str,
+    *,
+    for_update: bool = False,
 ) -> ChannelAccount | None:
     """查找外部店铺绑定，防止同一 TikTok 店铺跨租户重复绑定。"""
-    channel: ChannelAccount | None = await session.scalar(
-        select(ChannelAccount).where(
-            ChannelAccount.platform == platform,
-            ChannelAccount.external_store_id == external_store_id,
-        )
+    statement = select(ChannelAccount).where(
+        ChannelAccount.platform == platform,
+        ChannelAccount.external_store_id == external_store_id,
     )
+    if for_update:
+        statement = statement.with_for_update()
+    channel: ChannelAccount | None = await session.scalar(statement)
     return channel
 
 
@@ -93,3 +96,20 @@ async def claim_tiktok_channel_for_refresh(
         .limit(1)
     )
     return channel
+
+
+async def claim_tiktok_seller_for_refresh(
+    session: AsyncSession, ready_at: datetime
+) -> TikTokSellerAuthorization | None:
+    """按卖家授权行锁认领共享 Token，每次只允许一个 Worker 轮换。"""
+    authorization: TikTokSellerAuthorization | None = await session.scalar(
+        select(TikTokSellerAuthorization)
+        .where(
+            TikTokSellerAuthorization.status == "connected",
+            TikTokSellerAuthorization.next_refresh_at <= ready_at,
+        )
+        .order_by(TikTokSellerAuthorization.next_refresh_at, TikTokSellerAuthorization.id)
+        .with_for_update(skip_locked=True)
+        .limit(1)
+    )
+    return authorization

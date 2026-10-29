@@ -41,3 +41,15 @@ test("TikTok store list starts direct OAuth and keeps deletion as revocation", a
   assert.match(page, /external_store_id/);
   assert.doesNotMatch(page, /createStore/);
 });
+
+test("multi-shop OAuth asks for explicit shop selection and sends only selected IDs", async () => {
+  const page = await readFile(new URL("app/settings/stores/page.tsx", frontendRoot), "utf8");
+  const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
+
+  assert.match(page, /result\.status === "selection_required"/);
+  assert.match(page, /selectTikTokOAuthShops\(selection\.jobId, selectedShopIds\)/);
+  assert.match(page, /type="checkbox"/);
+  assert.match(page, /aria-modal="true"/);
+  assert.match(api, /\/settings\/channels\/tiktok\/oauth\/jobs\/\$\{encodeURIComponent\(jobId\)\}\/shops/);
+  assert.doesNotMatch(page, /selection_token_cipher|shop_cipher|refresh_token/);
+});

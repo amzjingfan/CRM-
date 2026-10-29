@@ -30,7 +30,7 @@ from app.orders.models import Order, OrderItem
 from app.shared.config.settings import get_settings
 from app.shared.database.redis import redis_client
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.stores.models import ChannelAccount
+from app.stores.models import ChannelAccount, TikTokSellerAuthorization
 
 AUTHORIZATION_LIFECYCLE_EVENTS = {"SELLER_DEAUTHORIZATION", "UPCOMING_AUTHORIZATION_EXPIRATION"}
 
@@ -487,7 +487,22 @@ async def _process_tiktok_authorization(
             "channel.deauthorized" if normalized.action == "deauthorized" else "channel.authorization_expiring"
         )
     elif normalized.action == "deauthorized":
+        grant_id = channel.seller_authorization_id
+        grant = await session.get(TikTokSellerAuthorization, grant_id, with_for_update=True) if grant_id else None
+        other_connected = (
+            await session.scalar(
+                select(ChannelAccount.id).where(
+                    ChannelAccount.seller_authorization_id == grant_id,
+                    ChannelAccount.id != channel.id,
+                    ChannelAccount.status == "connected",
+                )
+            )
+            if grant is not None
+            else None
+        )
         channel.status = "disconnected"
+        channel.seller_authorization = None
+        channel.seller_authorization_id = None
         channel.access_token_ref = f"revoked://{channel.id}"
         channel.refresh_token_ref = None
         channel.token_expires_at = None
@@ -495,6 +510,13 @@ async def _process_tiktok_authorization(
             key: value for key, value in channel.metadata_json.items() if key not in {"shop_cipher", "open_id_hash"}
         }
         channel.metadata_json = {**channel.metadata_json, "oauth_status": "deauthorized"}
+        if grant is not None:
+            if other_connected is None:
+                await session.delete(grant)
+            else:
+                grant.authorized_shop_ids = [
+                    shop_id for shop_id in grant.authorized_shop_ids if shop_id != channel.external_store_id
+                ]
         audit_action = "channel.deauthorized"
     else:
         channel.metadata_json = {

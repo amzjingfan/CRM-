@@ -40,11 +40,20 @@ async def test_oauth_job_is_encrypted_deduplicated_and_completed(monkeypatch: py
         return SimpleNamespace(id=store_id)
 
     async def complete(
-        _: object, state: str, code: str, __: object, ___: object, ____: object, *, commit: bool = True
+        _: object,
+        state: str,
+        code: str,
+        __: object,
+        ___: object,
+        ____: object,
+        *,
+        commit: bool = True,
+        job: TikTokOAuthJob | None = None,
     ) -> SimpleNamespace:
         assert state == "unit-test-state-with-enough-length"
         assert code == "unit-test-code"
         assert commit is False
+        assert job is not None
         return SimpleNamespace(status="connected")
 
     monkeypatch.setattr(oauth_service, "peek_tiktok_oauth_state", peek)
@@ -113,9 +122,18 @@ async def test_oauth_job_lock_fences_parallel_worker_and_crash_rolls_back_channe
     release = asyncio.Event()
 
     async def crash(
-        session: object, _state: str, _code: str, _error: object, _settings: object, _client: object, *, commit: bool
+        session: object,
+        _state: str,
+        _code: str,
+        _error: object,
+        _settings: object,
+        _client: object,
+        *,
+        commit: bool,
+        job: TikTokOAuthJob | None = None,
     ) -> SimpleNamespace:
         assert commit is False
+        assert job is not None
         session.add(  # type: ignore[attr-defined]
             ChannelAccount(
                 store_id=store_id,

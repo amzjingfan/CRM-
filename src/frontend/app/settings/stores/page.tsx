@@ -6,9 +6,9 @@ import { SettingsFrame } from "../../../components/SettingsFrame";
 import { EmptyState, ErrorState, LoadingState } from "../../../components/States";
 import {
   deleteChannel, getTikTokOAuthJobStatus, listStoreAuthorizations,
-  startNewTikTokStoreOAuth, startTikTokOAuth, updateStoreAlias,
+  selectTikTokOAuthShops, startNewTikTokStoreOAuth, startTikTokOAuth, updateStoreAlias,
   ApiError,
-  type ChannelView, type StoreView,
+  type ChannelView, type StoreView, type TikTokOAuthShopChoice,
 } from "../../../lib/api";
 import { useLanguage } from "../../../lib/i18n";
 
@@ -55,6 +55,10 @@ export default function StoresPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [aliasDraft, setAliasDraft] = useState("");
   const [deleteRow, setDeleteRow] = useState<StoreRow | null>(null);
+  const [selection, setSelection] = useState<{ jobId: string; shops: TikTokOAuthShopChoice[]; expiresAt: string | null } | null>(null);
+  const [selectionOpen, setSelectionOpen] = useState(false);
+  const [selectedShopIds, setSelectedShopIds] = useState<string[]>([]);
+  const [selectionError, setSelectionError] = useState("");
 
   useEffect(() => {
     if (!deleteRow || working) return;
@@ -64,6 +68,15 @@ export default function StoresPage() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [deleteRow, working]);
+
+  useEffect(() => {
+    if (!selectionOpen || working) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectionOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectionOpen, working]);
 
   const load = useCallback(async () => {
     const requestId = ++loadRequestId.current;
@@ -103,7 +116,7 @@ export default function StoresPage() {
     if (params.get("oauth") !== "tiktok") return;
     const status = params.get("status");
     const jobId = params.get("job");
-    if ((status === "processing" || status === "connected") && jobId && /^[0-9a-f-]{36}$/i.test(jobId)) {
+    if ((status === "processing" || status === "connected" || status === "selection_required") && jobId && /^[0-9a-f-]{36}$/i.test(jobId)) {
       let stopped = false;
       let timer: number;
       let attempts = 0;
@@ -112,6 +125,14 @@ export default function StoresPage() {
         try {
           const result = await getTikTokOAuthJobStatus(jobId);
           if (stopped) return;
+          if (result.status === "selection_required") {
+            setSelection({ jobId, shops: result.shops, expiresAt: result.selection_expires_at });
+            setSelectionOpen(true);
+            setSelectedShopIds([]);
+            setSelectionError("");
+            setNotice(en ? "Select the shops to connect from this seller authorization." : "请选择本次卖家授权要接入的店铺。");
+            return;
+          }
           if (result.status === "connected" || result.status === "failed" || result.status === "denied") {
             setNotice(result.status === "connected"
               ? en ? "Store authorization completed." : "店铺授权已完成。"
@@ -160,6 +181,23 @@ export default function StoresPage() {
     }
   }
 
+  async function confirmSelection() {
+    if (!selection || !selectedShopIds.length || working) return;
+    setWorking(true);
+    setSelectionError("");
+    try {
+      await selectTikTokOAuthShops(selection.jobId, selectedShopIds);
+      setSelection(null);
+      setSelectionOpen(false);
+      setSelectedShopIds([]);
+      window.history.replaceState({}, "", window.location.pathname);
+      setNotice(en ? "Selected stores connected." : "所选店铺已接入。");
+      await load();
+    } catch (caught) {
+      setSelectionError(caught instanceof Error ? caught.message : en ? "Could not connect selected stores." : "接入所选店铺失败。");
+    } finally { setWorking(false); }
+  }
+
   async function saveAlias(storeId: string) {
     if (working) return;
     setWorking(true);
@@ -199,6 +237,7 @@ export default function StoresPage() {
 
   return <SettingsFrame title={en ? "Store list" : "店铺列表"} description={en ? "Manage TikTok Shop authorizations." : "管理 TikTok Shop 店铺授权。"}>
     {notice ? <div className="inline-status" role="status">{notice}</div> : null}
+    {selection && !selectionOpen ? <div className="inline-status"><span>{en ? "TikTok shop selection is pending." : "TikTok 店铺选择尚未完成。"}</span> <button className="text-button" onClick={() => setSelectionOpen(true)} type="button">{en ? "Continue selecting shops" : "继续选择店铺"}</button></div> : null}
     <section className="settings-card store-list-card">
       <div className="settings-card-heading"><h2>{en ? "Store list" : "店铺列表"}</h2><button className="primary-button" disabled={working} onClick={() => void authorize()} type="button"><Plus size={16} />{working ? en ? "Redirecting…" : "正在处理…" : en ? "Add store" : "添加店铺"}</button></div>
       <div className="settings-toolbar">
@@ -220,5 +259,6 @@ export default function StoresPage() {
       </tr>)}</tbody></table></div> : <EmptyState label={query || filter !== "all" ? en ? "No matching stores" : "没有符合条件的店铺" : en ? "No stores yet" : "暂无店铺"} />}
     </section>
     {deleteRow ? <div className="store-confirm-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !working) setDeleteRow(null); }}><section aria-labelledby="store-delete-title" aria-modal="true" className="store-confirm-dialog" role="dialog"><h2 id="store-delete-title">{en ? "Delete store authorization?" : "删除店铺授权？"}</h2><p>{en ? `Remove CRM's saved TikTok credentials for ${deleteRow.store.name} and hide this row. Its system ID and history remain. TikTok app access must be revoked separately in TikTok.` : `将删除本系统保存的“${deleteRow.store.name}”TikTok 凭证并隐藏该行；系统 ID 和历史数据保留。TikTok 平台的应用授权需在 TikTok 另行撤销。`}</p><div><button className="secondary-button" disabled={working} onClick={() => setDeleteRow(null)} type="button">{en ? "Cancel" : "取消"}</button><button className="primary-button" disabled={working} onClick={() => void removeAuthorization()} type="button">{working ? en ? "Deleting…" : "正在删除…" : en ? "Confirm delete" : "确认删除"}</button></div></section></div> : null}
+    {selection && selectionOpen ? <div className="store-confirm-backdrop"><section aria-labelledby="store-selection-title" aria-describedby="store-selection-description" aria-modal="true" className="store-confirm-dialog store-selection-dialog" role="dialog"><h2 id="store-selection-title">{en ? "Select TikTok shops" : "选择 TikTok 店铺"}</h2><p id="store-selection-description">{en ? "Only checked shops will be connected. Each remains a separate CRM store." : "仅接入勾选的店铺；每家店在 CRM 中仍独立管理。"}{selection.expiresAt ? ` ${en ? "Select by" : "请在此前完成："} ${showDate(selection.expiresAt, en)}` : ""}</p><div className="store-selection-options">{selection.shops.map((shop) => <label className="store-selection-option" key={shop.id}><input checked={selectedShopIds.includes(shop.id)} onChange={(event) => setSelectedShopIds((current) => event.target.checked ? [...current, shop.id] : current.filter((id) => id !== shop.id))} type="checkbox" /><span><strong>{shop.name}</strong><small>{shop.code} · {en ? shop.region : sites[shop.region.toUpperCase()] ?? shop.region} · {shop.id}</small></span></label>)}</div>{selectionError ? <p className="store-selection-error" role="alert">{selectionError}</p> : null}<div className="store-selection-actions"><button className="secondary-button" disabled={working} onClick={() => setSelectionOpen(false)} type="button">{en ? "Later" : "稍后处理"}</button><button className="primary-button" disabled={working || !selectedShopIds.length} onClick={() => void confirmSelection()} type="button">{working ? en ? "Connecting…" : "正在接入…" : en ? `Connect ${selectedShopIds.length} shops` : `接入 ${selectedShopIds.length} 家店铺`}</button></div></section></div> : null}
   </SettingsFrame>;
 }

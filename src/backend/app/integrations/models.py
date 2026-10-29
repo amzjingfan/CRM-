@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -46,6 +46,9 @@ class TikTokOAuthJob(TimestampMixin, Base):
     return_to: Mapped[str] = mapped_column(String(200), default="/settings/channels")
     state_cipher: Mapped[str | None] = mapped_column(String(1200), nullable=True)
     code_cipher: Mapped[str | None] = mapped_column(String(1200), nullable=True)
+    selection_token_cipher: Mapped[str | None] = mapped_column(Text, nullable=True)
+    selection_shops: Mapped[list[dict[str, str]] | None] = mapped_column(JSONB, nullable=True)
+    selection_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

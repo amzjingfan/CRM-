@@ -17,12 +17,14 @@ from pydantic import ValidationError
 import app.integrations.oauth_service as oauth_service
 import app.integrations.tiktok_oauth as tiktok_oauth_module
 import app.shared.database.redis as redis_module
+import app.stores.models as store_models
 import app.stores.service as stores_service
 from app.audit.models import AuditLog
 from app.auth.dependencies import get_current_user
 from app.integrations.credential_crypto import decrypt_credential, encrypt_credential
+from app.integrations.models import TikTokOAuthJob
 from app.integrations.oauth_router import router as oauth_router
-from app.integrations.oauth_schemas import TikTokAuthorizedShop, TikTokTokenData
+from app.integrations.oauth_schemas import TikTokAuthorizedShop, TikTokShopData, TikTokTokenData
 from app.integrations.tiktok_oauth import (
     SHOP_PATH,
     SHOP_URL,
@@ -71,6 +73,22 @@ def token_data(**overrides: Any) -> TikTokTokenData:
     }
     values.update(overrides)
     return TikTokTokenData.model_validate(values)
+
+
+def test_authorized_shop_response_accepts_more_than_twenty_shops() -> None:
+    """平台卖家拥有二十余家店时仍可选择其中若干家。"""
+    shops = [
+        {
+            "id": f"external-shop-{index}",
+            "cipher": f"cipher-{index}",
+            "code": f"SHOP-{index}",
+            "name": f"Shop {index}",
+            "region": "US",
+            "seller_type": "LOCAL",
+        }
+        for index in range(21)
+    ]
+    assert len(TikTokShopData.model_validate({"shops": shops}).shops) == 21
 
 
 class FakeRedis:
@@ -127,12 +145,32 @@ class FakeChannelSession(FakeSession):
         self.deleted.append(value)
 
 
+class FakeSelectionSession(FakeSession):
+    """只模拟本测试需要的待选择任务与空数据库结果。"""
+
+    def __init__(self, job: TikTokOAuthJob) -> None:
+        super().__init__()
+        self.job = job
+
+    async def get(self, model: object, _id: uuid.UUID, **_kwargs: object) -> TikTokOAuthJob | None:
+        return self.job if model is TikTokOAuthJob and _id == self.job.id else None
+
+    async def scalar(self, _statement: object) -> None:
+        return None
+
+    async def scalars(self, _statement: object) -> Any:
+        return SimpleNamespace(all=lambda: [])
+
+
 class FakeOAuthClient:
     """返回固定卖家 Token 和唯一店铺，不执行公网调用。"""
 
-    def __init__(self, token: TikTokTokenData | None = None, shop_id: str = "external-shop-1") -> None:
+    def __init__(
+        self, token: TikTokTokenData | None = None, shop_id: str = "external-shop-1", shop_count: int = 1
+    ) -> None:
         self.token = token or token_data()
         self.shop_id = shop_id
+        self.shop_count = shop_count
 
     async def exchange_code(self, auth_code: str) -> TikTokTokenData:
         assert auth_code == "unit-test-auth-code"
@@ -147,13 +185,14 @@ class FakeOAuthClient:
         return (
             [
                 TikTokAuthorizedShop(
-                    id=self.shop_id,
-                    cipher="shop-cipher",
-                    code="SHOP-1",
-                    name="TikTok Shop One",
+                    id=self.shop_id if index == 0 else f"external-shop-{index + 1}",
+                    cipher="shop-cipher" if index == 0 else f"shop-cipher-{index + 1}",
+                    code=f"SHOP-{index + 1}",
+                    name="TikTok Shop One" if index == 0 else f"TikTok Shop {index + 1}",
                     region="GB",
                     seller_type="LOCAL",
                 )
+                for index in range(self.shop_count)
             ],
             "platform-request-id",
         )
@@ -197,6 +236,44 @@ def test_credential_encryption_is_context_bound_and_tamper_evident() -> None:
         decrypt_credential(encrypted, "master-key", "store-2:access")
     with pytest.raises(ValueError):
         decrypt_credential(encrypted[:-2] + "AA", "master-key", "store-1:access")
+
+
+def test_shared_seller_credential_is_shop_bound_and_legacy_channel_still_works() -> None:
+    """多店共享卖家 Token 时仅已关联且仍在授权列表中的店铺可使用。"""
+    settings = oauth_settings()
+    grant_id, store_id = uuid.uuid4(), uuid.uuid4()
+    key = settings.tiktok_credential_encryption_key
+    assert key is not None
+    grant = store_models.TikTokSellerAuthorization(
+        id=grant_id,
+        app_key=settings.tiktok_app_key,
+        open_id_hash=hashlib.sha256(b"seller-open-id").hexdigest(),
+        access_token_ref=encrypt_credential(
+            "shared-access-token-unit-test",
+            key.get_secret_value(),
+            f"tiktok:seller:{grant_id}:access",
+        ),
+        refresh_token_ref="encrypted:v1:unused",
+        access_expires_at=datetime.now(UTC) + timedelta(hours=1),
+        refresh_expires_at=datetime.now(UTC) + timedelta(days=1),
+        authorized_shop_ids=["external-shop-1"],
+        status="connected",
+    )
+    channel = ChannelAccount(
+        store_id=store_id,
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Shop One",
+        access_token_ref=f"shared://{grant_id}",
+        seller_authorization_id=grant_id,
+        seller_authorization=grant,
+        status="connected",
+        metadata_json={"open_id_hash": grant.open_id_hash},
+    )
+    assert oauth_service.decrypt_tiktok_access_token(channel, settings) == "shared-access-token-unit-test"
+    channel.external_store_id = "unapproved-shop"
+    with pytest.raises(AppError):
+        oauth_service.decrypt_tiktok_access_token(channel, settings)
 
 
 @pytest.mark.asyncio
@@ -510,6 +587,185 @@ async def test_complete_oauth_encrypts_tokens_only_after_store_validation(monkey
     assert audit.action == "channel.authorize"
     assert audit.result == "succeeded"
     assert session.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_multi_shop_oauth_waits_for_admin_selection_without_creating_stores(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """一次卖家授权返回多家店铺时，先安全暂存授权而不擅自连接全部店铺。"""
+    user_id = uuid.uuid4()
+    job = TikTokOAuthJob(id=uuid.uuid4(), user_id=user_id, return_to="/settings/stores", status="processing")
+    session = FakeSession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+
+    result = await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+        session,
+        "valid-state",
+        "unit-test-auth-code",
+        None,
+        oauth_settings(),
+        FakeOAuthClient(shop_count=2),
+        job=job,
+    )
+
+    assert result.status == "selection_required"
+    assert len(job.selection_shops) == 2
+    assert job.selection_token_cipher is not None
+    assert "access-token-unit-test-value" not in job.selection_token_cipher
+    assert not any(isinstance(value, (Store, ChannelAccount)) for value in session.added)
+
+
+@pytest.mark.asyncio
+async def test_admin_selection_creates_two_isolated_shops_with_one_seller_grant(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """勾选两店后以同一卖家凭证原子绑定，店铺和渠道各自独立。"""
+    user_id = uuid.uuid4()
+    job = TikTokOAuthJob(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        return_to="/settings/stores",
+        status="selection_required",
+        selection_expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        selection_shops=[
+            shop.model_dump()
+            for shop in (await FakeOAuthClient(shop_count=2).get_authorized_shops("access-token-unit-test-value"))[0]
+        ],
+    )
+    key = oauth_settings().tiktok_credential_encryption_key
+    assert key is not None
+    job.selection_token_cipher = encrypt_credential(
+        token_data().model_dump_json(), key.get_secret_value(), f"tiktok:oauth-job:{job.id}:selection"
+    )
+    session = FakeSelectionSession(job)
+    user = SimpleNamespace(id=user_id, status="active")
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(None))
+    monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(None))
+
+    result = await oauth_service.select_tiktok_oauth_shops(  # type: ignore[arg-type]
+        session,
+        user,
+        job.id,
+        ["external-shop-1", "external-shop-2"],
+        oauth_settings(),
+        FakeOAuthClient(shop_count=2),
+    )
+
+    grants = [item for item in session.added if isinstance(item, store_models.TikTokSellerAuthorization)]
+    stores = [item for item in session.added if isinstance(item, Store)]
+    channels = [item for item in session.added if isinstance(item, ChannelAccount)]
+    assert result.status == "connected"
+    assert len(grants) == 1 and len(stores) == len(channels) == 2
+    assert len({channel.store_id for channel in channels}) == 2
+    assert {channel.seller_authorization_id for channel in channels} == {grants[0].id}
+    assert all(channel.access_token_ref.startswith("shared://") for channel in channels)
+    assert job.selection_token_cipher is None and job.status == "connected"
+
+
+@pytest.mark.asyncio
+async def test_multi_shop_selection_conflict_does_not_mutate_seller_grant(monkeypatch: pytest.MonkeyPatch) -> None:
+    """任一勾选店铺已绑定其他卖家时，本次选择整体失败，不部分接入。"""
+    user_id = uuid.uuid4()
+    shops = (await FakeOAuthClient(shop_count=2).get_authorized_shops("access-token-unit-test-value"))[0]
+    job = TikTokOAuthJob(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        return_to="/settings/stores",
+        status="selection_required",
+        selection_expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        selection_shops=[shop.model_dump() for shop in shops],
+    )
+    key = oauth_settings().tiktok_credential_encryption_key
+    assert key is not None
+    job.selection_token_cipher = encrypt_credential(
+        token_data().model_dump_json(), key.get_secret_value(), f"tiktok:oauth-job:{job.id}:selection"
+    )
+    session = FakeSelectionSession(job)
+    other_seller = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        platform="tiktok",
+        external_store_id=shops[1].id,
+        display_name="Other seller shop",
+        access_token_ref="encrypted:v1:other",
+        status="connected",
+        metadata_json={"open_id_hash": hashlib.sha256(b"other-seller").hexdigest()},
+    )
+
+    async def find_binding(
+        _session: object, _platform: str, shop_id: str, *, for_update: bool = False
+    ) -> ChannelAccount | None:
+        assert for_update
+        return other_seller if shop_id == shops[1].id else None
+
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", find_binding)
+    with pytest.raises(AppError) as error:
+        await oauth_service.select_tiktok_oauth_shops(  # type: ignore[arg-type]
+            session,
+            SimpleNamespace(id=user_id),
+            job.id,
+            [shop.id for shop in shops],
+            oauth_settings(),
+            FakeOAuthClient(shop_count=2),
+        )
+    assert error.value.code == ErrorCode.RESOURCE_CONFLICT
+    assert job.status == "selection_required" and job.selection_token_cipher is not None
+    assert not any(
+        isinstance(item, (Store, ChannelAccount, store_models.TikTokSellerAuthorization)) for item in session.added
+    )
+
+
+@pytest.mark.asyncio
+async def test_selection_status_returns_shop_choices_without_cipher_or_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    """管理端只获得低敏选择摘要，不能取得 shop_cipher、open_id 或 Token。"""
+    user_id = uuid.uuid4()
+    shop = (await FakeOAuthClient().get_authorized_shops("access-token-unit-test-value"))[0][0]
+    job = TikTokOAuthJob(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        return_to="/settings/stores",
+        status="selection_required",
+        selection_expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        selection_shops=[shop.model_dump()],
+        selection_token_cipher="encrypted:v1:secret",
+    )
+    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    status = await oauth_service.get_tiktok_oauth_job_status(  # type: ignore[arg-type]
+        FakeSelectionSession(job), SimpleNamespace(id=user_id), job.id
+    )
+    serialized = status.model_dump_json()
+    assert status.status == "selection_required"
+    assert status.shops[0].name == "TikTok Shop One"
+    assert "shop-cipher" not in serialized and "encrypted" not in serialized
+
+
+@pytest.mark.asyncio
+async def test_cleanup_scrubs_expired_shop_selection_before_receipt_retention() -> None:
+    """待选择任务到期后应抹除卖家 Token 密文，而非等到收据整行删除。"""
+    statements: list[str] = []
+
+    class CleanupSession(FakeSession):
+        async def execute(self, statement: object) -> None:
+            statements.append(str(statement))
+
+    await oauth_service.cleanup_tiktok_oauth_jobs(CleanupSession())  # type: ignore[arg-type]
+    assert statements[0].startswith("UPDATE tiktok_oauth_jobs")
+    assert "selection_token_cipher" in statements[0]
+    assert "selection_expires_at" in statements[0]
 
 
 @pytest.mark.asyncio
@@ -870,6 +1126,368 @@ async def test_refresh_updates_encrypted_tokens_and_audit() -> None:
 
 
 @pytest.mark.asyncio
+async def test_legacy_shop_refresh_stays_connected_when_seller_adds_second_shop() -> None:
+    """平台多返回一家店时，旧单店只核对自身 ID，不能误标过期。"""
+    store_id = uuid.uuid4()
+    channel = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=store_id,
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Existing TKW Group",
+        access_token_ref="encrypted:v1:old",
+        refresh_token_ref=encrypt_credential(
+            "refresh-token-unit-test-value",
+            "unit-test-encryption-key-with-at-least-32-characters",
+            f"tiktok:{store_id}:external-shop-1:refresh",
+        ),
+        metadata_json={"open_id_hash": hashlib.sha256(b"seller-open-id").hexdigest()},
+    )
+    await oauth_service.refresh_tiktok_channel_token(
+        FakeSession(),  # type: ignore[arg-type]
+        channel,
+        oauth_settings(),
+        FakeOAuthClient(shop_count=2),  # type: ignore[arg-type]
+    )
+    assert channel.status == "connected"
+    assert channel.metadata_json["shop_cipher"] == "shop-cipher"
+
+
+@pytest.mark.asyncio
+async def test_shared_seller_refresh_rotates_once_and_expires_only_removed_shop() -> None:
+    """同卖家多店只刷新一次；平台移除其中一店时其他店仍可连接。"""
+    settings = oauth_settings()
+    key = settings.tiktok_credential_encryption_key
+    assert key is not None
+    grant_id = uuid.uuid4()
+    grant = store_models.TikTokSellerAuthorization(
+        id=grant_id,
+        app_key=settings.tiktok_app_key,
+        open_id_hash=hashlib.sha256(b"seller-open-id").hexdigest(),
+        access_token_ref="encrypted:v1:old-access",
+        refresh_token_ref=encrypt_credential(
+            "refresh-token-unit-test-value", key.get_secret_value(), f"tiktok:seller:{grant_id}:refresh"
+        ),
+        access_expires_at=datetime.now(UTC) + timedelta(minutes=1),
+        refresh_expires_at=datetime.now(UTC) + timedelta(days=1),
+        authorized_shop_ids=["external-shop-1", "external-shop-2"],
+        status="connected",
+    )
+    channels = [
+        ChannelAccount(
+            id=uuid.uuid4(),
+            store_id=uuid.uuid4(),
+            platform="tiktok",
+            external_store_id=f"external-shop-{index}",
+            display_name=f"Shop {index}",
+            access_token_ref=f"shared://{grant_id}",
+            seller_authorization_id=grant_id,
+            seller_authorization=grant,
+            status="connected",
+            metadata_json={"open_id_hash": grant.open_id_hash},
+        )
+        for index in (1, 2)
+    ]
+
+    class RefreshSession(FakeSession):
+        async def scalars(self, _statement: object) -> Any:
+            return SimpleNamespace(all=lambda: channels)
+
+    await oauth_service.refresh_tiktok_seller_authorization(  # type: ignore[attr-defined,arg-type]
+        RefreshSession(), grant, settings, FakeOAuthClient(shop_count=1)
+    )
+    assert grant.access_token_ref.startswith("encrypted:v1:")
+    assert channels[0].status == "connected"
+    assert channels[1].status == "expired"
+    assert grant.authorized_shop_ids == ["external-shop-1"]
+    assert grant.next_refresh_at > datetime.now(UTC) + timedelta(minutes=5)
+
+
+@pytest.mark.asyncio
+async def test_reauthorize_one_shared_shop_updates_seller_grant_for_all_siblings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """对多店卖家的目标店重新授权时，更新共享凭证且不误绑定其他店。"""
+    user_id, store_id, grant_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    grant = store_models.TikTokSellerAuthorization(
+        id=grant_id,
+        app_key=oauth_settings().tiktok_app_key,
+        open_id_hash=hashlib.sha256(b"seller-open-id").hexdigest(),
+        access_token_ref="encrypted:v1:old",
+        refresh_token_ref="encrypted:v1:old",
+        access_expires_at=datetime.now(UTC) + timedelta(minutes=1),
+        refresh_expires_at=datetime.now(UTC) + timedelta(days=1),
+        authorized_shop_ids=["external-shop-1", "external-shop-2"],
+        status="connected",
+    )
+    channel = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=store_id,
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Shop One",
+        access_token_ref=f"shared://{grant_id}",
+        seller_authorization_id=grant_id,
+        seller_authorization=grant,
+        status="connected",
+        metadata_json={"open_id_hash": grant.open_id_hash},
+    )
+    expired_sibling = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        platform="tiktok",
+        external_store_id="external-shop-2",
+        display_name="Expired sibling",
+        access_token_ref=f"shared://{grant_id}",
+        seller_authorization_id=grant_id,
+        seller_authorization=grant,
+        status="expired",
+        metadata_json={"open_id_hash": grant.open_id_hash},
+    )
+
+    class ReauthSession(FakeSession):
+        async def get(self, model: object, _id: uuid.UUID, **_kwargs: object) -> Any:
+            return grant if model is store_models.TikTokSellerAuthorization and _id == grant_id else None
+
+        async def scalars(self, _statement: object) -> Any:
+            return SimpleNamespace(all=lambda: [channel, expired_sibling])
+
+    session = ReauthSession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "store_id": str(store_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", _async_result(None))
+    monkeypatch.setattr(oauth_service, "get_active_store", _async_result(SimpleNamespace(id=store_id)))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(channel))
+    monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(channel))
+
+    result = await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+        session,
+        "valid-state",
+        "unit-test-auth-code",
+        None,
+        oauth_settings(),
+        FakeOAuthClient(shop_count=2),
+    )
+    assert result.status == "connected" and result.store_id == store_id
+    assert channel.access_token_ref == f"shared://{grant_id}"
+    assert grant.access_token_ref.startswith("encrypted:v1:")
+    assert grant.authorized_shop_ids == ["external-shop-1", "external-shop-2"]
+    assert expired_sibling.status == "expired"
+
+
+@pytest.mark.asyncio
+async def test_shop_admin_cannot_rotate_seller_grant_for_unmanaged_sibling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A 店管理员重授不得改动无权管理的 B 店及共享卖家 Token。"""
+    store_a, store_b, grant_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    grant = store_models.TikTokSellerAuthorization(
+        id=grant_id,
+        app_key=oauth_settings().tiktok_app_key,
+        open_id_hash=hashlib.sha256(b"seller-open-id").hexdigest(),
+        access_token_ref="encrypted:v1:old",
+        refresh_token_ref="encrypted:v1:old",
+        access_expires_at=datetime.now(UTC) + timedelta(minutes=1),
+        refresh_expires_at=datetime.now(UTC) + timedelta(days=1),
+        authorized_shop_ids=["external-shop-1", "external-shop-2"],
+        status="connected",
+    )
+    channels = [
+        ChannelAccount(
+            id=uuid.uuid4(),
+            store_id=store_id,
+            platform="tiktok",
+            external_store_id=f"external-shop-{index}",
+            display_name=f"Shop {index}",
+            access_token_ref=f"shared://{grant_id}",
+            seller_authorization_id=grant_id,
+            seller_authorization=grant,
+            status="connected",
+            metadata_json={"open_id_hash": grant.open_id_hash},
+        )
+        for index, store_id in ((1, store_a), (2, store_b))
+    ]
+
+    class ReauthSession(FakeSession):
+        async def get(self, _model: object, _id: uuid.UUID, **_kwargs: object) -> Any:
+            return grant
+
+        async def scalars(self, _statement: object) -> Any:
+            return SimpleNamespace(all=lambda: channels)
+
+    async def ensure_manager(_session: object, _user: object, store_id: uuid.UUID) -> None:
+        if store_id == store_b:
+            raise AppError(ErrorCode.PERMISSION_DENIED, "没有管理该店铺渠道的权限", 403)
+
+    monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", ensure_manager)
+    session = ReauthSession()
+    with pytest.raises(AppError) as denied:
+        await oauth_service._reauthorize_shared_seller(  # type: ignore[arg-type]
+            session,
+            channels[0],
+            token_data(),
+            (await FakeOAuthClient(shop_count=2).get_authorized_shops("access-token-unit-test-value"))[0],
+            SimpleNamespace(id=uuid.uuid4()),
+            None,
+            "/settings/stores",
+            oauth_settings(),
+            commit=False,
+        )
+    assert denied.value.code == ErrorCode.PERMISSION_DENIED
+    assert grant.access_token_ref == "encrypted:v1:old"
+    assert [channel.status for channel in channels] == ["connected", "connected"]
+
+
+@pytest.mark.asyncio
+async def test_readding_removed_shop_joins_existing_shared_seller_grant(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """同卖家另一店仍在线时，已删除店铺重新添加须加入共享授权。"""
+    user_id, store_id, grant_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    grant = store_models.TikTokSellerAuthorization(
+        id=grant_id,
+        app_key=oauth_settings().tiktok_app_key,
+        open_id_hash=hashlib.sha256(b"seller-open-id").hexdigest(),
+        access_token_ref="encrypted:v1:old",
+        refresh_token_ref="encrypted:v1:old",
+        access_expires_at=datetime.now(UTC) + timedelta(minutes=1),
+        refresh_expires_at=datetime.now(UTC) + timedelta(days=1),
+        authorized_shop_ids=["external-shop-1"],
+        status="connected",
+    )
+    sibling = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Shop One",
+        access_token_ref=f"shared://{grant_id}",
+        seller_authorization_id=grant_id,
+        seller_authorization=grant,
+        status="connected",
+        metadata_json={"open_id_hash": grant.open_id_hash},
+    )
+    removed = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=store_id,
+        platform="tiktok",
+        external_store_id="external-shop-2",
+        display_name="Shop Two",
+        access_token_ref="revoked://old",
+        status="disconnected",
+        metadata_json={"oauth_status": "revoked"},
+    )
+
+    class ReaddSession(FakeSession):
+        async def scalar(self, _statement: object) -> store_models.TikTokSellerAuthorization:
+            return grant
+
+        async def scalars(self, _statement: object) -> Any:
+            return SimpleNamespace(all=lambda: [sibling])
+
+    session = ReaddSession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "store_id": str(store_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", _async_result(None))
+    monkeypatch.setattr(oauth_service, "get_active_store", _async_result(SimpleNamespace(id=store_id)))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(removed))
+    monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(removed))
+    result = await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+        session,
+        "valid-state",
+        "unit-test-auth-code",
+        None,
+        oauth_settings(),
+        FakeOAuthClient(shop_count=2),
+    )
+    assert result.status == "connected"
+    assert removed.store_id == store_id and removed.seller_authorization_id == grant_id
+    assert removed.access_token_ref == f"shared://{grant_id}"
+    assert sibling.status == "connected"
+
+
+@pytest.mark.asyncio
+async def test_existing_single_shop_reauthorization_preserves_store_id_when_seller_has_multiple_shops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """现有 TKW 单店在卖家变为多店后重授，保留 CRM 店铺 ID 并建立共享授权。"""
+    user_id, store_id = uuid.uuid4(), uuid.uuid4()
+    channel = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=store_id,
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Existing TKW Group",
+        access_token_ref="encrypted:v1:old",
+        status="connected",
+        metadata_json={"open_id_hash": hashlib.sha256(b"seller-open-id").hexdigest()},
+    )
+
+    class LegacySession(FakeSession):
+        async def scalar(self, _statement: object) -> None:
+            return None
+
+        async def scalars(self, _statement: object) -> Any:
+            return SimpleNamespace(all=lambda: [channel])
+
+    session = LegacySession()
+    monkeypatch.setattr(
+        oauth_service,
+        "consume_tiktok_oauth_state",
+        _async_result(
+            {
+                "user_id": str(user_id),
+                "store_id": str(store_id),
+                "return_to": "/settings/stores",
+            }
+        ),
+    )
+    monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
+    monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", _async_result(None))
+    monkeypatch.setattr(oauth_service, "get_active_store", _async_result(SimpleNamespace(id=store_id)))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(channel))
+    monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(channel))
+    result = await oauth_service.complete_tiktok_oauth(  # type: ignore[arg-type]
+        session,
+        "valid-state",
+        "unit-test-auth-code",
+        None,
+        oauth_settings(),
+        FakeOAuthClient(shop_count=2),
+    )
+    grants = [item for item in session.added if isinstance(item, store_models.TikTokSellerAuthorization)]
+    assert result.status == "connected" and result.store_id == store_id
+    assert len(grants) == 1 and channel.seller_authorization_id == grants[0].id
+    assert channel.access_token_ref == f"shared://{grants[0].id}"
+    assert not any(isinstance(item, Store) for item in session.added)
+    assert any(isinstance(item, AuditLog) and item.action == "channel.authorization_migrated" for item in session.added)
+
+
+@pytest.mark.asyncio
 async def test_refresh_rejects_changed_authorization_principal_without_overwriting_tokens() -> None:
     """刷新返回其他 open_id 时必须保留旧密文并要求重新授权。"""
     store_id = uuid.uuid4()
@@ -954,6 +1572,7 @@ async def test_token_refresh_cycle_claims_due_channels_and_continues_after_failu
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "刷新失败", 502)
 
     monkeypatch.setattr(oauth_service, "claim_tiktok_channel_for_refresh", claim)
+    monkeypatch.setattr(oauth_service, "claim_tiktok_seller_for_refresh", _async_result(None))
     monkeypatch.setattr(oauth_service, "refresh_tiktok_channel_token", refresh)
 
     processed = await oauth_service.process_tiktok_token_refresh_cycle(
@@ -996,6 +1615,44 @@ async def test_revoke_destroys_local_tokens_and_keeps_lifecycle_audit(monkeypatc
     assert channel.metadata_json["oauth_status"] == "revoked"
     assert session.deleted == []
     assert any(isinstance(value, AuditLog) and value.action == "channel.revoke" for value in session.added)
+
+
+@pytest.mark.asyncio
+async def test_revoking_last_shared_shop_destroys_seller_credential(monkeypatch: pytest.MonkeyPatch) -> None:
+    """最后一家共享店铺删除后，不在系统保留仍可用的卖家 Token。"""
+    grant_id = uuid.uuid4()
+    grant = store_models.TikTokSellerAuthorization(id=grant_id, app_key="unit-test-app-key")
+    channel = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=uuid.uuid4(),
+        platform="tiktok",
+        external_store_id="external-shop-1",
+        display_name="Shop One",
+        access_token_ref=f"shared://{grant_id}",
+        seller_authorization_id=grant_id,
+        seller_authorization=grant,
+        status="connected",
+        metadata_json={"shop_cipher": "cipher"},
+    )
+
+    class RevokeSession(FakeChannelSession):
+        async def get(self, model: object, item_id: uuid.UUID, **_kwargs: object) -> Any:
+            if model is store_models.TikTokSellerAuthorization and item_id == grant_id:
+                return grant
+            return channel if model is ChannelAccount and item_id == channel.id else None
+
+        async def scalar(self, _statement: object) -> None:
+            return None
+
+    session = RevokeSession(channel)
+    monkeypatch.setattr(stores_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(stores_service, "ensure_store_admin", _async_result(None))
+    await stores_service.delete_channel(  # type: ignore[arg-type]
+        session, SimpleNamespace(id=uuid.uuid4()), channel.id
+    )
+    assert grant in session.deleted
+    assert channel.seller_authorization_id is None
+    assert channel.status == "disconnected"
 
 
 def _async_result(value: Any) -> Any:

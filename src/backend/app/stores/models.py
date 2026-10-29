@@ -5,7 +5,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.database.base import Base, TimestampMixin
 
@@ -30,6 +30,25 @@ class Store(TimestampMixin, Base):
         return value if isinstance(value, str) and value else None
 
 
+class TikTokSellerAuthorization(TimestampMixin, Base):
+    """同一应用下卖家级授权及轮换凭证，多个隔离店铺仅引用此记录。"""
+
+    __tablename__ = "tiktok_seller_authorizations"
+    __table_args__ = (UniqueConstraint("app_key", "open_id_hash", name="uq_tiktok_seller_app_principal"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    app_key: Mapped[str] = mapped_column(String(200))
+    open_id_hash: Mapped[str] = mapped_column(String(64))
+    access_token_ref: Mapped[str] = mapped_column(String(1200))
+    refresh_token_ref: Mapped[str] = mapped_column(String(1200))
+    access_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    refresh_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    next_refresh_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    scopes: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    authorized_shop_ids: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    status: Mapped[str] = mapped_column(String(20), default="connected")
+
+
 class ChannelAccount(TimestampMixin, Base):
     """店铺在外部平台上的授权账号；只保存密钥引用，不保存明文密钥。"""
 
@@ -46,6 +65,10 @@ class ChannelAccount(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     store_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("stores.id", ondelete="CASCADE"), index=True)
+    seller_authorization_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("tiktok_seller_authorizations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    seller_authorization: Mapped[TikTokSellerAuthorization | None] = relationship(lazy="selectin")
     platform: Mapped[str] = mapped_column(String(30))
     external_store_id: Mapped[str] = mapped_column(String(200))
     display_name: Mapped[str] = mapped_column(String(200))

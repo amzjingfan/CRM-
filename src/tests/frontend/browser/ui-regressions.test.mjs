@@ -923,6 +923,43 @@ test("store refresh removes prior rows when channel access is revoked", async ()
   }
 });
 
+test("multi-shop OAuth connects only checked shops and closes the selection dialog", async () => {
+  const jobId = "00000000-0000-4000-8000-000000000033";
+  const choices = [
+    { id: "shop-one", code: "SHOP-1", name: "美国一店", region: "US", seller_type: "LOCAL" },
+    { id: "shop-two", code: "SHOP-2", name: "美国二店", region: "US", seller_type: "LOCAL" },
+  ];
+  const writes = [];
+  const { context, page } = await openPage(`/settings/stores?oauth=tiktok&status=processing&job=${jobId}`, {
+    "GET /v1/settings/store-authorizations": [],
+    [`GET /v1/settings/channels/tiktok/oauth/jobs/${jobId}`]: {
+      status: "selection_required", shops: choices, selection_expires_at: "2125-01-01T00:00:00Z",
+    },
+  });
+  try {
+    await context.route(`**/v1/settings/channels/tiktok/oauth/jobs/${jobId}/shops`, async (route) => {
+      writes.push(JSON.parse(route.request().postData() ?? "{}"));
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        code: 0, message: "ok", data: { status: "connected", shops: [], selection_expires_at: null },
+      }) });
+    });
+    const dialog = page.getByRole("dialog", { name: "选择 TikTok 店铺" });
+    await dialog.waitFor();
+    await dialog.getByRole("button", { name: "稍后处理" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(new URL(page.url()).searchParams.get("job"), jobId);
+    await page.getByRole("button", { name: "继续选择店铺" }).click();
+    await dialog.waitFor();
+    await dialog.getByRole("checkbox").first().check();
+    await dialog.getByRole("button", { name: "接入 1 家店铺" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    assert.deepEqual(writes, [{ shop_ids: ["shop-one"] }]);
+    assert.equal(new URL(page.url()).search, "");
+  } finally {
+    await context.close();
+  }
+});
+
 test("store alias can be edited without changing its platform identity", async () => {
   const { context, page } = await openPage("/settings/stores", {
     "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }],

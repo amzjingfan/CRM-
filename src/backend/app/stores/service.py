@@ -11,7 +11,7 @@ from app.audit.models import AuditLog
 from app.auth.store_access import allowed_store_ids, ensure_store_access
 from app.shared.database.base import Role, User, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.stores.models import ChannelAccount, Store
+from app.stores.models import ChannelAccount, Store, TikTokSellerAuthorization
 from app.stores.repository import get_active_store, list_channels, list_stores
 from app.stores.schemas import ChannelCreate, StoreAliasUpdate, StoreCreate
 
@@ -165,7 +165,22 @@ async def delete_channel(session: AsyncSession, user: User, channel_id: uuid.UUI
     )
     if channel.platform == "tiktok":
         # 删除店铺授权只撤销凭证，保留绑定与历史业务数据以便再次添加。
+        grant_id = channel.seller_authorization_id
+        grant = await session.get(TikTokSellerAuthorization, grant_id, with_for_update=True) if grant_id else None
+        other_connected = (
+            await session.scalar(
+                select(ChannelAccount.id).where(
+                    ChannelAccount.seller_authorization_id == grant_id,
+                    ChannelAccount.id != channel.id,
+                    ChannelAccount.status == "connected",
+                )
+            )
+            if grant is not None
+            else None
+        )
         channel.status = "disconnected"
+        channel.seller_authorization = None
+        channel.seller_authorization_id = None
         channel.access_token_ref = f"revoked://{channel.id}"
         channel.refresh_token_ref = None
         channel.token_expires_at = None
@@ -174,6 +189,8 @@ async def delete_channel(session: AsyncSession, user: User, channel_id: uuid.UUI
             "oauth_status": "revoked",
             "revoked_at": datetime.now(UTC).isoformat(),
         }
+        if grant is not None and other_connected is None:
+            await session.delete(grant)
     else:
         await session.delete(channel)
     await session.commit()
