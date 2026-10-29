@@ -1,0 +1,37 @@
+{
+  "task_id": "MVP-AGENT-STAGING-DEPLOY-001",
+  "subject_sha": "01f138657e3bdb03376e2ee49cfeb6d4e0224411",
+  "base_sha": "e71ce6802f8b57e405b6a188eb6848af3c0a8b46",
+  "local": {
+    "backend_pass": 2542,
+    "windows_posix_skip": 3,
+    "frontend_contract_pass": 52,
+    "production_browser_pass": 142,
+    "ruff_format_files": 413,
+    "mypy_files": 255
+  },
+  "tdd": {
+    "red_fail": 6,
+    "red_pass": 1,
+    "green_pass": 7,
+    "focused_pass": 62
+  },
+  "review_blocking": 0,
+  "live_current_source": "8393602f376224b880405c71e8263fe824b82659",
+  "public_pure_rag": {
+    "passed": true,
+    "latency_ms": 15824,
+    "citations": 2
+  },
+  "isolated_candidate_v5": {
+    "four_tools_success": true,
+    "citations": 3,
+    "document_version": 1,
+    "unique_document_fact_in_answer": true,
+    "answer_length": 2690,
+    "platform_send": false
+  },
+  "deployed_this_subject": false,
+  "public_combined_acceptance": "pending",
+  "ci": "not_run_yet"
+}

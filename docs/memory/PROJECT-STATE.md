@@ -2,7 +2,7 @@
 
 2026-10-29；STANDARD；TikTok人工辅助v0.1；仓库CP11-gh/CRM，目标origin/main。
 
-MVP-AGENT-STAGING-DEPLOY-001为VERIFYING。用户已批准统一部署并追加知识文件检索全链路；RAG审计与引用补修 #636 已合入 `main=8393602f`，发布和真实 RAG 联合验收待做。部署仍由该任务单点协调，不把合并等同发布。
+MVP-AGENT-STAGING-DEPLOY-001为VERIFYING。用户已批准统一部署并追加知识文件检索全链路；RAG审计与引用补修 #636 已合入 `main=8393602f`，8393602f已手动部署，12容器/三健康和人工模式通过；Agent v4已发布。纯RAG浏览器通过。综合问题暴露路由改写DLP误拦，已补修并做独立候选四工具+文档引用预检，正跑最终回归。实际新基线e71ce680，分支fix/agent-routed-question-fallback-20261029。部署仍由本任务单点协调，不把候选预检等同公开服务复测。
 
 MVP-RECEPTION-TEAM-FEEDBACK-001 的前四条页面修复已由 PR #637 合入 `main=ed791b75`，本地验证见关联 IR/TR/RR；staging 尚未部署本次前端，部门角色与店铺咨询分配只形成方案、不改变运行规则。
 
@@ -10,10 +10,10 @@ MVP-RECEPTION-TEAM-FEEDBACK-001 的前四条页面修复已由 PR #637 合入 `m
 
 最终Agent输出和配置发布由模型语义判断，不引入新地址正则/词数规则。先过滤、重组、独立复核；仅明确unsupported可证据重生成；无效协议立即停止；已复核正文共享去重，原时限及取消/数值进度保留。语言偏离由模型标记后用安全正文改写。工作台完整草稿编辑/译文预览、超2000先精简后送审发送均已覆盖。
 
-运行服务保持第一批#634的e3fc，041、原人工模式/范围及后台自动关闭保持；没有本批部署/registry推送，Agent发布版本仍v3，v4仅草稿和隔离投影。本次批准已收到，正准备重建精确集成源发布镜像、单点协调、重新备份并正常发布配置，再做Codex浏览器现场验收。production G8继续No-Go。
+运行服务当前8393602f，041、原人工模式/范围及后台自动关闭保持；Agent v4包含三业务工具和获批合成验收文件。GHCR本机上传两次超时后，经逐层校验的OCI传输到服务器再发布精确linux/amd64摘要并通过手动门禁。新发现的路由补修尚未部署。production G8继续No-Go。
 
 同一合成入站与仅由其派生的记忆保留至最终现场验收后统一清理；manifest在忽略的src/tests/.artifacts/agent-detailed-tools-20261029。不得动真实消息、运行和审计，不重建买家，不发送平台消息。其他RAG文件draft，本次不声称现场RAG检索通过。原超时调用用量未知，未当作完整账单。
 
 三索引CANDIDATE_VIEW=300/325/283；正式源记录为事实。Workspace hygiene: ATTENTION。根checkout未知历史/文件、活动worktree、未跟踪src/frontend/AGENTS.md和上个worktree未知逆向diff均保留。临时测试输出仅src/tests/.artifacts，本轮已登记可恢复缓存隔离批次 MAINT-CLEANUP-20261029-001，无永久删除。
 
-下一动作：①从已合并主线核对精确镜像、备份与 ValidateOnly；②单点手动部署并正常导入/审批/绑定知识文件；③Codex浏览器联合验收，全部成功后统一清理合成夹具。
+下一动作：①完成路由补修的最终本地验证与集成；②精确镜像/备份/手动门禁补充统一部署；③Codex浏览器联合与工作台验收，全部成功后统一清理已知合成夹具。

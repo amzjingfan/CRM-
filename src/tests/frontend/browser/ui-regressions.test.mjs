@@ -304,7 +304,7 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     await parameters.getByRole("spinbutton", { name: "分块大小" }).fill("700");
     await parameters.getByRole("slider", { name: /单次召回数量/ }).fill("12");
     await parameters.getByRole("button", { name: /保存并应用/ }).click();
-    await page.getByText(/分块：700.*文档检索本期未接入/).waitFor();
+    await page.getByText(/分块：700.*文档检索需内部审批并绑定 Agent/).waitFor();
     assert.equal(await parameters.isVisible(), false);
 
     await page.getByRole("button", { name: "物流与仓储" }).click();
@@ -322,7 +322,7 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     assert.equal(await detail.isVisible(), false);
     assert.equal(await page.getByRole("link", { name: "Agent 管理" }).count(), 1);
     await page.reload();
-    await page.getByText(/分块：700.*文档检索本期未接入/).waitFor();
+    await page.getByText(/分块：700.*文档检索需内部审批并绑定 Agent/).waitFor();
     await page.setViewportSize({ width: 760, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   } finally {

@@ -30,6 +30,7 @@ from app.agents.tools.catalog import AgentToolContext, BusinessToolPort, ToolExe
 from app.agents.tools.loop import MAX_TOOL_RESULT_CHARS, ToolLoopTimeout, run_tool_loop, serialize_tool_result
 from app.agents.tools.metadata import TOOL_METADATA
 from app.knowledge_base.schemas import KnowledgeRetrievalHit
+from app.shared.exceptions.errors import AppError, ErrorCode
 
 _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
@@ -90,10 +91,16 @@ async def run_specialist(
     ):
         return SpecialistResult(selection.agent_id, None, reason_code="invalid_agent_scope")
     prompt = verify_published_prompt(agent.prompt_sections, agent.prompt_hash)
-    safe_question = prepare_untrusted_text(selection.subquestion, source="user_message").text
-    original_question = prepare_untrusted_text(
-        customer_question if customer_question is not None else selection.subquestion, source="user_message"
-    ).text
+    input_question = customer_question if customer_question is not None else selection.subquestion
+    original_question = prepare_untrusted_text(input_question, source="user_message").text
+    safe_question = original_question
+    if selection.subquestion != input_question:
+        try:
+            safe_question = prepare_untrusted_text(selection.subquestion, source="user_message").text
+        except AppError as error:
+            # 路由改写不能替代客户原文；只在原文已通过时舍弃不合格改写。
+            if error.code != ErrorCode.VALIDATION_ERROR:
+                raise
     question_data = {"untrusted_question": original_question, "untrusted_subquestion": safe_question}
     question_protocol = (
         "\n用户数据中的 untrusted_question 是买家原始问题；untrusted_subquestion 只是路由任务，"
