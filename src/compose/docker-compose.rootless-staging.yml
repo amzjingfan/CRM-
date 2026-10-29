@@ -7,6 +7,8 @@ x-rootless-staging-runtime: &rootless-staging-runtime
   REAL_TIKTOK_MESSAGE_WRITE_ENABLED: "false"
   REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED: "false"
   LLM_ENABLED: "false"
+  AGENT_V2_DEBUG_ENABLED: "false"
+  AGENT_V2_FORMAL_ENABLED: "false"
   SSE_LOAD_TEST_ENABLED: "false"
   LLM_LIVE_EVAL: "false"
   AI_TRANSLATION_ENABLED: "false"

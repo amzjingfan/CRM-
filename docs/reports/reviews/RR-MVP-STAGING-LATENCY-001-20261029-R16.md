@@ -4,7 +4,7 @@ record_type: review
 revision: R16
 status: APPROVE
 task_id: MVP-STAGING-LATENCY-001
-reviewed_sha: 053ebc9f625042e6c38c3c10df6e4c9e0284ba
+reviewed_sha: 053ebc9f625042e6c38c3c3c10df6e4c9e0284ba
 implementation_record: docs/records/implementation/IR-MVP-STAGING-LATENCY-001-20261029-R16.md
 test_record: docs/reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R20.md
 review_focus: [authorization, tenant_isolation, release_scope, immutable_image, private_backup, safety_switches, latency_claims]
@@ -14,6 +14,8 @@ supersedes: docs/reports/reviews/RR-MVP-STAGING-LATENCY-001-20261029-R15.md
 ---
 
 # 发布审查
+
+2026-10-29 元数据勘误：原 `reviewed_sha` 误少两个字符，现按真实 Git 提交及配对 IR/TR 修正为完整 40 位。审查对象、测试范围、结论和生产边界均未改变，本次没有重跑该历史审查。
 
 R15 的授权与请求顺序审查保持有效：指标只按服务端授权的店铺编号读取，名称补齐不增加未授权选择，也不重置当前店铺。隔离 release 只有两个 blob 变化，且与合并主线一致，动态 Agent v2 不在发布范围。精确镜像、私有备份、预检、实际切换、迁移头、12 容器、固定出口及安全开关都有本轮证据。GitHub 两作业 0 步失败为未运行，本地等价前端门禁通过。
 

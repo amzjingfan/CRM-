@@ -169,6 +169,8 @@ def test_agent_debug_overlay_only_opens_backend_model_clients(staging_env_file: 
     """Compose 真实合并后，调试不打开通用 LLM、SSE 或其他服务的检索能力。"""
     if shutil.which("docker") is None:
         pytest.skip("Docker Compose CLI unavailable")
+    with staging_env_file.open("a", encoding="utf-8") as handle:
+        handle.write("\nLLM_PRIMARY_CONTEXT_WINDOW_TOKENS=32768\nLLM_FALLBACK_CONTEXT_WINDOW_TOKENS=16384\n")
     compose_root = SOURCE_ROOT / "compose"
     files = [
         "docker-compose.yml",
@@ -196,6 +198,10 @@ def test_agent_debug_overlay_only_opens_backend_model_clients(staging_env_file: 
     config = json.loads(result.stdout)
     backend = config["services"]["backend"]["environment"]
     assert backend["AGENT_DEBUG_ENABLED"] == "true"
+    assert backend["AGENT_V2_DEBUG_ENABLED"] == "true"
+    assert backend["AGENT_V2_FORMAL_ENABLED"] == "false"
+    assert backend["LLM_PRIMARY_CONTEXT_WINDOW_TOKENS"] == "32768"
+    assert backend["LLM_FALLBACK_CONTEXT_WINDOW_TOKENS"] == "16384"
     assert backend["EMBEDDING_ENABLED"] == "true"
     assert backend["LLM_ENABLED"] == "false"
     assert backend["SSE_LOAD_TEST_ENABLED"] == "false"
@@ -204,6 +210,8 @@ def test_agent_debug_overlay_only_opens_backend_model_clients(staging_env_file: 
     for name in ("worker", "jobs", "agent-worker"):
         service = config["services"][name]["environment"]
         assert service.get("AGENT_DEBUG_ENABLED", "false") == "false"
+        assert service["AGENT_V2_DEBUG_ENABLED"] == "false"
+        assert service["AGENT_V2_FORMAL_ENABLED"] == "false"
         assert service.get("EMBEDDING_ENABLED", "false") == "false"
         assert service["LLM_ENABLED"] == "false"
 
@@ -541,14 +549,19 @@ def test_g5_deploy_rejects_running_backend_without_embedding_before_health(
 
 @pytest.mark.parametrize(
     "runtime_override",
-    ["FAKE_DOCKER_RUNTIME_LLM_ENABLED", "FAKE_DOCKER_RUNTIME_EMBEDDING_ENABLED"],
+    [
+        "FAKE_DOCKER_RUNTIME_LLM_ENABLED",
+        "FAKE_DOCKER_RUNTIME_EMBEDDING_ENABLED",
+        "FAKE_DOCKER_RUNTIME_AGENT_V2_DEBUG_ENABLED",
+        "FAKE_DOCKER_RUNTIME_AGENT_V2_FORMAL_ENABLED",
+    ],
 )
 def test_default_deploy_rejects_backend_that_kept_g5_model_enabled(
     runtime_override: str,
     staging_env_file: Path,
     tmp_path: Path,
 ) -> None:
-    """恢复默认配置时，旧 G5 backend 仍开模型或检索应阻止通过。"""
+    """恢复默认配置时，旧 backend 仍开模型、检索或动态 Agent 应阻止通过。"""
     model_asset_dir = Path(
         next(
             line.split("=", 1)[1]
@@ -948,6 +961,7 @@ def test_staging_agent_debug_requires_explicit_mode_and_shared_token(staging_env
     config["services"]["backend"]["environment"].update(
         {
             "AGENT_DEBUG_ENABLED": "true",
+            "AGENT_V2_DEBUG_ENABLED": "true",
             "EMBEDDING_ENABLED": "true",
             "LLM_ENABLED": "false",
             "LLM_PRIMARY_PROVIDER": "deepseek",
@@ -987,7 +1001,20 @@ def test_staging_agent_debug_requires_explicit_mode_and_shared_token(staging_env
     assert accepted.returncode == 0, normalized_process_output(accepted)
     evidence = json.loads(evidence_file.read_text(encoding="utf-8-sig"))
     assert evidence["agent_debug_enabled"] is True
+    assert evidence["agent_v2_debug_enabled"] is True
+    assert evidence["agent_v2_formal_enabled"] is False
     assert evidence["g5_sse_load_test_enabled"] is False
+
+    config["services"]["backend"]["environment"]["AGENT_V2_DEBUG_ENABLED"] = "false"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    missing_v2 = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentDebug", environment=environment)
+    assert missing_v2.returncode != 0
+    config["services"]["backend"]["environment"]["AGENT_V2_DEBUG_ENABLED"] = "true"
+    config["services"]["backend"]["environment"]["AGENT_V2_FORMAL_ENABLED"] = "true"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    unexpected_formal = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentDebug", environment=environment)
+    assert unexpected_formal.returncode != 0
+    config["services"]["backend"]["environment"]["AGENT_V2_FORMAL_ENABLED"] = "false"
 
     config["services"]["backend"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = "wrong" * 8
     config_path.write_text(json.dumps(config), encoding="utf-8")
@@ -1447,6 +1474,9 @@ if arguments[:2] == ["inspect", "--format"]:
             service_env["EMBEDDING_ENABLED"] = os.environ["FAKE_DOCKER_RUNTIME_EMBEDDING_ENABLED"]
         if service == "backend" and "FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED" in os.environ:
             service_env["AUTO_REPLY_ENABLED"] = os.environ["FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED"]
+        for name in ("AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED"):
+            if service == "backend" and "FAKE_DOCKER_RUNTIME_" + name in os.environ:
+                service_env[name] = os.environ["FAKE_DOCKER_RUNTIME_" + name]
         print(json.dumps({
             "Image": config["services"][service]["image"],
             "Env": [f"{name}={value}" for name, value in service_env.items()],

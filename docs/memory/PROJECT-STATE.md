@@ -1,5 +1,7 @@
 # 项目状态与恢复入口
 
+2026-10-29 用户已批准 Agent 与多店授权统一 staging 发布，由一个执行者切换。多店授权 #629/#630 已合入主线并为 DONE，041 为唯一合流头；部署补齐源 00bc04a1 的完整受影响回归 180/180，通过应用树身份核对复用组合产品 2394/3 与前端 52/134。私有备份和合成 Provider 原生工具协议预检通过；服务器仍旧版，尚未切换。MVP-AGENT-STAGING-DEPLOY-001 为 VERIFYING，IR/TR/RR R02，索引 CANDIDATE_VIEW；目录卫生沿用 ATTENTION，未知生成文件受保护。
+
 2026-10-29 `MVP-TIKTOK-MULTISHOP-AUTH-001 DONE`：将既有本地多店实现移植到当前远端主线，`feature/tiktok-multishop-remote-integrate-20261029` 从 `origin/main=7cee8b4c` 创建；迁移头以 `041_merge_agent_multishop_collab` 合流 Agent `040_agent_collaboration` 与 TikTok `035_tiktok_seller_multishop`。功能 subject `c289a9a07e9a71b244b6a07b93a56f9f57e3f699`；联合隔离库 2394 passed/3 skipped、前端契约 52/52 和生产浏览器 134/134，见本任务 IR/TR/RR R02。PR #629 已合入 `origin/main=04bf7b9b4c0524cc52d584f32edbb9e98faf0589`；三索引从权威主线 293/318/276 条 IR/TR/RR 核对为 `CURRENT`。staging 部署和真实多店只读验收尚待独立发布任务执行。统一 staging 部署由知识库/Agent UI 对话单点执行，本对话只交付 TikTok 集成主线 SHA；production G8 No-Go。Workspace hygiene: ATTENTION（未知文件及其他活动 worktree 保留）。
 
 2026-10-29 性能任务按用户修订的网络验收边界进入最终收口：当前线上隔离 release 的订单缓存 19/19、已登录看板两店只读切换与既有精确发布门禁及合成故障回归支持应用侧 AC-01～AC-06，见 [IR R17](../records/implementation/IR-MVP-STAGING-LATENCY-001-20261029-R17.md)、[TR R21](../reports/tests/TR-MVP-STAGING-LATENCY-001-20261029-R21.md)、[RR R17](../reports/reviews/RR-MVP-STAGING-LATENCY-001-20261029-R17.md)。WAN 重传、隧道抖动及偶发 504 仍可能造成秒级等待，不宣称公网稳定提速或生产放行。验收证据 PR #627 已合入 main `da0cff29`；主线源记录 IR/TR/RR 291/316/274 条核对一致，索引为 `CURRENT`，任务为 `DONE`。

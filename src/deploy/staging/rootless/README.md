@@ -77,7 +77,7 @@ AI_MARKETING_ENABLED
 AUTO_REPLY_ENABLED
 ```
 
-Agent 管理页真实调试只在 staging 通过 `Test-StagingProductionGates.ps1 -EnableAgentDebug` 显式开启。门禁在固定基础层后叠加 `docker-compose.rootless-staging-agent-debug.yml`，仅 backend 得到 `AGENT_DEBUG_ENABLED=true` 与 `EMBEDDING_ENABLED=true`；通用 `LLM_ENABLED`、自动回复、营销和平台发送开关保持原有模式。仓库外环境文件若有 `AGENT_DEBUG_ENABLED` 必须为 `false`；门禁核对合并 Compose、运行容器、已配置 DeepSeek 和共享检索令牌。调试需要迁移头 `034_agent_debug_runs`。恢复到关闭模式时去掉该参数并复核 backend 两个调试开关为关闭；有独立调试记录时迁移 034 的降级会失败关闭，保留数据并切回旧镜像前须确认旧代码能容忍该可空字段。
+Agent 管理页真实调试只在 staging 通过 `Test-StagingProductionGates.ps1 -EnableAgentDebug` 显式开启。门禁叠加 `docker-compose.rootless-staging-agent-debug.yml`，仅 backend 得到 `AGENT_DEBUG_ENABLED=true`、`AGENT_V2_DEBUG_ENABLED=true` 与 `EMBEDDING_ENABLED=true`；`AGENT_V2_FORMAL_ENABLED=false`、通用 `LLM_ENABLED`、自动回复、营销和平台发送保持原有模式。其他应用进程的 v2 开关固定关闭；仓库外环境文件若有这三项 Agent 开关必须为 `false`。门禁同时核对合并 Compose 与实际容器，缺失 v2 调试开关或意外启用正式入口均不得记录部署通过。覆盖层传递主/备用模型上下文窗口，默认各 8192，部署前须按实际项目模型核实；只有启用调试时 backend 才读取这些配置。还需核对 DeepSeek、共享检索令牌以及候选迁移的全部 head；034 仅是旧调试表，动态 Agent 与内部协作另需 035～040 及后续合流迁移。恢复关闭模式时去掉该参数并复核三个 Agent 开关；回滚须保存新增版本、会话记忆、协作记录和业务增量，不能盲目降低迁移版本。
 
 G2 Webhook 实测只通过 `Staging production gates` 工作流的 `enable_tiktok_webhook_read=true` 显式模式开启。该模式仅适用于 `validate`、`deploy`，在固定四层 Compose 之后叠加 `docker-compose.rootless-staging-webhook.yml`，并逐服务确认 backend/worker 的真实只读与 Webhook 为 true，其他能力和进程保持 false。仓库外 env 文件仍全部为 false；默认模式与 rollback 继续失败关闭。恢复时以相同受审镜像摘要执行默认 `validate`、`deploy`，核对模式证据、容器环境、健康和公网入口；不得把本模式延伸到 production。
 

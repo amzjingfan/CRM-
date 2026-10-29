@@ -179,9 +179,10 @@ function Assert-EnvironmentContract {
         $Values["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"].Trim().ToLowerInvariant() -ne "false") {
         throw "Staging preflight requires WORKSPACE_MESSAGE_TRANSLATION_ENABLED=false outside the reviewed overlay."
     }
-    if ($Values.ContainsKey("AGENT_DEBUG_ENABLED") -and
-        $Values["AGENT_DEBUG_ENABLED"].Trim().ToLowerInvariant() -ne "false") {
-        throw "Staging preflight requires AGENT_DEBUG_ENABLED=false outside the reviewed overlay."
+    foreach ($name in @("AGENT_DEBUG_ENABLED", "AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED")) {
+        if ($Values.ContainsKey($name) -and $Values[$name].Trim().ToLowerInvariant() -ne "false") {
+            throw "Staging preflight requires $name=false outside the reviewed overlay."
+        }
     }
     foreach ($name in $G2ProbeVariables) {
         if ($Values.ContainsKey($name) -and -not [string]::IsNullOrEmpty($Values[$name])) {
@@ -555,11 +556,14 @@ function Assert-ProductionComposeContract {
         if ($actualEmbedding -cne $expectedEmbedding) {
             throw "Staging Compose embedding capability does not match reviewed mode: $serviceName"
         }
-        $debugProperty = $applicationEnvironment.PSObject.Properties["AGENT_DEBUG_ENABLED"]
-        $actualDebug = if ($null -eq $debugProperty) { "false" } else { [string]$debugProperty.Value }
-        $expectedDebug = if ($EnableAgentDebug -and $serviceName -ceq "backend") { "true" } else { "false" }
-        if ($actualDebug -cne $expectedDebug) {
-            throw "Staging Compose Agent debug capability does not match reviewed mode: $serviceName"
+        foreach ($name in @("AGENT_DEBUG_ENABLED", "AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED")) {
+            $property = $applicationEnvironment.PSObject.Properties[$name]
+            $actual = if ($null -eq $property) { "false" } else { [string]$property.Value }
+            $expected = if ($EnableAgentDebug -and $serviceName -ceq "backend" -and
+                $name -cne "AGENT_V2_FORMAL_ENABLED") { "true" } else { "false" }
+            if ($actual -cne $expected) {
+                throw "Staging Compose Agent capability does not match reviewed mode: $serviceName/$name"
+            }
         }
         $expectedTranslation = if ($EnableWorkspaceTranslation -and $serviceName -ceq "backend") { "true" } else { "false" }
         if ([string]$applicationEnvironment.WORKSPACE_MESSAGE_TRANSLATION_ENABLED -cne $expectedTranslation) {
@@ -719,11 +723,14 @@ function Assert-RunningStagingMode {
         if ($actualEmbedding -cne $expectedEmbedding) {
             throw "Staging runtime embedding capability does not match reviewed mode: $serviceName"
         }
-        $actualDebug = [string]$runtimeEnvironment["AGENT_DEBUG_ENABLED"]
-        if ([string]::IsNullOrEmpty($actualDebug)) { $actualDebug = "false" }
-        $expectedDebug = if ($EnableAgentDebug -and $serviceName -ceq "backend") { "true" } else { "false" }
-        if ($actualDebug -cne $expectedDebug) {
-            throw "Staging runtime Agent debug capability does not match reviewed mode: $serviceName"
+        foreach ($name in @("AGENT_DEBUG_ENABLED", "AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED")) {
+            $actual = [string]$runtimeEnvironment[$name]
+            if ([string]::IsNullOrEmpty($actual)) { $actual = "false" }
+            $expected = if ($EnableAgentDebug -and $serviceName -ceq "backend" -and
+                $name -cne "AGENT_V2_FORMAL_ENABLED") { "true" } else { "false" }
+            if ($actual -cne $expected) {
+                throw "Staging runtime Agent capability does not match reviewed mode: $serviceName/$name"
+            }
         }
         $expectedTranslation = if ($EnableWorkspaceTranslation -and $serviceName -ceq "backend") { "true" } else { "false" }
         if ($runtimeEnvironment["WORKSPACE_MESSAGE_TRANSLATION_ENABLED"] -cne $expectedTranslation) {
@@ -905,6 +912,8 @@ function Write-Evidence {
         g5_sse_load_test_enabled = [bool]$EnableG5SSELoadTest
         workspace_message_translation_enabled = [bool]$EnableWorkspaceTranslation
         agent_debug_enabled = [bool]$EnableAgentDebug
+        agent_v2_debug_enabled = [bool]$EnableAgentDebug
+        agent_v2_formal_enabled = $false
         backend_query_limit = if ($EnableG5SSELoadTest) { 60 } else { 10 }
         runtime_mode_verified = ($Status -ceq "passed")
         validated_variable_names = @($RequiredVariables + $DisabledCapabilityVariables | Sort-Object -Unique)
