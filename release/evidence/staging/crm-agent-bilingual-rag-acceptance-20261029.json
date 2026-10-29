@@ -1,0 +1,495 @@
+{
+  "status": "passed_with_observed_transient_failures",
+  "environment": "staging",
+  "subject_sha": "7fce34ef954d398af29de8ef36c62978fa58f8c2",
+  "deployed_backend_sha": "0c5667272d438af15406be34fe173ee49b7cc4e8",
+  "source_tree_identical": true,
+  "frontend_unchanged_reused_sha": "aa6366d27f7621967407c44725b3df2b58976501",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:60852e50d44b5004cb9711373a86d65e8c6449abae13070e39ff6ab964ecb285",
+  "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:f1922d0c01e0bb40883ebb77f04357ea9b34d7b96e196f3478c5bcc9788ac9a7",
+  "production_release": false,
+  "healthy_services": 12,
+  "health_checks": [
+    {
+      "path": "/healthz",
+      "status_code": 200
+    },
+    {
+      "path": "/v1/health",
+      "status_code": 200
+    },
+    {
+      "path": "/v1/health/ready",
+      "status_code": 200
+    }
+  ],
+  "cases": [
+    {
+      "trace_id": "cbd764f0-8cb5-4ed2-b4d3-8e9c8e632ad5",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 31733,
+          "input_tokens": 40919,
+          "output_tokens": 3769,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 12718,
+          "output_tokens": 1026,
+          "output_summary": "tool_count=4;citation_count=3"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "e80d1089-0e3c-4151-8905-4aa5d82c7ed2",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 18096,
+          "input_tokens": 23556,
+          "output_tokens": 2076,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 12286,
+          "output_tokens": 988,
+          "output_summary": "tool_count=4;citation_count=1"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "6226a3c4-985e-4b36-a2e3-d0a229cb202d",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": null,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 30132,
+          "input_tokens": 49799,
+          "output_tokens": 3287,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 7,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 22102,
+          "output_tokens": 946,
+          "output_summary": "tool_count=5;citation_count=3"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "failed",
+          "result": {
+            "succeeded": false
+          },
+          "error_code": "DYNAMIC_TOOL_FAILED",
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "294e951e-a9c0-4d73-a5a4-a983c4219d03",
+      "runs": [
+        {
+          "phase": "review_ready",
+          "parent": true,
+          "version": null,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": 30297,
+          "input_tokens": 55275,
+          "output_tokens": 3055,
+          "output_summary": "phase=review_ready;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 7,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 28216,
+          "output_tokens": 842,
+          "output_summary": "tool_count=5;citation_count=2"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_customer_orders",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "retrieved"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_order",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "failed",
+          "result": {
+            "succeeded": false
+          },
+          "error_code": "DYNAMIC_TOOL_FAILED",
+          "mocked": false
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "35626336-7a16-47c1-8bbe-13a02f26e5a7",
+      "runs": [
+        {
+          "phase": "review_required",
+          "parent": true,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": "no_verified_evidence",
+          "latency_ms": 7152,
+          "input_tokens": 8086,
+          "output_tokens": 493,
+          "output_summary": "phase=review_required;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 4720,
+          "output_tokens": 131,
+          "output_summary": "tool_count=1;citation_count=0"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "no_hits"
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    },
+    {
+      "trace_id": "bff37e3d-4f45-438c-a9a3-80cdf9a385cc",
+      "runs": [
+        {
+          "phase": "review_required",
+          "parent": true,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": "no_verified_evidence",
+          "latency_ms": 8550,
+          "input_tokens": 10596,
+          "output_tokens": 599,
+          "output_summary": "phase=review_required;selected=1"
+        },
+        {
+          "phase": "review_ready",
+          "parent": false,
+          "version": 6,
+          "status": "succeeded",
+          "error_code": null,
+          "latency_ms": null,
+          "input_tokens": 7257,
+          "output_tokens": 241,
+          "output_summary": "tool_count=2;citation_count=0"
+        }
+      ],
+      "tools": [
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "no_hits"
+          },
+          "error_code": null,
+          "mocked": false
+        },
+        {
+          "name": "search_knowledge",
+          "status": "succeeded",
+          "result": {
+            "succeeded": true,
+            "result_status": "no_hits"
+          },
+          "error_code": null,
+          "mocked": false
+        }
+      ]
+    }
+  ],
+  "workbench_characters": {
+    "en": 1668,
+    "zh": 834
+  },
+  "full_editor_exact_match": true,
+  "editor_reuse_max_characters": 2676,
+  "final_configuration": {
+    "agent_enabled": true,
+    "published_version": 8,
+    "acceptance_version": 7,
+    "prompt_hash": "52205e724c7e196561d13cc5c2fc81914d84dbf7dd2aea4d36714f8a473093c5",
+    "tools": [
+      "query_logistics",
+      "query_order",
+      "search_customer_orders"
+    ],
+    "model": "deepseek-v4-flash",
+    "prompt_and_tools_preserved": true,
+    "active_bound_files": 0,
+    "synthetic_file_soft_deleted": true,
+    "synthetic_message_absent": true,
+    "synthetic_memory_absent": true,
+    "existing_category_preserved": true
+  },
+  "fixture_cleanup": {
+    "synthetic_messages_removed": 1,
+    "synthetic_memory_removed": true,
+    "memory_revision": 20,
+    "real_messages_changed": 0,
+    "platform_send_performed": false,
+    "recoverable_backup": true,
+    "remaining_message_counts": [
+      [
+        "assistant",
+        "outbound",
+        8
+      ],
+      [
+        "system",
+        "outbound",
+        8
+      ],
+      [
+        "agent",
+        "outbound",
+        10
+      ]
+    ]
+  },
+  "platform_send_count": 0,
+  "observed_failures": [
+    {
+      "kind": "formal_en_v6",
+      "reason": "answer_too_long",
+      "trace": "f0ff2a27-d23d-413b-8a90-8cc6c2acdee0",
+      "resolution": "published editable concise output policy v7; subsequent browser 1668 characters"
+    },
+    {
+      "kind": "formal_zh_v7_first",
+      "reason": "evidence_review_invalid",
+      "trace": "fe5f8d64-4a25-4059-b4f3-baa9a355be37",
+      "resolution": "manual retry accepted; invalid candidate never displayed"
+    },
+    {
+      "kind": "live_logistics_tool",
+      "reason": "DYNAMIC_TOOL_FAILED",
+      "resolution": "model queried again successfully; failed calls retained"
+    }
+  ],
+  "ci": {
+    "run": 40877496658,
+    "head": "ed83e2fef3d47d9b3911324cc1852def1aea1605",
+    "jobs": [
+      123459975760,
+      123459976167
+    ],
+    "steps": [
+      0,
+      0
+    ],
+    "runner": [
+      0,
+      0
+    ],
+    "conclusions": [
+      "failure",
+      "failure"
+    ],
+    "tests_executed": false,
+    "standing_local_substitute": true
+  },
+  "new_request_separate_scope": [
+    "sequential buyer turns and batches",
+    "true streaming",
+    "latest logistics text then native card",
+    "new logistics event notifications disabled until approved activation"
+  ]
+}

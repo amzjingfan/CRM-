@@ -1,17 +1,15 @@
 # 项目状态与恢复入口
 
-2026-10-29；STANDARD；TikTok人工辅助v0.1；CP11-gh/CRM；目标origin/main。
+2026-10-29；STANDARD；TikTok人工辅助；CP11-gh/CRM；origin/main。
 
-MVP-AGENT-STAGING-DEPLOY-001 VERIFYING。当前分支fix/agent-reply-fit-20261029，BASE_SHA=aa6366d27f7621967407c44725b3df2b58976501，CANDIDATE_SUBJECT_SHA=7fce34ef954d398af29de8ef36c62978fa58f8c2，EVIDENCE_HEAD_SHA=READ_AT_GATE。用户批准单点手动staging部署、真实只读买家上下文/必要字段给DeepSeek/合成样本，要求中英文都测、过长则精简；不发送真实消息。
+MVP-AGENT-STAGING-DEPLOY-001 VERIFYING，R10现场证据等待合入再标DONE。CANDIDATE_SUBJECT_SHA=7fce34ef954d398af29de8ef36c62978fa58f8c2，EVIDENCE_HEAD_SHA=READ_AT_GATE；#641源码合入0c566727并手动部署，后端精确摘要60852e50…，前端同树复用aa镜像f1922d0c…。041/12服务/三公网健康、原人工模式通过；自动回复/营销/高风险/后台自动LLM关闭，production未放行。
 
-当前staging aa已精确部署，041、12容器与三公网健康，原人工模式保留。自动回复/营销/高风险/后台自动LLM关闭，production G8 No-Go。另一协调会话无待纳入资产、不并行切换。
+本地2571/3、独立46和静态/动态16/安全237通过。CI40877496658两个job runner0/steps0失败未运行，持续授权本地替代。公开中英debug/正式四正例与双语缺政策负例完成；英文正式1668、中文834，实际四工具+RAG、正确语言、文件事实和引用，完整编辑一致。v6英文超长和v7中文首次复核格式失败后恢复、物流瞬时失败后模型再查成功均保留，不能声称100%稳定。最新R10、release/evidence/staging/crm-agent-bilingual-rag-acceptance-20261029.json。
 
-aa公开四入口正例成功：中英debug21.350/32.086秒，中英formal23.298/27.418秒，四类真实工具+绑定文件RAG、正确语言、可见正文、业务号和文档事实。中文1702、英文2676字的展开编辑逐字一致，旧长稿超限发送禁用；用户追加精简。aa英文缺证固定中文兜底失败，未计通过。英文物流首次失败后模型重新查询成功，原失败保留。
+最后统一清理：同一合成文档软删除，解除绑定发布v8，v7/v8 prompt/model/三业务工具相同；合成消息1、仅其派生记忆rev20恢复性清理，真实消息0改动，出站计数8/8/10未变，平台发送0。实际RAG需绑定业务方审批文件；原分类和运行审计保留。私有备份及恢复副本保留。
 
-本补修共享模型精简2000 UTF-16以内、1600目标，先清理隐私再改写并独立复核；无业务依据时丢弃专家稿，用可信缺证状态生成原语言澄清，仍人工复核且不FAQ回退。同稿/失败/超时保持关闭，权限与总deadline不变。10新增行为RED9/1，独立焦点46、最终隔离PG2571/3、静态和安全237/动态16通过。真实候选英文1875字、唯一文档事实/引用；EN/CN缺政策澄清通过。首候选未精简和首次布局失败都保留。前端树未变，复用R07同树52/142。本subject未部署。
+用户新增：逐条买家问答，多问题分批；真正流式（现仅完整复核后24字符传输分块）；物流文本只最新节点，文本发送成功后再原生物流卡片；新物流节点主动通知对应买家，不要求先订阅。当前已读代码，未实现这些新增范围。新增能力开发测试继续零真实发送，实际启用范围/平台边界单独配置，默认关闭。
 
-最新IR/TR/RR R09、release/evidence/staging/crm-agent-reply-fit-local-20261029.json；TR PARTIAL。索引CANDIDATE_VIEW；源记录为事实。Workspace hygiene: ATTENTION。未知主checkout历史、活动worktree、未跟踪src/frontend/AGENTS.md和旧diff保留。CLEANUP-20261029-001/002仅恢复性隔离10/5已知缓存，保留期后删除仍需授权。
+Workspace hygiene: ATTENTION。CLEANUP001/002分别恢复性隔离10/5已知缓存，无永久删除；未知主checkout历史、活动worktree、src/frontend/AGENTS.md与旧diff不动。三索引CANDIDATE_VIEW=304/329/287，源记录为事实。
 
-同一合成文件仍审批绑定，合成入站现英文revision4；基线无会话记忆，所有派生摘要均指向该测试入站。资料保留至最终现场成功，随后仅清理已知夹具和独占派生记忆，真实数据/审计保留。
-
-下一动作：①最终门禁与源码合并；②精确镜像/备份/手动更新；③Codex浏览器中英全链路和精简负例、统一清理、正式证据及DONE合并。
+下一动作：①合入R10并收尾既定验收状态；②为新增逐条/流式/卡片/通知形成计划及行为测试；③本地完成新增实现后再按明确批准发布，测试不发送真实消息。

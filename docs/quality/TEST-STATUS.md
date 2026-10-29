@@ -1,8 +1,8 @@
 # 最新测试状态
 
+2026-10-29 [TR R10](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R10.md)：staging精确手动更新、六类中英现场验收通过；工作台英文1668/中文834，四工具+RAG；一次CN复核格式失败后重试、EN超长改v7运营配置后恢复，均保留。统一恢复性清理、零真实发送。新流式/卡片顺序/主动物流通知待下一范围。
 2026-10-29 [TR R09](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R09.md)：精简与双语澄清本地2571/3、静态和独立审查通过；真实候选英文1875字及双语缺证通过。aa公开中英调试/工作台四正例通过，英文长稿和英文缺证旧兜底未满足新要求；本subject未部署，任务PARTIAL。
 
-2026-10-29 [TR R09](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R09.md)：精简与双语澄清本地2571/3、静态和独立审查通过；真实候选英文1875字及双语缺证通过。aa公开中英调试/工作台四正例通过，英文长稿和英文缺证旧兜底未满足新要求；本subject未部署，任务PARTIAL。
 
 2026-10-29 第二批本地门禁通过，subject `ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba`；新候选未部署。后端2514/3与新增统计8、前端52/105、真实候选5/5、输出语义14+1补测及配置16复用见[TR R05](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R05.md)。用户要求等待明确批准才部署/发布v4，staging仍e3fc，production G8 No-Go。
 
