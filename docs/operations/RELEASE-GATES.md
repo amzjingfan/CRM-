@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-10-29 统一 Agent 与多店授权发布仅关闭此次 staging 镜像/迁移/入口检查，`45d872c0` 的 041、12 容器、备份和公网项通过。Agent 两条真实业务请求未通过，文件 RAG/真实新店 OAuth 未验收；MVP-AGENT-STAGING-DEPLOY-001 保持 VERIFYING，production G8 继续 No-Go，不将本地或供应商协议探针计为全链路放行。见[TR R03](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R03.md)。
+
 2026-10-26 当前 staging 前端已从 `main=4c8d2365e64e3a0d90df45107200bb8c72b32c81` 手动部署浏览器反馈修复，运行镜像、现有 033 迁移头、12 容器、公网健康与已登录订单/菜单只读核对通过；[低敏现场证据](../../release/evidence/staging/crm-staging-browser-feedback-20261026.json)。此变更不改变下表 G8 的 production No-Go，也不构成真实退款、平台发票或持续稳定性验收。
 
 状态含义：`已实现` 只说明代码/确定性测试存在；`待真实验证` 表示仍缺真实账号、负载或持续运行证据；`阻塞` 表示不能签署发布；`范围外` 表示不属于 TikTok 人工辅助 v0.1。

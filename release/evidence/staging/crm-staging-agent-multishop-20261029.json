@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "evidence_type": "manual_staging_agent_multishop_release",
+  "generated_at_utc": "2026-10-29T02:26:01.420669+00:00",
+  "source_sha": "45d872c060f9b632de340318f32bf9de2904efb5",
+  "task_id": "MVP-AGENT-STAGING-DEPLOY-001",
+  "deployment_status": "passed",
+  "functional_verification": "partial",
+  "production_release": false,
+  "actions_deployment_used": false,
+  "source_pull_request": 631,
+  "integrated_pull_requests": [
+    582,
+    589,
+    629,
+    630
+  ],
+  "migration": "041_merge_agent_multishop_collab",
+  "artifacts": {
+    "source_archive_sha256": "fb47c00760e7321a8b4007e020922151639dcd0122ad5522d1901b0233ec0f0b",
+    "git_bundle_sha256": "c4463750cf5accf05205dd9ea99459502253772a977d80fa60a1332461ba27f4",
+    "image_archive_sha256": "c7ea160a79a232d3370fe5bdf8e6e2e78206597ee5264eecc2bd52df92ca5ad9",
+    "image_archive_bytes": 174117888,
+    "architecture": "linux/amd64",
+    "source_checkout_clean": true
+  },
+  "backup": {
+    "private_initial_id": "agent-multishop-20261029-0131",
+    "private_preswitch_id": "agent-multishop-45d872c0-preswitch-20261029",
+    "postgres_bytes": 744419,
+    "postgres_sha256": "58e9f7a6dd7a877aa9a5b095fef48cf8ecf733e007c694a37da0ee37b57406f4",
+    "postgres_restore_listing_passed": true,
+    "minio_bytes": 132764,
+    "minio_sha256": "9731c133d9feee3b766a54fdbba538c47fd88ca9e2ffcee6e05f6c26d472dd4f",
+    "minio_gzip_validation_passed": true,
+    "environment_sha256_before": "cf0726bc1beea2f8ecc7d96f3761cfe36d115a353df1df00505a432dca87de8d",
+    "environment_sha256_after": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "environment_changed_keys": [
+      "LLM_PRIMARY_CONTEXT_WINDOW_TOKENS"
+    ],
+    "live_restore_exercised": false
+  },
+  "gate": {
+    "schema_version": 1,
+    "evidence_type": "staging_production_gate_preflight",
+    "generated_at_utc": "2026-10-29T02:00:17.2474697Z",
+    "environment": "staging",
+    "status": "passed",
+    "production_release": false,
+    "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:5e2721fec5049f8eca0ba31fbaafe5edbb0fbed131b6e23c003e1c1d243b2eeb",
+    "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:69f5aa0076ea91ae559b2650193e19a8e1f2e25af601ca4352e2475666d14618",
+    "retrieval_model_image": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_ingestion_enabled": true,
+    "document_parser_image": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "mineru_assets_validated": true,
+    "external_model_assets_validated": true,
+    "compose_project": "crm-staging",
+    "docker_transport": "rootless_unix_socket",
+    "database_migration": "heads_applied",
+    "rootless_overlay_sha256": "2a1965ee911c1581120a1a9c0e9d88c58435a41eceaebbda90d6f74396968580",
+    "tiktok_egress_overlay_sha256": "c127156087e35b67eff3b438ac5634a05df6f53b21d48e33ec9e4953fd9d39a7",
+    "tiktok_webhook_read_enabled": true,
+    "g2_webhook_probe_enabled": false,
+    "g2_webhook_probe_mode": "off",
+    "tiktok_manual_send_enabled": true,
+    "tiktok_manual_send_target": "store",
+    "tiktok_manual_send_store_count": 1,
+    "g5_sse_load_test_enabled": false,
+    "workspace_message_translation_enabled": true,
+    "agent_debug_enabled": true,
+    "agent_v2_debug_enabled": true,
+    "agent_v2_formal_enabled": false,
+    "backend_query_limit": 10,
+    "runtime_mode_verified": true,
+    "validated_variable_names": [
+      "AI_MARKETING_ENABLED",
+      "AI_TRANSLATION_ENABLED",
+      "ALLOW_MOCK_PLATFORM_ADAPTERS",
+      "AUTO_REPLY_ENABLED",
+      "CORS_ORIGINS",
+      "DATABASE_URL",
+      "JWT_SECRET_KEY",
+      "LLM_ENABLED",
+      "LLM_LIVE_EVAL",
+      "MINIO_ACCESS_KEY",
+      "MINIO_ENDPOINT",
+      "MINIO_IMAGE",
+      "MINIO_SECRET_KEY",
+      "NGINX_IMAGE",
+      "POSTGRES_DB",
+      "POSTGRES_IMAGE",
+      "POSTGRES_PASSWORD",
+      "POSTGRES_USER",
+      "PUBLIC_API_BASE_URL",
+      "PUBLIC_BASE_URL",
+      "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED",
+      "REAL_TIKTOK_MESSAGE_WRITE_ENABLED",
+      "REAL_TIKTOK_READ_ENABLED",
+      "REAL_TIKTOK_WEBHOOK_ENABLED",
+      "REDIS_IMAGE",
+      "REDIS_URL",
+      "RETRIEVAL_MODEL_ASSET_DIR",
+      "RETRIEVAL_MODEL_SERVICE_IMAGE",
+      "TIKTOK_CONVERSATION_SYNC_ENABLED",
+      "TIKTOK_EGRESS_IP",
+      "TIKTOK_EGRESS_SECRET_DIR",
+      "TIKTOK_OAUTH_REDIRECT_URI"
+    ],
+    "health_checks": [
+      {
+        "path": "/healthz",
+        "status_code": 200
+      },
+      {
+        "path": "/v1/health",
+        "status_code": 200
+      },
+      {
+        "path": "/v1/health/ready",
+        "status_code": 200
+      }
+    ],
+    "tiktok_webhook_read_overlay_sha256": "fe76e8ce9bde62855b90b7b94dfb682a55b0c108fedea884aa2fe51bee2e52fc",
+    "tiktok_manual_send_overlay_sha256": "f79bba905e8101f189ad818145c8839552725ccadfcc6ebd249b7f89200c6f7c",
+    "workspace_translation_overlay_sha256": "fc1e4a40bcc2547bbde78ad339c2b649b574a04de34abb325b7b775dcd08797a",
+    "agent_debug_overlay_sha256": "2266523590333de80e5fac2e451857d73ab28d712e209a119540f9f78ff9cfdd",
+    "tiktok_egress": {
+      "status": "passed",
+      "configured_ip": "38.55.145.52",
+      "observed_ip": "38.55.145.52"
+    }
+  },
+  "runtime": {
+    "source_sha": "45d872c060f9b632de340318f32bf9de2904efb5",
+    "running_count": 12,
+    "business_boundary_preserved": true,
+    "flags": {
+      "AGENT_DEBUG_ENABLED": "true",
+      "AGENT_V2_DEBUG_ENABLED": "true",
+      "AGENT_V2_FORMAL_ENABLED": "false",
+      "LLM_ENABLED": "false",
+      "AUTO_REPLY_ENABLED": "false",
+      "AI_MARKETING_ENABLED": "false",
+      "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": "false",
+      "LLM_PRIMARY_CONTEXT_WINDOW_TOKENS": "32768"
+    },
+    "containers": [
+      {
+        "service": "proxy",
+        "running": true,
+        "health": "healthy",
+        "image": "nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10"
+      },
+      {
+        "service": "frontend",
+        "running": true,
+        "health": "healthy",
+        "image": "ghcr.io/cp11-gh/crm-frontend@sha256:69f5aa0076ea91ae559b2650193e19a8e1f2e25af601ca4352e2475666d14618"
+      },
+      {
+        "service": "document-parser",
+        "running": true,
+        "health": "not_configured",
+        "image": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2"
+      },
+      {
+        "service": "backend",
+        "running": true,
+        "health": "healthy",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:5e2721fec5049f8eca0ba31fbaafe5edbb0fbed131b6e23c003e1c1d243b2eeb"
+      },
+      {
+        "service": "worker",
+        "running": true,
+        "health": "not_configured",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:5e2721fec5049f8eca0ba31fbaafe5edbb0fbed131b6e23c003e1c1d243b2eeb"
+      },
+      {
+        "service": "jobs",
+        "running": true,
+        "health": "not_configured",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:5e2721fec5049f8eca0ba31fbaafe5edbb0fbed131b6e23c003e1c1d243b2eeb"
+      },
+      {
+        "service": "agent-worker",
+        "running": true,
+        "health": "not_configured",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:5e2721fec5049f8eca0ba31fbaafe5edbb0fbed131b6e23c003e1c1d243b2eeb"
+      },
+      {
+        "service": "tiktok-egress",
+        "running": true,
+        "health": "healthy",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:5e2721fec5049f8eca0ba31fbaafe5edbb0fbed131b6e23c003e1c1d243b2eeb"
+      },
+      {
+        "service": "retrieval-model-service",
+        "running": true,
+        "health": "healthy",
+        "image": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059"
+      },
+      {
+        "service": "postgres",
+        "running": true,
+        "health": "healthy",
+        "image": "pgvector/pgvector:0.8.0-pg16@sha256:a132765ec351c65111b5b675928a3a0515a466a40f97277329db8b8209ad8bc9"
+      },
+      {
+        "service": "minio",
+        "running": true,
+        "health": "healthy",
+        "image": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e"
+      },
+      {
+        "service": "redis",
+        "running": true,
+        "health": "healthy",
+        "image": "redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952"
+      }
+    ],
+    "credential_login_removed": true
+  },
+  "public_smoke": {
+    "generated_at": "2026-10-29T02:16:58.195019+00:00",
+    "source_sha": "45d872c060f9b632de340318f32bf9de2904efb5",
+    "checks": [
+      {
+        "path": "/healthz",
+        "status": 200,
+        "cache_control": "",
+        "seconds": 1.5,
+        "passed": true
+      },
+      {
+        "path": "/v1/health",
+        "status": 200,
+        "cache_control": "",
+        "seconds": 0.375,
+        "passed": true
+      },
+      {
+        "path": "/v1/health/ready",
+        "status": 200,
+        "cache_control": "",
+        "seconds": 0.422,
+        "passed": true
+      },
+      {
+        "path": "/agents",
+        "status": 200,
+        "cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "seconds": 0.688,
+        "passed": true
+      },
+      {
+        "path": "/knowledge",
+        "status": 200,
+        "cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "seconds": 1.25,
+        "passed": true
+      },
+      {
+        "path": "/settings/stores",
+        "status": 200,
+        "cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "seconds": 0.5,
+        "passed": true
+      },
+      {
+        "path": "/settings/channels",
+        "status": 200,
+        "cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "seconds": 0.5,
+        "passed": true
+      },
+      {
+        "path": "/workspace",
+        "status": 200,
+        "cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "seconds": 0.906,
+        "passed": true
+      },
+      {
+        "path": "/login",
+        "status": 200,
+        "cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "seconds": 2.391,
+        "passed": true
+      },
+      {
+        "path": "/marketing",
+        "status": 200,
+        "cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "seconds": 0.468,
+        "passed": true
+      },
+      {
+        "path": "/",
+        "status": 307,
+        "location": "/dashboard",
+        "passed": true
+      },
+      {
+        "path": "/_next/static/chunks/2evgu094glu3w.js",
+        "status": 200,
+        "cache_control": "public, max-age=31536000, immutable",
+        "passed": true
+      }
+    ],
+    "passed": true,
+    "latency_is_diagnostic_only": true
+  },
+  "provider_synthetic_probe": {
+    "function_request_http": 200,
+    "tool_result_followup_http": 200,
+    "answer_present": true,
+    "elapsed_seconds": 1.5,
+    "business_data_sent": false
+  },
+  "authenticated_ui": {
+    "agent_catalog_verified": true,
+    "categories": 6,
+    "operations": 3,
+    "business_tools": 12,
+    "confirmation_tools": 4,
+    "total_tools": 16,
+    "legacy_agent_version": 1,
+    "legacy_bound_tools": 2,
+    "bound_files": 0,
+    "existing_store_and_channel_connected": true,
+    "existing_workspace_loaded": true,
+    "independent_readonly_verification": true,
+    "new_shop_oauth_performed": false,
+    "agent_configuration_modified": false
+  },
+  "agent_live_requests": [
+    {
+      "trace_id": "cfc5bd6a-08d7-4996-96b5-05f9b040fa64",
+      "request": "ordinary_logistics_question",
+      "phase": "review_required",
+      "reason": "no_verified_evidence",
+      "latency_ms": 4484,
+      "child_status": "succeeded",
+      "reported_tools": 0,
+      "citations": 0,
+      "business_answer_accepted": false
+    },
+    {
+      "trace_id": "8fb7ce26-7aef-47ab-a53c-1d3efa0692e3",
+      "request": "explicit_readonly_tool_request",
+      "phase": "review_required",
+      "reason": "specialist_incomplete",
+      "child_reason": "sensitive_agent_output",
+      "latency_ms": 11920,
+      "child_status": "failed",
+      "reported_tools": 0,
+      "citations": 0,
+      "business_answer_accepted": false
+    }
+  ],
+  "limitations": [
+    "Tool plus RAG answer chain not accepted; no bound-file scenario executed.",
+    "Worker early failure can omit tool events; displayed zero is not proof that no platform read was attempted.",
+    "No new real shop authorization or real platform send was performed.",
+    "Public latency is diagnostic only; no production or overall performance approval."
+  ],
+  "platform_send_performed": false,
+  "safety_rules_relaxed": false,
+  "synthetic_business_data_created": false
+}
