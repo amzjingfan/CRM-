@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-TIKTOK-OAUTH-UX-STAGING-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec",
+  "previous_runtime_source_sha": "b21f59a76adce8775eb5f9d61993e3b42886d72a",
+  "approved_implementation_sha": "be936358bdce4f633a51fe599a5e5a7bbc1e074b",
+  "source_archive_sha256": "3b42c65d9dc78f3d99ac3d01e7d16fd2416b5de0c5e6cd32068680f516d9d9e9",
+  "image_transfer_archive_sha256": "377ccb7402e63e62a4f193d430e55c92812118b41dea4a48fadf01255e92eab90",
+  "build_source_note": "Image build contexts and Dockerfiles at 1eb6dbd1 and 18a0d7bb have identical Git object IDs; final images carry OCI revision 18a0d7bb and the same five approved OAuth product-file changes relative to the previous runtime.",
+  "github_publish_attempts": {
+    "backend_run": 40998702571,
+    "frontend_run": 40998706414,
+    "result": "failure_before_runner_steps; both jobs had zero steps; local build and GHCR push used"
+  },
+  "images": {
+    "previous_backend": "ghcr.io/cp11-gh/crm-backend@sha256:092585e4341885daeaf73b9735078b743c07a09e6864535fe03d2e3e745c1b0c",
+    "previous_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:b3abd6c4d4840ee598cdf3a2b9686ba6b4dfcfa3b7e4eb239d48eb5bb0b99243",
+    "candidate_backend": "ghcr.io/cp11-gh/crm-backend@sha256:cc323ea983fb42f0cb1d9753fa10486e1fa2028db69f003dc9ff1b8a499808b4",
+    "candidate_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:45fbdee0d2845f09cf7c6fea1792455d706f3f5ad723239c6127d407bd9dd1bb",
+    "unchanged_retrieval": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "unchanged_document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "candidate_and_previous_repo_digests_verified_on_staging": true
+  },
+  "backup": {
+    "private_server_directory": "/var/backups/crm-staging/oauth-ux-18a0d7bb-20261030",
+    "postgres_custom_dump_sha256": "e881a0d4af289f0e003167a85498c2e13d66dd48b8e0da8f265b8b5c7d97e630",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "6217a54bb72eb745d8402a63512035c34fce832d613ebdfbf5a39e3e66561ce5",
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "permissions": "root-only directory and 0600 files"
+  },
+  "staging_gate": {
+    "preflight_current_status": "validated",
+    "preflight_current_sha256": "c2f61768fae57c50c0831a5548ebe1368fad15fd8e1a81b2a09df4a71bbf733c",
+    "candidate_validate_status": "validated",
+    "candidate_validate_sha256": "c6499dc2c9e2fd51dfe2600df0f34f327d0b71d3eadeb552067a8b35ec0f8fe5",
+    "candidate_deploy_status": "passed",
+    "candidate_deploy_sha256": "50df5657eac0cb3565e5e63d4a742d1778d5afd117eb9e4db9d3925e27750d2f",
+    "candidate_deploy_generated_at_utc": "2026-10-30T03:57:36.5702943Z",
+    "database_migration": "044_reception_assignment (head)",
+    "fixed_egress_configured_and_observed_ip": "38.55.145.52"
+  },
+  "runtime_after": {
+    "running_or_healthy_services": 12,
+    "backend_and_frontend_revision": "18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec",
+    "backend_manual_send_store_count": 1,
+    "tiktok_read_and_webhook": true,
+    "workspace_translation": true,
+    "agent_debug_and_formal_suggestions": true,
+    "document_ingestion": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false,
+    "proxy_config_sha256": "1f05607ab729dba91f72e46ce10e7d5b9436e430c596182d3c211ea87ba6ac5e",
+    "proxy_bind_read_only_and_persistent": true
+  },
+  "public_checks": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "login": 200,
+    "marketing": 200,
+    "knowledge": 200,
+    "settings_stores": 200,
+    "settings_channels": 200,
+    "html_cache_control": "private, no-cache, no-store, max-age=0, must-revalidate",
+    "static_js_status": 200,
+    "static_js_cache_control_contains_immutable": true,
+    "deployed_channels_bundle_has_legacy_oauth_heading": false,
+    "deployed_channels_bundle_has_reauthorize_text": true,
+    "deployed_stores_bundle_has_add_store_text": true
+  },
+  "local_contract_test": "node --test src/tests/frontend/contract/tiktok-oauth.test.mjs: 4 passed, 0 failed",
+  "live_oauth_callback_or_seller_authorization": "not_executed",
+  "real_buyer_message_sent": false,
+  "temporary_ghcr_credentials_logged_out_and_verified": true
+}
