@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-10-30 staging 已从干净合并主线 `476cc8d5cf95e6304f53eec27a41d6bdaa01b056` 直接部署管理员部门接待资格和旧邮箱登录标识修复，前后端精确摘要分别为 `sha256:d94dcdc9…94ef2d`、`sha256:778e9036…9bc10`。私有备份、旧版/候选 ValidateOnly、Deploy、045、12 服务、固定出口和五个公开路径 200 通过；运行后端只读验证主管目录有 2 个账号，旧管理员登录标识可见、联系方式隐藏、2 店回复资格可用且默认未参与派单。in-app browser 登录态绑定两次超时，视觉回显记 `UI_UNAVAILABLE`；真实入站未演练。人工发送保留原两店、Agent 模式保持，自动回复/营销/高风险写入关闭，零真实买家测试外发，production 未发布。之后合入主线的 Agent 模板功能未包含在本次 staging 镜像。见[发布 TR](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md)与[精确证据](../../release/evidence/staging/crm-staging-department-admin-identity-20261030.json)。恢复使用旧前后端摘要并保留 045 后业务增量。
+
 ## Agent模板后台批次部署边界（本地候选，尚未批准部署）
 
 本任务只在本地开发、隔离PostgreSQL和本地浏览器验证；不改变本文现有staging/production发布事实。最终功能、统一修复、完整测试和审查完成后仍需用户另行批准部署。

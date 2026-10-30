@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-DEPARTMENT-ADMIN-IDENTITY-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "476cc8d5cf95e6304f53eec27a41d6bdaa01b056",
+  "implementation_subject_sha": "ae94787896fb53a01a7780045253ae86763eb235",
+  "source_pull_request": 673,
+  "previous_runtime_source_sha": "b5d4985b42fc2daac677a16805bfa18126b6439e",
+  "source_bundle_sha256": "bc46aa40fadacbddf2b9d40e1545858ccbb61f25c0d299c02bb895f05bd43f74",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:d94dcdc977481d4899bba97d6a6c544866ea8e4fda8415ebaf97b3e8ab94ef2d",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:778e903659d1da420cbc244011164b272bc95ff3a63349a14c76f9b6e439bc10",
+    "backend_previous": "ghcr.io/cp11-gh/crm-backend@sha256:1e42a82923236a70cd8244eb7ab59d9c23acbc806530404948d587b920a8e3a2",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:e9fdab85217f93f8bf35e08c99de61a954a70285a62d587c55356554ad666e14",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "backend_and_frontend_oci_revision": "476cc8d5cf95e6304f53eec27a41d6bdaa01b056",
+    "frontend_transfer_sha256": "3f01231fcd582addd6d9ba8be9864f915c8542896c67b6f11d9cd92f938fcea1"
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/.local/share/crm-staging-backups/department-admin-476cc8d5-20261030",
+    "postgres_custom_dump_sha256": "bb2e2d0a04188ca3e2a751f1430d08ad590ef313bd4fe4ef4f329260dac7af72",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "b1e3feebe242a14d3d84e91643a7db29d6bd8f0265ee3f2997921222e5c3169f",
+    "minio_archive_readable": true,
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "permissions": "0700 directory; 0600 backup files"
+  },
+  "gate": {
+    "previous_validate_sha256": "7ab6a7e7911d1808c7dfbcefc0098513e28a14e1c3e0235a217b9a6bc2413cff",
+    "candidate_validate_sha256": "3a5419302223afd3cf69459178534f7b0eadec433d50da0d80a34888c5444bd2",
+    "candidate_deploy_sha256": "dc680cf87d8e4384eefa17518dce5815fedb11ae23e802c0d3b7ab2f788f8492",
+    "previous_validate_status": "validated",
+    "candidate_validate_status": "validated",
+    "candidate_deploy_status": "passed",
+    "migration": "045_dept_dispatch_login (head)"
+  },
+  "runtime_after": {
+    "services_running_or_healthy": 12,
+    "frontend_and_backend_image_digests_match": true,
+    "manual_send_allowed_store_count_unchanged": 2,
+    "manual_send": true,
+    "webhook_read": true,
+    "agent_debug_and_formal_suggestions": true,
+    "workspace_translation": false,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false,
+    "tiktok_egress_ip": "38.55.145.52"
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "settings_team": 200,
+    "settings_team_departments": 200
+  },
+  "live_readonly_service_check": {
+    "supervisor_directory_count": 2,
+    "legacy_admin_login_identifier_present": true,
+    "admin_contact_fields_redacted": true,
+    "admin_eligible_store_count": 2,
+    "admin_reception_eligible": true,
+    "admin_dispatch_opted_in": false,
+    "admin_online_at_check": true
+  },
+  "authenticated_ui_check": "UI_UNAVAILABLE: in-app browser binding timed out twice; public pages and live read-only service check passed. No authenticated visual claim.",
+  "ghcr_credentials_logged_out_local_and_staging": true,
+  "test_actions_sent_real_buyer_messages": false
+}

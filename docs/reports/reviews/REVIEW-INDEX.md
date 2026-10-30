@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02 | MVP-DEPARTMENT-ADMIN-IDENTITY-001 | R02 | APPROVE | `476cc8d5cf95e6304f53eec27a41d6bdaa01b056` | source_integrity, backup, capability_scope, privacy, no_external_send | 2026-10-30T14:27:29Z | [`RR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md`](RR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md) |
 | RR-MVP-AGENT-TEMPLATE-BATCH-001-20261030-R02 | MVP-AGENT-TEMPLATE-BATCH-001 | R02 | APPROVE | `a8ef79964e9596a5f29d1974c0003d9131013221` | correctness, authorization, store_isolation, concurrency, immutable_history, migration, background_recovery, no_external_send | 2026-10-30T14:14:12.762481+00:00 | [`RR-MVP-AGENT-TEMPLATE-BATCH-001-20261030-R02.md`](RR-MVP-AGENT-TEMPLATE-BATCH-001-20261030-R02.md) |
 | RR-MVP-AGENT-TEMPLATE-BATCH-001-20261030-R01 | MVP-AGENT-TEMPLATE-BATCH-001 | R01 | APPROVE | `831abbcc1510ca71e6ed572408884f789a7ce506` | correctness, authorization, store_isolation, concurrency, immutable_history, migration, background_recovery, no_external_send | 2026-10-30T13:56:53.688132+00:00 | [`RR-MVP-AGENT-TEMPLATE-BATCH-001-20261030-R01.md`](RR-MVP-AGENT-TEMPLATE-BATCH-001-20261030-R01.md) |
 | RR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R01 | MVP-DEPARTMENT-ADMIN-IDENTITY-001 | R01 | APPROVE | `ae94787896fb53a01a7780045253ae86763eb235` | correctness, authorization, privacy, store_isolation, no_external_send | 2026-10-30T13:54:48Z | [`RR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R01.md`](RR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R01.md) |

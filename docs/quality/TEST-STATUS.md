@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-30 管理员接待资格与旧登录标识 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md) **PASS（staging 门禁与运行服务只读核对）**：合并主线 `476cc8d5` 精确镜像、私有备份、旧/新预检、Deploy、045、12 服务、固定出口和五个公开路径通过；主管目录可见旧管理员登录标识、联系方式仍隐藏，管理员在部门两店有回复资格且默认未参与派单。登录态视觉检查 `UI_UNAVAILABLE`，真实入站未演练；不把这些项记为通过。自动发送关闭，production No-Go。
+
 2026-10-30 管理员派单资格与旧登录账号显示[TR R01](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R01.md) **PASS（本地候选）**：`ae947878` 的隔离 PostgreSQL 权限/派单集成通过，后端 2730 passed/3 skipped、前端契约 55/55、生产构建浏览器 166/166、Ruff/格式/mypy、lint/typecheck/build 通过。主管账号目录显示旧邮箱登录标识，联系方式仍隐藏；管理员须部门成员、显式参与并在线才进入派单。staging 待从合并主线部署，真实入站未演练，production No-Go。
 
 2026-10-30 部门派单冗余说明移除[发布 TR R01](../reports/tests/TR-MVP-DEPARTMENT-RECEPTION-COPY-STAGING-001-20261030-R01.md) **PASS（staging）**：主线 `b5d4985b` 的前端精确摘要、私有备份、双预检/部署、045、12 服务、五个公开路径及已登录页面文字消失通过；后端和人工发送范围不变，零真实买家测试外发。原源码 [TR](../reports/tests/TR-MVP-DEPARTMENT-RECEPTION-COPY-001-20261030-R01.md) 的红绿浏览器、55 契约、lint/typecheck/build 与本轮现场结果分开记录；production No-Go。[证据](../../release/evidence/staging/crm-staging-department-reception-copy-20261030.json)。
