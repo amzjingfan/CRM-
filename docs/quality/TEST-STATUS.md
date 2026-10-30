@@ -1,10 +1,12 @@
 # 当前测试状态
 
+2026-10-30 全店人工发送 [TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md) **PASS（staging 配置及只读发送模式）**：现存三店中两家已接入 TikTok 客服渠道，原运行 `18a0d7bb` 同版镜像以精确摘要经私有备份、ValidateOnly/Deploy 发布；各店抽样两条活动会话为 `real`，未接入店失败关闭。044、12 容器、固定出口、三健康通过，自动回复/营销/高风险写入及其他应用进程的平台写入均关闭。合成两坐席并发派单与清理通过；未测试真实买家发送或 TikTok 入站派单。见[低敏证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)。
+
 2026-10-30 TikTok 授权单入口 [发布 TR R01](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md) PASS（限定 staging 部署）：源码 `18a0d7bb`，两项镜像发布工作流零步骤失败后按既有本地替代门禁构建/推送；备份、精确摘要、ValidateOnly/Deploy、044、12 服务、模式开关、五个页面和三个公网健康、指纹 JS 均通过。新部署 bundle 无旧 OAuth 卡片标题，店铺页保留添加入口，4 项 OAuth 契约复测通过。真实 OAuth、已登录交互和生产发布未执行；见[低敏证据](../../release/evidence/staging/crm-staging-oauth-single-entry-20261030.json)。
 
 2026-10-30 单客服部发布 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md) **PASS（staging 发布与默认关闭状态）**：干净主线 `b21f59a7` 的精确前后端镜像、私有备份、ValidateOnly/Deploy、044 迁移、12 容器、固定出口与三健康通过；只读数据核对为 1 指定管理员、3 指定店铺、0 派单配置和 1 清理审计；已登录部门/角色/逐店派单关闭状态可见。现有单店人工真实发送未扩大，自动回复/营销/高危关闭，未向真实买家发送测试消息；真实入站自动分配与多坐席竞争未现场演练，production No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)。
 
-以下为部署前阶段记录；当前运行状态以本页首段及 R02 为准。
+以下为部署前阶段记录；当前运行状态以本页首段和最新全店人工发送 TR 为准。
 
 2026-10-30 本轮回复交付staging通过：冻结发布d111d164/043_logistics_updates，最终中英工具+绑定文件RAG、真实坐席草稿流、文字后卡片、正式审阅取消零发送及临时预演UI移除通过。发布源码2712/3、55/158；保留PR646的本地集成fe4cf4b8为2731/3、55/161。16条合成消息/测试记忆清理、文件软删解绑v13、原26条消息未改。失败重试及限制见[TR R01](../reports/tests/TR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md)；本次未部署044，真实外发/主动通知未验收。
 

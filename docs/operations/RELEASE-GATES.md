@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-10-30 staging 已在 `18a0d7bb` 同版镜像上扩展人工发送至两家已授权 TikTok 店铺；未接入店铺失败关闭，自动回复/营销/高风险写入关闭。私有备份、ValidateOnly/Deploy、044、12 容器、固定出口、三健康和逐店只读模式通过，零真实买家测试外发。合成两坐席派单与清理通过，真实 TikTok 入站未验证；G8 production 仍 No-Go。见[TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md)和[发布证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)。
+
 2026-10-30 TikTok 授权单入口修复已在 staging 从主线 `18a0d7bb` 发布；镜像、备份、部署门禁、12 服务、044、固定出口、公网页面及静态资源核对通过，原单店人工发送范围未扩大，自动回复/营销/高风险写入关闭。真实 OAuth 回跳及已登录店铺点击未在本轮执行，G1 既有口径和 G8 production No-Go 不变。见 [TR](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md) 与[证据](../../release/evidence/staging/crm-staging-oauth-single-entry-20261030.json)。
 
 2026-10-30 staging 部门接待与默认关闭派单从干净合并主线 `b21f59a7` 手动部署：私有备份、精确镜像、ValidateOnly/Deploy、044、12 容器、固定出口、三健康和已登录 UI 通过。指定清理后仅 1 管理员、3 店铺；人工真实发送仍为原单店 allowlist，自动回复/营销/高风险关闭。真实入站自动派单与多坐席竞争未演练；不改变 G8 production No-Go。见 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md) 和[发布证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)。

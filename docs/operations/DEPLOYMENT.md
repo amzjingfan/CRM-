@@ -1,10 +1,12 @@
 # 部署与运行边界
 
-2026-10-30 当前 staging 已从主线 `18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec` 发布 TikTok 授权单入口修复。相对部署前 `b21f59a7`，产品代码只变化已批准的 5 个 OAuth 文件；前后端新镜像摘要、私有数据库/MinIO/环境备份、ValidateOnly/Deploy、12 服务、`044_reception_assignment`、固定出口、三健康和五个无参页面均通过。渠道页部署 JS 不含旧 OAuth 卡片标题，店铺页有“添加店铺”；真实 OAuth 未再次发起。Webhook 只读、原单店人工发送、翻译、Agent 调试/建议及文档解析模式保持，自动回复/营销/高风险写入关闭，production 未发布。回退使用部署前两镜像完整摘要并保留发布后业务增量；见 [本轮 TR](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md) 和[低敏发布证据](../../release/evidence/staging/crm-staging-oauth-single-entry-20261030.json)。
+2026-10-30 当前 staging 已从干净合并主线 `18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec` 的原运行前后端不可变镜像，经私有备份、ValidateOnly/Deploy 手动扩大人工真实发送范围。仅「TikTok US 测试店铺」和「XBM」具备已授权 TikTok 客服渠道并进入 backend allowlist；未接入的「测试店铺」失败关闭。044 迁移、12 容器、固定出口、三公网健康和每店活动会话只读发送模式通过；1 管理员/3 店铺保留。自动回复、自动营销、主动物流通知及高风险写入关闭，Agent 调试与人工建议保持；未向真实买家测试外发，production 未发布。合成两坐席并发派单在「测试店铺」短暂启用并通过，所有测试行已清理、派单重新关闭；真实 TikTok 入站未演练。见 [TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md) 与[低敏发布证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)。恢复时保留 044 后业务增量，不直接以旧整库覆盖。
 
-2026-10-30 此前 staging 从干净合并主线 `b21f59a76adce8775eb5f9d61993e3b42886d72a` 手动部署前后端，迁移头 `044_reception_assignment`。PR #646 单客服部接待、逐店默认关闭派单与已合并的 Agent 回复交付共存；私有备份、精确镜像、ValidateOnly/Deploy、12 容器、固定出口、三公网健康、已登录部门页及清理后 1 管理员/3 店铺只读对账通过。人工真实发送仍仅原 TikTok US 测试店铺；自动回复、自动营销、主动物流通知和高风险写入关闭；未向真实买家测试外发，production 未发布。用户要求的全店人工发送另列 READY 任务，不在本次发布。见 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md) 与[低敏发布证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)。恢复时保留 044 后业务增量，不直接以旧整库覆盖。
+2026-10-30 此前 staging 已从主线 `18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec` 发布 TikTok 授权单入口修复。相对部署前 `b21f59a7`，产品代码只变化已批准的 5 个 OAuth 文件；前后端新镜像摘要、私有数据库/MinIO/环境备份、ValidateOnly/Deploy、12 服务、`044_reception_assignment`、固定出口、三健康和五个无参页面均通过。渠道页部署 JS 不含旧 OAuth 卡片标题，店铺页有“添加店铺”；真实 OAuth 未再次发起。Webhook 只读、原单店人工发送、翻译、Agent 调试/建议及文档解析模式保持，自动回复/营销/高风险写入关闭，production 未发布。回退使用部署前两镜像完整摘要并保留发布后业务增量；见 [本轮 TR](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md) 和[低敏发布证据](../../release/evidence/staging/crm-staging-oauth-single-entry-20261030.json)。
 
-以下为更早阶段记录；当前运行状态以本页首段和本轮发布证据为准。
+2026-10-30 此前 staging 从干净合并主线 `b21f59a76adce8775eb5f9d61993e3b42886d72a` 手动部署前后端，迁移头 `044_reception_assignment`。PR #646 单客服部接待、逐店默认关闭派单与已合并的 Agent 回复交付共存；私有备份、精确镜像、ValidateOnly/Deploy、12 容器、固定出口、三公网健康、已登录部门页及清理后 1 管理员/3 店铺只读对账通过。人工真实发送仍仅原 TikTok US 测试店铺；自动回复、自动营销、主动物流通知和高风险写入关闭；未向真实买家测试外发，production 未发布。全店人工发送在后续独立发布中完成。见 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md) 与[低敏发布证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)。恢复时保留 044 后业务增量，不直接以旧整库覆盖。
+
+以下为更早阶段记录；当前运行状态以本页首段及全店人工发送证据为准。
 
 2026-10-30 回复交付042/043已获批准并手动部署；中英文工具、绑定文件RAG、原生坐席草稿流、最新物流与卡片及零发送预演已现场验证。重复分段修复以5940d4c5受审候选复测通过，临时前端预演入口正在本任务统一收尾。最终精确运行制品、备份和复测见本任务IR/TR与低敏机器证据。当前只发布d6f89746基线加本任务变更；期间主线PR646接待/自动派单含044迁移，仍待另行部署，不纳入本次镜像。自动回复、物流通知双开关、营销、高风险写入保持关闭，原单店人工发送和翻译范围保持；测试零真实消息。旧R10历史验收保留且不替代本轮新增能力。
 

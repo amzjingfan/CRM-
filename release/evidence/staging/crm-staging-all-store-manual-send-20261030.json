@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001",
+  "environment": "staging",
+  "production_release": false,
+  "source_sha": "18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec",
+  "source_bundle_sha256": "2b5ff5035a91858491b5ddd3bdacaa451f26316a37e413047b7b278b73632268",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:cc323ea983fb42f0cb1d9753fa10486e1fa2028db69f003dc9ff1b8a499808b4",
+  "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:45fbdee0d2845f09cf7c6fea1792455d706f3f5ad723239c6127d407bd9dd1bb",
+  "retrieval_image_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+  "document_parser_image_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+  "image_revision_verified": true,
+  "private_backup": {
+    "directory": "/home/crmdeploy/backups/all-store-manual-send-20261030",
+    "environment_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "postgres_custom_dump_sha256": "38ae8abdb9edd9ba1e30b75161eb942e27bae614295e8f0dc8d9aaa36c8c2710",
+    "minio_archive_sha256": "7eb647bc7bb368a3261c3215d6896d5fb8462c6733680a2357d40921e658149f",
+    "readability_checked": true,
+    "restore_not_performed": true
+  },
+  "gate_evidence": {
+    "validate_sha256": "a69360e14ea28ae3ea33706f40472b850be3843769a25b5a7df01b699ead0fc7",
+    "deploy_sha256": "47817c66069eddd4511ebfed717ef105deb53aa7b44895e65f76e962dabc873e",
+    "deploy_status": "passed",
+    "migration_head": "044_reception_assignment",
+    "active_service_count": 12,
+    "public_health_http": [200, 200, 200],
+    "fixed_egress_ip_verified": "38.55.145.52"
+  },
+  "capability_checks": {
+    "connected_authorized_store_count": 2,
+    "manual_send_allowed_stores": ["TikTok US 测试店铺", "XBM"],
+    "unconnected_store_fail_closed": "测试店铺",
+    "unconnected_store_synthetic_active_mode": "disabled",
+    "sampled_active_real_send_modes_per_connected_store": 2,
+    "authorized_admin_workspace_send_mode_verified": true,
+    "worker_jobs_agent_worker_write_enabled": false,
+    "auto_reply_enabled": false,
+    "marketing_enabled": false,
+    "high_risk_write_enabled": false,
+    "agent_debug_and_formal_suggestions_preserved": true,
+    "real_buyer_messages_sent_for_validation": 0
+  },
+  "synthetic_assignment_probe": {
+    "script_sha256": "9191a57ce34688298822096503d6a54c95652b099b8980a96165e4f19f68df44",
+    "store": "测试店铺",
+    "temporary_agents": 2,
+    "concurrent_conversations": 2,
+    "distinct_assignees": 2,
+    "capacity_per_agent": 1,
+    "idempotency_verified": true,
+    "audit_rows_verified": 2,
+    "test_rows_remaining": 0,
+    "config_enabled_after_test": false,
+    "real_tiktok_inbound_exercised": false
+  },
+  "post_deploy_data": {
+    "total_user_count": 1,
+    "active_store_count": 3,
+    "reception_store_configs": 0,
+    "test_store_conversations": 0,
+    "unsettled_seller_messages": 0
+  },
+  "actions_deployment_used": false
+}
