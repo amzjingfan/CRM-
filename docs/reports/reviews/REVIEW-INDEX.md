@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02 | MVP-DEPARTMENT-AUTO-ASSIGN-001 | R02 | APPROVE | `b21f59a76adce8775eb5f9d61993e3b42886d72a` | release_source, store_isolation, migration, data_cleanup, backup, capability_scope, no_external_send | 2026-10-30T03:29:33+00:00 | [`RR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md`](RR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md) |
 | RR-MVP-TIKTOK-OAUTH-UX-001-20261030-R01 | MVP-TIKTOK-OAUTH-UX-001 | R01 | APPROVE | `be936358bdce4f633a51fe599a5e5a7bbc1e074b` | correctness, authorization, store_isolation, low_sensitivity, scope | 2026-10-30T03:20:11Z | [`RR-MVP-TIKTOK-OAUTH-UX-001-20261030-R01.md`](RR-MVP-TIKTOK-OAUTH-UX-001-20261030-R01.md) |
 | RR-MVP-AGENT-REPLY-STAGING-001-20261030-R01 | MVP-AGENT-REPLY-STAGING-001 | R01 | APPROVE | `fe4cf4b8a7977d43cebdc711e38b302b7afe7d06` | correctness, scope, safety, regression | 2026-10-30T01:38:11.618174+00:00 | [`RR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md`](RR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md) |
 | RR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R01 | MVP-DEPARTMENT-AUTO-ASSIGN-001 | R01 | APPROVE | `dcc2ada1eb3290c64857b4b5e5e0328402f4281d` | correctness, authorization, store_isolation, concurrency, migration, no_external_send | 2026-10-30T01:47:04+08:00 | [`RR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R01.md`](RR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R01.md) |

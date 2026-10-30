@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-10-30 staging 部门接待与默认关闭派单从干净合并主线 `b21f59a7` 手动部署：私有备份、精确镜像、ValidateOnly/Deploy、044、12 容器、固定出口、三健康和已登录 UI 通过。指定清理后仅 1 管理员、3 店铺；人工真实发送仍为原单店 allowlist，自动回复/营销/高风险关闭。真实入站自动派单与多坐席竞争未演练；不改变 G8 production No-Go。见 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md) 和[发布证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)。
+
 2026-10-29 第二批本地门禁通过，subject `ff4d5e262bed31f07d9ec04a7c021c1a2b7fa9ba`；新候选未部署。后端2514/3与新增统计8、前端52/105、真实候选5/5、输出语义14+1补测及配置16复用见[TR R05](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R05.md)。用户要求等待明确批准才部署/发布v4，staging仍e3fc，production G8 No-Go。
 
 2026-10-29 统一 Agent 与多店授权发布仅关闭此次 staging 镜像/迁移/入口检查，`45d872c0` 的 041、12 容器、备份和公网项通过。Agent 两条真实业务请求未通过，文件 RAG/真实新店 OAuth 未验收；MVP-AGENT-STAGING-DEPLOY-001 保持 VERIFYING，production G8 继续 No-Go，不将本地或供应商协议探针计为全链路放行。见[TR R03](../reports/tests/TR-MVP-AGENT-STAGING-DEPLOY-001-20261029-R03.md)。

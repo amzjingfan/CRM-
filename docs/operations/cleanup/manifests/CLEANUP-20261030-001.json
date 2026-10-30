@@ -1,0 +1,17 @@
+{
+  "batch_id": "CLEANUP-20261030-001",
+  "task_id": "MAINT-CLEANUP-20261030-001",
+  "environment": "staging",
+  "state": "DELETED_WITH_PRIVATE_BACKUP",
+  "authorization": "User requested retaining exactly one specified admin account and three named stores before staging deployment.",
+  "kept_admin_email": "staging-oauth-admin-6e75f0c47b75444e@example.com",
+  "kept_store_names": ["TikTok US 测试店铺", "测试店铺", "XBM"],
+  "deleted_store_ids": ["d1ad4928-bf16-4b5f-8ad2-ec7b773fd0cd", "ec842d1d-6b23-42a2-a976-0ed79ed8be86"],
+  "deleted_store_names": ["G5 staging synthetic fixture", "RAG document import acceptance 2026-10-23"],
+  "deleted_account_count": 50,
+  "deleted_store_count": 2,
+  "pre_cleanup_postgres_dump_sha256": "44f1ed5657e1bb7009c20f5aa5bbe918bd72ad4225a87f28c4c86ec50b9b028a",
+  "post_cleanup_audit_request_id": "department-cleanup-20261030-28Rdpr",
+  "minio_objects_deleted": false,
+  "production_touched": false
+}

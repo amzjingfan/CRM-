@@ -1,21 +1,15 @@
 # 项目状态与恢复入口
 
-2026-10-30；STANDARD；TikTok人工辅助；CP11-gh/CRM；origin/main。TikTok 单入口授权源码和证据已随 PR #652 合入 `ab50aab0467f2f77762f3b6b99b67a7afe628f09`；CANDIDATE_SUBJECT_SHA=be936358bdce4f633a51fe599a5e5a7bbc1e074b，EVIDENCE_HEAD_SHA=READ_AT_GATE。任务唯一状态源为 TASKS；本轮未部署。
+2026-10-30；治理档位 STANDARD；TikTok 人工辅助；CP11-gh/CRM；origin/main；当前证据分支 docs/department-staging-evidence-20261030，`CANDIDATE_SUBJECT_SHA=b21f59a76adce8775eb5f9d61993e3b42886d72a`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`；任务状态以 [TASKS](../tasks/TASKS.md) 为准。staging 已从干净合并主线 `b21f59a76adce8775eb5f9d61993e3b42886d72a` 手动更新前后端；包含 PR #646 部门接待与派单和已合并的 Agent 回复交付，数据库迁移头 `044_reception_assignment`。精确镜像、私有备份、ValidateOnly/Deploy、12 个容器、固定出口、三健康与已登录部门页见 [部门发布证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)及 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md)。三索引为 `CANDIDATE_VIEW`，证据合入权威主线后重建为 `CURRENT`。production 未发布。
 
-新增设计提案（2026-10-30）：MVP-AGENT-TEMPLATE-BATCH-DESIGN-001已交付，见[Agent模板与批量差异更新设计](../superpowers/specs/2026-10-30-agent-templates-batch-design.md)，文档subject96da11d8，PR649已合并8a39e45b。用户已选模板＋批量应用及查看差异后选择店铺更新；完整设计仍待用户确认，未实施、未迁移、未改运行配置、未部署。独立builder检查无重要缺口，文档链接/任务唯一性/隐私/diff通过；未运行无关产品测试，也未生成虚构IR/TR/RR。此前已验收的staging与其他任务状态保持。
+随后主线 PR #652/#653 已合入 TikTok 店铺授权单入口源码与证据；该改动晚于本次 staging 发布源码，尚未部署。授权页旧卡片与全局入口已移除，异常店铺行内重新授权绑定自身 store_id；其范围及验证见 [授权 TR R01](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-001-20261030-R01.md)。模板与批量差异更新仅有 [设计提案](../superpowers/specs/2026-10-30-agent-templates-batch-design.md)，尚未实施。
 
-MVP-TIKTOK-OAUTH-UX-001 已完成源码合并：授权页的全局按钮与旧卡片已移除，异常店铺行内恢复绑定自身 store_id；旧回跳导向店铺页。授权进度新增低敏失败码和店铺 ID，列表显示店铺与渠道均连接后才报成功。最终候选本地前端契约55、相关浏览器9、后端OAuth53、类型/格式/lint/构建通过；全量浏览器首次尝试因独立端口3124未启动和并行构建超时退出1，不当作通过。PR #652 两项 CI 均 runner 0/steps 0，按既有本地替代门禁合并；IR/TR/RR R01 与三项索引从合并主线核对为 CURRENT。staging/production未部署。
+用户指定的 staging 清理已完成：只保留一个系统管理员和「TikTok US 测试店铺」「测试店铺」「XBM」，删除 50 个合成账号及 2 家合成店铺；清理前私有数据库备份、审计、提交后对账及恢复限制见 [CLEANUP-20261030-001](../operations/cleanup/CLEANUP-20261030-001.md)。MinIO 对象未删，未做整库恢复演练。
 
-MVP-AGENT-REPLY-STAGING-001已验收：staging手动部署冻结release d111d164（基线d6f89746加本任务），前后端精确摘要见机器证据；043_logistics_updates、12服务和三个公网健康200。最终中英文真实工具＋绑定文件RAG回答、坐席原生草稿流、最新物流正文后卡片、正式确认框仅查看后取消通过。临时预演交付按钮、通知预演区域与假的Agent自动发送开关移除，真实调试保留。自动回复、主动物流通知双开关、营销与高风险仍关闭，production未放行。
+当前逐店自动派单配置为 0，默认关闭；原单店人工真实发送 allowlist 未扩大。自动回复、自动营销、主动物流通知、高风险平台写入保持关闭；Agent 调试及正式人工建议维持，测试未向真实买家发送消息。真实入站自动派单及多坐席现场竞争未演练。用户新增的全店人工真实发送要求已单列 [MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001](../tasks/TASKS.md) 为 READY，须逐店核验渠道与权限后另行部署。
 
-发布源码本地2712/3平台skip、前端55/158；保留主线PR646的集成源码2731/3、前端55/161，Ruff450/mypy284/类型/构建/锁、动态16/安全237通过。既有20ms调度测试改为仅loop模块逻辑时钟，生产期限未改。保留现场路由/复核协议失败和重试，不声称一次成功率100%。CI源码及最终证据头均runner0/steps0未执行，按持续授权本地替代。
+此前 Agent 回复现场验收见 [TR R01](../reports/tests/TR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md)；模板与批量差异更新仅为 [设计提案](../superpowers/specs/2026-10-30-agent-templates-batch-design.md)，尚未实施。GitHub Actions 零步骤作业不计通过，按持续批准的本地替代门禁处理。G8 production 仍 No-Go。
 
-16条精确合成入站消息及专属测试记忆统一清理，原26条消息哈希不变、外发计数26不变；同一测试知识文件解绑软删，Agent正常发布v13，模型/工具及其余六段提示词保留，当前买家语言/简洁最新物流输出要求保留。分类保留，私有恢复备份和只读性验证通过，无整库恢复演练；临时registry凭据注销并移除，仅本任务本地测试服务已停止。
+Workspace hygiene: ATTENTION。主 checkout 的未知历史、活动 worktree 和未跟踪 `src/frontend/AGENTS.md` 保留；此前对此文件的移除操作被自动批准审查拒绝，本轮未重试。本次仅清理用户精确指定的 staging 账号与店铺，未清理本地未知文件。
 
-证据：IR/TR/RR-MVP-AGENT-REPLY-STAGING-001-20261030-R01，release/evidence/staging/crm-agent-reply-delivery-20261030.json；三索引从已合并主线源记录核对重建，CURRENT=307/332/290。旧R10双语工具/RAG通过事实保留。
-
-并行任务MVP-DEPARTMENT-AUTO-ASSIGN-001仍VERIFYING：PR646已合入1da8d152，044迁移/接待权限/派单代码在主线保留，但需其单独部署批准，本次staging没有包含该增量。其IR/TR/RR及任务授权边界保持，后续发布应以包含本轮修复的主线统一构建，避免覆盖本次变更。
-
-Workspace hygiene: ATTENTION。未知主checkout历史与活动worktree保护不动；本分支 `next dev` 生成的未跟踪 `src/frontend/AGENTS.md` 未纳入提交，自动批准审查拒绝了移除操作，保持原状。本轮无永久文件清理批次。原G4/G5/G8未满足事项不因本轮功能验收视为生产放行。
-
-下一动作：①如需在 staging 查看本轮 OAuth UI，应单独批准部署并做真实店铺验收；②用户确认模板批量设计后再编写实施计划；③接待/派单任务的独立 staging 部署仍待其授权。
+下一动作：①按独立任务核验并实施全部已授权店铺的人工发送，保持自动发送关闭；②若用户要求查看单入口授权 UI，再单独发布其源码到 staging；③若准备启用自动派单，在合成或受控环境补测真实入站与多坐席竞争。

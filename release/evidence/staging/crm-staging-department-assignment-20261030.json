@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-DEPARTMENT-AUTO-ASSIGN-001",
+  "environment": "staging",
+  "production_release": false,
+  "source_sha": "b21f59a76adce8775eb5f9d61993e3b42886d72a",
+  "source_bundle_sha256": "b872f5dfd87efe14ef9042ffe5ef6c345a118707d9c8a86a62b65ecacfea9d9d",
+  "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:092585e4341885daeaf73b9735078b743c07a09e6864535fe03d2e3e745c1b0c",
+  "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:b3abd6c4d4840ee598cdf3a2b9686ba6b4dfcfa3b7e4eb239d48eb5bb0b99243",
+  "previous_backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+  "previous_frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:c54f7b4bc336825a3309d0bd3af2659a076210115ac9169a55b78792665dc85e",
+  "retrieval_image_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+  "document_parser_image_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+  "image_verification": {
+    "backend_amd64_manifest": "sha256:b5964d31c54bcfdfa47a1a90af2460af849ee5b5c1332c7138033d77133deed1",
+    "frontend_amd64_manifest": "sha256:2b83c6d99912c4098ebc91085c99b6cb27d862986539a7d6bf5a76ae901abe7e",
+    "backend_compressed_bytes": 109883120,
+    "frontend_compressed_bytes": 64395007,
+    "remote_repo_digests_and_revision_verified": true
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/backups/department-release-b21f59a7-20261030",
+    "environment_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "postgres_custom_dump_sha256": "d3d9112f49673177effa1b46f1ba20b2c07bf8fe22030d3aff94db0c8839963a",
+    "minio_archive_sha256": "6aeed51a43a2569c3add634e48e8e9ca321060434fb87f67d9f0759c6e0cfa49",
+    "readability_checked": true,
+    "restore_not_performed": true
+  },
+  "gate_evidence": {
+    "validate_sha256": "9057264a5caad72cd144109db13cfb69ad52c9dee4bc69b296b4ee19dde55694",
+    "deploy_sha256": "f493d58bfd496281ec129b793e76fa501cc9a1aa9a325d9590ea2dae7178554d",
+    "deploy_status": "passed",
+    "migration_head": "044_reception_assignment",
+    "active_service_count": 12,
+    "public_health_http": [200, 200, 200],
+    "fixed_egress_ip_verified": "38.55.145.52"
+  },
+  "post_deploy_data": {
+    "active_keeper_admin_count": 1,
+    "total_user_count": 1,
+    "store_names": ["TikTok US 测试店铺", "XBM", "测试店铺"],
+    "store_count": 3,
+    "reception_store_configs": 0,
+    "cleanup_audit_count": 1
+  },
+  "capability_checks": {
+    "manual_send_allowed_store_count": 1,
+    "manual_send_allowed_store": "TikTok US 测试店铺",
+    "auto_reply_enabled": false,
+    "marketing_enabled": false,
+    "high_risk_write_enabled": false,
+    "agent_debug_and_formal_suggestions_preserved": true,
+    "real_buyer_messages_sent_for_validation": 0
+  },
+  "authenticated_ui": {
+    "department_page_updated": true,
+    "role_tab_visible": true,
+    "store_assignment_tab_visible": true,
+    "auto_assignment_default_off": true,
+    "department_account_count": 1
+  },
+  "actions_deployment_used": false
+}
