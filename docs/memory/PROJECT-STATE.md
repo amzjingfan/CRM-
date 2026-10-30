@@ -1,11 +1,17 @@
 # 项目状态与恢复入口
 
-2026-10-30；STANDARD；TikTok 人工辅助；CP11-gh/CRM；目标主线 `origin/main=d6f8974624f64b8bec30d47f33b4a79b3f42d21d`，当前分支 `feature/department-assignment-20261029`。本任务 CANDIDATE_SUBJECT_SHA=`dcc2ada1eb3290c64857b4b5e5e0328402f4281d`，EVIDENCE_HEAD_SHA=READ_AT_GATE；主线为候选祖先。
+2026-10-30；STANDARD；TikTok人工辅助；CP11-gh/CRM；origin/main。回复交付源码及现场证据已随PR647合入be43bf31；CANDIDATE_SUBJECT_SHA=fe4cf4b8a7977d43cebdc711e38b302b7afe7d06，EVIDENCE_HEAD_SHA=READ_AT_GATE。当前为文档收尾分支docs/agent-reply-staging-close-20261030；任务唯一状态源为TASKS。
 
-当前活动任务 `MVP-DEPARTMENT-AUTO-ASSIGN-001` 状态见 TASKS：单客服部固定角色和逐店接待资格，普通客服可转交本人同店会话，逐店派单默认关闭；合格在线坐席按近期人工服务和容量负载派单，失败留在待分配队列，零自动外发。AC-01～04 本地通过，AC-05 的 staging 部署需用户单独批准；production 未发布。产品、架构和发布边界见 `docs/product/PRODUCT.md`、`docs/architecture/SYSTEM.md`、`docs/operations/DEPLOYMENT.md`。
+MVP-AGENT-REPLY-STAGING-001已验收：staging手动部署冻结release d111d164（基线d6f89746加本任务），前后端精确摘要见机器证据；043_logistics_updates、12服务和三个公网健康200。最终中英文真实工具＋绑定文件RAG回答、坐席原生草稿流、最新物流正文后卡片、正式确认框仅查看后取消通过。临时预演交付按钮、通知预演区域与假的Agent自动发送开关移除，真实调试保留。自动回复、主动物流通知双开关、营销与高风险仍关闭，production未放行。
 
-最新证据：[IR](../records/implementation/IR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R01.md)、[TR](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R01.md)、[RR](../reports/reviews/RR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R01.md)。隔离 PostgreSQL 迁移往返通过；后端 2730 passed/3 skipped，前端 55/55，浏览器 161 passed/1 skipped；Ruff、格式、mypy、typecheck、lint 0 error/8 既有 warning、构建通过。三索引为 CANDIDATE_VIEW；PR CI 待创建后核验。
+发布源码本地2712/3平台skip、前端55/158；保留主线PR646的集成源码2731/3、前端55/161，Ruff450/mypy284/类型/构建/锁、动态16/安全237通过。既有20ms调度测试改为仅loop模块逻辑时钟，生产期限未改。保留现场路由/复核协议失败和重试，不声称一次成功率100%。CI源码及最终证据头均runner0/steps0未执行，按持续授权本地替代。
 
-既有 staging 仍保持此前已验收 Agent 版本及安全开关，本次接待功能尚未部署。没有真实买家发送、退款或生产数据操作。Workspace hygiene: ATTENTION；主 checkout 的未知文件和活动 worktree 受保护，无本轮清理批次或永久删除。
+16条精确合成入站消息及专属测试记忆统一清理，原26条消息哈希不变、外发计数26不变；同一测试知识文件解绑软删，Agent正常发布v13，模型/工具及其余六段提示词保留，当前买家语言/简洁最新物流输出要求保留。分类保留，私有恢复备份和只读性验证通过，无整库恢复演练；临时registry凭据注销并移除，仅本任务本地测试服务已停止。
 
-下一动作：①创建并核验本任务唯一 PR，按适用门禁合并；②准备 staging 迁移、备份、预检的可审阅结果；③取得用户单独部署批准后再发布和现场验收。
+证据：IR/TR/RR-MVP-AGENT-REPLY-STAGING-001-20261030-R01，release/evidence/staging/crm-agent-reply-delivery-20261030.json；三索引从已合并主线源记录核对重建，CURRENT=307/332/290。旧R10双语工具/RAG通过事实保留。
+
+并行任务MVP-DEPARTMENT-AUTO-ASSIGN-001仍VERIFYING：PR646已合入1da8d152，044迁移/接待权限/派单代码在主线保留，但需其单独部署批准，本次staging没有包含该增量。其IR/TR/RR及任务授权边界保持，后续发布应以包含本轮修复的主线统一构建，避免覆盖本次变更。
+
+Workspace hygiene: ATTENTION。未知主checkout历史、活动worktree与未跟踪frontend/AGENTS.md保护不动；本轮无永久文件清理批次。测试辅助/日志/镜像归档只在centralized临时根，不提交。原G4/G5/G8未满足事项不因本轮功能验收视为生产放行。
+
+下一动作：①等待接待/派单任务的独立staging部署批准；②后续真实主动通知/买家交付另行批准和验收；③真实店铺政策文档按正常审批并绑定后使用，合成指南已清理。

@@ -262,7 +262,56 @@
         "steps": 0
       }
     ],
-    "final_evidence_head_audit": "PR647 merge gate"
+    "final_evidence_head_audit": "PR647 merge gate",
+    "final_evidence_head_sha": "3939ced8636bd3faa7a1ee8d19e97f22f5ccf942",
+    "final_run_id": 40987247267,
+    "final_jobs": [
+      {
+        "id": 123841027484,
+        "runner_id": 0,
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 123841027904,
+        "runner_id": 0,
+        "steps": 0,
+        "conclusion": "failure"
+      }
+    ]
   },
-  "updated_at": "2026-10-30T01:38:11.618174+00:00"
+  "updated_at": "2026-10-30T01:38:11.618174+00:00",
+  "merge": {
+    "pr": 647,
+    "sha": "be43bf31f0f768040ba1b63914394f58661b3363",
+    "src_tree_equals_reviewed_integration_head": true
+  },
+  "post_cleanup_verification": {
+    "schema_head": "043_logistics_updates",
+    "original_messages": 26,
+    "all_original_hashes_match": true,
+    "outbound": 26,
+    "fixture_messages_remaining": 0,
+    "test_memory_removed": true,
+    "file_soft_deleted": true,
+    "fixture_unbound": true,
+    "agent_enabled": true,
+    "agent_published_version": 13,
+    "desired_output_policy_preserved": true
+  },
+  "final_public_health": [
+    {
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "path": "/v1/health",
+      "status": 200
+    },
+    {
+      "path": "/v1/health/ready",
+      "status": 200
+    }
+  ],
+  "temporary_registry_credentials_removed": true
 }
