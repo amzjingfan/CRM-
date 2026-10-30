@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-DEPARTMENT-RECEPTION-COPY-STAGING-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "b5d4985b42fc2daac677a16805bfa18126b6439e",
+  "implementation_subject_sha": "af29152e19ad252a5bb6f25c0b33b84a42cf511a",
+  "source_pull_request": 670,
+  "previous_runtime_source_sha": "0fc2b50b993d2f53e63d1b555fd60a26add268d4",
+  "source_bundle_sha256": "bc1d8abcb4d3ef076edecfac0e4a14b5a22cc3e3470431f4a639000b4086d1f1",
+  "images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:e9fdab85217f93f8bf35e08c99de61a954a70285a62d587c55356554ad666e14",
+    "backend_unchanged": "ghcr.io/cp11-gh/crm-backend@sha256:1e42a82923236a70cd8244eb7ab59d9c23acbc806530404948d587b920a8e3a2",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:8f08de63b8efe1ad6c273b3524eb2df6867b830fa1c2ab2dfdfae9d5aa94f4de",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "frontend_oci_revision": "b5d4985b42fc2daac677a16805bfa18126b6439e",
+    "frontend_transfer_sha256": "9d82497cf379d3834b9ce25f29dbd1686139ed2cbebe994daa3ff8fdedd7df32"
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/.local/share/crm-staging-backups/department-copy-b5d4985b-20261030",
+    "postgres_custom_dump_sha256": "466a9072e8eea32b4ed8dc1b6e878bd3ba46139631997d523bf002c030892143",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "3895d05541b30eef26f64ed22d3de006a3693f9e2fafb2861cf9b6bab754e149",
+    "minio_archive_readable": true,
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "permissions": "0700 directory; 0600 backup files"
+  },
+  "gate": {
+    "previous_validate_sha256": "0878bc0d357f1bbc371220d3551f063f53f77778315a40f50afd966a07f7ebe2",
+    "candidate_validate_sha256": "7163d3ddc0ef8293ec30d033a6733335dac3481543759cd89b2bac057360098f",
+    "candidate_deploy_sha256": "6b769283d9b2026fc02c4543bb7ed55b120b29768a45d8375f8115c3fffd1e28",
+    "previous_validate_status": "validated",
+    "candidate_validate_status": "validated",
+    "candidate_deploy_status": "passed",
+    "migration": "045_dept_dispatch_login (head)"
+  },
+  "runtime_after": {
+    "services_running_or_healthy": 12,
+    "frontend_and_backend_image_digests_match": true,
+    "manual_send_allowed_store_count_unchanged": 2,
+    "manual_send": true,
+    "webhook_read": true,
+    "agent_debug_and_formal_suggestions": true,
+    "workspace_translation": false,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "settings_team": 200,
+    "settings_team_departments": 200
+  },
+  "authenticated_ui_check": "Existing signed-in department page refreshed; the department dispatch tab no longer showed the redundant paragraph. Store heading, unified switch, queue reason and agent table remained visible. Supervisor independent login and real inbound dispatch were not exercised.",
+  "ghcr_credentials_logged_out_local_and_staging": true,
+  "test_actions_sent_real_buyer_messages": false
+}
