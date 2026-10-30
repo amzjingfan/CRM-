@@ -1738,6 +1738,8 @@ test("department reception configures all department stores once and omits reply
   try {
     await page.getByRole("tab", { name: "部门店铺咨询分配" }).click();
     await page.getByText("负责店铺：US Demo Store", { exact: true }).waitFor();
+    assert.equal(await page.getByText(/主管可查看本部门全部店铺会话/).count(), 0);
+    assert.equal(await page.getByText(/登录后显示在线/).count(), 0);
     const enabled = page.getByRole("checkbox", { name: "启用本部门所有负责店铺的自动派单" });
     await enabled.waitFor();
     assert.equal(await enabled.isChecked(), false);
@@ -1769,7 +1771,7 @@ test("department reception explains why a global administrator cannot join dispa
     await page.getByText("无部门店铺回复权限").waitFor();
     assert.equal(await page.getByRole("checkbox", { name: "Admin One参与派单" }).isDisabled(), true);
     await page.getByText(/当前无人可接待/).waitFor();
-    await page.getByText(/登录后显示在线/).waitFor();
+    assert.equal(await page.getByText(/登录后显示在线/).count(), 0);
   } finally { await context.close(); }
 });
 

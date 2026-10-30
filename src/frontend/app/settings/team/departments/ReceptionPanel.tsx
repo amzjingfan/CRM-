@@ -45,7 +45,6 @@ export function ReceptionPanel({ department, stores, editable }: Props) {
 
   return <div className="department-panel">
     <div className="department-panel-toolbar"><h3>部门店铺咨询分配</h3><span>统一派单到有对应店铺权限的在线客服</span></div>
-    <p className="mt-2 text-sm text-[var(--muted)]">负责店铺：{department.store_ids.map(storeName).join("、") || "暂无店铺"}。主管可查看本部门全部店铺会话并参与派单；普通客服只接收本人负责店铺的会话。登录后显示在线，退出或登录过期后离线。</p>
     {notice ? <p className="inline-status" role="status">{notice}</p> : null}
     {!department.store_ids.length ? <EmptyState label="请先给部门分配店铺" /> : loading ? <LoadingState label="正在加载接待配置…" /> : error ? <ErrorState message={error} retry={() => void load()} /> : draft ? <>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] p-3">

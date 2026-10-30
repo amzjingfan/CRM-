@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-30 部门派单冗余文案移除 [TR R01](../reports/tests/TR-MVP-DEPARTMENT-RECEPTION-COPY-001-20261030-R01.md) **PASS（本地候选）**：两条合成浏览器用例先红后绿，55 项前端契约、lint（0 error/8 既有 warning）、typecheck 和 build 通过；staging 尚待合并与部署。
+
 2026-10-30 部门统一派单/账号目录[发布 TR R01](../reports/tests/TR-MVP-DEPARTMENT-UNIFIED-DISPATCH-STAGING-001-20261030-R01.md) **PASS（限定 staging 部署）**：主线 `0fc2b50b` 精确前后端、私有备份、双预检/部署、045、12 服务、固定出口、三公网健康和账号/部门页面通过；已登录部门目录回显管理员与主管，派单页进一步浏览器读取超时。源码 subject 的 2730 后端、55 契约、165 常规浏览器与 1 生产缓存项及隔离旧数据迁移见[功能 TR](../reports/tests/TR-MVP-DEPARTMENT-UNIFIED-DISPATCH-001-20261030-R01.md)。真实入站派单与主管独立 staging 登录未演练；原人工发送范围及安全开关保持，production No-Go。[低敏证据](../../release/evidence/staging/crm-staging-department-unified-dispatch-20261030.json)。
 
 2026-10-30 部门角色 UI [staging 发布 TR R01](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md) **PASS**：精确前端镜像、私有备份、双预检/部署、044、12 服务和五个公网路径通过；已登录账号“更多”菜单三项直接可见，删除当前管理员禁用。原功能 subject 的浏览器 56/56、前端 55/55、后端 2658 通过/77 跳过；连接测试店合成入站事务回滚零外发零残留。真实 TikTok webhook 未演练，production No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)。
