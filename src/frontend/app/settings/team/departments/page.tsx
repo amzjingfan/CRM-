@@ -13,7 +13,7 @@ import { ReceptionPanel } from "./ReceptionPanel";
 import { RolePanel } from "./RolePanel";
 
 type Tab = "members" | "roles" | "reception";
-const roleNames: Record<string, string> = { admin: "管理员", supervisor: "客服主管", agent: "普通客服" };
+const roleNames: Record<string, string> = { admin: "系统管理员", supervisor: "客服主管", agent: "普通客服" };
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);

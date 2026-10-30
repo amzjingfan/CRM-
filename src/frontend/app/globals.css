@@ -770,6 +770,12 @@ button, a, label.file-button { cursor: pointer; }
 .account-drawer-fields .compact-field { width: 100%; }
 .account-drawer-fields small { color: var(--muted); font-size: 11px; }
 .account-form-section { border-left: 3px solid var(--primary); padding-left: 10px; font-size: 14px; font-weight: 700; }
+.account-store-picker { display: grid; gap: 8px; max-height: 230px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.account-store-picker legend { padding: 0 5px; font-size: 12px; font-weight: 600; }
+.account-store-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.account-store-row label { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 13px; }
+.account-store-row .compact-field { width: 120px; flex: none; }
+.account-role-note { color: var(--muted); font-size: 12px; }
 .account-drawer-form footer { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); margin-top: auto; padding: 16px 24px; }
 .account-drawer-form footer button { min-height: 36px; padding: 7px 16px; }
 .department-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 14px; }

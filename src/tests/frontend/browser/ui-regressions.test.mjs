@@ -1547,11 +1547,55 @@ test("new agent defaults to a store served by the department and explains incomp
   });
   try {
     await page.getByRole("button", { name: "新建账号" }).click();
-    assert.equal(await page.locator('select[name="store_id"]').inputValue(), store.id);
+    assert.equal(await page.getByRole("checkbox", { name: `负责店铺 ${store.name}` }).isChecked(), true);
     assert.equal(await page.locator('select[name="department_id"] option').count(), 2);
-    await page.locator('select[name="store_id"]').selectOption(otherStore.id);
+    await page.getByRole("checkbox", { name: `负责店铺 ${store.name}` }).uncheck();
+    await page.getByRole("checkbox", { name: `负责店铺 ${otherStore.name}` }).check();
     assert.equal(await page.locator('select[name="department_id"] option').count(), 1);
-    await page.getByText(/当前店铺未分配给任何部门/).waitFor();
+    await page.getByText(/所选店铺未分配给任何部门/).waitFor();
+  } finally { await context.close(); }
+});
+
+test("account create and edit submit all selected stores and editable roles", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Second Store", code: "second" };
+  const member = { id: "00000000-0000-4000-8000-0000000000c1", login_name: "agent_one", name: "Agent One", email: null, phone: null, timezone: "Asia/Shanghai", max_concurrent_sessions: 50, status: "active", assignments: [{ role: "agent", store_id: store.id }], department_ids: [], last_login_at: null, created_at: "2026-10-22T00:00:00Z" };
+  let created = null; let updated = null;
+  const { context, page } = await openPage("/settings/team", {
+    "GET /v1/settings/team": [member],
+    "GET /v1/settings/stores": [store, otherStore],
+    "GET /v1/settings/departments": [],
+  }, async (context) => {
+    await context.route("**/v1/settings/team", async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      created = JSON.parse(route.request().postData());
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" }, body: JSON.stringify({ code: 0, message: "ok", data: member }) });
+    });
+    await context.route(`**/v1/settings/team/${member.id}`, async (route) => {
+      if (route.request().method() !== "PATCH") return route.fallback();
+      updated = JSON.parse(route.request().postData());
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" }, body: JSON.stringify({ code: 0, message: "ok", data: member }) });
+    });
+  });
+  try {
+    await page.getByRole("button", { name: "新建账号" }).click();
+    await page.getByRole("checkbox", { name: `负责店铺 ${otherStore.name}` }).check();
+    await page.locator('input[name="login_name"]').fill("agent_two");
+    await page.locator('input[name="temporary_password"]').fill("ExamplePass123!");
+    await page.getByRole("button", { name: "保存" }).click();
+    await page.getByRole("status").getByText(/账号已创建/).waitFor();
+    assert.deepEqual(created.assignments, [{ role: "agent", store_id: store.id }, { role: "agent", store_id: otherStore.id }]);
+    await page.getByRole("row", { name: /Agent One/ }).getByText("未分部门 | 普通客服（1 店）").waitFor();
+    await page.getByRole("row", { name: /Agent One/ }).getByRole("button", { name: "编辑" }).click();
+    await page.getByRole("combobox", { name: "账号角色" }).selectOption("supervisor");
+    await page.getByRole("checkbox", { name: `负责店铺 ${otherStore.name}` }).check();
+    await page.getByRole("button", { name: "保存" }).click();
+    await page.getByRole("status").getByText(/账号信息已保存/).waitFor();
+    assert.deepEqual(updated.assignments, [{ role: "supervisor", store_id: store.id }, { role: "supervisor", store_id: otherStore.id }]);
+    await page.getByRole("row", { name: /Agent One/ }).getByRole("button", { name: "编辑" }).click();
+    await page.locator('input[name="name"]').fill("Agent One Updated");
+    await page.getByRole("button", { name: "保存" }).click();
+    await page.getByRole("status").getByText(/账号信息已保存/).waitFor();
+    assert.equal("assignments" in updated, false);
   } finally { await context.close(); }
 });
 
@@ -1672,7 +1716,29 @@ test("department reception starts disabled and saves one store with eligible age
     await page.getByRole("button", { name: "保存接待配置" }).click();
     await page.getByRole("status").getByText(/接待配置已保存/).waitFor();
     await page.getByText(/当前无人可接待/).waitFor();
+    await page.getByText("已开启 · 待领取 2 个").waitFor();
+    await page.getByText(/未在工作台接待/).waitFor();
     assert.deepEqual(saved, { enabled: true, agents: [{ user_id: agentId, auto_enabled: true, capacity: 12 }] });
+  } finally { await context.close(); }
+});
+
+test("department reception explains why a global administrator cannot join dispatch", async () => {
+  const departmentId = "00000000-0000-4000-8000-0000000000d1";
+  const adminId = "00000000-0000-4000-8000-0000000000c1";
+  const admin = { id: adminId, login_name: "admin_one", name: "Admin One", email: null, phone: null, timezone: "Asia/Shanghai", max_concurrent_sessions: 50, status: "active", assignments: [{ role: "admin", store_id: null }], department_ids: [departmentId], last_login_at: null, created_at: "2026-10-22T00:00:00Z" };
+  const reception = { store_id: store.id, department_id: departmentId, enabled: true, queue_count: 1, queue_reasons: { no_eligible_agent: 1 }, takeover_count: 0, takeover_conversation_ids: [], agents: [{ user_id: adminId, name: "Admin One", active: false, auto_enabled: false, accepting: true, capacity: 20, pending_count: 0, online: false, last_heartbeat_at: null }] };
+  const { context, page } = await openPage("/settings/team/departments", {
+    "GET /v1/settings/departments": [{ id: departmentId, name: "客服部", store_ids: [store.id], created_at: "2026-10-22T00:00:00Z" }],
+    "GET /v1/settings/stores": [store], "GET /v1/settings/team": [admin],
+    [`GET /v1/settings/departments/${departmentId}/members`]: [admin],
+    [`GET /v1/settings/departments/${departmentId}/reception/stores/${store.id}`]: reception,
+  });
+  try {
+    await page.getByRole("tab", { name: "部门店铺咨询分配" }).click();
+    await page.getByText("系统管理员不参与派单").waitFor();
+    assert.equal(await page.getByRole("checkbox", { name: "Admin One参与派单" }).isDisabled(), true);
+    await page.getByText(/自动派单已开启，但当前无人可接待/).waitFor();
+    await page.getByText(/最近 60 秒的工作台接待心跳/).waitFor();
   } finally { await context.close(); }
 });
 
