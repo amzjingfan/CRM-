@@ -63,6 +63,8 @@ async def test_starred_and_closed_filters_are_scoped_and_persisted(
                 "allowed_store_ids",
                 AsyncMock(return_value={store_id}),
             )
+            monkeypatch.setattr(workspace_service, "supervised_store_ids", AsyncMock(return_value={store_id}))
+            monkeypatch.setattr(workspace_service, "ensure_conversation_access", AsyncMock(return_value=None))
             await workspace_service.set_conversation_star(session, actor, active.id, True)
             await workspace_service.set_conversation_closed(session, actor, closed.id, True)
 

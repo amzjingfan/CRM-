@@ -16,11 +16,17 @@ from app.agents.core.providers.factory import build_provider
 from app.agents.core.security import sanitize_prompt_text
 from app.agents.core.translation import TranslationBundleResult, TranslationService
 from app.audit.models import AuditLog
-from app.auth.store_access import allowed_store_ids, ensure_store_access
+from app.auth.store_access import (
+    allowed_store_ids,
+    ensure_conversation_access,
+    ensure_store_access,
+    supervised_store_ids,
+)
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.integrations.tiktok_write import TIKTOK_TEXT_MAX_LENGTH, is_tiktok_send_target_allowed
 from app.orders.models import Order
+from app.reception_assignment.models import ReceptionStoreConfig
 from app.shared.config.settings import get_settings
 from app.shared.database.base import Permission, User, role_permissions, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
@@ -29,6 +35,7 @@ from app.tools.contracts import ToolExecutionContext, ToolInvocation
 from app.tools.executor import SqlAlchemyToolExecutor
 from app.tools.models import ToolCall
 from app.tools.repository import begin_tool_call, finish_tool_call
+from app.users.models import department_members
 from app.workspace.delivery_errors import DeliveryNotStarted
 from app.workspace.logistics_preview import (
     LogisticsCardPreview,
@@ -45,6 +52,7 @@ from app.workspace.repository import (
 )
 from app.workspace.schemas import (
     AssigneeView,
+    AssignmentEventView,
     CustomerSummary,
     DraftTranslationView,
     LogisticsCardView,
@@ -78,13 +86,24 @@ def _customer_view(customer: Customer) -> CustomerSummary:
     )
 
 
+async def _assert_conversation_visibility(session: AsyncSession, actor: User, conversation: Conversation) -> None:
+    await ensure_conversation_access(session, actor, conversation)
+
+
+async def _assert_conversation_owner(session: AsyncSession, actor: User, conversation: Conversation) -> None:
+    await ensure_conversation_access(session, actor, conversation, owner_required=True)
+
+
 async def set_buyer_stage_override(
     session: AsyncSession, actor: User, session_id: uuid.UUID, stage: Literal["pre", "during", "after"] | None
 ) -> CustomerSummary:
     """会话鉴权后更新同店买家画像，只记录阶段，不保存订单内容。"""
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, actor, "workspace.reply")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_owner(session, actor, conversation)
     customer = await session.scalar(
         select(Customer)
         .where(Customer.id == conversation.customer_id, Customer.store_id == conversation.store_id)
@@ -116,7 +135,15 @@ async def set_buyer_stage_override(
     return _customer_view(customer)
 
 
-def _session_view(conversation: Conversation, customer: Customer, last: Message | None) -> SessionSummary:
+def _session_view(
+    conversation: Conversation,
+    customer: Customer,
+    last: Message | None,
+    *,
+    can_manage: bool = False,
+    can_claim: bool = False,
+    needs_takeover: bool = False,
+) -> SessionSummary:
     return SessionSummary(
         id=conversation.id,
         store_id=conversation.store_id,
@@ -126,9 +153,30 @@ def _session_view(conversation: Conversation, customer: Customer, last: Message 
         closed_at=conversation.closed_at,
         unread_count=conversation.unread_count,
         assigned_user_id=conversation.assigned_user_id,
+        can_manage=can_manage,
+        can_claim=can_claim,
+        needs_takeover=needs_takeover,
         last_message_at=conversation.last_message_at,
         last_message=last.content if last else None,
         customer=_customer_view(customer),
+    )
+
+
+def _assignment_event_view(item: AuditLog) -> AssignmentEventView:
+    """仅将审计中的低敏派单字段投影到主管可见记录。"""
+    data = item.after_data or {}
+    raw_user_id = data.get("assigned_user_id")
+    try:
+        assigned_user_id = uuid.UUID(raw_user_id) if isinstance(raw_user_id, str) else None
+    except ValueError:
+        assigned_user_id = None
+    reason = data.get("reason")
+    return AssignmentEventView(
+        action=item.action,
+        actor_type=item.actor_type,
+        assigned_user_id=assigned_user_id,
+        reason=reason if isinstance(reason, str) else None,
+        created_at=item.created_at,
     )
 
 
@@ -240,7 +288,10 @@ async def get_session_list(
     if len(raw_terms) > 20 or any(not item.strip() or len(item.strip()) > 120 for item in raw_terms):
         raise AppError(ErrorCode.VALIDATION_ERROR, "搜索最多 20 项且每项为 1～120 个字符", 422)
     search_terms = tuple(dict.fromkeys(item.strip() for item in raw_terms))
-    store_ids = await allowed_store_ids(session, user)
+    store_ids = await allowed_store_ids(session, user, "workspace.view")
+    supervisors = await supervised_store_ids(session, user)
+    transfer_stores = await allowed_store_ids(session, user, "workspace.transfer")
+    reply_stores = await allowed_store_ids(session, user, "workspace.reply")
     if store_id and store_id not in store_ids:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     rows, total = await list_conversations(
@@ -255,11 +306,27 @@ async def get_session_list(
         page_size,
         search_scope,
         search_terms,
+        supervised_store_ids=supervisors,
     )
     return SessionListData(
-        items=[_session_view(conversation, customer, message) for conversation, customer, message in rows],
+        items=[
+            _session_view(
+                conversation,
+                customer,
+                message,
+                can_manage=conversation.store_id in transfer_stores
+                and (conversation.assigned_user_id == user.id or conversation.store_id in supervisors),
+                can_claim=conversation.store_id in transfer_stores
+                and conversation.store_id in reply_stores
+                and conversation.assigned_user_id is None
+                and conversation.status != "closed",
+            )
+            for conversation, customer, message in rows
+        ],
         pagination=PageMeta(page=page, page_size=page_size, total=total),
-        unread_messages_total=await unread_message_total(session, store_ids),
+        unread_messages_total=await unread_message_total(
+            session, store_ids, user_id=user.id, supervised_store_ids=supervisors
+        ),
     )
 
 
@@ -267,21 +334,85 @@ async def get_session_messages(
     session: AsyncSession, user: User, session_id: uuid.UUID, page: int, page_size: int
 ) -> SessionMessagesData:
     """查询会话详情，GET 不隐式修改未读数。"""
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.view")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_visibility(session, user, conversation)
     customer = await session.get(Customer, conversation.customer_id)
     if customer is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "客户不存在", 404)
     messages, total = await list_messages(session, conversation.id, page, page_size)
     orders = await recent_orders(session, customer.id)
     last = await session.get(Message, conversation.last_message_id) if conversation.last_message_id else None
-    send_mode = _message_send_mode(conversation, await _connected_send_channel(session, conversation))
+    supervisors = await supervised_store_ids(session, user)
+    reply_stores = await allowed_store_ids(session, user, "workspace.reply")
+    transfer_stores = await allowed_store_ids(session, user, "workspace.transfer")
+    may_reply = conversation.store_id in reply_stores and (
+        conversation.assigned_user_id == user.id or conversation.store_id in supervisors
+    )
+    may_manage = conversation.store_id in transfer_stores and (
+        conversation.assigned_user_id == user.id or conversation.store_id in supervisors
+    )
+    needs_takeover = False
+    assignment_events: list[AssignmentEventView] = []
+    if conversation.store_id in supervisors:
+        if conversation.assignment_source == "manual" and conversation.assigned_user_id is not None:
+            needs_takeover = not await _assignee_can_reply(
+                session, conversation.store_id, conversation.assigned_user_id
+            )
+            config = await session.get(ReceptionStoreConfig, conversation.store_id)
+            if not needs_takeover and config is not None:
+                member = await session.scalar(
+                    select(department_members.c.user_id).where(
+                        department_members.c.department_id == config.department_id,
+                        department_members.c.user_id == conversation.assigned_user_id,
+                    )
+                )
+                needs_takeover = member is None
+        records = (
+            await session.scalars(
+                select(AuditLog)
+                .where(
+                    AuditLog.store_id == conversation.store_id,
+                    AuditLog.resource_type == "conversation",
+                    AuditLog.resource_id == conversation.id,
+                    AuditLog.action.in_(
+                        [
+                            "conversation.assign.auto",
+                            "conversation.assign.auto_requeue",
+                            "conversation.assign",
+                            "conversation.transfer",
+                        ]
+                    ),
+                )
+                .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+                .limit(20)
+            )
+        ).all()
+        assignment_events = [_assignment_event_view(item) for item in records]
+    send_mode = (
+        _message_send_mode(conversation, await _connected_send_channel(session, conversation))
+        if may_reply
+        else "disabled"
+    )
     return SessionMessagesData(
-        session=_session_view(conversation, customer, last),
+        session=_session_view(
+            conversation,
+            customer,
+            last,
+            can_manage=may_manage,
+            can_claim=conversation.store_id in transfer_stores
+            and conversation.store_id in reply_stores
+            and conversation.assigned_user_id is None
+            and conversation.status != "closed",
+            needs_takeover=needs_takeover,
+        ),
         messages=[_message_view(item) for item in messages],
         customer=_customer_view(customer),
         recent_orders=[_order_view(item) for item in orders],
+        assignment_events=assignment_events,
         pagination=PageMeta(page=page, page_size=page_size, total=total),
         send_mode=send_mode,
         translation_enabled=(
@@ -307,9 +438,12 @@ async def translate_draft(
     settings = get_settings()
     if not settings.workspace_message_translation_enabled:
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "草稿翻译未启用", 503)
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.reply")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_owner(session, user, conversation)
     if conversation.platform != "tiktok" or conversation.status == "closed":
         raise AppError(ErrorCode.VALIDATION_ERROR, "该会话不能预览回复译文", 422)
     if _message_send_mode(conversation, await _connected_send_channel(session, conversation)) == "disabled":
@@ -374,9 +508,12 @@ async def translate_message(
     settings = get_settings()
     if not settings.workspace_message_translation_enabled:
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "消息翻译未启用", 503)
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.view")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_visibility(session, user, conversation)
     if conversation.platform != "tiktok":
         raise AppError(ErrorCode.VALIDATION_ERROR, "仅支持 TikTok 消息翻译", 422)
     message = await session.scalar(
@@ -480,9 +617,12 @@ async def translate_sidebar_tracking(
         raise AppError(ErrorCode.VALIDATION_ERROR, "暂无可翻译的物流描述", 422)
     if sanitize_prompt_text(source) != source:
         raise AppError(ErrorCode.VALIDATION_ERROR, "物流描述含需脱敏内容，无法翻译", 422)
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.view")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_visibility(session, user, conversation)
     try:
         provider = build_provider("deepseek", settings.llm_primary_model, settings)
         translator = TranslationService(StructuredGenerationService(provider, None, max_attempts=1))
@@ -564,9 +704,12 @@ async def translate_sidebar_tracking_timeline(
         for event in events
     ):
         raise AppError(ErrorCode.VALIDATION_ERROR, "物流描述含需脱敏内容，无法翻译", 422)
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.view")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_visibility(session, user, conversation)
     provider = build_provider("deepseek", settings.llm_primary_model, settings)
     translator = TranslationService(StructuredGenerationService(provider, None, max_attempts=1))
     semaphore = asyncio.Semaphore(3)
@@ -658,9 +801,15 @@ async def send_agent_message(
     """把已人工确认的消息交给统一工具执行层并返回持久化终态。"""
     if not confirmed:
         raise DeliveryNotStarted(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.reply")
+    )
     if conversation is None:
         raise DeliveryNotStarted(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    try:
+        await _assert_conversation_owner(session, user, conversation)
+    except AppError as error:
+        raise DeliveryNotStarted(error.code, error.message, error.status_code) from error
     if conversation.status == "closed":
         raise DeliveryNotStarted(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
     send_mode = _message_send_mode(conversation, await _connected_send_channel(session, conversation))
@@ -698,6 +847,8 @@ async def send_agent_message(
         raise DeliveryNotStarted(ErrorCode.RESOURCE_CONFLICT, "当前店铺存在发送结果未知的消息，请先完成人工对账", 409)
     if result.error_code == "TOOL_MEDIA_PROOF_INVALID":
         raise AppError(ErrorCode.VALIDATION_ERROR, "媒体上传凭据无效、过期或不属于当前会话", 422)
+    if result.error_code == "TOOL_OWNER_MISMATCH":
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
     existing = await session.scalar(
         select(Message).where(
             Message.store_id == conversation.store_id,
@@ -920,9 +1071,12 @@ async def reconcile_unknown_message(
 
 async def mark_read(session: AsyncSession, user: User, session_id: uuid.UUID) -> int:
     """显式清零会话未读数。"""
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.view")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_owner(session, user, conversation)
     conversation.unread_count = 0
     await session.commit()
     return 0
@@ -941,10 +1095,11 @@ async def set_conversation_star(
 ) -> SessionActionResult:
     """CRM 内部差评风险标记；重复设置同一状态不产生新审计。"""
     conversation = await find_conversation(
-        session, session_id, await allowed_store_ids(session, actor), for_update=True
+        session, session_id, await allowed_store_ids(session, actor, "workspace.transfer"), for_update=True
     )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_owner(session, actor, conversation)
     if conversation.is_starred != starred:
         conversation.is_starred = starred
         session.add(
@@ -968,10 +1123,11 @@ async def set_conversation_closed(
 ) -> SessionActionResult:
     """本地关闭/重开；未结清出站消息时拒绝关闭。"""
     conversation = await find_conversation(
-        session, session_id, await allowed_store_ids(session, actor), for_update=True
+        session, session_id, await allowed_store_ids(session, actor, "workspace.transfer"), for_update=True
     )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_owner(session, actor, conversation)
     if closed and conversation.status != "closed":
         unresolved = await session.scalar(
             select(Message.id)
@@ -1010,9 +1166,12 @@ async def set_conversation_closed(
 
 async def list_session_assignees(session: AsyncSession, actor: User, session_id: uuid.UUID) -> list[AssigneeView]:
     """只展示当前会话所属店铺的可用坐席。"""
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, actor, "workspace.transfer")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_visibility(session, actor, conversation)
     rows = (
         await session.execute(
             select(User.id, User.name)
@@ -1054,15 +1213,22 @@ async def assign_session(
 ) -> Conversation:
     """分配前验证目标客服确实拥有该店铺角色。"""
     conversation = await find_conversation(
-        session, session_id, await allowed_store_ids(session, actor), for_update=True
+        session, session_id, await allowed_store_ids(session, actor, "workspace.transfer"), for_update=True
     )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    if conversation.store_id not in await supervised_store_ids(session, actor):
+        if conversation.assigned_user_id is not None and conversation.assigned_user_id != actor.id:
+            raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+        if conversation.assigned_user_id is not None or assignee_id != actor.id:
+            raise AppError(ErrorCode.PERMISSION_DENIED, "客服只能领取待分配会话；转交请使用转交操作", 403)
     if conversation.status == "closed":
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
     if not await _assignee_can_reply(session, conversation.store_id, assignee_id):
         raise AppError(ErrorCode.VALIDATION_ERROR, "目标客服没有当前店铺回复权限", 422)
     conversation.assigned_user_id = assignee_id
+    conversation.assignment_source = "manual"
+    conversation.assignment_wait_reason = None
     session.add(
         AuditLog(
             store_id=conversation.store_id,
@@ -1089,9 +1255,12 @@ async def transfer_session(
     idempotency_key: str,
 ) -> TransferResult:
     """集中执行转人工状态流转并以审计 ID 作为 transfer_id。"""
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, actor))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, actor, "workspace.transfer")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await _assert_conversation_owner(session, actor, conversation)
     if conversation.status == "closed":
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
     if assign_to and not await _assignee_can_reply(session, conversation.store_id, assign_to):
@@ -1113,12 +1282,19 @@ async def transfer_session(
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "转人工历史结果不可重放", 409)
     # begin_tool_call 会提交事务；重新加锁确认未被另一坐席同时关闭。
     await session.refresh(conversation, with_for_update=True)
+    try:
+        await _assert_conversation_owner(session, actor, conversation)
+    except AppError:
+        await finish_tool_call(session, tool_call, started, "failed", None, False, "TOOL_OWNER_MISMATCH")
+        raise
     if conversation.status == "closed":
         await finish_tool_call(session, tool_call, started, "failed", None, False, "CONVERSATION_CLOSED")
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "会话已关闭，请先重新打开", 409)
     conversation.status = "transferred"
     conversation.transfer_reason = reason
     conversation.assigned_user_id = assign_to
+    conversation.assignment_source = "manual" if assign_to else None
+    conversation.assignment_wait_reason = None
     audit = AuditLog(
         store_id=conversation.store_id,
         actor_type="user",
@@ -1144,7 +1320,7 @@ async def transfer_session(
 
 async def get_order(session: AsyncSession, user: User, order_id: str) -> OrderSummary:
     """按内部或平台订单号查询租户内订单。"""
-    order = await find_order(session, order_id, await allowed_store_ids(session, user))
+    order = await find_order(session, order_id, await allowed_store_ids(session, user, "workspace.view"))
     if order is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "订单不存在", 404)
     await ensure_store_access(session, user, order.store_id)

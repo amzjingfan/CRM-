@@ -27,6 +27,14 @@ class Conversation(TimestampMixin, Base):
     assigned_user_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
+    assignment_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    assignment_wait_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    awaiting_reply_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_assignment_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_human_responder_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    last_human_replied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     unread_count: Mapped[int] = mapped_column(default=0)
     last_message_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -185,7 +185,13 @@ async def create_member(
             action="team.member.create",
             resource_type="user",
             resource_id=member.id,
-            after_data={"login_name": member.login_name, "assignment_count": len(assignments)},
+            after_data={
+                "login_name": member.login_name,
+                "assignments": [
+                    {"role": role.code, "store_id": str(store_id) if store_id else None}
+                    for role, store_id in assignments
+                ],
+            },
             result="succeeded",
         )
     )
@@ -203,6 +209,8 @@ async def update_member(
     member = await session.get(User, member_id)
     if member is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "员工不存在", 404)
+    role_change_before: list[dict[str, str | None]] | None = None
+    role_change_after: list[dict[str, str | None]] | None = None
     if payload.name is not None:
         member.name = payload.name
     if "email" in payload.model_fields_set:
@@ -217,6 +225,13 @@ async def update_member(
         member.max_concurrent_sessions = payload.max_concurrent_sessions
     if payload.assignments is not None:
         assignments = await _validate_assignments(session, actor, payload.assignments)
+        role_change_before = [
+            {"role": item.role, "store_id": str(item.store_id) if item.store_id else None}
+            for item in (await _assignment_rows(session, [member.id]))[member.id]
+        ]
+        role_change_after = [
+            {"role": role.code, "store_id": str(store_id) if store_id else None} for role, store_id in assignments
+        ]
         existing_admin = await session.scalar(
             select(user_roles.c.id)
             .join(Role, Role.id == user_roles.c.role_id)
@@ -233,7 +248,12 @@ async def update_member(
             action="team.member.update",
             resource_type="user",
             resource_id=member.id,
-            after_data={"name": member.name, "email_present": member.email is not None},
+            before_data={"assignments": role_change_before} if role_change_before is not None else None,
+            after_data={
+                "name": member.name,
+                "email_present": member.email is not None,
+                **({"assignments": role_change_after} if role_change_after is not None else {}),
+            },
             result="succeeded",
         )
     )

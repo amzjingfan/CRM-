@@ -27,6 +27,7 @@ from app.integrations.schemas import (
 )
 from app.marketing.models import CustomerReview
 from app.orders.models import Order, OrderItem
+from app.reception_assignment.dispatch import dispatch_conversation
 from app.shared.config.settings import get_settings
 from app.shared.database.redis import redis_client
 from app.shared.exceptions.errors import AppError, ErrorCode
@@ -363,6 +364,10 @@ async def _process_message(
             )
         )
     conversation.unread_count += 1
+    if conversation.last_human_replied_at is None or normalized.created_at > conversation.last_human_replied_at:
+        if conversation.awaiting_reply_since is None or normalized.created_at < conversation.awaiting_reply_since:
+            conversation.awaiting_reply_since = normalized.created_at
+        await dispatch_conversation(session, conversation.id, now=datetime.now(UTC))
     if get_settings().auto_reply_enabled:
         config = await find_enabled_config(session, channel.store_id)
         if config is not None:

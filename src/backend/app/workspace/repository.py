@@ -40,11 +40,23 @@ async def list_conversations(
     page_size: int,
     search_scope: str = "all",
     search_terms: tuple[str, ...] = (),
+    supervised_store_ids: set[uuid.UUID] | None = None,
 ) -> tuple[list[tuple[Conversation, Customer, Message | None]], int]:
     """稳定分页查询会话和最后一条消息。"""
     if not store_ids:
         return [], 0
     conditions: list[ColumnElement[bool]] = [Conversation.store_id.in_(store_ids)]
+    if supervised_store_ids is not None:
+        ordinary_stores = store_ids - supervised_store_ids
+        conditions.append(
+            or_(
+                Conversation.store_id.in_(supervised_store_ids),
+                and_(
+                    Conversation.store_id.in_(ordinary_stores),
+                    or_(Conversation.assigned_user_id == user_id, Conversation.assigned_user_id.is_(None)),
+                ),
+            )
+        )
     if filter_name == "unread":
         conditions.append(Conversation.unread_count > 0)
     elif filter_name == "mine":
@@ -95,14 +107,31 @@ async def list_conversations(
     return [(conversation, customer, message) for conversation, customer, message in rows], int(total)
 
 
-async def unread_message_total(session: AsyncSession, store_ids: set[uuid.UUID]) -> int:
+async def unread_message_total(
+    session: AsyncSession,
+    store_ids: set[uuid.UUID],
+    *,
+    user_id: uuid.UUID | None = None,
+    supervised_store_ids: set[uuid.UUID] | None = None,
+) -> int:
     """汇总当前坐席可访问且未关闭会话的未读消息数，不受列表分页和搜索影响。"""
     if not store_ids:
         return 0
+    visibility = (
+        or_(
+            Conversation.store_id.in_(supervised_store_ids),
+            and_(
+                Conversation.store_id.in_(store_ids - supervised_store_ids),
+                or_(Conversation.assigned_user_id == user_id, Conversation.assigned_user_id.is_(None)),
+            ),
+        )
+        if supervised_store_ids is not None and user_id is not None
+        else Conversation.store_id.in_(store_ids)
+    )
     return int(
         await session.scalar(
             select(func.coalesce(func.sum(Conversation.unread_count), 0)).where(
-                Conversation.store_id.in_(store_ids), Conversation.status != "closed"
+                Conversation.store_id.in_(store_ids), visibility, Conversation.status != "closed"
             )
         )
         or 0

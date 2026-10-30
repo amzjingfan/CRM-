@@ -12,6 +12,7 @@ from app.knowledge_base.document_router import router as knowledge_document_rout
 from app.knowledge_base.router import router as knowledge_router
 from app.marketing.router import router as marketing_router
 from app.reception.router import router as reception_router
+from app.reception_assignment.router import router as reception_assignment_router
 
 # 应用启动时集中注册全部 ORM 表，确保跨模块外键（例如 tool_calls → agent_runs）
 # 在任一模块首次 flush 前都能由 SQLAlchemy 正确解析。
@@ -36,5 +37,6 @@ router.include_router(knowledge_router)
 router.include_router(knowledge_document_router)
 router.include_router(marketing_router)
 router.include_router(reception_router)
+router.include_router(reception_assignment_router)
 router.include_router(workspace_router)
 router.include_router(sessions_alias_router)

@@ -1539,7 +1539,7 @@ test("account deletion requires a disabled account and explicit confirmation", a
   } finally { await context.close(); }
 });
 
-test("department members show deferred permission controls and removal uses only membership API", async () => {
+test("department role uses store scoped account assignment and removal keeps permissions", async () => {
   const departmentId = "00000000-0000-4000-8000-0000000000d1";
   const memberId = "00000000-0000-4000-8000-0000000000c1";
   const member = {
@@ -1549,12 +1549,18 @@ test("department members show deferred permission controls and removal uses only
     last_login_at: null, created_at: "2026-10-22T00:00:00Z",
   };
   let removalPath = "";
+  let rolePayload = null;
   const { context, page } = await openPage("/settings/team/departments", {
     "GET /v1/settings/departments": [{ id: departmentId, name: "客服一部", store_ids: [store.id], created_at: "2026-10-22T00:00:00Z" }],
     "GET /v1/settings/stores": [store],
     "GET /v1/settings/team": [member],
     [`GET /v1/settings/departments/${departmentId}/members`]: [member],
   }, async (context) => {
+    await context.route(`**/v1/settings/team/${memberId}`, async (route) => {
+      if (route.request().method() !== "PATCH") return route.fallback();
+      rolePayload = JSON.parse(route.request().postData());
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" }, body: JSON.stringify({ code: 0, message: "ok", data: member }) });
+    });
     await context.route(`**/v1/settings/departments/${departmentId}/members/${memberId}`, async (route) => {
       removalPath = new URL(route.request().url()).pathname;
       await route.fulfill({ status: 204, headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" } });
@@ -1562,12 +1568,55 @@ test("department members show deferred permission controls and removal uses only
   });
   try {
     await page.getByRole("cell", { name: "agent_one" }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "切换角色" }).isDisabled(), true);
-    assert.equal(await page.getByRole("button", { name: "修改权限" }).isDisabled(), true);
+    await page.getByRole("button", { name: "查看角色" }).click();
+    await page.getByRole("combobox", { name: "Agent One店铺角色" }).selectOption("supervisor");
+    await page.getByRole("button", { name: "保存" }).click();
+    await page.getByRole("status").getByText(/本店角色已更新/).waitFor();
+    assert.deepEqual(rolePayload.assignments, [{ role: "supervisor", store_id: store.id }]);
+    await page.getByRole("tab", { name: /部门账号/ }).click();
     await page.getByRole("button", { name: "移出部门" }).click();
     await page.getByRole("button", { name: "确认移出" }).click();
     await page.getByRole("status").getByText(/账号角色和店铺权限保持不变/).waitFor();
     assert.equal(removalPath, `/v1/settings/departments/${departmentId}/members/${memberId}`);
+  } finally { await context.close(); }
+});
+
+test("department reception starts disabled and saves one store with eligible agents", async () => {
+  const departmentId = "00000000-0000-4000-8000-0000000000d1";
+  const agentId = "00000000-0000-4000-8000-0000000000c1";
+  const reception = {
+    store_id: store.id, department_id: departmentId, enabled: false, queue_count: 2,
+    queue_reasons: { no_online_agent: 2 }, takeover_count: 1,
+    takeover_conversation_ids: ["00000000-0000-4000-8000-0000000000e1"],
+    agents: [{ user_id: agentId, name: "Agent One", active: true, auto_enabled: false, accepting: true, capacity: 20, pending_count: 1, online: false, last_heartbeat_at: null }],
+  };
+  let saved = null;
+  const { context, page } = await openPage("/settings/team/departments", {
+    "GET /v1/settings/departments": [{ id: departmentId, name: "客服部", store_ids: [store.id], created_at: "2026-10-22T00:00:00Z" }],
+    "GET /v1/settings/stores": [store],
+    "GET /v1/settings/team": [],
+    [`GET /v1/settings/departments/${departmentId}/members`]: [],
+    [`GET /v1/settings/departments/${departmentId}/reception/stores/${store.id}`]: reception,
+  }, async (context) => {
+    await context.route(`**/v1/settings/departments/${departmentId}/reception/stores/${store.id}`, async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      saved = JSON.parse(route.request().postData());
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" }, body: JSON.stringify({ code: 0, message: "ok", data: { ...reception, ...saved } }) });
+    });
+  });
+  try {
+    await page.getByRole("tab", { name: "部门店铺咨询分配" }).click();
+    const enabled = page.getByRole("checkbox", { name: "启用该店自动派单" });
+    await enabled.waitFor();
+    assert.equal(await enabled.isChecked(), false);
+    await page.getByText(/手动分配会话的原负责人已失去接待资格/).waitFor();
+    await enabled.check();
+    await page.getByRole("checkbox", { name: "Agent One参与派单" }).check();
+    await page.getByRole("spinbutton", { name: "Agent One待回复上限" }).fill("12");
+    await page.getByRole("button", { name: "保存接待配置" }).click();
+    await page.getByRole("status").getByText(/接待配置已保存/).waitFor();
+    await page.getByText(/当前无人可接待/).waitFor();
+    assert.deepEqual(saved, { enabled: true, agents: [{ user_id: agentId, auto_enabled: true, capacity: 12 }] });
   } finally { await context.close(); }
 });
 

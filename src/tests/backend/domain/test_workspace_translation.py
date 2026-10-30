@@ -60,6 +60,7 @@ async def test_translation_cannot_cross_store_or_conversation(monkeypatch: pytes
         lambda: SimpleNamespace(workspace_message_translation_enabled=True),
     )
     monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    monkeypatch.setattr(workspace_service, "_assert_conversation_visibility", AsyncMock())
     find = AsyncMock(return_value=None)
     monkeypatch.setattr(workspace_service, "find_conversation", find)
     provider = Mock()
@@ -97,6 +98,7 @@ async def test_translation_uses_stored_message_and_returns_chinese(monkeypatch: 
         lambda: SimpleNamespace(workspace_message_translation_enabled=True, llm_primary_model="deepseek-chat"),
     )
     monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    monkeypatch.setattr(workspace_service, "_assert_conversation_visibility", AsyncMock())
     monkeypatch.setattr(
         workspace_service,
         "find_conversation",
@@ -190,6 +192,7 @@ async def test_tracking_translation_reads_verified_description_without_sending(m
     detail = AsyncMock(return_value=SimpleNamespace(latest_tracking_description=source))
     monkeypatch.setattr(workspace_service, "get_sidebar_order_detail", detail)
     monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    monkeypatch.setattr(workspace_service, "_assert_conversation_visibility", AsyncMock())
     monkeypatch.setattr(
         workspace_service,
         "find_conversation",
@@ -246,6 +249,7 @@ async def test_tracking_timeline_translation_verifies_order_and_translates_all_e
     detail = AsyncMock(return_value=SimpleNamespace(tracking_packages=packages))
     monkeypatch.setattr(workspace_service, "get_sidebar_order_detail", detail)
     monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    monkeypatch.setattr(workspace_service, "_assert_conversation_visibility", AsyncMock())
     monkeypatch.setattr(
         workspace_service,
         "find_conversation",

@@ -30,12 +30,12 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   }
   const context = await browser.newContext({ viewport: fixtureOptions.viewport ?? { width: 1440, height: orderCount > 1 ? 2400 : 900 } });
   const records = [
-    { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: null, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } },
-    { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: null, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [], buyer_stage_override: null } },
+    { id: firstId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 2, assigned_user_id: fixtureOptions.unassigned ? null : assigneeId, can_manage: fixtureOptions.canManage ?? !fixtureOptions.unassigned, can_claim: fixtureOptions.canClaim ?? !!fixtureOptions.unassigned, needs_takeover: fixtureOptions.needsTakeover ?? false, last_message_at: "2026-10-20T10:00:00Z", last_message: "Latest message", customer: { id: "00000000-0000-4000-8000-000000000401", name: "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } },
+    { id: secondId, store_id: storeId, platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 3, assigned_user_id: assigneeId, can_manage: true, can_claim: false, last_message_at: "2026-10-20T09:00:00Z", last_message: "Another message", customer: { id: "00000000-0000-4000-8000-000000000402", name: "Bob", email: null, avatar: null, tags: [], buyer_stage_override: null } },
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
-  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, activeOrderDetails: 0, maxActiveOrderDetails: 0, standardTracking: 0, extraDetailEvent: false, enhancedTracking: 0 };
+  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, assign: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, activeOrderDetails: 0, maxActiveOrderDetails: 0, standardTracking: 0, extraDetailEvent: false, enhancedTracking: 0 };
   // 页面会预取订单详情；必须在首次请求前固定样例，不能依赖导航后的赋值时序。
   calls.extraDetailEvent = fixtureOptions.extraDetailEvent ?? false;
   calls.detailRateLimited = fixtureOptions.detailRateLimited ?? false;
@@ -57,7 +57,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       return route.fulfill({ status: 200, headers: { ...headers, "content-type": "text/event-stream" }, body });
     }
     let data;
-    if (path === "/v1/auth/me") data = { id: assigneeId, name: "Agent", email: "agent@example.invalid", role: "agent", avatar: null, permissions: ["workspace.view", "workspace.reply", "workspace.transfer"], store_ids: [storeId] };
+    if (path === "/v1/auth/me") data = { id: assigneeId, name: "Agent", email: "agent@example.invalid", role: fixtureOptions.selfRole ?? "agent", avatar: null, permissions: ["workspace.view", "workspace.reply", "workspace.transfer"], store_ids: [storeId] };
     else if (path === "/v1/marketing/reception/groups") data = { items: [{ id: "group-1", store_id: storeId, scope: "personal", owner_user_id: assigneeId, name: "售后", sort_order: 0 }], total: 1, page: 1, page_size: 100 };
     else if (path === "/v1/marketing/reception/replies") {
       const query = url.searchParams.get("q")?.toLowerCase();
@@ -86,7 +86,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/messages") && method === "GET") {
       const record = records.find((item) => path.includes(item.id));
       const page = Number(url.searchParams.get("page") ?? "1");
-      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: syncedOrderStatus ? [{ id: "order-1", external_order_id: "577600000000000001", platform: "tiktok", status: syncedOrderStatus, currency: "USD", total_amount: "97.90", tracking_number: null, tracking_status: null }] : [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" ? "disabled" : "real", requires_confirmation: true, translation_enabled: translationEnabled, draft_translation_enabled: record.status !== "closed" };
+      data = { session: record, customer: record.customer, messages: messages.slice((page - 1) * 100, page * 100), recent_orders: syncedOrderStatus ? [{ id: "order-1", external_order_id: "577600000000000001", platform: "tiktok", status: syncedOrderStatus, currency: "USD", total_amount: "97.90", tracking_number: null, tracking_status: null }] : [], assignment_events: fixtureOptions.assignmentEvents ?? [], ai_suggestion: null, pagination: { page, page_size: 100, total: messages.length }, send_mode: record.status === "closed" || !record.assigned_user_id ? "disabled" : "real", requires_confirmation: true, translation_enabled: translationEnabled, draft_translation_enabled: record.status !== "closed" && !!record.assigned_user_id };
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
@@ -154,6 +154,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     else if (path.endsWith("/buyer-stage")) { const record = records.find((item) => path.includes(item.id)); const stage = JSON.parse(request.postData()).stage; record.customer.buyer_stage_override = stage; calls.stage.push({ sessionId: record.id, stage }); data = record.customer; }
     else if (path.endsWith("/closed")) { if (calls.closeFailures-- > 0) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "close unavailable", data: null }) }); const record = records.find((item) => path.includes(item.id)); const closed = JSON.parse(request.postData()).closed; calls.closed.push({ sessionId: record.id, closed }); record.status = closed ? "closed" : "active"; data = { status: record.status, is_starred: record.is_starred, closed_at: record.status === "closed" ? "2026-10-20T11:00:00Z" : null }; }
     else if (path.endsWith("/assignees")) data = [{ id: assigneeId, name: "Agent A" }];
+    else if (path.endsWith("/assign") && method === "POST") { const record = records.find((item) => path.includes(item.id)); assert.equal(JSON.parse(request.postData()).user_id, assigneeId); record.assigned_user_id = assigneeId; record.can_manage = true; record.can_claim = false; calls.assign++; data = record; }
     else if (path.endsWith("/transfer")) { calls.transfer++; const record = records.find((item) => path.includes(item.id)); record.status = "transferred"; record.assigned_user_id = JSON.parse(request.postData()).assign_to; data = { status: "transferred", transfer_id: "00000000-0000-4000-8000-000000000501" }; }
     else if (path.endsWith("/messages/media/upload") && method === "POST") {
       calls.mediaUpload++;
@@ -555,6 +556,7 @@ test("long conversation and AI draft keep the header visible and composer at the
       await page.waitForURL("**/agents");
       await page.getByRole("link", { name: "客服工作台", exact: true }).click();
       await page.waitForURL("**/workspace");
+      if (viewport.width < 760) await page.goto(`${baseUrl}/workspace?session=${firstId}`);
       await page.getByRole("heading", { name: "Alice", exact: true }).first().waitFor();
       await page.locator(".message-scroll .message").last().getByRole("button", { name: "译成中文", exact: true }).click();
       await page.locator(".message-scroll .message").last().locator(".message-translation").waitFor();
@@ -770,6 +772,36 @@ test("closing a conversation uses an in-app dialog and only writes after confirm
     assert.deepEqual(calls.closed, [{ sessionId: firstId, closed: true }]);
     assert.equal(records[0].status, "closed");
     assert.deepEqual(nativeDialogs, []);
+  } finally { await context.close(); }
+});
+
+test("an agent claims an unassigned conversation before replying or closing it", async () => {
+  const { context, page, calls, records } = await openWorkspace({ unassigned: true });
+  try {
+    assert.equal(await page.getByRole("button", { name: "关闭会话" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "图片" }).isDisabled(), true);
+    await page.getByRole("button", { name: "领取会话" }).click();
+    await page.getByRole("button", { name: "关闭会话" }).waitFor({ state: "visible" });
+    await page.waitForFunction(() => !document.querySelector('button[aria-label="关闭会话"]')?.disabled);
+    assert.equal(records[0].assigned_user_id, assigneeId);
+    assert.equal(calls.assign, 1);
+    assert.equal(await page.getByRole("button", { name: "图片" }).isDisabled(), false);
+  } finally { await context.close(); }
+});
+
+test("per-store permissions hide invalid claim and management actions while showing supervisor assignment context", async () => {
+  const { context, page } = await openWorkspace({
+    selfRole: "supervisor", canManage: false, canClaim: false,
+    needsTakeover: true,
+    assignmentEvents: [{ action: "conversation.assign.auto", actor_type: "system", assigned_user_id: assigneeId, reason: "least_pending", created_at: "2026-10-20T10:00:00Z" }],
+  });
+  try {
+    assert.equal(await page.getByRole("button", { name: "领取会话" }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "关闭会话" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "转交会话" }).isDisabled(), true);
+    await page.getByText("原负责人已失去本店接待资格").waitFor();
+    await page.getByText(/派单记录（最近 1 条）/).click();
+    await page.getByText(/自动派单/).waitFor();
   } finally { await context.close(); }
 });
 

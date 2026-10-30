@@ -13,7 +13,7 @@ import { LogisticsNotificationReview, ReplyReviewPanel } from "../../components/
 import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, sendMessageMedia, uploadMessageMedia, setBuyerStage, setSessionClosed, setSessionStar, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type SidebarOrder, type StoreView } from "../../lib/api";
+import { assignSession, currentUser, getSessionMessages, getSessionMessagesPage, heartbeatReceptionStore, listOwnReceptionStores, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, sendMessageMedia, uploadMessageMedia, setBuyerStage, setSessionClosed, setSessionStar, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type OwnReceptionStore, type SessionAssignee, type SessionListData, type SessionMessagesData, type SidebarOrder, type StoreView, type UserView } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
 import "./quick-reply.css";
@@ -43,6 +43,7 @@ const filterLabels: Record<"zh" | "en", Record<Filter, string>> = {
   zh: { all: "全部", unread: "未读", mine: "我的", starred: "星标", closed: "已关闭" },
   en: { all: "All", unread: "Unread", mine: "Mine", starred: "Starred", closed: "Closed" },
 };
+const assignmentLabels: Record<string, string> = { "conversation.assign.auto": "自动派单", "conversation.assign.auto_requeue": "离线重派", "conversation.assign": "人工分配", "conversation.transfer": "人工转交" };
 const newKey = () => typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 const searchTerms = (value: string) => [...new Set(value.split(/[\n,，;；]+/).map((term) => term.trim()).filter(Boolean))];
 const replyEmojis = ["😀", "😃", "😄", "😁", "😊", "🙂", "😉", "😍", "🥰", "😘", "😂", "😅", "🥲", "😢", "😮", "🤔", "😎", "👍", "👎", "👏", "🙌", "🙏", "💪", "👋", "❤️", "💙", "✨", "🎉", "🎁", "🌹", "🔥", "✅", "💯", "📦", "🚚", "🛍️"];
@@ -69,6 +70,10 @@ export default function WorkspacePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [list, setList] = useState<SessionListData | null>(null);
   const [stores, setStores] = useState<StoreView[]>([]);
+  const [self, setSelf] = useState<UserView | null>(null);
+  const [receptionStores, setReceptionStores] = useState<OwnReceptionStore[]>([]);
+  const receptionStoresRef = useRef<OwnReceptionStore[]>([]);
+  const [receptionError, setReceptionError] = useState("");
   const [storeError, setStoreError] = useState("");
   const [detail, setDetail] = useState<SessionMessagesData | null>(null);
   const [orderSnapshot, setOrderSnapshot] = useState<{ sessionId: string; stage: BuyerStage | "unknown"; orders: SidebarOrder[] | null } | null>(null);
@@ -216,6 +221,36 @@ export default function WorkspacePage() {
       .catch(() => { if (active) setStoreError(en ? "Could not load stores. Refresh to retry." : "店铺加载失败，请刷新重试。"); });
     return () => { active = false; };
   }, [en]);
+
+  useEffect(() => {
+    let active = true;
+    const pulse = async () => {
+      if (!active || document.visibilityState !== "visible") return;
+      const accepting = receptionStoresRef.current.filter((item) => item.accepting);
+      const results = await Promise.allSettled(accepting.map((item) => heartbeatReceptionStore(item.store_id, true)));
+      if (!active) return;
+      const refreshed = new Set(accepting.filter((_, index) => results[index]?.status === "fulfilled").map((item) => item.store_id));
+      const next = receptionStoresRef.current.map((item) => refreshed.has(item.store_id) ? { ...item, online: true } : item);
+      receptionStoresRef.current = next; setReceptionStores(next);
+      if (results.some((result) => result.status === "rejected")) setReceptionError("自动接待在线状态更新失败，请刷新后重试");
+      else if (accepting.length) setReceptionError("");
+    };
+    void currentUser().then((user) => { if (active) setSelf(user); })
+      .catch(() => { if (active) setReceptionError("当前账号信息加载失败，请刷新后重试"); });
+    void listOwnReceptionStores().then((items) => { if (active) { receptionStoresRef.current = items; setReceptionStores(items); void pulse(); } })
+      .catch(() => { if (active) setReceptionError("接待状态加载失败，请刷新后重试"); });
+    const timer = window.setInterval(() => { void pulse(); }, 20_000);
+    document.addEventListener("visibilitychange", pulse);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", pulse); };
+  }, []);
+
+  async function toggleReception(store: OwnReceptionStore) {
+    try {
+      await heartbeatReceptionStore(store.store_id, !store.accepting);
+      const next = receptionStoresRef.current.map((item) => item.store_id === store.store_id ? { ...item, accepting: !store.accepting, online: !store.accepting } : item);
+      receptionStoresRef.current = next; setReceptionStores(next); setReceptionError("");
+    } catch (caught) { setReceptionError(caught instanceof Error ? caught.message : "接待状态更新失败"); }
+  }
 
   const buildListQuery = useCallback((page: number) => {
     const query = new URLSearchParams({ filter, page: String(page), page_size: "30" });
@@ -656,13 +691,32 @@ export default function WorkspacePage() {
     finally { setActionBusy(false); }
   }
 
+  async function claimConversation() {
+    if (!detail || !self || actionBusy || detail.session.assigned_user_id) return;
+    const sessionId = detail.session.id;
+    setActionBusy(true);
+    try {
+      await assignSession(sessionId, self.id);
+      const fresh = await getSessionMessages(sessionId);
+      setDetail((current) => current?.session.id === sessionId ? fresh : current);
+      await loadList();
+      setAnnouncement(en ? "Conversation claimed" : "会话已领取");
+    } catch (caught) { setAnnouncement(caught instanceof Error ? caught.message : en ? "Could not claim conversation" : "领取会话失败"); }
+    finally { setActionBusy(false); }
+  }
+
   const displayedBuyerStage = detail?.customer.buyer_stage_override
     ?? (detail && orderSnapshot?.sessionId === detail.session.id ? orderSnapshot.stage
       : detail?.session.platform === "tiktok" ? "unknown" : stageFromOrders(detail?.recent_orders ?? []));
+  const contextConversation = contextMenu ? list?.items.find((item) => item.id === contextMenu.sessionId) : null;
+  const canManageContextConversation = contextConversation?.can_manage === true;
+  const canManageDetail = detail?.session.can_manage === true;
 
   return <AppShell><main className={`workspace-grid ${selectedId ? "has-selection" : ""}`}>
     <section className="conversation-panel" aria-label={en ? "Conversation list" : "会话列表"}>
       <div className="panel-heading"><div><p className="eyebrow">INBOX</p><h2 className="text-xl font-semibold">{en ? "Customer messages" : "客户消息"}</h2></div><span aria-label={en ? "Total unread messages" : "新消息总数"} className="count-pill">{list?.unread_messages_total ?? 0}</span></div>
+      {receptionStores.length ? <details className="border-b border-[var(--border)] px-3 py-2 text-xs"><summary className="cursor-pointer">{en ? "Automatic reception" : "自动接待"} · {receptionStores.filter((item) => item.accepting && item.online).length}/{receptionStores.length} {en ? "stores active" : "家店铺接待中"}</summary><div className="mt-2 flex flex-wrap gap-2">{receptionStores.map((item) => <button className="secondary-button" key={item.store_id} onClick={() => void toggleReception(item)} type="button">{stores.find((store) => store.id === item.store_id)?.name ?? item.store_id} · {item.accepting ? (en ? "Pause" : "暂停") : (en ? "Resume" : "恢复")}</button>)}</div></details> : null}
+      {receptionError ? <p className="px-3 text-xs text-red-600" role="alert">{receptionError}</p> : null}
       <div className="filter-row" aria-label={en ? "Conversation filters" : "会话筛选"}>{(["all", "unread", "mine", "starred", "closed"] as Filter[]).map((item) => <button aria-pressed={filter === item} className={filter === item ? "filter active" : "filter"} key={item} onClick={() => setFilter(item)} type="button">{filterLabels[language][item]}</button>)}</div>
       <div className="workspace-search">
         <div className="workspace-search-controls">
@@ -684,7 +738,7 @@ export default function WorkspacePage() {
           </span>
         </button>;
       })}{loadingMore ? <p className="workspace-search-summary" role="status">{en ? "Loading more conversations…" : "正在加载更多会话…"}</p> : null}{loadMoreError ? <div className="workspace-search-summary" role="alert">{loadMoreError} <button className="text-button" onClick={() => void loadMoreConversations()} type="button">{en ? "Retry" : "重试"}</button></div> : null}</>}</div>
-      {contextMenu && list?.items.find((item) => item.id === contextMenu.sessionId) ? <div aria-label={en ? "Conversation actions" : "会话操作"} className="workspace-conversation-context" ref={contextMenuRef} role="menu" style={{ left: contextMenu.x, top: contextMenu.y }}><button disabled={actionBusy} onClick={() => { const item = list.items.find((entry) => entry.id === contextMenu.sessionId); setContextMenu(null); if (item) void changeStarForSession(item.id, item.is_starred); }} role="menuitem" type="button">{list.items.find((item) => item.id === contextMenu.sessionId)?.is_starred ? (en ? "Remove star" : "取消星标") : (en ? "Star" : "星标")}</button><button disabled={actionBusy || list.items.find((item) => item.id === contextMenu.sessionId)?.status === "closed"} onClick={() => { setPendingContextAction({ sessionId: contextMenu.sessionId, action: "transfer" }); setSelectedId(contextMenu.sessionId); setContextMenu(null); }} role="menuitem" type="button">{en ? "Transfer" : "转交"}</button><button disabled={actionBusy || list.items.find((item) => item.id === contextMenu.sessionId)?.status === "closed"} onClick={() => { setPendingContextAction({ sessionId: contextMenu.sessionId, action: "close" }); setSelectedId(contextMenu.sessionId); setContextMenu(null); }} role="menuitem" type="button">{en ? "Close conversation" : "关闭会话"}</button></div> : null}
+      {contextMenu && contextConversation ? <div aria-label={en ? "Conversation actions" : "会话操作"} className="workspace-conversation-context" ref={contextMenuRef} role="menu" style={{ left: contextMenu.x, top: contextMenu.y }}><button disabled={actionBusy || !canManageContextConversation} onClick={() => { setContextMenu(null); void changeStarForSession(contextConversation.id, contextConversation.is_starred); }} role="menuitem" type="button">{contextConversation.is_starred ? (en ? "Remove star" : "取消星标") : (en ? "Star" : "星标")}</button><button disabled={actionBusy || !canManageContextConversation || contextConversation.status === "closed"} onClick={() => { setPendingContextAction({ sessionId: contextMenu.sessionId, action: "transfer" }); setSelectedId(contextMenu.sessionId); setContextMenu(null); }} role="menuitem" type="button">{en ? "Transfer" : "转交"}</button><button disabled={actionBusy || !canManageContextConversation || contextConversation.status === "closed"} onClick={() => { setPendingContextAction({ sessionId: contextMenu.sessionId, action: "close" }); setSelectedId(contextMenu.sessionId); setContextMenu(null); }} role="menuitem" type="button">{en ? "Close conversation" : "关闭会话"}</button></div> : null}
     </section>
 
     <section className="chat-panel" aria-label={en ? "Chat window" : "聊天窗口"}>{!selectedId ? <EmptyState label={en ? "Select a conversation" : "请选择一个会话"} /> : detailError ? <ErrorState message={detailError} /> : !detail ? <LoadingState label={en ? "Loading messages…" : "正在加载消息…"} /> : <>
@@ -694,8 +748,10 @@ export default function WorkspacePage() {
           <div className="workspace-chat-identity"><h2 className="truncate font-semibold">{detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")}</h2><div className="workspace-buyer-stage" ref={stageMenuRef}><button aria-expanded={stageMenuOpen} aria-label={en ? "Buyer stage" : "买家阶段"} className="workspace-buyer-stage-button" data-stage={displayedBuyerStage} disabled={stageBusy} onClick={() => setStageMenuOpen(!stageMenuOpen)} title={detail.customer.buyer_stage_override ? (en ? "Manually selected" : "人工选择") : undefined} type="button">{stageLabel(displayedBuyerStage, en)}<CaretDown size={12} /></button>{stageMenuOpen ? <div aria-label={en ? "Choose buyer stage" : "选择买家阶段"} className="workspace-buyer-stage-menu" role="menu">{detail.customer.buyer_stage_override ? <button onClick={() => void changeBuyerStage(null)} role="menuitem" type="button">{en ? "Restore automatic stage" : "恢复自动判断"}</button> : null}{(["pre", "during", "after"] as BuyerStage[]).map((stage) => <button key={stage} onClick={() => void changeBuyerStage(stage)} role="menuitem" type="button">{stageLabel(stage, en)}</button>)}</div> : null}</div></div>
           <p className="text-xs text-[var(--muted)]">{detail.session.platform} · {detail.session.status} · {modeLabel(detail.send_mode, en)}</p>{stageError ? <p className="workspace-stage-error" role="alert">{stageError}</p> : null}
         </div>
-        <div className="chat-actions"><button aria-label={detail.session.is_starred ? (en ? "Remove review risk mark" : "取消差评风险标记") : (en ? "Mark review risk" : "标记差评风险")} aria-pressed={detail.session.is_starred} className="icon-action" disabled={actionBusy} onClick={() => void changeStar()} title={en ? "Review risk" : "差评风险"} type="button"><Star size={19} weight={detail.session.is_starred ? "fill" : "regular"} /></button><button aria-label={en ? "Transfer conversation" : "转交会话"} className="icon-action" disabled={actionBusy || detail.session.status === "closed"} onClick={() => void openTransfer()} title={en ? "Transfer" : "转交会话"} type="button"><UserSwitch size={19} /></button><button aria-label={detail.session.status === "closed" ? (en ? "Reopen conversation" : "重新打开会话") : (en ? "Close conversation" : "关闭会话")} className="icon-action" disabled={actionBusy} onClick={() => { if (detail.session.status === "closed") void changeClosed(false); else { setCloseError(""); setCloseConfirmId(detail.session.id); } }} title={detail.session.status === "closed" ? (en ? "Reopen" : "重新打开") : (en ? "Close" : "关闭会话")} type="button">{detail.session.status === "closed" ? <ArrowRight size={19} /> : <X size={19} />}</button><button className="secondary-button" onClick={() => setCustomerOpen(true)} type="button"><UserFocus size={17} />{en ? "Customer details" : "客户信息"}</button></div>
+        <div className="chat-actions">{detail.session.can_claim ? <button className="secondary-button" disabled={actionBusy} onClick={() => void claimConversation()} type="button">{en ? "Claim" : "领取会话"}</button> : null}<button aria-label={detail.session.is_starred ? (en ? "Remove review risk mark" : "取消差评风险标记") : (en ? "Mark review risk" : "标记差评风险")} aria-pressed={detail.session.is_starred} className="icon-action" disabled={actionBusy || !canManageDetail} onClick={() => void changeStar()} title={en ? "Review risk" : "差评风险"} type="button"><Star size={19} weight={detail.session.is_starred ? "fill" : "regular"} /></button><button aria-label={en ? "Transfer conversation" : "转交会话"} className="icon-action" disabled={actionBusy || detail.session.status === "closed" || !canManageDetail} onClick={() => void openTransfer()} title={en ? "Transfer" : "转交会话"} type="button"><UserSwitch size={19} /></button><button aria-label={detail.session.status === "closed" ? (en ? "Reopen conversation" : "重新打开会话") : (en ? "Close conversation" : "关闭会话")} className="icon-action" disabled={actionBusy || !canManageDetail} onClick={() => { if (detail.session.status === "closed") void changeClosed(false); else { setCloseError(""); setCloseConfirmId(detail.session.id); } }} title={detail.session.status === "closed" ? (en ? "Reopen" : "重新打开") : (en ? "Close" : "关闭会话")} type="button">{detail.session.status === "closed" ? <ArrowRight size={19} /> : <X size={19} />}</button><button className="secondary-button" onClick={() => setCustomerOpen(true)} type="button"><UserFocus size={17} />{en ? "Customer details" : "客户信息"}</button></div>
       </header>
+      {detail.session.needs_takeover ? <p className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800" role="alert">原负责人已失去本店接待资格，请主管重新分配此会话。</p> : null}
+      {detail.assignment_events?.length ? <details className="border-b border-[var(--border)] px-4 py-2 text-xs"><summary className="cursor-pointer">派单记录（最近 {detail.assignment_events.length} 条）</summary><ol className="mt-2 space-y-1">{detail.assignment_events.map((event, index) => <li key={`${event.created_at}-${index}`}>{new Date(event.created_at).toLocaleString()} · {assignmentLabels[event.action] ?? event.action}{event.assigned_user_id ? ` · ${event.assigned_user_id.slice(0, 8)}` : ""}{event.reason ? ` · ${event.reason}` : ""}</li>)}</ol></details> : null}
       <div className="message-area"><div className="message-scroll" onScroll={onMessageScroll} ref={messageScrollRef}>{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble customerName={detail.customer.name} en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>{showLatest ? <button className="latest-button" onClick={scrollToLatest} type="button"><ArrowDown size={16} />{en ? "Latest message" : "到最新消息"}</button> : null}</div>
       <ReplyReviewPanel busy={sending} composerDraft={draft} composerRevision={draftRevision.current} en={en} key={detail.session.id} onDelivered={(messages) => setDetail((current) => current?.session.id === detail.session.id ? { ...current, messages: [...current.messages.filter((message) => !messages.some((received) => received.id === message.id)), ...messages] } : current)} onUse={(text) => { setDraft(text); setAnnouncement(en ? "Suggestion inserted; review it before sending" : "建议已填入输入框，确认后再发送"); }} recipient={detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} sendMode={detail.send_mode} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} triggerMessageId={detail.messages.findLast((message) => message.role === "user")?.id ?? null} />
       <LogisticsNotificationReview en={en} key={`notifications-${detail.session.id}`} orders={orderSnapshot?.sessionId === detail.session.id ? orderSnapshot.orders : null} sessionId={detail.session.id} storeId={detail.session.store_id} />

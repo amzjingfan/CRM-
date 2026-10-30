@@ -8,6 +8,7 @@ import uuid
 from app.integrations.conversation_sync import process_tiktok_conversation_sync_cycle
 from app.integrations.service import claim_and_process_one, cleanup_processed_payloads
 from app.integrations.tiktok_read import close_tiktok_read_http_pool
+from app.reception_assignment.dispatch import dispatch_queued, requeue_offline_auto_assignments
 from app.shared.config.settings import get_settings
 from app.shared.database.session import session_factory
 from app.shared.logging.setup import configure_logging
@@ -37,11 +38,17 @@ async def run_worker() -> None:
     )
     cleanup_counter = 0
     next_conversation_sync_at = 0.0
+    next_assignment_cycle_at = 0.0
     sync_task: asyncio.Task[None] | None = None
     while True:
         try:
             async with session_factory() as session:
                 processed = await claim_and_process_one(session, settings.webhook_max_retries)
+                if time.monotonic() >= next_assignment_cycle_at:
+                    await requeue_offline_auto_assignments(session)
+                    await dispatch_queued(session)
+                    await session.commit()
+                    next_assignment_cycle_at = time.monotonic() + 5.0
                 cleanup_counter += 1
                 if cleanup_counter >= 60:
                     await cleanup_processed_payloads(session, settings.webhook_payload_retention_days)

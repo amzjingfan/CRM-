@@ -35,6 +35,7 @@ from app.reception.models import (
     ReceptionPolicyStore,
     ReceptionReply,
 )
+from app.reception_assignment.models import ReceptionAgentConfig, ReceptionStoreConfig
 from app.shared.database.base import Permission, Role, User
 from app.stores.models import ChannelAccount, Store
 from app.tools.models import CouponIssuance, ToolCall
@@ -81,6 +82,8 @@ __all__ = [
     "ReceptionPolicy",
     "ReceptionPolicyStore",
     "ReceptionReply",
+    "ReceptionAgentConfig",
+    "ReceptionStoreConfig",
     "Role",
     "Store",
     "ToolCall",

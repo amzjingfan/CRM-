@@ -61,6 +61,7 @@ async def test_search_validates_batch_bounds_before_store_query(
     allowed = AsyncMock(return_value={uuid.uuid4()})
     listing = AsyncMock(return_value=([], 0))
     monkeypatch.setattr(workspace_service, "allowed_store_ids", allowed)
+    monkeypatch.setattr(workspace_service, "supervised_store_ids", AsyncMock(return_value=set()))
     monkeypatch.setattr(workspace_service, "list_conversations", listing)
     unread_total = AsyncMock(return_value=5)
     monkeypatch.setattr(workspace_service, "unread_message_total", unread_total)
@@ -146,6 +147,7 @@ async def test_workspace_draft_translation_is_store_scoped_audited_and_preview_o
         ),
     )
     monkeypatch.setattr(workspace_service, "allowed_store_ids", AsyncMock(return_value={store_id}))
+    monkeypatch.setattr(workspace_service, "_assert_conversation_owner", AsyncMock())
     lookup = AsyncMock(return_value=None)
     monkeypatch.setattr(workspace_service, "find_conversation", lookup)
     provider = Mock()

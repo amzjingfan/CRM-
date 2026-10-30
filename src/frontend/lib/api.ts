@@ -4,7 +4,7 @@ export type UserView = { id: string; name: string; email: string | null; login_n
 export type ApiResponse<T> = { code: number; message: string; data: T };
 export type BuyerStage = "pre" | "during" | "after";
 export type CustomerSummary = { id: string; name: string | null; email: string | null; avatar: string | null; tags: string[]; buyer_stage_override?: BuyerStage | null };
-export type SessionSummary = { id: string; store_id: string; platform: string; status: string; is_starred: boolean; closed_at: string | null; unread_count: number; assigned_user_id: string | null; last_message_at: string | null; last_message: string | null; customer: CustomerSummary };
+export type SessionSummary = { id: string; store_id: string; platform: string; status: string; is_starred: boolean; closed_at: string | null; unread_count: number; assigned_user_id: string | null; can_manage?: boolean; can_claim?: boolean; needs_takeover?: boolean; last_message_at: string | null; last_message: string | null; customer: CustomerSummary };
 export type SessionActionResult = Pick<SessionSummary, "status" | "is_starred" | "closed_at">;
 export type SessionAssignee = { id: string; name: string };
 export type LogisticsCardView = { order_id: string; package_id: string | null; product_name: string | null; image_url: string | null; sku_name: string | null; quantity: number | null; unit_price: string | null; currency: string | null; tracking_number: string | null; carrier_name: string | null; latest_description: string | null; latest_at: string | null };
@@ -37,7 +37,7 @@ export type SidebarCoupon = { id: string; title: string; status: string | null; 
 export type SidebarCoupons = { items: SidebarCoupon[]; next_page_token: string | null; total_count: number | null; partial_search: boolean };
 export type SidebarSearch = { section: "orders" | "products" | "coupons"; field: string; query: string; status?: "all" | "unpaid" | "ship" | "transit" | "done" | "cancel"; page?: number; page_token?: string | null; refresh?: boolean };
 export type SessionListData = { items: SessionSummary[]; pagination: { page: number; page_size: number; total: number }; unread_messages_total: number };
-export type SessionMessagesData = { session: SessionSummary; messages: MessageView[]; customer: CustomerSummary; recent_orders: OrderSummary[]; ai_suggestion: null; pagination: { page: number; page_size: number; total: number }; send_mode: "disabled" | "mock" | "real"; requires_confirmation: true; translation_enabled?: boolean; draft_translation_enabled?: boolean };
+export type SessionMessagesData = { session: SessionSummary; messages: MessageView[]; customer: CustomerSummary; recent_orders: OrderSummary[]; assignment_events?: Array<{ action: string; actor_type: string; assigned_user_id: string | null; reason: string | null; created_at: string }>; ai_suggestion: null; pagination: { page: number; page_size: number; total: number }; send_mode: "disabled" | "mock" | "real"; requires_confirmation: true; translation_enabled?: boolean; draft_translation_enabled?: boolean };
 export type KnowledgeCategory = { id: string; store_id: string; parent_id: string | null; name: string; code: string; layer: string; sort_order: number; status: string };
 export type KnowledgeStatementType = "policy" | "technical_artifact" | "customer_instance_fact" | "non_assertive_proposition" | "unknown";
 export type KnowledgeCustomerScope = "none" | "generic" | "specific_customer";
@@ -81,6 +81,9 @@ export type TeamAssignment = { role: "admin" | "supervisor" | "agent"; store_id:
 export type TeamRoleView = { role: string; store_id: string | null };
 export type TeamMember = { id: string; login_name: string | null; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; status: "active" | "disabled"; assignments: TeamRoleView[]; department_ids: string[]; last_login_at: string | null; created_at: string };
 export type Department = { id: string; name: string; store_ids: string[]; created_at: string };
+export type ReceptionAgent = { user_id: string; name: string; active: boolean; auto_enabled: boolean; accepting: boolean; capacity: number; pending_count: number; online: boolean; last_heartbeat_at: string | null };
+export type ReceptionStore = { store_id: string; department_id: string; enabled: boolean; queue_count: number; queue_reasons: Record<string, number>; takeover_count: number; takeover_conversation_ids: string[]; agents: ReceptionAgent[] };
+export type OwnReceptionStore = { store_id: string; accepting: boolean; online: boolean };
 export type TeamMemberCreate = { login_name: string; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; temporary_password: string; assignments: TeamAssignment[]; department_id: string | null };
 export type Suggestion = { agent_run_id: string; content: string | null; reply_parts?: string[]; logistics_order_numbers?: string[]; trigger_message_id?: string | null; reason_codes?: string[]; intent: string | null; confidence: number; action: string; terminal_state: string; requires_human: boolean; transfer_performed: boolean; send_performed: false; citations: Array<{ document_id: string; chunk_id: string; score: number; source_label: string }>; trace_id: string; demo_mode: boolean; demo_scenario: string | null };
 export type ChatEvent = { event: "accepted" | "status" | "draft" | "delta" | "result" | "error" | "done"; data: Record<string, unknown> };
@@ -247,6 +250,7 @@ export const setSessionStar = (sessionId: string, starred: boolean) => requestAp
 export const setSessionClosed = (sessionId: string, closed: boolean) => requestApi<SessionActionResult>(`/workspace/sessions/${sessionId}/closed`, { method: "PATCH", body: JSON.stringify({ closed }) });
 export const setBuyerStage = (sessionId: string, stage: BuyerStage | null) => requestApi<CustomerSummary>(`/workspace/sessions/${sessionId}/buyer-stage`, { method: "PATCH", body: JSON.stringify({ stage }) });
 export const listSessionAssignees = (sessionId: string) => requestApi<SessionAssignee[]>(`/workspace/sessions/${sessionId}/assignees`);
+export const assignSession = (sessionId: string, userId: string) => requestApi<SessionSummary>(`/workspace/sessions/${sessionId}/assign`, { method: "POST", body: JSON.stringify({ user_id: userId }) });
 export const transferSession = (sessionId: string, reason: string, idempotencyKey: string, assignTo?: string) => requestApi<{ transfer_id: string; status: "transferred" }>(`/workspace/sessions/${sessionId}/transfer`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ reason, assign_to: assignTo ?? null }) });
 export const listKnowledgeCategories = (storeId = "") => requestApi<KnowledgeCategory[]>(`/knowledge/categories${storeId ? `?store_id=${encodeURIComponent(storeId)}` : ""}`);
 export const createKnowledgeCategory = (payload: { store_id: string; parent_id: string | null; name: string; code: string }) => requestApi<KnowledgeCategory>("/knowledge/categories", { method: "POST", body: JSON.stringify(payload) });
@@ -345,6 +349,10 @@ export const updateDepartment = (id: string, payload: { name?: string; store_ids
 export const listDepartmentMembers = (id: string) => requestApi<TeamMember[]>(`/settings/departments/${id}/members`);
 export const addDepartmentMember = (id: string, userId: string) => requestApi<void>(`/settings/departments/${id}/members`, { method: "POST", body: JSON.stringify({ user_id: userId }) });
 export const removeDepartmentMember = (id: string, userId: string) => requestApi<void>(`/settings/departments/${id}/members/${userId}`, { method: "DELETE" });
+export const getDepartmentReception = (departmentId: string, storeId: string) => requestApi<ReceptionStore>(`/settings/departments/${departmentId}/reception/stores/${storeId}`);
+export const putDepartmentReception = (departmentId: string, storeId: string, payload: { enabled: boolean; agents: Array<{ user_id: string; auto_enabled: boolean; capacity: number }> }) => requestApi<ReceptionStore>(`/settings/departments/${departmentId}/reception/stores/${storeId}`, { method: "PUT", body: JSON.stringify(payload) });
+export const listOwnReceptionStores = () => requestApi<OwnReceptionStore[]>("/workspace/reception/stores");
+export const heartbeatReceptionStore = (storeId: string, accepting: boolean) => requestApi<{ store_id: string; accepting: boolean; last_heartbeat_at: string }>("/workspace/reception/heartbeat", { method: "POST", body: JSON.stringify({ store_id: storeId, accepting }) });
 export const disableTeamMember = (userId: string) => requestApi<void>(`/settings/team/${userId}`, { method: "DELETE" });
 export const deleteTeamMember = (userId: string) => requestApi<void>(`/settings/team/${userId}/permanent`, { method: "DELETE" });
 export const getSuggestion = (sessionId: string, triggerMessageId?: string) => requestApi<Suggestion>(`/workspace/sessions/${sessionId}/suggest`, { method: "POST", body: JSON.stringify({ trigger_message_id: triggerMessageId ?? null }) });

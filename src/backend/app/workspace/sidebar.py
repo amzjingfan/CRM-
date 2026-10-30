@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
-from app.auth.store_access import allowed_store_ids
+from app.auth.store_access import allowed_store_ids, ensure_conversation_access
 from app.conversations.models import Conversation
 from app.customers.models import Customer
 from app.integrations.tiktok_read import (
@@ -331,9 +331,12 @@ class SidebarCoupons(BaseModel):
 
 
 async def _conversation(session: AsyncSession, user: User, session_id: uuid.UUID) -> Conversation:
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.view")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await ensure_conversation_access(session, user, conversation)
     return conversation
 
 

@@ -7,10 +7,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from pydantic import ValidationError
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.models import AuditLog
+from app.auth.store_access import allowed_store_ids, supervised_store_ids
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.integrations.adapters import get_message_adapter
@@ -18,7 +19,7 @@ from app.integrations.schemas import SendMessageCommand
 from app.integrations.tiktok_write import is_tiktok_send_target_allowed
 from app.orders.models import Order
 from app.shared.config.settings import get_settings
-from app.shared.database.base import user_roles
+from app.shared.database.base import Permission, User, role_permissions, user_roles
 from app.shared.exceptions.errors import AppError
 from app.stores.models import ChannelAccount, Store
 from app.tools.contracts import (
@@ -473,11 +474,18 @@ class SqlAlchemyToolExecutor:
             raise ToolDispatchError("TOOL_RESOURCE_NOT_FOUND")
         if conversation.status == "closed":
             raise ToolDispatchError("TOOL_PLATFORM_DISABLED")
+        await self._verify_user_owner(invocation, conversation, "workspace.transfer")
         if arguments.assign_to is not None:
             assignment = await self.session.scalar(
-                select(user_roles.c.id).where(
+                select(user_roles.c.id)
+                .join(User, User.id == user_roles.c.user_id)
+                .join(role_permissions, role_permissions.c.role_id == user_roles.c.role_id)
+                .join(Permission, Permission.id == role_permissions.c.permission_id)
+                .where(
                     user_roles.c.user_id == arguments.assign_to,
                     user_roles.c.store_id == invocation.context.store_id,
+                    User.status == "active",
+                    Permission.code == "workspace.reply",
                 )
             )
             if assignment is None:
@@ -622,6 +630,8 @@ class SqlAlchemyToolExecutor:
             if media_claim
             else None
         )
+        # 只在所有只读预检之后核对归属，但必须早于处理态消息和平台调用。
+        await self._verify_user_owner(invocation, conversation, "workspace.reply")
         message = Message(
             store_id=conversation.store_id,
             conversation_id=conversation.id,
@@ -664,6 +674,19 @@ class SqlAlchemyToolExecutor:
         message.status = result.status
         message.error_code = result.error_code
         message.sent_at = datetime.now(UTC) if result.status == "sent" else None
+        if result.status == "sent" and invocation.context.actor_type == "user" and invocation.context.actor_id:
+            # 平台返回发送成功后才确认近期人工回复；刷新行锁避免覆盖期间抵达的新消息。
+            await self.session.refresh(conversation, with_for_update=True)
+            latest_inbound = await self.session.scalar(
+                select(func.max(Message.created_at)).where(
+                    Message.conversation_id == conversation.id,
+                    Message.direction == "inbound",
+                )
+            )
+            if latest_inbound is None or (message.sent_at is not None and latest_inbound <= message.sent_at):
+                conversation.awaiting_reply_since = None
+            conversation.last_human_responder_id = invocation.context.actor_id
+            conversation.last_human_replied_at = message.sent_at
         message.raw_payload = {
             "delivery_mode": "mock" if result.mock else "real",
             **({"logistics_card": card_payload} if card_payload else {}),
@@ -698,6 +721,23 @@ class SqlAlchemyToolExecutor:
             mocked=result.mock,
             error_code=result.error_code,
         )
+
+    async def _verify_user_owner(
+        self, invocation: ToolInvocation, conversation: Conversation, permission_code: str
+    ) -> None:
+        """在工具执行的行锁内复核店铺权限与归属，避免撤权或转交后的竞态操作。"""
+        if invocation.context.actor_type != "user":
+            return
+        actor_id = invocation.context.actor_id
+        actor = await self.session.get(User, actor_id) if actor_id is not None else None
+        if actor is None or actor.status != "active":
+            raise ToolDispatchError("TOOL_OWNER_MISMATCH")
+        if conversation.store_id not in await allowed_store_ids(self.session, actor, permission_code):
+            raise ToolDispatchError("TOOL_OWNER_MISMATCH")
+        if conversation.assigned_user_id == actor_id:
+            return
+        if conversation.store_id not in await supervised_store_ids(self.session, actor):
+            raise ToolDispatchError("TOOL_OWNER_MISMATCH")
 
     async def _find_order(self, store_id: uuid.UUID, order_id: str) -> Order | None:
         """按内部或平台订单号查询，并强制绑定可信店铺。"""

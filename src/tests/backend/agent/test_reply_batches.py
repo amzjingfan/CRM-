@@ -122,8 +122,8 @@ async def test_late_previous_attempt_cannot_overwrite_current_unknown_claim():
 
 @pytest.mark.asyncio
 async def test_known_not_started_can_retry_but_other_platform_errors_stay_unknown():
-    from app.workspace.delivery_errors import DeliveryNotStarted
     from app.shared.exceptions.errors import ErrorCode
+    from app.workspace.delivery_errors import DeliveryNotStarted
 
     calls = []
 

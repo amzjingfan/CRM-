@@ -13,6 +13,7 @@ from app.conversations.workflow import reopen_on_new_buyer_message
 from app.customers.models import Customer
 from app.integrations.adapters import _message_content
 from app.integrations.tiktok_read import TikTokConversation, TikTokConversationMessage, TikTokReadClient
+from app.reception_assignment.dispatch import dispatch_conversation
 from app.shared.config.settings import Settings
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount
@@ -104,6 +105,9 @@ async def _persist_page(
                 is_new_since_close = closed_at is not None and created_at > closed_at
                 if is_new_since_sync or is_new_since_close:
                     conversation.unread_count += 1
+                    if conversation.last_human_replied_at is None or created_at > conversation.last_human_replied_at:
+                        if conversation.awaiting_reply_since is None or created_at < conversation.awaiting_reply_since:
+                            conversation.awaiting_reply_since = created_at
                 if is_new_since_close and reopen_on_new_buyer_message(conversation, created_at):
                     session.add(
                         AuditLog(
@@ -116,6 +120,8 @@ async def _persist_page(
                             result="succeeded",
                         )
                     )
+                if (is_new_since_sync or is_new_since_close) and conversation.awaiting_reply_since is not None:
+                    await dispatch_conversation(session, conversation.id, now=datetime.now(UTC))
         if conversation.last_message_at is None or message.created_at > conversation.last_message_at:
             conversation.last_message_id = message.id
             conversation.last_message_at = message.created_at

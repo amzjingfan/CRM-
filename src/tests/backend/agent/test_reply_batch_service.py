@@ -80,7 +80,10 @@ async def test_other_unknown_message_blocks_before_write_with_retryable_typed_fa
     from app.tools.contracts import ToolResult
     from app.workspace.delivery_errors import DeliveryNotStarted
 
-    conv = SimpleNamespace(id=uuid.uuid4(), store_id=uuid.uuid4(), status="active", platform="tiktok")
+    actor = SimpleNamespace(id=uuid.uuid4())
+    conv = SimpleNamespace(
+        id=uuid.uuid4(), store_id=uuid.uuid4(), status="active", platform="tiktok", assigned_user_id=actor.id
+    )
     session = SimpleNamespace(scalar=AsyncMock(return_value=None))
     monkeypatch.setattr(workspace, "find_conversation", AsyncMock(return_value=conv))
     monkeypatch.setattr(workspace, "allowed_store_ids", AsyncMock(return_value={conv.store_id}))
@@ -95,9 +98,7 @@ async def test_other_unknown_message_blocks_before_write_with_retryable_typed_fa
     )
     monkeypatch.setattr(workspace, "SqlAlchemyToolExecutor", lambda _: executor)
     with pytest.raises(DeliveryNotStarted) as raised:
-        await workspace.send_agent_message(
-            session, SimpleNamespace(id=uuid.uuid4()), conv.id, "Reviewed", "attempt-1", confirmed=True
-        )
+        await workspace.send_agent_message(session, actor, conv.id, "Reviewed", "attempt-1", confirmed=True)
     assert raised.value.status_code == 409
     session.scalar.assert_not_awaited()
 
@@ -105,11 +106,14 @@ async def test_other_unknown_message_blocks_before_write_with_retryable_typed_fa
 @pytest.mark.asyncio
 async def test_entire_store_access_revoked_after_claim_is_known_not_started(monkeypatch):
     from app.shared.exceptions.errors import ErrorCode
+
     session, actor, conv, sender = setup(monkeypatch)
-    monkeypatch.setattr(service, "current_permissions", AsyncMock(side_effect=[
-        {"workspace.reply"}, AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)]))
-    payload = ReplyBatchRequest(parts=[{"kind": "text", "content": "Reviewed"}],
-        preview_only=False, confirmed=True)
+    monkeypatch.setattr(
+        service,
+        "current_permissions",
+        AsyncMock(side_effect=[{"workspace.reply"}, AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)]),
+    )
+    payload = ReplyBatchRequest(parts=[{"kind": "text", "content": "Reviewed"}], preview_only=False, confirmed=True)
     result = await service.deliver_reviewed_batch(session, actor, conv.id, payload, "revoked")
     assert result.status == "failed" and result.parts[0].message_id is None
     sender.assert_not_awaited()

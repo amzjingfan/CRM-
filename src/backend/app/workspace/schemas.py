@@ -38,6 +38,9 @@ class SessionSummary(BaseModel):
     closed_at: datetime | None
     unread_count: int
     assigned_user_id: uuid.UUID | None
+    can_manage: bool = False
+    can_claim: bool = False
+    needs_takeover: bool = False
     last_message_at: datetime | None
     last_message: str | None
     customer: CustomerSummary
@@ -148,6 +151,14 @@ class SessionSearchRequest(BaseModel):
     terms: list[str] = Field(default_factory=list, max_length=20)
 
 
+class AssignmentEventView(BaseModel):
+    action: str
+    actor_type: str
+    assigned_user_id: uuid.UUID | None = None
+    reason: str | None = None
+    created_at: datetime
+
+
 class SessionMessagesData(BaseModel):
     """会话详情、客户、订单和消息。"""
 
@@ -155,6 +166,7 @@ class SessionMessagesData(BaseModel):
     messages: list[MessageView]
     customer: CustomerSummary
     recent_orders: list[OrderSummary]
+    assignment_events: list[AssignmentEventView] = Field(default_factory=list)
     ai_suggestion: None = None
     pagination: PageMeta
     send_mode: Literal["disabled", "mock", "real"]

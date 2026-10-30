@@ -3,16 +3,24 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import ANY, AsyncMock, Mock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.conversations.workflow import reopen_on_new_buyer_message
+from app.integrations import conversation_sync
 from app.integrations.conversation_sync import _persist_page
 from app.integrations.tiktok_read import TikTokConversationMessage, TikTokMessageSender
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.workspace import service as workspace_service
+
+
+@pytest.fixture(autouse=True)
+def synthetic_access_and_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    """本文件验证原有状态流转；归属安全由独立 PostgreSQL 用例验证。"""
+    monkeypatch.setattr(workspace_service, "ensure_conversation_access", AsyncMock(return_value=None))
+    monkeypatch.setattr(conversation_sync, "dispatch_conversation", AsyncMock(return_value=None))
 
 
 @pytest.mark.asyncio
@@ -206,6 +214,8 @@ async def test_sync_reopens_once_and_counts_each_new_buyer_message_across_pages(
         unread_count=0,
         last_message_at=None,
         last_message_id=None,
+        last_human_replied_at=None,
+        awaiting_reply_since=None,
     )
     channel = SimpleNamespace(store_id=conversation.store_id, last_sync_at=None)
     customer = SimpleNamespace(id=uuid.uuid4())
@@ -253,6 +263,8 @@ async def test_sync_counts_new_buyer_messages_but_not_historical_backfill() -> N
         unread_count=0,
         last_message_at=None,
         last_message_id=None,
+        last_human_replied_at=None,
+        awaiting_reply_since=None,
     )
     channel = SimpleNamespace(store_id=conversation.store_id, last_sync_at=last_sync_at)
     customer = SimpleNamespace(id=uuid.uuid4())
@@ -277,6 +289,16 @@ async def test_sync_counts_new_buyer_messages_but_not_historical_backfill() -> N
     assert cutoff is None
     assert conversation.unread_count == 1
     assert conversation.status == "active"
+    conversation_sync.dispatch_conversation.assert_awaited_once_with(session, conversation.id, now=ANY)
+    new_message = next(
+        call.args[0]
+        for call in session.add.call_args_list
+        if getattr(call.args[0], "external_message_id", None) == "202"
+    )
+    session.scalar = AsyncMock(return_value=new_message)
+    duplicate_count, _ = await _persist_page(session, channel, conversation, customer, "123", [new], None)
+    assert duplicate_count == 0
+    assert conversation_sync.dispatch_conversation.await_count == 1
 
 
 def test_closed_conversation_never_exposes_send_mode(monkeypatch: pytest.MonkeyPatch) -> None:

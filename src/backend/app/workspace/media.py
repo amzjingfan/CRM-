@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.models import AuditLog
-from app.auth.store_access import allowed_store_ids
+from app.auth.store_access import allowed_store_ids, ensure_conversation_access
 from app.integrations.tiktok_write import TikTokMessageClient, is_tiktok_send_target_allowed
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
@@ -107,9 +107,12 @@ async def upload_media(
     session: AsyncSession, user: User, session_id: uuid.UUID, upload: UploadFile, idempotency_key: str
 ) -> MediaUploadView:
     """先核对店铺和真实发送白名单，再上传至当前授权店铺的 TikTok。"""
-    conversation = await find_conversation(session, session_id, await allowed_store_ids(session, user))
+    conversation = await find_conversation(
+        session, session_id, await allowed_store_ids(session, user, "workspace.reply")
+    )
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
+    await ensure_conversation_access(session, user, conversation, owner_required=True)
     settings = get_settings()
     channel = await session.scalar(
         select(ChannelAccount)
