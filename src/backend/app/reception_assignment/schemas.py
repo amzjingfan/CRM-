@@ -61,3 +61,37 @@ class OwnReceptionStoreView(BaseModel):
     store_id: uuid.UUID
     accepting: bool
     online: bool
+
+
+class ReceptionDepartmentAgentInput(BaseModel):
+    user_id: uuid.UUID
+    auto_enabled: bool = False
+
+
+class ReceptionDepartmentInput(BaseModel):
+    enabled: bool = False
+    agents: list[ReceptionDepartmentAgentInput] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def unique_agents(self) -> "ReceptionDepartmentInput":
+        if len({item.user_id for item in self.agents}) != len(self.agents):
+            raise ValueError("接待客服不可重复")
+        return self
+
+
+class ReceptionDepartmentAgentView(BaseModel):
+    user_id: uuid.UUID
+    name: str
+    active: bool
+    eligible_store_ids: list[uuid.UUID]
+    auto_enabled: bool
+    online: bool
+
+
+class ReceptionDepartmentView(BaseModel):
+    department_id: uuid.UUID
+    store_ids: list[uuid.UUID]
+    enabled: bool
+    queue_count: int
+    queue_reasons: dict[str, int] = Field(default_factory=dict)
+    agents: list[ReceptionDepartmentAgentView]

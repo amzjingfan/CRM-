@@ -24,6 +24,7 @@ export default function DepartmentsPage() {
   const [roleStoreId, setRoleStoreId] = useState("");
   const [roleDrafts, setRoleDrafts] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canViewReception, setCanViewReception] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,7 @@ export default function DepartmentsPage() {
     setLoading(true);
     try {
       const [items, shops, people, me] = await Promise.all([listDepartments(), listStores(), listTeam(), currentUser()]);
-      setDepartments(items); setStores(shops); setAccounts(people); setIsAdmin(me.role === "admin");
+      setDepartments(items); setStores(shops); setAccounts(people); setIsAdmin(me.role === "admin"); setCanViewReception(me.role === "admin" || me.permissions.includes("settings.team"));
       setSelectedId((value) => items.some((item) => item.id === value) ? value : items[0]?.id ?? "");
       setError("");
     } catch (caught) { setError(caught instanceof Error ? caught.message : "部门加载失败"); }
@@ -51,7 +52,7 @@ export default function DepartmentsPage() {
 
   const selected = departments.find((item) => item.id === selectedId);
   useEffect(() => { setRoleStoreId(selected?.store_ids[0] ?? ""); setRoleDrafts({}); }, [selectedId, selected?.store_ids]);
-  const filtered = useMemo(() => members.filter((item) => `${item.login_name ?? ""} ${item.email ?? ""} ${item.name}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())), [members, query]);
+  const filtered = useMemo(() => accounts.filter((item) => `${item.login_name ?? ""} ${item.email ?? ""} ${item.name}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())), [accounts, query]);
   const available = accounts.filter((item) => selected && !item.department_ids.includes(selected.id) && item.status === "active" && item.assignments.some((assignment) => assignment.store_id === null || selected.store_ids.includes(assignment.store_id)));
 
   async function saveDepartment(event: FormEvent<HTMLFormElement>) {
@@ -99,14 +100,14 @@ export default function DepartmentsPage() {
     finally { setBusy(false); }
   }
 
-  return <SettingsFrame title="部门管理" description="管理单一客服部的成员、固定角色与逐店咨询分配；部门归属不改变登录权限。">
+  return <SettingsFrame title="部门管理" description="管理客服部成员、固定角色与部门统一咨询分配。">
     {notice ? <div className="inline-status" role="status">{notice}</div> : null}
     {loading ? <LoadingState label="正在加载部门…" /> : error ? <ErrorState message={error} retry={() => void load()} /> : <div className="department-layout">
       <section className="settings-card department-list"><div className="settings-card-heading"><div><h2>部门</h2><p>共 {departments.length} 个</p></div>{isAdmin ? <button aria-label="新建部门" className="settings-icon-button" onClick={() => setEditor("create")} type="button"><Plus size={18} /></button> : null}</div><nav aria-label="部门列表">{departments.map((department) => <button aria-current={selectedId === department.id ? "true" : undefined} className={selectedId === department.id ? "department-link active" : "department-link"} key={department.id} onClick={() => setSelectedId(department.id)} type="button">{department.name}<small>{department.store_ids.length} 个店铺</small></button>)}</nav>{!departments.length ? <EmptyState label="暂无部门，点击右上角新建" /> : null}</section>
       <section className="settings-card department-detail">{selected ? <>
         <div className="settings-card-heading"><div><h2>{selected.name}</h2><p>负责店铺：{selected.store_ids.map((id) => stores.find((store) => store.id === id)?.name ?? id).join("、")}</p></div>{isAdmin ? <button className="secondary-button" onClick={() => setEditor("edit")} type="button">编辑部门</button> : null}</div>
-        <div className="settings-segments department-tabs" role="tablist"><button aria-selected={tab === "members"} className={tab === "members" ? "active" : ""} onClick={() => setTab("members")} role="tab" type="button">部门账号 ({members.length})</button><button aria-selected={tab === "roles"} className={tab === "roles" ? "active" : ""} onClick={() => setTab("roles")} role="tab" type="button">部门角色</button><button aria-selected={tab === "reception"} className={tab === "reception" ? "active" : ""} onClick={() => setTab("reception")} role="tab" type="button">部门店铺咨询分配</button></div>
-        {tab === "members" ? <><div className="settings-toolbar"><label className="settings-search"><MagnifyingGlass size={17} /><input aria-label="搜索部门账号" onChange={(event) => setQuery(event.target.value)} placeholder="输入账号或昵称搜索" value={query} /></label><div className="settings-toolbar-actions"><button aria-label="刷新部门账号" className="settings-icon-button" onClick={() => void load()} type="button"><ArrowClockwise size={18} /></button>{isAdmin ? <button className="primary-button" onClick={() => setEditor("add")} type="button"><Plus size={16} />加入账号</button> : null}</div></div>{filtered.length ? <div className="settings-table-wrap"><table className="settings-table department-table"><thead><tr><th>登录账号</th><th>昵称</th><th>手机号码</th><th>状态</th><th>角色</th><th>操作</th></tr></thead><tbody>{filtered.map((member) => <tr key={member.id}><td>{member.login_name ?? member.email ?? "—"}</td><td>{member.name}</td><td>{member.phone || "—"}</td><td><span className={`status-badge ${member.status}`}>{member.status === "active" ? "启用中" : "已停用"}</span></td><td>{[...new Set(member.assignments.map((assignment) => roleNames[assignment.role] ?? assignment.role))].join("、") || "无店铺角色"}</td><td className="department-actions"><button onClick={() => setTab("roles")} type="button">查看角色</button>{isAdmin ? <button onClick={() => setRemoveTarget(member)} type="button">移出部门</button> : null}</td></tr>)}</tbody></table></div> : <EmptyState label={query ? "没有符合条件的部门账号" : "该部门暂无账号"} />}</> : null}
+        <div className="settings-segments department-tabs" role="tablist"><button aria-selected={tab === "members"} className={tab === "members" ? "active" : ""} onClick={() => setTab("members")} role="tab" type="button">账号目录 ({accounts.length})</button><button aria-selected={tab === "roles"} className={tab === "roles" ? "active" : ""} onClick={() => setTab("roles")} role="tab" type="button">部门角色</button>{canViewReception ? <button aria-selected={tab === "reception"} className={tab === "reception" ? "active" : ""} onClick={() => setTab("reception")} role="tab" type="button">部门店铺咨询分配</button> : null}</div>
+        {tab === "members" ? <><div className="settings-toolbar"><label className="settings-search"><MagnifyingGlass size={17} /><input aria-label="搜索部门账号" onChange={(event) => setQuery(event.target.value)} placeholder="输入账号或昵称搜索" value={query} /></label><div className="settings-toolbar-actions"><button aria-label="刷新部门账号" className="settings-icon-button" onClick={() => void load()} type="button"><ArrowClockwise size={18} /></button>{isAdmin ? <button className="primary-button" onClick={() => setEditor("add")} type="button"><Plus size={16} />加入账号</button> : null}</div></div>{filtered.length ? <div className="settings-table-wrap"><table className="settings-table department-table"><thead><tr><th>登录账号</th><th>昵称</th><th>手机号码</th><th>状态</th><th>部门关系</th><th>角色</th><th>操作</th></tr></thead><tbody>{filtered.map((member) => <tr key={member.id}><td>{member.login_name ?? member.email ?? "—"}</td><td>{member.name}</td><td>{member.phone || "—"}</td><td><span className={`status-badge ${member.status}`}>{member.status === "active" ? "启用中" : "已停用"}</span></td><td>{selected && member.department_ids.includes(selected.id) ? "本部门" : "其他部门／未分配"}</td><td>{[...new Set(member.assignments.map((assignment) => roleNames[assignment.role] ?? assignment.role))].join("、") || "无店铺角色"}</td><td className="department-actions">{selected && member.department_ids.includes(selected.id) ? <button onClick={() => setTab("roles")} type="button">查看角色</button> : null}{isAdmin && selected && member.department_ids.includes(selected.id) ? <button onClick={() => setRemoveTarget(member)} type="button">移出部门</button> : null}</td></tr>)}</tbody></table></div> : <EmptyState label={query ? "没有符合条件的账号" : "暂无账号"} />}</> : null}
         {tab === "roles" ? <RolePanel busy={busy} drafts={roleDrafts} editable={isAdmin} members={members} onDraftChange={(id, role) => setRoleDrafts({ ...roleDrafts, [id]: role })} onSave={(member) => void saveRole(member)} onStoreChange={(id) => { setRoleStoreId(id); setRoleDrafts({}); }} storeId={roleStoreId} storeIds={selected.store_ids} stores={stores} /> : null}
         {tab === "reception" ? <ReceptionPanel department={selected} editable={isAdmin} members={members} stores={stores} /> : null}
       </> : <EmptyState label="先创建部门并分配店铺" />}</section>

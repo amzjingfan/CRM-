@@ -11,9 +11,12 @@ from app.auth.security import decode_token
 from app.auth.service import (
     authenticate_user,
     build_scoped_user_view,
+    end_login_session,
     issue_token_data,
     refresh_token_ttl,
+    renew_login_session,
     resolve_refresh_user,
+    start_login_session,
 )
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
@@ -83,7 +86,8 @@ async def login(payload: LoginRequest, session: DbSession, request: Request) -> 
     """使用登录账号或邮箱及密码登录。"""
     await enforce_login_limit(request)
     user = await authenticate_user(session, payload.identifier, payload.password)
-    return ApiResponse(data=issue_token_data(user, await build_scoped_user_view(session, user)))
+    login_id = await start_login_session(session, user)
+    return ApiResponse(data=issue_token_data(user, await build_scoped_user_view(session, user), login_id))
 
 
 @router.get("/me", response_model=ApiResponse[UserView])
@@ -102,13 +106,15 @@ async def refresh_token(
 ) -> ApiResponse[TokenData]:
     """使用 Refresh Token 重新签发令牌。"""
     user = await resolve_refresh_user(session, payload.refresh_token)
-    return ApiResponse(data=issue_token_data(user, await build_scoped_user_view(session, user)))
+    login_id = await renew_login_session(session, user, payload.refresh_token)
+    return ApiResponse(data=issue_token_data(user, await build_scoped_user_view(session, user), login_id))
 
 
 @router.post("/logout", response_model=ApiResponse[dict[str, bool]])
-async def logout(payload: RefreshRequest) -> ApiResponse[dict[str, bool]]:
+async def logout(payload: RefreshRequest, session: DbSession) -> ApiResponse[dict[str, bool]]:
     """撤销 Refresh Token，并要求前端清除本地令牌。"""
     token_payload = decode_token(payload.refresh_token, "refresh")
+    await end_login_session(session, payload.refresh_token)
     await revoke_refresh_token(str(token_payload["jti"]), refresh_token_ttl(token_payload))
     return ApiResponse(data={"logged_out": True})
 
@@ -127,7 +133,8 @@ async def browser_login(
         raise AppError(ErrorCode.PERMISSION_DENIED, "请求来源不受信任", 403)
     await enforce_login_limit(request)
     user = await authenticate_user(session, payload.identifier, payload.password)
-    token_data = issue_token_data(user, await build_scoped_user_view(session, user))
+    login_id = await start_login_session(session, user)
+    token_data = issue_token_data(user, await build_scoped_user_view(session, user), login_id)
     set_browser_cookies(response, token_data, secrets.token_urlsafe(32))
     return ApiResponse(data=BrowserSessionData(expires_in=token_data.expires_in, user=token_data.user))
 
@@ -149,7 +156,8 @@ async def browser_refresh(
 
         raise AppError(ErrorCode.AUTHENTICATION_REQUIRED, "请求未认证", 401)
     user = await resolve_refresh_user(session, refresh_cookie)
-    token_data = issue_token_data(user, await build_scoped_user_view(session, user))
+    login_id = await renew_login_session(session, user, refresh_cookie)
+    token_data = issue_token_data(user, await build_scoped_user_view(session, user), login_id)
     set_browser_cookies(response, token_data, secrets.token_urlsafe(32))
     return ApiResponse(data=BrowserSessionData(expires_in=token_data.expires_in, user=token_data.user))
 
@@ -159,11 +167,12 @@ async def browser_refresh(
     response_model=ApiResponse[dict[str, bool]],
     dependencies=[Depends(require_csrf)],
 )
-async def browser_logout(response: Response, request: Request) -> ApiResponse[dict[str, bool]]:
+async def browser_logout(response: Response, request: Request, session: DbSession) -> ApiResponse[dict[str, bool]]:
     """撤销浏览器 Refresh Token 并清除全部认证 Cookie。"""
     refresh_cookie = request.cookies.get("crm_refresh_token")
     if refresh_cookie:
         token_payload = decode_token(refresh_cookie, "refresh")
+        await end_login_session(session, refresh_cookie)
         await revoke_refresh_token(str(token_payload["jti"]), refresh_token_ttl(token_payload))
     clear_browser_cookies(response)
     return ApiResponse(data={"logged_out": True})

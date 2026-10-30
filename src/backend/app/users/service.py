@@ -2,18 +2,19 @@
 
 import uuid
 from collections import defaultdict
+from datetime import UTC, datetime
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.models import AuditLog
 from app.auth.repository import find_role_by_code
 from app.auth.security import hash_password
-from app.auth.store_access import allowed_store_ids, ensure_store_access
-from app.shared.database.base import Role, User, user_roles
+from app.auth.store_access import ensure_store_access
+from app.shared.database.base import Role, User, UserLoginSession, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.users.models import department_members, department_stores
+from app.users.models import department_members
 from app.users.schemas import TeamMemberCreate, TeamMemberUpdate, TeamMemberView, TeamRoleAssignment, TeamRoleView
 
 
@@ -67,31 +68,19 @@ async def _views(session: AsyncSession, users: list[User]) -> list[TeamMemberVie
 
 
 async def list_team(session: AsyncSession, actor: User) -> list[TeamMemberView]:
-    store_ids = await allowed_store_ids(session, actor)
-    role_codes = {role.code for role in actor.roles}
-    if "admin" in role_codes:
-        users = list((await session.scalars(select(User).order_by(User.created_at, User.id))).all())
-        return await _views(session, users)
-    if not store_ids:
-        return []
-    user_ids = list(
-        (
-            await session.scalars(select(user_roles.c.user_id).where(user_roles.c.store_id.in_(store_ids)).distinct())
-        ).all()
-    )
-    users = list((await session.scalars(select(User).where(User.id.in_(user_ids)).order_by(User.created_at))).all())
+    """所有已登录员工可见账号目录，只有管理员看到联系方式并可修改。"""
+    users = list((await session.scalars(select(User).order_by(User.created_at, User.id))).all())
     views = await _views(session, users)
-    visible_departments = set(
-        (
-            await session.scalars(
-                select(department_stores.c.department_id).where(department_stores.c.store_id.in_(store_ids))
-            )
-        ).all()
+    system_admin = await session.scalar(
+        select(user_roles.c.user_id)
+        .join(Role, Role.id == user_roles.c.role_id)
+        .where(user_roles.c.user_id == actor.id, Role.code == "admin", user_roles.c.store_id.is_(None))
     )
-    for item in views:
-        item.department_ids = [
-            department_id for department_id in item.department_ids if department_id in visible_departments
-        ]
+    if system_admin is None:
+        for item in views:
+            item.email = None
+            item.phone = None
+            item.last_login_at = None
     return views
 
 
@@ -272,6 +261,11 @@ async def change_member_password(session: AsyncSession, actor: User, member_id: 
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "员工不存在", 404)
     member.password_hash = hash_password(password)
     member.auth_version = (member.auth_version or 0) + 1
+    await session.execute(
+        update(UserLoginSession)
+        .where(UserLoginSession.user_id == member_id, UserLoginSession.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(UTC))
+    )
     session.add(
         AuditLog(
             actor_type="user",
@@ -300,6 +294,11 @@ async def disable_member(session: AsyncSession, actor: User, member_id: uuid.UUI
     if is_admin is not None and member.status == "active" and await _active_system_admin_count(session) <= 1:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "不能禁用最后一个有效管理员", 409)
     member.status = "disabled"
+    await session.execute(
+        update(UserLoginSession)
+        .where(UserLoginSession.user_id == member_id, UserLoginSession.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(UTC))
+    )
     session.add(
         AuditLog(
             actor_type="user",

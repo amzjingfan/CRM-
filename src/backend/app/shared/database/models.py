@@ -35,8 +35,13 @@ from app.reception.models import (
     ReceptionPolicyStore,
     ReceptionReply,
 )
-from app.reception_assignment.models import ReceptionAgentConfig, ReceptionStoreConfig
-from app.shared.database.base import Permission, Role, User
+from app.reception_assignment.models import (
+    ReceptionAgentConfig,
+    ReceptionDepartmentAgent,
+    ReceptionDepartmentConfig,
+    ReceptionStoreConfig,
+)
+from app.shared.database.base import Permission, Role, User, UserLoginSession
 from app.stores.models import ChannelAccount, Store
 from app.tools.models import CouponIssuance, ToolCall
 from app.users.models import Department
@@ -83,11 +88,14 @@ __all__ = [
     "ReceptionPolicyStore",
     "ReceptionReply",
     "ReceptionAgentConfig",
+    "ReceptionDepartmentAgent",
+    "ReceptionDepartmentConfig",
     "ReceptionStoreConfig",
     "Role",
     "Store",
     "ToolCall",
     "TikTokOAuthJob",
     "User",
+    "UserLoginSession",
     "WebhookEvent",
 ]

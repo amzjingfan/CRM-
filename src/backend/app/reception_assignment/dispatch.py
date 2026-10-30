@@ -1,16 +1,18 @@
-"""店铺咨询派单：仅修改 CRM 会话归属，不触发平台发送。"""
+"""部门多店咨询派单：仅调整 CRM 会话归属，不触发平台发送。"""
 
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.models import AuditLog
+from app.auth.store_access import allowed_store_ids_for_permission
 from app.conversations.models import Conversation
-from app.reception_assignment.models import ReceptionAgentConfig, ReceptionStoreConfig
-from app.reception_assignment.rules import PRESENCE_TTL, AssignmentCandidate, choose_candidate
-from app.shared.database.base import Permission, Role, User, role_permissions, user_roles
+from app.reception_assignment.models import ReceptionDepartmentAgent, ReceptionDepartmentConfig
+from app.reception_assignment.rules import AssignmentCandidate, choose_candidate
+from app.shared.database.base import Role, User, UserLoginSession, user_roles
+from app.stores.models import Store
 from app.users.models import department_members, department_stores
 
 OFFLINE_REQUEUE_GRACE = timedelta(minutes=2)
@@ -19,7 +21,7 @@ OFFLINE_REQUEUE_GRACE = timedelta(minutes=2)
 async def dispatch_conversation(
     session: AsyncSession, conversation_id: uuid.UUID, *, now: datetime | None = None
 ) -> uuid.UUID | None:
-    """锁定会话和店铺配置后选择负责人；人工归属永不被自动覆盖。"""
+    """部门统一开关下按店铺授权选人；人工归属绝不自动覆盖。"""
     instant = now or datetime.now(UTC)
     conversation = await session.scalar(
         select(Conversation).where(Conversation.id == conversation_id).with_for_update()
@@ -30,52 +32,72 @@ async def dispatch_conversation(
         return conversation.assigned_user_id
     if conversation.status not in ("active", "transferred") or conversation.awaiting_reply_since is None:
         return None
-    # 同店所有派单都锁此行，使容量计数与写入串行化。
-    store_config = await session.scalar(
-        select(ReceptionStoreConfig).where(ReceptionStoreConfig.store_id == conversation.store_id).with_for_update()
+    store_active = await session.scalar(
+        select(Store.id).where(Store.id == conversation.store_id, Store.status == "active", Store.deleted_at.is_(None))
     )
-    if store_config is None or not store_config.enabled:
-        conversation.assignment_wait_reason = "not_configured" if store_config is None else "disabled"
+    if store_active is None:
+        conversation.assignment_wait_reason = "store_inactive"
         return None
-    department_store_id = await session.scalar(
-        select(department_stores.c.store_id).where(
-            department_stores.c.department_id == store_config.department_id,
-            department_stores.c.store_id == conversation.store_id,
-        )
+    department_id = await session.scalar(
+        select(department_stores.c.department_id).where(department_stores.c.store_id == conversation.store_id)
     )
-    if department_store_id is None:
+    if department_id is None:
         conversation.assignment_wait_reason = "department_unlinked"
         conversation.next_assignment_attempt_at = instant + timedelta(seconds=30)
         return None
-    eligible_rows = (
+    # 同部门所有店铺共用这把锁，跨店负载计数及归属写入串行化。
+    config = await session.scalar(
+        select(ReceptionDepartmentConfig)
+        .where(ReceptionDepartmentConfig.department_id == department_id)
+        .with_for_update()
+    )
+    if config is None or not config.enabled:
+        conversation.assignment_wait_reason = "not_configured" if config is None else "disabled"
+        return None
+    candidates = (
         await session.execute(
-            select(ReceptionAgentConfig, User)
-            .join(User, User.id == ReceptionAgentConfig.user_id)
-            .join(department_members, department_members.c.user_id == User.id)
-            .join(user_roles, user_roles.c.user_id == User.id)
-            .join(Role, Role.id == user_roles.c.role_id)
-            .join(role_permissions, role_permissions.c.role_id == Role.id)
-            .join(Permission, Permission.id == role_permissions.c.permission_id)
-            .where(
-                ReceptionAgentConfig.store_id == conversation.store_id,
-                ReceptionAgentConfig.auto_enabled.is_(True),
-                User.status == "active",
-                department_members.c.department_id == store_config.department_id,
-                user_roles.c.store_id == conversation.store_id,
-                Permission.code == "workspace.reply",
+            select(ReceptionDepartmentAgent, User)
+            .join(User, User.id == ReceptionDepartmentAgent.user_id)
+            .join(
+                department_members,
+                and_(
+                    department_members.c.user_id == User.id,
+                    department_members.c.department_id == department_id,
+                ),
             )
-            .distinct()
+            .where(
+                ReceptionDepartmentAgent.department_id == department_id,
+                ReceptionDepartmentAgent.auto_enabled.is_(True),
+                User.status == "active",
+                ~exists(
+                    select(user_roles.c.user_id)
+                    .join(Role, Role.id == user_roles.c.role_id)
+                    .where(
+                        user_roles.c.user_id == User.id,
+                        user_roles.c.store_id.is_(None),
+                        Role.code == "admin",
+                    )
+                ),
+            )
         )
     ).all()
-    if not eligible_rows:
+    eligible = [
+        (agent, user)
+        for agent, user in candidates
+        if conversation.store_id in await allowed_store_ids_for_permission(session, user, "workspace.reply")
+    ]
+    if not eligible:
         conversation.assignment_wait_reason = "no_eligible_agent"
         conversation.next_assignment_attempt_at = instant + timedelta(seconds=30)
         return None
+    department_store_ids = select(department_stores.c.store_id).where(
+        department_stores.c.department_id == department_id
+    )
     pending_rows = (
         await session.execute(
             select(Conversation.assigned_user_id, func.count(Conversation.id))
             .where(
-                Conversation.store_id == conversation.store_id,
+                Conversation.store_id.in_(department_store_ids),
                 Conversation.status.in_(["active", "transferred"]),
                 Conversation.awaiting_reply_since.is_not(None),
                 Conversation.assigned_user_id.is_not(None),
@@ -83,7 +105,7 @@ async def dispatch_conversation(
             .group_by(Conversation.assigned_user_id)
         )
     ).all()
-    pending = {user_id: count for user_id, count in pending_rows}
+    pending: dict[uuid.UUID | None, int] = {row[0]: row[1] for row in pending_rows}
     recent = (
         await session.execute(
             select(Conversation.last_human_responder_id, Conversation.last_human_replied_at)
@@ -97,38 +119,41 @@ async def dispatch_conversation(
             .limit(1)
         )
     ).first()
+    online_ids = set(
+        (
+            await session.scalars(
+                select(UserLoginSession.user_id).where(
+                    UserLoginSession.user_id.in_([user.id for _, user in eligible]),
+                    UserLoginSession.revoked_at.is_(None),
+                    UserLoginSession.expires_at > instant,
+                )
+            )
+        ).all()
+    )
     decision = choose_candidate(
         [
             AssignmentCandidate(
-                user_id=agent.user_id,
-                pending_count=pending.get(agent.user_id, 0),
-                capacity=agent.capacity,
-                last_seen_at=agent.last_heartbeat_at,
+                user_id=user.id,
+                pending_count=pending.get(user.id, 0),
+                online=user.id in online_ids,
                 last_assigned_at=agent.last_assigned_at,
-                accepting=agent.accepting,
             )
-            for agent, _user in eligible_rows
+            for agent, user in eligible
         ],
         now=instant,
         recent_responder_id=recent[0] if recent else None,
         recent_reply_at=recent[1] if recent else None,
     )
     if decision is None:
-        online = any(
-            item.accepting
-            and item.last_heartbeat_at is not None
-            and instant - PRESENCE_TTL <= item.last_heartbeat_at <= instant + timedelta(seconds=5)
-            for item, _user in eligible_rows
-        )
-        conversation.assignment_wait_reason = "all_at_capacity" if online else "no_online_agent"
+        conversation.assignment_wait_reason = "no_online_agent"
         conversation.next_assignment_attempt_at = instant + timedelta(seconds=30)
         return None
-    agent = next(config for config, _user in eligible_rows if config.user_id == decision.user_id)
+    selected = next(agent for agent, _ in eligible if agent.user_id == decision.user_id)
     conversation.assigned_user_id = decision.user_id
     conversation.assignment_source = "auto"
     conversation.assignment_wait_reason = None
     conversation.next_assignment_attempt_at = None
-    agent.last_assigned_at = instant
+    selected.last_assigned_at = instant
     session.add(
         AuditLog(
             store_id=conversation.store_id,
@@ -145,14 +170,17 @@ async def dispatch_conversation(
 
 
 async def dispatch_queued(session: AsyncSession, *, now: datetime | None = None, limit: int = 50) -> int:
-    """限量重试已开启店铺的新咨询；首次历史回填不会进入队列。"""
+    """限量重试部门多店队列；首次历史回填不会入队。"""
     instant = now or datetime.now(UTC)
     ids = (
         await session.scalars(
             select(Conversation.id)
-            .join(ReceptionStoreConfig, ReceptionStoreConfig.store_id == Conversation.store_id)
+            .join(department_stores, department_stores.c.store_id == Conversation.store_id)
+            .join(
+                ReceptionDepartmentConfig, ReceptionDepartmentConfig.department_id == department_stores.c.department_id
+            )
             .where(
-                ReceptionStoreConfig.enabled.is_(True),
+                ReceptionDepartmentConfig.enabled.is_(True),
                 Conversation.status.in_(["active", "transferred"]),
                 Conversation.assigned_user_id.is_(None),
                 Conversation.awaiting_reply_since.is_not(None),
@@ -176,30 +204,30 @@ async def dispatch_queued(session: AsyncSession, *, now: datetime | None = None,
 async def requeue_offline_auto_assignments(
     session: AsyncSession, *, now: datetime | None = None, limit: int = 50
 ) -> int:
-    """离线宽限期后重派自动归属；人工归属和已回复会话保持原样。"""
+    """退出或会话过期两分钟后重派；人工归属保持不变。"""
     instant = now or datetime.now(UTC)
     stale_before = instant - OFFLINE_REQUEUE_GRACE
+    was_online = exists(
+        select(UserLoginSession.id).where(
+            UserLoginSession.user_id == Conversation.assigned_user_id,
+            UserLoginSession.expires_at > stale_before,
+            or_(UserLoginSession.revoked_at.is_(None), UserLoginSession.revoked_at > stale_before),
+        )
+    )
     ids = (
         await session.scalars(
             select(Conversation.id)
-            .join(ReceptionStoreConfig, ReceptionStoreConfig.store_id == Conversation.store_id)
-            .outerjoin(
-                ReceptionAgentConfig,
-                and_(
-                    ReceptionAgentConfig.store_id == Conversation.store_id,
-                    ReceptionAgentConfig.user_id == Conversation.assigned_user_id,
-                ),
+            .join(department_stores, department_stores.c.store_id == Conversation.store_id)
+            .join(
+                ReceptionDepartmentConfig, ReceptionDepartmentConfig.department_id == department_stores.c.department_id
             )
             .where(
-                ReceptionStoreConfig.enabled.is_(True),
+                ReceptionDepartmentConfig.enabled.is_(True),
                 Conversation.status.in_(["active", "transferred"]),
                 Conversation.assignment_source == "auto",
                 Conversation.assigned_user_id.is_not(None),
                 Conversation.awaiting_reply_since.is_not(None),
-                or_(
-                    ReceptionAgentConfig.last_heartbeat_at.is_(None),
-                    ReceptionAgentConfig.last_heartbeat_at < stale_before,
-                ),
+                ~was_online,
             )
             .order_by(Conversation.awaiting_reply_since, Conversation.id)
             .with_for_update(of=Conversation, skip_locked=True)
@@ -212,22 +240,6 @@ async def requeue_offline_auto_assignments(
         if conversation is None or conversation.assigned_user_id is None or conversation.assignment_source != "auto":
             continue
         previous_owner = conversation.assigned_user_id
-        # 与首次派单及管理员配置保持 store -> agent 的锁顺序，避免互等。
-        store_config = await session.scalar(
-            select(ReceptionStoreConfig).where(ReceptionStoreConfig.store_id == conversation.store_id).with_for_update()
-        )
-        if store_config is None or not store_config.enabled:
-            continue
-        setting = await session.scalar(
-            select(ReceptionAgentConfig)
-            .where(
-                ReceptionAgentConfig.store_id == conversation.store_id,
-                ReceptionAgentConfig.user_id == previous_owner,
-            )
-            .with_for_update()
-        )
-        if setting is not None and setting.last_heartbeat_at is not None and setting.last_heartbeat_at >= stale_before:
-            continue
         conversation.assigned_user_id = None
         conversation.assignment_source = None
         session.add(

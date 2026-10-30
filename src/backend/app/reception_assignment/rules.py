@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-PRESENCE_TTL = timedelta(seconds=60)
 RECENT_REPLY_WINDOW = timedelta(hours=72)
 
 
@@ -15,10 +14,8 @@ class AssignmentCandidate:
 
     user_id: uuid.UUID
     pending_count: int
-    capacity: int
-    last_seen_at: datetime | None
+    online: bool
     last_assigned_at: datetime | None
-    accepting: bool
 
 
 @dataclass(frozen=True)
@@ -35,16 +32,7 @@ def choose_candidate(
     recent_reply_at: datetime | None = None,
 ) -> AssignmentDecision | None:
     """先排除不可接待者，再按近期服务和待处理负载排序。"""
-    eligible = [
-        item
-        for item in candidates
-        if item.accepting
-        and item.capacity > 0
-        and 0 <= item.pending_count < item.capacity
-        and item.last_seen_at is not None
-        and item.last_seen_at.tzinfo is not None
-        and now - PRESENCE_TTL <= item.last_seen_at <= now + timedelta(seconds=5)
-    ]
+    eligible = [item for item in candidates if item.online]
     if not eligible:
         return None
     if (

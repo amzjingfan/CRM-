@@ -18,6 +18,7 @@ from app.agents.core.translation import TranslationBundleResult, TranslationServ
 from app.audit.models import AuditLog
 from app.auth.store_access import (
     allowed_store_ids,
+    allowed_store_ids_for_permission,
     ensure_conversation_access,
     ensure_store_access,
     supervised_store_ids,
@@ -26,16 +27,15 @@ from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
 from app.integrations.tiktok_write import TIKTOK_TEXT_MAX_LENGTH, is_tiktok_send_target_allowed
 from app.orders.models import Order
-from app.reception_assignment.models import ReceptionStoreConfig
 from app.shared.config.settings import get_settings
-from app.shared.database.base import Permission, User, role_permissions, user_roles
+from app.shared.database.base import User, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import ChannelAccount, Store
 from app.tools.contracts import ToolExecutionContext, ToolInvocation
 from app.tools.executor import SqlAlchemyToolExecutor
 from app.tools.models import ToolCall
 from app.tools.repository import begin_tool_call, finish_tool_call
-from app.users.models import department_members
+from app.users.models import department_members, department_stores
 from app.workspace.delivery_errors import DeliveryNotStarted
 from app.workspace.logistics_preview import (
     LogisticsCardPreview,
@@ -362,11 +362,13 @@ async def get_session_messages(
             needs_takeover = not await _assignee_can_reply(
                 session, conversation.store_id, conversation.assigned_user_id
             )
-            config = await session.get(ReceptionStoreConfig, conversation.store_id)
-            if not needs_takeover and config is not None:
+            department_id = await session.scalar(
+                select(department_stores.c.department_id).where(department_stores.c.store_id == conversation.store_id)
+            )
+            if not needs_takeover and department_id is not None:
                 member = await session.scalar(
                     select(department_members.c.user_id).where(
-                        department_members.c.department_id == config.department_id,
+                        department_members.c.department_id == department_id,
                         department_members.c.user_id == conversation.assigned_user_id,
                     )
                 )
@@ -1172,40 +1174,53 @@ async def list_session_assignees(session: AsyncSession, actor: User, session_id:
     if conversation is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
     await _assert_conversation_visibility(session, actor, conversation)
-    rows = (
-        await session.execute(
-            select(User.id, User.name)
-            .join(user_roles, user_roles.c.user_id == User.id)
-            .join(role_permissions, role_permissions.c.role_id == user_roles.c.role_id)
-            .join(Permission, Permission.id == role_permissions.c.permission_id)
-            .where(
-                user_roles.c.store_id == conversation.store_id,
-                User.status == "active",
-                Permission.code == "workspace.reply",
+    department_id = await session.scalar(
+        select(department_stores.c.department_id).where(department_stores.c.store_id == conversation.store_id)
+    )
+    if department_id is None:
+        users = (
+            await session.scalars(
+                select(User)
+                .join(user_roles, user_roles.c.user_id == User.id)
+                .where(user_roles.c.store_id == conversation.store_id, User.status == "active")
+                .distinct()
+                .order_by(User.name, User.id)
             )
-            .distinct()
-            .order_by(User.name, User.id)
-        )
-    ).all()
-    return [AssigneeView(id=user_id, name=name) for user_id, name in rows]
+        ).all()
+    else:
+        users = (
+            await session.scalars(
+                select(User)
+                .join(department_members, department_members.c.user_id == User.id)
+                .where(department_members.c.department_id == department_id, User.status == "active")
+                .order_by(User.name, User.id)
+            )
+        ).all()
+    return [
+        AssigneeView(id=user.id, name=user.name)
+        for user in users
+        if conversation.store_id in await allowed_store_ids_for_permission(session, user, "workspace.reply")
+    ]
 
 
 async def _assignee_can_reply(session: AsyncSession, store_id: uuid.UUID, user_id: uuid.UUID) -> bool:
-    """转交目标必须在职、属于同店并有人工回复权限。"""
-    assignment = await session.scalar(
-        select(user_roles.c.id)
-        .join(User, User.id == user_roles.c.user_id)
-        .join(role_permissions, role_permissions.c.role_id == user_roles.c.role_id)
-        .join(Permission, Permission.id == role_permissions.c.permission_id)
-        .where(
-            user_roles.c.user_id == user_id,
-            user_roles.c.store_id == store_id,
-            User.status == "active",
-            Permission.code == "workspace.reply",
-        )
-        .limit(1)
+    """转交目标必须在职、属于部门且有本店回复权限；主管覆盖部门所有店铺。"""
+    user = await session.get(User, user_id)
+    if user is None or user.status != "active":
+        return False
+    department_id = await session.scalar(
+        select(department_stores.c.department_id).where(department_stores.c.store_id == store_id)
     )
-    return assignment is not None
+    if department_id is None:
+        return store_id in await allowed_store_ids_for_permission(session, user, "workspace.reply")
+    membership = await session.scalar(
+        select(department_members.c.user_id).where(
+            department_members.c.department_id == department_id, department_members.c.user_id == user_id
+        )
+    )
+    return membership is not None and store_id in await allowed_store_ids_for_permission(
+        session, user, "workspace.reply"
+    )
 
 
 async def assign_session(

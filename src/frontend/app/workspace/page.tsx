@@ -13,7 +13,7 @@ import { ReplyReviewPanel } from "../../components/ReplyReviewPanel";
 import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { assignSession, currentUser, getSessionMessages, getSessionMessagesPage, heartbeatReceptionStore, listOwnReceptionStores, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, sendMessageMedia, uploadMessageMedia, setBuyerStage, setSessionClosed, setSessionStar, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type OwnReceptionStore, type SessionAssignee, type SessionListData, type SessionMessagesData, type SidebarOrder, type StoreView, type UserView } from "../../lib/api";
+import { assignSession, currentUser, getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendMessage, sendMessageMedia, uploadMessageMedia, setBuyerStage, setSessionClosed, setSessionStar, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type SidebarOrder, type StoreView, type UserView } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
 import "./quick-reply.css";
@@ -71,9 +71,6 @@ export default function WorkspacePage() {
   const [list, setList] = useState<SessionListData | null>(null);
   const [stores, setStores] = useState<StoreView[]>([]);
   const [self, setSelf] = useState<UserView | null>(null);
-  const [receptionStores, setReceptionStores] = useState<OwnReceptionStore[]>([]);
-  const receptionStoresRef = useRef<OwnReceptionStore[]>([]);
-  const [receptionError, setReceptionError] = useState("");
   const [storeError, setStoreError] = useState("");
   const [detail, setDetail] = useState<SessionMessagesData | null>(null);
   const [orderSnapshot, setOrderSnapshot] = useState<{ sessionId: string; stage: BuyerStage | "unknown" } | null>(null);
@@ -224,33 +221,10 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     let active = true;
-    const pulse = async () => {
-      if (!active || document.visibilityState !== "visible") return;
-      const accepting = receptionStoresRef.current.filter((item) => item.accepting);
-      const results = await Promise.allSettled(accepting.map((item) => heartbeatReceptionStore(item.store_id, true)));
-      if (!active) return;
-      const refreshed = new Set(accepting.filter((_, index) => results[index]?.status === "fulfilled").map((item) => item.store_id));
-      const next = receptionStoresRef.current.map((item) => refreshed.has(item.store_id) ? { ...item, online: true } : item);
-      receptionStoresRef.current = next; setReceptionStores(next);
-      if (results.some((result) => result.status === "rejected")) setReceptionError("自动接待在线状态更新失败，请刷新后重试");
-      else if (accepting.length) setReceptionError("");
-    };
     void currentUser().then((user) => { if (active) setSelf(user); })
-      .catch(() => { if (active) setReceptionError("当前账号信息加载失败，请刷新后重试"); });
-    void listOwnReceptionStores().then((items) => { if (active) { receptionStoresRef.current = items; setReceptionStores(items); void pulse(); } })
-      .catch(() => { if (active) setReceptionError("接待状态加载失败，请刷新后重试"); });
-    const timer = window.setInterval(() => { void pulse(); }, 20_000);
-    document.addEventListener("visibilitychange", pulse);
-    return () => { active = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", pulse); };
+      .catch(() => { /* 工作台主体仍由认证路由处理错误。 */ });
+    return () => { active = false; };
   }, []);
-
-  async function toggleReception(store: OwnReceptionStore) {
-    try {
-      await heartbeatReceptionStore(store.store_id, !store.accepting);
-      const next = receptionStoresRef.current.map((item) => item.store_id === store.store_id ? { ...item, accepting: !store.accepting, online: !store.accepting } : item);
-      receptionStoresRef.current = next; setReceptionStores(next); setReceptionError("");
-    } catch (caught) { setReceptionError(caught instanceof Error ? caught.message : "接待状态更新失败"); }
-  }
 
   const buildListQuery = useCallback((page: number) => {
     const query = new URLSearchParams({ filter, page: String(page), page_size: "30" });
@@ -715,8 +689,6 @@ export default function WorkspacePage() {
   return <AppShell><main className={`workspace-grid ${selectedId ? "has-selection" : ""}`}>
     <section className="conversation-panel" aria-label={en ? "Conversation list" : "会话列表"}>
       <div className="panel-heading"><div><p className="eyebrow">INBOX</p><h2 className="text-xl font-semibold">{en ? "Customer messages" : "客户消息"}</h2></div><span aria-label={en ? "Total unread messages" : "新消息总数"} className="count-pill">{list?.unread_messages_total ?? 0}</span></div>
-      {receptionStores.length ? <details className="border-b border-[var(--border)] px-3 py-2 text-xs"><summary className="cursor-pointer">{en ? "Automatic reception" : "自动接待"} · {receptionStores.filter((item) => item.accepting && item.online).length}/{receptionStores.length} {en ? "stores active" : "家店铺接待中"}</summary><div className="mt-2 flex flex-wrap gap-2">{receptionStores.map((item) => <button className="secondary-button" key={item.store_id} onClick={() => void toggleReception(item)} type="button">{stores.find((store) => store.id === item.store_id)?.name ?? item.store_id} · {item.accepting ? (en ? "Pause" : "暂停") : (en ? "Resume" : "恢复")}</button>)}</div></details> : null}
-      {receptionError ? <p className="px-3 text-xs text-red-600" role="alert">{receptionError}</p> : null}
       <div className="filter-row" aria-label={en ? "Conversation filters" : "会话筛选"}>{(["all", "unread", "mine", "starred", "closed"] as Filter[]).map((item) => <button aria-pressed={filter === item} className={filter === item ? "filter active" : "filter"} key={item} onClick={() => setFilter(item)} type="button">{filterLabels[language][item]}</button>)}</div>
       <div className="workspace-search">
         <div className="workspace-search-controls">

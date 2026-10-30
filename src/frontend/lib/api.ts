@@ -81,9 +81,8 @@ export type TeamAssignment = { role: "admin" | "supervisor" | "agent"; store_id:
 export type TeamRoleView = { role: string; store_id: string | null };
 export type TeamMember = { id: string; login_name: string | null; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; status: "active" | "disabled"; assignments: TeamRoleView[]; department_ids: string[]; last_login_at: string | null; created_at: string };
 export type Department = { id: string; name: string; store_ids: string[]; created_at: string };
-export type ReceptionAgent = { user_id: string; name: string; active: boolean; auto_enabled: boolean; accepting: boolean; capacity: number; pending_count: number; online: boolean; last_heartbeat_at: string | null };
-export type ReceptionStore = { store_id: string; department_id: string; enabled: boolean; queue_count: number; queue_reasons: Record<string, number>; takeover_count: number; takeover_conversation_ids: string[]; agents: ReceptionAgent[] };
-export type OwnReceptionStore = { store_id: string; accepting: boolean; online: boolean };
+export type ReceptionDepartmentAgent = { user_id: string; name: string; active: boolean; eligible_store_ids: string[]; auto_enabled: boolean; online: boolean };
+export type ReceptionDepartment = { department_id: string; store_ids: string[]; enabled: boolean; queue_count: number; queue_reasons: Record<string, number>; agents: ReceptionDepartmentAgent[] };
 export type TeamMemberCreate = { login_name: string; name: string; email: string | null; phone: string | null; timezone: string; max_concurrent_sessions: number; temporary_password: string; assignments: TeamAssignment[]; department_id: string | null };
 export type Suggestion = { agent_run_id: string; content: string | null; reply_parts?: string[]; logistics_order_numbers?: string[]; trigger_message_id?: string | null; reason_codes?: string[]; intent: string | null; confidence: number; action: string; terminal_state: string; requires_human: boolean; transfer_performed: boolean; send_performed: false; citations: Array<{ document_id: string; chunk_id: string; score: number; source_label: string }>; trace_id: string; demo_mode: boolean; demo_scenario: string | null };
 export type ChatEvent = { event: "accepted" | "status" | "draft" | "delta" | "result" | "error" | "done"; data: Record<string, unknown> };
@@ -349,10 +348,8 @@ export const updateDepartment = (id: string, payload: { name?: string; store_ids
 export const listDepartmentMembers = (id: string) => requestApi<TeamMember[]>(`/settings/departments/${id}/members`);
 export const addDepartmentMember = (id: string, userId: string) => requestApi<void>(`/settings/departments/${id}/members`, { method: "POST", body: JSON.stringify({ user_id: userId }) });
 export const removeDepartmentMember = (id: string, userId: string) => requestApi<void>(`/settings/departments/${id}/members/${userId}`, { method: "DELETE" });
-export const getDepartmentReception = (departmentId: string, storeId: string) => requestApi<ReceptionStore>(`/settings/departments/${departmentId}/reception/stores/${storeId}`);
-export const putDepartmentReception = (departmentId: string, storeId: string, payload: { enabled: boolean; agents: Array<{ user_id: string; auto_enabled: boolean; capacity: number }> }) => requestApi<ReceptionStore>(`/settings/departments/${departmentId}/reception/stores/${storeId}`, { method: "PUT", body: JSON.stringify(payload) });
-export const listOwnReceptionStores = () => requestApi<OwnReceptionStore[]>("/workspace/reception/stores");
-export const heartbeatReceptionStore = (storeId: string, accepting: boolean) => requestApi<{ store_id: string; accepting: boolean; last_heartbeat_at: string }>("/workspace/reception/heartbeat", { method: "POST", body: JSON.stringify({ store_id: storeId, accepting }) });
+export const getDepartmentReception = (departmentId: string) => requestApi<ReceptionDepartment>(`/settings/departments/${departmentId}/reception`);
+export const putDepartmentReception = (departmentId: string, payload: { enabled: boolean; agents: Array<{ user_id: string; auto_enabled: boolean }> }) => requestApi<ReceptionDepartment>(`/settings/departments/${departmentId}/reception`, { method: "PUT", body: JSON.stringify(payload) });
 export const disableTeamMember = (userId: string) => requestApi<void>(`/settings/team/${userId}`, { method: "DELETE" });
 export const deleteTeamMember = (userId: string) => requestApi<void>(`/settings/team/${userId}/permanent`, { method: "DELETE" });
 export const getSuggestion = (sessionId: string, triggerMessageId?: string) => requestApi<Suggestion>(`/workspace/sessions/${sessionId}/suggest`, { method: "POST", body: JSON.stringify({ trigger_message_id: triggerMessageId ?? null }) });

@@ -9,6 +9,52 @@ from app.conversations.models import Conversation
 from app.shared.database.base import Permission, Role, User, role_permissions, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.stores.models import Store
+from app.users.models import department_members, department_stores
+
+
+async def _department_supervisor_store_ids(session: AsyncSession, user: User) -> set[uuid.UUID]:
+    """主管仅扩展到本人所属、且原角色所在的部门店铺。"""
+    supervisor_stores = set(
+        (
+            await session.scalars(
+                select(user_roles.c.store_id)
+                .join(Role, Role.id == user_roles.c.role_id)
+                .join(Store, Store.id == user_roles.c.store_id)
+                .where(
+                    user_roles.c.user_id == user.id,
+                    Role.code == "supervisor",
+                    Store.status == "active",
+                    Store.deleted_at.is_(None),
+                )
+            )
+        ).all()
+    )
+    if not supervisor_stores:
+        return set()
+    department_ids = set(
+        (
+            await session.scalars(
+                select(department_members.c.department_id)
+                .join(department_stores, department_stores.c.department_id == department_members.c.department_id)
+                .where(department_members.c.user_id == user.id, department_stores.c.store_id.in_(supervisor_stores))
+            )
+        ).all()
+    )
+    if not department_ids:
+        return set()
+    return set(
+        (
+            await session.scalars(
+                select(Store.id)
+                .join(department_stores, department_stores.c.store_id == Store.id)
+                .where(
+                    department_stores.c.department_id.in_(department_ids),
+                    Store.status == "active",
+                    Store.deleted_at.is_(None),
+                )
+            )
+        ).all()
+    )
 
 
 async def allowed_store_ids(session: AsyncSession, user: User, permission_code: str | None = None) -> set[uuid.UUID]:
@@ -26,7 +72,9 @@ async def allowed_store_ids(session: AsyncSession, user: User, permission_code: 
         return set(
             (await session.scalars(select(Store.id).where(Store.status == "active", Store.deleted_at.is_(None)))).all()
         )
-    return {store_id for _, store_id in role_rows if store_id is not None}
+    return {store_id for _, store_id in role_rows if store_id is not None} | await _department_supervisor_store_ids(
+        session, user
+    )
 
 
 async def allowed_store_ids_for_permission(session: AsyncSession, user: User, permission_code: str) -> set[uuid.UUID]:
@@ -47,7 +95,17 @@ async def allowed_store_ids_for_permission(session: AsyncSession, user: User, pe
     ).all()
     if any(code == "admin" and store_id is None for code, store_id in rows):
         return await allowed_store_ids(session, user)
-    return {store_id for _, store_id in rows if store_id is not None}
+    scoped = {store_id for _, store_id in rows if store_id is not None}
+    if permission_code in {
+        "settings.team",
+        "workspace.view",
+        "workspace.reply",
+        "workspace.assign",
+        "workspace.transfer",
+        "workspace.close",
+    } and any(code == "supervisor" for code, _ in rows):
+        scoped |= await _department_supervisor_store_ids(session, user)
+    return scoped
 
 
 async def ensure_store_access(session: AsyncSession, user: User, store_id: uuid.UUID) -> None:
@@ -67,7 +125,9 @@ async def supervised_store_ids(session: AsyncSession, user: User) -> set[uuid.UU
     ).all()
     if any(code == "admin" and store_id is None for code, store_id in rows):
         return await allowed_store_ids(session, user)
-    return {store_id for _, store_id in rows if store_id is not None}
+    return {store_id for _, store_id in rows if store_id is not None} | await _department_supervisor_store_ids(
+        session, user
+    )
 
 
 async def ensure_conversation_access(

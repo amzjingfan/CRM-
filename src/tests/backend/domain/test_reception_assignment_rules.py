@@ -1,4 +1,4 @@
-"""派单排序只使用已核验的在线和负载事实。"""
+"""派单排序只使用登录在线和跨店负载事实。"""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -12,12 +12,10 @@ def candidate(
     user_id: uuid.UUID,
     *,
     pending: int = 0,
-    capacity: int = 20,
-    seen_at: datetime | None = NOW,
+    online: bool = True,
     last_assigned_at: datetime | None = None,
-    accepting: bool = True,
 ) -> AssignmentCandidate:
-    return AssignmentCandidate(user_id, pending, capacity, seen_at, last_assigned_at, accepting)
+    return AssignmentCandidate(user_id, pending, online, last_assigned_at)
 
 
 def test_recent_human_responder_wins_only_within_72_hours_and_if_eligible() -> None:
@@ -31,7 +29,7 @@ def test_recent_human_responder_wins_only_within_72_hours_and_if_eligible() -> N
     assert expired is not None and (expired.user_id, expired.reason) == (less_busy, "least_pending")
 
     offline = choose_candidate(
-        [candidate(recent, seen_at=NOW - timedelta(seconds=61)), candidate(less_busy)],
+        [candidate(recent, online=False), candidate(less_busy)],
         now=NOW,
         recent_responder_id=recent,
         recent_reply_at=NOW - timedelta(hours=3),
@@ -52,11 +50,7 @@ def test_least_pending_breaks_ties_by_oldest_assignment_then_user_id() -> None:
     assert stable is not None and stable.user_id == min(older, newer)
 
 
-def test_offline_paused_and_full_agents_are_excluded() -> None:
-    offline, paused, full = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
-    choices = [
-        candidate(offline, seen_at=NOW - timedelta(seconds=61)),
-        candidate(paused, accepting=False),
-        candidate(full, pending=20, capacity=20),
-    ]
-    assert choose_candidate(choices, now=NOW) is None
+def test_only_logged_out_agents_are_excluded_and_no_hidden_capacity_limit() -> None:
+    offline, busy = uuid.uuid4(), uuid.uuid4()
+    assert choose_candidate([candidate(offline, online=False)], now=NOW) is None
+    assert choose_candidate([candidate(offline, online=False), candidate(busy, pending=500)], now=NOW).user_id == busy

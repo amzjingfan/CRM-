@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, status
 
-from app.auth.dependencies import get_current_user, require_csrf, require_permission, require_role
+from app.auth.dependencies import get_current_user, require_csrf, require_role
 from app.shared.database.base import User
 from app.shared.database.session import DbSession
 from app.shared.schemas.responses import ApiResponse
@@ -14,7 +14,7 @@ from app.users.department_schemas import DepartmentCreate, DepartmentMemberAdd, 
 from app.users.schemas import TeamMemberView
 
 router = APIRouter(prefix="/settings/departments", tags=["部门管理"])
-READ = [Depends(require_permission("settings.team"))]
+READ = [Depends(get_current_user)]
 WRITE = [Depends(require_csrf), Depends(require_role("admin"))]
 
 

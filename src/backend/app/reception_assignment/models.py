@@ -41,3 +41,29 @@ class ReceptionAgentConfig(TimestampMixin, Base):
     capacity: Mapped[int] = mapped_column(Integer, default=20, server_default=text("20"), nullable=False)
     last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ReceptionDepartmentConfig(TimestampMixin, Base):
+    """部门统一派单开关；仅覆盖该部门负责的店铺。"""
+
+    __tablename__ = "reception_department_configs"
+
+    department_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("departments.id", ondelete="CASCADE"), primary_key=True
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"), nullable=False)
+
+
+class ReceptionDepartmentAgent(TimestampMixin, Base):
+    """部门成员参加该部门全部有权限店铺的派单。"""
+
+    __tablename__ = "reception_department_agents"
+
+    department_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("departments.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    auto_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"), nullable=False)
+    last_assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -24,12 +24,13 @@ async def test_admin_password_reset_bumps_auth_version_and_audits_without_secret
         password_hash=hash_password("PreviousPass123!"),
         auth_version=0,
     )
-    session = SimpleNamespace(get=AsyncMock(return_value=member), add=Mock(), commit=AsyncMock())
+    session = SimpleNamespace(get=AsyncMock(return_value=member), execute=AsyncMock(), add=Mock(), commit=AsyncMock())
 
     await team_service.change_member_password(session, actor, member.id, "NewPassword123!")  # type: ignore[arg-type]
 
     assert verify_password("NewPassword123!", member.password_hash)
     assert member.auth_version == 1
+    session.execute.assert_awaited_once()
     audits = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
     assert len(audits) == 1
     assert audits[0].action == "team.member.password_change"

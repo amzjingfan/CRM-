@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, status
 
-from app.auth.dependencies import get_current_user, require_csrf, require_permission, require_role
+from app.auth.dependencies import get_current_user, require_csrf, require_role
 from app.shared.database.base import User
 from app.shared.database.session import DbSession
 from app.shared.schemas.responses import ApiResponse
@@ -20,7 +20,7 @@ from app.users.service import (
 )
 
 router = APIRouter(prefix="/settings/team", tags=["团队管理"])
-READ_DESCRIPTION = "权限：settings.team；普通用户只能查看其店铺范围内的团队成员。"
+READ_DESCRIPTION = "已登录员工可查看账号目录；非管理员仅返回公开姓名、角色和部门，不返回联系方式。"
 WRITE_DESCRIPTION = "权限：系统级 admin；需 CSRF。店铺角色必须显式绑定 store_id，禁止自我禁用和禁用最后一个管理员。"
 DELETE_DESCRIPTION = "权限：系统级 admin；需 CSRF。仅允许永久删除已禁用且没有受保护业务引用的员工。"
 
@@ -28,7 +28,6 @@ DELETE_DESCRIPTION = "权限：系统级 admin；需 CSRF。仅允许永久删�
 @router.get(
     "",
     response_model=ApiResponse[list[TeamMemberView]],
-    dependencies=[Depends(require_permission("settings.team"))],
     description=READ_DESCRIPTION,
 )
 async def team(
@@ -52,7 +51,6 @@ async def add_member(
 @router.get(
     "/{member_id}",
     response_model=ApiResponse[TeamMemberView],
-    dependencies=[Depends(require_permission("settings.team"))],
     description=READ_DESCRIPTION,
 )
 async def member(
