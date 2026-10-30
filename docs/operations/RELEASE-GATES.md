@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-10-30 部门统一派单与账号目录修复从主线 `0fc2b50b` 同版前后端直接发布 staging：私有备份、原版/候选 ValidateOnly、Deploy、045、12 服务、固定出口、三公网健康与账号/部门页面通过。部门派单开启但尚无参与者；已登录部门目录回显两账号，主管独立登录及真实入站派单未现场演练。原两店人工发送和安全开关保持，零真实买家测试外发；[TR](../reports/tests/TR-MVP-DEPARTMENT-UNIFIED-DISPATCH-STAGING-001-20261030-R01.md)、[证据](../../release/evidence/staging/crm-staging-department-unified-dispatch-20261030.json)。G8 production 继续 No-Go。
+
 2026-10-30 部门角色 UI 从主线 `eb768378` 的前端镜像发布 staging；旧/新模式 ValidateOnly、私有备份、Deploy、044、12 服务、五个公网路径和已登录账号菜单现场检查通过。后端与全部安全开关未变，零外发；真实 TikTok 入站未验证，G8 production 继续 No-Go。见[TR](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md)和[证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)。
 
 2026-10-30 staging 已在 `18a0d7bb` 同版镜像上扩展人工发送至两家已授权 TikTok 店铺；未接入店铺失败关闭，自动回复/营销/高风险写入关闭。私有备份、ValidateOnly/Deploy、044、12 容器、固定出口、三健康和逐店只读模式通过，零真实买家测试外发。合成两坐席派单与清理通过，真实 TikTok 入站未验证；G8 production 仍 No-Go。见[TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md)和[发布证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)。

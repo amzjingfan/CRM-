@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-10-30 最新 staging 已从干净合并主线 `0fc2b50b993d2f53e63d1b555fd60a26add268d4` 手动部署部门统一派单、登录在线与全员只读账号目录的同版前后端，迁移头 `045_dept_dispatch_login`。前后端 linux/amd64 OCI revision、私有环境/PostgreSQL/MinIO 备份、旧版与候选 ValidateOnly、Deploy、12 服务、固定出口、三公网健康及账号/部门页面 200 均核对；已登录部门页显示两账号，派单页进一步浏览器读取超时。人工发送保持原两家授权店铺，Agent 调试/建议保持，自动回复/营销/高风险写入关闭；零真实买家测试外发，production 未发布。见[发布 TR](../reports/tests/TR-MVP-DEPARTMENT-UNIFIED-DISPATCH-STAGING-001-20261030-R01.md)与[精确证据](../../release/evidence/staging/crm-staging-department-unified-dispatch-20261030.json)。恢复优先旧镜像并保留 045 后业务增量，不能直接降级数据库。
+
 2026-10-30 最新 staging 已从干净合并主线 `4483ec9b512f698721d2db6500d54e0bbfd95b8e` 手动部署账号多店授权、角色回显和派单资格说明；只替换前端不可变摘要 `sha256:fd2dab24…b1422`，后端及其他服务镜像不变。私有备份、原版/候选 ValidateOnly、最终 Deploy、044 迁移、12 服务、三个公网健康和已登录账号及部门派单只读回显通过。首次 Deploy 因临时 GHCR 认证缺失在切换前失败，修复后重新预检并成功部署。人工发送仍限原两家已授权店铺，Agent 调试/建议保留，自动回复、营销、高风险写入关闭；未修改真实账号、未向买家发送消息，production 未发布。见[发布 TR](../reports/tests/TR-MVP-TEAM-MULTISTORE-RECEPTION-STAGING-001-20261030-R01.md)及[精确证据](../../release/evidence/staging/crm-staging-team-multistore-reception-20261030.json)。回退使用原前端摘要且保留发布后业务增量。
 
 2026-10-30 最新 staging 前端已从干净合并主线 `eb76837823f9e200f47db4a7786d4e91a94f9997` 手动部署部门角色、逐店派单摘要、账号部门选择及“更多”菜单可见性修复；后端仍为原摘要 `cc323ea9…808b4`。原版/候选 ValidateOnly、私有备份、精确镜像、Deploy、044、12 服务和三公网健康通过；已登录账号页菜单三项无需滚动完整显示，管理员删除仍禁用。TikTok 人工发送仍限原两家已授权店铺，自动回复、营销、高风险写入关闭；无真实买家外发、无 production 发布。见[发布 TR](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md)和[精确证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)。回退使用原前端摘要且保留发布后业务增量。

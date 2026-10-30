@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-30 部门统一派单/账号目录[发布 TR R01](../reports/tests/TR-MVP-DEPARTMENT-UNIFIED-DISPATCH-STAGING-001-20261030-R01.md) **PASS（限定 staging 部署）**：主线 `0fc2b50b` 精确前后端、私有备份、双预检/部署、045、12 服务、固定出口、三公网健康和账号/部门页面通过；已登录部门目录回显管理员与主管，派单页进一步浏览器读取超时。源码 subject 的 2730 后端、55 契约、165 常规浏览器与 1 生产缓存项及隔离旧数据迁移见[功能 TR](../reports/tests/TR-MVP-DEPARTMENT-UNIFIED-DISPATCH-001-20261030-R01.md)。真实入站派单与主管独立 staging 登录未演练；原人工发送范围及安全开关保持，production No-Go。[低敏证据](../../release/evidence/staging/crm-staging-department-unified-dispatch-20261030.json)。
+
 2026-10-30 部门角色 UI [staging 发布 TR R01](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md) **PASS**：精确前端镜像、私有备份、双预检/部署、044、12 服务和五个公网路径通过；已登录账号“更多”菜单三项直接可见，删除当前管理员禁用。原功能 subject 的浏览器 56/56、前端 55/55、后端 2658 通过/77 跳过；连接测试店合成入站事务回滚零外发零残留。真实 TikTok webhook 未演练，production No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)。
 
 2026-10-30 全店人工发送 [TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md) **PASS（staging 配置及只读发送模式）**：现存三店中两家已接入 TikTok 客服渠道，原运行 `18a0d7bb` 同版镜像以精确摘要经私有备份、ValidateOnly/Deploy 发布；各店抽样两条活动会话为 `real`，未接入店失败关闭。044、12 容器、固定出口、三健康通过，自动回复/营销/高风险写入及其他应用进程的平台写入均关闭。合成两坐席并发派单与清理通过；未测试真实买家发送或 TikTok 入站派单。见[低敏证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)。

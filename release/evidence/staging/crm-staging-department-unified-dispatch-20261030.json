@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-DEPARTMENT-UNIFIED-DISPATCH-STAGING-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "0fc2b50b993d2f53e63d1b555fd60a26add268d4",
+  "implementation_subject_sha": "f86458c35bf4a76c2d3dc8765d1186b41cf978e0",
+  "source_pull_request": 668,
+  "previous_runtime_source_sha": "4483ec9b512f698721d2db6500d54e0bbfd95b8e",
+  "source_bundle_sha256": "054bb1080dcc75edcd04f396d2fde5c4e890cb7dac2a5845435c1824bbd0cf4d",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:1e42a82923236a70cd8244eb7ab59d9c23acbc806530404948d587b920a8e3a2",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:8f08de63b8efe1ad6c273b3524eb2df6867b830fa1c2ab2dfdfae9d5aa94f4de",
+    "unchanged_retrieval": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "unchanged_document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "previous_backend": "ghcr.io/cp11-gh/crm-backend@sha256:cc323ea983fb42f0cb1d9753fa10486e1fa2028db69f003dc9ff1b8a499808b4",
+    "previous_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:fd2dab242a0b7cab2e98d31b0fa7fb53722f6d249033c17fadcff03e90eb1422",
+    "platform": "linux/amd64",
+    "backend_and_frontend_oci_revision": "0fc2b50b993d2f53e63d1b555fd60a26add268d4",
+    "backend_transfer_sha256": "9f755537ee8d8d8afebf75cb05378cf63b47bda5eab296831c6c85c05184fff4",
+    "frontend_transfer_sha256": "650780c6f07c33c5bcd741ba69e05ab2632555008e8391e23841979d93926ad5"
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/.local/share/crm-staging-backups/department-unified-0fc2b50b-20261030",
+    "postgres_custom_dump_sha256": "75fbc6aa508c7379073d925926036ada2facc643a8afce492428718c6633f70b",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "10fe987dff29a0482e0ae34351ca7350b3c74c54d88ba15dc87eafb5220cef7b",
+    "minio_archive_readable": true,
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "permissions": "0700 directory; 0600 backup files"
+  },
+  "gate": {
+    "previous_validate_status": "validated",
+    "previous_validate_sha256": "bf421f0f26d500d477d2627e6d3a818645fa6616438c2c1c3c20546842b9fbb3",
+    "candidate_validate_status": "validated",
+    "candidate_validate_sha256": "b805016da0104820ab60537ff8c39956aa16f3c1e3deee3967ee8860f4f009da",
+    "candidate_deploy_status": "passed",
+    "candidate_deploy_sha256": "8d45a2c2a52775f93bb7116a1909c1f6d904880f6d13d26aa630430192d3ad0a",
+    "migration": "045_dept_dispatch_login (head)"
+  },
+  "runtime_after": {
+    "services_running_or_healthy": 12,
+    "backend_and_frontend_image_digests_match": true,
+    "fixed_egress_ip": "38.55.145.52",
+    "department_dispatch_enabled_count": 1,
+    "participating_agent_count": 0,
+    "active_login_session_count_at_check": 1,
+    "manual_send_allowed_store_count": 2,
+    "webhook_read": true,
+    "manual_send": true,
+    "agent_debug_and_formal_suggestions": true,
+    "workspace_translation": false,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "settings_team": 200,
+    "settings_team_departments": 200
+  },
+  "authenticated_ui_check": "Existing signed-in department page refreshed to the new account directory label and showed both the global administrator and supervisor. A subsequent dispatch-tab browser read timed out. Supervisor login and real inbound dispatch were not exercised on staging; deterministic browser/PostgreSQL tests cover those roles.",
+  "ghcr_credentials_logged_out_local_and_staging": true,
+  "test_actions_sent_real_buyer_messages": false
+}
