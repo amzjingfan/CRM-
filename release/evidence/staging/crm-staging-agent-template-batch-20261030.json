@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-TEMPLATE-STAGING-001",
+  "observed_at": "2026-10-30T17:31:53.744724+00:00",
+  "environment": "staging",
+  "deployment_method": "manual reviewed PowerShell gate; no Actions/CD deployment",
+  "production_release": false,
+  "first_deployment_source": "fbacb37299c4793ef166b2123e111b24095001b0",
+  "frontend_source": "a0d9938e0441fb5848a51635a33dbbb27bd776a4",
+  "backend_source": "d67078db7445b1ef71a35af095075b1280f0d70c",
+  "verified_code_subject": "dcf5621e4c725faead3f6f67d01d6770bca5a88a",
+  "product_pr": 679,
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:1ad9b54ad547b8faf38ca6daca3f9e61552ad6635e7bb21b6d101e19bb687c56",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:1a235bf2a916176e3f028945daf5d3eb20ace7b9ca97cfdc1c806048368d8df0",
+    "retrieval": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2"
+  },
+  "rollback_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:f1e11dd603d51299432f9876628cf4a00bb3a5d3cae15c2394c917dd3d7cf088",
+  "backend_unchanged_in_final_deploy": true,
+  "migration": "046_merge_templates_dispatch",
+  "services": 12,
+  "fixed_egress_gate_passed": true,
+  "shared_lock_released": true,
+  "gates": {
+    "current_validate": true,
+    "candidate_validate": true,
+    "deploy_and_health": true
+  },
+  "public_assets": {
+    "public_paths": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200,
+      "/login": 200,
+      "/agents": 200,
+      "/agents/templates": 200,
+      "/agents/template-batches": 200,
+      "/knowledge": 200
+    },
+    "batch_assets": [
+      {
+        "path": "/_next/static/chunks/0cz1d0mv5g_q7.js",
+        "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/0hxeqxaalipav.css",
+        "sha256": "c1e016248789e61c8fec73f2322c1d64a57df0e956d8b26ae84aca9319498836",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/0umf92h1sb77c.js",
+        "sha256": "c410d0f2543e080768fc14f73b2bd1fdf103e26956e9730390b5e41c4fb5ff8b",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/16i9zxfk4ab6c.css",
+        "sha256": "be3723db498bc2c1ea22e491c544c1733743b2fe924f3ccacb697d7d9ceeea36",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/184v-_dr-9s4o.js",
+        "sha256": "27bd1d0528221e67bc6d42e807a8ff8dda3267535c7e738a89f0dd0058a64bc4",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/1fp59-_eyp60v.css",
+        "sha256": "09c686e0ab06f47dcbafc24e1b8eecc95b6cd84d084207499e18eec4e4997a52",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/2530nr096maiw.js",
+        "sha256": "ce85487c50cdd77056eba3007897bce73e8ebc663b14ec3f2583d0eb353acb98",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/2evgu094glu3w.js",
+        "sha256": "294c07cbe46530b79158e51b10b39f2e2e19611257a6cfa86024ac7667c2a6a0",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/2khxl0v1q4i6n.js",
+        "sha256": "885fd68a19ca1dc00018cae690b07cd463371a463f04f8b34b5590a3fec18a33",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/3asi81dl01bk3.js",
+        "sha256": "3e86f249a1808f677802d851082b53fe219e6abd45425a2b4be94a653ae76654",
+        "container_matches": true
+      },
+      {
+        "path": "/_next/static/chunks/turbopack-3-ry682tkyiqk.js",
+        "sha256": "8bbb58cbfd4633c1d828c6bc37bc32abc768a149c01b1dfc4f5131fd81274551",
+        "container_matches": true
+      }
+    ],
+    "new_state_text_present": true
+  },
+  "real_tests": {
+    "two_store_create": true,
+    "three_way_diff_conflict_blocks": true,
+    "local_override_preserved": true,
+    "shared_format_updated": true,
+    "old_version_unchanged": true,
+    "background_continue_after_navigation": true,
+    "controlled_delay_seconds": 110,
+    "total_confirmed_items": 4,
+    "each_attempt_count": 1,
+    "xbm_only_own_document_citation": true,
+    "final_chinese_english_tool_rag": {
+      "frontend_revision": "a0d9938e0441fb5848a51635a33dbbb27bd776a4",
+      "backend_revision": "d67078db7445b1ef71a35af095075b1280f0d70c",
+      "batch_state_labels": true,
+      "chinese_counts": true,
+      "mapped_file_visible": true,
+      "wrong_unbind_candidates": 0,
+      "chinese": {
+        "passed": true,
+        "trace_id": "30312d55-dfae-402f-a8c1-65e90046d8a4"
+      },
+      "english": {
+        "passed": true,
+        "trace_id": "cb70639b-e8a1-41e1-8b32-90ecd1c7a021"
+      },
+      "tools": [
+        "search_customer_orders",
+        "query_logistics",
+        "search_knowledge"
+      ],
+      "document_citation": true,
+      "live_send_performed": false
+    },
+    "database_final": {
+      "final_trace_run_count": 4,
+      "runs": [
+        {
+          "trace_id": "30312d55-dfae-402f-a8c1-65e90046d8a4",
+          "phase": "review_ready",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "status": "succeeded",
+          "action": "human_review"
+        },
+        {
+          "trace_id": "30312d55-dfae-402f-a8c1-65e90046d8a4",
+          "phase": "review_ready",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "status": "succeeded",
+          "action": "human_review"
+        },
+        {
+          "trace_id": "cb70639b-e8a1-41e1-8b32-90ecd1c7a021",
+          "phase": "review_ready",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "status": "succeeded",
+          "action": "human_review"
+        },
+        {
+          "trace_id": "cb70639b-e8a1-41e1-8b32-90ecd1c7a021",
+          "phase": "review_ready",
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "status": "succeeded",
+          "action": "human_review"
+        }
+      ],
+      "persisted_tool_calls": [
+        {
+          "tool": "search_customer_orders",
+          "status": "succeeded",
+          "mocked": false
+        },
+        {
+          "tool": "search_knowledge",
+          "status": "succeeded",
+          "mocked": false
+        },
+        {
+          "tool": "query_logistics",
+          "status": "succeeded",
+          "mocked": false
+        },
+        {
+          "tool": "search_customer_orders",
+          "status": "succeeded",
+          "mocked": false
+        },
+        {
+          "tool": "search_knowledge",
+          "status": "succeeded",
+          "mocked": false
+        },
+        {
+          "tool": "query_logistics",
+          "status": "succeeded",
+          "mocked": false
+        }
+      ],
+      "active_owned_agents": 0,
+      "active_owned_files": 0,
+      "active_owned_templates": 0,
+      "no_auto_reply_runs": true
+    }
+  },
+  "local_final": {
+    "frontend_contract": 77,
+    "production_browser": 210,
+    "browser_skips": 0,
+    "lint_errors": 0,
+    "existing_lint_warnings": 8,
+    "typecheck": true,
+    "build": true,
+    "independent_review_blockers": 0,
+    "backend_tests_rerun": false,
+    "reason": "backend/deploy config unchanged against deployed d67078db; current real model/tool calls verified"
+  },
+  "ci": {
+    "head": "fa597d1d78448932db4ddcec5a9b40898c0e3a66",
+    "run_id": 41094511125,
+    "jobs": [
+      {
+        "id": 124196665429,
+        "steps": 0,
+        "runner_id": 0
+      },
+      {
+        "id": 124196665587,
+        "steps": 0,
+        "runner_id": 0
+      }
+    ],
+    "status": "NOT_RUN_ZERO_STEPS",
+    "standing_local_substitute": true
+  },
+  "safety": {
+    "auto_reply": false,
+    "marketing": false,
+    "high_risk_write": false,
+    "live_buyer_send_performed": false,
+    "test_admin_token_minted": false
+  },
+  "backups": {
+    "private_owner_only": true,
+    "postgres_sha256": "4ded6b327fe87225902475acbb6d331cb078c24d01bfacdfa13294525ba36779",
+    "minio_sha256": "e32314f6829d8eafac4fea577ab57893d1331096f68722ea7f0e4fd24dfbc44c",
+    "env_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "owned_rows_sha256": "3c49038e993cb808838a1d5fa59d0931f224527803e9c2b21360a037a6791504",
+    "restore_exercised": false
+  },
+  "cleanup": {
+    "result": "PASS_OWNED_ACTIVE_FIXTURES_CLEANED",
+    "agents_soft_deleted": 2,
+    "files_soft_deleted": 2,
+    "template_archived": 1,
+    "unowned_agent_file_rows_hash_unchanged": true,
+    "immutable_versions_batches_audits_retained": true,
+    "standard_preset_categories_retained": true,
+    "buyer_data_touched": false,
+    "backup_restore_tested": false
+  },
+  "ephemeral_registry_cleanup": "REMOTE_REMOVED_LOCAL_DEFERRED_BY_EXPLICIT_USER_DECISION",
+  "local_test_service": "owned 3146 standalone stopped; listener absent",
+  "result": "BUSINESS_DEPLOYMENT_AND_TEST_FIXTURE_CLEANUP_PASS; remote registry copy removed, local copy user-deferred",
+  "record_status": "FINAL_BUSINESS_RELEASE_WITH_USER_DEFERRED_LOCAL_COPY",
+  "revalidated_at": "2026-10-30T17:39:20.287693+00:00",
+  "credential_copy_metadata": {
+    "local_copy_exists": true,
+    "remote_copy_exists": false,
+    "local_current_user_only_via_protected_parent": true,
+    "precise_authorization_answer_received": true,
+    "local_user_deferred": true,
+    "contents_not_read": true,
+    "all_copies_deleted": false
+  },
+  "operational_cleanup": {
+    "updated_at": "2026-10-30T23:36:30.080453+00:00",
+    "exact_user_authorization_received": true,
+    "remote_registry_copy_deleted": true,
+    "remote_absence_confirmed": true,
+    "local_registry_copy_deleted": false,
+    "local_deletion_auto_review_blocked_after_authorization": true,
+    "local_copy_retained_by_explicit_user_decision": "稍后处理",
+    "local_current_user_only_directory": true,
+    "local_frontend_3146_stopped": true,
+    "temporary_test_admin_credential_authorized": true,
+    "temporary_test_admin_credential_minted": false,
+    "global_credentials_and_backups_preserved": true
+  },
+  "credential_copy_metadata_at_evidence_checkpoint": {
+    "local_current_user_only_via_protected_parent": true,
+    "remote_directory_mode": "700",
+    "remote_file_mode": "600",
+    "contents_not_read": true,
+    "copies_deleted": false,
+    "precise_authorization_answer_received": false
+  }
+}

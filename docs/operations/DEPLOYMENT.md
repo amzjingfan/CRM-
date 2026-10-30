@@ -1,12 +1,14 @@
 # 部署与运行边界
 
-2026-10-31 staging 已从干净合并主线 `d67078db7445b1ef71a35af095075b1280f0d70c` 直接部署 TikTok 富消息修复的精确前后端镜像；发布前实际版本为 `fbacb372`/046，当前仍为 `046_merge_templates_dispatch`，原有 Agent 模板运行能力保持。私有环境/PostgreSQL/MinIO 备份、原版与候选 ValidateOnly、Deploy、12 服务、固定出口及四个公开只读路径通过；人工真实发送仍限原两家授权店，自动回复/营销/高风险写入关闭。两店历史类型占位按官方只读接口和平台消息 ID 幂等补录，完成数量见[发布 TR R02](../reports/tests/TR-MVP-WORKSPACE-TIKTOK-RICH-MESSAGES-001-20261031-R02.md)与[精确证据](../../release/evidence/staging/crm-staging-tiktok-rich-messages-20261031.json)。未向真实买家测试发送，production 未发布。回滚仅切回发布前精确前后端摘要并保留 046 和后续业务增量。
+2026-10-31 staging 当前前端为已合并主线 `a0d9938e0441fb5848a51635a33dbbb27bd776a4`，镜像 `ghcr.io/cp11-gh/crm-frontend@sha256:1a235bf2a916176e3f028945daf5d3eb20ace7b9ca97cfdc1c806048368d8df0`；后端保持主线 `d67078db7445b1ef71a35af095075b1280f0d70c` 的精确摘要 `sha256:1ad9b54ad547b8faf38ca6daca3f9e61552ad6635e7bb21b6d101e19bb687c56`，保留工作台富消息变更。用户已批准手动部署和真实验收，本轮不使用Actions/CD发布。私有备份、旧/新ValidateOnly、共享锁Deploy、046、12服务、固定出口、8公网路径与11资源哈希通过；两店模板/后台和中英文真实工具+文件回答通过。合成2Agent/2文件软删除、模板归档，真实数据未动，零外发；本地测试服务已停，临时registry副本经精确授权后服务器副本已删除；本机删除仍受执行门禁阻止，用户选择稍后处理，按该决定保留而不记为已删除，任务待证据收尾。见[TR R02](../reports/tests/TR-MVP-AGENT-TEMPLATE-STAGING-001-20261030-R02.md)与[精确证据](../../release/evidence/staging/crm-staging-agent-template-batch-20261030.json)。以下带日期的旧发布段落保留其形成时事实，当前现场以前段和精确证据为准。
+
+2026-10-31 此前 staging 已从干净合并主线 `d67078db7445b1ef71a35af095075b1280f0d70c` 直接部署 TikTok 富消息修复的精确前后端镜像；发布前实际版本为 `fbacb372`/046，当前仍为 `046_merge_templates_dispatch`，原有 Agent 模板运行能力保持。私有环境/PostgreSQL/MinIO 备份、原版与候选 ValidateOnly、Deploy、12 服务、固定出口及四个公开只读路径通过；人工真实发送仍限原两家授权店，自动回复/营销/高风险写入关闭。两店历史类型占位按官方只读接口和平台消息 ID 幂等补录，完成数量见[发布 TR R02](../reports/tests/TR-MVP-WORKSPACE-TIKTOK-RICH-MESSAGES-001-20261031-R02.md)与[精确证据](../../release/evidence/staging/crm-staging-tiktok-rich-messages-20261031.json)。未向真实买家测试发送，production 未发布。回滚仅切回发布前精确前后端摘要并保留 046 和后续业务增量。
 
 2026-10-30 staging 已从干净合并主线 `476cc8d5cf95e6304f53eec27a41d6bdaa01b056` 直接部署管理员部门接待资格和旧邮箱登录标识修复，前后端精确摘要分别为 `sha256:d94dcdc9…94ef2d`、`sha256:778e9036…9bc10`。私有备份、旧版/候选 ValidateOnly、Deploy、045、12 服务、固定出口和五个公开路径 200 通过；运行后端只读验证主管目录有 2 个账号，旧管理员登录标识可见、联系方式隐藏、2 店回复资格可用且默认未参与派单。in-app browser 登录态绑定两次超时，视觉回显记 `UI_UNAVAILABLE`；真实入站未演练。人工发送保留原两店、Agent 模式保持，自动回复/营销/高风险写入关闭，零真实买家测试外发，production 未发布。之后合入主线的 Agent 模板功能未包含在本次 staging 镜像。见[发布 TR](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md)与[精确证据](../../release/evidence/staging/crm-staging-department-admin-identity-20261030.json)。恢复使用旧前后端摘要并保留 045 后业务增量。
 
-## Agent模板后台批次部署边界（本地候选，尚未批准部署）
+## Agent模板后台批次部署边界
 
-本任务只在本地开发、隔离PostgreSQL和本地浏览器验证；不改变本文现有staging/production发布事实。最终功能、统一修复、完整测试和审查完成后仍需用户另行批准部署。
+Agent模板已在用户明确批准后手动部署staging并完成真实验收，见本文首段和TR R02。此前本地候选记录不代表当时获准部署；本次授权与现场结果另行记录。production仍未发布，自动回复、营销和高风险写入范围不扩大。
 
 模板迁移045_agent_templates与主线045_dept_dispatch_login均在044之后，由046_merge_templates_dispatch合流为唯一head；升级可从044或任一045分支进入，不改写历史revision。升级前备份并核对最终主线迁移头。后端lifespan运行模板配置处理器，默认AGENT_TEMPLATE_PROCESSOR_ENABLED=true、AGENT_TEMPLATE_PROCESSOR_POLL_SECONDS=2、AGENT_TEMPLATE_PROCESSOR_LEASE_SECONDS=180；实际lease至少覆盖有界模型复核预算再加30秒。多个后端副本由数据库token/lease协调，无独立Worker/队列服务。关闭该处理器只暂停配置批次，API返回processor_enabled供界面说明；不会关闭已有Agent运行，也不启用正式建议或自动外发开关。
 

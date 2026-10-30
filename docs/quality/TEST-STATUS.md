@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-31 Agent模板[TR R02](../reports/tests/TR-MVP-AGENT-TEMPLATE-STAGING-001-20261030-R02.md) **PASS（手动staging发布、业务与合成数据清理）**：统一产品PR #679合并并部署a0前端，后端沿用d670；新旧预检/046/12服务/固定出口/8路径200/11资源哈希通过。最终本地77契约及210生产浏览器、类型/lint/build与独立复审通过；真实两店创建/v2保留覆盖/离页后台（4项各attempt1）、最终中英文订单列表/物流/知识同轮回答及正确引用通过，6项持久工具mock=false。2测试Agent/2文件软删除、模板归档，非测试行哈希不变，两店知识列表0篇。用户已精确授权清理：服务器认证副本已删，本机仍受执行门禁阻止并按用户稍后处理的决定保留；不记作全部凭证已清理，任务待证据合并后收尾。production No-Go，零真实买家外发。[证据](../../release/evidence/staging/crm-staging-agent-template-batch-20261030.json)。
+
 2026-10-31 TikTok 富消息修复 [TR R02](../reports/tests/TR-MVP-WORKSPACE-TIKTOK-RICH-MESSAGES-001-20261031-R02.md) **PASS（staging）**：合并主线 `d67078db` 的前后端精确镜像、私有备份、双 ValidateOnly/Deploy、046、12 服务和公网四条路径通过；已登录工作台实际看到买家图片、商品、订单、物流卡片和两个视频播放器。两家授权店原 4301 条旧类型占位经官方只读列表与单会话补录后均清零，定向旧会话处理没有新增本地消息或错误；完整数量见[机器证据](../../release/evidence/staging/crm-staging-tiktok-rich-messages-20261031.json)。人工发送范围未变、自动发送关闭、零真实买家测试外发，production No-Go。
 
 2026-10-30 管理员接待资格与旧登录标识 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md) **PASS（staging 门禁与运行服务只读核对）**：合并主线 `476cc8d5` 精确镜像、私有备份、旧/新预检、Deploy、045、12 服务、固定出口和五个公开路径通过；主管目录可见旧管理员登录标识、联系方式仍隐藏，管理员在部门两店有回复资格且默认未参与派单。登录态视觉检查 `UI_UNAVAILABLE`，真实入站未演练；不把这些项记为通过。自动发送关闭，production No-Go。
