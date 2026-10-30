@@ -1755,11 +1755,11 @@ test("department reception configures all department stores once and omits reply
   } finally { await context.close(); }
 });
 
-test("department reception explains why a global administrator cannot join dispatch", async () => {
+test("department reception lets a global administrator opt in to dispatch", async () => {
   const departmentId = "00000000-0000-4000-8000-0000000000d1";
   const adminId = "00000000-0000-4000-8000-0000000000c1";
   const admin = { id: adminId, login_name: "admin_one", name: "Admin One", email: null, phone: null, timezone: "Asia/Shanghai", max_concurrent_sessions: 50, status: "active", assignments: [{ role: "admin", store_id: null }], department_ids: [departmentId], last_login_at: null, created_at: "2026-10-22T00:00:00Z" };
-  const reception = { department_id: departmentId, store_ids: [store.id], enabled: true, queue_count: 1, queue_reasons: { no_eligible_agent: 1 }, agents: [{ user_id: adminId, name: "Admin One", active: false, eligible_store_ids: [], auto_enabled: false, online: false }] };
+  const reception = { department_id: departmentId, store_ids: [store.id], enabled: true, queue_count: 1, queue_reasons: { no_online_agent: 1 }, agents: [{ user_id: adminId, name: "Admin One", active: true, eligible_store_ids: [store.id], auto_enabled: false, online: false }] };
   const { context, page } = await openPage("/settings/team/departments", {
     "GET /v1/settings/departments": [{ id: departmentId, name: "客服部", store_ids: [store.id], created_at: "2026-10-22T00:00:00Z" }],
     "GET /v1/settings/stores": [store], "GET /v1/settings/team": [admin],
@@ -1768,8 +1768,11 @@ test("department reception explains why a global administrator cannot join dispa
   });
   try {
     await page.getByRole("tab", { name: "部门店铺咨询分配" }).click();
-    await page.getByText("无部门店铺回复权限").waitFor();
-    assert.equal(await page.getByRole("checkbox", { name: "Admin One参与派单" }).isDisabled(), true);
+    await page.getByRole("cell", { name: store.name }).waitFor();
+    const participate = page.getByRole("checkbox", { name: "Admin One参与派单" });
+    assert.equal(await participate.isDisabled(), false);
+    await participate.check();
+    assert.equal(await participate.isChecked(), true);
     await page.getByText(/当前无人可接待/).waitFor();
     assert.equal(await page.getByText(/登录后显示在线/).count(), 0);
   } finally { await context.close(); }

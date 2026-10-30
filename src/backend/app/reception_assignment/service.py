@@ -76,21 +76,12 @@ async def get_department_reception(
     agents = []
     for user_id, name, status in members:
         user = await session.get(User, user_id)
-        is_admin = await session.scalar(
-            select(user_roles.c.user_id)
-            .join(Role, Role.id == user_roles.c.role_id)
-            .where(
-                user_roles.c.user_id == user_id,
-                user_roles.c.store_id.is_(None),
-                Role.code == "admin",
-            )
-        )
         eligible = (
             sorted(
                 set(store_ids).intersection(await allowed_store_ids_for_permission(session, user, "workspace.reply")),
                 key=str,
             )
-            if user is not None and status == "active" and is_admin is None
+            if user is not None and status == "active"
             else []
         )
         agents.append(

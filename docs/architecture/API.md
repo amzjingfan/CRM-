@@ -106,11 +106,11 @@ Agent 发布接口在既有授权、revision和模型配置校验后执行一次
 
 ### 团队与渠道
 
-- `GET /settings/team` 与 `GET /settings/team/{user_id}` 对所有已认证账号提供只读账号目录，非管理员响应隐藏邮箱、手机和上次登录；`POST/PATCH/DELETE /settings/team` 仍要求系统级管理员和 CSRF，普通删除表示禁用。
+- `GET /settings/team` 与 `GET /settings/team/{user_id}` 对所有已认证账号提供只读账号目录；旧邮箱登录账号无独立登录名时，非管理员响应将该邮箱作为登录标识显示，同时隐藏独立邮箱、手机和上次登录字段。`POST/PATCH/DELETE /settings/team` 仍要求系统级管理员和 CSRF，普通删除表示禁用。
 - 员工读取响应中的 `assignments[].role` 保留数据库已有角色编码（包括受控测试角色），避免历史账号使整个列表失败；新建和修改账号的角色写入仍只接受 `admin`、`supervisor`、`agent`，且继续校验系统级／店铺级范围。账号页将一个或多个所选店铺映射为现有 `assignments` 数组；系统管理员使用 `store_id=null`，普通客服和客服主管逐店授权。编辑基本资料未改角色或店铺时不提交 `assignments`，以免覆盖既有权限。
 - `POST /auth/login` 与 `/auth/browser/login` 接受 `identifier`（登录账号或邮箱），旧 `email` 请求字段继续兼容；新界面登录名 6–16 位且创建后不可修改，旧 API 调用仍可仅用邮箱创建。`POST /settings/team` 可保存可选邮箱、手机号码、工作时区、账号并发数、初始部门；`PATCH /settings/team/{user_id}/password` 修改密码并使旧 Access/Refresh Token 失效。账号并发数不施加运行限制。`DELETE /settings/team/{user_id}/permanent` 仅系统管理员持有效 CSRF 可用，要求目标已停用、不是当前用户且没有受保护业务引用；否则返回 409，成功返回 204 并记审计。页面仅对已停用账号提供二次确认入口。
 - `GET/POST /settings/departments`、`GET/PATCH/DELETE /settings/departments/{department_id}`、`GET/POST /settings/departments/{department_id}/members` 和 `DELETE /settings/departments/{department_id}/members/{member_id}` 管理部门与组织成员。已认证账号按可见店铺读取部门及成员，写入只限系统级管理员并要求 CSRF、审计。部门成员增删不改变逐店角色，空部门才可删除；部门页账号目录由全体账号列表构成，标注当前部门成员关系。
-- `GET/PUT /settings/departments/{department_id}/reception` 读取或一次保存部门全部负责店铺的自动派单开关和部门成员参与资格；GET 要求 `settings.team` 且校验部门店铺范围，PUT 只限系统级管理员并要求 CSRF、审计。响应包含成员对哪些店铺可回复、登录会话在线状态和待领取数；主管覆盖所属部门全部店铺，普通客服须有对应店铺 `workspace.reply`。旧逐店配置和工作台接待心跳路由已移除；数据库旧表保留供迁移审计。登录、刷新、退出维护可过期登录会话，派单不发送平台消息。
+- `GET/PUT /settings/departments/{department_id}/reception` 读取或一次保存部门全部负责店铺的自动派单开关和部门成员参与资格；GET 要求 `settings.team` 且校验部门店铺范围，PUT 只限系统级管理员并要求 CSRF、审计。响应包含成员对哪些店铺可回复、登录会话在线状态和待领取数；系统级管理员覆盖全部有效店铺，主管覆盖所属部门全部店铺，普通客服须有对应店铺 `workspace.reply`。管理员仍须属于部门并由管理员显式勾选参与，登录有效后才进入派单候选。旧逐店配置和工作台接待心跳路由已移除；数据库旧表保留供迁移审计。登录、刷新、退出维护可过期登录会话，派单不发送平台消息。
 - `DELETE /settings/team/{user_id}/permanent` 仅能删除已禁用且无受保护业务引用的用户。
 - 店铺与渠道位于 `/settings/stores`、`/settings/channels`；`GET /settings/store-authorizations` 要求 `settings.channels`，在同一次服务端授权范围核验后返回当前用户可见且未被本地删除的 TikTok 店铺及其渠道展示字段，供店铺页一次请求回显；平台侧撤权仍保留异常行。通用渠道创建仅用于 Shopee/Amazon 契约级 Mock，禁止创建 TikTok 真实记录。`PATCH /settings/stores/{store_id}/alias` 仅更新目标店铺的展示别名，要求系统级或目标店铺管理员、CSRF 与审计；店铺列表返回别名，TikTok 渠道列表返回站点、平台授权与刷新凭证两者更早的到期时间、低敏授权状态及最近授权时间，无数据时为 `null`。
 

@@ -11,7 +11,7 @@ from app.auth.store_access import allowed_store_ids_for_permission
 from app.conversations.models import Conversation
 from app.reception_assignment.models import ReceptionDepartmentAgent, ReceptionDepartmentConfig
 from app.reception_assignment.rules import AssignmentCandidate, choose_candidate
-from app.shared.database.base import Role, User, UserLoginSession, user_roles
+from app.shared.database.base import User, UserLoginSession
 from app.stores.models import Store
 from app.users.models import department_members, department_stores
 
@@ -69,15 +69,6 @@ async def dispatch_conversation(
                 ReceptionDepartmentAgent.department_id == department_id,
                 ReceptionDepartmentAgent.auto_enabled.is_(True),
                 User.status == "active",
-                ~exists(
-                    select(user_roles.c.user_id)
-                    .join(Role, Role.id == user_roles.c.role_id)
-                    .where(
-                        user_roles.c.user_id == User.id,
-                        user_roles.c.store_id.is_(None),
-                        Role.code == "admin",
-                    )
-                ),
             )
         )
     ).all()

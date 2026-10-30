@@ -78,6 +78,8 @@ async def list_team(session: AsyncSession, actor: User) -> list[TeamMemberView]:
     )
     if system_admin is None:
         for item in views:
+            # 旧账号只用邮箱登录；目录仍显示登录标识，但不暴露独立联系方式。
+            item.login_name = item.login_name or item.email
             item.email = None
             item.phone = None
             item.last_login_at = None

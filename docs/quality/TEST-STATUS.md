@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-30 管理员派单资格与旧登录账号显示[TR R01](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R01.md) **PASS（本地候选）**：`ae947878` 的隔离 PostgreSQL 权限/派单集成通过，后端 2730 passed/3 skipped、前端契约 55/55、生产构建浏览器 166/166、Ruff/格式/mypy、lint/typecheck/build 通过。主管账号目录显示旧邮箱登录标识，联系方式仍隐藏；管理员须部门成员、显式参与并在线才进入派单。staging 待从合并主线部署，真实入站未演练，production No-Go。
+
 2026-10-30 部门派单冗余说明移除[发布 TR R01](../reports/tests/TR-MVP-DEPARTMENT-RECEPTION-COPY-STAGING-001-20261030-R01.md) **PASS（staging）**：主线 `b5d4985b` 的前端精确摘要、私有备份、双预检/部署、045、12 服务、五个公开路径及已登录页面文字消失通过；后端和人工发送范围不变，零真实买家测试外发。原源码 [TR](../reports/tests/TR-MVP-DEPARTMENT-RECEPTION-COPY-001-20261030-R01.md) 的红绿浏览器、55 契约、lint/typecheck/build 与本轮现场结果分开记录；production No-Go。[证据](../../release/evidence/staging/crm-staging-department-reception-copy-20261030.json)。
 
 2026-10-30 部门派单冗余文案移除 [TR R01](../reports/tests/TR-MVP-DEPARTMENT-RECEPTION-COPY-001-20261030-R01.md) **PASS（本地候选）**：两条合成浏览器用例先红后绿，55 项前端契约、lint（0 error/8 既有 warning）、typecheck 和 build 通过；staging 尚待合并与部署。

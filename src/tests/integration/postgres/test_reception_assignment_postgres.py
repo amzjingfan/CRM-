@@ -8,9 +8,12 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from app.auth.store_access import allowed_store_ids_for_permission, supervised_store_ids
 from app.auth.security import create_access_token
 from app.auth.service import resolve_access_user
+from app.auth.store_access import allowed_store_ids_for_permission, supervised_store_ids
+from app.conversations.models import Conversation
+from app.customers.models import Customer
+from app.reception_assignment.dispatch import dispatch_conversation
 from app.reception_assignment.schemas import ReceptionDepartmentAgentInput, ReceptionDepartmentInput
 from app.reception_assignment.service import configure_department_reception, get_department_reception
 from app.shared.database.base import Role, User, UserLoginSession, user_roles
@@ -43,7 +46,12 @@ async def test_department_configuration_and_supervisor_scope_follow_login_sessio
                             Store(id=second, name="接待二店", code=f"reception_{second.hex}", status="active"),
                             Store(id=outside, name="部门外店", code=f"reception_{outside.hex}", status="active"),
                             Department(id=department_id, name=f"接待部 {department_id.hex}"),
-                            User(id=admin_id, login_name=f"a{admin_id.hex[:12]}", name="管理员", password_hash="test"),
+                            User(
+                                id=admin_id,
+                                email=f"admin-{admin_id.hex}@example.invalid",
+                                name="管理员",
+                                password_hash="test",
+                            ),
                             User(
                                 id=supervisor_id,
                                 login_name=f"s{supervisor_id.hex[:12]}",
@@ -86,12 +94,14 @@ async def test_department_configuration_and_supervisor_scope_follow_login_sessio
                     directory = await list_team(session, supervisor)
                     admin_entry = next(item for item in directory if item.id == admin_id)
                     assert admin_entry.name == "管理员"
+                    assert admin_entry.login_name == f"admin-{admin_id.hex}@example.invalid"
                     assert admin_entry.email is None and admin_entry.phone is None
                     assert (await get_department_reception(session, supervisor, department_id)).enabled is False
                     initial = await get_department_reception(session, admin, department_id)
                     assert initial.enabled is False
                     by_id = {item.user_id: item for item in initial.agents}
-                    assert by_id[admin_id].active is False
+                    assert by_id[admin_id].active is True
+                    assert set(by_id[admin_id].eligible_store_ids) == {first, second}
                     assert set(by_id[supervisor_id].eligible_store_ids) == {first, second}
                     assert by_id[agent_id].eligible_store_ids == [second]
                     with pytest.raises(AppError):
@@ -113,6 +123,37 @@ async def test_department_configuration_and_supervisor_scope_follow_login_sessio
                     assert configured.enabled is True
                     assert all(item.auto_enabled for item in configured.agents if item.user_id != admin_id)
                     assert not any(item.online for item in configured.agents)
+                    configured = await configure_department_reception(
+                        session,
+                        admin,
+                        department_id,
+                        ReceptionDepartmentInput(
+                            enabled=True,
+                            agents=[ReceptionDepartmentAgentInput(user_id=admin_id, auto_enabled=True)],
+                        ),
+                    )
+                    assert next(item for item in configured.agents if item.user_id == admin_id).auto_enabled is True
+                    admin_login = UserLoginSession(user_id=admin_id, expires_at=datetime.now(UTC) + timedelta(days=1))
+                    customer_id = uuid.uuid4()
+                    session.add_all(
+                        [
+                            admin_login,
+                            Customer(
+                                id=customer_id, store_id=first, platform="tiktok", external_customer_id=customer_id.hex
+                            ),
+                        ]
+                    )
+                    await session.flush()
+                    conversation = Conversation(
+                        store_id=first,
+                        customer_id=customer_id,
+                        platform="tiktok",
+                        external_conversation_id=f"admin_dispatch_{uuid.uuid4().hex}",
+                        awaiting_reply_since=datetime.now(UTC),
+                    )
+                    session.add(conversation)
+                    await session.flush()
+                    assert await dispatch_conversation(session, conversation.id) == admin_id
                     login = UserLoginSession(user_id=supervisor_id, expires_at=datetime.now(UTC) + timedelta(days=1))
                     session.add(login)
                     await session.commit()

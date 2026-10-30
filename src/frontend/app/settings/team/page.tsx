@@ -204,7 +204,7 @@ export default function TeamPage() {
           <option value="agent">普通客服</option><option value="supervisor">客服主管</option><option value="admin">系统管理员（全部店铺）</option>
         </select>
       </label>
-      {role !== "admin" ? <AccountStorePicker stores={stores} roles={storeRoles} role={role} onToggle={toggleStore} onRoleChange={(id, nextRole) => { setStoreRoles((current) => ({ ...current, [id]: nextRole })); setRole("mixed"); setAssignmentDirty(true); }} /> : <p className="account-role-note">系统管理员拥有全部店铺权限，不参与自动派单。</p>}
+      {role !== "admin" ? <AccountStorePicker stores={stores} roles={storeRoles} role={role} onToggle={toggleStore} onRoleChange={(id, nextRole) => { setStoreRoles((current) => ({ ...current, [id]: nextRole })); setRole("mixed"); setAssignmentDirty(true); }} /> : <p className="account-role-note">系统管理员拥有全部店铺权限；若属于客服部，可在部门接待配置中选择是否参与派单。</p>}
       {drawer.kind === "create" ? <label className="field-label">所在部门<select className="compact-field" defaultValue="" key={`${role}:${selectedStoreIds.join(",")}`} name="department_id"><option value="">暂不分配</option>{eligibleDepartments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select>{!eligibleDepartments.length && departments.length ? <small>所选店铺未分配给任何部门。请更换负责店铺，或先到部门管理中添加该店铺。</small> : null}</label> : <p className="account-role-note">所属部门请在部门管理中调整；此处修改店铺角色与授权。</p>}
     </>;
   }
