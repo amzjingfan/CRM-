@@ -1,16 +1,18 @@
 """Agent 运营管理业务规则。"""
 
 import uuid
+from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import cast
+from typing import Literal, cast
 
-from sqlalchemy import select
+from sqlalchemy import select, tuple_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.core.reply_policy import resolve_store_reply_profile
 from app.agents.management.config_models import AgentConfig
 from app.agents.management.config_repository import find_config, list_configs, list_run_logs
+from app.agents.management.models import AgentConfigVersion
 from app.agents.management.repository import get_published_agent
 from app.agents.management.schemas import (
     AgentConfigCreate,
@@ -24,7 +26,7 @@ from app.agents.management.schemas import (
 from app.agents.prompts.compiler import PLATFORM_POLICY_VERSION
 from app.agents.safety.grounding import GROUNDING_PROMPT_VERSION
 from app.audit.models import AuditLog
-from app.auth.store_access import allowed_store_ids, ensure_store_access
+from app.auth.store_access import allowed_store_ids
 from app.knowledge_base.document_models import KnowledgeFile
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
@@ -79,6 +81,9 @@ def config_view(config: AgentConfig) -> AgentConfigView:
         status=config.status,  # type: ignore[arg-type]
         draft_revision=getattr(config, "draft_revision", 1),
         published_version=getattr(config, "published_version", None),
+        template_id=getattr(config, "template_id", None),
+        template_state_json=getattr(config, "template_state_json", None),
+        published_template_source_json=getattr(config, "_published_template_source_json", None),
         model_provider=getattr(config, "draft_model_provider", None),
         model_name=getattr(config, "draft_model_name", None),
         prompt_sections=dict(getattr(config, "draft_prompt_sections", {})),
@@ -95,14 +100,53 @@ def config_view(config: AgentConfig) -> AgentConfigView:
 
 
 async def get_configs(session: AsyncSession, user: User) -> list[AgentConfigView]:
-    rows = await list_configs(session, await allowed_store_ids(session, user))
+    rows = await list_configs(session, await allowed_store_ids(session, user, "agent.view"))
+    await _load_published_sources(session, rows)
     return [config_view(item) for item in rows]
 
 
-async def get_config(session: AsyncSession, user: User, config_id: uuid.UUID) -> AgentConfig:
-    item = await find_config(session, config_id, await allowed_store_ids(session, user))
+async def _load_published_sources(session: AsyncSession, configs: Sequence[AgentConfig]) -> None:
+    keys = [
+        (config.id, config.store_id, config.published_version)
+        for config in configs
+        if config.published_version is not None
+    ]
+    sources = {}
+    if keys:
+        rows = (
+            await session.execute(
+                select(
+                    AgentConfigVersion.agent_config_id,
+                    AgentConfigVersion.store_id,
+                    AgentConfigVersion.version,
+                    AgentConfigVersion.template_source_json,
+                ).where(
+                    tuple_(
+                        AgentConfigVersion.agent_config_id, AgentConfigVersion.store_id, AgentConfigVersion.version
+                    ).in_(keys)
+                )
+            )
+        ).all()
+        sources = {(row.agent_config_id, row.store_id, row.version): row.template_source_json for row in rows}
+    # 草稿关联与运行来源独立；解除关联也不能抹掉仍在运行的旧版本来源。
+    for config in configs:
+        config.__dict__["_published_template_source_json"] = sources.get(
+            (config.id, config.store_id, config.published_version)
+        )
+
+
+async def get_config(
+    session: AsyncSession,
+    user: User,
+    config_id: uuid.UUID,
+    *,
+    permission_code: Literal["agent.view", "agent.manage"] = "agent.view",
+) -> AgentConfig:
+    # 部门会话范围不是 Agent 授权；写入调用者必须明确要求目标店的管理权限。
+    item = await find_config(session, config_id, await allowed_store_ids(session, user, permission_code))
     if item is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "Agent 配置不存在", 404)
+    await _load_published_sources(session, [item])
     return item
 
 
@@ -143,7 +187,8 @@ async def create_config(
     user: User,
     payload: AgentConfigCreate,
 ) -> AgentConfigView:
-    await ensure_store_access(session, user, payload.store_id)
+    if payload.store_id not in await allowed_store_ids(session, user, "agent.manage"):
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     require_knowledge_view_for_binding(user, payload.knowledge_file_ids)
     file_ids = await validate_knowledge_file_ids(session, payload.store_id, payload.knowledge_file_ids)
     config = AgentConfig(
@@ -195,7 +240,7 @@ async def update_config(
     config_id: uuid.UUID,
     payload: AgentConfigUpdate,
 ) -> AgentConfigView:
-    config = await get_config(session, user, config_id)
+    config = await get_config(session, user, config_id, permission_code="agent.manage")
     # 授权读取后重新加锁并刷新 revision，避免两个旧草稿同时通过 Python 比较。
     await session.refresh(config, with_for_update=True)
     if getattr(config, "deleted_at", None) is not None:
@@ -285,7 +330,7 @@ async def set_config_status(
     config_id: uuid.UUID,
     status: str,
 ) -> AgentConfigView:
-    config = await get_config(session, user, config_id)
+    config = await get_config(session, user, config_id, permission_code="agent.manage")
     if status == "enabled":
         version = await get_published_agent(session, store_id=config.store_id, config_id=config.id)
         if version is None or not version.ready_for_v2:
@@ -315,7 +360,7 @@ async def set_config_status(
 
 
 async def delete_config(session: AsyncSession, user: User, config_id: uuid.UUID) -> None:
-    config = await get_config(session, user, config_id)
+    config = await get_config(session, user, config_id, permission_code="agent.manage")
     if config.status == "enabled":
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "请先停用 Agent 配置", 409)
     config.deleted_at = datetime.now(UTC)

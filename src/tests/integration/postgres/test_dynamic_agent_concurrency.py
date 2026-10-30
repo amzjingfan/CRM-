@@ -40,9 +40,10 @@ async def test_two_stale_draft_writers_cannot_both_commit(monkeypatch) -> None:
         ready = asyncio.Event()
         readers = 0
 
-        async def both_read_before_lock(session, user, config_id):
+        async def both_read_before_lock(session, user, config_id, *, permission_code):
             nonlocal readers
-            item = await original(session, user, config_id)
+            assert permission_code == "agent.manage"
+            item = await original(session, user, config_id, permission_code=permission_code)
             readers += 1
             if readers == 2:
                 ready.set()

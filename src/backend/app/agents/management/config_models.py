@@ -23,6 +23,13 @@ class AgentConfig(TimestampMixin, Base):
             postgresql_where=text("deleted_at IS NULL"),
         ),
         Index("idx_agent_configs_store_status", "store_id", "status"),
+        Index(
+            "uq_agent_configs_store_template_active",
+            "store_id",
+            "template_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND template_id IS NOT NULL"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -44,6 +51,10 @@ class AgentConfig(TimestampMixin, Base):
     draft_model_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
     draft_model_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     draft_prompt_sections: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, nullable=False)
+    template_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("agent_templates.id", ondelete="RESTRICT"), nullable=True
+    )
+    template_state_json: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
 
 
 class AgentTask(TimestampMixin, Base):

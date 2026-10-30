@@ -172,7 +172,9 @@ test("protected routes quietly handle expected authentication errors", () => {
 test("Agent configuration edits model and seven-section prompt but keeps automated sending unavailable", () => {
   const agentSource = readRequiredSource("agent");
   const apiSource = readRequiredSource("api");
-  assert.match(agentSource, /七段式系统提示词 · 可编辑/);
+  const sharedPrompt = readFileSync(new URL("../../../frontend/components/AgentPromptFields.tsx", import.meta.url), "utf8");
+  assert.match(agentSource, /AgentPromptFields/);
+  assert.match(sharedPrompt, /七段式系统提示词/);
   assert.match(agentSource, /发布版本/);
   assert.match(agentSource, /model_provider/);
   assert.match(agentSource, /AgentToolCatalog/);

@@ -3,6 +3,12 @@
 from app.agents.delivery.models import ReplyBatch
 from app.agents.management.config_models import AgentConfig, AgentTask
 from app.agents.management.models import AgentConfigVersion
+from app.agents.management.templates.models import (
+    AgentTemplate,
+    AgentTemplateBatch,
+    AgentTemplateBatchItem,
+    AgentTemplateVersion,
+)
 from app.agents.memory.models import AgentSessionMemory
 from app.agents.runtime.models import AgentRun
 from app.agents.tools.logistics_updates.models import (
@@ -59,6 +65,10 @@ __all__ = [
     "AgentConfigVersion",
     "AgentSessionMemory",
     "AgentTask",
+    "AgentTemplate",
+    "AgentTemplateBatch",
+    "AgentTemplateBatchItem",
+    "AgentTemplateVersion",
     "ChannelAccount",
     "Conversation",
     "Customer",

@@ -38,3 +38,4 @@ class AgentConfigVersion(Base):
     ready_for_v2: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     published_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    template_source_json: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)

@@ -1,5 +1,13 @@
 # 部署与运行边界
 
+## Agent模板后台批次部署边界（本地候选，尚未批准部署）
+
+本任务只在本地开发、隔离PostgreSQL和本地浏览器验证；不改变本文现有staging/production发布事实。最终功能、统一修复、完整测试和审查完成后仍需用户另行批准部署。
+
+模板迁移045_agent_templates与主线045_dept_dispatch_login均在044之后，由046_merge_templates_dispatch合流为唯一head；升级可从044或任一045分支进入，不改写历史revision。升级前备份并核对最终主线迁移头。后端lifespan运行模板配置处理器，默认AGENT_TEMPLATE_PROCESSOR_ENABLED=true、AGENT_TEMPLATE_PROCESSOR_POLL_SECONDS=2、AGENT_TEMPLATE_PROCESSOR_LEASE_SECONDS=180；实际lease至少覆盖有界模型复核预算再加30秒。多个后端副本由数据库token/lease协调，无独立Worker/队列服务。关闭该处理器只暂停配置批次，API返回processor_enabled供界面说明；不会关闭已有Agent运行，也不启用正式建议或自动外发开关。
+
+应用退出先停止处理器和在途调用，再释放现有运行器/HTTP池/数据库连接；重启等过期lease恢复未提交项，已提交项以同事务结果为准。回滚优先停新应用入口/处理器并保留现有店铺发布版本、模板和批次历史。模板分支有模板/批次/来源数据时拒绝无损降级，不能直接drop新表或重写旧Agent版本；如需改变结构须另行核对数据保留与恢复方案。跨版本数据库往返只在显式专属测试库执行。
+
 2026-10-30 最新 staging 已从干净主线 `b5d4985b42fc2daac677a16805bfa18126b6439e` 手动部署部门派单文案修复前端 `ghcr.io/cp11-gh/crm-frontend@sha256:e9fdab85217f93f8bf35e08c99de61a954a70285a62d587c55356554ad666e14`，后端原摘要不变。私有环境/PostgreSQL/MinIO 备份、原版/候选 ValidateOnly、Deploy、045、12 服务和五个公开路径 200 通过；已登录页面长段落消失，派单操作仍在。原两店人工发送和 Agent 模式保持，自动回复、营销及高风险写入关闭，零真实买家测试外发，production 未发布。见[发布 TR](../reports/tests/TR-MVP-DEPARTMENT-RECEPTION-COPY-STAGING-001-20261030-R01.md)与[精确证据](../../release/evidence/staging/crm-staging-department-reception-copy-20261030.json)。回退仅切回旧前端摘要并保护 045 后业务增量。
 
 2026-10-30 最新 staging 已从干净合并主线 `0fc2b50b993d2f53e63d1b555fd60a26add268d4` 手动部署部门统一派单、登录在线与全员只读账号目录的同版前后端，迁移头 `045_dept_dispatch_login`。前后端 linux/amd64 OCI revision、私有环境/PostgreSQL/MinIO 备份、旧版与候选 ValidateOnly、Deploy、12 服务、固定出口、三公网健康及账号/部门页面 200 均核对；已登录部门页显示两账号，派单页进一步浏览器读取超时。人工发送保持原两家授权店铺，Agent 调试/建议保持，自动回复/营销/高风险写入关闭；零真实买家测试外发，production 未发布。见[发布 TR](../reports/tests/TR-MVP-DEPARTMENT-UNIFIED-DISPATCH-STAGING-001-20261030-R01.md)与[精确证据](../../release/evidence/staging/crm-staging-department-unified-dispatch-20261030.json)。恢复优先旧镜像并保留 045 后业务增量，不能直接降级数据库。

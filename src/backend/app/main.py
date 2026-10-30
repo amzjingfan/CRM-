@@ -13,9 +13,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.agents.core.factory import build_shared_agent_runtime
+from app.agents.management.templates.processor import TemplateBatchProcessor
 from app.api.v1.router import router as v1_router
 from app.integrations.tiktok_read import close_tiktok_read_http_pool, read_timing
 from app.shared.config.settings import get_settings
+from app.shared.database.session import engine, session_factory
 from app.shared.exceptions.errors import AppError
 from app.shared.health import ReadinessReport, collect_readiness
 from app.shared.logging.setup import configure_logging
@@ -40,14 +42,24 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     )
     runtime = build_shared_agent_runtime(settings)
     application.state.agent_runtime = runtime
+    processor = TemplateBatchProcessor(session_factory, settings)
+    application.state.template_batch_processor = processor
+    processor.start()
     try:
         yield
     finally:
         try:
-            if runtime is not None:
-                await runtime.aclose()
+            try:
+                await processor.stop()
+            finally:
+                if runtime is not None:
+                    await runtime.aclose()
         finally:
-            await close_tiktok_read_http_pool()
+            try:
+                await close_tiktok_read_http_pool()
+            finally:
+                await engine.dispose()
+                application.state.template_batch_processor = None
             application.state.agent_runtime = None
             logger.info("应用关闭", extra={"trace_id": lifecycle_trace_id, "event": "application_stopped"})
 

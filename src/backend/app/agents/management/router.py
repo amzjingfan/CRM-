@@ -28,6 +28,10 @@ from app.agents.management.schemas import (
     AgentRunLogPage,
 )
 from app.agents.management.service import publish_agent
+from app.agents.management.templates.batch_router import router as template_batches_router
+from app.agents.management.templates.router import router as templates_router
+from app.agents.management.templates.selection_schemas import AgentTemplateSourceView, DetachTemplateRequest
+from app.agents.management.templates.source import detach_template, template_source
 from app.agents.tools.access import tool_catalog
 from app.agents.tools.collaboration import CollaborationView, list_collaboration
 from app.agents.tools.logistics_updates.http import router as logistics_notification_router
@@ -42,6 +46,8 @@ from app.shared.schemas.responses import ApiResponse
 
 router = APIRouter(prefix="/agents", tags=["Agent 运营管理"])
 router.include_router(logistics_notification_router)
+router.include_router(templates_router)
+router.include_router(template_batches_router)
 READ_DESCRIPTION = "权限：agent.view；只返回当前用户可访问 store_id 的运营配置和脱敏日志。"
 WRITE_DESCRIPTION = (
     "权限：agent.manage；需 CSRF 并校验 store_id。可编辑模型和七段式 Prompt 草稿，发布后生成不可变版本。"
@@ -109,6 +115,27 @@ async def agent(
     return ApiResponse(data=config_view(await get_config(session, user, agent_id)))
 
 
+@router.get("/{agent_id}/template-source", response_model=ApiResponse[AgentTemplateSourceView])
+async def agent_template_source(
+    agent_id: uuid.UUID, session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[AgentTemplateSourceView]:
+    return ApiResponse(data=await template_source(session, user, agent_id))
+
+
+@router.post(
+    "/{agent_id}/detach-template",
+    response_model=ApiResponse[AgentConfigView],
+    dependencies=[Depends(require_csrf)],
+)
+async def detach_agent_template(
+    agent_id: uuid.UUID,
+    payload: DetachTemplateRequest,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[AgentConfigView]:
+    return ApiResponse(data=await detach_template(session, user, agent_id, payload.expected_revision))
+
+
 @router.patch(
     "/{agent_id}",
     response_model=ApiResponse[AgentConfigView],
@@ -136,7 +163,7 @@ async def publish_agent_config(
     session: DbSession,
     user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[AgentConfigView]:
-    config = await get_config(session, user, agent_id)
+    config = await get_config(session, user, agent_id, permission_code="agent.manage")
     await publish_agent(
         session,
         store_id=config.store_id,
@@ -194,7 +221,7 @@ async def disable_agent(
 async def toggle_agent(
     agent_id: uuid.UUID, session: DbSession, user: Annotated[User, Depends(get_current_user)]
 ) -> ApiResponse[AgentConfigView]:
-    current = await get_config(session, user, agent_id)
+    current = await get_config(session, user, agent_id, permission_code="agent.manage")
     return ApiResponse(
         data=await set_config_status(session, user, agent_id, "disabled" if current.status == "enabled" else "enabled")
     )

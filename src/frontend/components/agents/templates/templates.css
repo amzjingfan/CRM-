@@ -1,0 +1,23 @@
+.agent-page .tabs a{text-decoration:none;display:inline-block}
+.template-page .template-layout{display:grid;grid-template-columns:285px minmax(0,1fr);gap:20px;align-items:start}
+.template-page .template-library{padding:20px;background:#fff;border:1px solid #e2e8f1;border-radius:12px;min-width:0}
+.template-page .template-library h2{font-size:16px;margin:0 0 6px}
+.template-page .template-list{display:grid;gap:10px;margin-top:18px}
+.template-page .template-list-item{display:grid;text-align:left;gap:9px;border:1px solid #e0e7f0;background:#fff;color:#17233a;border-radius:9px;padding:15px;overflow-wrap:anywhere}
+.template-page .template-list-item.active{border-color:#315fd6;background:#f3f7ff}
+.template-page .template-list-item small,.template-page .template-list-item span{color:#62728a;font-size:12px;line-height:1.5}
+.template-page .archive-filter{display:flex;align-items:center;gap:8px;margin-top:15px;font-size:12px;color:#52627b;min-height:44px}
+.template-page .config-actions{flex-wrap:wrap;justify-content:flex-end}
+.template-page .template-editor{min-width:0}
+.template-page .config-body{max-height:calc(100vh - 305px);min-height:400px;overflow:auto;scrollbar-gutter:stable}
+.template-page .version-field{max-width:280px}
+.agent-page .knowledge-slots{margin-top:26px;padding-top:22px;border-top:1px solid #e3e8f0}
+.agent-page .slot-row{border:1px solid #dfe6f0;border-radius:9px;padding:16px;margin:16px 0;min-width:0}
+.agent-page .slot-row legend{font-size:13px;font-weight:650;color:#52627b;padding:0 5px}
+.agent-page .template-modal{max-height:calc(100dvh - 32px);display:flex;flex-direction:column}
+.agent-page .template-modal>form{min-height:0;display:flex;flex-direction:column}
+.agent-page .template-modal .modal-body{overflow:auto;min-height:0}
+.agent-page .template-modal .field-group{margin-bottom:14px}
+.agent-page .template-modal .modal-foot{flex:none}
+@media(max-width:1000px){.template-page .template-layout{grid-template-columns:230px minmax(0,1fr)}.template-page .config-head{flex-wrap:wrap}}
+@media(max-width:780px){.template-page .template-layout{grid-template-columns:minmax(0,1fr)}.template-page .template-list{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}.template-page .config-body{max-height:none;min-height:0}.template-page .template-library{padding:16px}.template-page .topbar{flex-wrap:wrap}.template-page .config-actions{justify-content:flex-start}}

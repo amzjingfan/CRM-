@@ -142,6 +142,9 @@ class AgentConfigView(BaseModel):
     status: Literal["enabled", "disabled"]
     draft_revision: int = 1
     published_version: int | None = None
+    template_id: uuid.UUID | None = None
+    template_state_json: dict[str, object] | None = None
+    published_template_source_json: dict[str, object] | None = None
     model_provider: str | None = None
     model_name: str | None = None
     prompt_sections: dict[str, str] = Field(default_factory=dict)

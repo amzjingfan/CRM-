@@ -38,7 +38,7 @@ async def run_agent_debug_v2(
     settings = get_settings()
     if not settings.agent_debug_enabled:
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Agent 真实调试尚未启用", 503)
-    config = await get_config(session, user, config_id)
+    config = await get_config(session, user, config_id, permission_code="agent.manage")
     if payload.mode == "store":
         agents = tuple(await list_enabled_agents(session, config.store_id))
     else:

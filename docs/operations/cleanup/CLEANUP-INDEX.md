@@ -4,6 +4,7 @@
 
 | Batch ID | Task ID | State | Scope | Retention until | Updated | Record |
 |---|---|---|---|---|---|---|
+| CLEANUP-20261030-002 | MAINT-CLEANUP-20261030-002 | QUARANTINED | 本轮T7A误置根目录5缓存，5/5hash一致，无永久删除 | 2026-11-06 | 2026-10-30 | [记录](CLEANUP-20261030-002.md) |
 | CLEANUP-20261030-001 | MAINT-CLEANUP-20261030-001 | DELETED_WITH_PRIVATE_BACKUP | staging 50 个合成账号与 2 家合成店铺；保留指定管理员和 3 家店铺 | 私有备份保留；恢复须先隔离对账 | 2026-10-30 | [记录](CLEANUP-20261030-001.md) |
 | CLEANUP-20261029-002 | MAINT-CLEANUP-20261029-002 | QUARANTINED | 本次误置5缓存，5/5hash一致，无永久删除 | 2026-11-05 | 2026-10-29 | [记录](CLEANUP-20261029-002.md) |
 | CLEANUP-20261029-001 | MAINT-CLEANUP-20261029-001 | QUARANTINED | 本次误置的10个pytest缓存；逐文件hash一致，可恢复隔离 | 2026-11-05 | 2026-10-29 | [记录](CLEANUP-20261029-001.md) |

@@ -1,5 +1,31 @@
 # 当前 API 契约
 
+## Agent 模板与后台批量应用（2026-10-30 本地候选，未部署）
+
+模板是配置复用入口，店铺运行仍读取自己的已发布 AgentConfigVersion。以下后端接口已实现；完整批量 UI 与最终联合验收仍按实施任务推进，不把接口就绪当作上线。
+
+| 接口（均位于 /v1） | 契约 |
+|---|---|
+| GET/POST /agents/templates；GET/PATCH /agents/templates/{id} | 共享已发布库及管理员草稿；编辑带 expected_revision。GET列表返回 items/can_manage |
+| GET /agents/templates/catalog | 无店铺依赖的已配置原生工具模型、七段标题及全部注册工具元数据，不推断店铺授权 |
+| POST /agents/templates/from-agent | source_agent_id，并明确 source_version 或 source_draft_revision 二选一；只提取通用字段 |
+| GET /agents/templates/{id}/versions；POST /publish、/archive、/restore | 不可变模板版本；写操作需精确 expected_revision，发布不改变店铺运行 |
+| GET /agents/templates/application-stores | 逐店 agent.manage 的 active/未删除店及候选 Agent；page/page_size/search，返回 items/pagination |
+| GET /agents/templates/application-stores/{store_id}/knowledge-files | 同店 agent.manage 与 knowledge.view；返回本店文件当前有效版本、审批和 can_publish，无正文/存储路径 |
+| POST /agents/templates/{id}/application-previews | template_version、逐店 create/adopt/update 请求和可选 parent_batch_id；返回持久 preview_id/hash、完整目标、A/B/C差异、issues/warnings |
+| POST /agents/template-batches | 只接受 preview_id 和严格 confirmation:true，加稳定 Idempotency-Key；激活同一预览，HTTP不执行模型 |
+| GET /agents/template-batches；GET /agents/template-batches/{id} | 列表默认20项、详情默认50项，最大100；本人或系统管理员可见，店铺详情再按现时权限隐藏 |
+| POST /agents/template-batches/{id}/retry-failed、/cancel | 临时故障相同冻结配置重试；改配置必须重新预览。取消不回滚已成功项 |
+| GET /agents/{id}/template-source；POST /agents/{id}/detach-template | 逐店 agent.view/manage；来源区分 draft 与 published；解除请求仅 expected_revision，不改变运行版本 |
+
+TemplateConfig包含默认名称/建议编码、类型、职责、模型提供方与模型名、七段提示词、工具集合、知识需求槽；实际文件ID、reply_profile、凭证、会话和记忆不进入模板。名称/编码仅create可改，enable_after_publish仅显式发布新Agent时合法。ApplicationItemRequest.fields=null表示首轮建议，{}表示此次不更新管理字段；字段选择为template/local/manual，仅manual接收完整value（包括显式null）。知识需求按同店logical file ID映射，发布资格检查当前有效版本ready、approved_for_internal_review且审批人/时间非空。
+
+预览不写店铺配置；确认和执行重验当前权限、Agent revision/运行版本/启停、模板归档、模型/工具目录和知识依赖。输入变化返回冲突或需重新预览，不静默替换版本。相同创建者/key和preview返回原批次；同key不同preview或已激活preview换key返回409。客户端遇未知结果先查询同preview ID，不生成新key重建。批次queued/running/completed/partial_failed/cancelled，逐店pending/running/succeeded/failed/needs_repreview/skipped/cancelled；partial_failed仅代表结束且含错误，须结合counts区分全失败和部分成功。
+
+逐店结果的 `old_published_version` 来自预览时冻结的 `expected_published_version`，新建无旧版本为null，不随Agent后续发布改变；`result_version` 沿用本次项目的结果版本，保存草稿时可能保持旧运行版本。两者都按当前逐店权限隐藏为null，界面不能从现时Agent推测旧批次历史，也不能把草稿成功当作新运行版本已生效。
+
+来源draft.fields的aligned、local_override、pending_review独立可重叠，不能相加充当字段总数，也不能把部分字段更新标作全面V2。published保存原运行版本的不可变来源；detach只清草稿关联、revision加一和审计，不自动发布。模板维护只允许数据库系统级admin；写操作继续CSRF，知识和业务工具权限不因模板共享扩大。
+
 ## 有序回复与物流通知（2026-10-30）
 
 - `POST /v1/chat/query` 新增可选 `reply_mode: single|review_plan`，默认single兼容旧调用。review_plan的SSE新增draft：`{part_index,text,replace:true,unverified:true,sendable:false,trigger_message_id}`，text为当前整段快照；原result新增 `reply_parts/logistics_order_numbers/trigger_message_id/reason_codes`，content仍为首段，所有可用段均经复核。done completed不代表非空可用答复。
@@ -99,6 +125,8 @@ Agent 发布接口在既有授权、revision和模型配置校验后执行一次
 - `GET/POST /agents`、`GET/PATCH/DELETE /agents/{agent_id}`。
 - 迁移 035～039 后，Agent 响应增加 `draft_revision`、可空 `published_version`、草稿 `model_provider/model_name/prompt_sections`，运行记录增加 `parent_run_id/config_version/phase`。`POST/PATCH /agents` 可保存模型及七段式 Prompt 草稿；`PATCH` 可传 `expected_revision` 做并发检查。`POST /agents/{agent_id}/publish` 需 `agent.manage`、CSRF 和 `expected_revision`，生成不可变版本及摘要。发布不自动启用或部署。新版正式执行开关默认关闭，开启时同店所有启用 Agent 均进入模型路由候选。
 - `POST /agents/{agent_id}/enable|disable|toggle`、`GET /agents/{agent_id}/logs`。
+- 普通 Agent 列表、详情及运行日志按目标店铺 `agent.view` 过滤；创建、修改、发布、启停、删除及调试按目标店铺 `agent.manage` 校验。部门会话监督范围不授予其他店铺 Agent 配置权限；工作台正式建议维持既有会话权限。
+
 - `POST /agents/{agent_id}/debug` 接收 `message`、可选 `conversation_id` 和 `mode=single|store`，需要 `agent.manage`、CSRF 和 AI 查询限流。新版调试开关开启时，`single` 可调试该店铺已发布的停用 Agent；`store` 从该店所有启用 Agent 的发布版本中路由一个或多个。服务端再次校验店铺及文件绑定；绑定文件需 `knowledge.view`，会话需 `workspace.view` 且同店。响应返回人工建议、`routed_agents/tool_events/reason_code`、有效文件引用和追踪号；没有会话时订单和客户工具缺少可信对象，执行会返回明确的上下文缺失状态。TikTok 会话经已验证买家身份返回订单候选，模型选择后才查询对应详情或物流。商品、优惠及绑定知识可独立于买家会话查询；两个明确配置的内部写入可保存 AI 协作记录。调试不创建客户消息、不执行平台写入或发送。
 - `reply_profile` 仅接受固定语气、回复语言、坐席语言和经清洗的品牌名；阈值字段仍拒绝。模型及 Prompt 仅能经 Agent 草稿与发布接口配置，不由调试或正式运行请求覆盖。
 - Agent 新建与修改支持 `agent_type=service|operations` 和当前授权店铺的 `knowledge_file_ids`。新增或改变非空文件绑定还需 `knowledge.view`；新版执行器由职责描述而非固定类型决定参与路由。文件绑定保存时校验店铺，运行时再校验版本审批、有效状态、归档/删除和模型门禁。文件 RAG 的查询向量化、SQL 与重排共用 12 秒总时限，总 Agent 运行另受同一绝对截止时间限制。

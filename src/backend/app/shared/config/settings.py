@@ -79,6 +79,13 @@ class Settings(BaseSettings):
     marketing_poll_seconds: float = Field(default=60.0, gt=0, le=300, validation_alias="MARKETING_POLL_SECONDS")
     ai_marketing_enabled: bool = Field(default=False, validation_alias="AI_MARKETING_ENABLED")
     metrics_poll_seconds: float = Field(default=300.0, gt=0, le=3600, validation_alias="METRICS_POLL_SECONDS")
+    agent_template_processor_enabled: bool = Field(default=True, validation_alias="AGENT_TEMPLATE_PROCESSOR_ENABLED")
+    agent_template_processor_poll_seconds: float = Field(
+        default=2.0, gt=0, le=60, validation_alias="AGENT_TEMPLATE_PROCESSOR_POLL_SECONDS"
+    )
+    agent_template_processor_lease_seconds: float = Field(
+        default=180.0, ge=30, le=3600, validation_alias="AGENT_TEMPLATE_PROCESSOR_LEASE_SECONDS"
+    )
     request_timeout_seconds: float = Field(default=30.0, gt=1, le=300, validation_alias="REQUEST_TIMEOUT_SECONDS")
     chat_query_limit: int = Field(default=10, ge=1, le=1000, validation_alias="CHAT_QUERY_LIMIT")
     chat_query_window_seconds: int = Field(

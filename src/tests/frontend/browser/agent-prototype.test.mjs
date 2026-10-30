@@ -18,7 +18,7 @@ const agent = (id, store_id, name) => ({
   draft_revision: 1, published_version: null, model_provider: "deepseek", model_name: "deepseek-v4-flash", prompt_sections: promptSections,
   enabled_tools: ["transfer_to_human"], knowledge_file_ids: [], knowledge_scope: {},
   reply_profile: { tone: "friendly", reply_language: "auto", operator_language: "zh-CN", brand_name: null },
-  runtime: { available: true, llm_provider: "deepseek", llm_model: "deepseek-v4-flash", available_models: ["deepseek-v4-flash", "deepseek-v4-pro"], model_options: [{ provider: "deepseek", model_name: "deepseek-v4-flash" }, { provider: "deepseek", model_name: "deepseek-v4-pro" }], embedding_provider: "local_bge", embedding_model: "BAAI/bge-m3", reranker_model: "BAAI/bge-reranker-large", prompt_versions: {}, auto_reply_threshold: 0.85, human_review_threshold: 0.5, token_streaming: false },
+  runtime: { available: true, llm_provider: "deepseek", llm_model: "deepseek-v4-flash", available_models: ["deepseek-v4-flash", "deepseek-v4-pro"], model_options: [{ provider: "deepseek", model_name: "deepseek-v4-flash" }, { provider: "deepseek", model_name: "deepseek-v4-pro" }, { provider: "openai", model_name: "agent::alias:2026" }], embedding_provider: "local_bge", embedding_model: "BAAI/bge-m3", reranker_model: "BAAI/bge-reranker-large", prompt_versions: {}, auto_reply_threshold: 0.85, human_review_threshold: 0.5, token_streaming: false },
   created_at: "2026-10-26T00:00:00Z", updated_at: "2026-10-26T00:00:00Z",
 });
 let browser;
@@ -28,8 +28,10 @@ after(async () => { await browser?.close(); });
 async function openAgentPage(options = {}) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const agents = [agent("00000000-0000-4000-8000-0000000000a1", us.id, "美国客服"), agent("00000000-0000-4000-8000-0000000000a2", uk.id, "英国客服")];
+  if (options.templateSource) agents[0].published_version = 1;
   if (options.notificationAgent) Object.assign(agents[0], { status: "enabled", published_version: 1, enabled_tools: ["notify_logistics_update"] });
   const writes = [];
+  let detached = false;
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -37,7 +39,13 @@ async function openAgentPage(options = {}) {
     let data = [];
     if (url.pathname === "/v1/auth/me") data = { id: "00000000-0000-4000-8000-000000000001", name: "测试管理员", role: "admin", permissions: ["agent.view", "agent.manage", "knowledge.view"], store_ids: [us.id, uk.id] };
     else if (url.pathname === "/v1/settings/stores") data = [us, uk];
+    else if (url.pathname.endsWith("/template-source")) {
+      if (options.sourceGate && agents[0].draft_revision > 1 && !detached) await options.sourceGate();
+      data = options.templateSource ? { agent_id: agents[0].id, store_id: us.id, draft: detached ? null : { template_id: "template", name: "共享模板", archived: false, target_template_version: 2, draft_revision: agents[0].draft_revision, fields: [{ field: "description", local_override: true, applied_template_version: 1, last_reviewed_template_version: 1, aligned: false, pending_review: true }], aligned_count: 0, local_override_count: agents[0].draft_revision, pending_review_count: 1 }, published: { version: agents[0].published_version ?? 1, template_source_json: { template_id: "template", fields: { description: { applied_template_version: 1, baseline_value: "不应展示的基线正文" } } } } } : { agent_id: agents[0].id, store_id: us.id, draft: null, published: null };
+    }
+    else if (url.pathname.endsWith("/detach-template") && options.templateSource) { writes.push({ detach: request.postDataJSON() }); detached = true; data = agents[0]; }
     else if (url.pathname === "/v1/agents/tool-catalog") data = toolCatalog;
+    else if (url.pathname === "/v1/agents/templates") data = { items: [], can_manage: true };
     else if (url.pathname === "/v1/agents/collaboration") data = [];
     else if (url.pathname === "/v1/agents/logistics-notifications/policy") {
       const policy = { store_id: url.searchParams.get("store_id"), agent_id: null, enabled: false, mode: "preview", enabled_at: null, revision: 0, global_enabled: false, real_delivery_enabled: false, last_scan_at: null };
@@ -86,13 +94,88 @@ test("temporary preview auto-send switch is absent and real Agent settings remai
   } finally { await context.close(); }
 });
 
+test("mobile Agent action toolbar keeps all actions reachable before and after editing", async () => {
+  const { context, page, writes } = await openAgentPage();
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const header = page.locator(".config-head");
+    await header.evaluate((element) => element.scrollIntoView({ block: "start", inline: "nearest" }));
+    const actions = page.locator(".config-actions");
+    await page.getByRole("button", { name: "保存为模板", exact: true }).waitFor({ state: "visible" });
+    const buttons = actions.getByRole("button");
+    assert.deepEqual(await buttons.allTextContents(), ["保存为模板", "启用", "发布版本", "保存配置"]);
+    const assertActionsVisible = async () => {
+      const bounds = await actions.evaluate((element) => {
+        const card = element.closest(".config");
+        const rect = (node) => { const { left, right, top, bottom } = node.getBoundingClientRect(); return { left, right, top, bottom }; };
+        return { actions: rect(element), card: rect(card), viewport: { width: innerWidth, height: innerHeight }, buttons: [...element.querySelectorAll("button")].map(rect), scrollLeft: document.querySelector(".app-main")?.scrollLeft ?? 0 };
+      });
+      assert.equal(bounds.scrollLeft, 0);
+      for (const rect of [bounds.actions, ...bounds.buttons]) {
+        assert.ok(rect.left >= bounds.card.left && rect.right <= bounds.card.right, `action clipped by card: ${JSON.stringify({ rect, card: bounds.card })}`);
+        assert.ok(rect.left >= 0 && rect.right <= bounds.viewport.width && rect.top >= 0 && rect.bottom <= bounds.viewport.height, `action outside viewport: ${JSON.stringify({ rect, viewport: bounds.viewport })}`);
+      }
+    };
+    await assertActionsVisible();
+    await page.getByLabel("Agent 名称", { exact: true }).fill("美国客服已编辑");
+    await page.getByText("未保存", { exact: true }).waitFor();
+    await assertActionsVisible();
+    const saved = page.waitForResponse((response) => response.url().includes("/v1/agents/") && response.request().method() === "PATCH");
+    await page.getByRole("button", { name: "保存配置", exact: true }).click();
+    await saved;
+    assert.equal(writes.at(-1).name, "美国客服已编辑");
+  } finally { await context.close(); }
+});
+
+test("来源分开显示草稿与运行，解除关联使用准确 revision 并保留运行来源", async () => {
+  const { context, page, writes } = await openAgentPage({ templateSource: true });
+  try {
+    await page.getByText("草稿来源：共享模板 · 目标 v2").waitFor();
+    await page.getByText(/当前运行：Agent 发布 v1/).waitFor(); assert.equal(await page.getByText("不应展示的基线正文").count(), 0);
+    await page.getByRole("button", { name: "解除模板关联" }).click();
+    await page.getByRole("button", { name: "确认解除" }).click();
+    await page.getByText("当前草稿为独立 Agent，未关联模板。").waitFor();
+    assert.deepEqual(writes.at(-1), { detach: { expected_revision: 1 } });
+    await page.getByText(/当前运行：Agent 发布 v1/).waitFor();
+  } finally { await context.close(); }
+});
+
+test("fixround1 来源随保存和发布刷新，加载期间不能解除旧 revision", async () => {
+  let release; let started; const gate = new Promise((r) => { release = r; }); const requested = new Promise((r) => { started = r; });
+  const { context, page, writes } = await openAgentPage({ templateSource: true, sourceGate: async () => { started(); await gate; } });
+  try {
+    await page.getByText("本店覆盖 1", { exact: false }).waitFor();
+    await page.getByLabel("用途描述").fill("新职责"); await page.getByRole("button", { name: "保存配置", exact: true }).click();
+    await page.getByText("配置已保存").waitFor();
+    await Promise.race([requested, new Promise((_, reject) => setTimeout(() => reject(new Error("保存后未请求最新来源")), 3000))]);
+    assert.equal(await page.getByRole("button", { name: "解除模板关联" }).count(), 0);
+    release(); await page.getByText("本店覆盖 2", { exact: false }).waitFor();
+    await page.getByRole("button", { name: "发布版本" }).click(); await page.getByText(/当前运行：Agent 发布 v2/).waitFor({ timeout: 3000 });
+    await page.getByRole("button", { name: "解除模板关联" }).click(); await page.getByRole("button", { name: "确认解除" }).click();
+    await page.getByText("当前草稿为独立 Agent，未关联模板。").waitFor(); assert.deepEqual(writes.at(-1), { detach: { expected_revision: 2 } });
+  } finally { release(); await context.close(); }
+});
+
+test("shared Agent model selector keeps the full provider and colon-containing model name", async () => {
+  const { context, page, writes } = await openAgentPage();
+  try {
+    await page.getByRole("tab", { name: /模型与提示词/ }).click();
+    await page.getByLabel("驱动模型 · 已接入").selectOption({ label: "openai / agent::alias:2026" });
+    const saved = page.waitForResponse((response) => response.url().includes("/v1/agents/") && response.request().method() === "PATCH");
+    await page.getByRole("button", { name: "保存配置", exact: true }).click(); await saved;
+    assert.equal(writes.at(-1).model_provider, "openai");
+    assert.equal(writes.at(-1).model_name, "agent::alias:2026");
+    assert.deepEqual(writes.at(-1).reply_profile, { tone: "friendly", reply_language: "auto", operator_language: "zh-CN", brand_name: null });
+  } finally { await context.close(); }
+});
+
 test("Agent prototype tabs, store isolation and bound files", async () => {
   const { context, page, writes } = await openAgentPage();
   try {
     assert.equal(await page.getByRole("button", { name: /美国客服/ }).count(), 1);
     await page.getByRole("tab", { name: /模型与提示词/ }).click();
     await page.getByText("七段式系统提示词 · 可编辑").waitFor();
-    await page.getByLabel("驱动模型 · 已接入").selectOption("deepseek::deepseek-v4-pro");
+    await page.getByLabel("驱动模型 · 已接入").selectOption({ label: "deepseek / deepseek-v4-pro" });
     await page.getByRole("tab", { name: /知识库/ }).click();
     await page.getByLabel("选择已导入知识").selectOption(file.id);
     await page.getByRole("button", { name: /绑定知识/ }).click();

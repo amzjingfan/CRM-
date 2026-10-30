@@ -1,0 +1,198 @@
+{
+  "batch_id": "CLEANUP-20261030-002",
+  "task_id": "MAINT-CLEANUP-20261030-002",
+  "parent_task": "MVP-AGENT-TEMPLATE-BATCH-001",
+  "state": "QUARANTINED",
+  "reason": "This task T7A pytest cache_dir generated five misplaced root cache files; report command and nodeids establish ownership. No unknown file deletion.",
+  "source": "tests",
+  "destination": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests",
+  "retention_until": "2026-11-06",
+  "permanent_delete_authorized": false,
+  "files": [
+    {
+      "path": ".artifacts/agent-template-batch-20261030/task-7a-pytest-cache/.gitignore",
+      "bytes": 37,
+      "task_id": "MAINT-CLEANUP-20261030-002",
+      "batch_id": "CLEANUP-20261030-002",
+      "base_sha": "31165ab364b6e19b4dd9fabba6df5daad1a41542",
+      "original_path": "tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/.gitignore",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 37,
+      "sha256": "3ed731b65d06150c138e2dadb0be0697550888a6b47eb8c45ecc9adba8b8e9bd",
+      "modified_at": "2026-10-30T06:41:24.816004Z",
+      "reason": "T7A task report records this exact pytest command with relative cache_dir; nodeids name two T7A migration tests. These are task-generated cache artifacts.",
+      "reference_checks": [
+        "T7A actual command used relative cache_dir ../tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache; actual nodeids name the two T7A migration tests.",
+        "The preserved cache directory .gitignore content is exactly: # Created by pytest automatically. followed by *; this rule ignores all files in the cache directory. This preserved file is the evidence for original-path git_status=ignored.",
+        "Current original tests/... paths are absent; current git status and git check-ignore against those absent paths do not establish historical status. git ls-files lists no tracked original paths.",
+        "git grep in tracked .github at candidate HEAD found no task-7a-pytest-cache reference."
+      ],
+      "related_tasks_or_worktrees": [
+        "Parent task MVP-AGENT-TEMPLATE-BATCH-001; generator task T7A.",
+        "Worktree identified by repository-relative branch feature/agent-template-batch-20261030; base 31165ab364b6e19b4dd9fabba6df5daad1a41542."
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261030-002/tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/.gitignore",
+      "secondary_copy_path": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/.gitignore",
+      "retention_until": "2026-11-06T23:59:59Z",
+      "restore_method": "If original target tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/.gitignore remains absent, copy this exact primary quarantine file back to that path, creating parent directories only as needed; refuse overwrite if target exists. Verify size_bytes and sha256 from this entry. The artifact secondary copy is also retained.",
+      "verification": [
+        "Pre-copy: source/target full paths resolved inside this worktree; destination absent; exactly five source files; no reparse points; this item size and SHA-256 matched manifest.",
+        "Post-copy: primary and secondary copies have the listed size and SHA-256.",
+        "Original root tests/ directory is absent after T7A quarantine.",
+        "Historical T7A layout verification recorded in CLEANUP-20261030-002.md: src/backend uv run --frozen pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_repository_layout.py -q; 8 passed in 0.06s, exit 0. Not rerun this round."
+      ]
+    },
+    {
+      "path": ".artifacts/agent-template-batch-20261030/task-7a-pytest-cache/CACHEDIR.TAG",
+      "bytes": 191,
+      "task_id": "MAINT-CLEANUP-20261030-002",
+      "batch_id": "CLEANUP-20261030-002",
+      "base_sha": "31165ab364b6e19b4dd9fabba6df5daad1a41542",
+      "original_path": "tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/CACHEDIR.TAG",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 191,
+      "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4",
+      "modified_at": "2026-10-30T06:41:24.816004Z",
+      "reason": "T7A task report records this exact pytest command with relative cache_dir; nodeids name two T7A migration tests. These are task-generated cache artifacts.",
+      "reference_checks": [
+        "T7A actual command used relative cache_dir ../tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache; actual nodeids name the two T7A migration tests.",
+        "The preserved cache directory .gitignore content is exactly: # Created by pytest automatically. followed by *; this rule ignores all files in the cache directory. This preserved file is the evidence for original-path git_status=ignored.",
+        "Current original tests/... paths are absent; current git status and git check-ignore against those absent paths do not establish historical status. git ls-files lists no tracked original paths.",
+        "git grep in tracked .github at candidate HEAD found no task-7a-pytest-cache reference."
+      ],
+      "related_tasks_or_worktrees": [
+        "Parent task MVP-AGENT-TEMPLATE-BATCH-001; generator task T7A.",
+        "Worktree identified by repository-relative branch feature/agent-template-batch-20261030; base 31165ab364b6e19b4dd9fabba6df5daad1a41542."
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261030-002/tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/CACHEDIR.TAG",
+      "secondary_copy_path": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/CACHEDIR.TAG",
+      "retention_until": "2026-11-06T23:59:59Z",
+      "restore_method": "If original target tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/CACHEDIR.TAG remains absent, copy this exact primary quarantine file back to that path, creating parent directories only as needed; refuse overwrite if target exists. Verify size_bytes and sha256 from this entry. The artifact secondary copy is also retained.",
+      "verification": [
+        "Pre-copy: source/target full paths resolved inside this worktree; destination absent; exactly five source files; no reparse points; this item size and SHA-256 matched manifest.",
+        "Post-copy: primary and secondary copies have the listed size and SHA-256.",
+        "Original root tests/ directory is absent after T7A quarantine.",
+        "Historical T7A layout verification recorded in CLEANUP-20261030-002.md: src/backend uv run --frozen pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_repository_layout.py -q; 8 passed in 0.06s, exit 0. Not rerun this round."
+      ]
+    },
+    {
+      "path": ".artifacts/agent-template-batch-20261030/task-7a-pytest-cache/README.md",
+      "bytes": 302,
+      "task_id": "MAINT-CLEANUP-20261030-002",
+      "batch_id": "CLEANUP-20261030-002",
+      "base_sha": "31165ab364b6e19b4dd9fabba6df5daad1a41542",
+      "original_path": "tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/README.md",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 302,
+      "sha256": "73fd6fccdd802c419a6b2d983d6c3173b7da97558ac4b589edec2dfe443db9ad",
+      "modified_at": "2026-10-30T06:41:24.816004Z",
+      "reason": "T7A task report records this exact pytest command with relative cache_dir; nodeids name two T7A migration tests. These are task-generated cache artifacts.",
+      "reference_checks": [
+        "T7A actual command used relative cache_dir ../tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache; actual nodeids name the two T7A migration tests.",
+        "The preserved cache directory .gitignore content is exactly: # Created by pytest automatically. followed by *; this rule ignores all files in the cache directory. This preserved file is the evidence for original-path git_status=ignored.",
+        "Current original tests/... paths are absent; current git status and git check-ignore against those absent paths do not establish historical status. git ls-files lists no tracked original paths.",
+        "git grep in tracked .github at candidate HEAD found no task-7a-pytest-cache reference."
+      ],
+      "related_tasks_or_worktrees": [
+        "Parent task MVP-AGENT-TEMPLATE-BATCH-001; generator task T7A.",
+        "Worktree identified by repository-relative branch feature/agent-template-batch-20261030; base 31165ab364b6e19b4dd9fabba6df5daad1a41542."
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261030-002/tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/README.md",
+      "secondary_copy_path": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/README.md",
+      "retention_until": "2026-11-06T23:59:59Z",
+      "restore_method": "If original target tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/README.md remains absent, copy this exact primary quarantine file back to that path, creating parent directories only as needed; refuse overwrite if target exists. Verify size_bytes and sha256 from this entry. The artifact secondary copy is also retained.",
+      "verification": [
+        "Pre-copy: source/target full paths resolved inside this worktree; destination absent; exactly five source files; no reparse points; this item size and SHA-256 matched manifest.",
+        "Post-copy: primary and secondary copies have the listed size and SHA-256.",
+        "Original root tests/ directory is absent after T7A quarantine.",
+        "Historical T7A layout verification recorded in CLEANUP-20261030-002.md: src/backend uv run --frozen pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_repository_layout.py -q; 8 passed in 0.06s, exit 0. Not rerun this round."
+      ]
+    },
+    {
+      "path": ".artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/lastfailed",
+      "bytes": 2,
+      "task_id": "MAINT-CLEANUP-20261030-002",
+      "batch_id": "CLEANUP-20261030-002",
+      "base_sha": "31165ab364b6e19b4dd9fabba6df5daad1a41542",
+      "original_path": "tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/lastfailed",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "modified_at": "2026-10-30T06:41:53.6327473Z",
+      "reason": "T7A task report records this exact pytest command with relative cache_dir; nodeids name two T7A migration tests. These are task-generated cache artifacts.",
+      "reference_checks": [
+        "T7A actual command used relative cache_dir ../tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache; actual nodeids name the two T7A migration tests.",
+        "The preserved cache directory .gitignore content is exactly: # Created by pytest automatically. followed by *; this rule ignores all files in the cache directory. This preserved file is the evidence for original-path git_status=ignored.",
+        "Current original tests/... paths are absent; current git status and git check-ignore against those absent paths do not establish historical status. git ls-files lists no tracked original paths.",
+        "git grep in tracked .github at candidate HEAD found no task-7a-pytest-cache reference."
+      ],
+      "related_tasks_or_worktrees": [
+        "Parent task MVP-AGENT-TEMPLATE-BATCH-001; generator task T7A.",
+        "Worktree identified by repository-relative branch feature/agent-template-batch-20261030; base 31165ab364b6e19b4dd9fabba6df5daad1a41542."
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261030-002/tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/lastfailed",
+      "secondary_copy_path": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/lastfailed",
+      "retention_until": "2026-11-06T23:59:59Z",
+      "restore_method": "If original target tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/lastfailed remains absent, copy this exact primary quarantine file back to that path, creating parent directories only as needed; refuse overwrite if target exists. Verify size_bytes and sha256 from this entry. The artifact secondary copy is also retained.",
+      "verification": [
+        "Pre-copy: source/target full paths resolved inside this worktree; destination absent; exactly five source files; no reparse points; this item size and SHA-256 matched manifest.",
+        "Post-copy: primary and secondary copies have the listed size and SHA-256.",
+        "Original root tests/ directory is absent after T7A quarantine.",
+        "Historical T7A layout verification recorded in CLEANUP-20261030-002.md: src/backend uv run --frozen pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_repository_layout.py -q; 8 passed in 0.06s, exit 0. Not rerun this round."
+      ]
+    },
+    {
+      "path": ".artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/nodeids",
+      "bytes": 257,
+      "task_id": "MAINT-CLEANUP-20261030-002",
+      "batch_id": "CLEANUP-20261030-002",
+      "base_sha": "31165ab364b6e19b4dd9fabba6df5daad1a41542",
+      "original_path": "tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/nodeids",
+      "kind": "file",
+      "category": "test-artifacts",
+      "git_status": "ignored",
+      "size_bytes": 257,
+      "sha256": "38b653875aaacf1faea9cdfca3ea7e9a000d3e3fd3317caa1bf641bcf1514a26",
+      "modified_at": "2026-10-30T06:41:53.6327473Z",
+      "reason": "T7A task report records this exact pytest command with relative cache_dir; nodeids name two T7A migration tests. These are task-generated cache artifacts.",
+      "reference_checks": [
+        "T7A actual command used relative cache_dir ../tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache; actual nodeids name the two T7A migration tests.",
+        "The preserved cache directory .gitignore content is exactly: # Created by pytest automatically. followed by *; this rule ignores all files in the cache directory. This preserved file is the evidence for original-path git_status=ignored.",
+        "Current original tests/... paths are absent; current git status and git check-ignore against those absent paths do not establish historical status. git ls-files lists no tracked original paths.",
+        "git grep in tracked .github at candidate HEAD found no task-7a-pytest-cache reference."
+      ],
+      "related_tasks_or_worktrees": [
+        "Parent task MVP-AGENT-TEMPLATE-BATCH-001; generator task T7A.",
+        "Worktree identified by repository-relative branch feature/agent-template-batch-20261030; base 31165ab364b6e19b4dd9fabba6df5daad1a41542."
+      ],
+      "action": "quarantined",
+      "quarantine_path": ".maintenance/quarantine/CLEANUP-20261030-002/tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/nodeids",
+      "secondary_copy_path": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/nodeids",
+      "retention_until": "2026-11-06T23:59:59Z",
+      "restore_method": "If original target tests/.artifacts/agent-template-batch-20261030/task-7a-pytest-cache/v/cache/nodeids remains absent, copy this exact primary quarantine file back to that path, creating parent directories only as needed; refuse overwrite if target exists. Verify size_bytes and sha256 from this entry. The artifact secondary copy is also retained.",
+      "verification": [
+        "Pre-copy: source/target full paths resolved inside this worktree; destination absent; exactly five source files; no reparse points; this item size and SHA-256 matched manifest.",
+        "Post-copy: primary and secondary copies have the listed size and SHA-256.",
+        "Original root tests/ directory is absent after T7A quarantine.",
+        "Historical T7A layout verification recorded in CLEANUP-20261030-002.md: src/backend uv run --frozen pytest -c pyproject.toml ../tests/backend/runtime_infrastructure/test_repository_layout.py -q; 8 passed in 0.06s, exit 0. Not rerun this round."
+      ]
+    }
+  ],
+  "primary_quarantine_root": ".maintenance/quarantine/CLEANUP-20261030-002/tests",
+  "secondary_copy_root": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests",
+  "persistent_copy_note": "The primary .maintenance copy is the durable local quarantine; the original artifact quarantine copy is retained as a secondary copy. Neither copy is deleted.",
+  "initial_destination": "src/tests/.artifacts/agent-template-batch-20261030/quarantine/CLEANUP-20261030-002/root-tests",
+  "primary_destination": ".maintenance/quarantine/CLEANUP-20261030-002/tests"
+}
