@@ -4,6 +4,8 @@
 
 此前部门接待与派单从干净主线 `b21f59a76adce8775eb5f9d61993e3b42886d72a` 发布，部门现场与清理事实见[部门发布证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)和[TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md)。PR #654/#655 已合入主线；本轮仅增加 OAuth 修复，不扩大原单店人工发送范围。
 
+本轮发布记录 PR #656 已合入主线 `3a97bf4371ec58ba088005a1dd673f1b7a17f0a8`；IR/TR/RR 三项源记录从合并主线复核并更新索引为 `CURRENT`。PR 的两项 CI 在零步骤时失败，按持续批准的本地替代门禁处理，不记为 CI 通过。
+
 主线 PR #652/#653 的授权单入口源码现已包含于当前 staging 镜像：授权页旧卡片与全局入口移除，异常店铺行内重新授权绑定自身 store_id；功能测试见[授权 TR R01](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-001-20261030-R01.md)。模板与批量差异更新仅有[设计提案](../superpowers/specs/2026-10-30-agent-templates-batch-design.md)，尚未实施。
 
 用户指定的 staging 清理已完成：只保留一个系统管理员和「TikTok US 测试店铺」「测试店铺」「XBM」，删除 50 个合成账号及 2 家合成店铺；清理前私有数据库备份、审计、提交后对账及恢复限制见 [CLEANUP-20261030-001](../operations/cleanup/CLEANUP-20261030-001.md)。MinIO 对象未删，未做整库恢复演练。
