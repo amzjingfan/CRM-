@@ -1,6 +1,6 @@
 # 项目状态与恢复入口
 
-2026-10-30 最新 staging 从主线 `eb76837823f9e200f47db4a7786d4e91a94f9997` 发布部门角色、逐店派单摘要、账号部门选择与菜单可见性修复；前端新摘要 `903acf1a…74860`，后端原摘要不变。私有备份、双 ValidateOnly、Deploy、044、12 服务、五个公网路径和已登录账号菜单通过。低敏[发布证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)及[TR](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md)。人工发送范围与安全开关未变，零外发，production No-Go；`CANDIDATE_SUBJECT_SHA=eb76837823f9e200f47db4a7786d4e91a94f9997`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。本任务证据分支索引为 `CANDIDATE_VIEW`，合并后从主线重建。
+2026-10-30 最新 staging 从主线 `eb76837823f9e200f47db4a7786d4e91a94f9997` 发布部门角色、逐店派单摘要、账号部门选择与菜单可见性修复；前端新摘要 `903acf1a…74860`，后端原摘要不变。私有备份、双 ValidateOnly、Deploy、044、12 服务、五个公网路径和已登录账号菜单通过。低敏[发布证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)及[TR](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md)。人工发送范围与安全开关未变，零外发，production No-Go；`CANDIDATE_SUBJECT_SHA=eb76837823f9e200f47db4a7786d4e91a94f9997`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。发布证据 PR #662 已合入主线 `9d8264689f5445a87557f6b3ce4423e3a49cf1ad`；三索引已从权威主线源记录重建为 `CURRENT`。
 
 2026-10-30 部门角色、逐店派单摘要、账号部门选择和“更多”菜单完整显示已通过 PR #660 合入主线 `6b9b2bc450e54d88760ae33d31217055db5ec34c`；源码 subject `0fb8202f5b39b77e085228b3dd6acc64ecf88c35`，验证见 [TR R01](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-002-20261030-R01.md)。前端生产构建浏览器回归 56 项通过，后端全量 2658 通过、77 跳过；staging 已连接测试店合成入站事务回滚，零外发、零残留。PR 两项 Actions 为 0 步骤失败，按本地替代门禁记录为 CI 未运行。此 UI 变更已从合并主线发布 staging，现场证据见首段。
 
