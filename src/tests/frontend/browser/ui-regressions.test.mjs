@@ -1538,6 +1538,23 @@ test("team form permits system admin without store and resets to disabled agent 
   }
 });
 
+test("new agent defaults to a store served by the department and explains incompatible stores", async () => {
+  const otherStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name: "Unassigned Store", code: "unassigned" };
+  const departmentId = "00000000-0000-4000-8000-0000000000d1";
+  const { context, page } = await openPage("/settings/team", {
+    "GET /v1/settings/stores": [otherStore, store],
+    "GET /v1/settings/departments": [{ id: departmentId, name: "客服部", store_ids: [store.id], created_at: "2026-10-22T00:00:00Z" }],
+  });
+  try {
+    await page.getByRole("button", { name: "新建账号" }).click();
+    assert.equal(await page.locator('select[name="store_id"]').inputValue(), store.id);
+    assert.equal(await page.locator('select[name="department_id"] option').count(), 2);
+    await page.locator('select[name="store_id"]').selectOption(otherStore.id);
+    assert.equal(await page.locator('select[name="department_id"] option').count(), 1);
+    await page.getByText(/当前店铺未分配给任何部门/).waitFor();
+  } finally { await context.close(); }
+});
+
 test("account deletion requires a disabled account and explicit confirmation", async () => {
   const account = (id, status) => ({
     id, login_name: `agent_${status}`, name: `Agent ${status}`, email: null, phone: null,
@@ -1560,6 +1577,9 @@ test("account deletion requires a disabled account and explicit confirmation", a
   try {
     await page.getByRole("row", { name: /Agent active/ }).getByRole("button", { name: "Agent active 更多操作" }).click();
     assert.equal(await page.getByRole("button", { name: "删除账号" }).isDisabled(), true);
+    const menuBounds = await page.getByRole("menu", { name: "账号更多操作" }).boundingBox();
+    assert.ok(menuBounds && menuBounds.y >= 0 && menuBounds.y + menuBounds.height <= page.viewportSize().height);
+    assert.equal(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.textContent, { x: menuBounds.x + menuBounds.width / 2, y: menuBounds.y + menuBounds.height - 12 }), "删除账号");
     await page.getByRole("row", { name: /Agent active/ }).getByRole("button", { name: "Agent active 更多操作" }).click();
     await page.getByRole("row", { name: /Agent disabled/ }).getByRole("button", { name: "Agent disabled 更多操作" }).click();
     await page.getByRole("button", { name: "删除账号" }).click();
@@ -1602,6 +1622,7 @@ test("department role uses store scoped account assignment and removal keeps per
   try {
     await page.getByRole("cell", { name: "agent_one" }).waitFor();
     await page.getByRole("button", { name: "查看角色" }).click();
+    await page.getByRole("button", { name: "查看普通客服权限" }).click();
     await page.getByRole("combobox", { name: "Agent One店铺角色" }).selectOption("supervisor");
     await page.getByRole("button", { name: "保存" }).click();
     await page.getByRole("status").getByText(/本店角色已更新/).waitFor();
@@ -1639,6 +1660,8 @@ test("department reception starts disabled and saves one store with eligible age
   });
   try {
     await page.getByRole("tab", { name: "部门店铺咨询分配" }).click();
+    await page.getByRole("cell", { name: "US Demo Store", exact: true }).waitFor();
+    await page.getByRole("cell", { name: /自动派单关闭/ }).waitFor();
     const enabled = page.getByRole("checkbox", { name: "启用该店自动派单" });
     await enabled.waitFor();
     assert.equal(await enabled.isChecked(), false);
