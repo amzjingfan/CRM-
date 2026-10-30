@@ -4,17 +4,17 @@ import test from "node:test";
 
 import { frontendRoot } from "../helpers/paths.mjs";
 
-test("TikTok channel uses server OAuth instead of browser credential input", async () => {
+test("TikTok authorization has one add-store entry and no standalone OAuth card", async () => {
   const page = await readFile(new URL("app/settings/channels/page.tsx", frontendRoot), "utf8");
+  const storesPage = await readFile(new URL("app/settings/stores/page.tsx", frontendRoot), "utf8");
   const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
 
   assert.equal(api.includes("/settings/channels/tiktok/oauth/start?store_id="), true);
-  assert.equal(page.includes("startTikTokOAuth(selectedStoreId)"), true);
+  assert.equal(page.includes("startTikTokOAuth(channel.store_id, \"/settings/stores\")"), true);
   assert.equal(page.includes("window.location.assign(result.authorization_url)"), true);
-  assert.equal(page.includes('value="tiktok"'), false);
-  const oauthCard = page.split("<h2>TikTok Shop OAuth</h2>")[1].split("</article>")[0];
-  assert.equal(oauthCard.includes("access_token_ref"), false);
-  assert.equal(oauthCard.includes("refresh_token"), false);
+  assert.equal(page.includes("TikTok Shop OAuth</h2>"), false);
+  assert.equal(page.includes("selectedStoreId"), false);
+  assert.equal(storesPage.includes("startNewTikTokStoreOAuth()"), true);
 });
 
 test("TikTok channel page displays only low-sensitive authorization state", async () => {
@@ -23,8 +23,7 @@ test("TikTok channel page displays only low-sensitive authorization state", asyn
   assert.equal(page.includes("channel.scopes"), true);
   assert.equal(page.includes("channel.last_sync_at"), true);
   assert.equal(page.includes('status === "connected"'), true);
-  assert.equal(page.includes("getTikTokOAuthJobStatus(jobId)"), true);
-  assert.equal(page.includes("window.history.replaceState"), true);
+  assert.equal(page.includes("/settings/stores?${params.toString()}"), true);
   assert.equal(page.includes("localStorage"), false);
 });
 

@@ -340,7 +340,7 @@ async def get_tiktok_oauth_job_status(session: AsyncSession, user: User, job_id:
         await ensure_store_channel_manager(session, user, job.store_id)
     if job.status == "selection_required":
         if job.selection_expires_at is None or job.selection_expires_at <= datetime.now(UTC):
-            return TikTokOAuthJobStatus(status="failed")
+            return TikTokOAuthJobStatus(status="failed", error_code="SELECTION_EXPIRED")
         return TikTokOAuthJobStatus.model_validate(
             {
                 "status": "selection_required",
@@ -348,7 +348,13 @@ async def get_tiktok_oauth_job_status(session: AsyncSession, user: User, job_id:
                 "selection_expires_at": job.selection_expires_at.isoformat(),
             }
         )
-    return TikTokOAuthJobStatus.model_validate({"status": job.status})
+    return TikTokOAuthJobStatus.model_validate(
+        {
+            "status": job.status,
+            "error_code": job.error_code if job.status == "failed" else None,
+            "store_id": job.store_id,
+        }
+    )
 
 
 async def complete_tiktok_oauth(

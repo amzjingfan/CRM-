@@ -39,6 +39,20 @@ function showDate(value: string | null | undefined, en: boolean): string {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString(en ? "en-US" : "zh-CN", { hour12: false });
 }
 
+function oauthFailureReason(code: string | null, en: boolean): string {
+  const reasons: Record<string, [string, string]> = {
+    STATE_EXPIRED: ["授权等待已过期", "Authorization timed out"],
+    SELECTION_EXPIRED: ["店铺选择已过期", "Shop selection expired"],
+    INVALID_JOB_CREDENTIAL: ["授权回调凭证无效", "Authorization callback was invalid"],
+    TOKEN_INVALID: ["TikTok 授权凭证无效", "TikTok credentials were invalid"],
+    PERMISSION_DENIED: ["授权账号或权限不符合要求", "Account or permission was rejected"],
+    RESOURCE_CONFLICT: ["店铺绑定冲突或授权范围已变化", "Store binding conflicted or authorization changed"],
+    THIRD_PARTY_ERROR: ["TikTok 接口或授权服务暂时失败", "TikTok or the authorization service failed"],
+  };
+  const reason = reasons[code ?? ""];
+  return reason ? reason[en ? 1 : 0] : en ? "Authorization could not be completed" : "授权未能完成";
+}
+
 export default function StoresPage() {
   const en = useLanguage() === "en";
   const [rows, setRows] = useState<StoreRow[]>([]);
@@ -50,6 +64,7 @@ export default function StoresPage() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [retryStoreId, setRetryStoreId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -85,22 +100,25 @@ export default function StoresPage() {
     setError("");
     try {
       const result = await listStoreAuthorizations();
-      if (requestId !== loadRequestId.current) return;
+      if (requestId !== loadRequestId.current) return null;
       // 仅隐藏使用者主动删除的授权；平台侧撤销仍显示异常以便重新添加。
-      setRows(result.filter(({ store, channel }) => channel.store_id === store.id
+      const nextRows = result.filter(({ store, channel }) => channel.store_id === store.id
         && !(channel.status === "disconnected" && channel.authorization_status === "revoked"))
-        .map(({ store, channel }) => ({ store, channel, state: rowState(channel) })));
+        .map(({ store, channel }) => ({ store, channel, state: rowState(channel) }));
+      setRows(nextRows);
       loadedRef.current = true;
       setHasLoaded(true);
       setError("");
+      return nextRows;
     } catch (caught) {
-      if (requestId !== loadRequestId.current) return;
+      if (requestId !== loadRequestId.current) return null;
       if (caught instanceof ApiError && (caught.status === 401 || caught.status === 403)) {
         setRows([]);
         loadedRef.current = false;
         setHasLoaded(false);
       }
       setError(caught instanceof Error ? caught.message : en ? "Failed to load stores" : "店铺加载失败");
+      return null;
     } finally {
       if (requestId === loadRequestId.current) {
         setLoading(false);
@@ -134,11 +152,25 @@ export default function StoresPage() {
             return;
           }
           if (result.status === "connected" || result.status === "failed" || result.status === "denied") {
-            setNotice(result.status === "connected"
-              ? en ? "Store authorization completed." : "店铺授权已完成。"
-              : en ? "Authorization failed. Please try again." : "店铺授权未完成，请重试。");
             window.history.replaceState({}, "", window.location.pathname);
-            void load();
+            if (result.status === "connected") {
+              setRetryStoreId(null);
+              const refreshed = await load();
+              if (!stopped) setNotice(refreshed?.some((row) => (!result.store_id || row.store.id === result.store_id)
+                && row.channel?.platform === "tiktok" && row.channel.status === "connected")
+                ? en ? "Store and channel are connected." : "店铺与渠道均已连接。"
+                : en ? "Authorization finished, but a connected store and channel are not visible yet. Refresh to confirm." : "授权已处理，但尚未看到店铺与渠道均连接；请刷新确认状态。");
+            } else if (result.status === "denied") {
+              setRetryStoreId(result.store_id);
+              setNotice(result.store_id
+                ? en ? "Authorization was cancelled. Retry this store if needed." : "授权已取消；可重试该店授权。"
+                : en ? "Authorization was cancelled. Add a store to try again." : "授权已取消；可从“添加店铺”重新发起。");
+            } else {
+              setRetryStoreId(result.store_id);
+              setNotice(`${oauthFailureReason(result.error_code, en)}${result.store_id
+                ? en ? ". Retry this store." : "；可重试该店授权。"
+                : en ? ". Add a store to try again." : "；可从“添加店铺”重新发起。"}`);
+            }
             return;
           }
         } catch (caught) {
@@ -155,7 +187,7 @@ export default function StoresPage() {
       timer = window.setTimeout(() => void poll(), 500);
       return () => { stopped = true; window.clearTimeout(timer); };
     }
-    setNotice(status === "denied" ? en ? "Authorization cancelled." : "授权已取消。" : en ? "Authorization failed." : "店铺授权未完成。");
+    setNotice(status === "denied" ? en ? "Authorization was cancelled. Add a store to try again." : "授权已取消；可从“添加店铺”重新发起。" : en ? "Could not verify authorization. Add a store to try again." : "无法确认授权结果；可从“添加店铺”重新发起。");
     window.history.replaceState({}, "", window.location.pathname);
   }, [en, load]);
 
@@ -172,6 +204,7 @@ export default function StoresPage() {
     if (working) return;
     setWorking(true);
     setNotice("");
+    setRetryStoreId(null);
     try {
       const result = storeId ? await startTikTokOAuth(storeId, "/settings/stores") : await startNewTikTokStoreOAuth();
       window.location.assign(result.authorization_url);
@@ -183,6 +216,7 @@ export default function StoresPage() {
 
   async function confirmSelection() {
     if (!selection || !selectedShopIds.length || working) return;
+    const submittedIds = [...selectedShopIds];
     setWorking(true);
     setSelectionError("");
     try {
@@ -191,8 +225,11 @@ export default function StoresPage() {
       setSelectionOpen(false);
       setSelectedShopIds([]);
       window.history.replaceState({}, "", window.location.pathname);
-      setNotice(en ? "Selected stores connected." : "所选店铺已接入。");
-      await load();
+      const refreshed = await load();
+      setNotice(refreshed && submittedIds.every((shopId) => refreshed.some((row) => row.channel?.platform === "tiktok"
+        && row.channel.external_store_id === shopId && row.channel.status === "connected"))
+        ? en ? "Selected stores and channels are connected." : "所选店铺与渠道均已连接。"
+        : en ? "Selection finished, but some connected stores are not visible yet. Refresh to confirm." : "店铺选择已处理，但部分店铺尚未显示已连接；请刷新确认状态。");
     } catch (caught) {
       setSelectionError(caught instanceof Error ? caught.message : en ? "Could not connect selected stores." : "接入所选店铺失败。");
     } finally { setWorking(false); }
@@ -236,7 +273,7 @@ export default function StoresPage() {
   }
 
   return <SettingsFrame title={en ? "Store list" : "店铺列表"} description={en ? "Manage TikTok Shop authorizations." : "管理 TikTok Shop 店铺授权。"}>
-    {notice ? <div className="inline-status" role="status">{notice}</div> : null}
+    {notice ? <div className="inline-status" role="status">{notice}{retryStoreId ? <> <button className="text-button" disabled={working} onClick={() => void authorize(retryStoreId)} type="button">{en ? "Retry this store" : "重试该店授权"}</button></> : null}</div> : null}
     {selection && !selectionOpen ? <div className="inline-status"><span>{en ? "TikTok shop selection is pending." : "TikTok 店铺选择尚未完成。"}</span> <button className="text-button" onClick={() => setSelectionOpen(true)} type="button">{en ? "Continue selecting shops" : "继续选择店铺"}</button></div> : null}
     <section className="settings-card store-list-card">
       <div className="settings-card-heading"><h2>{en ? "Store list" : "店铺列表"}</h2><button className="primary-button" disabled={working} onClick={() => void authorize()} type="button"><Plus size={16} />{working ? en ? "Redirecting…" : "正在处理…" : en ? "Add store" : "添加店铺"}</button></div>
@@ -255,7 +292,7 @@ export default function StoresPage() {
         <td><span className={`store-status store-status-${row.state}`}>{en ? { active: "Active", abnormal: "Abnormal", expiring: "Expiring", expired: "Expired" }[row.state] : { active: "生效中", abnormal: "异常", expiring: "即将失效", expired: "已失效" }[row.state]}</span></td>
         <td>{showDate(row.channel?.authorization_expires_at, en)}</td>
         <td>{showDate(row.channel?.last_authorized_at ?? row.store.created_at, en)}</td>
-        <td className="store-row-actions"><button className="text-button" disabled={working} onClick={() => void authorize(row.store.id)} type="button">{en ? "Re-add" : "重新添加"}</button>{row.channel ? <button className="text-button" disabled={working} onClick={() => setDeleteRow(row)} type="button">{en ? "Delete" : "删除"}</button> : null}</td>
+        <td className="store-row-actions">{row.channel?.status !== "connected" || row.state === "expired" || row.state === "expiring" ? <button className="text-button" disabled={working} onClick={() => void authorize(row.store.id)} type="button">{en ? "Reauthorize" : "重新授权"}</button> : null}{row.channel ? <button className="text-button" disabled={working} onClick={() => setDeleteRow(row)} type="button">{en ? "Delete" : "删除"}</button> : null}</td>
       </tr>)}</tbody></table></div> : <EmptyState label={query || filter !== "all" ? en ? "No matching stores" : "没有符合条件的店铺" : en ? "No stores yet" : "暂无店铺"} />}
     </section>
     {deleteRow ? <div className="store-confirm-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !working) setDeleteRow(null); }}><section aria-labelledby="store-delete-title" aria-modal="true" className="store-confirm-dialog" role="dialog"><h2 id="store-delete-title">{en ? "Delete store authorization?" : "删除店铺授权？"}</h2><p>{en ? `Remove CRM's saved TikTok credentials for ${deleteRow.store.name} and hide this row. Its system ID and history remain. TikTok app access must be revoked separately in TikTok.` : `将删除本系统保存的“${deleteRow.store.name}”TikTok 凭证并隐藏该行；系统 ID 和历史数据保留。TikTok 平台的应用授权需在 TikTok 另行撤销。`}</p><div><button className="secondary-button" disabled={working} onClick={() => setDeleteRow(null)} type="button">{en ? "Cancel" : "取消"}</button><button className="primary-button" disabled={working} onClick={() => void removeAuthorization()} type="button">{working ? en ? "Deleting…" : "正在删除…" : en ? "Confirm delete" : "确认删除"}</button></div></section></div> : null}

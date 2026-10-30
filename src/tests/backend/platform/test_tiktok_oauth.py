@@ -754,6 +754,31 @@ async def test_selection_status_returns_shop_choices_without_cipher_or_token(mon
 
 
 @pytest.mark.asyncio
+async def test_failed_job_returns_only_stable_error_code(monkeypatch: pytest.MonkeyPatch) -> None:
+    """授权失败提示使用稳定低敏错误码，不把任务密文或平台响应交给浏览器。"""
+    user_id = uuid.uuid4()
+    store_id = uuid.uuid4()
+    job = TikTokOAuthJob(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        store_id=store_id,
+        return_to="/settings/stores",
+        status="failed",
+        error_code="STATE_EXPIRED",
+        state_cipher="encrypted:v1:secret",
+    )
+    monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", _async_result(None))
+    status = await oauth_service.get_tiktok_oauth_job_status(  # type: ignore[arg-type]
+        FakeSelectionSession(job), SimpleNamespace(id=user_id), job.id
+    )
+    assert status.status == "failed"
+    assert status.error_code == "STATE_EXPIRED"
+    assert status.store_id == store_id
+    assert "encrypted" not in status.model_dump_json()
+
+
+@pytest.mark.asyncio
 async def test_cleanup_scrubs_expired_shop_selection_before_receipt_retention() -> None:
     """待选择任务到期后应抹除卖家 Token 密文，而非等到收据整行删除。"""
     statements: list[str] = []

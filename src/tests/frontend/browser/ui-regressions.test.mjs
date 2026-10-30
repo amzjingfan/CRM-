@@ -864,6 +864,7 @@ test("store list renders after one authorization request without waiting for leg
   try {
     await page.getByRole("row", { name: /US Demo Store/ }).waitFor({ timeout: 5000 });
     assert.equal(await page.getByRole("button", { name: "全部 (1)" }).count(), 1);
+    assert.equal(await page.getByRole("button", { name: "重新授权" }).count(), 0);
   } finally {
     releaseLegacy();
     await context.close();
@@ -1053,13 +1054,14 @@ test("store settings keep readable columns in a narrow desktop window", async ()
   }
 });
 
-test("re-add uses the same store and deletion needs a second confirmation", async () => {
+test("expired store reauthorization uses the same store and deletion needs a second confirmation", async () => {
+  const expiredChannel = { ...storeChannel, authorization_expires_at: "2020-01-01T00:00:00Z" };
   let releaseReload = () => {};
   let signalReload = () => {};
   const reloadPending = new Promise((resolve) => { releaseReload = resolve; });
   const reloadStarted = new Promise((resolve) => { signalReload = resolve; });
   const { context, page } = await openPage("/settings/stores", {
-    "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }],
+    "GET /v1/settings/store-authorizations": [{ store, channel: expiredChannel }],
   });
   try {
     let oauthStoreId = "";
@@ -1072,7 +1074,7 @@ test("re-add uses the same store and deletion needs a second confirmation", asyn
       }
       await route.fulfill({ status: 200, contentType: "application/json", headers: {
         "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
-      }, body: JSON.stringify({ code: 0, message: "ok", data: deletions ? [] : [{ store, channel: storeChannel }] }) });
+      }, body: JSON.stringify({ code: 0, message: "ok", data: deletions ? [] : [{ store, channel: expiredChannel }] }) });
     });
     await context.route("**/v1/settings/channels/tiktok/oauth/start?*", async (route) => {
       const params = new URL(route.request().url()).searchParams;
@@ -1088,7 +1090,7 @@ test("re-add uses the same store and deletion needs a second confirmation", asyn
         "access-control-allow-origin": origin, "access-control-allow-credentials": "true",
       } });
     });
-    await page.getByRole("button", { name: "重新添加" }).click();
+    await page.getByRole("button", { name: "重新授权" }).click();
     await page.getByRole("status").getByText("重新授权暂不可用").waitFor();
     assert.equal(oauthStoreId, store.id);
     assert.equal(returnTo, "/settings/stores");
@@ -1163,24 +1165,37 @@ test("concurrent expired settings requests share one browser refresh and both re
   }
 });
 
-test("channel authorization without an internal store explains the prerequisite", async () => {
-  const { context, page } = await openPage("/settings/channels");
+test("channel page has no duplicate TikTok OAuth entry or card", async () => {
+  const { context, page } = await openPage("/settings/channels", {
+    "GET /v1/settings/stores": [store],
+    "GET /v1/settings/channels": [storeChannel],
+  });
   try {
-    await page.getByRole("link", { name: "创建店铺" }).waitFor({ state: "visible", timeout: 5000 });
-    assert.equal(await page.getByRole("button", { name: "授权 TikTok Shop" }).isDisabled(), true);
-    assert.equal(await page.getByRole("button", { name: "添加 Mock 渠道" }).isDisabled(), true);
+    await page.getByRole("heading", { name: "授权店铺列表" }).waitFor();
+    await page.getByRole("row", { name: /US Demo Store/ }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "授权 TikTok Shop" }).count(), 0);
+    assert.equal(await page.getByRole("heading", { name: "TikTok Shop OAuth" }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "重新授权" }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "添加 Mock 渠道" }).isDisabled(), false);
   } finally {
     await context.close();
   }
 });
 
-test("channel authorization failure is visibly announced", async () => {
+test("disconnected channel can reauthorize only its own store and shows start failure", async () => {
+  const disconnected = { ...storeChannel, status: "disconnected", authorization_status: "deauthorized" };
   const { context, page } = await openPage("/settings/channels", {
     "GET /v1/auth/me": { ...user, store_ids: [store.id] },
     "GET /v1/settings/stores": [store],
+    "GET /v1/settings/channels": [disconnected],
   });
   try {
+    let targetStore = "";
+    let returnTo = "";
     await context.route("**/v1/settings/channels/tiktok/oauth/start*", async (route) => {
+      const params = new URL(route.request().url()).searchParams;
+      targetStore = params.get("store_id");
+      returnTo = params.get("return_to");
       await route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -1188,21 +1203,23 @@ test("channel authorization failure is visibly announced", async () => {
         body: JSON.stringify({ code: 503, message: "授权服务暂不可用", data: null }),
       });
     });
-    await page.getByRole("button", { name: "授权 TikTok Shop" }).click();
+    await page.getByRole("row", { name: /US Demo Store/ }).getByRole("button", { name: "重新授权" }).click();
     const status = page.getByRole("status").filter({ hasText: "授权服务暂不可用" });
     await status.waitFor({ state: "visible", timeout: 5000 });
     assert.ok((await status.boundingBox()).y < 400, "OAuth error should be near the page header");
+    assert.equal(targetStore, store.id);
+    assert.equal(returnTo, "/settings/stores");
   } finally {
     await context.close();
   }
 });
 
-test("TikTok OAuth processing return polls and shows the verified result", async () => {
+test("legacy channel OAuth return redirects to store page for verified result", async () => {
   const jobId = "00000000-0000-4000-8000-0000000000e1";
   let polls = 0;
   const { context, page } = await openPage(
     `/settings/channels?oauth=tiktok&status=processing&job=${jobId}`,
-    { "GET /v1/settings/stores": [store] },
+    { "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }] },
     async (browserContext) => {
       await browserContext.route(`**/v1/settings/channels/tiktok/oauth/jobs/${jobId}`, async (route) => {
         polls += 1;
@@ -1210,52 +1227,68 @@ test("TikTok OAuth processing return polls and shows the verified result", async
           status: 200,
           contentType: "application/json",
           headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
-          body: JSON.stringify({ code: 0, message: "ok", data: { status: polls === 1 ? "processing" : "connected" } }),
+          body: JSON.stringify({ code: 0, message: "ok", data: { status: polls === 1 ? "processing" : "connected", store_id: store.id } }),
         });
       });
     },
   );
   try {
-    await page.getByRole("status").getByText("授权已完成").waitFor({ timeout: 8000 });
+    await page.getByRole("status").getByText("店铺与渠道均已连接。").waitFor({ timeout: 8000 });
     assert.ok(polls >= 2);
+    assert.equal(new URL(page.url()).pathname, "/settings/stores");
     assert.equal(new URL(page.url()).search, "");
   } finally {
     await context.close();
   }
 });
 
-test("TikTok OAuth connected URL does not claim success without a verified job", async () => {
+test("completed OAuth job does not claim connection when the store list lacks a connected channel", async () => {
+  const jobId = "00000000-0000-4000-8000-0000000000e3";
+  const { context, page } = await openPage(`/settings/stores?oauth=tiktok&status=processing&job=${jobId}`, {
+    "GET /v1/settings/store-authorizations": [],
+    [`GET /v1/settings/channels/tiktok/oauth/jobs/${jobId}`]: { status: "connected" },
+  });
+  try {
+    await page.getByRole("status").getByText(/尚未看到店铺与渠道均连接/).waitFor({ timeout: 8000 });
+    assert.equal(await page.getByRole("status").getByText("店铺与渠道均已连接。").count(), 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("legacy channel OAuth failed job shows its cause after redirect", async () => {
   const jobId = "00000000-0000-4000-8000-0000000000e2";
   const { context, page } = await openPage(
     `/settings/channels?oauth=tiktok&status=connected&job=${jobId}`,
-    { "GET /v1/settings/stores": [store] },
+    { "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }] },
     async (browserContext) => {
       await browserContext.route(`**/v1/settings/channels/tiktok/oauth/jobs/${jobId}`, async (route) => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
           headers: { "access-control-allow-origin": origin, "access-control-allow-credentials": "true" },
-          body: JSON.stringify({ code: 0, message: "ok", data: { status: "failed" } }),
+          body: JSON.stringify({ code: 0, message: "ok", data: { status: "failed", error_code: "STATE_EXPIRED", store_id: store.id } }),
         });
       });
     },
   );
   try {
-    await page.getByRole("status").getByText("授权未完成").waitFor({ timeout: 8000 });
-    assert.equal(await page.getByRole("status").getByText("授权已完成").count(), 0);
+    await page.getByRole("status").getByText(/授权等待已过期/).waitFor({ timeout: 8000 });
+    await page.getByRole("button", { name: "重试该店授权" }).waitFor();
+    assert.equal(await page.getByRole("status").getByText("店铺与渠道均已连接。").count(), 0);
   } finally {
     await context.close();
   }
 });
 
-test("TikTok OAuth connected URL without a job asks for a new authorization", async () => {
+test("legacy channel OAuth return without a job does not claim success", async () => {
   const { context, page } = await openPage(
     "/settings/channels?oauth=tiktok&status=connected",
-    { "GET /v1/settings/stores": [store] },
+    { "GET /v1/settings/store-authorizations": [{ store, channel: storeChannel }] },
   );
   try {
-    await page.getByRole("status").getByText("无法确认此次 TikTok Shop 授权").waitFor();
-    assert.equal(await page.getByRole("status").getByText("授权已完成").count(), 0);
+    await page.getByRole("status").getByText(/无法确认授权结果/).waitFor();
+    assert.equal(await page.getByRole("status").getByText("店铺与渠道均已连接。").count(), 0);
   } finally {
     await context.close();
   }

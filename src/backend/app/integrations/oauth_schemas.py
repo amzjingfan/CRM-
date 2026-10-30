@@ -31,6 +31,8 @@ class TikTokOAuthJobStatus(BaseModel):
     status: Literal["pending", "processing", "selection_required", "connected", "denied", "failed"]
     shops: list[TikTokOAuthShopChoice] = Field(default_factory=list)
     selection_expires_at: str | None = None
+    error_code: str | None = None
+    store_id: uuid.UUID | None = None
 
 
 class TikTokOAuthShopSelection(BaseModel):
