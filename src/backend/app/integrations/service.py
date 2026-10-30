@@ -341,9 +341,10 @@ async def _process_message(
         role="user",
         direction="inbound",
         content=normalized.content,
+        message_type=normalized.message_type,
         language=normalized.language,
         status="received",
-        raw_payload={},
+        raw_payload=normalized.display_data,
         created_at=normalized.created_at,
     )
     session.add(message)

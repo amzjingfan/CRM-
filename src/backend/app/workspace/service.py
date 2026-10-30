@@ -61,6 +61,7 @@ from app.workspace.schemas import (
     MessageView,
     OrderSummary,
     PageMeta,
+    RichMessageCardView,
     SessionActionResult,
     SessionListData,
     SessionMessagesData,
@@ -206,9 +207,11 @@ def _message_view(message: Message) -> MessageView:
     media_data = message.raw_payload.get("media")
     media = (
         MediaMessageView.model_validate(media_data)
-        if message.message_type in {"image", "video"} and isinstance(media_data, dict)
+        if message.message_type in {"image", "video", "emoticons"} and isinstance(media_data, dict)
         else None
     )
+    rich_card_data = message.raw_payload.get("card")
+    rich_card = RichMessageCardView.model_validate(rich_card_data) if isinstance(rich_card_data, dict) else None
     return MessageView(
         id=message.id,
         role=message.role,
@@ -220,6 +223,7 @@ def _message_view(message: Message) -> MessageView:
         message_type=message.message_type or "text",
         logistics_card=card,
         media=media,
+        rich_card=rich_card,
     )
 
 

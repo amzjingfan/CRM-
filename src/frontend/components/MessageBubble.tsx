@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Headset, Robot } from "@phosphor-icons/react";
 import { translateMessage, type MessageView } from "../lib/api";
 import { TrackingCard } from "./TrackingCard";
+import { TikTokMessageCard } from "./TikTokMessageCard";
 import { buyerAvatarText, messageSide, senderLabel } from "../lib/message-display";
 
 const statusLabel = (status: MessageView["status"], en: boolean) => ({
@@ -19,9 +20,10 @@ export function MessageBubble({ message, sessionId, customerName, en, translatio
   const [translation, setTranslation] = useState("");
   const [translating, setTranslating] = useState(false);
   const [translationError, setTranslationError] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const side = messageSide(message.role);
   const sender = senderLabel(message.role, en);
-  const canTranslate = !["logistics_card", "image", "video"].includes(message.message_type ?? "text") && translationEnabled && side !== "system" && /[A-Za-z]/.test(message.content);
+  const canTranslate = (message.message_type ?? "text") === "text" && translationEnabled && side !== "system" && /[A-Za-z]/.test(message.content);
 
   async function requestTranslation() {
     if (translating || translation) return;
@@ -41,7 +43,7 @@ export function MessageBubble({ message, sessionId, customerName, en, translatio
     {side !== "system" ? <span aria-hidden="true" className={`message-avatar ${message.role === "assistant" ? "robot" : ""}`}>{message.role === "user" ? buyerAvatarText(customerName) : message.role === "assistant" ? <Robot size={15} weight="fill" /> : <Headset size={15} weight="fill" />}</span> : null}
     <div className="message-stack">
       <div className="message-bubble">
-        {message.message_type === "logistics_card" && message.logistics_card ? <TrackingCard card={message.logistics_card} en={en} sessionId={sessionId} translationEnabled={translationEnabled} /> : message.message_type === "image" && message.media?.url ? <a href={message.media.url} rel="noopener noreferrer" target="_blank"><img alt={en ? "Sent image" : "已发送图片"} className="workspace-message-image" src={message.media.url} /></a> : message.message_type === "video" ? <p className="message-original">{en ? "Video sent through TikTok" : "视频已通过 TikTok 发送"}</p> : <p className="message-original">{message.content}</p>}
+        {message.message_type === "logistics_card" && message.logistics_card ? <TrackingCard card={message.logistics_card} en={en} sessionId={sessionId} translationEnabled={translationEnabled} /> : message.rich_card ? <TikTokMessageCard card={message.rich_card} en={en} /> : ["image", "emoticons"].includes(message.message_type ?? "") && message.media?.url ? <a href={message.media.url} rel="noopener noreferrer" referrerPolicy="no-referrer" target="_blank"><img alt={message.message_type === "emoticons" ? (en ? "Sticker" : "表情") : (en ? "Image" : "图片")} className="workspace-message-image" loading="lazy" referrerPolicy="no-referrer" src={message.media.url} /></a> : message.message_type === "video" && message.media?.url && !videoFailed ? <video aria-label={en ? "TikTok video" : "TikTok 视频"} className="workspace-message-video" controls onError={() => setVideoFailed(true)} playsInline poster={message.media.cover ?? undefined} preload="none" src={message.media.url} /> : message.message_type === "video" && message.media?.cover ? <div className="workspace-message-video-expired"><img alt="" src={message.media.cover} /><span>{en ? "Video unavailable" : "视频链接已过期或不可用"}</span></div> : <p className="message-original">{message.content}</p>}
         {translation && translation !== message.content ? <p className="message-translation"><span className="sr-only">{en ? "Chinese translation: " : "中文译文："}</span>{translation}</p> : null}
       </div>
       <div className="message-meta">

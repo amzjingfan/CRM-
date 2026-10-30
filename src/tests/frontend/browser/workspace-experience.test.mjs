@@ -35,6 +35,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   ];
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
+  if (fixtureOptions.richMessages) messages.splice(0, messages.length, ...fixtureOptions.richMessages);
   const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, assign: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, activeOrderDetails: 0, maxActiveOrderDetails: 0, standardTracking: 0, extraDetailEvent: false, enhancedTracking: 0 };
   // 页面会预取订单详情；必须在首次请求前固定样例，不能依赖导航后的赋值时序。
   calls.extraDetailEvent = fixtureOptions.extraDetailEvent ?? false;
@@ -188,6 +189,25 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   await page.getByRole("heading", { name: "Alice" }).first().waitFor();
   return { context, page, messages, records, calls };
 }
+
+test("TikTok buyer images, video and product cards render their original media fields", async () => {
+  const common = { role: "user", status: "received", created_at: "2026-10-20T10:00:00Z", error_code: null, delivery_mode: "inbound" };
+  const richMessages = [
+    { ...common, id: "image-1", message_type: "image", content: "图片", media: { url: "https://cdn.example/image.jpg" } },
+    { ...common, id: "video-1", message_type: "video", content: "视频", media: { url: "https://cdn.example/video.mp4", cover: "https://cdn.example/cover.jpg" } },
+    { ...common, id: "product-1", message_type: "product_card", content: "商品卡片", rich_card: { kind: "product_card", product_id: "123", title: "Hat", image_url: "https://cdn.example/hat.jpg", price: "$9" } },
+    { ...common, id: "tracking-1", message_type: "logistics_card", content: "物流卡片", rich_card: { kind: "logistics_card", order_id: "456", packages: [{ title: "Hat", tracking_number: "T1" }, { title: "Scarf", tracking_number: "T2" }] } },
+  ];
+  const { context, page } = await openWorkspace({ richMessages });
+  try {
+    await page.locator('.message.incoming img[src="https://cdn.example/image.jpg"]').waitFor();
+    await page.locator('.message.incoming video[src="https://cdn.example/video.mp4"]').waitFor();
+    await page.getByText("Hat").first().waitFor();
+    await page.getByText("Scarf").waitFor();
+    assert.equal(await page.getByText("[TikTok IMAGE]").count(), 0);
+    assert.equal(await page.getByText("[TikTok PRODUCT_CARD]").count(), 0);
+  } finally { await context.close(); }
+});
 
 test("background refresh shows new messages without waiting for the session list", async () => {
   const { context, page, messages } = await openWorkspace(2);

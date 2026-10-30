@@ -44,4 +44,17 @@
 .workspace-media-preview { display: grid; max-height: 260px; min-height: 120px; place-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); }
 .workspace-media-preview img, .workspace-media-preview video { max-width: 100%; max-height: 258px; object-fit: contain; }
 .workspace-message-image { display: block; max-width: min(360px, 60vw); max-height: 300px; border-radius: 6px; object-fit: contain; }
+.workspace-message-video { display: block; width: min(360px, 60vw); max-height: 320px; border-radius: 6px; background: #101827; }
+.workspace-message-video-expired { position: relative; width: min(360px, 60vw); }
+.workspace-message-video-expired img { display: block; width: 100%; border-radius: 6px; }
+.workspace-message-video-expired span { position: absolute; inset: auto 8px 8px; border-radius: 4px; background: #101827cc; color: white; padding: 4px 8px; }
+.tiktok-message-card { width: min(320px, 60vw); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 10px 12px; box-shadow: 0 2px 8px rgb(30 50 85 / 9%); font-size: .76rem; }
+.tiktok-message-card-heading { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--primary); }
+.tiktok-message-card-body { display: flex; gap: 9px; min-width: 0; }
+.tiktok-message-card-image { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 5px; object-fit: cover; }
+.tiktok-message-card-details { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.tiktok-message-card-details > strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tiktok-message-card-details > span { color: var(--muted); }
+.tiktok-message-card-package { display: flex; gap: 9px; margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
+.tiktok-message-card > a { display: inline-block; margin-top: 8px; color: var(--primary); }
 @media (max-width: 680px) { .quick-reply-picker { right: 6px; width: calc(100% - 12px); max-height: 56vh; } .quick-reply-scope span { display: none; } }

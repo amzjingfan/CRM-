@@ -578,6 +578,8 @@ async def test_shop_tracking_conversation_message_and_webhook_reads_use_get_only
     assert [len(shops), len(tracking), len(conversations), len(messages), len(webhooks)] == [1, 1, 1, 1, 1]
     assert all(request.method == "GET" for request in requests)
     assert requests[1].url.path == "/logistics/202604/orders/576461413038785752/tracking"
+    assert requests[3].url.params["need_data"] == "true"
+    assert requests[3].url.params["need_plaintext"] == "true"
     active_shop_request = requests[0]
     assert "shop_cipher" not in active_shop_request.url.params
     assert all(request.headers.get("x-tts-access-token") == "unit-test-access-token" for request in requests)

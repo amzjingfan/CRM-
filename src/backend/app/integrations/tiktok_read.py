@@ -339,6 +339,8 @@ class TikTokConversationMessage(TikTokModel):
 
     id: str = Field(min_length=1, max_length=200, pattern=r"^\d+$")
     content: str = Field(max_length=20_000)
+    data: str | None = Field(default=None, max_length=20_000)
+    plaintext: str | None = Field(default=None, max_length=20_000)
     create_time: int
     is_visible: bool = True
     sender: TikTokMessageSender
@@ -793,7 +795,8 @@ class TikTokReadClient:
             "locale": "en",
             "sort_order": "DESC",
             "sort_field": "create_time",
-            "need_data": "false",
+            "need_data": "true",
+            "need_plaintext": "true",
         }
         if page_token:
             query["page_token"] = page_token

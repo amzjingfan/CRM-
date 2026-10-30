@@ -7,10 +7,13 @@ import pytest
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-import app.integrations.conversation_sync as conversation_sync
 from app.conversations.models import Conversation, Message
 from app.customers.models import Customer
-from app.integrations.conversation_sync import process_tiktok_conversation_sync_cycle, sync_tiktok_channel
+from app.integrations import conversation_sync
+from app.integrations.conversation_sync import (
+    process_tiktok_conversation_sync_cycle,
+    sync_tiktok_channel,
+)
 from app.integrations.tiktok_read import TikTokConversation, TikTokConversationMessage
 from app.shared.config.settings import Settings
 from app.stores.models import ChannelAccount, Store
@@ -27,7 +30,12 @@ class FakeReadClient:
         self.message_calls = 0
 
     async def get_conversations(self, page_size: int = 20, page_token: str | None = None):
-        buyer = {"im_user_id": "101", "user_id": "901", "nickname": "Buyer", "role": "BUYER"}
+        buyer = {
+            "im_user_id": "101",
+            "user_id": "901",
+            "nickname": "Buyer",
+            "role": "BUYER",
+        }
         if page_token is None:
             return (
                 [
@@ -134,7 +142,9 @@ async def test_disabled_cycle_never_queries_channels() -> None:
 
 
 @pytest.mark.asyncio
-async def test_enabled_cycle_imports_only_connected_tiktok_channel(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_enabled_cycle_imports_only_connected_tiktok_channel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """周期任务必须走受控渠道，不能扫描其他平台或未连接账号。"""
     assert TEST_DATABASE_URL is not None
     engine = create_async_engine(TEST_DATABASE_URL)
@@ -144,7 +154,13 @@ async def test_enabled_cycle_imports_only_connected_tiktok_channel(monkeypatch: 
     client = FakeReadClient()
     try:
         async with sessions() as setup:
-            setup.add(Store(id=store_id, name="Cycle test", code=f"sync-cycle-{uuid.uuid4().hex}"))
+            setup.add(
+                Store(
+                    id=store_id,
+                    name="Cycle test",
+                    code=f"sync-cycle-{uuid.uuid4().hex}",
+                )
+            )
             await setup.flush()
             setup.add(
                 ChannelAccount(
@@ -237,7 +253,83 @@ async def test_backfill_all_pages_exposes_real_conversations_without_duplicates(
 
 
 @pytest.mark.asyncio
-async def test_failed_channel_does_not_block_next_connected_store(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_rich_message_refresh_repairs_existing_placeholder_without_duplicate() -> None:
+    """已显示为 [TikTok IMAGE] 的旧消息重读后保留原 ID 并补齐媒体。"""
+    assert TEST_DATABASE_URL is not None
+    engine = create_async_engine(TEST_DATABASE_URL)
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    store_id = uuid.uuid4()
+    try:
+        async with sessions() as session:
+            store = Store(id=store_id, name="Rich test", code=f"sync-rich-{uuid.uuid4().hex}")
+            session.add(store)
+            await session.flush()
+            channel = ChannelAccount(
+                store_id=store_id,
+                platform="tiktok",
+                external_store_id=f"{uuid.uuid4().int}",
+                display_name="Rich test",
+                access_token_ref="encrypted:v1:test",
+                status="connected",
+                scopes=["seller.customer_service"],
+            )
+            customer = Customer(store_id=store_id, platform="tiktok", external_customer_id="101")
+            session.add_all([channel, customer])
+            await session.flush()
+            conversation = Conversation(
+                store_id=store_id,
+                customer_id=customer.id,
+                platform="tiktok",
+                external_conversation_id="501",
+            )
+            session.add(conversation)
+            await session.flush()
+            message = Message(
+                store_id=store_id,
+                conversation_id=conversation.id,
+                customer_id=customer.id,
+                platform="tiktok",
+                external_message_id="701",
+                role="user",
+                direction="inbound",
+                message_type="image",
+                content="[TikTok IMAGE]",
+                status="received",
+                raw_payload={},
+            )
+            session.add(message)
+            await session.commit()
+            remote = TikTokConversationMessage.model_validate(
+                {
+                    "id": "701",
+                    "type": "IMAGE",
+                    "create_time": 1_700_000_001,
+                    "sender": {"im_user_id": "101", "role": "BUYER"},
+                    "content": '{"url":"https://cdn.example/image.jpg","width":"304","height":"290"}',
+                }
+            )
+            inserted, _ = await conversation_sync._persist_page(
+                session, channel, conversation, customer, "101", [remote], None
+            )
+            refreshed = await session.get(Message, message.id)
+            assert inserted == 0
+            assert refreshed is not None and refreshed.content == "图片"
+            assert refreshed.raw_payload["media"]["url"] == "https://cdn.example/image.jpg"
+            assert (
+                len((await session.scalars(select(Message).where(Message.conversation_id == conversation.id))).all())
+                == 1
+            )
+    finally:
+        async with sessions() as cleanup:
+            await cleanup.execute(delete(Store).where(Store.id == store_id))
+            await cleanup.commit()
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_failed_channel_does_not_block_next_connected_store(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """第一个店铺接口失败后，事务回滚仍可继续同步第二个店铺。"""
     assert TEST_DATABASE_URL is not None
     engine = create_async_engine(TEST_DATABASE_URL)
@@ -255,7 +347,13 @@ async def test_failed_channel_does_not_block_next_connected_store(monkeypatch: p
     try:
         async with sessions() as setup:
             for index in range(2):
-                setup.add(Store(id=store_ids[index], name="Cycle test", code=f"sync-fail-{uuid.uuid4().hex}"))
+                setup.add(
+                    Store(
+                        id=store_ids[index],
+                        name="Cycle test",
+                        code=f"sync-fail-{uuid.uuid4().hex}",
+                    )
+                )
                 await setup.flush()
                 setup.add(
                     ChannelAccount(

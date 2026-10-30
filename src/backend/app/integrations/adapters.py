@@ -2,7 +2,6 @@
 
 import hashlib
 import hmac
-import json
 import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
@@ -22,6 +21,7 @@ from app.integrations.schemas import (
     TikTokAuthorizationLifecycleEvent,
     platform_event_adapter,
 )
+from app.integrations.tiktok_message import parse_tiktok_message
 from app.integrations.tiktok_read import TikTokOrder, TikTokReadClient, parse_money
 from app.integrations.tiktok_write import TikTokMessageClient
 from app.shared.config.settings import Settings, get_settings
@@ -202,7 +202,9 @@ class TikTokAdapter(PlatformAdapter):
         if not external_customer_id.isdigit() or not conversation_id.isdigit() or not message_id.isdigit():
             raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 消息标识无效", 422)
         message_type = str(data.get("type", "OTHER"))
-        content = _message_content(message_type, data.get("content"))
+        content, display_data = parse_tiktok_message(
+            message_type, data.get("content"), data.get("data"), data.get("plaintext")
+        )
         created_at = _unix_datetime(data.get("create_time"), required=True)
         if created_at is None:  # required=True 已保证非空，此分支用于静态类型和纵深防御。
             raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 消息时间无效", 422)
@@ -219,6 +221,8 @@ class TikTokAdapter(PlatformAdapter):
                     avatar=str(sender["avatar"]) if sender.get("avatar") else None,
                 ),
                 content=content,
+                message_type=message_type.lower() if len(message_type) <= 30 else "other",
+                display_data=display_data,
                 created_at=created_at,
             )
         except ValidationError as exc:
@@ -281,21 +285,6 @@ def _unix_datetime(value: object, *, required: bool) -> datetime | None:
         return datetime.fromtimestamp(timestamp, UTC)
     except (ValueError, OverflowError, OSError) as exc:
         raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 时间字段无效", 422) from exc
-
-
-def _message_content(message_type: str, raw_content: object) -> str:
-    """提取客服可展示内容；卡片只显示类型占位，不持久化完整第三方载荷。"""
-    if not isinstance(raw_content, str):
-        raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 消息内容无效", 422)
-    try:
-        parsed = json.loads(raw_content)
-    except json.JSONDecodeError as exc:
-        raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 消息内容无效", 422) from exc
-    if isinstance(parsed, dict):
-        text_content = parsed.get("content")
-        if isinstance(text_content, str) and text_content.strip():
-            return text_content.strip()
-    return f"[TikTok {message_type}]"
 
 
 def _normalize_tiktok_order(order: TikTokOrder, event_id: str, external_store_id: str) -> OrderUpdatedEvent:

@@ -59,15 +59,53 @@ class MessageView(BaseModel):
     message_type: str = "text"
     logistics_card: "LogisticsCardView | None" = None
     media: "MediaMessageView | None" = None
+    rich_card: "RichMessageCardView | None" = None
 
 
 class MediaMessageView(BaseModel):
-    """仅展示平台已上传资源；视频 ID 不构造未经核实的播放地址。"""
+    """仅展示平台返回的媒体地址；视频 ID 不构造播放地址。"""
 
     url: str | None = None
     vid: str | None = None
     width: int | None = None
     height: int | None = None
+    cover: str | None = None
+    duration: str | None = None
+    expire_time: str | None = None
+
+
+class RichMessageCardView(BaseModel):
+    """TikTok 原生卡片的最小可信展示字段。"""
+
+    kind: str
+    title: str | None = None
+    image_url: str | None = None
+    price: str | None = None
+    paid_price: str | None = None
+    status: str | None = None
+    product_id: str | None = None
+    order_id: str | None = None
+    coupon_id: str | None = None
+    sku_id: str | None = None
+    package_id: str | None = None
+    tracking_number: str | None = None
+    carrier_name: str | None = None
+    latest_description: str | None = None
+    sold_quantity: str | None = None
+    quantity: str | None = None
+    url: str | None = None
+    packages: list["RichPackageView"] = Field(default_factory=list, max_length=20)
+
+
+class RichPackageView(BaseModel):
+    title: str | None = None
+    image_url: str | None = None
+    package_id: str | None = None
+    paid_price: str | None = None
+    quantity: str | None = None
+    tracking_number: str | None = None
+    carrier_name: str | None = None
+    latest_description: str | None = None
 
 
 class LogisticsCardView(BaseModel):

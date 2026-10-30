@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.conversations.models import Message
 from app.integrations import service as webhook_service
 
 
@@ -33,6 +34,8 @@ async def test_webhook_dispatches_new_buyer_message_once(monkeypatch: pytest.Mon
         external_message_id="message-1",
         created_at=now,
         content="synthetic buyer message",
+        message_type="product_card",
+        display_data={"card": {"kind": "product_card", "product_id": "123"}},
         language="en",
     )
     session = Mock(spec=AsyncSession)
@@ -50,6 +53,9 @@ async def test_webhook_dispatches_new_buyer_message_once(monkeypatch: pytest.Mon
     assert dispatch.await_args.args == (session, conversation_id)
     assert conversation.awaiting_reply_since == now
     assert conversation.unread_count == 1
+    stored = next(call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], Message))
+    assert stored.message_type == "product_card"
+    assert stored.raw_payload == normalized.display_data
 
     session.scalar = AsyncMock(side_effect=[conversation, SimpleNamespace(id=uuid.uuid4())])
     await webhook_service._process_message(session, event, channel, normalized)

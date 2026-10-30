@@ -11,7 +11,7 @@ from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.conversations.workflow import reopen_on_new_buyer_message
 from app.customers.models import Customer
-from app.integrations.adapters import _message_content
+from app.integrations.tiktok_message import parse_tiktok_message
 from app.integrations.tiktok_read import TikTokConversation, TikTokConversationMessage, TikTokReadClient
 from app.reception_assignment.dispatch import dispatch_conversation
 from app.shared.config.settings import Settings
@@ -72,6 +72,7 @@ async def _persist_page(
         role, direction = _message_role(remote.sender.role)
         if role == "user" and remote.sender.im_user_id != buyer_im_user_id:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话买家不匹配", 502)
+        content, display_data = parse_tiktok_message(remote.type, remote.content, remote.data, remote.plaintext)
         existing = await session.scalar(
             select(Message).where(Message.platform == "tiktok", Message.external_message_id == remote.id)
         )
@@ -79,6 +80,11 @@ async def _persist_page(
             if existing.store_id != channel.store_id or existing.conversation_id != conversation.id:
                 raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 消息店铺或会话冲突", 502)
             message = existing
+            if message.content.startswith("[TikTok "):
+                message.message_type = remote.type.lower() if len(remote.type) <= 30 else "other"
+                message.content = content
+            if display_data:
+                message.raw_payload = {**(message.raw_payload or {}), **display_data}
         else:
             created_at = _platform_time(remote.create_time)
             message = Message(
@@ -90,10 +96,13 @@ async def _persist_page(
                 role=role,
                 direction=direction,
                 message_type=remote.type.lower() if len(remote.type) <= 30 else "other",
-                content=_message_content(remote.type, remote.content),
+                content=content,
                 status="received" if role == "user" else "sent",
                 sent_at=created_at if direction == "outbound" else None,
-                raw_payload={"delivery_mode": "real", "source": "tiktok_sync"} if role != "user" else {},
+                raw_payload={
+                    **({"delivery_mode": "real", "source": "tiktok_sync"} if role != "user" else {}),
+                    **display_data,
+                },
                 created_at=created_at,
             )
             session.add(message)
@@ -130,7 +139,12 @@ async def _persist_page(
 
 
 async def _sync_conversation(
-    session: AsyncSession, channel: ChannelAccount, client: TikTokReadClient, remote: TikTokConversation
+    session: AsyncSession,
+    channel: ChannelAccount,
+    client: TikTokReadClient,
+    remote: TikTokConversation,
+    *,
+    refresh_rich: bool = False,
 ) -> int:
     buyers = [participant for participant in remote.participants if participant.role == "BUYER"]
     if len(buyers) != 1:
@@ -169,7 +183,20 @@ async def _sync_conversation(
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话店铺或买家冲突", 502)
 
     latest_id = remote.latest_message.id if remote.latest_message else None
-    if latest_id and conversation.metadata_json.get("tiktok_latest_message_id") == latest_id:
+    if refresh_rich:
+        placeholder = await session.scalar(
+            select(Message.id)
+            .where(
+                Message.conversation_id == conversation.id,
+                Message.platform == "tiktok",
+                Message.content.like("[TikTok %"),
+            )
+            .limit(1)
+        )
+        if placeholder is None:
+            await session.commit()
+            return 0
+    if not refresh_rich and latest_id and conversation.metadata_json.get("tiktok_latest_message_id") == latest_id:
         await session.commit()
         return 0
 
@@ -195,7 +222,9 @@ async def _sync_conversation(
     return inserted
 
 
-async def sync_tiktok_channel(session: AsyncSession, channel: ChannelAccount, client: TikTokReadClient) -> SyncSummary:
+async def sync_tiktok_channel(
+    session: AsyncSession, channel: ChannelAccount, client: TikTokReadClient, *, refresh_rich: bool = False
+) -> SyncSummary:
     """同步全部列表页；逐会话提交使中断后可安全重跑。"""
     if channel.platform != "tiktok" or channel.status != "connected" or "seller.customer_service" not in channel.scopes:
         raise AppError(ErrorCode.PERMISSION_DENIED, "TikTok 客服渠道未授权", 403)
@@ -206,7 +235,7 @@ async def sync_tiktok_channel(session: AsyncSession, channel: ChannelAccount, cl
     while True:
         page, next_token, _request_id = await client.get_conversations(page_token=page_token)
         for remote in page:
-            messages += await _sync_conversation(session, channel, client, remote)
+            messages += await _sync_conversation(session, channel, client, remote, refresh_rich=refresh_rich)
             conversations += 1
         if not next_token:
             break

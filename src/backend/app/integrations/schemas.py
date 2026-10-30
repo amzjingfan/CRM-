@@ -26,6 +26,8 @@ class MessageCreatedEvent(BaseModel):
     external_message_id: str = Field(min_length=1, max_length=200)
     customer: CustomerPayload
     content: str = Field(min_length=1, max_length=4000)
+    message_type: str = Field(default="text", min_length=1, max_length=30)
+    display_data: dict[str, object] = Field(default_factory=dict)
     created_at: datetime
     language: str | None = Field(default=None, max_length=20)
 
