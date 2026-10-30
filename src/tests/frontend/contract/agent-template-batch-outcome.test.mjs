@@ -67,6 +67,18 @@ function findButton(node, name) {
   return null;
 }
 
+for (const [status, expected] of [["preview", "未确认预览"], ["queued", "等待执行"], ["running", "执行中"]]) {
+  test(`batch status distinguishes ${status} from unfinished work`, () => {
+    const harness = pageHarness({ id: "i", status: "pending", store_name: "店" });
+    harness.values[3].items[0] = { ...summary, status };
+    harness.values[4] = { ...harness.values[4], status };
+    const html = renderToStaticMarkup(harness.render()); harness.unmount();
+    assert.ok(html.includes(expected), html);
+    assert.ok(html.includes("成功：1"), html);
+    assert.ok(!html.includes("succeeded:"), html);
+  });
+}
+
 for (const [name, publish, oldVersion, resultVersion, expected] of [
   ["create and publish", true, null, 1, "新版本已发布"],
   ["save draft", false, 1, 1, "草稿已保存，运行版本未改变"],

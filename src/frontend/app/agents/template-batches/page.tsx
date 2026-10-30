@@ -16,7 +16,9 @@ const actions: Record<string, string> = { create: "新建", adopt: "关联", upd
 function label(batch: BatchSummary) {
   const c = batch.counts;
   if (batch.status === "cancelled") return "已取消";
-  if (["preview", "queued", "running"].includes(batch.status)) return "未完成";
+  if (batch.status === "preview") return "未确认预览";
+  if (batch.status === "queued") return "等待执行";
+  if (batch.status === "running") return "执行中";
   const failed = (c.failed ?? 0) + (c.needs_repreview ?? 0);
   if (failed && (c.succeeded ?? 0)) return "部分失败";
   if (failed) return "全部失败";
@@ -77,7 +79,7 @@ export default function TemplateBatchesPage() {
     finally { if (isCurrent()) setBusy(false); }
   }
   return <AppShell><div className="agent-page template-page"><div className="shell">
-    <header className="topbar"><div className="title"><div><h1>批量任务</h1><p>查看已确认计划及各店处理结果</p></div></div></header>
+    <header className="topbar"><div className="title"><div><h1>批量任务</h1><p>查看预览、已确认计划及各店处理结果</p></div></div></header>
     <AgentTemplateNav current="batches" />
     <main className="main">
       {error ? <p role="alert">{error}</p> : null}
@@ -88,8 +90,8 @@ export default function TemplateBatchesPage() {
         {!id ? <p>选择任务查看详情。</p> : !detail || detail.id !== id ? <p role="status">{error ? "任务暂不可用，将自动重试。" : "正在加载任务…"}</p> : <>
           <h2>{label(detail)} · 模板 v{detail.template_version}</h2><p>任务 {detail.id} {detail.parent_batch_id ? `· 续接 ${detail.parent_batch_id}` : ""}</p>
           {!detail.processor_enabled ? <p role="status">后台处理器未启用，任务不会自动推进。</p> : null}
-          <p>{Object.entries(detail.counts).map(([key, count]) => `${key}: ${count}`).join(" · ")}</p>
-          <p>取消不会回滚已成功的店铺；确认后的计划为只读。</p>
+          <p>{Object.entries(detail.counts).map(([key, count]) => `${states[key] ?? key}：${count}`).join(" · ")}</p>
+          <p>{detail.status === "preview" ? "当前仅为未确认预览，不会执行；请返回应用页审阅并确认。" : "取消不会回滚已成功的店铺；确认后的计划为只读。"}</p>
           <button className="btn" disabled={busy || !["queued", "running"].includes(detail.status)} onClick={() => setCancelOpen(true)}>取消任务</button>{" "}
           <button className="btn" disabled={busy || !hasRetryable} onClick={() => void action("retry")}>重试可重试失败项</button>{" "}
           <Link className="btn" href={`/agents/templates/${encodeURIComponent(detail.template_id)}/apply?version=${detail.template_version}&parent_batch_id=${encodeURIComponent(detail.id)}`}>重新预览未成功项</Link>
