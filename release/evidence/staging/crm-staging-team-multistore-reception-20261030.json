@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-TEAM-MULTISTORE-RECEPTION-STAGING-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "4483ec9b512f698721d2db6500d54e0bbfd95b8e",
+  "approved_implementation_sha": "0d8b66e067bad3b96e9e78db3f98cef0acc93c9e",
+  "previous_runtime_source_sha": "eb76837823f9e200f47db4a7786d4e91a94f9997",
+  "source_archive_sha256": "f13ceab1bfc51dc6ac03e5bb25134173a2345832a0ed7fc233fca8562b543ed5",
+  "source_bundle_sha256": "ea7e400e4b2bf83d6a45c8455e30416c0c19ecb2216e804fa9f7c26426de56bf",
+  "frontend_transfer_archive_sha256": "5fd3bcbd1d7ffffbf438218e485d73344cb94bc20d65779cb673bcc8a211a379",
+  "images": {
+    "previous_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:903acf1a00e10503998024e72e29fe92ed59f337b05d87dd1c8436c610174860",
+    "deployed_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:fd2dab242a0b7cab2e98d31b0fa7fb53722f6d249033c17fadcff03e90eb1422",
+    "unchanged_backend": "ghcr.io/cp11-gh/crm-backend@sha256:cc323ea983fb42f0cb1d9753fa10486e1fa2028db69f003dc9ff1b8a499808b4",
+    "unchanged_retrieval": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "unchanged_document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "frontend_oci_revision": "4483ec9b512f698721d2db6500d54e0bbfd95b8e"
+  },
+  "backup": {
+    "private_server_directory": "/home/crmdeploy/.local/share/crm-staging-backups/team-ui-4483ec9b-20261030-1630",
+    "postgres_custom_dump_sha256": "3cf882ec12280e8f4232418c5260f34d840401d63f292f8500cac05e5cde1f33",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "db24135736df36709ea4e8f18071ce330e1bb3f3dfce32af8a743ba8529809fe",
+    "minio_archive_readable": true,
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "permissions": "0700 directory, 0600 files"
+  },
+  "staging_gate": {
+    "current_validate_status": "validated",
+    "current_validate_sha256": "88f8ea0aa6e53e734990601e1cfe0c35ce46c199c9bc28f11f1dce7c287ed42e",
+    "candidate_validate_status": "validated",
+    "candidate_validate_sha256": "b52ab68d56b86b74768676d7f6d3c567beaf5177ce9ab38b288b108c32778b63",
+    "candidate_deploy_status": "passed",
+    "candidate_deploy_sha256": "b9ebffb2477c38d5bce2c391e91677c739cf7f37faa13d2d9fab0274f4953a12",
+    "database_migration": "044_reception_assignment (head)",
+    "production_release": false
+  },
+  "runtime_after": {
+    "running_or_healthy_services": 12,
+    "backend_manual_send_store_count": 2,
+    "tiktok_read_and_webhook": true,
+    "manual_send": true,
+    "agent_debug_and_formal_suggestions": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "settings_team": 200,
+    "settings_team_departments": 200
+  },
+  "authenticated_ui_check": "Fresh account page showed global admin and store-scoped supervisor role labels; department assignment page explained no eligible agent, disabled ineligible participation, and described 60-second workspace heartbeat. Existing account edits and real assignment writes were not performed.",
+  "evidence_pr_ci": {
+    "pull_request": 666,
+    "run_id": 41032869320,
+    "backend_job_id": 123986565930,
+    "frontend_job_id": 123986566293,
+    "result": "both_failure_before_runner_steps; runner_name_empty; steps_zero; local_substitute_gate_used"
+  },
+  "source_verification_note": "Clean Git checkout at exact release SHA and matching frontend tree verified. Windows tar extraction changed one Unicode filename encoding, so the Git checkout, not that tar extraction, was used for the release gate.",
+  "ghcr_transfer_note": "Remote GHCR pull stalled; exact-digest Docker archive was verified and loaded before deployment. First Deploy attempt failed on missing temporary registry auth before service switch; Candidate Validate reran and final Deploy passed.",
+  "temporary_ghcr_credentials_logged_out_local_and_staging": true,
+  "real_buyer_message_sent": false
+}
