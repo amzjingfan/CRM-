@@ -27,7 +27,7 @@ from app.agents.safety.input import prepare_untrusted_text
 from app.agents.tools.business_identifiers import business_identifier_values
 from app.shared.exceptions.errors import AppError
 
-REPLY_PLAN_PROMPT_VERSION = "agent-reply-plan-v1.0.0"
+REPLY_PLAN_PROMPT_VERSION = "agent-reply-plan-v1.1.0"
 
 
 @runtime_checkable
@@ -114,6 +114,7 @@ async def aggregate_reply_plan(
                 + (
                     "仅通过submit_reply_parts提交答复。当前question是一条买家消息，不混答历史消息。"
                     "简单问题一条简短答复；多个独立问题按自然顺序拆为完整、各自可理解的短答复。"
+                    "各条分别负责不同问题，不得每条重复回答整题，也不重复列出其他条已回答的事实。"
                     "每条最多2000 UTF-16单元，优先1200以内。物流正文仅最新节点、时间和必要定位信息；"
                     "不要列全部轨迹，完整详情随后以物流卡片呈现。不输出内部引用、审核或发送状态。"
                 ),
@@ -194,10 +195,31 @@ async def aggregate_reply_plan(
                 ),
             ),
             on_usage=on_usage,
+            regenerate_unsupported=False,
         )
         input_tokens += result.input_tokens
         output_tokens += result.output_tokens
         if result.content is None:
+            if result.reason_code == "answer_not_grounded":
+                # 单段失去依据后不能拿整题重答该段，否则会把同一整题答案重复交付多次。
+                # 废弃整组候选，仅从原始专家证据重建一条完整答复；被拒正文不回投。
+                fallback = await aggregate_results(
+                    question=safe_question,
+                    results=results,
+                    provider=provider,
+                    deadline=deadline,
+                    store_id=store_id,
+                    max_output_tokens=max_output_tokens,
+                    privacy_policies=privacy_policies,
+                    output_policies=(*output_policies, "本次重建一条完整简洁答复，不重复答案；物流仅最新节点。"),
+                    on_usage=on_usage,
+                )
+                return replace(
+                    fallback,
+                    reply_parts=(fallback.content,) if fallback.content else (),
+                    input_tokens=input_tokens + fallback.input_tokens,
+                    output_tokens=output_tokens + fallback.output_tokens,
+                )
             return failure(result.reason_code or "answer_not_grounded")
         verified.append(result.content)
         reason = reason or result.reason_code

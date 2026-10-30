@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-30 本轮回复交付staging通过：冻结发布d111d164/043_logistics_updates，最终中英工具+绑定文件RAG、真实坐席草稿流、文字后卡片、正式审阅取消零发送及临时预演UI移除通过。发布源码2712/3、55/158；保留PR646的本地集成fe4cf4b8为2731/3、55/161。16条合成消息/测试记忆清理、文件软删解绑v13、原26条消息未改。失败重试及限制见[TR R01](../reports/tests/TR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md)；本次未部署044，真实外发/主动通知未验收。
+
 2026-10-30 单客服部接待与派单候选 `dcc2ada1eb3290c64857b4b5e5e0328402f4281d` 本地 AC-01～04 通过：隔离 PostgreSQL 迁移 043→044→043→044；后端 2730 passed/3 skipped；前端 55/55、浏览器 161 passed/1 skipped；Ruff、格式、mypy、typecheck、lint 0 error/8 既有 warning、webpack build 通过。普通客服可转交本人同店会话；逐店自动派单默认关闭，零自动外发。CI 待 PR 创建后核验；staging 待用户单独批准，production 不变。见[TR R01](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R01.md)。
 
 2026-10-29 回复交付源码已合入main 26782c2a（PR644），本地通过，subject `b3ce00a35bda8a1504f7f56cb4d910bc0fa0b865`：后端2711/3平台skip、前端55/159、构建/类型/静态/锁及动态16/安全237通过；独立审查关闭。043→041→043和新五表ORM一致；全库98项既有差异与基线完全相同，未伪报alembic check通过。CI run40904785085两个job均runner0/steps0未运行，按持续授权本地替代。新能力未部署、真实发送0；[TR R01](../reports/tests/TR-MVP-AGENT-REPLY-DELIVERY-001-20261029-R01.md)。

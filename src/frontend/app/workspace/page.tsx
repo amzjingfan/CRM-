@@ -9,7 +9,7 @@ import { buyerAvatarText } from "../../lib/message-display";
 import { stageFromOrders, stageLabel } from "../../lib/buyer-stage";
 import { QuickReplyPicker } from "../../components/QuickReplyPicker";
 import { ReplyDraftEditor } from "../../components/ReplyDraftEditor";
-import { LogisticsNotificationReview, ReplyReviewPanel } from "../../components/ReplyReviewPanel";
+import { ReplyReviewPanel } from "../../components/ReplyReviewPanel";
 import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
@@ -76,9 +76,9 @@ export default function WorkspacePage() {
   const [receptionError, setReceptionError] = useState("");
   const [storeError, setStoreError] = useState("");
   const [detail, setDetail] = useState<SessionMessagesData | null>(null);
-  const [orderSnapshot, setOrderSnapshot] = useState<{ sessionId: string; stage: BuyerStage | "unknown"; orders: SidebarOrder[] | null } | null>(null);
+  const [orderSnapshot, setOrderSnapshot] = useState<{ sessionId: string; stage: BuyerStage | "unknown" } | null>(null);
   const onOrderSnapshot = useCallback((sessionId: string, orders: SidebarOrder[] | null) => {
-    setOrderSnapshot({ sessionId, stage: orders ? stageFromOrders(orders) : "unknown", orders });
+    setOrderSnapshot({ sessionId, stage: orders ? stageFromOrders(orders) : "unknown" });
   }, []);
   const [detailError, setDetailError] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -754,7 +754,6 @@ export default function WorkspacePage() {
       {detail.assignment_events?.length ? <details className="border-b border-[var(--border)] px-4 py-2 text-xs"><summary className="cursor-pointer">派单记录（最近 {detail.assignment_events.length} 条）</summary><ol className="mt-2 space-y-1">{detail.assignment_events.map((event, index) => <li key={`${event.created_at}-${index}`}>{new Date(event.created_at).toLocaleString()} · {assignmentLabels[event.action] ?? event.action}{event.assigned_user_id ? ` · ${event.assigned_user_id.slice(0, 8)}` : ""}{event.reason ? ` · ${event.reason}` : ""}</li>)}</ol></details> : null}
       <div className="message-area"><div className="message-scroll" onScroll={onMessageScroll} ref={messageScrollRef}>{detail.pagination.page > 1 ? <button className="secondary-button self-center" disabled={loadingOlder} onClick={() => void loadOlder()} type="button">{loadingOlder ? (en ? "Loading…" : "加载中…") : (en ? "Load older messages" : "加载更早消息")}</button> : null}{detail.messages.length ? detail.messages.map((message) => <MessageBubble customerName={detail.customer.name} en={en} key={message.id} message={message} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} />) : <EmptyState label={en ? "No messages in this conversation" : "该会话暂无消息"} />}</div>{showLatest ? <button className="latest-button" onClick={scrollToLatest} type="button"><ArrowDown size={16} />{en ? "Latest message" : "到最新消息"}</button> : null}</div>
       <ReplyReviewPanel busy={sending} composerDraft={draft} composerRevision={draftRevision.current} en={en} key={detail.session.id} onDelivered={(messages) => setDetail((current) => current?.session.id === detail.session.id ? { ...current, messages: [...current.messages.filter((message) => !messages.some((received) => received.id === message.id)), ...messages] } : current)} onUse={(text) => { setDraft(text); setAnnouncement(en ? "Suggestion inserted; review it before sending" : "建议已填入输入框，确认后再发送"); }} recipient={detail.customer.name ?? (en ? "Anonymous customer" : "匿名客户")} sendMode={detail.send_mode} sessionId={detail.session.id} translationEnabled={detail.translation_enabled === true} triggerMessageId={detail.messages.findLast((message) => message.role === "user")?.id ?? null} />
-      <LogisticsNotificationReview en={en} key={`notifications-${detail.session.id}`} orders={orderSnapshot?.sessionId === detail.session.id ? orderSnapshot.orders : null} sessionId={detail.session.id} storeId={detail.session.store_id} />
       <div className="composer">
         <div className="workspace-composer-tools">
           <button aria-expanded={emojiOpen} aria-label={en ? "Emoji" : "表情"} disabled={!!cardDraft || detail.send_mode === "disabled"} onClick={() => { setEmojiOpen(!emojiOpen); setQuickReplyOpen(false); }} ref={emojiButtonRef} title={en ? "Emoji" : "表情"} type="button"><Smiley size={19} /></button>

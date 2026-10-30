@@ -73,6 +73,7 @@ async def aggregate_results(
     output_policies: tuple[str, ...] = (),
     on_usage: Callable[[int, int], None] | None = None,
     max_answer_characters: int = 2000,
+    regenerate_unsupported: bool = True,
 ) -> ReviewedSuggestion:
     """冲突和不可信输出失败关闭；任何结果都不授予自动发送权限。"""
     agent_ids = tuple(item.agent_id for item in results)
@@ -216,6 +217,8 @@ async def aggregate_results(
                 if time.monotonic() >= deadline:
                     return failure("deadline_exceeded")
                 if review.supported or review.reason_code != "answer_not_grounded":
+                    return replace(review, input_tokens=input_tokens, output_tokens=output_tokens)
+                if not regenerate_unsupported:
                     return replace(review, input_tokens=input_tokens, output_tokens=output_tokens)
                 # 旧正文不进入新生成上下文，避免把被拒事实或私密值再次作为回答依据。
                 fresh_messages: tuple[dict[str, object], ...] = (

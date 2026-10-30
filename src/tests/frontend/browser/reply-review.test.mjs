@@ -18,7 +18,7 @@ async function openReview(options = {}) {
   const records = [sessionId, otherId].map((id, index) => ({ id, store_id: "store-1", platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 0, assigned_user_id: null, last_message_at: "2026-10-29T01:00:00Z", last_message: "Where is my parcel?", customer: { id: `customer-${index}`, name: index ? "Bob" : "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } }));
   const card = { order_id: "order-1", package_id: "package-1", product_name: "Test parcel", image_url: null, sku_name: null, quantity: 1, unit_price: null, currency: null, tracking_number: "TRACK-1", carrier_name: "Test carrier", latest_description: "Arrived today", latest_at: "2026-10-29T01:00:00Z" };
   const notificationRequests = [];
-  const state = { cardFailure: false, batchStatus: "previewed", batchParts: null, orders: options.orders ?? [] };
+  const state = { cardFailure: false, batchStatus: "completed", batchParts: null, orders: options.orders ?? [] };
   await context.route("**/v1/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -83,7 +83,23 @@ test("unverified streamed drafts stay outside the composer until final review su
   } finally { await context.close(); }
 });
 
-test("multiple verified answers precede native cards and preview uses the actual composer edit", async () => {
+test("temporary preview controls are absent while ordered review stays available", async () => {
+  const { context, page, finish, batches, notificationRequests } = await openReview();
+  try {
+    assert.equal(await page.getByText("物流更新通知预演", { exact: true }).count(), 0);
+    await page.getByRole("button", { name: "生成", exact: true }).click();
+    await finish(["Your parcel arrived today."], ["order-1"]);
+    const panel = page.getByRole("region", { name: "回复审阅" });
+    await panel.getByLabel("物流卡片", { exact: true }).waitFor();
+    assert.equal(await panel.getByRole("button", { name: "预演交付顺序", exact: true }).count(), 0);
+    await panel.getByRole("button", { name: "审阅整组发送", exact: true }).click();
+    await page.getByRole("dialog", { name: "审阅整组回复" }).waitFor();
+    assert.equal(batches.length, 0);
+    assert.equal(notificationRequests.length, 0);
+  } finally { await context.close(); }
+});
+
+test("multiple verified answers precede native cards and confirmation uses the actual composer edit", async () => {
   const { context, page, finish, batches } = await openReview();
   try {
     await page.getByRole("button", { name: "生成", exact: true }).click();
@@ -91,9 +107,13 @@ test("multiple verified answers precede native cards and preview uses the actual
     const panel = page.getByRole("region", { name: "回复审阅" });
     await panel.getByLabel("物流卡片", { exact: true }).waitFor();
     await page.getByRole("textbox", { name: "回复内容", exact: true }).fill("Edited latest status.");
-    await panel.getByRole("button", { name: "预演交付顺序", exact: true }).click();
-    await panel.getByText("预演完成，未向买家发送", { exact: true }).waitFor();
-    assert.deepEqual(batches[0].body, { trigger_message_id: "buyer-1", parts: [{ kind: "text", content: "Edited latest status." }, { kind: "text", content: "Returns are accepted within 30 days." }, { kind: "logistics_card", order_id: "order-1", package_id: "package-1" }], preview_only: true, confirmed: false });
+    await panel.getByRole("button", { name: "审阅整组发送", exact: true }).click();
+    const review = page.getByRole("dialog", { name: "审阅整组回复" });
+    await review.waitFor();
+    assert.equal(batches.length, 0, "opening review never delivers");
+    await review.getByRole("button", { name: "确认发送整组", exact: true }).click();
+    await page.waitForFunction(() => !!document.querySelector(".reply-review-result"));
+    assert.deepEqual(batches[0].body, { trigger_message_id: "buyer-1", parts: [{ kind: "text", content: "Edited latest status." }, { kind: "text", content: "Returns are accepted within 30 days." }, { kind: "logistics_card", order_id: "order-1", package_id: "package-1" }], preview_only: false, confirmed: true });
     assert.ok(batches[0].key);
     assert.deepEqual(await panel.locator("[data-reply-kind]").evaluateAll((nodes) => nodes.map((node) => node.dataset.replyKind)), ["text", "text", "logistics_card"]);
   } finally { await context.close(); }
@@ -153,7 +173,7 @@ test("completed without a usable result reports review required and clears every
     await emit("done", { reason: "completed" });
     await page.getByText(/未生成可用回复.*隐私复核未通过/).waitFor();
     assert.equal(await page.getByText("Discard me", { exact: true }).count(), 0);
-    assert.equal(await page.getByRole("button", { name: "预演交付顺序", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "审阅整组发送", exact: true }).count(), 0);
     assert.equal(await page.getByRole("textbox", { name: "回复内容", exact: true }).inputValue(), "");
   } finally { await context.close(); }
 });
@@ -167,11 +187,11 @@ test("logistics preview failure preserves verified text and can retry the card a
     const panel = page.getByRole("region", { name: "回复审阅" });
     await panel.getByRole("alert").filter({ hasText: "Card temporarily unavailable" }).waitFor();
     assert.equal(await page.getByRole("textbox", { name: "回复内容", exact: true }).inputValue(), "Your parcel arrived today.");
-    assert.equal(await panel.getByRole("button", { name: "预演交付顺序", exact: true }).isDisabled(), true);
+    assert.equal(await panel.getByRole("button", { name: "审阅整组发送", exact: true }).isDisabled(), true);
     state.cardFailure = false;
     await panel.getByRole("button", { name: "重试卡片预览", exact: true }).click();
     await panel.getByLabel("物流卡片", { exact: true }).waitFor();
-    assert.equal(await panel.getByRole("button", { name: "预演交付顺序", exact: true }).isEnabled(), true);
+    assert.equal(await panel.getByRole("button", { name: "审阅整组发送", exact: true }).isEnabled(), true);
     assert.equal(batches.length, 0);
   } finally { await context.close(); }
 });
@@ -185,22 +205,20 @@ test("a failed card retry preserves the immutable confirmed plan and idempotency
     await finish(["Your parcel arrived today."], ["order-1"]);
     const panel = page.getByRole("region", { name: "回复审阅" });
     await panel.getByLabel("物流卡片", { exact: true }).waitFor();
-    await panel.getByRole("button", { name: "预演交付顺序", exact: true }).click();
-    await page.waitForFunction(() => !!document.querySelector(".reply-review-result"));
     await panel.getByRole("button", { name: "审阅整组发送", exact: true }).click();
-    assert.equal(batches.length, 1, "opening review must not deliver");
+    assert.equal(batches.length, 0, "opening review must not deliver");
     await page.getByRole("dialog", { name: "审阅整组回复" }).getByRole("button", { name: "确认发送整组", exact: true }).click();
     await panel.getByRole("button", { name: "仅重试失败卡片", exact: true }).waitFor();
-    assert.equal(batches[1].body.confirmed, true);
-    assert.equal(batches[1].body.preview_only, false);
-    assert.notEqual(batches[0].key, batches[1].key);
+    assert.equal(batches[0].body.confirmed, true);
+    assert.equal(batches[0].body.preview_only, false);
+    assert.ok(batches[0].key);
     state.batchStatus = "completed";
     state.batchParts = state.batchParts.map((part) => ({ ...part, status: "sent", error_code: null }));
     await page.getByRole("textbox", { name: "回复内容", exact: true }).fill("New unrelated edit");
     assert.equal(await panel.locator("[data-reply-kind=text]").innerText().then((text) => text.includes("New unrelated edit")), false, "a confirmed delivery must keep displaying its immutable text");
     await panel.getByRole("button", { name: "仅重试失败卡片", exact: true }).click();
     await panel.getByText("交付完成", { exact: true }).waitFor();
-    assert.deepEqual(batches[2], batches[1], "retry must resume the same immutable plan; the server skips sent text");
+    assert.deepEqual(batches[1], batches[0], "retry must resume the same immutable plan; the server skips sent text");
   } finally { await context.close(); }
 });
 
@@ -230,8 +248,12 @@ test("one Chinese question stays a single short reply without a logistics card",
     await panel.getByText("您的包裹今天已送达。", { exact: true }).waitFor();
     assert.equal(await panel.locator("[data-reply-kind=text]").count(), 1);
     assert.equal(await panel.getByLabel("物流卡片", { exact: true }).count(), 0);
-    await panel.getByRole("button", { name: "预演交付顺序", exact: true }).click();
-    await panel.getByText("预演完成，未向买家发送", { exact: true }).waitFor();
+    await panel.getByRole("button", { name: "审阅整组发送", exact: true }).click();
+    const review = page.getByRole("dialog", { name: "审阅整组回复" });
+    await review.waitFor();
+    assert.equal(batches.length, 0, "opening review never delivers");
+    await review.getByRole("button", { name: "确认发送整组", exact: true }).click();
+    await page.waitForFunction(() => !!document.querySelector(".reply-review-result"));
     assert.deepEqual(batches[0].body.parts, [{ kind: "text", content: "您的包裹今天已送达。" }]);
   } finally { await context.close(); }
 });
@@ -243,7 +265,7 @@ test("the total delivery budget includes native card references after text", asy
     await finish(Array.from({ length: 8 }, () => "R".repeat(2000)), ["order-1"]);
     const panel = page.getByRole("region", { name: "回复审阅" });
     await panel.getByLabel("物流卡片", { exact: true }).waitFor();
-    assert.equal(await panel.getByRole("button", { name: "预演交付顺序", exact: true }).isDisabled(), true);
+    assert.equal(await panel.getByRole("button", { name: "审阅整组发送", exact: true }).isDisabled(), true);
   } finally { await context.close(); }
 });
 
@@ -261,56 +283,4 @@ test("batch review keeps keyboard focus inside and Escape cancels without delive
     await dialog.waitFor({ state: "hidden", timeout: 1500 });
     assert.equal(batches.length, 0);
   } finally { await context.close(); }
-});
-
-test("notification preview uses a current buyer CRM order UUID and never submits delivery", async () => {
-  const order = { id: "00000000-0000-4000-8000-000000000501", external_order_id: "EXTERNAL-ORDER-1", status: "IN_TRANSIT", payment_status: "paid", currency: "USD", total_amount: "1.00", payment_breakdown: {}, ordered_at: "2026-10-29T00:00:00Z", paid_at: null, tracking_number: null, tracking_status: null, items: [], live_detail_available: false };
-  const { context, page, notificationRequests, batches } = await openReview({ orders: [order] });
-  try {
-    await page.getByText("物流更新通知预演", { exact: true }).click();
-    const section = page.getByRole("region", { name: "物流通知审阅", exact: true });
-    await section.getByRole("combobox", { name: "当前买家已同步订单", exact: true }).selectOption(order.id);
-    await section.getByRole("button", { name: "预演物流更新通知", exact: true }).click();
-    await section.getByText("Your parcel arrived today.", { exact: true }).waitFor();
-    await section.getByText(/预演成功.*未向买家发送/).waitFor();
-    assert.deepEqual(notificationRequests, [{ store_id: "store-1", conversation_id: sessionId, order_id: order.id }]);
-    assert.equal(batches.length, 0);
-    await section.getByText(/全局通知未启用/).waitFor();
-  } finally { await context.close(); }
-});
-
-test("notification preview never substitutes an external order number for an unsynced CRM order", async () => {
-  const { context, page, notificationRequests } = await openReview();
-  try {
-    await page.getByText("物流更新通知预演", { exact: true }).click();
-    const section = page.getByRole("region", { name: "物流通知审阅", exact: true });
-    await section.getByText(/暂无已同步并核验的 CRM 订单/).waitFor();
-    assert.equal(await section.getByRole("button", { name: "预演物流更新通知", exact: true }).isDisabled(), true);
-    assert.equal(notificationRequests.length, 0);
-  } finally { await context.close(); }
-});
-
-test("closing notification review discards a late preview and reopening remains usable", async () => {
-  const order = { id: "00000000-0000-4000-8000-000000000501", external_order_id: "EXTERNAL-ORDER-1", status: "IN_TRANSIT", payment_status: "paid", currency: "USD", total_amount: "1.00", payment_breakdown: {}, ordered_at: "2026-10-29T00:00:00Z", paid_at: null, tracking_number: null, tracking_status: null, items: [], live_detail_available: false };
-  const { context, page } = await openReview({ orders: [order] });
-  let release;
-  let started;
-  const pending = new Promise((resolve) => { started = resolve; });
-  const hold = new Promise((resolve) => { release = resolve; });
-  await page.route("**/v1/agents/logistics-notifications/preview", async (route) => { started(); await hold; await route.fallback(); });
-  try {
-    const toggle = page.getByText("物流更新通知预演", { exact: true });
-    await toggle.click();
-    const section = page.getByRole("region", { name: "物流通知审阅", exact: true });
-    await section.getByRole("combobox", { name: "当前买家已同步订单", exact: true }).selectOption(order.id);
-    await section.getByRole("button", { name: "预演物流更新通知", exact: true }).click();
-    await pending;
-    await toggle.click();
-    await toggle.click();
-    await section.getByRole("button", { name: "预演物流更新通知", exact: true }).waitFor({ timeout: 1500 });
-    assert.equal(await section.getByRole("button", { name: "预演物流更新通知", exact: true }).isEnabled(), true);
-    release();
-    await page.waitForResponse((response) => response.url().endsWith("/logistics-notifications/preview"));
-    assert.equal(await section.getByText("Your parcel arrived today.", { exact: true }).count(), 0);
-  } finally { release(); await context.close(); }
 });

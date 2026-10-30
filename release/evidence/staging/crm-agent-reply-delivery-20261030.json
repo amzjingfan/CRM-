@@ -1,0 +1,268 @@
+{
+  "task_id": "MVP-AGENT-REPLY-STAGING-001",
+  "integration_subject_sha": "fe4cf4b8a7977d43cebdc711e38b302b7afe7d06",
+  "release_source_sha": "d111d164a709ab790f5926a4dfd339f909180e25",
+  "release_base_sha": "d6f8974624f64b8bec30d47f33b4a79b3f42d21d",
+  "main_integration_base_sha": "1da8d1528e0bbf542e4e849129904b3ae1f9b618",
+  "production_release": false,
+  "release_excludes_unapproved_pr646_and_044": true,
+  "schema_head": "043_logistics_updates",
+  "images": [
+    {
+      "name": "backend",
+      "archive_sha256": "833cc11703b4e7828b9395df7e88993ada81640401b3b15bed3011ce7b9d9a94",
+      "digest": "sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+      "image": "ghcr.io/cp11-gh/crm-backend@sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+      "tag": "ghcr.io/cp11-gh/crm-backend:agent-reply-d111d164-20261030"
+    },
+    {
+      "name": "frontend",
+      "archive_sha256": "8096e6bf85baf9efad116254bb0345ad8a87f72614352796e9f9554e08981a18",
+      "digest": "sha256:c54f7b4bc336825a3309d0bd3af2659a076210115ac9169a55b78792665dc85e",
+      "image": "ghcr.io/cp11-gh/crm-frontend@sha256:c54f7b4bc336825a3309d0bd3af2659a076210115ac9169a55b78792665dc85e",
+      "tag": "ghcr.io/cp11-gh/crm-frontend:agent-reply-d111d164-20261030"
+    }
+  ],
+  "runtime": {
+    "healthy_running_services": 12,
+    "production_release": false,
+    "rows": [
+      {
+        "service": "crm-staging-proxy-1",
+        "image": "nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+        "revision": null,
+        "health": "healthy"
+      },
+      {
+        "service": "crm-staging-frontend-1",
+        "image": "ghcr.io/cp11-gh/crm-frontend@sha256:c54f7b4bc336825a3309d0bd3af2659a076210115ac9169a55b78792665dc85e",
+        "revision": "d111d164a709ab790f5926a4dfd339f909180e25",
+        "health": "healthy"
+      },
+      {
+        "service": "crm-staging-agent-worker-1",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+        "revision": "d111d164a709ab790f5926a4dfd339f909180e25",
+        "health": "running",
+        "flags": {
+          "LLM_ENABLED": false,
+          "AGENT_DEBUG_ENABLED": false,
+          "AGENT_V2_DEBUG_ENABLED": false,
+          "AGENT_V2_FORMAL_ENABLED": false,
+          "AUTO_REPLY_ENABLED": false,
+          "AI_MARKETING_ENABLED": false,
+          "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": false,
+          "LLM_LIVE_EVAL": false,
+          "LOGISTICS_NOTIFICATIONS_ENABLED": false,
+          "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED": false
+        }
+      },
+      {
+        "service": "crm-staging-jobs-1",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+        "revision": "d111d164a709ab790f5926a4dfd339f909180e25",
+        "health": "running",
+        "flags": {
+          "LLM_ENABLED": false,
+          "AGENT_DEBUG_ENABLED": false,
+          "AGENT_V2_DEBUG_ENABLED": false,
+          "AGENT_V2_FORMAL_ENABLED": false,
+          "AUTO_REPLY_ENABLED": false,
+          "AI_MARKETING_ENABLED": false,
+          "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": false,
+          "LLM_LIVE_EVAL": false,
+          "LOGISTICS_NOTIFICATIONS_ENABLED": false,
+          "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED": false
+        }
+      },
+      {
+        "service": "crm-staging-backend-1",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+        "revision": "d111d164a709ab790f5926a4dfd339f909180e25",
+        "health": "healthy",
+        "flags": {
+          "LLM_ENABLED": true,
+          "AGENT_DEBUG_ENABLED": true,
+          "AGENT_V2_DEBUG_ENABLED": true,
+          "AGENT_V2_FORMAL_ENABLED": true,
+          "AUTO_REPLY_ENABLED": false,
+          "AI_MARKETING_ENABLED": false,
+          "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": false,
+          "LLM_LIVE_EVAL": false,
+          "LOGISTICS_NOTIFICATIONS_ENABLED": false,
+          "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED": false
+        }
+      },
+      {
+        "service": "crm-staging-worker-1",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+        "revision": "d111d164a709ab790f5926a4dfd339f909180e25",
+        "health": "running",
+        "flags": {
+          "LLM_ENABLED": false,
+          "AGENT_DEBUG_ENABLED": false,
+          "AGENT_V2_DEBUG_ENABLED": false,
+          "AGENT_V2_FORMAL_ENABLED": false,
+          "AUTO_REPLY_ENABLED": false,
+          "AI_MARKETING_ENABLED": false,
+          "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": false,
+          "LLM_LIVE_EVAL": false,
+          "LOGISTICS_NOTIFICATIONS_ENABLED": false,
+          "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED": false
+        }
+      },
+      {
+        "service": "crm-staging-tiktok-egress-1",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:18f686d5bbde8144bb9472bef77390aa93eb4d9a50d143532251402df9e6bc5c",
+        "revision": "d111d164a709ab790f5926a4dfd339f909180e25",
+        "health": "healthy"
+      },
+      {
+        "service": "crm-staging-document-parser-1",
+        "image": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+        "revision": "69f32427395baeef310f37c78455efdd60ecc456",
+        "health": "running"
+      },
+      {
+        "service": "crm-staging-retrieval-model-service-1",
+        "image": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+        "revision": "33d80bd4acc1dfb9c93ec687086ee466d99682c6",
+        "health": "healthy"
+      },
+      {
+        "service": "crm-staging-postgres-1",
+        "image": "pgvector/pgvector:0.8.0-pg16@sha256:a132765ec351c65111b5b675928a3a0515a466a40f97277329db8b8209ad8bc9",
+        "revision": null,
+        "health": "healthy"
+      },
+      {
+        "service": "crm-staging-minio-1",
+        "image": "minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e",
+        "revision": null,
+        "health": "healthy"
+      },
+      {
+        "service": "crm-staging-redis-1",
+        "image": "redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952",
+        "revision": null,
+        "health": "healthy"
+      }
+    ]
+  },
+  "local_release": {
+    "backend_passed": 2712,
+    "backend_skipped": 3,
+    "frontend_contract": 55,
+    "frontend_browser": 158,
+    "focused_final_browser": 14,
+    "dynamic_contract": 16,
+    "safety_samples": 237
+  },
+  "local_integration": {
+    "backend_passed": 2731,
+    "backend_skipped": 3,
+    "frontend_contract": 55,
+    "frontend_browser": 161,
+    "mypy_files": 284,
+    "ruff_files": 450,
+    "initial_flaky_timeout_test_failure_retained": true
+  },
+  "live": {
+    "tool_counts": [
+      {
+        "tool": "query_logistics",
+        "status": "failed",
+        "mocked": false,
+        "count": 1
+      },
+      {
+        "tool": "query_logistics",
+        "status": "succeeded",
+        "mocked": false,
+        "count": 15
+      },
+      {
+        "tool": "query_order",
+        "status": "succeeded",
+        "mocked": false,
+        "count": 4
+      },
+      {
+        "tool": "search_customer_orders",
+        "status": "succeeded",
+        "mocked": false,
+        "count": 18
+      },
+      {
+        "tool": "search_knowledge",
+        "status": "succeeded",
+        "mocked": false,
+        "count": 17
+      }
+    ],
+    "rag_active_version": 2,
+    "rag_chunks": 1,
+    "embedding_model": "BAAI/bge-m3",
+    "all_recorded_citations_match_bound_approved_v2": true,
+    "original_message_hashes_preserved": 26,
+    "outbound_before": 26,
+    "outbound_after": 26
+  },
+  "public_browser_final": {
+    "english": true,
+    "chinese": true,
+    "ordered_text_then_card": true,
+    "temporary_preview_controls_absent": true,
+    "native_operator_draft_seen_before_result": true,
+    "review_dialog_opened_then_cancelled": true,
+    "real_send_performed": false
+  },
+  "cleanup": {
+    "synthetic_messages_removed": 16,
+    "synthetic_memory_removed": true,
+    "real_messages_preserved": 26,
+    "outbound_after": 26,
+    "file_soft_deleted": true,
+    "fixture_unbound": true,
+    "published_version": 13,
+    "model_tools_and_six_other_prompt_sections_preserved": true,
+    "desired_output_policy_preserved": true,
+    "category_preserved": true,
+    "platform_send_performed": false,
+    "recoverable_backup": true
+  },
+  "remaining_risks": [
+    "model routing/review can still fail and require retry",
+    "real buyer delivery/automatic notifications not tested",
+    "only synthetic Markdown import this round",
+    "backup readability checked; no whole-database restore drill"
+  ],
+  "records": {
+    "IR": "docs/records/implementation/IR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md",
+    "TR": "docs/reports/tests/TR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md",
+    "RR": "docs/reports/reviews/RR-MVP-AGENT-REPLY-STAGING-001-20261030-R01.md"
+  },
+  "ci": {
+    "status": "NOT_RUN_ZERO_STEPS",
+    "source_head_sha": "fe4cf4b8a7977d43cebdc711e38b302b7afe7d06",
+    "run_id": 40987062327,
+    "jobs": [
+      {
+        "id": 123840441914,
+        "name": "Frontend quality gates",
+        "conclusion": "failure",
+        "runner_id": 0,
+        "steps": 0
+      },
+      {
+        "id": 123840441945,
+        "name": "Backend quality gates",
+        "conclusion": "failure",
+        "runner_id": 0,
+        "steps": 0
+      }
+    ],
+    "final_evidence_head_audit": "PR647 merge gate"
+  },
+  "updated_at": "2026-10-30T01:38:11.618174+00:00"
+}

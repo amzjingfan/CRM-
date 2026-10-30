@@ -76,6 +76,16 @@ async function openAgentPage(options = {}) {
   return { context, page, writes };
 }
 
+test("temporary preview auto-send switch is absent and real Agent settings remain", async () => {
+  const { context, page, writes } = await openAgentPage();
+  try {
+    assert.equal(await page.getByRole("switch", { name: "自动发送原型演示", exact: true }).count(), 0);
+    assert.equal(await page.getByText("模拟自动发送", { exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "保存配置", exact: true }).isEnabled(), true);
+    assert.equal(writes.length, 0);
+  } finally { await context.close(); }
+});
+
 test("Agent prototype tabs, store isolation and bound files", async () => {
   const { context, page, writes } = await openAgentPage();
   try {

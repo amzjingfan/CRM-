@@ -109,3 +109,36 @@ async def test_unsupported_streamed_draft_never_becomes_final_reply_parts():
     )
     assert seen == ["A guaranteed refund."]
     assert result.content is None and result.reply_parts == ()
+
+
+@pytest.mark.asyncio
+async def test_rejected_part_rebuilds_one_complete_answer_instead_of_repeating_it_per_part():
+    class Regenerating(BatchModel):
+        def __init__(self):
+            super().__init__(["Rejected partial delivery answer.", "Rejected partial policy answer."])
+            self.generations = []
+
+        async def complete(self, *, messages, tools, max_output_tokens):
+            payload = json.loads(messages[-1]["content"])
+            if not tools:
+                self.generations.append(payload)
+                return ToolTurn("Latest delivery is verified. The guide lists three materials.", (), {}, 2, 1)
+            result = accepted_review_turn(messages)
+            if payload["answer"] in self.parts:
+                result.calls[0].arguments.update(supported=False, reason_code="unsupported", evidence_ids=[])
+            return result
+
+    model = Regenerating()
+    model.release.set()
+    result = await aggregate_reply_plan(
+        question="Latest delivery and guide materials?",
+        results=(SpecialistResult(uuid.uuid4(), "Expert draft", verified_facts={"status": "delivered"}),),
+        provider=model,
+        deadline=time.monotonic() + 3,
+        store_id=uuid.uuid4(),
+        on_draft=lambda *_: asyncio.sleep(0),
+    )
+    assert result.reply_parts == ("Latest delivery is verified. The guide lists three materials.",)
+    assert len(model.generations) == 1
+    assert model.generations[0]["question"] == "Latest delivery and guide materials?"
+    assert "Rejected partial" not in json.dumps(model.generations)

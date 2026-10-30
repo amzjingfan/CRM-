@@ -184,14 +184,19 @@ async def test_cancellation_keeps_completed_tool_progress_and_stops_provider() -
 
 
 @pytest.mark.asyncio
-async def test_timeout_carries_completed_tool_progress_to_the_worker() -> None:
+async def test_timeout_carries_completed_tool_progress_to_the_worker(monkeypatch) -> None:
     from langchain_core.tools import tool
 
-    from app.agents.tools.loop import run_tool_loop
+    from app.agents.tools import loop
+
+    clock = [0.0]
+    monkeypatch.setattr(loop, "time", SimpleNamespace(monotonic=lambda: clock[0]))
 
     @tool
     async def read_order() -> dict:
         """读取合成订单状态。"""
+        # 在工具成功后推进逻辑时钟，避免机器负载耗尽20ms而误测成工具自身超时。
+        clock[0] = 2.0
         return {"status": "succeeded", "facts": {"status": "shipped"}}
 
     class Model:
@@ -201,8 +206,8 @@ async def test_timeout_carries_completed_tool_progress_to_the_worker() -> None:
             await asyncio.sleep(30)
 
     with pytest.raises(TimeoutError) as caught:
-        await run_tool_loop(
-            provider=Model(), messages=(), tools=(read_order,), deadline=time.monotonic() + 0.02, max_output_tokens=1024
+        await loop.run_tool_loop(
+            provider=Model(), messages=(), tools=(read_order,), deadline=1.0, max_output_tokens=1024
         )
     partial = getattr(caught.value, "result", None)
     assert partial is not None
