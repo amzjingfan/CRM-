@@ -1,6 +1,6 @@
 # 项目状态与恢复入口
 
-2026-10-30；治理档位 STANDARD；TikTok 人工辅助；CP11-gh/CRM；origin/main；证据分支 feature/all-store-manual-send-20261030，`CANDIDATE_SUBJECT_SHA=18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`；任务状态以 [TASKS](../tasks/TASKS.md) 为准。staging 从干净合并主线 `18a0d7bb` 的同版不可变镜像手动扩展人工发送至两家已授权 TikTok 店铺，迁移头 `044_reception_assignment`。精确镜像、私有备份、ValidateOnly/Deploy、12 容器、固定出口、三健康及只读发送模式见 [全店人工发送证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)和 [TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md)。任务待证据合并收尾，production 未发布。
+2026-10-30；治理档位 STANDARD；TikTok 人工辅助；CP11-gh/CRM；origin/main；`CANDIDATE_SUBJECT_SHA=18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`；任务状态以 [TASKS](../tasks/TASKS.md) 为准。staging 从干净合并主线 `18a0d7bb` 的同版不可变镜像手动扩展人工发送至两家已授权 TikTok 店铺，迁移头 `044_reception_assignment`。精确镜像、私有备份、ValidateOnly/Deploy、12 容器、固定出口、三健康及只读发送模式见 [全店人工发送证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)和 [TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md)。发布证据 PR #658 已合入主线 `a3380c7e`，任务完成；三索引从权威主线源记录重建为 `CURRENT`。production 未发布。
 
 此前部门接待与派单从干净主线 `b21f59a76adce8775eb5f9d61993e3b42886d72a` 发布，部门现场与清理事实见[部门发布证据](../../release/evidence/staging/crm-staging-department-assignment-20261030.json)和[TR R02](../reports/tests/TR-MVP-DEPARTMENT-AUTO-ASSIGN-001-20261030-R02.md)。PR #654/#655 已合入主线；全店人工发送由后续独立发布扩展。
 
@@ -16,4 +16,4 @@
 
 Workspace hygiene: ATTENTION。主 checkout 的未知历史、活动 worktree 和未跟踪 `src/frontend/AGENTS.md` 保留；此前对此文件的移除操作被自动批准审查拒绝，本轮未重试。本次仅清理用户精确指定的 staging 账号与店铺，未清理本地未知文件。
 
-下一动作：①合并全店人工发送证据并将任务标记 DONE；②如需证明真实授权体验，在已登录测试店铺执行 OAuth 回跳与多店选择；③若准备常态启用自动派单，在受控平台会话补测真实入站。
+下一动作：①若新增已授权店铺，重新核对渠道并更新人工发送 allowlist；②如需证明真实授权体验，在已登录测试店铺执行 OAuth 回跳与多店选择；③若准备常态启用自动派单，在受控平台会话补测真实入站。
