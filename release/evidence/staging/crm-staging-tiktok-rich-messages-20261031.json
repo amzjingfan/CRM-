@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-WORKSPACE-TIKTOK-RICH-MESSAGES-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "d67078db7445b1ef71a35af095075b1280f0d70c",
+  "implementation_subject_sha": "60265d6566fca45ef1196ac777ea281be0662016",
+  "source_pull_request": 678,
+  "previous_runtime_source_sha": "fbacb37299c4793ef166b2123e111b24095001b0",
+  "source_bundle_sha256": "818940ceed53ef21c1cf4e08c05525dc0a300b63f37e70eb3684a5a10b4e9fcd",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:1ad9b54ad547b8faf38ca6daca3f9e61552ad6635e7bb21b6d101e19bb687c56",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:f1e11dd603d51299432f9876628cf4a00bb3a5d3cae15c2394c917dd3d7cf088",
+    "backend_previous": "ghcr.io/cp11-gh/crm-backend@sha256:48b30c279535490a20c613bdfd549dda4aa1d19625536f85da45af690cf6a0ac",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:dfa4e097c80c67ac1d2f68a136a42145c8273d0b37fff6133354a51fb2688aca",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "backend_and_frontend_oci_revision": "d67078db7445b1ef71a35af095075b1280f0d70c",
+    "image_transfer_tar_sha256": "5cc1b75de78e102193f6610170ec990913309062b01e71a4279fc80d78622997"
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/.local/share/crm-staging-backups/tiktok-rich-d67078db-20261031",
+    "postgres_custom_dump_sha256": "17058d3f5080ec147e24d97523afac95e72fb0fb7c4c65f702b606c6d1272686",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "eab19bfe4258740fdea144f9c04d08dbe26d8896b73732395872cf777d83342f",
+    "minio_archive_readable": true,
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "permissions": "0700 directory; 0600 backup files"
+  },
+  "gate": {
+    "wrapper_sha256": "e453c9253b2d912e0dd7b297c4036d8ebe5c85a018aa16b18e93446d9ae5380d",
+    "previous_validate_sha256": "8c3d34158f6afb5505f3f9ad8ffedd6181b6df9965c3b2b6655bc2ff219bf4aa",
+    "candidate_validate_sha256": "83cf6804acaf2e71cbec6bf575d3b3de084833c36327898fdc0462f8891d0292",
+    "candidate_deploy_sha256": "3c679e07905c644444d6444fcfcb6d2e7a2d60b8bb8c2004160ac9b13243429a",
+    "previous_validate_status": "validated",
+    "candidate_validate_status": "validated",
+    "candidate_deploy_status": "passed",
+    "migration": "046_merge_templates_dispatch (head)"
+  },
+  "runtime_after": {
+    "services_running_or_healthy": 12,
+    "frontend_and_backend_image_digests_match": true,
+    "manual_send_allowed_store_count_unchanged": 2,
+    "manual_send": true,
+    "webhook_read": true,
+    "agent_debug_and_formal_suggestions": true,
+    "document_ingestion": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false,
+    "tiktok_egress_ip": "38.55.145.52"
+  },
+  "later_runtime_observation": {
+    "reason": "parallel_agent_template_frontend_rollout",
+    "backend_still_release_digest": true,
+    "frontend_current_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:1a235bf2a916176e3f028945daf5d3eb20ace7b9ca97cfdc1c806048368d8df0",
+    "frontend_oci_revision": "a0d9938e0441fb5848a51635a33dbbb27bd776a4",
+    "frontend_revision_descends_from_release_source": true,
+    "public_health_paths_still_200": true
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "workspace": 200
+  },
+  "historical_backfill": {
+    "initial_placeholder_count": 4301,
+    "tiktok_us_initial_placeholder_count": 189,
+    "xbm_initial_placeholder_count": 4112,
+    "tiktok_us_list_conversations_processed": 180,
+    "tiktok_us_remaining_placeholder_count": 0,
+    "xbm_list_conversations_processed": 1000,
+    "xbm_list_sync_new_local_messages": 2,
+    "xbm_after_list_sync_remaining_placeholder_count": 150,
+    "xbm_unlisted_old_conversations": 31,
+    "xbm_direct_conversation_refresh_count": 31,
+    "xbm_direct_refresh_new_local_messages": 0,
+    "xbm_direct_refresh_errors": 0,
+    "xbm_remaining_placeholder_count": 0,
+    "final_type_display_counts": {
+      "xbm": {"image": 43, "video": 2, "emoticons": 3, "product_card": 11, "order_card": 1142, "logistics_card": 2945},
+      "tiktok_us": {"image": 38, "video": 3, "product_card": 2, "order_card": 35, "logistics_card": 105, "buyer_enter_from_order": 6}
+    }
+  },
+  "authenticated_ui_check": "Live staging workspace AX and screenshots show real buyer photo and product card image/price, order and logistics cards, two video players with frames, and one video played to 0:12/0:12. Signed URL playback after expiry was not tested.",
+  "ghcr_credentials_logged_out_local_and_staging": true,
+  "test_actions_sent_real_buyer_messages": false
+}

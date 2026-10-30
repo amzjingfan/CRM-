@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-31 TikTok 富消息修复 [TR R02](../reports/tests/TR-MVP-WORKSPACE-TIKTOK-RICH-MESSAGES-001-20261031-R02.md) **PASS（staging）**：合并主线 `d67078db` 的前后端精确镜像、私有备份、双 ValidateOnly/Deploy、046、12 服务和公网四条路径通过；已登录工作台实际看到买家图片、商品、订单、物流卡片和两个视频播放器。两家授权店原 4301 条旧类型占位经官方只读列表与单会话补录后均清零，定向旧会话处理没有新增本地消息或错误；完整数量见[机器证据](../../release/evidence/staging/crm-staging-tiktok-rich-messages-20261031.json)。人工发送范围未变、自动发送关闭、零真实买家测试外发，production No-Go。
+
 2026-10-30 管理员接待资格与旧登录标识 [TR R02](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md) **PASS（staging 门禁与运行服务只读核对）**：合并主线 `476cc8d5` 精确镜像、私有备份、旧/新预检、Deploy、045、12 服务、固定出口和五个公开路径通过；主管目录可见旧管理员登录标识、联系方式仍隐藏，管理员在部门两店有回复资格且默认未参与派单。登录态视觉检查 `UI_UNAVAILABLE`，真实入站未演练；不把这些项记为通过。自动发送关闭，production No-Go。
 
 2026-10-30 管理员派单资格与旧登录账号显示[TR R01](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R01.md) **PASS（本地候选）**：`ae947878` 的隔离 PostgreSQL 权限/派单集成通过，后端 2730 passed/3 skipped、前端契约 55/55、生产构建浏览器 166/166、Ruff/格式/mypy、lint/typecheck/build 通过。主管账号目录显示旧邮箱登录标识，联系方式仍隐藏；管理员须部门成员、显式参与并在线才进入派单。staging 待从合并主线部署，真实入站未演练，production No-Go。
