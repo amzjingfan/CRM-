@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-30 部门角色 UI [staging 发布 TR R01](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md) **PASS**：精确前端镜像、私有备份、双预检/部署、044、12 服务和五个公网路径通过；已登录账号“更多”菜单三项直接可见，删除当前管理员禁用。原功能 subject 的浏览器 56/56、前端 55/55、后端 2658 通过/77 跳过；连接测试店合成入站事务回滚零外发零残留。真实 TikTok webhook 未演练，production No-Go。见[低敏证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)。
+
 2026-10-30 全店人工发送 [TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md) **PASS（staging 配置及只读发送模式）**：现存三店中两家已接入 TikTok 客服渠道，原运行 `18a0d7bb` 同版镜像以精确摘要经私有备份、ValidateOnly/Deploy 发布；各店抽样两条活动会话为 `real`，未接入店失败关闭。044、12 容器、固定出口、三健康通过，自动回复/营销/高风险写入及其他应用进程的平台写入均关闭。合成两坐席并发派单与清理通过；未测试真实买家发送或 TikTok 入站派单。见[低敏证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)。
 
 2026-10-30 TikTok 授权单入口 [发布 TR R01](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md) PASS（限定 staging 部署）：源码 `18a0d7bb`，两项镜像发布工作流零步骤失败后按既有本地替代门禁构建/推送；备份、精确摘要、ValidateOnly/Deploy、044、12 服务、模式开关、五个页面和三个公网健康、指纹 JS 均通过。新部署 bundle 无旧 OAuth 卡片标题，店铺页保留添加入口，4 项 OAuth 契约复测通过。真实 OAuth、已登录交互和生产发布未执行；见[低敏证据](../../release/evidence/staging/crm-staging-oauth-single-entry-20261030.json)。

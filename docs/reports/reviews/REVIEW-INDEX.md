@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01 | MVP-DEPARTMENT-ROLE-UI-STAGING-001 | R01 | APPROVE | `eb76837823f9e200f47db4a7786d4e91a94f9997` | release_source, authorization_scope, store_isolation, backup, rollback, runtime_mode, no_external_send | 2026-10-30T07:00:55Z | [`RR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md`](RR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md) |
 | RR-MVP-DEPARTMENT-ROLE-UI-002-20261030-R01 | MVP-DEPARTMENT-ROLE-UI-002 | R01 | APPROVE | `0fb8202f5b39b77e085228b3dd6acc64ecf88c35` | correctness, store_isolation, authorization, no_external_send, test_cleanup | 2026-10-30T14:09:20+08:00 | [`RR-MVP-DEPARTMENT-ROLE-UI-002-20261030-R01.md`](RR-MVP-DEPARTMENT-ROLE-UI-002-20261030-R01.md) |
 | RR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01 | MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001 | R01 | APPROVE | `18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec` | store_isolation, scope, fail_closed, backup, release, no_external_send, test_cleanup | 2026-10-30T04:10:46+00:00 | [`RR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md`](RR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md) |
 | RR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01 | MVP-TIKTOK-OAUTH-UX-STAGING-001 | R01 | APPROVE | `18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec` | release_source, authorization_scope, store_isolation, backup, rollback, runtime_mode, no_external_send | 2026-10-30T04:04:03Z | [`RR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md`](RR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md) |

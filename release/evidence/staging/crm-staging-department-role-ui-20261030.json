@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-DEPARTMENT-ROLE-UI-STAGING-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "eb76837823f9e200f47db4a7786d4e91a94f9997",
+  "approved_implementation_sha": "0fb8202f5b39b77e085228b3dd6acc64ecf88c35",
+  "previous_runtime_source_sha": "18a0d7bb0b0ca6b2bb601de32af7128d1a41a9ec",
+  "source_archive_sha256": "06328e2d877d2c9f2b094976dcc3b1de64aedd7c7c7a9262171ee65270d3f32a",
+  "frontend_transfer_archive_sha256": "e3810086ab6717b056aca5a439181090788755d6d49172ac0dd18935cc809f8c",
+  "images": {
+    "previous_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:45fbdee0d2845f09cf7c6fea1792455d706f3f5ad723239c6127d407bd9dd1bb",
+    "deployed_frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:903acf1a00e10503998024e72e29fe92ed59f337b05d87dd1c8436c610174860",
+    "unchanged_backend": "ghcr.io/cp11-gh/crm-backend@sha256:cc323ea983fb42f0cb1d9753fa10486e1fa2028db69f003dc9ff1b8a499808b4",
+    "unchanged_retrieval": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "unchanged_document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "frontend_oci_revision": "eb76837823f9e200f47db4a7786d4e91a94f9997"
+  },
+  "backup": {
+    "private_server_directory": "/home/crmdeploy/.local/share/crm-staging-backups/department-ui-eb768378-20261030-1425",
+    "postgres_custom_dump_sha256": "a107d0366f6e7d8c69184fe565c51f961cec49c197e38f815f6b64b46267c968",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "053381a9bd7d996bb0991a413fe4cae3395df645fa47f87f6c12345a13743576",
+    "minio_archive_readable": true,
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "permissions": "0700 directory, 0600 files"
+  },
+  "staging_gate": {
+    "current_validate_status": "validated",
+    "current_validate_sha256": "88573d106b9a96f526e7eadb49e8fa5c85a5758de6bcb330ffcea15d5c9d5b00",
+    "candidate_validate_status": "validated",
+    "candidate_validate_sha256": "3976b980f33b2d6348a0fd285aa4f2c935b706a5b79b8045d5bf214793e9b8c1",
+    "candidate_deploy_status": "passed",
+    "candidate_deploy_sha256": "2dcb6d532d59b0bf9573a8ca81b1cf4c28bbcca157897bb5b868944880bffabf",
+    "database_migration": "044_reception_assignment (head)",
+    "production_release": false
+  },
+  "runtime_after": {
+    "running_or_healthy_services": 12,
+    "backend_manual_send_store_count": 2,
+    "tiktok_read_and_webhook": true,
+    "manual_send": true,
+    "agent_debug_and_formal_suggestions": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "settings_team": 200,
+    "settings_team_departments": 200
+  },
+  "evidence_pr_ci": {
+    "pull_request": 662,
+    "run_id": 41018105080,
+    "backend_job_id": 123938923830,
+    "frontend_job_id": 123938923382,
+    "result": "both_failure_before_runner_steps; runner_name_empty; steps_zero; local_substitute_gate_used"
+  },
+  "authenticated_ui_check": "Admin account More menu showed all three actions without table scroll; Delete action disabled for current admin.",
+  "synthetic_assignment_test": "Connected staging test shop, transaction rolled back, zero buyer sends and zero test-row residue; genuine TikTok webhook not exercised.",
+  "real_buyer_message_sent": false,
+  "temporary_ghcr_credentials_logged_out_local_and_staging": true,
+  "ghcr_transfer_note": "Remote pull initially stalled; exact-digest image transferred as verified Docker archive, loaded, then pull and RepoDigest verification succeeded before deployment."
+}

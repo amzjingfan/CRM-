@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-10-30 部门角色 UI 从主线 `eb768378` 的前端镜像发布 staging；旧/新模式 ValidateOnly、私有备份、Deploy、044、12 服务、五个公网路径和已登录账号菜单现场检查通过。后端与全部安全开关未变，零外发；真实 TikTok 入站未验证，G8 production 继续 No-Go。见[TR](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md)和[证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)。
+
 2026-10-30 staging 已在 `18a0d7bb` 同版镜像上扩展人工发送至两家已授权 TikTok 店铺；未接入店铺失败关闭，自动回复/营销/高风险写入关闭。私有备份、ValidateOnly/Deploy、044、12 容器、固定出口、三健康和逐店只读模式通过，零真实买家测试外发。合成两坐席派单与清理通过，真实 TikTok 入站未验证；G8 production 仍 No-Go。见[TR R01](../reports/tests/TR-MVP-TIKTOK-ALL-STORE-MANUAL-SEND-001-20261030-R01.md)和[发布证据](../../release/evidence/staging/crm-staging-all-store-manual-send-20261030.json)。
 
 2026-10-30 TikTok 授权单入口修复已在 staging 从主线 `18a0d7bb` 发布；镜像、备份、部署门禁、12 服务、044、固定出口、公网页面及静态资源核对通过，原单店人工发送范围未扩大，自动回复/营销/高风险写入关闭。真实 OAuth 回跳及已登录店铺点击未在本轮执行，G1 既有口径和 G8 production No-Go 不变。见 [TR](../reports/tests/TR-MVP-TIKTOK-OAUTH-UX-STAGING-001-20261030-R01.md) 与[证据](../../release/evidence/staging/crm-staging-oauth-single-entry-20261030.json)。
