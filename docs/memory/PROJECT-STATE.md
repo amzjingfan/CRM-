@@ -8,7 +8,7 @@
 
 2026-10-30 此前 staging 从主线 `eb76837823f9e200f47db4a7786d4e91a94f9997` 发布部门角色、逐店派单摘要、账号部门选择与菜单可见性修复；前端新摘要 `903acf1a…74860`，后端原摘要不变。私有备份、双 ValidateOnly、Deploy、044、12 服务、五个公网路径和已登录账号菜单通过。低敏[发布证据](../../release/evidence/staging/crm-staging-department-role-ui-20261030.json)及[TR](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-STAGING-001-20261030-R01.md)。人工发送范围与安全开关未变，零外发，production No-Go；`CANDIDATE_SUBJECT_SHA=eb76837823f9e200f47db4a7786d4e91a94f9997`，`EVIDENCE_HEAD_SHA=READ_AT_GATE`。发布证据 PR #662 已合入主线 `9d8264689f5445a87557f6b3ce4423e3a49cf1ad`；三索引已从权威主线源记录重建为 `CURRENT`。
 
-Agent模板最终本地验收完成（2026-10-30）：MVP-AGENT-TEMPLATE-BATCH-001，feature/agent-template-batch-20261030，CANDIDATE_SUBJECT_SHA=a8ef79964e9596a5f29d1974c0003d9131013221，EVIDENCE_HEAD_SHA=READ_AT_GATE，BASE1eb6dbd1，已整合主线476及046合流。最终a8重新运行后端2970pass/5条件skip、专库2pass、Ruff566/mypy302/锁/16动态/237安全，以及前端74contract/类型/lint0error8旧warning/build与209 production浏览器0skip，全部通过。Agent路径与831相同，V1/V2/V3真实关页后台、重开attempt1、本店覆盖与历史证据明确复用。55自有合成行已私有备份后清理，247非自有审计保留，备份未演练恢复。新前端由正常工具启动并停止，未用服务器密钥。IR/TR/RR R02为FINAL/PASS/APPROVE，R01原历史保留；三索引CANDIDATE_VIEW，产品PR #674待精确head门禁合并，任务VERIFYING。未知AGENTS及CLEANUP-20261030-002五cache双副本保留。未部署，部署另等批准。
+Agent模板最终本地验收完成（2026-10-30）：MVP-AGENT-TEMPLATE-BATCH-001，feature/agent-template-batch-20261030，CANDIDATE_SUBJECT_SHA=a8ef79964e9596a5f29d1974c0003d9131013221，EVIDENCE_HEAD_SHA=READ_AT_GATE，BASE1eb6dbd1，已整合主线476及046合流。最终a8重新运行后端2970pass/5条件skip、专库2pass、Ruff566/mypy302/锁/16动态/237安全，以及前端74contract/类型/lint0error8旧warning/build与209 production浏览器0skip，全部通过。Agent路径与831相同，V1/V2/V3真实关页后台、重开attempt1、本店覆盖与历史证据明确复用。55自有合成行已私有备份后清理，247非自有审计保留，备份未演练恢复。新前端由正常工具启动并停止，未用服务器密钥。IR/TR/RR R02为FINAL/PASS/APPROVE，R01原历史保留；产品PR #674已squash合入主线d62981d773325d102e301cbd9526b0cd9d9fa02f，合并源码与实测6f84证据头相同；精确head的CI两作业均runner_id=0/steps=0未运行，按持续批准本地替代。任务及隔离子任务DONE；三索引从权威主线d629全部源记录重建CURRENT。未知AGENTS及CLEANUP-20261030-002五cache双副本保留。未部署，部署另等批准。
 
 2026-10-30 部门角色、逐店派单摘要、账号部门选择和“更多”菜单完整显示已通过 PR #660 合入主线 `6b9b2bc450e54d88760ae33d31217055db5ec34c`；源码 subject `0fb8202f5b39b77e085228b3dd6acc64ecf88c35`，验证见 [TR R01](../reports/tests/TR-MVP-DEPARTMENT-ROLE-UI-002-20261030-R01.md)。前端生产构建浏览器回归 56 项通过，后端全量 2658 通过、77 跳过；staging 已连接测试店合成入站事务回滚，零外发、零残留。PR 两项 Actions 为 0 步骤失败，按本地替代门禁记录为 CI 未运行。此 UI 变更已从合并主线发布 staging，现场证据见首段。
 
@@ -28,4 +28,4 @@ Agent模板最终本地验收完成（2026-10-30）：MVP-AGENT-TEMPLATE-BATCH-0
 
 Workspace hygiene: ATTENTION。主 checkout 的未知历史、活动 worktree 和未跟踪 `src/frontend/AGENTS.md` 保留；此前对此文件的移除操作被自动批准审查拒绝，本轮未重试。本次仅清理用户精确指定的 staging 账号与店铺，未清理本地未知文件。
 
-下一动作：①唯一产品PR核对精确head CI/本地替代后合并；②合并后任务DONE并从权威主线源记录重建CURRENT索引；③部署等待用户独立批准。
+下一动作：①Agent模板部署等待用户独立批准；②保留本地合成备份与CLEANUP-20261030-002隔离双副本，不永久删除；③其他活动任务按TASKS独立推进。
