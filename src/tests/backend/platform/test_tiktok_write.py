@@ -179,6 +179,24 @@ async def test_send_logistics_card_uses_official_message_type_and_identifiers() 
 
 
 @pytest.mark.asyncio
+async def test_send_order_card_uses_native_type_and_only_verified_order_id() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body == {
+            "type": "ORDER_CARD",
+            "content": '{"order_id":"580874485811283206"}',
+            "sender_role": "CUSTOMER_SERVICE",
+        }
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        result = await TikTokMessageClient(real_write_settings(), connected_channel(), http_client).send_text_message(
+            command(message_type="order_card", card_order_id="580874485811283206", card_package_id="123456")
+        )
+    assert result.status == "sent"
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("message_type", "media_value", "width", "height", "expected"),
     [

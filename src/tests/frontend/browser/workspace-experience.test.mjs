@@ -36,7 +36,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   for (let index = 2; index < conversationCount; index++) records.push({ ...records[1], id: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`, unread_count: 0, customer: { ...records[1].customer, name: `Customer ${index}` } });
   const messages = Array.from({ length: messageCount }, (_, index) => ({ id: `message-${index}`, role: index % 2 ? "agent" : "user", content: `Message ${index}`, status: "received", created_at: new Date(Date.UTC(2026, 9, 20, 0, index)).toISOString(), error_code: null, delivery_mode: "inbound" }));
   if (fixtureOptions.richMessages) messages.splice(0, messages.length, ...fixtureOptions.richMessages);
-  const calls = { send: 0, cardSend: 0, mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, assign: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, activeOrderDetails: 0, maxActiveOrderDetails: 0, standardTracking: 0, extraDetailEvent: false, enhancedTracking: 0 };
+  const calls = { send: 0, cardSend: 0, orderCardSend: 0, orderCardPayloads: [], mediaUpload: 0, mediaSend: 0, mediaKeys: [], mediaPayloads: [], cardPayloads: [], sendFailures: 0, sentContent: [], transfer: 0, assign: 0, closed: [], closeFailures: 0, stage: [], translation: 0, trackingTranslations: 0, trackingFailure: false, translationDelay: 0, searchQueries: [], sidebarQueries: [], productDetails: 0, orderDetails: 0, activeOrderDetails: 0, maxActiveOrderDetails: 0, standardTracking: 0, extraDetailEvent: false, enhancedTracking: 0 };
   // 页面会预取订单详情；必须在首次请求前固定样例，不能依赖导航后的赋值时序。
   calls.extraDetailEvent = fixtureOptions.extraDetailEvent ?? false;
   calls.detailRateLimited = fixtureOptions.detailRateLimited ?? false;
@@ -91,7 +91,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/search") && method === "POST") {
       const payload = JSON.parse(request.postData());
       calls.sidebarQueries.push(payload);
-      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: orderSellerSku, sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45", package_id: "123457", tracking_number: "OLD-2" }] };
+      const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: null, currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: orderSellerSku, sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45", package_id: "123457", tracking_number: "OLD-2" }] };
       const orders = Array.from({ length: orderCount }, (_, index) => ({ ...order, id: `order-${index + 1}`, external_order_id: `57760000000000000${index + 1}` }));
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
       const coupon = { id: "789", title: "Shop coupon", status: "ONGOING", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
@@ -174,6 +174,12 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       const payload = JSON.parse(request.postData());
       calls.cardPayloads.push(payload);
       data = { id: `card-${calls.cardSend}`, role: "agent", content: `物流卡片 · 订单 ${payload.order_id}`, message_type: "logistics_card", logistics_card: { order_id: payload.order_id, package_id: payload.package_id, product_name: "Walking pad", image_url: null, sku_name: orderVariant, quantity: 1, unit_price: "90.45", currency: "USD", tracking_number: "OLD-2", carrier_name: "Carrier C", latest_description: "Picked up", latest_at: "2026-10-15T19:20:00Z" }, status: "sent", created_at: new Date().toISOString(), error_code: null, delivery_mode: "real" };
+    }
+    else if (path.endsWith("/messages/order-card") && method === "POST") {
+      calls.orderCardSend++;
+      const payload = JSON.parse(request.postData());
+      calls.orderCardPayloads.push(payload);
+      data = { id: `order-card-${calls.orderCardSend}`, role: "agent", content: `订单卡片 · 订单 ${payload.order_id}`, message_type: "order_card", rich_card: { kind: "order_card", order_id: payload.order_id, title: "Walking pad", status: orderStatus, paid_price: "USD 97.90" }, status: "sent", created_at: new Date().toISOString(), error_code: null, delivery_mode: "real" };
     }
     else if (path.endsWith("/messages") && method === "POST") {
       calls.send++;
@@ -1445,7 +1451,7 @@ test("catalog hides inactive and empty inventory products and unavailable coupon
   } finally { await context.close(); }
 });
 
-test("all order stages keep the same core fields and order draft previews the exact text", async () => {
+test("all order stages keep the same core fields and use native order cards", async () => {
   for (const status of ["UNPAID", "AWAITING_SHIPMENT", "AWAITING_COLLECTION", "IN_TRANSIT", "SHIPPED", "DELIVERED", "COMPLETED", "CANCELLED", "CANCELED"]) {
     const { context, page, calls } = await openWorkspace(2, status);
     try {
@@ -1454,9 +1460,17 @@ test("all order stages keep the same core fields and order draft previews the ex
       for (const label of ["支付状态", "付款时间", "支付方式", "出货状态", "最晚发货", "物流状态", "物流单号", "物流商", "最新物流描述", "最新物流时间"]) {
         assert.equal(await card.locator(".customer-info-line").filter({ hasText: label }).count(), 1, `${status}: ${label}`);
       }
+      const expectedPayment = status === "UNPAID" ? "未付款" : ["CANCELLED", "CANCELED"].includes(status) ? "取消前已付款 · 退款待核实" : "已付款";
+      assert.match(await card.locator(".customer-info-line").filter({ hasText: "支付状态" }).innerText(), new RegExp(expectedPayment));
       await card.getByRole("button", { name: "填入回复草稿" }).click();
-      await page.getByLabel("订单摘要草稿预览").waitFor();
-      assert.match(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), /Order 577600000000000001/);
+      await page.getByLabel("订单卡片预览").waitFor();
+      assert.equal(await page.getByRole("textbox", { name: "回复内容" }).count(), 0);
+      await page.getByRole("button", { name: "发送订单卡片" }).click();
+      await page.getByRole("dialog", { name: "审阅订单卡片" }).waitFor();
+      assert.equal(calls.orderCardSend, 0);
+      await page.getByRole("button", { name: "确认发送卡片" }).click();
+      await page.getByLabel("订单卡片").waitFor();
+      assert.deepEqual(calls.orderCardPayloads, [{ order_id: "577600000000000001", confirmed: true }]);
       assert.equal(calls.send, 0);
     } finally { await context.close(); }
   }

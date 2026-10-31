@@ -260,6 +260,8 @@ class TikTokMessageClient:
             return self._failed("TIKTOK_MESSAGE_TOO_LONG")
         if command.message_type == "logistics_card" and not command.card_order_id:
             return self._failed("TIKTOK_LOGISTICS_CARD_ORDER_REQUIRED")
+        if command.message_type == "order_card" and not command.card_order_id:
+            return self._failed("TIKTOK_ORDER_CARD_ORDER_REQUIRED")
         if command.message_type in {"image", "video"} and not command.media_value:
             return self._failed("TIKTOK_MEDIA_RESOURCE_REQUIRED")
         if command.message_type == "image" and (not command.media_width or not command.media_height):
@@ -269,10 +271,10 @@ class TikTokMessageClient:
         # 官方 content 字段本身是序列化后的 JSON 字符串；紧凑序列化保证
         # 签名正文与实际发送字节完全一致。
         card_content: dict[str, object] = {"order_id": command.card_order_id}
-        if command.card_package_id:
+        if command.message_type == "logistics_card" and command.card_package_id:
             card_content["package_id"] = command.card_package_id
         content: dict[str, object]
-        if command.message_type == "logistics_card":
+        if command.message_type in {"logistics_card", "order_card"}:
             content = card_content
         elif command.message_type == "image":
             content = {"url": command.media_value, "width": command.media_width, "height": command.media_height}

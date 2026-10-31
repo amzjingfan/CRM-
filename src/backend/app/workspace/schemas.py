@@ -243,6 +243,20 @@ class SendLogisticsCardRequest(BaseModel):
         return value
 
 
+class SendOrderCardRequest(BaseModel):
+    """只允许发送当前买家已核对订单的 TikTok 原生订单卡片。"""
+
+    order_id: str = Field(min_length=1, max_length=200, pattern=r"^\d+$")
+    confirmed: Literal[True]
+
+    @field_validator("confirmed", mode="before")
+    @classmethod
+    def validate_literal_confirmation(cls, value: object) -> object:
+        if value is not True:
+            raise ValueError("发送前必须显式提交布尔值 true")
+        return value
+
+
 class SendMediaRequest(BaseModel):
     """先上传后显式确认发送；上传凭据由本服务签发。"""
 

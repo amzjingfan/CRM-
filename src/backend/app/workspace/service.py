@@ -73,6 +73,7 @@ from app.workspace.sidebar import (
     SidebarTrackingPackage,
     SidebarTrackingTimelineTranslation,
     SidebarTrackingTranslation,
+    _live_order_view,
     _verified_sidebar_order,
     get_sidebar_enhanced_tracking,
     get_sidebar_order_detail,
@@ -799,7 +800,7 @@ async def send_agent_message(
     idempotency_key: str,
     *,
     confirmed: bool,
-    message_type: Literal["text", "logistics_card", "image", "video"] = "text",
+    message_type: Literal["text", "logistics_card", "order_card", "image", "video"] = "text",
     card_order_id: str | None = None,
     card_package_id: str | None = None,
     media_token: str | None = None,
@@ -827,7 +828,7 @@ async def send_agent_message(
         if send_mode != "real" or not media_token:
             raise AppError(ErrorCode.PERMISSION_DENIED, "当前会话未开放真实媒体发送", 403)
     arguments: dict[str, object] = {"conversation_id": str(conversation.id), "content": content}
-    if message_type == "logistics_card":
+    if message_type in {"logistics_card", "order_card"}:
         arguments.update(
             {"message_type": message_type, "card_order_id": card_order_id, "card_package_id": card_package_id}
         )
@@ -934,6 +935,54 @@ async def send_agent_logistics_card(
     if message is None:
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流卡片发送记录丢失", 503)
     message.raw_payload = {**message.raw_payload, "logistics_card": card.model_dump(mode="json")}
+    await session.commit()
+    return _message_view(message)
+
+
+async def send_agent_order_card(
+    session: AsyncSession,
+    user: User,
+    session_id: uuid.UUID,
+    order_id: str,
+    idempotency_key: str,
+    *,
+    confirmed: bool,
+) -> MessageView:
+    """先核验订单确属当前会话买家，再发送 TikTok 原生订单卡片。"""
+    if not confirmed:
+        raise DeliveryNotStarted(ErrorCode.VALIDATION_ERROR, "发送前必须完成人工二次确认", 422)
+    try:
+        conversation, _client, order = await _verified_sidebar_order(session, user, session_id, order_id)
+        if _message_send_mode(conversation, await _connected_send_channel(session, conversation)) == "disabled":
+            raise DeliveryNotStarted(ErrorCode.PERMISSION_DENIED, "当前会话不能发送消息", 403)
+        summary = _live_order_view(order)
+    except AppError as error:
+        raise DeliveryNotStarted(error.code, error.message, error.status_code) from error
+    result = await send_agent_message(
+        session,
+        user,
+        session_id,
+        f"订单卡片 · 订单 {order_id}",
+        idempotency_key,
+        confirmed=True,
+        message_type="order_card",
+        card_order_id=order_id,
+    )
+    message = await session.get(Message, result.id)
+    if message is None:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "订单卡片发送记录丢失", 503)
+    first = summary.items[0] if summary.items else None
+    message.raw_payload = {
+        **message.raw_payload,
+        "card": RichMessageCardView(
+            kind="order_card",
+            order_id=order_id,
+            title=first.name if first else None,
+            image_url=first.image_url if first else None,
+            status=summary.status,
+            paid_price=f"{summary.currency} {summary.total_amount}" if summary.total_amount is not None else None,
+        ).model_dump(mode="json"),
+    }
     await session.commit()
     return _message_view(message)
 

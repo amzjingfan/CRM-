@@ -115,6 +115,15 @@ const paymentStatusText: Record<string, { zh: string; en: string }> = {
   UNPAID: { zh: "未付款", en: "Unpaid" },
   REFUNDED: { zh: "已退款", en: "Refunded" },
 };
+export function orderPaymentLabel(order: Pick<SidebarOrder, "payment_status" | "status" | "paid_at">, en: boolean): string {
+  const explicit = order.payment_status && paymentStatusText[order.payment_status.toUpperCase()];
+  if (explicit) return explicit[en ? "en" : "zh"];
+  // TikTok 订单列表不提供独立支付状态；付款时间只证明曾付款，不能推断取消后的退款结果。
+  if (order.paid_at && ["CANCELLED", "CANCELED"].includes(order.status.toUpperCase())) return en ? "Paid before cancellation · refund unverified" : "取消前已付款 · 退款待核实";
+  if (order.paid_at) return en ? "Paid" : "已付款";
+  if (order.status.toUpperCase() === "UNPAID") return en ? "Unpaid" : "未付款";
+  return "—";
+}
 function couponDiscount(coupon: SidebarCoupon, en: boolean) {
   const value = coupon.discount_value;
   if (!value || value.startsWith("{")) return "—";
@@ -259,7 +268,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
     {first ? <div className="customer-item-row">{first.image_url ? <img alt="" className="customer-product-image" src={first.image_url} /> : <div className="customer-item-thumb" aria-hidden="true">{first.name.slice(0, 1)}</div>}<div className="customer-item-copy"><strong><CopyableValue en={en} label={en ? "product name" : "商品名称"} value={first.name} /></strong><small>{en ? "SPU: " : "SPU："}<CopyableValue en={en} label="SPU" value={first.product_id} /></small><small className="customer-item-variant"><span>{en ? "Variant: " : "商品规格："}</span><CopyableValue en={en} label={en ? "variant" : "商品规格"} value={first.sku_name} /></small><small>SKU: <CopyableValue en={en} label="SKU" value={first.sku_id} /></small>{first.sku ? <small className="customer-item-seller-sku"><span>{en ? "Seller SKU: " : "SKU 货号："}</span><CopyableValue en={en} label={en ? "seller SKU" : "SKU 货号"} value={first.sku} /></small> : null}</div><div className="customer-item-price">{money(order.currency, first.total_amount)}<small>×{first.quantity}</small></div></div> : <p className="customer-side-muted">{en ? "Item details unavailable" : "暂无商品明细"}</p>}
     {order.items.length > 1 ? <p className="customer-side-muted">{en ? `${order.items.length} line items` : `共 ${order.items.length} 项商品`}</p> : null}
     <details className="customer-money"><summary><span>{totalLabel}</span><strong>{money(order.currency, order.total_amount)}</strong></summary><div className="customer-money-grid">{breakdown.filter((row) => order.payment_breakdown?.[row.key] !== undefined).map((row) => <div key={row.key}><span>{row[en ? "en" : "zh"]}</span><span>{money(order.currency, order.payment_breakdown[row.key])}</span></div>)}<div className="customer-money-total"><span>{totalLabel}</span><span>{money(order.currency, order.total_amount)}</span></div>{!Object.keys(order.payment_breakdown ?? {}).length ? <small>{en ? "Discount, tax and shipping breakdown is unavailable from the synced order." : "当前同步订单未提供折扣、税费及运费拆分。"}</small> : null}</div></details>
-    <div className="customer-info-line"><span>{en ? "Payment" : "支付状态"}</span><span>{paymentStatusText[(order.payment_status ?? order.status).toUpperCase()]?.[en ? "en" : "zh"] ?? "—"}</span></div>
+    <div className="customer-info-line"><span>{en ? "Payment" : "支付状态"}</span><span>{orderPaymentLabel(order, en)}</span></div>
     {order.status === "UNPAID" ? <div className="customer-info-line"><span>{en ? "Payment deadline" : "付款截止"}</span><span>—</span></div> : null}
     <div className="customer-info-line"><span>{en ? "Paid at" : "付款时间"}</span><span>{dateTime(order.paid_at, en)}</span></div>
     <div className="customer-info-line"><span>{en ? "Payment method" : "支付方式"}</span><span>{detail?.payment_method_name ?? "—"}</span></div>

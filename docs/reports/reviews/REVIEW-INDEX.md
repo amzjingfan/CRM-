@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-WORKSPACE-LIVE-FEEDBACK-001-20261031-R01 | MVP-WORKSPACE-LIVE-FEEDBACK-001 | R01 | APPROVE | `550316f4e8f6784c9ef6d05a4a9e5837dc8e86e6` | platform_contract, tenant_isolation, buyer_order_proof, manual_send, idempotency, unknown_delivery, payment_truth | 2026-10-31T11:13:26Z | [`RR-MVP-WORKSPACE-LIVE-FEEDBACK-001-20261031-R01.md`](RR-MVP-WORKSPACE-LIVE-FEEDBACK-001-20261031-R01.md) |
 | RR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01 | MVP-AGENT-TEMPLATE-UI-STAGING-001 | R01 | APPROVE | `d6de3be766d6656eadfe8e410dff6981c01fea4a` | release_integrity, scope_preservation, auth_csrf, knowledge_grounding, immutable_preferences, cleanup, rollback | 2026-10-31T08:33:02.179315+00:00 | [`RR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01.md`](RR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01.md) |
 | RR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R01 | MVP-WORKSPACE-CATALOG-CONSISTENCY-001 | R01 | APPROVE | `a1be18c4c266293b8fdc6c6f88514f990cfd1d19` | catalog_correctness, agent_tool_semantics, order_fields, send_safety, tenant_scope | 2026-10-31 07:50:35+00:00 | [`RR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R01.md`](RR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R01.md) |
 | RR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01 | MVP-AGENT-TEMPLATE-UI-001 | R01 | APPROVE | `78e7069c9a0386d143c474ad9a6cd9a5fb903094` | correctness, immutable_publication, language_tone, cancellation, tenant_isolation, workflow_preservation, responsive_ui, search_races | 2026-10-31T07:11:23.998783+00:00 | [`RR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md`](RR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md) |

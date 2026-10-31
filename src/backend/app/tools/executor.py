@@ -589,7 +589,7 @@ class SqlAlchemyToolExecutor:
             )
             if unresolved is not None:
                 raise ToolDispatchError("TOOL_RECONCILIATION_REQUIRED")
-        if arguments.message_type == "logistics_card" and (
+        if arguments.message_type in {"logistics_card", "order_card"} and (
             conversation.platform != "tiktok"
             or invocation.context.actor_type != "user"
             or not invocation.context.human_confirmed
@@ -618,9 +618,14 @@ class SqlAlchemyToolExecutor:
                 raise ToolDispatchError("TOOL_MEDIA_PROOF_INVALID") from error
             if media_claim.kind != arguments.message_type:
                 raise ToolDispatchError("TOOL_MEDIA_PROOF_INVALID")
-        card_payload = (
+        logistics_payload = (
             {"order_id": arguments.card_order_id, "package_id": arguments.card_package_id}
             if arguments.message_type == "logistics_card"
+            else None
+        )
+        order_card_payload = (
+            {"kind": "order_card", "order_id": arguments.card_order_id}
+            if arguments.message_type == "order_card"
             else None
         )
         media_payload = (
@@ -647,7 +652,8 @@ class SqlAlchemyToolExecutor:
             agent_run_id=invocation.context.agent_run_id,
             raw_payload={
                 "delivery_mode": "unknown",
-                **({"logistics_card": card_payload} if card_payload else {}),
+                **({"logistics_card": logistics_payload} if logistics_payload else {}),
+                **({"card": order_card_payload} if order_card_payload else {}),
                 **({"media": media_payload} if media_payload else {}),
             },
         )
@@ -689,7 +695,8 @@ class SqlAlchemyToolExecutor:
             conversation.last_human_replied_at = message.sent_at
         message.raw_payload = {
             "delivery_mode": "mock" if result.mock else "real",
-            **({"logistics_card": card_payload} if card_payload else {}),
+            **({"logistics_card": logistics_payload} if logistics_payload else {}),
+            **({"card": order_card_payload} if order_card_payload else {}),
             **({"media": media_payload} if media_payload else {}),
         }
         conversation.last_message_id = message.id
