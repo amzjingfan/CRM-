@@ -1,17 +1,5 @@
 /* Scoped from the approved knowledge-base prototype. Keep changes local to /knowledge. */
 
-.knowledge-prototype-shell { background: #f5f7fb; color: #17233a; }
-.knowledge-prototype-shell .sidebar { z-index: 1; width: 224px; flex-basis: 224px; padding: 24px 16px; border-right-color: #e3e8f0; background: #fff; }
-.knowledge-prototype-shell .app-main { padding: 0; background: #f5f7fb; }
-.knowledge-prototype-shell .main-nav { display: grid; grid-template-columns: 1fr; gap: 5px; margin-top: 0; }
-.knowledge-prototype-shell .nav-group-separated { margin: 0; border: 0; padding: 0; }
-.knowledge-prototype-shell .nav-link { min-height: 43px; height: 43px; flex-direction: row; gap: 13px; border-radius: 9px; padding: 0 13px; color: #69768c; font-size: 14px; font-weight: 600; box-shadow: none; }
-.knowledge-prototype-shell .nav-link.active { background: #ebf1ff; color: #315fd6; box-shadow: none; }
-.knowledge-prototype-shell .nav-link .nav-icon { width: 18px; height: 18px; color: currentColor; }
-.knowledge-prototype-shell .sidebar-footer { display: none; }
-.knowledge-brand { display: flex; align-items: center; gap: 10px; margin: 0 8px 30px; white-space: nowrap; font-size: 17px; font-weight: 750; }
-.knowledge-brand-mark { display: grid; width: 22px; height: 22px; flex: none; place-items: center; border-radius: 6px; background: #315fd6; color: #fff; font-size: 15px; }
-.knowledge-sidebar-note { position: absolute; bottom: 18px; left: 29px; color: #96a2b4; font-size: 11px; }
 .knowledge-page { display: flex; min-height: 100vh; flex-direction: column; }
 .knowledge-page .backdrop { z-index: 70; }
 .knowledge-page .drawer, .knowledge-page .modal { z-index: 71; }
@@ -46,12 +34,6 @@
 .knowledge-page .row .file small { line-height: 1.35; }
 .knowledge-page .demo-label { color: #315fd6; }
 @media (max-width: 780px) {
-  .knowledge-prototype-shell { height: 100vh; min-height: 0; overflow: hidden; }
-  .knowledge-prototype-shell .sidebar { position: relative; inset: auto; width: 65px; height: 100vh; flex: 0 0 65px; padding: 18px 8px; border-top: 0; border-right: 1px solid #e3e8f0; }
-  .knowledge-prototype-shell .app-main { width: auto; height: 100vh; min-height: 0; flex: 1; overflow: auto; padding: 0; }
-  .knowledge-prototype-shell .nav-link { justify-content: center; padding: 0; }
-  .knowledge-prototype-shell .nav-link span, .knowledge-brand strong, .knowledge-sidebar-note { display: none; }
-  .knowledge-brand { justify-content: center; margin: 0 0 30px; }
 }
 
 .knowledge-page{font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#17233a;background:#f5f7fb;font-size:14px}

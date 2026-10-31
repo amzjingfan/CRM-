@@ -94,7 +94,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       const order = { id: "order-1", external_order_id: "577600000000000001", status: orderStatus, payment_status: orderStatus === "UNPAID" ? null : "paid", currency: "USD", total_amount: "97.90", payment_breakdown: { sub_total: "90.45", tax: "7.45" }, ordered_at: "2026-10-15T07:11:00Z", paid_at: orderStatus === "UNPAID" ? null : "2026-10-15T07:12:00Z", tracking_number: "878696895644", tracking_status: null, live_detail_available: true, items: [{ name: "Walking pad", product_id: "123", sku: orderSellerSku, sku_id: "456", sku_name: orderVariant, image_url: null, quantity: 1, unit_price: "90.45", total_amount: "90.45", package_id: "123457", tracking_number: "OLD-2" }] };
       const orders = Array.from({ length: orderCount }, (_, index) => ({ ...order, id: `order-${index + 1}`, external_order_id: `57760000000000000${index + 1}` }));
       const product = { id: "123", title: "Walking pad", status: "ACTIVATE", image_url: null, skus: [{ id: "456", seller_sku: "PAD-BLK", name: null, currency: "USD", sale_price: "90.45", quantity: 4 }] };
-      const coupon = { id: "789", title: "Shop coupon", status: "EXPIRED", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
+      const coupon = { id: "789", title: "Shop coupon", status: "ONGOING", display_type: "REGULAR", promo_code: "SAVE5", discount_type: "AMOUNT_OFF", discount_value: "$5.00", claim_end_time: null, chat_shareable: false };
       if (payload.section === "orders") {
         const category = { UNPAID: "unpaid", AWAITING_SHIPMENT: "ship", IN_TRANSIT: "transit", DELIVERED: "done", CANCELLED: "cancel" }[orderStatus];
         const matches = orders.filter((item) => (payload.status === "all" || payload.status === category) && (!payload.query || [item.external_order_id, item.tracking_number, item.items[0].name, item.items[0].sku, item.items[0].sku_id, item.items[0].product_id].some((value) => value?.toLowerCase().includes(payload.query.toLowerCase()))));
@@ -1281,19 +1281,21 @@ test("customer can bypass the short order cache with refresh", async () => {
   } finally { await context.close(); }
 });
 
-test("customer order states show their own fields and leave unavailable facts blank", async () => {
-  for (const [state, expected, missing, logisticsLabel] of [
-    ["UNPAID", "付款截止", "物流状态", null],
-    ["AWAITING_SHIPMENT", "最晚发货", "物流状态", null],
-    ["DELIVERED", "物流状态", "取消原因", "已送达"],
-    ["COMPLETED", "物流状态", "取消原因", "已送达"],
-    ["CANCELLED", "取消原因", "物流状态", null],
+test("customer order states retain core fields and show only applicable exception fields", async () => {
+  for (const [state, extra, absent, logisticsLabel] of [
+    ["UNPAID", "付款截止", "取消原因", null],
+    ["AWAITING_SHIPMENT", null, "取消原因", null],
+    ["DELIVERED", null, "取消原因", "已送达"],
+    ["COMPLETED", null, "取消原因", "已送达"],
+    ["CANCELLED", "取消原因", "付款截止", null],
   ]) {
     const { context, page } = await openWorkspace(2, state);
     try {
       const card = page.getByTestId("customer-order-card");
-      await card.getByText(expected).waitFor();
-      assert.equal(await card.getByText(missing).count(), 0);
+      await card.getByText("支付状态").waitFor();
+      await card.getByText("物流状态").waitFor();
+      if (extra) await card.getByText(extra).waitFor();
+      assert.equal(await card.getByText(absent).count(), 0);
       if (logisticsLabel) await card.locator(".customer-info-line").filter({ hasText: "物流状态" }).getByText(logisticsLabel).waitFor();
     } finally { await context.close(); }
   }
@@ -1402,7 +1404,7 @@ test("product and coupon tabs load shop data, expand SKU, and only fill an edita
     await page.getByRole("tab", { name: "优惠券" }).click();
     const coupon = page.getByTestId("customer-coupon-card");
     await coupon.getByText("Shop coupon").waitFor();
-    await coupon.getByText("已过期").waitFor();
+    await coupon.getByText("进行中").waitFor();
     await coupon.getByText("立减 $5.00").waitFor();
     await coupon.getByText("常规展示").waitFor();
     await page.getByLabel("搜索字段").selectOption("code");
@@ -1416,11 +1418,55 @@ test("product and coupon tabs load shop data, expand SKU, and only fill an edita
   } finally { await context.close(); }
 });
 
+test("catalog hides inactive and empty inventory products and unavailable coupons", async () => {
+  const { context, page } = await openWorkspace(2);
+  try {
+    const product = (id, status, quantity) => ({ id, title: id, status, image_url: "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=", skus: [{ id: `sku-${id}`, seller_sku: null, name: null, currency: "USD", sale_price: "1.00", quantity }] });
+    await page.route("**/v1/workspace/sessions/*/sidebar/search", async (route) => {
+      const payload = JSON.parse(route.request().postData());
+      if (payload.section === "orders") return route.fallback();
+      const now = Math.floor(Date.now() / 1000);
+      const items = payload.section === "products"
+        ? [product("In stock", "ACTIVATE", 2), product("Sold out", "ACTIVATE", 0), product("Inactive", "INACTIVATE", 3), product("Unknown stock", "ACTIVATE", null)]
+        : [
+          { id: "active", title: "Active coupon", status: "ONGOING", claim_start_time: now - 10, claim_end_time: now + 100, chat_shareable: true },
+          { id: "expired", title: "Expired coupon", status: "EXPIRED", claim_end_time: now - 1 },
+          { id: "upcoming", title: "Upcoming coupon", status: "NOT_STARTED", claim_start_time: now + 100 },
+          { id: "disabled", title: "Disabled coupon", status: "INACTIVE" },
+        ];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data: { items, next_page_token: null, total_count: items.length, partial_search: false } }) });
+    });
+    await page.getByRole("tab", { name: "商品" }).click();
+    await page.getByText("In stock", { exact: true }).waitFor();
+    assert.equal(await page.getByTestId("customer-product-card").count(), 1);
+    await page.getByRole("tab", { name: "优惠券" }).click();
+    await page.getByText("Active coupon").waitFor();
+    assert.equal(await page.getByTestId("customer-coupon-card").count(), 1);
+  } finally { await context.close(); }
+});
+
+test("all order stages keep the same core fields and order draft previews the exact text", async () => {
+  for (const status of ["UNPAID", "AWAITING_SHIPMENT", "AWAITING_COLLECTION", "IN_TRANSIT", "SHIPPED", "DELIVERED", "COMPLETED", "CANCELLED", "CANCELED"]) {
+    const { context, page, calls } = await openWorkspace(2, status);
+    try {
+      const card = page.getByTestId("customer-order-card");
+      await card.getByText("577600000000000001").waitFor();
+      for (const label of ["支付状态", "付款时间", "支付方式", "出货状态", "最晚发货", "物流状态", "物流单号", "物流商", "最新物流描述", "最新物流时间"]) {
+        assert.equal(await card.locator(".customer-info-line").filter({ hasText: label }).count(), 1, `${status}: ${label}`);
+      }
+      await card.getByRole("button", { name: "填入回复草稿" }).click();
+      await page.getByLabel("订单摘要草稿预览").waitFor();
+      assert.match(await page.getByRole("textbox", { name: "回复内容" }).inputValue(), /Order 577600000000000001/);
+      assert.equal(calls.send, 0);
+    } finally { await context.close(); }
+  }
+});
+
 test("scrolling the product catalog to the bottom loads its next page", async () => {
   const { context, page } = await openWorkspace(2);
   try {
     const image = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
-    const makeProduct = (id) => ({ id: String(id), title: `Product ${id}`, status: "ACTIVATE", image_url: image, skus: [] });
+    const makeProduct = (id) => ({ id: String(id), title: `Product ${id}`, status: "ACTIVATE", image_url: image, skus: [{ id: `sku-${id}`, seller_sku: null, name: null, currency: "USD", sale_price: "1.00", quantity: 1 }] });
     const productQueries = [];
     await page.route("**/v1/workspace/sessions/*/sidebar/search", async (route) => {
       const payload = JSON.parse(route.request().postData());
@@ -1437,5 +1483,25 @@ test("scrolling the product catalog to the bottom loads its next page", async ()
     await page.getByText("Product 2000").waitFor();
     assert.equal(productQueries.filter((query) => query.page_token === "next-1").length, 1);
     assert.equal(await page.getByRole("button", { name: "加载更多商品" }).count(), 0);
+  } finally { await context.close(); }
+});
+
+test("an empty filtered catalog page continues to an in-stock product", async () => {
+  const { context, page } = await openWorkspace(2);
+  try {
+    const queries = [];
+    await page.route("**/v1/workspace/sessions/*/sidebar/search", async (route) => {
+      const payload = JSON.parse(route.request().postData());
+      if (payload.section !== "products") return route.fallback();
+      queries.push(payload.page_token ?? null);
+      const items = payload.page_token
+        ? [{ id: "available", title: "Available product", status: "ACTIVATE", image_url: null, skus: [{ id: "sku-available", seller_sku: null, name: null, currency: "USD", sale_price: "1.00", quantity: 3 }] }]
+        : [];
+      const data = { items, next_page_token: payload.page_token ? null : "next-available", total_count: 2, partial_search: false };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ code: 0, message: "ok", data }) });
+    });
+    await page.getByRole("tab", { name: "商品" }).click();
+    await page.getByText("Available product").waitFor();
+    assert.deepEqual(queries, [null, "next-available"]);
   } finally { await context.close(); }
 });

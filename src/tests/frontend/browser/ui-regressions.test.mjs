@@ -120,6 +120,21 @@ async function openPage(path, responses = {}, setup = async () => {}) {
   return { context, page };
 }
 
+test("knowledge and Agent pages use the same navigation shell and account footer", async () => {
+  const widths = [];
+  for (const path of ["/dashboard", "/knowledge", "/agents"]) {
+    const { context, page } = await openPage(path);
+    try {
+      const sidebar = page.getByRole("complementary", { name: "主导航" });
+      widths.push(await sidebar.evaluate((node) => Math.round(node.getBoundingClientRect().width)));
+      assert.equal(await sidebar.locator(".sidebar-footer").isVisible(), true, path);
+      assert.equal(await sidebar.locator(".knowledge-brand").count(), 0, path);
+      assert.equal(await sidebar.getByRole("link", { name: "系统配置" }).count(), 1, path);
+    } finally { await context.close(); }
+  }
+  assert.deepEqual(widths, [230, 230, 230]);
+});
+
 test("knowledge with no authorized store offers store setup instead of loading forever", async () => {
   const { context, page } = await openPage("/knowledge");
   try {
@@ -285,7 +300,7 @@ test("knowledge prototype keeps navigation, parameter drawer, and detail interac
     if (new URL(request.url()).pathname === "/v1/knowledge/entries") entryRequests.push(request.url());
   });
   try {
-    await page.getByText("CRM 智能聊天系统").waitFor();
+    await page.getByRole("link", { name: "知识库" }).waitFor();
     const categories = page.getByRole("complementary", { name: "知识分类" });
     await categories.getByRole("button", { name: "关务与合规" }).waitFor();
     assert.equal(new URL(page.url()).searchParams.has("layer"), false);

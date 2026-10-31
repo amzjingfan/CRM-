@@ -34,18 +34,6 @@ const navItems = [
   { href: "/settings", key: "settings", icon: GearSix, separated: true },
 ] as const;
 
-function KnowledgeNavIcon({ name }: { name: (typeof navItems)[number]["key"] }) {
-  const paths = {
-    dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
-    workspace: <><path d="M4 13v-2a8 8 0 0 1 16 0v2" /><rect x="2.5" y="12" width="4" height="7" rx="1.5" /><rect x="17.5" y="12" width="4" height="7" rx="1.5" /><path d="M19.5 19a4 4 0 0 1-4 3H12" /></>,
-    knowledge: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>,
-    marketing: <><path d="M3 10v4h4l10 5V5L7 10H3Z" /><path d="m7 14 2 6h3M20 9l2-2M20 15l2 2" /></>,
-    agents: <><rect x="4" y="6" width="16" height="14" rx="3" /><path d="M12 6V3M9 3h6" /><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" /><path d="M9 16h6" /></>,
-    settings: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" /></>,
-  };
-  return <svg aria-hidden="true" className="nav-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">{paths[name]}</svg>;
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<UserView | null>(null);
@@ -105,13 +93,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const text = copy[language];
   const current = navItems.find((item) => pathname.startsWith(item.href)) ?? navItems[0];
   const userInitial = user.name.trim().slice(0, 1).toUpperCase() || "U";
-  const knowledgePrototype = current.href === "/knowledge";
-  const agentPrototype = current.href === "/agents";
-  const prototypeNavigation = knowledgePrototype || agentPrototype;
-
-  return <div className={knowledgePrototype ? "app-shell knowledge-prototype-shell" : agentPrototype ? "app-shell agent-prototype-shell" : "app-shell"}>
+  return <div className="app-shell">
     <aside className="sidebar" aria-label={language === "en" ? "Main navigation" : "主导航"}>
-      {prototypeNavigation ? <div className="knowledge-brand"><span className="knowledge-brand-mark" aria-hidden="true">◇</span><strong>CRM 智能聊天系统</strong></div> : null}
       <nav className="main-nav">{navItems.map((item) => {
         const Icon = item.icon;
         const active = current.href === item.href;
@@ -119,10 +102,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button aria-expanded={marketingOpen} aria-label={text.marketing} className={active ? "nav-link active" : "nav-link"} onClick={() => setMarketingOpen((open) => !open)} type="button"><Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} /><span>{text.marketing}</span><CaretDown aria-hidden="true" className={marketingOpen ? "reception-nav-caret open" : "reception-nav-caret"} size={14} /></button>
           {marketingOpen ? <div className="reception-side-subnav"><Link aria-current={pathname === "/marketing" ? "page" : undefined} href="/marketing">营销流程</Link><Link aria-current={pathname.startsWith("/marketing/reception") ? "page" : undefined} href="/marketing/reception">基础接待</Link></div> : null}
         </div>;
-        return <div className={"separated" in item && item.separated ? "nav-group-separated" : ""} key={item.href}><Link aria-current={pathname === item.href ? "page" : undefined} aria-label={text[item.key]} className={active ? "nav-link active" : "nav-link"} href={item.href}>{prototypeNavigation ? <KnowledgeNavIcon name={item.key} /> : <Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} />}<span>{text[item.key]}</span></Link></div>;
+        return <div className={"separated" in item && item.separated ? "nav-group-separated" : ""} key={item.href}><Link aria-current={pathname === item.href ? "page" : undefined} aria-label={text[item.key]} className={active ? "nav-link active" : "nav-link"} href={item.href}><Icon aria-hidden="true" className="nav-icon" size={20} weight={active ? "fill" : "regular"} /><span>{text[item.key]}</span></Link></div>;
       })}</nav>
-      {knowledgePrototype ? <div className="knowledge-sidebar-note">知识库交互界面 · 按店铺隔离</div> : null}
-      {agentPrototype ? <div className="knowledge-sidebar-note">Agent 管理 · 按店铺隔离</div> : null}
       <div className="sidebar-footer">
         <div className="service-status"><span className="live-dot" /> <span>{text.online}</span></div>
         <div className="sidebar-user"><span className="user-avatar" aria-hidden="true">{userInitial}</span><span className="sidebar-user-copy"><strong>{user.name}</strong><small>{user.role}</small></span><div className="sidebar-tools"><button aria-label={language === "en" ? "Switch theme" : "切换主题"} onClick={toggleTheme} title={theme === "light" ? "Dark" : "Light"} type="button"><Moon size={17} /></button><button aria-label={language === "en" ? "Switch language" : "切换语言"} onClick={toggleLanguage} title={language === "zh" ? "English" : "中文"} type="button"><Translate size={17} /></button><button aria-label={text.signOut} onClick={() => logout().finally(() => { window.location.href = "/login"; })} title={text.signOut} type="button"><SignOut size={17} /></button></div></div>

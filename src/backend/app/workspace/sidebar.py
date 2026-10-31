@@ -865,6 +865,13 @@ def _product_view(product: TikTokProduct, *, include_details: bool = False) -> S
     )
 
 
+def _listed_in_stock(product: TikTokProduct) -> bool:
+    # 平台目录的未知库存不能当作有货；客服和 Agent 共用此保守筛选。
+    return product.status == "ACTIVATE" and any(
+        inventory.quantity is not None and inventory.quantity > 0 for sku in product.skus for inventory in sku.inventory
+    )
+
+
 async def search_sidebar_products(
     session: AsyncSession,
     user: User,
@@ -885,7 +892,10 @@ async def search_store_products(session: AsyncSession, store_id: uuid.UUID, payl
     query = payload.query.strip()
     if payload.field == "productId" and query:
         product = await client.get_product(query)
-        return SidebarProducts(items=[_product_view(product)], next_page_token=None, total_count=1)
+        available = _listed_in_stock(product)
+        return SidebarProducts(
+            items=[_product_view(product)] if available else [], next_page_token=None, total_count=int(available)
+        )
     sku_ids = [query] if query and payload.field == "sku" else None
     seller_skus = [query] if query and payload.field == "sellerSku" else None
     products, next_token, total = await client.search_products(
@@ -896,7 +906,7 @@ async def search_store_products(session: AsyncSession, store_id: uuid.UUID, payl
     if query and payload.field == "name":
         products = [product for product in products if query.casefold() in product.title.casefold()]
     return SidebarProducts(
-        items=[_product_view(item) for item in products],
+        items=[_product_view(item) for item in products if _listed_in_stock(item)],
         next_page_token=next_token,
         total_count=total,
         partial_search=bool(query and payload.field == "name" and next_token),
@@ -918,7 +928,10 @@ async def get_sidebar_product(
 async def get_store_product(session: AsyncSession, store_id: uuid.UUID, product_id: str) -> SidebarProduct:
     """调用方先校验店铺和读取权限；不要求创建买家会话。"""
     client = await _tiktok_client(session, store_id)
-    return _product_view(await client.get_product(product_id), include_details=True)
+    product = await client.get_product(product_id)
+    if not _listed_in_stock(product):
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "商品已下架或无可用库存", 404)
+    return _product_view(product, include_details=True)
 
 
 def _coupon_view(coupon: TikTokCoupon) -> SidebarCoupon:
@@ -976,6 +989,14 @@ def _coupon_view(coupon: TikTokCoupon) -> SidebarCoupon:
     )
 
 
+def _currently_available_coupon(coupon: TikTokCoupon, now: int) -> bool:
+    if coupon.status != "ONGOING":
+        return False
+    start = coupon.claim_duration.get("start_time")
+    end = coupon.claim_duration.get("end_time")
+    return (type(start) is not int or start <= now) and (type(end) is not int or end > now)
+
+
 async def search_sidebar_coupons(
     session: AsyncSession,
     user: User,
@@ -1002,8 +1023,9 @@ async def search_store_coupons(session: AsyncSession, store_id: uuid.UUID, paylo
         coupons = [
             coupon for coupon in coupons if coupon.promo_code and query.casefold() in coupon.promo_code.casefold()
         ]
+    now = int(time.time())
     return SidebarCoupons(
-        items=[_coupon_view(item) for item in coupons],
+        items=[_coupon_view(item) for item in coupons if _currently_available_coupon(item, now)],
         next_page_token=next_token,
         total_count=total,
         partial_search=bool(query and payload.field == "code" and next_token),

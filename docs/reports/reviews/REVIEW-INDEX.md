@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R01 | MVP-WORKSPACE-CATALOG-CONSISTENCY-001 | R01 | APPROVE | `a1be18c4c266293b8fdc6c6f88514f990cfd1d19` | catalog_correctness, agent_tool_semantics, order_fields, send_safety, tenant_scope | 2026-10-31T07:50:35Z | [`RR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R01.md`](RR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R01.md) |
 | RR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01 | MVP-AGENT-TEMPLATE-UI-001 | R01 | APPROVE | `78e7069c9a0386d143c474ad9a6cd9a5fb903094` | correctness, immutable_publication, language_tone, cancellation, tenant_isolation, workflow_preservation, responsive_ui, search_races | 2026-10-31T07:11:23.998783+00:00 | [`RR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md`](RR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md) |
 | RR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R02 | MVP-AGENT-DEBUG-STREAM-XBM-001 | R02 | APPROVE | `ecc94a7b2e7293553c307fa3f6393755962196e8` | release_identity, authorization, streaming, live_tools_rag, configuration_equivalence, cleanup, no_external_send | 2026-10-31 03:36:15.944047+00:00 | [`RR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R02.md`](RR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R02.md) |
 | RR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R01 | MVP-AGENT-DEBUG-STREAM-XBM-001 | R01 | APPROVE | `63b69216ccaa82a48a6bf18786d4f8876f7fec73` | correctness, cancellation, authorization, tenant_isolation, streaming, prompt_language, retrieval, integration | 2026-10-31 02:50:53.526328+00:00 | [`RR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R01.md`](RR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R01.md) |
