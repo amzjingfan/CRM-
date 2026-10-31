@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-DEBUG-STREAM-XBM-001",
+  "subject_sha": "ecc94a7b2e7293553c307fa3f6393755962196e8",
+  "local_test_subject_sha": "63b69216ccaa82a48a6bf18786d4f8876f7fec73",
+  "code_pr": 688,
+  "source_inputs_equal": true,
+  "environment": "staging",
+  "production_release": false,
+  "generated_at_utc": "2026-10-31T03:36:15.944047+00:00",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:e5a9316aa4f5c8433a26d46b86ff1fc2c95556bf2a6fea1cdb29e0ddd26e8f85",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:6c4a3ae376dbb545a579f0ca665ddde7f5a3af35c4c57b3865485a5447bc71e9",
+    "retrieval_model": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2"
+  },
+  "release": {
+    "current_validate": "passed",
+    "candidate_validate": "passed",
+    "deploy": "passed",
+    "migration_head": "047_supervisor_store_auth",
+    "running_services": 12,
+    "translation_preserved": true,
+    "auto_reply_enabled": false,
+    "high_risk_write_enabled": false,
+    "manual_send_store_count": 2,
+    "fixed_egress_verified": true,
+    "public_vhost_modified": false,
+    "ssh_key_acl_modified": false,
+    "credentials_written": false,
+    "private_backup_verified": true,
+    "backup_restore_drill_performed": false
+  },
+  "public_checks": {
+    "paths": {
+      "/healthz": {
+        "status": 200
+      },
+      "/v1/health": {
+        "status": 200
+      },
+      "/v1/health/ready": {
+        "status": 200
+      },
+      "/login": {
+        "status": 200,
+        "no_store": true
+      },
+      "/marketing": {
+        "status": 200,
+        "no_store": true
+      },
+      "/knowledge": {
+        "status": 200,
+        "no_store": true
+      },
+      "/settings/stores": {
+        "status": 200,
+        "no_store": true
+      },
+      "/agents": {
+        "status": 200,
+        "no_store": true
+      }
+    },
+    "fingerprinted_js": {
+      "status": 200,
+      "immutable": true,
+      "sha256": "ce85487c50cdd77056eba3007897bce73e8ebc663b14ec3f2583d0eb353acb98"
+    }
+  },
+  "local_validation": {
+    "backend_passed": 3018,
+    "backend_skipped": 5,
+    "production_ui_passed": 214,
+    "production_ui_skipped": 0,
+    "frontend_contract_passed": 78,
+    "dynamic_contract_samples": 16,
+    "safety_samples": 237,
+    "unsafe_escape_count": 0
+  },
+  "live_cases": [
+    {
+      "case": "cn_tools_and_rag",
+      "trace_id": "51e257a8-7531-446d-9bbb-0bcfe440fb83",
+      "answer_language": "zh",
+      "tools": [
+        "search_customer_orders",
+        "query_order",
+        "query_logistics",
+        "search_knowledge"
+      ],
+      "knowledge_retrieved": true,
+      "review_ready": true
+    },
+    {
+      "case": "en_tools_and_rag",
+      "trace_id": "0ba60e43-3adf-4dde-8acd-c9ef3cf95999",
+      "answer_language": "en",
+      "tools": [
+        "search_customer_orders",
+        "query_order",
+        "query_logistics",
+        "search_knowledge"
+      ],
+      "knowledge_retrieved": true,
+      "review_ready": true
+    },
+    {
+      "case": "store_route",
+      "trace_id": "e9639b68-55f8-46a6-bdda-282c6c197fe6",
+      "routed_agent_count": 1,
+      "review_ready": true
+    },
+    {
+      "case": "post_cleanup_tools_only",
+      "trace_id": "b20f8f9e-fce9-4fdd-b6b9-4455eb34a61a",
+      "tools": [
+        "search_customer_orders",
+        "query_logistics"
+      ],
+      "knowledge_tool_called": false,
+      "review_ready": true
+    }
+  ],
+  "native_public_stream": {
+    "trace_id": "92e2ac22-0b4d-47d9-b52f-77d0093de323",
+    "draft_count": 126,
+    "first_draft_ms": 13877,
+    "last_draft_ms": 14918,
+    "result_ms": 21574,
+    "distinct_delivery_batches": 5,
+    "native_generation": true,
+    "draft_unverified": true,
+    "draft_sendable": false,
+    "credential_ttl_minutes": 10,
+    "credential_process_exited": true
+  },
+  "cancel": {
+    "cancel_trace_id": "25ca8cdc-0b0c-4de5-bfaf-106b6dab8271",
+    "status": "failed",
+    "error_code": "DYNAMIC_RUN_CANCELLED",
+    "draft_disconnect_audited": true
+  },
+  "cleanup_and_config_comparison": {
+    "source_us_unchanged": true,
+    "source_us_published_version": 13,
+    "source_us_draft_revision": 29,
+    "template_published_version": 1,
+    "template_matches_us": {
+      "model_provider": true,
+      "model_name": true,
+      "prompt_sections": true,
+      "tool_names": true,
+      "agent_type": true,
+      "description": true
+    },
+    "xbm_matches_us": {
+      "model_provider": true,
+      "model_name": true,
+      "prompt_sections": true,
+      "tool_names": true,
+      "agent_type": true,
+      "description": true
+    },
+    "seven_prompt_sections": 7,
+    "xbm_agent_retained_enabled": true,
+    "xbm_published_version": 3,
+    "template_association_retained": true,
+    "bound_files_after_cleanup": 0,
+    "owned_file_soft_deleted": true,
+    "xbm_active_files_after_cleanup": 0,
+    "audited_tool_calls": 31,
+    "all_mocked_false": true,
+    "message_rows_from_debug_runs": 0,
+    "cancel_audit_retained": true
+  },
+  "platform_messages_created": 0,
+  "audit_retained": true,
+  "unexecuted": [
+    "production deployment",
+    "real buyer message send",
+    "POSIX process-wait tests on Windows",
+    "opt-in destructive template migration roundtrip",
+    "backup restore drill"
+  ],
+  "low_sensitive_artifact_sha256": {
+    "gate-current.json": "881ae2fe7914e497e99ef46a254cb8d80a2b0dfa9ab71d4ec18723dfc51f07c6",
+    "gate-candidate.json": "62f70eadeb0cdd2e777da56d8661f5f8eedaae7c122dd8231a453ce18084c381",
+    "gate-deploy.json": "89b888cfffcd7d389be2c9591c29790455afa8c01bdefcbcd641f6d3cd3f2b93",
+    "stream-probe-final.log": "43530a1579fce95d9720a336986f4ebd3d4eabeccf5162f2e6fa633d1c06aae3",
+    "verify-final-data-last.log": "745e15534586565502e7beb0c3b2ff032d1df55a278282a5c04a539f54463819",
+    "public-health-assets.json": "1c418b547a1eec4b34ddaf32b1ca666fa302e78e70aaea4c4e672a1b4486bdd6"
+  },
+  "runtime_source_sha": "8bf9873c4ebaa1eeda882acad24acfbb1ff7a0b8",
+  "source_comparison": {
+    "left_sha": "63b69216ccaa82a48a6bf18786d4f8876f7fec73",
+    "right_sha": "8bf9873c4ebaa1eeda882acad24acfbb1ff7a0b8",
+    "paths": [
+      "src"
+    ],
+    "equal": true
+  },
+  "document_candidate_runtime_equivalence_scope": [
+    "src/backend",
+    "src/frontend/app/agents",
+    "src/frontend/lib/api.ts",
+    "src/deploy",
+    "src/compose"
+  ],
+  "subsequent_main_work_not_deployed_by_this_task": "workspace TikTok logistics card detail (#690)"
+}

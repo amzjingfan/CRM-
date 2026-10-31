@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-31 Agent调试流式与XBM全链路[TR R02](../reports/tests/TR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R02.md) PASS：候选本地3018/5条件跳过、生产浏览器214/214、78契约、16/237确定性评测；合并8bf的实际部署、中文/英文四工具+知识引用、126公网早片/终态和断连取消持久记录通过。模板与XBM Agent保留启用，合成指南已软删、有效文件/绑定0，清理后仅工具物流回答通过，零真实外发。未运行项及测量时间见R02，不等于production放行。
+
 2026-10-31 客服主管店铺授权[TR R02](../reports/tests/TR-MVP-SUPERVISOR-STORE-AUTH-001-20261031-R02.md) **PASS（本地行为与 staging 部署门禁）**：PR #686 合入主线 `8d296227`，本地隔离 PostgreSQL 2984 通过/5 跳过、前端契约 77 通过；已按该主线直构建并部署前后端，私有备份、源码核验、不可变镜像、ValidateOnly/Deploy、047、12 服务和三健康通过。现场主管角色的新权限关联为 1 行；原两店人工发送及所有安全开关保持，零外发。已登录主管页面的浏览器工具两次超时，记 `UI_UNAVAILABLE`；真实 TikTok 新店授权未执行，不记现场 OAuth 验收。见[低敏证据](../../release/evidence/staging/crm-staging-supervisor-store-authorization-20261031.json)，production No-Go。
 
 2026-10-31 Agent模板[TR R02](../reports/tests/TR-MVP-AGENT-TEMPLATE-STAGING-001-20261030-R02.md) **PASS（手动staging发布、业务与合成数据清理）**：统一产品PR #679合并并部署a0前端，后端沿用d670；新旧预检/046/12服务/固定出口/8路径200/11资源哈希通过。最终本地77契约及210生产浏览器、类型/lint/build与独立复审通过；真实两店创建/v2保留覆盖/离页后台（4项各attempt1）、最终中英文订单列表/物流/知识同轮回答及正确引用通过，6项持久工具mock=false。2测试Agent/2文件软删除、模板归档，非测试行哈希不变，两店知识列表0篇。用户已精确授权清理：服务器认证副本已删，本机仍受执行门禁阻止并按用户稍后处理的决定保留；不记作全部凭证已清理，任务待证据合并后收尾。production No-Go，零真实买家外发。[证据](../../release/evidence/staging/crm-staging-agent-template-batch-20261030.json)。
