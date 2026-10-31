@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-WORKSPACE-TIKTOK-LOGISTICS-DETAIL-001",
+  "environment": "staging",
+  "production_release": false,
+  "release_source_sha": "d47e8015f126dc0af756a02eb3febbcf41ceef47",
+  "implementation_subject_sha": "8247cd5658b6c73824ebe3b85551b358fc485c18",
+  "source_pull_request": 690,
+  "source_bundle_sha256": "29740ad5f63d6aa3b237aa93a184a82624197882c34d2a499be2119ffadc5faf",
+  "images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:6eb383a0ca06c436abfe1e6dc97987c15545eaad3b9873a8efc2cd3ee75985fb",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:6c4a3ae376dbb545a579f0ca665ddde7f5a3af35c4c57b3865485a5447bc71e9",
+    "backend_unchanged": "ghcr.io/cp11-gh/crm-backend@sha256:e5a9316aa4f5c8433a26d46b86ff1fc2c95556bf2a6fea1cdb29e0ddd26e8f85",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "frontend_oci_revision": "d47e8015f126dc0af756a02eb3febbcf41ceef47",
+    "backend_oci_revision": "8bf9873c4ebaa1eeda882acad24acfbb1ff7a0b8",
+    "platform": "linux/amd64",
+    "image_transfer_tar_sha256": "fa005aa9fa4f797eb53326d2723e4c04476e70c11cf0265531908323354045c4"
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/.local/share/crm-staging-backups/logistics-detail-20261031-d47",
+    "environment_backup_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "runtime_inspect_sha256": "bc505a882db891e3a640f7f80993ef97cb66d62681a541ddf2115e90a1ba4cb9",
+    "postgres_custom_dump_sha256": "0246b6e0caa773507aabf3fbedf1c793f788c833c787572687e38954ce06547c",
+    "minio_archive_sha256": "a4f9c0fb7ab134b94a383159bae669c02f09c75a540ce117f62ccf292d969a83",
+    "postgres_restore_list_readable": true,
+    "minio_archive_readable": true,
+    "permissions": "0700 directory; 0600 backup files"
+  },
+  "gate": {
+    "previous_validate_sha256": "f964d54d6eb943c8bbcbbb7689410fa9204cb4127290d2b5d58fe0a14fbb647d",
+    "candidate_validate_sha256": "8edf7aa98afaf5c9557aa05c92a21d30581004432a00e4a00d7e29ce3c180f43",
+    "candidate_deploy_sha256": "52b8e5b87c7f783c3048473e811e688ab47c83e0d577549087d6dedad2c59888",
+    "previous_validate_status": "validated",
+    "candidate_validate_status": "validated",
+    "candidate_deploy_status": "passed",
+    "migration": "047_supervisor_store_auth (head)"
+  },
+  "runtime_after": {
+    "services_running_or_healthy": 12,
+    "frontend_digest_match": true,
+    "backend_digest_unchanged": true,
+    "manual_send_allowed_store_count_unchanged": 2,
+    "manual_send": true,
+    "webhook_read": true,
+    "workspace_translation": true,
+    "agent_debug_and_formal_suggestions": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "workspace": 200
+  },
+  "authenticated_ui_check": "Authenticated workspace AX showed the existing buyer conversation and three logistics cards after deployment. Clicking an older logistics card timed out in the browser tool; detail popover and tracking fetch remain UI_UNAVAILABLE and are not claimed as verified.",
+  "github_actions_used": false,
+  "test_actions_sent_real_buyer_messages": false,
+  "refund_actions_performed": false
+}

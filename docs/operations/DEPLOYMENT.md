@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-10-31 工作台物流消息详情从干净合并主线 `d47e8015f126dc0af756a02eb3febbcf41ceef47` 直接更新 staging 前端至 `ghcr.io/cp11-gh/crm-frontend@sha256:6eb383a0ca06c436abfe1e6dc97987c15545eaad3b9873a8efc2cd3ee75985fb`；后端仍为 Agent 调试镜像 `sha256:e5a9316a…8f85`。私有备份、旧/新 `ValidateOnly`、`Deploy`、047、12 服务和四条公网路径 200 通过。两店人工真实发送、翻译、Agent 模式及安全关闭项保留，零买家外发、退款或 production 操作。已登录工作台只读可见物流卡片，真实点击因浏览器工具超时记 `UI_UNAVAILABLE`；见[TR R02](../reports/tests/TR-MVP-WORKSPACE-TIKTOK-LOGISTICS-DETAIL-001-20261031-R02.md)和[低敏证据](../../release/evidence/staging/crm-staging-tiktok-logistics-detail-20261031.json)。恢复前端使用证据中的旧完整摘要，保留后续业务增量；未使用 GitHub Actions。
+
 2026-10-31 Agent调试真流式与XBM验收从合并主线 `8bf9873c4ebaa1eeda882acad24acfbb1ff7a0b8` 手动部署：后端e5a9316a、前端6c4a3ae3完整摘要见[机器证据](../../release/evidence/staging/crm-staging-agent-debug-stream-xbm-20261031.json)。私有备份、双预检、Deploy、047、12服务、固定出口及8公网路径/缓存通过；翻译与原两店人工发送边界保留。中文/英文真实工具+知识引用、126公网原生草稿及断连取消审计通过；模板v1及XBM订单物流Agent v3启用保留，自有指南解绑后软删除，零外发。未改公网vhost、SSH ACL或全局Docker配置，认证仅进程内；备份未做恢复演练，production No-Go。
 
 2026-10-31 客服主管店铺授权修复从已合并主线 `8d2962279d796709279d17b4d8aa6f0a978d87b0` 直接部署 staging：后端 `sha256:6c345006…8c01f`、前端 `sha256:aa78ad6e…73d88`，检索和文档解析原摘要不变。受审源码、私有环境/PostgreSQL/MinIO 备份、完整 OCI 摘要、`ValidateOnly`、`Deploy`、047 迁移、12 容器和三公网健康通过；主管角色新授权权限现场关联 1 行。两家店铺人工真实发送、Webhook 读取、工作台翻译、Agent 与文档解析开关保持，自动回复、营销、高风险写入关闭；零新店 OAuth、买家消息、退款或 production 操作。已登录主管 UI 工具 `UI_UNAVAILABLE`，真实新店授权未演练。恢复须按[低敏证据](../../release/evidence/staging/crm-staging-supervisor-store-authorization-20261031.json)核对旧前后端摘要与私有备份，并保留部署后的业务增量；未使用 GitHub Actions。
