@@ -39,7 +39,7 @@ async def stores(session: DbSession, user: Annotated[User, Depends(get_current_u
 @router.get(
     "/store-authorizations",
     response_model=ApiResponse[list[StoreAuthorizationView]],
-    dependencies=[Depends(require_permission("settings.channels"))],
+    dependencies=[Depends(require_permission("settings.store_authorize"))],
 )
 async def store_authorizations(
     session: DbSession, user: Annotated[User, Depends(get_current_user)]
@@ -84,7 +84,7 @@ async def set_store_alias(
 @router.get(
     "/channels",
     response_model=ApiResponse[list[ChannelView]],
-    dependencies=[Depends(require_permission("settings.channels"))],
+    dependencies=[Depends(require_permission("settings.store_authorize"))],
 )
 async def channels(
     session: DbSession, user: Annotated[User, Depends(get_current_user)]

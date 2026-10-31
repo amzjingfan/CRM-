@@ -40,12 +40,13 @@ async def test_store_authorizations_keep_store_scope_and_hide_local_revocations(
     rows = await service.get_store_authorizations(SimpleNamespace(), SimpleNamespace())
 
     assert [(store.id, channel.store_id) for store, channel in rows] == [(allowed_id, allowed_id)]
-    allowed_store_ids.assert_awaited_once()
+    assert allowed_store_ids.await_count == 1
+    assert allowed_store_ids.call_args.args[2] == "settings.store_authorize"
     list_stores.assert_awaited_once_with(allowed_store_ids.call_args.args[0], allowed)
     list_channels.assert_awaited_once_with(allowed_store_ids.call_args.args[0], allowed)
 
 
-def test_store_authorizations_require_channel_permission() -> None:
+def test_store_authorizations_require_store_authorize_permission() -> None:
     app = FastAPI()
     app.include_router(router, prefix="/v1")
 
@@ -58,3 +59,37 @@ def test_store_authorizations_require_channel_permission() -> None:
     with TestClient(app) as client:
         response = client.get("/v1/settings/store-authorizations")
     assert response.status_code == 403
+
+
+def test_supervisor_with_store_authorize_permission_can_load_store_authorizations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = FastAPI()
+    app.include_router(router, prefix="/v1")
+
+    @app.exception_handler(AppError)
+    async def handle_app_error(_: Request, error: AppError) -> JSONResponse:
+        return JSONResponse(status_code=error.status_code, content={"code": error.code})
+
+    role = SimpleNamespace(code="supervisor", permissions=[SimpleNamespace(code="settings.store_authorize")])
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(roles=[role])
+    app.dependency_overrides[get_db_session] = lambda: SimpleNamespace()
+    monkeypatch.setattr("app.stores.router.get_store_authorizations", AsyncMock(return_value=[]))
+    with TestClient(app) as client:
+        response = client.get("/v1/settings/store-authorizations")
+    assert response.status_code == 200
+    assert response.json()["data"] == []
+
+
+@pytest.mark.asyncio
+async def test_channel_list_uses_store_authorization_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    store_id = uuid.uuid4()
+    allowed_store_ids = AsyncMock(return_value={store_id})
+    list_channels = AsyncMock(return_value=[])
+    monkeypatch.setattr(service, "allowed_store_ids", allowed_store_ids)
+    monkeypatch.setattr(service, "list_channels", list_channels)
+
+    assert await service.get_channels(SimpleNamespace(), SimpleNamespace()) == []
+
+    assert allowed_store_ids.call_args.args[2] == "settings.store_authorize"
+    list_channels.assert_awaited_once_with(allowed_store_ids.call_args.args[0], {store_id})

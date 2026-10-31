@@ -97,6 +97,7 @@ async def allowed_store_ids_for_permission(session: AsyncSession, user: User, pe
         return await allowed_store_ids(session, user)
     scoped = {store_id for _, store_id in rows if store_id is not None}
     if permission_code in {
+        "settings.store_authorize",
         "settings.team",
         "workspace.view",
         "workspace.reply",

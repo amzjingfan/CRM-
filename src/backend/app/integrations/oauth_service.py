@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.models import AuditLog
 from app.auth.repository import find_user_by_id
-from app.auth.store_access import ensure_store_access
+from app.auth.store_access import allowed_store_ids_for_permission, ensure_store_access
 from app.integrations.credential_crypto import decrypt_credential, encrypt_credential
 from app.integrations.models import TikTokOAuthJob
 from app.integrations.oauth_schemas import (
@@ -36,6 +36,7 @@ from app.stores.repository import (
     find_channel_by_store_platform,
     get_active_store,
 )
+from app.users.models import department_members, department_stores
 
 SELLER_USER_TYPES = {0, 4, 5}
 DEFAULT_RETURN_TO = "/settings/channels"
@@ -83,6 +84,39 @@ async def ensure_system_store_admin(session: AsyncSession, user: User) -> None:
         raise AppError(ErrorCode.PERMISSION_DENIED, "没有添加店铺的权限", 403)
 
 
+async def ensure_new_store_authorizer(session: AsyncSession, user: User) -> uuid.UUID | None:
+    """系统管理员可全局建店；主管须属于唯一负责部门且在该部门有店铺角色。"""
+    try:
+        await ensure_system_store_admin(session, user)
+        return None
+    except AppError as exc:
+        if exc.code != ErrorCode.PERMISSION_DENIED:
+            raise
+    departments: set[uuid.UUID] = set(
+        (
+            await session.scalars(
+                select(department_members.c.department_id)
+                .join(department_stores, department_stores.c.department_id == department_members.c.department_id)
+                .join(user_roles, user_roles.c.store_id == department_stores.c.store_id)
+                .join(Store, Store.id == department_stores.c.store_id)
+                .join(Role, Role.id == user_roles.c.role_id)
+                .where(
+                    department_members.c.user_id == user.id,
+                    user_roles.c.user_id == user.id,
+                    Role.code == "supervisor",
+                    Role.permissions.any(Permission.code == "settings.store_authorize"),
+                    Store.status == "active",
+                    Store.deleted_at.is_(None),
+                )
+                .distinct()
+            )
+        ).all()
+    )
+    if len(departments) != 1:
+        raise AppError(ErrorCode.PERMISSION_DENIED, "没有添加店铺的权限", 403)
+    return departments.pop()
+
+
 async def ensure_store_channel_manager(session: AsyncSession, user: User, store_id: uuid.UUID) -> None:
     """渠道管理权限须来自系统级或目标店铺角色，不能借用其他店铺授权。"""
     assignment = await session.scalar(
@@ -94,7 +128,9 @@ async def ensure_store_channel_manager(session: AsyncSession, user: User, store_
             or_(Role.code == "admin", Role.permissions.any(Permission.code == "settings.channels")),
         )
     )
-    if assignment is None:
+    if assignment is None and store_id not in await allowed_store_ids_for_permission(
+        session, user, "settings.store_authorize"
+    ):
         raise AppError(ErrorCode.PERMISSION_DENIED, "没有管理该店铺渠道的权限", 403)
 
 
@@ -221,7 +257,7 @@ async def start_new_tiktok_store_oauth(
     """点击添加店铺时先取得一次性授权链接，成功回调后再创建内部店铺。"""
     runtime = settings or get_settings()
     validate_oauth_runtime(runtime)
-    await ensure_system_store_admin(session, user)
+    await ensure_new_store_authorizer(session, user)
     return await _create_oauth_start(user.id, None, STORES_RETURN_TO, runtime)
 
 
@@ -296,7 +332,7 @@ async def queue_tiktok_oauth(
     if user is None or user.status != "active":
         raise AppError(ErrorCode.PERMISSION_DENIED, "OAuth 发起用户不可用", 403)
     if bound.store_id is None:
-        await ensure_system_store_admin(session, user)
+        await ensure_new_store_authorizer(session, user)
     else:
         await ensure_store_access(session, user, bound.store_id)
         await ensure_store_channel_manager(session, user, bound.store_id)
@@ -334,7 +370,7 @@ async def get_tiktok_oauth_job_status(session: AsyncSession, user: User, job_id:
     if job is None or job.user_id != user.id:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     if job.store_id is None:
-        await ensure_system_store_admin(session, user)
+        await ensure_new_store_authorizer(session, user)
     else:
         await ensure_store_access(session, user, job.store_id)
         await ensure_store_channel_manager(session, user, job.store_id)
@@ -385,8 +421,9 @@ async def complete_tiktok_oauth(
     if user is None or user.status != "active":
         raise AppError(ErrorCode.PERMISSION_DENIED, "OAuth 发起用户不可用", 403)
     if bound.store_id is None:
-        await ensure_system_store_admin(session, user)
+        department_id = await ensure_new_store_authorizer(session, user)
     else:
+        department_id = None
         await ensure_store_access(session, user, bound.store_id)
         await ensure_store_channel_manager(session, user, bound.store_id)
         if await get_active_store(session, bound.store_id) is None:
@@ -432,6 +469,7 @@ async def complete_tiktok_oauth(
                     raise AppError(ErrorCode.RESOURCE_CONFLICT, "店铺已添加，请使用重新添加", 409)
                 store_id = external_binding.store_id
                 await ensure_store_access(session, user, store_id)
+                await ensure_store_channel_manager(session, user, store_id)
                 if await get_active_store(session, store_id) is None:
                     raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
             else:
@@ -450,6 +488,10 @@ async def complete_tiktok_oauth(
                     )
                 )
                 await session.flush()
+                if department_id is not None:
+                    await session.execute(
+                        department_stores.insert().values(department_id=department_id, store_id=store_id)
+                    )
         elif external_binding is not None and external_binding.store_id != store_id:
             raise AppError(ErrorCode.RESOURCE_CONFLICT, "TikTok 店铺已绑定其他租户", 409)
         channel = await find_channel_by_store_platform(session, store_id, "tiktok")
@@ -753,7 +795,7 @@ async def select_tiktok_oauth_shops(
     settings: Settings | None = None,
     client: TikTokOAuthClient | None = None,
 ) -> TikTokOAuthCompletion:
-    """由原发起系统管理员确认多店绑定；再次核验平台清单并原子提交。"""
+    """由原发起人确认多店绑定；再次核验平台清单并原子提交。"""
     runtime = settings or get_settings()
     validate_oauth_runtime(runtime)
     if (
@@ -762,7 +804,7 @@ async def select_tiktok_oauth_shops(
         or len(set(selected_shop_ids)) != len(selected_shop_ids)
     ):
         raise AppError(ErrorCode.VALIDATION_ERROR, "请选择有效的 TikTok 店铺", 400)
-    await ensure_system_store_admin(session, user)
+    department_id = await ensure_new_store_authorizer(session, user)
     job = await session.get(TikTokOAuthJob, job_id, with_for_update=True)
     if job is None or job.user_id != user.id:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
@@ -816,6 +858,7 @@ async def select_tiktok_oauth_shops(
                 raise AppError(ErrorCode.RESOURCE_CONFLICT, "TikTok 店铺已绑定其他卖家授权", 409)
             store_id = binding.store_id
             await ensure_store_access(session, user, store_id)
+            await ensure_store_channel_manager(session, user, store_id)
             if await get_active_store(session, store_id) is None:
                 raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
         else:
@@ -847,6 +890,12 @@ async def select_tiktok_oauth_shops(
             )
         ).all()
     )
+
+    # 新店授权可能复用已有卖家凭证；先检查全部受影响店铺，再轮换共享 Token。
+    for channel in [*existing_shared, *legacy]:
+        if channel.status == "connected":
+            await ensure_store_access(session, user, channel.store_id)
+            await ensure_store_channel_manager(session, user, channel.store_id)
 
     key = _credential_key(runtime)
     access_cipher = encrypt_credential(token.access_token, key, f"tiktok:seller:{grant_id}:access")
@@ -894,6 +943,9 @@ async def select_tiktok_oauth_shops(
                     status="active",
                 )
             )
+            if department_id is not None:
+                await session.flush()
+                await session.execute(department_stores.insert().values(department_id=department_id, store_id=store_id))
             selected_channel = ChannelAccount(
                 id=uuid.uuid4(),
                 store_id=store_id,

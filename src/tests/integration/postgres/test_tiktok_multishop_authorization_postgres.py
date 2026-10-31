@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.auth.store_access import allowed_store_ids_for_permission
 from app.integrations.credential_crypto import encrypt_credential
 from app.integrations.models import TikTokOAuthJob
 from app.integrations.oauth_schemas import TikTokAuthorizedShop, TikTokTokenData
@@ -18,13 +19,15 @@ from app.shared.config.settings import Settings
 from app.shared.database.base import Role, User, user_roles
 from app.stores.models import ChannelAccount, Store, TikTokSellerAuthorization
 from app.stores.repository import claim_tiktok_seller_for_refresh
+from app.users.models import Department, department_members, department_stores
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="未提供隔离的 PostgreSQL 测试数据库")
 
 
 @pytest.mark.asyncio
-async def test_two_shops_persist_one_seller_grant_and_load_shared_token() -> None:
+@pytest.mark.parametrize("actor_role", ["admin", "supervisor"])
+async def test_two_shops_persist_one_seller_grant_and_load_shared_token(actor_role: str) -> None:
     """真实外键、JSONB 与 selectin 读取下，两家店共用一个授权且隔离 ID 不变。"""
     assert TEST_DATABASE_URL is not None
     engine = create_async_engine(TEST_DATABASE_URL)
@@ -72,16 +75,28 @@ async def test_two_shops_persist_one_seller_grant_and_load_shared_token() -> Non
             return shops, "synthetic-request"
 
     store_ids: list[uuid.UUID] = []
+    baseline_store_id = uuid.uuid4() if actor_role == "supervisor" else None
+    department_id = uuid.uuid4() if actor_role == "supervisor" else None
     try:
         async with sessions() as session:
             user = User(
                 id=user_id, email=f"multishop-{uuid.uuid4().hex}@example.invalid", password_hash="unused", name="Test"
             )
             session.add(user)
-            admin_role_id = await session.scalar(select(Role.id).where(Role.code == "admin"))
-            assert admin_role_id is not None
+            role_id = await session.scalar(select(Role.id).where(Role.code == actor_role))
+            assert role_id is not None
             await session.flush()
-            await session.execute(user_roles.insert().values(user_id=user_id, role_id=admin_role_id, store_id=None))
+            if baseline_store_id is not None and department_id is not None:
+                session.add(Store(id=baseline_store_id, name="Existing shop", code=f"shop-{baseline_store_id.hex}"))
+                session.add(Department(id=department_id, name=f"Department {department_id.hex}"))
+                await session.flush()
+                await session.execute(
+                    department_stores.insert().values(department_id=department_id, store_id=baseline_store_id)
+                )
+                await session.execute(department_members.insert().values(department_id=department_id, user_id=user_id))
+            await session.execute(
+                user_roles.insert().values(user_id=user_id, role_id=role_id, store_id=baseline_store_id)
+            )
             key = settings.tiktok_credential_encryption_key
             assert key is not None
             session.add(
@@ -115,6 +130,23 @@ async def test_two_shops_persist_one_seller_grant_and_load_shared_token() -> Non
             )
             store_ids = [channel.store_id for channel in channels]
             assert len(channels) == 2 and len(set(store_ids)) == 2
+            if department_id is not None:
+                assigned = set(
+                    (
+                        await verify.scalars(
+                            select(department_stores.c.store_id).where(
+                                department_stores.c.department_id == department_id,
+                                department_stores.c.store_id.in_(store_ids),
+                            )
+                        )
+                    ).all()
+                )
+                assert assigned == set(store_ids)
+                scoped_user = await verify.get(User, user_id)
+                assert scoped_user is not None
+                assert set(store_ids) <= await allowed_store_ids_for_permission(
+                    verify, scoped_user, "settings.store_authorize"
+                )
             assert len({channel.seller_authorization_id for channel in channels}) == 1
             assert all(decrypt_tiktok_access_token(channel, settings) == token.access_token for channel in channels)
             grant = await verify.get(TikTokSellerAuthorization, channels[0].seller_authorization_id)
@@ -126,6 +158,10 @@ async def test_two_shops_persist_one_seller_grant_and_load_shared_token() -> Non
             await cleanup.execute(delete(User).where(User.id == user_id))
             if store_ids:
                 await cleanup.execute(delete(Store).where(Store.id.in_(store_ids)))
+            if baseline_store_id is not None:
+                await cleanup.execute(delete(Store).where(Store.id == baseline_store_id))
+            if department_id is not None:
+                await cleanup.execute(delete(Department).where(Department.id == department_id))
             await cleanup.execute(
                 delete(TikTokSellerAuthorization).where(
                     TikTokSellerAuthorization.open_id_hash == hashlib.sha256(token.open_id.encode()).hexdigest()

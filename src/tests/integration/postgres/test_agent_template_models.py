@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from alembic.script import ScriptDirectory
 from sqlalchemy import delete, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -24,6 +25,11 @@ from app.stores.models import Store
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="未提供隔离的 PostgreSQL 测试数据库")
+
+
+def _current_migration_head() -> str:
+    migration_path = Path(__file__).resolve().parents[3] / "backend" / "migrations"
+    return ScriptDirectory(str(migration_path)).get_current_head()
 
 
 @pytest.mark.asyncio
@@ -165,9 +171,7 @@ async def test_populated_template_prevents_destructive_downgrade() -> None:
         assert result.returncode != 0
         assert "不能无损降级" in result.stdout + result.stderr
         async with sessions() as session:
-            assert (
-                await session.scalar(text("SELECT version_num FROM alembic_version")) == "046_merge_templates_dispatch"
-            )
+            assert await session.scalar(text("SELECT version_num FROM alembic_version")) == _current_migration_head()
             assert await session.get(AgentTemplate, template_id) is not None
             assert await session.scalar(text("SELECT to_regclass('user_login_sessions')")) is not None
     finally:
@@ -272,9 +276,7 @@ async def test_version_number_and_creator_idempotency_constraints_and_batch_defa
             with pytest.raises(IntegrityError):
                 await session.flush()
             await session.rollback()
-            assert (
-                await session.scalar(text("SELECT version_num FROM alembic_version")) == "046_merge_templates_dispatch"
-            )
+            assert await session.scalar(text("SELECT version_num FROM alembic_version")) == _current_migration_head()
     finally:
         async with sessions() as session:
             await session.execute(delete(AgentTemplateBatch).where(AgentTemplateBatch.template_id == template_id))

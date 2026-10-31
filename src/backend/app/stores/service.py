@@ -23,7 +23,7 @@ async def get_stores(session: AsyncSession, user: User) -> list[Store]:
 
 async def get_store_authorizations(session: AsyncSession, user: User) -> list[tuple[Store, ChannelAccount]]:
     """用一次授权范围核验聚合店铺与渠道，减少店铺页的公网请求。"""
-    store_ids = await allowed_store_ids(session, user)
+    store_ids = await allowed_store_ids(session, user, "settings.store_authorize")
     stores = await list_stores(session, store_ids)
     channels = await list_channels(session, store_ids)
     tiktok_channels: dict[uuid.UUID, ChannelAccount] = {}
@@ -110,7 +110,7 @@ async def update_store_alias(
 
 async def get_channels(session: AsyncSession, user: User) -> list[ChannelAccount]:
     """返回当前用户授权店铺的渠道账号。"""
-    return await list_channels(session, await allowed_store_ids(session, user))
+    return await list_channels(session, await allowed_store_ids(session, user, "settings.store_authorize"))
 
 
 async def create_channel(session: AsyncSession, user: User, payload: ChannelCreate) -> ChannelAccount:

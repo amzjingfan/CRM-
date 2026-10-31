@@ -8,6 +8,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlparse
 
 import httpx
@@ -421,8 +422,10 @@ async def test_direct_add_starts_oauth_without_creating_store(monkeypatch: pytes
 
 
 @pytest.mark.asyncio
-async def test_direct_add_requires_system_admin_before_state_creation(monkeypatch: pytest.MonkeyPatch) -> None:
-    """店铺级角色即使可读已有店铺，也不能开辟新租户。"""
+async def test_direct_add_denies_roles_without_store_authorization_before_state_creation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """缺少店铺授权权限的角色不能开辟新租户。"""
 
     async def denied(*_: object) -> None:
         raise AppError(ErrorCode.PERMISSION_DENIED, "没有添加店铺的权限", 403)
@@ -430,13 +433,44 @@ async def test_direct_add_requires_system_admin_before_state_creation(monkeypatc
     async def unexpected_save(*_: object) -> bool:
         raise AssertionError("不得写入 OAuth state")
 
+    class NoDepartmentSession(FakeSession):
+        async def scalars(self, _statement: object) -> SimpleNamespace:
+            return SimpleNamespace(all=list)
+
     monkeypatch.setattr(oauth_service, "ensure_system_store_admin", denied)
     monkeypatch.setattr(oauth_service, "save_tiktok_oauth_state", unexpected_save)
     with pytest.raises(AppError) as error:
         await oauth_service.start_new_tiktok_store_oauth(  # type: ignore[arg-type]
-            FakeSession(), SimpleNamespace(id=uuid.uuid4()), oauth_settings()
+            NoDepartmentSession(), SimpleNamespace(id=uuid.uuid4()), oauth_settings()
         )
     assert error.value.code == ErrorCode.PERMISSION_DENIED
+
+
+@pytest.mark.asyncio
+async def test_supervisor_new_store_authorization_requires_one_responsible_department() -> None:
+    department_id = uuid.uuid4()
+    role = SimpleNamespace(code="supervisor", permissions=[SimpleNamespace(code="settings.store_authorize")])
+    user = SimpleNamespace(id=uuid.uuid4(), roles=[role])
+
+    class RoleSession:
+        departments = [department_id]
+
+        async def scalar(self, _statement: object) -> None:
+            return None
+
+        async def scalars(self, _statement: object) -> SimpleNamespace:
+            return SimpleNamespace(all=lambda: self.departments)
+
+    session = RoleSession()
+    assert await oauth_service.ensure_new_store_authorizer(session, user) == department_id  # type: ignore[arg-type]
+    session.departments = []
+    with pytest.raises(AppError) as missing:
+        await oauth_service.ensure_new_store_authorizer(session, user)  # type: ignore[arg-type]
+    assert missing.value.code == ErrorCode.PERMISSION_DENIED
+    session.departments = [department_id, uuid.uuid4()]
+    with pytest.raises(AppError) as ambiguous:
+        await oauth_service.ensure_new_store_authorizer(session, user)  # type: ignore[arg-type]
+    assert ambiguous.value.code == ErrorCode.PERMISSION_DENIED
 
 
 @pytest.mark.parametrize(
@@ -676,6 +710,103 @@ async def test_admin_selection_creates_two_isolated_shops_with_one_seller_grant(
 
 
 @pytest.mark.asyncio
+async def test_supervisor_selection_assigns_new_shops_to_responsible_department(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    department_id, user_id = uuid.uuid4(), uuid.uuid4()
+    shop = (await FakeOAuthClient().get_authorized_shops("access-token-unit-test-value"))[0][0]
+    job = TikTokOAuthJob(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        return_to="/settings/stores",
+        status="selection_required",
+        selection_expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        selection_shops=[shop.model_dump()],
+    )
+    key = oauth_settings().tiktok_credential_encryption_key
+    assert key is not None
+    job.selection_token_cipher = encrypt_credential(
+        token_data().model_dump_json(), key.get_secret_value(), f"tiktok:oauth-job:{job.id}:selection"
+    )
+
+    class SelectionSession(FakeSelectionSession):
+        assignments: list[dict[str, object]]
+
+        def __init__(self, task: TikTokOAuthJob) -> None:
+            super().__init__(task)
+            self.assignments = []
+
+        async def execute(self, statement: Any) -> None:
+            self.assignments.append(statement.compile().params)
+
+    session = SelectionSession(job)
+    monkeypatch.setattr(oauth_service, "ensure_new_store_authorizer", _async_result(department_id))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(None))
+    await oauth_service.select_tiktok_oauth_shops(  # type: ignore[arg-type]
+        session, SimpleNamespace(id=user_id), job.id, [shop.id], oauth_settings(), FakeOAuthClient()
+    )
+    created_store = next(item for item in session.added if isinstance(item, Store))
+    assert session.assignments == [{"department_id": department_id, "store_id": created_store.id}]
+
+
+@pytest.mark.asyncio
+async def test_supervisor_selection_rejects_shared_seller_outside_store_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_id, foreign_store_id, grant_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    shop = (await FakeOAuthClient().get_authorized_shops("access-token-unit-test-value"))[0][0]
+    job = TikTokOAuthJob(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        return_to="/settings/stores",
+        status="selection_required",
+        selection_expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        selection_shops=[shop.model_dump()],
+    )
+    key = oauth_settings().tiktok_credential_encryption_key
+    assert key is not None
+    job.selection_token_cipher = encrypt_credential(
+        token_data().model_dump_json(), key.get_secret_value(), f"tiktok:oauth-job:{job.id}:selection"
+    )
+    foreign = ChannelAccount(
+        id=uuid.uuid4(),
+        store_id=foreign_store_id,
+        platform="tiktok",
+        external_store_id="foreign-shop",
+        display_name="Foreign",
+        access_token_ref="shared://old",
+        seller_authorization_id=grant_id,
+        status="connected",
+        metadata_json={},
+    )
+
+    class SelectionSession(FakeSelectionSession):
+        calls = 0
+
+        async def scalar(self, _statement: object) -> SimpleNamespace:
+            return SimpleNamespace(id=grant_id)
+
+        async def scalars(self, _statement: object) -> SimpleNamespace:
+            self.calls += 1
+            return SimpleNamespace(all=lambda: [foreign] if self.calls == 1 else [])
+
+    session = SelectionSession(job)
+    manager = AsyncMock(side_effect=AppError(ErrorCode.PERMISSION_DENIED, "没有管理该店铺渠道的权限", 403))
+    monkeypatch.setattr(oauth_service, "ensure_new_store_authorizer", _async_result(uuid.uuid4()))
+    monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_access", _async_result(None))
+    monkeypatch.setattr(oauth_service, "ensure_store_channel_manager", manager)
+    with pytest.raises(AppError) as denied:
+        await oauth_service.select_tiktok_oauth_shops(  # type: ignore[arg-type]
+            session, SimpleNamespace(id=user_id), job.id, [shop.id], oauth_settings(), FakeOAuthClient()
+        )
+    assert denied.value.code == ErrorCode.PERMISSION_DENIED
+    assert manager.await_args.args[2] == foreign_store_id
+    assert job.status == "selection_required" and job.selection_token_cipher is not None
+    assert not any(isinstance(item, (Store, ChannelAccount)) for item in session.added)
+
+
+@pytest.mark.asyncio
 async def test_multi_shop_selection_conflict_does_not_mutate_seller_grant(monkeypatch: pytest.MonkeyPatch) -> None:
     """任一勾选店铺已绑定其他卖家时，本次选择整体失败，不部分接入。"""
     user_id = uuid.uuid4()
@@ -794,10 +925,25 @@ async def test_cleanup_scrubs_expired_shop_selection_before_receipt_retention() 
 
 
 @pytest.mark.asyncio
-async def test_direct_add_creates_store_only_after_verified_shop(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("as_supervisor", [False, True])
+async def test_direct_add_creates_store_only_after_verified_shop(
+    monkeypatch: pytest.MonkeyPatch, as_supervisor: bool
+) -> None:
     """平台返回唯一卖家店铺且 Scope 完整后，才原子建立系统 ID 和渠道。"""
     user_id = uuid.uuid4()
-    session = FakeSession()
+    department_id = uuid.uuid4()
+
+    class StoreSession(FakeSession):
+        assignments: list[dict[str, object]]
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.assignments = []
+
+        async def execute(self, statement: Any) -> None:
+            self.assignments.append(statement.compile().params)
+
+    session = StoreSession()
     monkeypatch.setattr(
         oauth_service,
         "consume_tiktok_oauth_state",
@@ -809,7 +955,10 @@ async def test_direct_add_creates_store_only_after_verified_shop(monkeypatch: py
         ),
     )
     monkeypatch.setattr(oauth_service, "find_user_by_id", _async_result(SimpleNamespace(id=user_id, status="active")))
-    monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
+    if as_supervisor:
+        monkeypatch.setattr(oauth_service, "ensure_new_store_authorizer", _async_result(department_id))
+    else:
+        monkeypatch.setattr(oauth_service, "ensure_system_store_admin", _async_result(None))
     monkeypatch.setattr(oauth_service, "find_channel_by_external_store", _async_result(None))
     monkeypatch.setattr(oauth_service, "find_channel_by_store_platform", _async_result(None))
 
@@ -826,6 +975,7 @@ async def test_direct_add_creates_store_only_after_verified_shop(monkeypatch: py
     assert channel.metadata_json["region"] == "GB"
     assert isinstance(channel.metadata_json["last_authorized_at"], str)
     assert session.commits == 1
+    assert session.assignments == ([{"department_id": department_id, "store_id": store.id}] if as_supervisor else [])
 
 
 @pytest.mark.asyncio
@@ -989,7 +1139,7 @@ async def test_store_admin_check_is_bound_to_target_store() -> None:
 
 
 @pytest.mark.asyncio
-async def test_oauth_channel_manager_permission_is_bound_to_target_store() -> None:
+async def test_oauth_channel_manager_permission_is_bound_to_target_store(monkeypatch: pytest.MonkeyPatch) -> None:
     """其他店铺的渠道权限不能启动或完成目标店铺的重新授权。"""
     store_id, user_id = uuid.uuid4(), uuid.uuid4()
 
@@ -1001,6 +1151,7 @@ async def test_oauth_channel_manager_permission_is_bound_to_target_store() -> No
             return None
 
     session = RoleSession()
+    monkeypatch.setattr(oauth_service, "allowed_store_ids_for_permission", AsyncMock(return_value=set()))
     with pytest.raises(AppError) as denied:
         await oauth_service.ensure_store_channel_manager(  # type: ignore[arg-type]
             session, SimpleNamespace(id=user_id), store_id
@@ -1010,6 +1161,24 @@ async def test_oauth_channel_manager_permission_is_bound_to_target_store() -> No
     assert store_id.hex in sql
     assert "user_roles.store_id IS NULL" in sql
     assert "settings.channels" in sql
+
+
+@pytest.mark.asyncio
+async def test_supervisor_channel_authorization_uses_target_store_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    allowed_store, other_store = uuid.uuid4(), uuid.uuid4()
+
+    class RoleSession:
+        async def scalar(self, _statement: object) -> None:
+            return None
+
+    scoped = AsyncMock(return_value={allowed_store})
+    monkeypatch.setattr(oauth_service, "allowed_store_ids_for_permission", scoped)
+    user = SimpleNamespace(id=uuid.uuid4())
+    await oauth_service.ensure_store_channel_manager(RoleSession(), user, allowed_store)  # type: ignore[arg-type]
+    with pytest.raises(AppError) as denied:
+        await oauth_service.ensure_store_channel_manager(RoleSession(), user, other_store)  # type: ignore[arg-type]
+    assert denied.value.code == ErrorCode.PERMISSION_DENIED
+    assert scoped.await_args.args[2] == "settings.store_authorize"
 
 
 @pytest.mark.asyncio

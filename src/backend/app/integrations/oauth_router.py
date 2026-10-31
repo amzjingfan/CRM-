@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
 
-from app.auth.dependencies import get_current_user, require_csrf, require_permission, require_role
+from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.integrations.oauth_schemas import TikTokOAuthJobStatus, TikTokOAuthShopSelection, TikTokOAuthStart
 from app.integrations.oauth_service import (
     complete_tiktok_oauth,
@@ -29,7 +29,7 @@ router = APIRouter(tags=["TikTok OAuth"])
 @router.post(
     "/settings/stores/tiktok/oauth/start",
     response_model=ApiResponse[TikTokOAuthStart],
-    dependencies=[Depends(require_csrf), Depends(require_role("admin"))],
+    dependencies=[Depends(require_csrf), Depends(require_permission("settings.store_authorize"))],
 )
 async def begin_new_tiktok_store_oauth(
     session: DbSession, user: Annotated[User, Depends(get_current_user)]
@@ -41,7 +41,7 @@ async def begin_new_tiktok_store_oauth(
 @router.get(
     "/settings/channels/tiktok/oauth/start",
     response_model=ApiResponse[TikTokOAuthStart],
-    dependencies=[Depends(require_permission("settings.channels"))],
+    dependencies=[Depends(require_permission("settings.store_authorize"))],
 )
 async def begin_tiktok_oauth(
     store_id: uuid.UUID,
@@ -56,7 +56,7 @@ async def begin_tiktok_oauth(
 @router.get(
     "/settings/channels/tiktok/oauth/jobs/{job_id}",
     response_model=ApiResponse[TikTokOAuthJobStatus],
-    dependencies=[Depends(require_permission("settings.channels"))],
+    dependencies=[Depends(require_permission("settings.store_authorize"))],
 )
 async def tiktok_oauth_job_status(
     job_id: uuid.UUID,
@@ -72,8 +72,7 @@ async def tiktok_oauth_job_status(
     response_model=ApiResponse[TikTokOAuthJobStatus],
     dependencies=[
         Depends(require_csrf),
-        Depends(require_role("admin")),
-        Depends(require_permission("settings.channels")),
+        Depends(require_permission("settings.store_authorize")),
     ],
 )
 async def confirm_tiktok_oauth_shops(
@@ -82,7 +81,7 @@ async def confirm_tiktok_oauth_shops(
     session: DbSession,
     user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[TikTokOAuthJobStatus]:
-    """只允许原授权发起管理员确认本次要接入的店铺。"""
+    """仅原授权发起人可确认本次要接入的店铺。"""
     result = await select_tiktok_oauth_shops(session, user, job_id, payload.shop_ids)
     return ApiResponse(data=TikTokOAuthJobStatus(status=result.status))
 
