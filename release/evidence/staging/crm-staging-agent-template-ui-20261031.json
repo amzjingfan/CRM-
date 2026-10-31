@@ -1,0 +1,551 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-TEMPLATE-UI-STAGING-001",
+  "environment": "staging",
+  "production_release": false,
+  "generated_at_utc": "2026-10-31T08:22:48.825247+00:00",
+  "source_revision": "6074c4b001aa37e1653db3a3a7f226dd3e2077e3",
+  "integration_main_at_evidence": "743eb782904e39065c1a9d8779749f4af613198c",
+  "deployment_method": "manual official staging gate; no GitHub Actions/CD",
+  "previous_images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:e5a9316aa4f5c8433a26d46b86ff1fc2c95556bf2a6fea1cdb29e0ddd26e8f85",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:6eb383a0ca06c436abfe1e6dc97987c15545eaad3b9873a8efc2cd3ee75985fb"
+  },
+  "new_images": {
+    "crm-staging-backend-1": "ghcr.io/cp11-gh/crm-backend@sha256:dc16ae474657c9ab060bbbf7527f6f3ad76dd7d8eb940a4f65b204fd87cd19fa",
+    "crm-staging-frontend-1": "ghcr.io/cp11-gh/crm-frontend@sha256:250d680d40f7f8d94935c3706de2973b17509c2d32ca6114a42cfb0df56675df"
+  },
+  "other_images": {
+    "retrieval": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2"
+  },
+  "backup": {
+    "private_directory": "agent-template-ui-6074c4b0-20261031",
+    "hashes": {
+      "postgres.dump": "9fc6028b8f4cf29a181bcd7d79d20a3de3c6f72dd0f0a2c0d2fd3d25e1e92e81",
+      "minio-data.tgz": "8ecec8835a980c7d2014a2057198ca12421bcb70a38479efe0a371e61c460d63",
+      "crm-staging.env.before": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0"
+    },
+    "postgres_archive_list_verified": true,
+    "minio_archive_list_verified": true,
+    "restore_drill_performed": false
+  },
+  "gates": {
+    "CurrentValidate": {
+      "sha256": "fdaaac85324f2efde7ec9b1a8afaabd7a1bfc75b9ce38712799da800ac8244c0",
+      "status": "validated"
+    },
+    "CandidateValidate": {
+      "sha256": "634273166cadda992ed5e07805a9217bc8cf6073e0dc9c98f4e68a9285e799dd",
+      "status": "validated"
+    },
+    "Deploy": {
+      "sha256": "46bb658e3782be4e91110a60514151ac3efff15eebca555cd8324253fcaaf047",
+      "status": "passed"
+    }
+  },
+  "runtime": {
+    "revision_verified": true,
+    "existing_switches_unchanged": true,
+    "switches": {
+      "REAL_TIKTOK_READ_ENABLED": "true",
+      "REAL_TIKTOK_WEBHOOK_ENABLED": "true",
+      "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": "true",
+      "WORKSPACE_MESSAGE_TRANSLATION_ENABLED": "true",
+      "LLM_ENABLED": "true",
+      "EMBEDDING_ENABLED": "true",
+      "AGENT_V2_DEBUG_ENABLED": "true",
+      "AGENT_V2_FORMAL_ENABLED": "true",
+      "AUTO_REPLY_ENABLED": "false",
+      "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED": "false",
+      "AI_MARKETING_ENABLED": "false"
+    },
+    "manual_send_store_count": 2,
+    "services": 12
+  },
+  "migration": "048_published_reply_profile (head)",
+  "health": [
+    {
+      "path": "/healthz",
+      "status_code": 200
+    },
+    {
+      "path": "/v1/health",
+      "status_code": 200
+    },
+    {
+      "path": "/v1/health/ready",
+      "status_code": 200
+    }
+  ],
+  "fixed_egress_verified": true,
+  "acceptance": {
+    "schema_version": 1,
+    "source_revision": "6074c4b001aa37e1653db3a3a7f226dd3e2077e3",
+    "final_cases": [
+      {
+        "case": "frozen_auto_cn",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "friendly",
+          "reply_language": "auto",
+          "operator_language": "zh-CN"
+        },
+        "content_sha256": "98d3214fa628c2658053403fea30d5a3af0a49906b3d55544214f1c8523322fe",
+        "content_chars": 57,
+        "first_draft_ms": 5647,
+        "final_result_ms": 7300,
+        "tool_events": [
+          {
+            "agent_id": "9928b607-badc-423d-98a5-af244d77c7bd",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_ed6JeUCrY8eSRY1XpM3P0786"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": false,
+        "retry_required": false
+      },
+      {
+        "case": "auto_en",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "friendly",
+          "reply_language": "auto",
+          "operator_language": "en"
+        },
+        "content_sha256": "f74aa30488aa22fbb5c2cc7ac4235b81b06a95ee612759c790391e9bda698c2e",
+        "content_chars": 320,
+        "first_draft_ms": 5208,
+        "final_result_ms": 6807,
+        "tool_events": [
+          {
+            "agent_id": "9928b607-badc-423d-98a5-af244d77c7bd",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_SLRXYl2V1fjSi0Armzcl6994"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": false,
+        "retry_required": false
+      },
+      {
+        "case": "forced_cn",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "professional",
+          "reply_language": "zh-CN",
+          "operator_language": "zh-CN"
+        },
+        "content_sha256": "901ae5088bd71745205ff7365c0894fb3da8324d2d285134effe6819a46838e5",
+        "content_chars": 99,
+        "first_draft_ms": 6204,
+        "final_result_ms": 12045,
+        "tool_events": [
+          {
+            "agent_id": "67e69b56-9ca8-4189-936f-012ba3462b78",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_771O3URf8m17wQf1Vt2p6124"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": true,
+        "retry_required": true
+      },
+      {
+        "case": "forced_en",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "professional",
+          "reply_language": "en",
+          "operator_language": "en"
+        },
+        "content_sha256": "c34fccfcc70f895c0541d9ca233786c738578b1e15744f06b53730aaf236fe9a",
+        "content_chars": 233,
+        "first_draft_ms": 5286,
+        "final_result_ms": 9935,
+        "tool_events": [
+          {
+            "agent_id": "9928b607-badc-423d-98a5-af244d77c7bd",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_Q9Kp9gYUGeTK3VUoIbvv5958"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": true,
+        "retry_required": false
+      },
+      {
+        "case": "tone_concise",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "concise",
+          "reply_language": "auto",
+          "operator_language": "en"
+        },
+        "content_sha256": "ae86ccbf6bbeba36406a6f08ff12c73541722c394f679ff68b73db9f58e3fb47",
+        "content_chars": 465,
+        "first_draft_ms": 4500,
+        "final_result_ms": 6801,
+        "tool_events": [
+          {
+            "agent_id": "9928b607-badc-423d-98a5-af244d77c7bd",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_dPj9xSztou0aqxP3QueN5864"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": false,
+        "retry_required": false
+      },
+      {
+        "case": "tone_empathetic",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "empathetic",
+          "reply_language": "auto",
+          "operator_language": "en"
+        },
+        "content_sha256": "5200ce9cc6951e197bf6a9c2bac2af42539cbc9be5b08570f123cfc552e84502",
+        "content_chars": 418,
+        "first_draft_ms": 6156,
+        "final_result_ms": 7250,
+        "tool_events": [
+          {
+            "agent_id": "9928b607-badc-423d-98a5-af244d77c7bd",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_2E7LsLyTNZOCkCSYZw1T5098"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": false,
+        "retry_required": false
+      },
+      {
+        "case": "operator_zh",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "friendly",
+          "reply_language": "en",
+          "operator_language": "zh-CN"
+        },
+        "content_sha256": "73bd71dfb6d9738d1bb4495f377724840a6f7a18512e6a0f611885efb9f0fcc9",
+        "content_chars": 248,
+        "first_draft_ms": 7154,
+        "final_result_ms": 11333,
+        "tool_events": [
+          {
+            "agent_id": "9928b607-badc-423d-98a5-af244d77c7bd",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_Xmzik7gPuJZ3n13Qhvzz4756"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": true,
+        "retry_required": false
+      },
+      {
+        "case": "operator_en",
+        "passed": true,
+        "checks": {
+          "nonempty_reviewed_body": true,
+          "language": true,
+          "rag_tool_called": true,
+          "bound_file_cited": true,
+          "native_stream": true,
+          "not_sent": true,
+          "operator_translation": true
+        },
+        "published_profile": {
+          "tone": "friendly",
+          "reply_language": "zh-CN",
+          "operator_language": "en"
+        },
+        "content_sha256": "bf82ccd44495a42fea7910e005c8ead8681e4e80250525f147ba4091ccdd0d54",
+        "content_chars": 96,
+        "first_draft_ms": 4625,
+        "final_result_ms": 9430,
+        "tool_events": [
+          {
+            "agent_id": "9928b607-badc-423d-98a5-af244d77c7bd",
+            "tool_name": "search_knowledge",
+            "status": "retrieved",
+            "call_id": "call_00_VF5c33g6C228j6X3K4MI6473"
+          }
+        ],
+        "citation_count": 1,
+        "operator_translation_present": true,
+        "retry_required": false
+      }
+    ],
+    "final_case_count": 8,
+    "checks": [
+      {
+        "name": "authentication_required",
+        "passed": true
+      },
+      {
+        "name": "csrf_required",
+        "passed": true
+      },
+      {
+        "name": "store_search_scoped",
+        "passed": true
+      },
+      {
+        "name": "empty_store_search",
+        "passed": true
+      },
+      {
+        "name": "synthetic_file_indexed",
+        "passed": true,
+        "chunk_count": 1
+      },
+      {
+        "name": "synthetic_agent_published_disabled",
+        "passed": true
+      },
+      {
+        "name": "two_store_preview_valid",
+        "passed": true
+      },
+      {
+        "name": "two_store_batch_succeeded",
+        "passed": true
+      },
+      {
+        "name": "batch_did_not_copy_reply_preferences_2d9aa744-4f05-42bc-aae9-21223de0adaa",
+        "passed": true
+      },
+      {
+        "name": "batch_did_not_copy_reply_preferences_74bd2ebb-53fe-4049-8324-bdf9c24b4d4d",
+        "passed": true
+      }
+    ],
+    "passed": true,
+    "preserved_failures": {
+      "invalid_fixture_customer_scope": true,
+      "legacy_tool_field_assumption": true,
+      "retrieved_status_assumption": true,
+      "operator_translation_unavailable_once": true,
+      "credential_expiry_blocked_final_cleanup": true
+    },
+    "interpretation": "V2 search_knowledge events use status retrieved, not the legacy succeeded tool_calls contract. Exact raw responses remain unchanged. Seven matrix cases and one explicitly retried forced_cn pass. Failed translation retained buyer body and explicit error; no product gate or threshold was changed.",
+    "cleanup": {
+      "agents_soft_deleted": 7,
+      "files_soft_deleted": 4,
+      "templates_archived": 2,
+      "categories_created": 0,
+      "batch_audit_records_retained": 2,
+      "last_cleanup": {
+        "cleanup_passed": true,
+        "agent_soft_deleted": "67e69b56-9ca8-4189-936f-012ba3462b78",
+        "file_soft_deleted": "74965668-9c61-414f-9f12-cb158cb9b8a0",
+        "both_404": true,
+        "active_owned_agents": 0,
+        "other_configs_unchanged": true,
+        "other_configs_sha256": "765e2f14f376de146a17253b884f875962422a1296baaf050519d54edfffe39b",
+        "original_template_preserved": true,
+        "original_agent_count": 4,
+        "buyer_messages_sent": 0
+      }
+    },
+    "zero_buyer_sends": true,
+    "temporary_credentials_memory_only_destroyed": true,
+    "approval_windows_minutes": [
+      10,
+      5
+    ],
+    "tone_semantic_acceptance": "Not independently scored in this release. Four options were published and exercised; natural tone and concise length remain model-dependent. No assertion that concise is always shorter."
+  },
+  "cleanup_audit": {
+    "agents": {
+      "owned": 7,
+      "soft_deleted_or_archived": 7,
+      "active": 0
+    },
+    "files": {
+      "owned": 4,
+      "soft_deleted_or_archived": 4,
+      "active": 0
+    },
+    "templates": {
+      "owned": 2,
+      "soft_deleted_or_archived": 2,
+      "active": 0
+    },
+    "batches": {
+      "completed_audit_records_retained": 2,
+      "pending": 0
+    },
+    "passed": true
+  },
+  "browser": {
+    "template_groups_and_optional_description_removed": true,
+    "store_multiselect_two_shops_and_search_preservation": true,
+    "no_visible_store_pagination": true,
+    "batch_dropdown": true,
+    "screenshots": [
+      "staging-template.png",
+      "staging-store-multiselect.png",
+      "staging-batch-results.png"
+    ],
+    "batch_two_store_results_loaded": true,
+    "unsaved_selection_leave_confirmation": true
+  },
+  "deployment_recovery": "First GHCR blob TLS handshake timed out before switch; terminated only owned gate/pull processes, transferred checked OCI archives over inner network, verified all blobs and revision, imported exact RepoDigests, reran official candidate validation and deployment successfully.",
+  "rollback": "Use recorded previous backend/frontend immutable digests with the same reviewed overlays and existing two-store scope. Keep 048 nullable column and post-release business increments; no database downgrade or data restore performed.",
+  "scope_limits": [
+    "Synthetic document search and two-store configuration tests, no real buyer/order/tool API invocation in this release acceptance.",
+    "One translation_unavailable kept the reviewed buyer body; targeted retry passed. No stochastic reliability guarantee.",
+    "Later main workspace catalog/sidebar changes are outside this frozen 6074 release.",
+    "Soft-deleted entities and completed batch/audit records remain recoverable/auditable.",
+    "Tone configuration/publication/runtime path was exercised, but this release has no independent semantic tone rating or fixed-length guarantee."
+  ],
+  "artifact_sha256": {
+    "acceptance-eight-cases.json": "39c05d5cd7179fbb2cef4d399ea8406879559ac3ac0179effa69c6933418a965",
+    "acceptance-eight-cases.log": "e65c1fd8f15a11e396ed63f44dffdeef92a9561c5a98a915516268d9711eb94d",
+    "acceptance-evaluated.json": "3c4f330d95789eef91914cfe0dbf741e22d873776f65be1e406a3dfd7ae2b4e8",
+    "acceptance-preflight-invalid-scope.json": "a336523fed593e578d80995a32ed8485a2e3c20c733b5fd8a517fbbb39460989",
+    "acceptance-preflight-invalid-scope.log": "e8157520ca1999386f75732ab6c8e52cfd256bd03013bde004aa0e02ec9b0a2a",
+    "acceptance-preflight-legacy-field.json": "c5b0115905c3bac61b84a82e61f38343f6a8ae7a0aa708649dda4c367a940fae",
+    "acceptance-preflight-legacy-field.log": "b2094f32e0982099429bf507f2c4f00870acb9f9b25e2858898d433b555bc3e8",
+    "acceptance-report.json": "fd19b2e2c6bc753064b392443287b5dba2f5017b15827c0319e721e2893fa80f",
+    "acceptance.log": "eab9d8cfcec08f807abfdbd01fd482bc00e3275279e00b5a3d10a5187567abdb",
+    "audit-owned.log": "ac6c114daef904746a5a7c0920460bb4feebd4a00ff73d0dec70c087cadef465",
+    "backend-build.log": "4434791e4e0dab1f033e23d8f659479bc5a8155715d88fc46ad25fba4b248620",
+    "backend-publish.log": "ef5b43b3bac8e646e612b7a7b21090b93218fcb4793de3a666fd1637812654c6",
+    "backend-published-proof.json": "79020ed8375600f82ea14e376a107128d1f5095fb8d5501834750173189e6b49",
+    "backup.log": "c6b8c8007eca2f664a4c21423d94b0a16d248a75c722eb4241505d9796039a1a",
+    "candidatevalidate-authenticated.log": "c745f81b9c6f075ffb4354e4c08f28e04e62efa394cbdb9ad4fc703c350b38de",
+    "cleanup-audit.json": "eb21a28cc216f29f0af08bea2bbff47d80ce189dbb0c1e25145966e896cebc07",
+    "cleanup-final.log": "1973e430f14e49d0adf49e9b711d5336f25e8226737ccb07948c45db58a7766f",
+    "currentvalidate-authenticated.log": "c745f81b9c6f075ffb4354e4c08f28e04e62efa394cbdb9ad4fc703c350b38de",
+    "deploy-authenticated.log": "b860602bc630a1ed611652d8c985970469e4e622be37a5491dc58c55c9661487",
+    "deploy-first-stalled.log": "ae4f52b0165ea500ff6507ea8c9a083247f5fd3ceffbb898085719b4b99e915c",
+    "frontend-build.log": "cb7145474a2ffa8ea93460e85fa292b501a120692f6f813bb4aeeb9529bb1186",
+    "frontend-publish.log": "6b1e84d42553322c65ccb9654987b0b9cdc7438175440d679a9fc75140963bc5",
+    "frontend-published-proof.json": "4533a4fd70555e84fd2940b6ac55a9053aa449876f2765bd8935888c75b459ac",
+    "import-images.log": "695e04863954c6452062d0943ec6b072c09b5afe866859c5a61ac25c889bb8df",
+    "import-main-proof.json": "a7f58154b8b391c459426a6c0b3eb21e07e086d897a6ace3f089a0adbe0b5386",
+    "postflight.log": "91831c017c7fddf2331f297973157e5405bc69e8273eefb69b2bd9f4bb7e759e",
+    "preflight.log": "c23a0f27d399e5d88957c3e851a6f6eef05f63d7293025d989e5e03643351e54",
+    "registry-helper.log": "cfdfe6ecd5c21b5cd973cc770fb768659c7c9e3bab155e8d1e6bb782efaae776",
+    "source-prepare.log": "ea4ad8e1d1c4407b4f8589281d85fd9a7e23d1e462dff7c1751d07686a3c21a5",
+    "staging-store-multiselect.png": "25cf0c51882ca3c00f3f33f6a15051e3e422104d5aeee0125e503a1ee908d78b",
+    "staging-template.png": "e122efa7ae4bc66fd7057d0719f3db5a531d8f8e42b4619e8116cbf7c926f741",
+    "stop-pull-child.log": "f6e33c8fc35f4266defff82ed9098b8526c25eb2f80aa269270311671e22ac66",
+    "stop-stalled-pull.log": "0ad1021ae56c9204d7c9da851ac39dce3fae9e932ddc5f1195f12b0532fe3ad3",
+    "staging-batch-results.png": "f450bcb11116969f4dc5946a0237dc21b4d2d426a97c07baa9b620340292d487",
+    "final-review.md": "73f2f6c66b77e439e989a315fc04355e4427687d6177d184b17c73c9c9969b84",
+    "public-final-health.json": "36527bd13247a8c57dbe1c7d11b5d830ce3f65c97e15cf6cf7355f8f182be0dd"
+  },
+  "candidate_subject_sha": "d6de3be766d6656eadfe8e410dff6981c01fea4a",
+  "deployed_source_sha": "6074c4b001aa37e1653db3a3a7f226dd3e2077e3",
+  "independent_review": {
+    "verdict": "APPROVE",
+    "artifact_sha256": "73f2f6c66b77e439e989a315fc04355e4427687d6177d184b17c73c9c9969b84",
+    "findings_closed": [
+      "sha_scope",
+      "tone_claims",
+      "tr_commands",
+      "batch_screenshot"
+    ]
+  },
+  "public_final_health": [
+    {
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "path": "/v1/health",
+      "status": 200
+    },
+    {
+      "path": "/v1/health/ready",
+      "status": 200
+    },
+    {
+      "path": "/agents",
+      "status": 200
+    },
+    {
+      "path": "/agents/templates",
+      "status": 200
+    },
+    {
+      "path": "/agents/template-batches",
+      "status": 200
+    }
+  ]
+}
