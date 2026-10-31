@@ -158,7 +158,8 @@ _TOOLS = (
     ToolMetadata(
         "search_knowledge",
         "知识检索",
-        "检索当前 Agent 显式绑定且仍获内部审批的知识文件，返回原文片段、版本和引用。",
+        "检索当前 Agent 显式绑定且仍获内部审批的知识文件，返回原文片段、版本和引用。"
+        "查询使用完整问题语义；无命中可改写查询再检索，不代表文件不存在或未审批。",
         "knowledge",
         "read",
         "knowledge.view",

@@ -33,6 +33,8 @@ async def run_agent_debug_v2(
     payload: AgentDebugRequest,
     trace_id: str,
     runtime: SharedAgentRuntime | None,
+    *,
+    progress: RunProgress | None = None,
 ) -> AgentDebugView:
     """店铺级路由与单 Agent 调试共享同一新执行链路；绝不发送平台消息。"""
     settings = get_settings()
@@ -116,7 +118,7 @@ async def run_agent_debug_v2(
         )
     )
     await session.commit()
-    progress = RunProgress()
+    progress = progress if progress is not None else RunProgress()
     try:
         async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
             result = await execute_model_run(
@@ -136,8 +138,9 @@ async def run_agent_debug_v2(
                 user=user,
                 progress=progress,
             )
-    except Exception as error:
+    except (Exception, asyncio.CancelledError) as error:
         timed_out = isinstance(error, TimeoutError)
+        cancelled = isinstance(error, asyncio.CancelledError)
         # 保留截止前工具轨迹；异常路径不携带答案、事实或记忆写入。
         await persist_dynamic_result(
             session,
@@ -150,8 +153,12 @@ async def run_agent_debug_v2(
         )
         run.status = "timeout" if timed_out else "failed"
         run.phase = "timeout" if timed_out else "failed"
-        run.error_code = "DYNAMIC_RUN_TIMEOUT" if timed_out else "DYNAMIC_RUN_FAILED"
+        run.error_code = (
+            "DYNAMIC_RUN_CANCELLED" if cancelled else "DYNAMIC_RUN_TIMEOUT" if timed_out else "DYNAMIC_RUN_FAILED"
+        )
         await session.commit()
+        if cancelled:
+            raise
         raise AppError(
             ErrorCode.THIRD_PARTY_ERROR,
             "Agent 调试已超时" if timed_out else "Agent 动态调试失败",
@@ -178,7 +185,9 @@ async def run_agent_debug_v2(
     ]
     return AgentDebugView(
         agent_run_id=run.id,
-        content=result.suggestion.content,
+        content="\n\n".join(result.suggestion.reply_parts)
+        if result.suggestion.reply_parts
+        else result.suggestion.content,
         action="human_review",
         terminal_state=result.phase.value,
         citations=citations,

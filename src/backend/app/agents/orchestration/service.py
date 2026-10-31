@@ -132,6 +132,14 @@ async def execute_dynamic_run(
     if not route.selections:
         state.advance(RunPhase.REVIEW_REQUIRED)
         return DynamicRunResult(state.phase, route, (), _review_required("no_matching_agent"), "no_matching_agent")
+    language_policy = (
+        (
+            f"本轮当前问题的语种为 {route.question_language}。默认跟随本轮语种，"
+            "不能被历史会话、路由子问题、工具原文或专家草稿改变；仅已发布要求明确指定其他语言时例外。",
+        )
+        if route.question_language
+        else ()
+    )
     state.advance(RunPhase.EXECUTING)
     specialists = await run_selected(
         plan=route, worker=worker, deadline=deadline, on_results=progress.capture if progress is not None else None
@@ -175,7 +183,8 @@ async def execute_dynamic_run(
                 agent.prompt_sections.get("language_format", "")
                 for agent in snapshot.published_agents
                 if agent.id in {item.agent_id for item in specialists}
-            ),
+            )
+            + language_policy,
             on_usage=progress.capture_aggregate_usage,
             on_draft=progress.on_draft,
         )
@@ -196,7 +205,8 @@ async def execute_dynamic_run(
                 agent.prompt_sections["language_format"]
                 for agent in snapshot.published_agents
                 if any(item.agent_id == agent.id for item in specialists) and "language_format" in agent.prompt_sections
-            ),
+            )
+            + language_policy,
             on_usage=progress.capture_aggregate_usage if progress is not None else None,
         )
     phase = (

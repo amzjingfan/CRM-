@@ -19,7 +19,7 @@ test("workspace SSE suggestion fills the composer without automatic sending", as
   const source = await readFile(new URL("app/workspace/page.tsx", frontendRoot), "utf8");
   const replyReview = await readFile(new URL("components/ReplyReviewPanel.tsx", frontendRoot), "utf8");
   const api = await readFile(new URL("lib/api.ts", frontendRoot), "utf8");
-  assert.equal(api.includes('rawRequest("/chat/query"'), true);
+  assert.equal(api.includes('streamApiQuery("/chat/query"'), true);
   assert.equal(api.includes("ReadableStream"), false);
   assert.equal(api.includes("response.body.getReader()"), true);
   assert.equal(source.includes("<ReplyReviewPanel"), true);

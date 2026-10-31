@@ -111,3 +111,56 @@ async def test_dynamic_run_respects_deadline_and_does_not_prefetch_latest_order(
 
     assert error.value.status_code == 504
     assert session.scalar.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_cancelled_debug_persists_tool_progress_and_terminal_state(monkeypatch: pytest.MonkeyPatch) -> None:
+    _, agent_id = _setup(monkeypatch)
+    monkeypatch.setattr(debug, "user_permissions", lambda _user: {"agent.manage"})
+    session = SimpleNamespace(add=Mock(), commit=AsyncMock())
+    user = SimpleNamespace(id=uuid.uuid4(), roles=[SimpleNamespace(code="admin")])
+    monkeypatch.setattr(
+        debug,
+        "freeze_debug_context",
+        AsyncMock(return_value=SimpleNamespace(snapshot_hash="test", low_sensitive_reference=lambda: {})),
+    )
+
+    async def cancelled(**kwargs):
+        raise asyncio.CancelledError()
+
+    monkeypatch.setattr(debug, "execute_model_run", cancelled)
+    persist = AsyncMock()
+    monkeypatch.setattr(debug, "persist_dynamic_result", persist)
+    with pytest.raises(asyncio.CancelledError):
+        await debug.run_agent_debug_v2(session, user, agent_id, AgentDebugRequest(message="查物流"), "trace", None)
+    persist.assert_awaited_once()
+    run = persist.await_args.kwargs["run"]
+    assert run.status == "failed"
+    assert run.error_code == "DYNAMIC_RUN_CANCELLED"
+    assert session.commit.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_debug_keeps_all_reviewed_reply_parts(monkeypatch: pytest.MonkeyPatch) -> None:
+    _, agent_id = _setup(monkeypatch)
+    monkeypatch.setattr(debug, "user_permissions", lambda _user: {"agent.manage"})
+    session = SimpleNamespace(add=Mock(side_effect=lambda row: setattr(row, "id", uuid.uuid4())), commit=AsyncMock())
+    user = SimpleNamespace(id=uuid.uuid4(), roles=[SimpleNamespace(code="admin")])
+    monkeypatch.setattr(
+        debug,
+        "freeze_debug_context",
+        AsyncMock(return_value=SimpleNamespace(snapshot_hash="test", low_sensitive_reference=lambda: {})),
+    )
+    outcome = SimpleNamespace(
+        suggestion=SimpleNamespace(content="First", reply_parts=("First", "Second")),
+        specialists=(),
+        route=SimpleNamespace(selections=()),
+        phase=SimpleNamespace(value="review_ready"),
+        reason_code=None,
+    )
+    monkeypatch.setattr(debug, "execute_model_run", AsyncMock(return_value=outcome))
+    monkeypatch.setattr(debug, "persist_dynamic_result", AsyncMock())
+    response = await debug.run_agent_debug_v2(
+        session, user, agent_id, AgentDebugRequest(message="两项问题"), "trace", None
+    )
+    assert response.content == "First\n\nSecond"

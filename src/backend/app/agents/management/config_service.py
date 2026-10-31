@@ -23,6 +23,7 @@ from app.agents.management.schemas import (
     AgentRuntimeView,
     ToolCallLogView,
 )
+from app.agents.orchestration.router import ROUTER_PROMPT_VERSION
 from app.agents.prompts.compiler import PLATFORM_POLICY_VERSION
 from app.agents.safety.grounding import GROUNDING_PROMPT_VERSION
 from app.audit.models import AuditLog
@@ -59,7 +60,7 @@ def runtime_view() -> AgentRuntimeView:
         reranker_model="BAAI/bge-reranker-large",
         prompt_versions={
             "platform_policy": PLATFORM_POLICY_VERSION,
-            "dynamic_router": "v2",
+            "dynamic_router": ROUTER_PROMPT_VERSION,
             "evidence_review": GROUNDING_PROMPT_VERSION,
         },
         auto_reply_threshold=settings.agent_auto_reply_threshold,

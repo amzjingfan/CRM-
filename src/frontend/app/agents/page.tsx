@@ -12,7 +12,7 @@ import { SaveAgentTemplate } from "../../components/agents/templates/SaveAgentTe
 import { listAgentTemplates } from "../../lib/agent-templates";
 import { AppShell } from "../../components/AppShell";
 import {
-  approveDocumentVersion, createAgent, debugAgent, getAgentLogs, listAgents, listDocumentFiles, listSessions, listStores, publishAgent, revokeDocumentVersion, setAgentEnabled, updateAgent,
+  approveDocumentVersion, createAgent, streamAgentDebug, getAgentLogs, listAgents, listDocumentFiles, listSessions, listStores, publishAgent, revokeDocumentVersion, setAgentEnabled, updateAgent,
   type AgentConfig, type AgentDebugResult, type AgentRunLog, type DocumentFileSummary, type SessionSummary, type StoreView,
 } from "../../lib/api";
 import "./agent-prototype.css";
@@ -57,7 +57,10 @@ export default function AgentsPage() {
   const [templateSource, setTemplateSource] = useState<AgentConfig | null>(null);
   const [newType, setNewType] = useState<"service" | "operations">("service");
   const [previewInput, setPreviewInput] = useState("");
-  const [previewLines, setPreviewLines] = useState<string[]>([]);
+  const [previewLines, setPreviewLines] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [previewDrafts, setPreviewDrafts] = useState<Record<number, string>>({});
+  const previewAbort = useRef<AbortController | null>(null);
+  const previewBody = useRef<HTMLDivElement | null>(null);
   const [previewResult, setPreviewResult] = useState<AgentDebugResult | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewError, setPreviewError] = useState("");
@@ -100,7 +103,11 @@ export default function AgentsPage() {
         : agents.find((item) => item.id === requested && item.store_id === storeId)?.id ?? agents.find((item) => item.store_id === storeId)?.id ?? "";
     });
   }, [agents, storeId]);
-  useEffect(() => { setTab("basic"); setPreviewLines([]); setPreviewResult(null); setPreviewError(""); setPreviewBusy(false); setConversationId(""); setPreviewMode("single"); previewRequestId.current++; }, [storeId, selectedId]);
+  useEffect(() => { previewAbort.current?.abort(); setPreviewDrafts({}); setPreviewInput(""); setTab("basic"); setPreviewLines([]); setPreviewResult(null); setPreviewError(""); setPreviewBusy(false); setConversationId(""); setPreviewMode("single"); previewRequestId.current++; }, [storeId, selectedId]);
+  useEffect(() => {
+    if (previewBody.current) previewBody.current.scrollTop = previewBody.current.scrollHeight;
+  }, [previewLines, previewDrafts]);
+  useEffect(() => () => { previewRequestId.current++; previewAbort.current?.abort(); }, []);
   useEffect(() => {
     setDraft(selected ? draftOf(selected) : null);
     setPreviewLines([]);
@@ -208,15 +215,35 @@ export default function AgentsPage() {
     const input = previewInput.trim();
     if (!input || !selected || previewBusy || dirty) return;
     const sequence = ++previewRequestId.current;
-    setPreviewBusy(true); setPreviewError(""); setPreviewResult(null);
+    const controller = new AbortController();
+    previewAbort.current?.abort(); previewAbort.current = controller;
+    setPreviewBusy(true); setPreviewError(""); setPreviewResult(null); setPreviewDrafts({});
+    setPreviewInput("");
+    setPreviewLines((old) => [...old, { role: "user", text: input }]);
+    let receivedResult = false;
     try {
-      const result = await debugAgent(selected.id, input, conversationId || null, previewMode);
-      if (sequence !== previewRequestId.current) return;
-      setPreviewLines((old) => [...old, input, result.content || "没有可安全展示的建议。请检查绑定知识、工具上下文和运行记录。"]);
-      setPreviewResult(result); setPreviewInput("");
-      void getAgentLogs(selected.id).then((page) => { if (sequence === previewRequestId.current) setLogs(page.items); });
-    } catch (caught) { if (sequence === previewRequestId.current) setPreviewError(message(caught)); }
-    finally { if (sequence === previewRequestId.current) setPreviewBusy(false); }
+      await streamAgentDebug(selected.id, input, conversationId || null, previewMode, (event) => {
+        if (sequence !== previewRequestId.current || controller.signal.aborted) return;
+        if (event.event === "draft" && !receivedResult) {
+          const index = event.data.part_index;
+          if (typeof index === "number" && typeof event.data.text === "string") {
+            setPreviewDrafts((old) => ({ ...old, [index]: event.data.text as string }));
+          }
+        } else if (event.event === "result") {
+          const result = event.data as unknown as AgentDebugResult;
+          receivedResult = true; setPreviewDrafts({}); setPreviewResult(result);
+          setPreviewLines((old) => [...old, { role: "assistant", text: result.content || "没有可安全展示的建议。请检查绑定知识、工具上下文和运行记录。" }]);
+          void getAgentLogs(selected.id).then((page) => { if (sequence === previewRequestId.current) setLogs(page.items); }).catch(() => undefined);
+        } else if (event.event === "error") {
+          throw new Error(typeof event.data.message === "string" ? event.data.message : "Agent 调试失败");
+        }
+      }, controller.signal);
+      if (!receivedResult && !controller.signal.aborted) throw new Error("Agent 调试未返回最终结果，请重试");
+    } catch (caught) {
+      if (sequence === previewRequestId.current && !controller.signal.aborted) setPreviewError(message(caught));
+    } finally {
+      if (sequence === previewRequestId.current) { setPreviewBusy(false); setPreviewDrafts({}); }
+    }
   }
   return <AppShell><div className="agent-page"><div className="shell">
     <header className="topbar"><div className="title"><span className="title-icon">◇</span><div><h1>Agent 管理</h1><p>配置 TikTok 店铺的人工辅助客服建议</p></div></div>
@@ -252,8 +279,8 @@ export default function AgentsPage() {
             <div className="binding-meta"><span>当前店铺：<b>{currentStore?.name}</b></span><span>真实平台自动回复：<b>关闭</b></span><span>检索失败：<b>失败关闭</b></span></div><Link className="binding-link" href={`/knowledge?store_id=${storeId}`}>打开知识库 →</Link></section> : null}
           {tab === "logs" ? <section className="panel active" role="tabpanel"><div className="section-head"><h3>脱敏运行记录</h3><p>展示父子运行阶段和版本，不展示客户原文、完整模型输入或密钥。</p></div><div className="logs">{logsError ? <p role="alert">{logsError}</p> : logs.length ? logs.map((run) => <div className="bound-item" key={run.id}><div className="bound-item-body"><strong>{run.parent_run_id ? "子 Agent" : "主运行"} · {run.phase ?? run.intent ?? "待复核"} · {run.action}</strong><small>{run.model_provider}/{run.model_name} · {run.config_version ? `v${run.config_version} · ` : ""}{run.latency_ms ?? "—"} ms · trace {run.trace_id?.slice(0, 12) ?? "—"}</small></div><span className="bound-state">{run.status}</span></div>) : <div className="bound-empty">暂无运行记录</div>}</div></section> : null}
         </div></section>
-      <section className="preview" aria-labelledby="previewTitle"><div className="preview-head"><div><h3 id="previewTitle">预览与调试</h3><p>真实模型 · 已绑定知识检索 · 授权会话的只读工具 · 不发送真实消息</p></div><button type="button" className="btn small" onClick={() => { previewRequestId.current++; setPreviewLines([]); setPreviewResult(null); setPreviewError(""); setPreviewBusy(false); }}>清空</button></div>
-        <div className="preview-body" aria-live="polite">{previewLines.length ? previewLines.map((line, index) => <div className={`preview-bubble ${index % 2 ? "assistant" : "user"}`} key={index}>{line}</div>) : <p>输入问题，调试当前 Agent 或当前店铺的多 Agent 路由。</p>}{previewBusy ? <p role="status">正在调用模型、检索和工具…</p> : null}{previewError ? <p role="alert">{previewError}</p> : null}{previewResult ? <div className="preview-diagnostics"><strong>本次运行 · {previewResult.terminal_state}</strong><p>路由：{previewResult.routed_agents?.length ? previewResult.routed_agents.map((item) => item.name).join("、") : "未选择 Agent"}</p><p>工具：{previewResult.tool_events?.length ? previewResult.tool_events.map((item) => `${item.tool_name}（${item.status}）`).join("、") : previewResult.tool_calls.length ? previewResult.tool_calls.map((call) => `${call.tool_name}（${call.status}）`).join("、") : "未调用"}</p><p>引用：{previewResult.citations.length ? previewResult.citations.map((item) => item.source_label).join("、") : "无"}</p>{previewResult.reason_code ? <p>需复核：{previewResult.reason_code}</p> : null}<small>追踪 ID：{previewResult.trace_id}</small></div> : null}</div>
+      <section className="preview" aria-labelledby="previewTitle"><div className="preview-head"><div><h3 id="previewTitle">预览与调试</h3><p>真实模型 · 已绑定知识检索 · 授权会话的只读工具 · 不发送真实消息</p></div><button type="button" className="btn small" onClick={() => { previewRequestId.current++; previewAbort.current?.abort(); setPreviewDrafts({}); setPreviewLines([]); setPreviewResult(null); setPreviewError(""); setPreviewBusy(false); }}>清空</button></div>
+        <div ref={previewBody} className="preview-body" aria-live="polite">{previewLines.length ? previewLines.map((line, index) => <div className={`preview-bubble ${line.role}`} key={index}>{line.text}</div>) : <p>输入问题，调试当前 Agent 或当前店铺的多 Agent 路由。</p>}{previewBusy ? <p role="status">{Object.keys(previewDrafts).length ? "正在生成 · 草稿待复核" : "正在调用模型、检索和工具…"}</p> : null}{Object.entries(previewDrafts).sort(([a], [b]) => Number(a) - Number(b)).map(([index, text]) => <div className="preview-bubble assistant" aria-label="待复核草稿" key={index}>{text}</div>)}{previewError ? <p role="alert">{previewError}</p> : null}{previewResult ? <div className="preview-diagnostics"><strong>本次运行 · {previewResult.terminal_state}</strong><p>路由：{previewResult.routed_agents?.length ? previewResult.routed_agents.map((item) => item.name).join("、") : "未选择 Agent"}</p><p>工具：{previewResult.tool_events?.length ? previewResult.tool_events.map((item) => `${item.tool_name}（${item.status}）`).join("、") : previewResult.tool_calls.length ? previewResult.tool_calls.map((call) => `${call.tool_name}（${call.status}）`).join("、") : "未调用"}</p><p>引用：{previewResult.citations.length ? previewResult.citations.map((item) => item.source_label).join("、") : "无"}</p>{previewResult.reason_code ? <p>需复核：{previewResult.reason_code}</p> : null}<small>追踪 ID：{previewResult.trace_id}</small></div> : null}</div>
         <label className="preview-context">调试范围<select className="field" aria-label="调试范围" value={previewMode} onChange={(event) => setPreviewMode(event.target.value as "single" | "store")}><option value="single">当前 Agent</option><option value="store">当前店铺全部已启用 Agent</option></select></label>
         <label className="preview-context">只读工具上下文（可选）<select className="field" aria-label="只读工具上下文" value={conversationId} onChange={(event) => setConversationId(event.target.value)}><option value="">不关联会话；仅测试模型与已绑定知识</option>{sessions.map((item) => <option key={item.id} value={item.id}>{item.customer.name || "未命名客户"} · {item.id.slice(0, 8)}</option>)}</select></label><form className="preview-input" onSubmit={(event) => { event.preventDefault(); void preview(); }}><input className="field" maxLength={4000} placeholder="试试：你好 / 我的订单什么时候到？" value={previewInput} onChange={(event) => setPreviewInput(event.target.value)} /><button className="btn primary" type="submit" disabled={previewBusy || dirty || !selected.runtime.available}>运行调试</button></form><p className="preview-note">未绑定知识文件时仍可调试模型与授权只读工具，不会检索整店 FAQ。订单、物流和客户工具需关联当前店铺的授权会话；所有建议须由坐席复核。</p></section>
         <AgentCollaboration key={conversationId} conversationId={conversationId} refreshKey={previewResult?.agent_run_id} />

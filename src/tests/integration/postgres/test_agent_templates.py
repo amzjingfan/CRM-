@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
+from _support import require_isolated_postgres_url
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, select
@@ -44,7 +45,8 @@ SECTIONS = {key: "只处理授权业务，证据不足交人工。" for key, _ i
 
 @pytest.fixture
 async def api(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[SimpleNamespace]:
-    assert URL in ALLOWED_TEST_DATABASE_URLS
+    require_isolated_postgres_url(URL)
+    assert URL in ALLOWED_TEST_DATABASE_URLS or URL == os.getenv("AGENT_TEMPLATE_RUNTIME_TEST_DATABASE_URL")
     engine = create_async_engine(URL)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     ids = [uuid.uuid4() for _ in range(6)]

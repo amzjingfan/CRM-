@@ -26,7 +26,7 @@ services:
       POSTGRES_USER: crm_test
       POSTGRES_PASSWORD: crm_test
     ports:
-      - "5433:5432"
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-5433}:5432"
     # 测试库只保存自动化测试生成的临时数据。使用 tmpfs 可以保证容器删除后
     # 不遗留客户或开发数据，也避免测试误用正式 postgres_data 卷。
     tmpfs:

@@ -20,6 +20,7 @@ from app.agents.management.repository import list_enabled_agents
 from app.agents.memory.models import AgentSessionMemory
 from app.agents.memory.service import load_memory, remember_session_question
 from app.agents.orchestration.aggregator import AGGREGATE_PROMPT_VERSION
+from app.agents.orchestration.router import ROUTER_PROMPT_VERSION
 from app.agents.orchestration.service import RunProgress
 from app.agents.providers.factory import validate_tool_model
 from app.agents.runtime.execution import execute_model_run, persist_dynamic_result
@@ -201,7 +202,7 @@ async def run_formal_suggestion(
         provider=settings.llm_primary_provider,
         model=settings.llm_primary_model,
         prompt_versions={
-            "dynamic_router": "v2",
+            "dynamic_router": ROUTER_PROMPT_VERSION,
             "evidence_review": GROUNDING_PROMPT_VERSION,
             "answer_output": AGGREGATE_PROMPT_VERSION,
             **({"reply_plan": REPLY_PLAN_PROMPT_VERSION} if progress.reply_plan else {}),

@@ -73,7 +73,7 @@ export type DashboardTrend = { items: Array<{ date: string; sessions: number }> 
 export type DashboardChannels = { items: Array<{ platform: string; count: number; percentage: number }> };
 export type DashboardAlerts = { refund_requests: { total: number }; bad_reviews: { total: number; golden_window: boolean }; abandoned_carts: { total: number; potential_gmv: string } };
 export type TopQuery = { rank: number; intent: string; count: number };
-export type AgentRuntime = { available: boolean; llm_provider: string; llm_model: string | null; available_models?: string[]; model_options?: Array<{ provider: string; model_name: string }>; embedding_provider: string; embedding_model: string; reranker_model: string; prompt_versions: Record<string, string>; auto_reply_threshold: number; human_review_threshold: number; token_streaming: false };
+export type AgentRuntime = { available: boolean; llm_provider: string; llm_model: string | null; available_models?: string[]; model_options?: Array<{ provider: string; model_name: string }>; embedding_provider: string; embedding_model: string; reranker_model: string; prompt_versions: Record<string, string>; auto_reply_threshold: number; human_review_threshold: number; token_streaming: boolean };
 export type AgentReplyProfile = { tone: "friendly" | "professional" | "concise" | "empathetic"; reply_language: "auto" | "zh-CN" | "en"; operator_language: "zh-CN" | "en"; brand_name: string | null };
 export type AgentConfig = { id: string; store_id: string; name: string; code: string; description: string | null; agent_type: "service" | "operations"; status: "enabled" | "disabled"; draft_revision: number; published_version: number | null; model_provider: string | null; model_name: string | null; prompt_sections: Record<string, string>; enabled_tools: string[]; knowledge_file_ids: string[]; knowledge_scope: Record<string, unknown>; reply_profile: AgentReplyProfile; runtime: AgentRuntime; created_at: string; updated_at: string };
 export type AgentRunLog = { id: string; parent_run_id?: string | null; config_version?: number | null; phase?: string | null; status: string; action: string; intent: string | null; final_confidence: number | null; model_provider: string; model_name: string; prompt_version: string | null; latency_ms: number | null; input_tokens: number | null; output_tokens: number | null; error_code: string | null; trace_id: string | null; tool_calls: Array<{ id: string; tool_name: string; status: string; error_code: string | null; latency_ms: number | null; mocked: boolean }>; created_at: string };
@@ -364,10 +364,23 @@ export async function streamChatQuery(
   replyMode: "single" | "review_plan" = "single",
 ): Promise<void> {
   const init: RequestInit = { method: "POST", body: JSON.stringify({ session_id: sessionId, trigger_message_id: triggerMessageId ?? null, ...(replyMode === "review_plan" ? { reply_mode: replyMode } : {}) }), signal };
-  let response = await rawRequest("/chat/query", init);
+  return streamApiQuery("/chat/query", init, onEvent, signal);
+}
+
+export function streamAgentDebug(
+  agentId: string, message: string, conversationId: string | null, mode: "single" | "store",
+  onEvent: (event: ChatEvent) => void, signal: AbortSignal,
+): Promise<void> {
+  return streamApiQuery(`/agents/${agentId}/debug/stream`, {
+    method: "POST", body: JSON.stringify({ message, conversation_id: conversationId, mode }), signal,
+  }, onEvent, signal);
+}
+
+async function streamApiQuery(path: string, init: RequestInit, onEvent: (event: ChatEvent) => void, signal: AbortSignal): Promise<void> {
+  let response = await rawRequest(path, init);
   if (response.status === 401) {
     const refreshed = await rawRequest("/auth/browser/refresh", { method: "POST" });
-    if (refreshed.ok) response = await rawRequest("/chat/query", init);
+    if (refreshed.ok) response = await rawRequest(path, init);
   }
   if (!response.ok || !response.body) {
     const body = (await response.json().catch(() => null)) as ApiResponse<unknown> | null;

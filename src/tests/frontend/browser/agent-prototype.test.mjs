@@ -65,10 +65,14 @@ async function openAgentPage(options = {}) {
       writes.push({ publish: JSON.parse(request.postData() ?? "{}") });
       current.published_version = (current.published_version ?? 0) + 1;
       data = current;
-    } else if (url.pathname.endsWith("/debug") && request.method() === "POST") {
+    } else if ((url.pathname.endsWith("/debug") || url.pathname.endsWith("/debug/stream")) && request.method() === "POST") {
       const payload = JSON.parse(request.postData() ?? "{}");
       writes.push({ debug: payload, path: url.pathname });
       data = { agent_run_id: "00000000-0000-4000-8000-0000000000b1", content: "已查询绑定知识，订单信息需要关联会话。", action: "human_review", terminal_state: "HUMAN_REVIEW", citations: [], tool_calls: [], tool_events: payload.mode === "store" ? [{ agent_id: agents[0].id, tool_name: "query_order", status: "succeeded", call_id: "call-1" }] : [], routed_agents: payload.mode === "store" ? [{ id: agents[0].id, name: agents[0].name }] : [], trace_id: "debug-trace", send_performed: false };
+      if (url.pathname.endsWith("/stream")) {
+        if (options.debugGate) await options.debugGate();
+        return route.fulfill({ status: 200, contentType: "text/event-stream", body: `event: accepted\ndata: {}\n\nevent: result\ndata: ${JSON.stringify(data)}\n\nevent: done\ndata: {}\n\n` });
+      }
     } else if (url.pathname.endsWith("/logs")) data = { items: [], page: 1, page_size: 20, total: 0 };
     else if (url.pathname.endsWith("/approve") && request.method() === "POST") { writes.push(JSON.parse(request.postData() ?? "{}")); data = { ...file.latest_version, approval_status: "approved_for_internal_review" }; }
     else if (url.pathname.endsWith("/revoke") && request.method() === "POST") { writes.push({ revoked: true }); data = { ...file.latest_version, approval_status: "draft" }; }
@@ -315,7 +319,7 @@ test("disabled Agent live debug calls backend without platform sending", async (
     await page.getByPlaceholder(/试试/).fill("你好");
     await page.getByRole("button", { name: "运行调试" }).click();
     await page.getByText(/已查询绑定知识/).waitFor();
-    assert.deepEqual(writes.at(-1), { debug: { message: "你好", conversation_id: null, mode: "single" }, path: "/v1/agents/00000000-0000-4000-8000-0000000000a3/debug" });
+    assert.deepEqual(writes.at(-1), { debug: { message: "你好", conversation_id: null, mode: "single" }, path: "/v1/agents/00000000-0000-4000-8000-0000000000a3/debug/stream" });
     assert.equal(requests.some((path) => path.includes("/chat/query") || path.includes("/messages")), false);
   } finally { await context.close(); }
 });
@@ -329,5 +333,97 @@ test("store debug sends multi-Agent mode and renders route and tool events", asy
     await page.getByText("路由：美国客服").waitFor();
     await page.getByText("工具：query_order（succeeded）").waitFor();
     assert.equal(writes.at(-1).debug.mode, "store");
+  } finally { await context.close(); }
+});
+
+
+test("debug clears submitted input immediately and preserves next draft", async () => {
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const { context, page } = await openAgentPage({ debugGate: () => gate });
+  try {
+    await page.getByPlaceholder(/试试/).fill("我的订单到哪了");
+    await page.getByRole("button", { name: "运行调试" }).click();
+    assert.equal(await page.getByPlaceholder(/试试/).inputValue(), "");
+    await page.locator(".preview-bubble.user").getByText("我的订单到哪了", { exact: true }).waitFor();
+    await page.getByPlaceholder(/试试/).fill("下一条问题");
+    release();
+    await page.getByText(/已查询绑定知识/).waitFor();
+    assert.equal(await page.getByPlaceholder(/试试/).inputValue(), "下一条问题");
+  } finally { release(); await context.close(); }
+});
+
+
+async function installDebugStream(page) {
+  await page.evaluate(() => {
+    const original = window.fetch;
+    window.fetch = async (...args) => {
+      if (!String(args[0]).endsWith("/debug/stream")) return original(...args);
+      const encoder = new TextEncoder();
+      const body = new ReadableStream({
+        start(controller) {
+          window.debugEmit = (event, data) => controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          window.debugEmit("accepted", {});
+          window.debugFinish = () => { window.debugEmit("done", {}); controller.close(); };
+        },
+      });
+      return new Response(body, { headers: { "content-type": "text/event-stream" } });
+    };
+  });
+}
+
+test("debug renders progressive drafts then replaces with reviewed result", async () => {
+  const { context, page } = await openAgentPage();
+  try {
+    await installDebugStream(page);
+    await page.getByPlaceholder(/试试/).fill("Where is my order?");
+    await page.getByRole("button", { name: "运行调试" }).click();
+    await page.evaluate(() => window.debugEmit("draft", { part_index: 0, text: "Your parcel", unverified: true, sendable: false }));
+    await page.getByLabel("待复核草稿").getByText("Your parcel", { exact: true }).waitFor();
+    await page.evaluate(() => window.debugEmit("draft", { part_index: 0, text: "Your parcel arrived", unverified: true, sendable: false }));
+    await page.getByLabel("待复核草稿").getByText("Your parcel arrived", { exact: true }).waitFor();
+    await page.getByPlaceholder(/试试/).fill("Next question");
+    await page.evaluate(() => {
+      window.debugEmit("result", { agent_run_id: "run", content: "Delivered today.", terminal_state: "review_ready", routed_agents: [], tool_events: [{ tool_name: "query_logistics", status: "succeeded" }], tool_calls: [], citations: [{source_label:"delivery.md"}], trace_id: "stream-trace" });
+      window.debugFinish();
+    });
+    await page.getByText("Delivered today.", { exact: true }).waitFor();
+    assert.equal(await page.getByLabel("待复核草稿").count(), 0);
+    assert.equal(await page.getByPlaceholder(/试试/).inputValue(), "Next question");
+    await page.getByText("引用：delivery.md", { exact: true }).waitFor();
+  } finally { await context.close(); }
+});
+
+test("debug error removes unreviewed drafts and preserves new input", async () => {
+  const { context, page } = await openAgentPage();
+  try {
+    await installDebugStream(page);
+    await page.getByPlaceholder(/试试/).fill("First question");
+    await page.getByRole("button", { name: "运行调试" }).click();
+    await page.evaluate(() => window.debugEmit("draft", { part_index: 0, text: "Unreviewed" }));
+    await page.getByLabel("待复核草稿").waitFor();
+    await page.getByPlaceholder(/试试/).fill("Keep this next question");
+    await page.evaluate(() => { window.debugEmit("error", {message:"模型超时"}); window.debugFinish(); });
+    await page.getByText("模型超时", {exact:true}).waitFor();
+    assert.equal(await page.getByLabel("待复核草稿").count(),0);
+    assert.equal(await page.getByPlaceholder(/试试/).inputValue(),"Keep this next question");
+    assert.equal(await page.locator(".preview-bubble.user").innerText(),"First question");
+  } finally { await context.close(); }
+});
+
+test("debug store switch ignores late draft and result", async () => {
+  const { context, page } = await openAgentPage();
+  try {
+    await installDebugStream(page);
+    await page.getByPlaceholder(/试试/).fill("US question");
+    await page.getByRole("button", { name: "运行调试" }).click();
+    await page.getByLabel("当前店铺", {exact:true}).selectOption(uk.id);
+    await page.evaluate(() => {
+      window.debugEmit("draft", { part_index: 0, text:"OLD-US-DRAFT" });
+      window.debugEmit("result", {content:"OLD-US-RESULT"}); window.debugFinish();
+    });
+    assert.equal(await page.getByText("OLD-US-DRAFT",{exact:true}).count(),0);
+    assert.equal(await page.getByText("OLD-US-RESULT",{exact:true}).count(),0);
+    assert.equal(await page.locator(".preview-bubble").count(),0);
   } finally { await context.close(); }
 });

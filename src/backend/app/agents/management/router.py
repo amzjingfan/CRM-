@@ -1,12 +1,16 @@
 """Agent 运营管理 HTTP API。"""
 
 import uuid
+from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Annotated, cast
 
+import anyio
 from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi.responses import StreamingResponse
 
 from app.agents.core.factory import SharedAgentRuntime
+from app.agents.delivery.reply_parts import DraftPartSink
 from app.agents.management.config_service import (
     config_view,
     create_config,
@@ -18,6 +22,7 @@ from app.agents.management.config_service import (
     update_config,
 )
 from app.agents.management.debug import run_agent_debug_v2
+from app.agents.management.debug_stream import stream_debug_events
 from app.agents.management.schemas import (
     AgentConfigCreate,
     AgentConfigUpdate,
@@ -32,6 +37,7 @@ from app.agents.management.templates.batch_router import router as template_batc
 from app.agents.management.templates.router import router as templates_router
 from app.agents.management.templates.selection_schemas import AgentTemplateSourceView, DetachTemplateRequest
 from app.agents.management.templates.source import detach_template, template_source
+from app.agents.orchestration.service import RunProgress
 from app.agents.tools.access import tool_catalog
 from app.agents.tools.collaboration import CollaborationView, list_collaboration
 from app.agents.tools.logistics_updates.http import router as logistics_notification_router
@@ -39,7 +45,7 @@ from app.agents.tools.metadata import ToolCatalogView
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
-from app.shared.database.redis import consume_chat_query
+from app.shared.database.redis import acquire_chat_stream, consume_chat_query, release_chat_stream
 from app.shared.database.session import DbSession
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.shared.schemas.responses import ApiResponse
@@ -249,6 +255,65 @@ async def debug_agent(
     if not settings.agent_v2_debug_enabled:
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "动态 Agent 调试尚未启用", 503)
     return ApiResponse(data=await run_agent_debug_v2(session, user, agent_id, payload, trace_id, runtime))
+
+
+@router.post(
+    "/{agent_id}/debug/stream",
+    dependencies=[Depends(require_csrf), Depends(require_permission("agent.manage"))],
+    response_class=StreamingResponse,
+    description="坐席调试草稿 SSE；最终结果完整复核，不发送平台消息。",
+)
+async def debug_agent_stream(
+    agent_id: uuid.UUID,
+    payload: AgentDebugRequest,
+    request: Request,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> StreamingResponse:
+    settings = get_settings()
+    if not settings.agent_v2_debug_enabled or not settings.agent_debug_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "动态 Agent 调试尚未启用", 503)
+    await get_config(session, user, agent_id, permission_code="agent.manage")
+    client_ip = request.client.host if request.client else "unknown"
+    if not await consume_chat_query(user.id, client_ip, settings.chat_query_limit, settings.chat_query_window_seconds):
+        raise AppError(ErrorCode.RATE_LIMITED, "Agent 调试请求过于频繁", 429)
+    lease = await acquire_chat_stream(user.id, settings.chat_user_concurrency, settings.chat_stream_lease_seconds)
+    if lease is None:
+        raise AppError(ErrorCode.RATE_LIMITED, "同时进行的 AI 建议过多", 429)
+    runtime = cast(SharedAgentRuntime | None, getattr(request.app.state, "agent_runtime", None))
+    trace_id = str(getattr(request.state, "trace_id", uuid.uuid4()))
+
+    async def run(on_draft: DraftPartSink) -> AgentDebugView:
+        return await run_agent_debug_v2(
+            session,
+            user,
+            agent_id,
+            payload,
+            trace_id,
+            runtime,
+            progress=RunProgress(reply_plan=True, on_draft=on_draft),
+        )
+
+    async def events() -> AsyncIterator[str]:
+        stream = stream_debug_events(run, trace_id=trace_id)
+        try:
+            async for event in stream:
+                yield event
+        finally:
+            with anyio.CancelScope(shield=True):
+                try:
+                    await stream.aclose()
+                finally:
+                    await release_chat_stream(user.id, lease)
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get(

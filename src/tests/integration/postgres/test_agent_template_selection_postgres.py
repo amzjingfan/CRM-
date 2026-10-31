@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from _support import require_isolated_postgres_url
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select, text
@@ -47,7 +48,8 @@ ALLOWED_TEST_DATABASE_URLS = {
 
 @pytest.fixture
 async def api():
-    assert URL in ALLOWED_TEST_DATABASE_URLS
+    require_isolated_postgres_url(URL)
+    assert URL in ALLOWED_TEST_DATABASE_URLS or URL == os.getenv("AGENT_TEMPLATE_RUNTIME_TEST_DATABASE_URL")
     engine = create_async_engine(URL)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     admin, scoped, viewer = [uuid.uuid4() for _ in range(3)]

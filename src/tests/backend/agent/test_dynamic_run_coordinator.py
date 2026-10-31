@@ -11,13 +11,14 @@ from agent._review_helpers import accepted_review_turn
 
 from app.agents.management.repository import PublishedAgent
 from app.agents.orchestration.coordinator import SpecialistResult
-from app.agents.orchestration.service import execute_dynamic_run
+from app.agents.orchestration.service import RunProgress, execute_dynamic_run
 from app.agents.providers.tool_calling import FunctionCall, ToolTurn
 from app.agents.runtime.snapshot import RunSnapshot
 
 
 @pytest.mark.asyncio
-async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion() -> None:
+@pytest.mark.parametrize("reply_plan", [False, True])
+async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion(reply_plan) -> None:
     store, conversation, customer = (uuid.uuid4() for _ in range(3))
     agents = tuple(
         PublishedAgent(
@@ -50,7 +51,10 @@ async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion
                     FunctionCall(
                         "route",
                         "route_agents",
-                        {"selections": [{"agent_id": str(item.id), "subquestion": item.name} for item in agents]},
+                        {
+                            "question_language": "zh-CN",
+                            "selections": [{"agent_id": str(item.id), "subquestion": item.name} for item in agents],
+                        },
                     ),
                 ),
                 {"role": "assistant", "content": None},
@@ -61,14 +65,23 @@ async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion
     )
 
     async def aggregate_model(*, messages, tools, max_output_tokens):
-        if tools:
+        if tools and tools[0].name == "review_answer_evidence":
             return accepted_review_turn(messages)
         import json
 
         payload = json.loads(messages[1]["content"])
-        assert set(payload["published_output_policies"]) == {
-            agent.prompt_sections["language_format"] for agent in agents
-        }
+        policies = payload["published_output_policies"]
+        assert {agent.prompt_sections["language_format"] for agent in agents}.issubset(policies)
+        assert any("zh-CN" in item for item in policies)
+        if tools:
+            assert tools[0].name == "submit_reply_parts"
+            return ToolTurn(
+                None,
+                (FunctionCall("p", "submit_reply_parts", {"texts": ["已查询订单和物流，请坐席复核。"]}),),
+                {},
+                2,
+                2,
+            )
         return ToolTurn(
             "已查询订单和物流，请坐席复核。",
             (),
@@ -81,6 +94,7 @@ async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion
     seen = []
 
     async def worker(selection):
+        assert selection.question_language == "zh-CN"
         seen.append(selection.agent_id)
         facts = (
             {"query_order.status": "shipped"}
@@ -97,6 +111,7 @@ async def test_dynamic_run_routes_two_agents_and_returns_one_reviewed_suggestion
         worker=worker,
         deadline=time.monotonic() + 2,
         max_catalog_tokens=1000,
+        progress=RunProgress(reply_plan=reply_plan),
     )
     assert set(seen) == {item.id for item in agents}
     assert run.suggestion.content == "已查询订单和物流，请坐席复核。"

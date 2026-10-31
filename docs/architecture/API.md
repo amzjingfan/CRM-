@@ -127,6 +127,7 @@ Agent 发布接口在既有授权、revision和模型配置校验后执行一次
 - `POST /agents/{agent_id}/enable|disable|toggle`、`GET /agents/{agent_id}/logs`。
 - 普通 Agent 列表、详情及运行日志按目标店铺 `agent.view` 过滤；创建、修改、发布、启停、删除及调试按目标店铺 `agent.manage` 校验。部门会话监督范围不授予其他店铺 Agent 配置权限；工作台正式建议维持既有会话权限。
 
+- `POST /agents/{agent_id}/debug/stream` 使用相同请求体及 agent.manage、CSRF、店铺/会话/绑定文件权限校验和 AI 限流，另申请当前用户 SSE 并发租约。按 accepted → draft* → result|error → done 交付；draft 包含 part_index、text 完整快照、unverified=true、sendable=false，只供坐席查看。result 是原 AgentDebugView 的完整复核终态，包含全部已复核答复段、路由、工具和引用；失败或断线清除草稿，不自动重发。连接关闭取消模型运行并记录 DYNAMIC_RUN_CANCELLED，finally 释放本请求租约。原 JSON 调试接口保留兼容；runtime.token_streaming=true 表示支持调试草稿流，不代表自动发送已开启。
 - `POST /agents/{agent_id}/debug` 接收 `message`、可选 `conversation_id` 和 `mode=single|store`，需要 `agent.manage`、CSRF 和 AI 查询限流。新版调试开关开启时，`single` 可调试该店铺已发布的停用 Agent；`store` 从该店所有启用 Agent 的发布版本中路由一个或多个。服务端再次校验店铺及文件绑定；绑定文件需 `knowledge.view`，会话需 `workspace.view` 且同店。响应返回人工建议、`routed_agents/tool_events/reason_code`、有效文件引用和追踪号；没有会话时订单和客户工具缺少可信对象，执行会返回明确的上下文缺失状态。TikTok 会话经已验证买家身份返回订单候选，模型选择后才查询对应详情或物流。商品、优惠及绑定知识可独立于买家会话查询；两个明确配置的内部写入可保存 AI 协作记录。调试不创建客户消息、不执行平台写入或发送。
 - `reply_profile` 仅接受固定语气、回复语言、坐席语言和经清洗的品牌名；阈值字段仍拒绝。模型及 Prompt 仅能经 Agent 草稿与发布接口配置，不由调试或正式运行请求覆盖。
 - Agent 新建与修改支持 `agent_type=service|operations` 和当前授权店铺的 `knowledge_file_ids`。新增或改变非空文件绑定还需 `knowledge.view`；新版执行器由职责描述而非固定类型决定参与路由。文件绑定保存时校验店铺，运行时再校验版本审批、有效状态、归档/删除和模型门禁。文件 RAG 的查询向量化、SQL 与重排共用 12 秒总时限，总 Agent 运行另受同一绝对截止时间限制。

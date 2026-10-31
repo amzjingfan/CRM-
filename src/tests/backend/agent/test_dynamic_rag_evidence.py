@@ -183,3 +183,13 @@ async def test_dynamic_tool_audit_maps_completed_knowledge_query_without_changin
     if tool_name == "search_knowledge" and semantic_status in {"retrieved", "no_hits"}:
         assert values["output_summary"]["result_status"] == semantic_status
     session.commit.assert_awaited_once()
+
+
+def test_empty_retrieval_explains_query_miss_and_supports_semantic_retry():
+    from app.agents.rag.retriever import EvidenceBundle, project_evidence_for_model
+
+    output = project_evidence_for_model(EvidenceBundle((), 0))
+    assert output["status"] == "no_hits"
+    assert output["hits"] == []
+    assert "query_guidance" in output
+    assert "未审批" in output["query_guidance"]

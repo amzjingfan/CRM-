@@ -126,8 +126,14 @@ def project_evidence_for_model(bundle: EvidenceBundle) -> dict[str, object]:
                 "content": content,
             }
         )
-    return {
+    result: dict[str, object] = {
         "status": "retrieved" if projected else "no_hits",
         "hits": projected,
         "excluded_file_count": bundle.excluded_file_count,
     }
+    if not projected:
+        result["query_guidance"] = (
+            "本轮未命中不等于文件不存在或未审批。请结合当前问题，用完整自然语言描述主题和所需信息重新检索，"
+            "不要只搜索编号或脱敏占位符；仍无依据时明确说明本轮未检索到相关片段，不能编造政策。"
+        )
+    return result

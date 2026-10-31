@@ -93,7 +93,7 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(
     result = await run_specialist(
         snapshot=snapshot,
         agent=agent,
-        selection=RoutedAgent(agent_id, "我的包裹在哪里"),
+        selection=RoutedAgent(agent_id, "Where is the parcel?", "zh-CN"),
         provider=provider,
         executor=executor,
         rag_service=None,
@@ -103,6 +103,7 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(
         ),
         deadline=time.monotonic() + 5,
         model_limits=ModelLimits(8000, 1024, 256),
+        customer_question="我的包裹在哪里",
     )
     assert result.reason_code == expected_reason
     assert result.answer == (answer if expected_reason is None else None)
@@ -115,6 +116,11 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(
         assert not result.verified_facts
     assert executor.execute.await_count == 1
     first_call = provider.complete.await_args_list[0].kwargs
+    import json
+
+    question_data = json.loads(first_call["messages"][-1]["content"])
+    assert question_data["question_language"] == "zh-CN"
+    assert question_data["untrusted_question"] == "我的包裹在哪里"
     assert [tool.name for tool in first_call["tools"]] == ["query_logistics"]
     from app.agents.rag.search import RagRetrievalTimeout
     from app.agents.runtime import worker

@@ -97,7 +97,7 @@ class AgentRuntimeView(BaseModel):
     prompt_versions: dict[str, str]
     auto_reply_threshold: float
     human_review_threshold: float
-    token_streaming: Literal[False] = False
+    token_streaming: Literal[True] = True
 
 
 class AgentDebugRequest(BaseModel):

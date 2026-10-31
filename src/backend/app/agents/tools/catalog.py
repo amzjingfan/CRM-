@@ -35,7 +35,11 @@ class NoModelArguments(StrictToolArguments):
 class KnowledgeSearchArguments(StrictToolArguments):
     """模型只可提交查询文本；店铺及文件范围由闭包中的可信服务固定。"""
 
-    query: str = Field(min_length=1, max_length=4000)
+    query: str = Field(
+        min_length=1,
+        max_length=4000,
+        description="描述当前问题的完整检索主题与所需信息，不要只用编号或脱敏占位符；无命中时可结合问题语义改写再次检索。",
+    )
 
 
 class ToolExecutionPort(Protocol):

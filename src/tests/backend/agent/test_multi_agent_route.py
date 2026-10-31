@@ -117,3 +117,39 @@ async def test_router_rejects_cross_store_candidates_before_model_call() -> None
             max_catalog_tokens=1000,
         )
     assert model.seen == []
+
+
+@pytest.mark.asyncio
+async def test_model_question_language_is_frozen_independent_of_history_and_subquestion():
+    agent = _agent(uuid.uuid4(), "订单物流")
+
+    class Model:
+        async def complete(self, *, messages, tools, max_output_tokens):
+            assert json.loads(messages[-1]["content"])["question"] == "我的包裹到哪了？"
+            return ToolTurn(
+                None,
+                (
+                    FunctionCall(
+                        "r",
+                        "route_agents",
+                        {
+                            "question_language": "zh-CN",
+                            "selections": [{"agent_id": str(agent.id), "subquestion": "Where is the parcel?"}],
+                        },
+                    ),
+                ),
+                {},
+                1,
+                1,
+            )
+
+    plan = await route_agents(
+        question="我的包裹到哪了？",
+        agents=(agent,),
+        provider=Model(),
+        deadline=time.monotonic() + 2,
+        max_catalog_tokens=1024,
+        routing_context="inbound: Where is my order?",
+    )
+    assert plan.question_language == "zh-CN"
+    assert plan.selections[0].question_language == "zh-CN"

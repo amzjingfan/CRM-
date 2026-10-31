@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from _support import require_isolated_postgres_url
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -44,7 +45,8 @@ SECTIONS = {key: "只处理授权业务，证据不足交人工。" for key, _ i
 
 @pytest.fixture
 async def env(monkeypatch):
-    assert URL in ALLOWED_TEST_DATABASE_URLS
+    require_isolated_postgres_url(URL)
+    assert URL in ALLOWED_TEST_DATABASE_URLS or URL == os.getenv("AGENT_TEMPLATE_RUNTIME_TEST_DATABASE_URL")
     engine = create_async_engine(URL)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     actor, manager, store, other, template, file_id, file_other, role_id = [uuid.uuid4() for _ in range(8)]

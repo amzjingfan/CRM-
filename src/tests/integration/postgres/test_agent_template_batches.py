@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
 import pytest
+from _support import require_isolated_postgres_url
 from sqlalchemy import delete, select, update
 from test_agent_template_application_postgres import env as env_fixture
 from test_agent_template_application_postgres import make_preview
@@ -31,7 +32,10 @@ ALLOWED_TEST_DATABASE_URLS = {
 
 @pytest.fixture(autouse=True)
 def dedicated_database():
-    assert os.getenv("TEST_DATABASE_URL") in ALLOWED_TEST_DATABASE_URLS
+    require_isolated_postgres_url(os.getenv("TEST_DATABASE_URL"))
+    assert os.getenv("TEST_DATABASE_URL") in ALLOWED_TEST_DATABASE_URLS or os.getenv("TEST_DATABASE_URL") == os.getenv(
+        "AGENT_TEMPLATE_RUNTIME_TEST_DATABASE_URL"
+    )
 
 
 def worker(env):
@@ -547,7 +551,8 @@ def test_main_disposes_real_pool_between_different_event_loops(monkeypatch):
     from app.shared.config.settings import get_settings
 
     url = os.getenv("TEST_DATABASE_URL")
-    assert url in ALLOWED_TEST_DATABASE_URLS
+    require_isolated_postgres_url(url)
+    assert url in ALLOWED_TEST_DATABASE_URLS or url == os.getenv("AGENT_TEMPLATE_RUNTIME_TEST_DATABASE_URL")
     engine = create_async_engine(url)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     monkeypatch.setattr(main, "engine", engine)
@@ -575,17 +580,22 @@ async def test_real_main_lifespan_runs_confirmed_queue_with_no_browser(env, monk
     from app.shared.config.settings import get_settings
 
     monkeypatch.setattr(
-        main, "settings", get_settings().model_copy(update={"agent_template_processor_poll_seconds": 0.001})
+        main,
+        "settings",
+        get_settings().model_copy(
+            update={"agent_template_processor_enabled": True, "agent_template_processor_poll_seconds": 0.001}
+        ),
     )
     monkeypatch.setattr(main, "build_shared_agent_runtime", lambda _: None)
     async with main.lifespan(main.app):
+        processor = main.app.state.template_batch_processor
+        assert processor._task is not None
         for _ in range(100):
             b, _ = await state(env, view)
             if b.status == "completed":
                 break
             await asyncio.sleep(0.01)
         assert b.status == "completed"
-        processor = main.app.state.template_batch_processor
     assert processor._task is None
 
 

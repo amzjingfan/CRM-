@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from _support import require_isolated_postgres_url
 from agent._review_helpers import accepted_review_turn
 from sqlalchemy import delete, func, select
 from test_agent_rag_postgres import approved_chunk_metadata, approved_document_fields, vector
@@ -42,12 +43,16 @@ from app.shared.database.base import User
 from app.tools.models import ToolCall
 
 env = env_fixture
-URL = "postgresql+asyncpg://crm_test:crm_test@127.0.0.1:56874/crm_template_batch_full_test_20261030"
+URL = os.getenv(
+    "AGENT_TEMPLATE_RUNTIME_TEST_DATABASE_URL",
+    "postgresql+asyncpg://crm_test:crm_test@127.0.0.1:56874/crm_template_batch_full_test_20261030",
+)
 pytestmark = [pytest.mark.asyncio, pytest.mark.skipif(not os.getenv("TEST_DATABASE_URL"), reason="需要专用 PostgreSQL")]
 
 
 @pytest.fixture(autouse=True)
 def dedicated_database():
+    require_isolated_postgres_url(URL)
     assert os.getenv("TEST_DATABASE_URL") == URL
     assert os.getenv("DATABASE_URL") == URL
 
