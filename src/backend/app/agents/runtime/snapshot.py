@@ -117,6 +117,7 @@ async def freeze_run_context(
                 item.model_name,
                 list(item.tool_names),
                 list(item.file_ids),
+                item.reply_profile.model_dump(mode="json") if item.reply_profile is not None else None,
             ]
             for item in published_agents
         ],
@@ -234,6 +235,7 @@ async def freeze_debug_context(
                 item.model_name,
                 list(item.tool_names),
                 list(item.file_ids),
+                item.reply_profile.model_dump(mode="json") if item.reply_profile is not None else None,
             ]
             for item in published_agents
         ],

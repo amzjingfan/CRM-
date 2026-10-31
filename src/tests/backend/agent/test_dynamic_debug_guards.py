@@ -152,7 +152,12 @@ async def test_debug_keeps_all_reviewed_reply_parts(monkeypatch: pytest.MonkeyPa
         AsyncMock(return_value=SimpleNamespace(snapshot_hash="test", low_sensitive_reference=lambda: {})),
     )
     outcome = SimpleNamespace(
-        suggestion=SimpleNamespace(content="First", reply_parts=("First", "Second")),
+        suggestion=SimpleNamespace(
+            content="First",
+            reply_parts=("First", "Second"),
+            customer_translation=None,
+            customer_translation_error_code=None,
+        ),
         specialists=(),
         route=SimpleNamespace(selections=()),
         phase=SimpleNamespace(value="review_ready"),

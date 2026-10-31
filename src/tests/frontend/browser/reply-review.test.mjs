@@ -65,6 +65,54 @@ async function openReview(options = {}) {
   return { context, page, emit, finish, batches, state, notificationRequests };
 }
 
+test("final stream operator translation stays internal and never enters the reply batch", async () => {
+  const { context, page, emit, finish, batches } = await openReview();
+  try {
+    await page.getByRole("button", { name: "生成", exact: true }).click();
+    await emit("result", { content: "Your parcel arrives tomorrow.", reply_parts: ["Your parcel arrives tomorrow."], trigger_message_id: "buyer-1", translation: { trigger_message_id: "buyer-1", target_language: "zh-CN", message_translation: "包裹何时到？", draft_translation: "您的包裹明天送达。" } });
+    await emit("done", { reason: "completed" });
+    const panel = page.getByRole("region", { name: "回复审阅" });
+    await panel.getByText("坐席译文 · 简体中文", { exact: true }).click({ timeout: 5000 });
+    await panel.getByText("您的包裹明天送达。", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("textbox", { name: "回复内容", exact: true }).inputValue(), "Your parcel arrives tomorrow.");
+    assert.equal(await panel.locator(".reply-review-parts").getByText("您的包裹明天送达。", { exact: true }).count(), 0);
+    await panel.getByRole("button", { name: "审阅整组发送", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "审阅整组回复" });
+    assert.equal(await dialog.getByText("您的包裹明天送达。", { exact: true }).count(), 0);
+    await dialog.getByRole("button", { name: "确认发送整组", exact: true }).click();
+    await page.getByText("交付完成", { exact: true }).waitFor();
+    assert.deepEqual(batches[0].body.parts, [{ kind: "text", content: "Your parcel arrives tomorrow." }]);
+    await panel.getByRole("button", { name: "刷新", exact: true }).click();
+    await finish(["Another reviewed reply."]);
+    assert.equal(await panel.getByText("您的包裹明天送达。", { exact: true }).count(), 0);
+  } finally { await context.close(); }
+});
+
+test("translation failure keeps the reviewed customer reply usable without exposing technical errors", async () => {
+  const { context, page, emit } = await openReview();
+  try {
+    await page.getByRole("button", { name: "生成", exact: true }).click();
+    await emit("result", { content: "Your parcel arrives tomorrow.", reply_parts: ["Your parcel arrives tomorrow."], trigger_message_id: "buyer-1", translation_error_code: "operator_translation_provider_error" });
+    await emit("done", { reason: "completed" });
+    const panel = page.getByRole("region", { name: "回复审阅" });
+    await panel.getByText("坐席译文暂不可用，请复核客户正文。", { exact: true }).waitFor({ timeout: 5000 });
+    assert.equal(await page.getByRole("textbox", { name: "回复内容", exact: true }).inputValue(), "Your parcel arrives tomorrow.");
+    assert.equal(await panel.getByRole("button", { name: "审阅整组发送", exact: true }).isEnabled(), true);
+    assert.equal(await page.getByText("operator_translation_provider_error", { exact: true }).count(), 0);
+  } finally { await context.close(); }
+});
+
+test("a translation for another buyer message never appears beside the current reviewed reply", async () => {
+  const { context, page, emit } = await openReview();
+  try {
+    await page.getByRole("button", { name: "生成", exact: true }).click();
+    await emit("result", { content: "Current reply.", reply_parts: ["Current reply."], trigger_message_id: "buyer-1", translation: { trigger_message_id: "other-buyer", target_language: "zh-CN", message_translation: "旧问题", draft_translation: "其他消息的译文" } });
+    await emit("done", { reason: "completed" });
+    await page.getByRole("region", { name: "回复审阅" }).getByText("Current reply.", { exact: true }).waitFor();
+    assert.equal(await page.getByText("其他消息的译文", { exact: true }).count(), 0);
+  } finally { await context.close(); }
+});
+
 test("unverified streamed drafts stay outside the composer until final review succeeds", async () => {
   const { context, page, emit, finish } = await openReview();
   try {

@@ -1,5 +1,9 @@
 # 系统架构
 
+## 2026-10-31 回复偏好本地候选
+
+当前候选新增 `048_published_reply_profile`，顺接已发布的 `047_supervisor_store_auth`，为 `agent_config_versions` 增加可空 JSONB `reply_profile`。旧行不回填，保持历史发布语义；新发布冻结配置，草稿和模板来源不能改变运行版本。降级删除该新字段会丢失新版本的表达偏好，仅允许在获准且有备份的环境执行；本轮往返验证只使用隔离测试库。UI 精简复用既有接口和批次处理器，不增加运行服务。
+
 ## Agent 模板与持久批次本地候选
 
 模板管理集中于 app.agents.management.templates，复用既有配置发布、七段编译与语义复核、权限、工具和RAG。模板应用把配置实际写入各店Agent；运行器不读取或动态合并模板，不共享跨店记忆。
@@ -35,7 +39,7 @@
 - 模型服务：本地 BGE-M3 Embedding、bge-reranker-large 和受控 DeepSeek Provider。
 - 通用文档解析 Worker：独立 MinerU 4.0.12 CPU 容器，读取私有 MinIO 源文件，调用内部 BGE-M3 后将完整版本的向量写入 pgvector；不对公网提供端口。
 
-当前候选源码数据库迁移头为 `046_merge_templates_dispatch`，合流 `045_agent_templates` 与 `045_dept_dispatch_login`，两条045均顺接 `044_reception_assignment` 及 `042_agent_reply_delivery` 与 `043_logistics_updates`；其中 `041_merge_agent_multishop_collab` 合流 `040_agent_collaboration` 与独立的 `035_tiktok_seller_multishop`；staging 已部署头以实际发布证据为准，本次接待派单尚未部署。Agent 分支的 035～039 顺序增加多 Agent 发布版本、七段提示词草稿、运行快照、会话记忆及父子运行阶段，040 增加内部协作记录；多店分支的 035 新增卖家级加密凭证、渠道可空关联和 OAuth 待选择材料，不改既有单店凭证。旧 Agent 配置在其 035 回填版本 1，新运行器以固定保守七段模板和项目主模型读取该版本的工具与显式绑定文件；管理员发布完整新版后替换兼容投影。有多个已启用 Agent、新版配置、共享授权或待选择授权任务时不得盲目降级。`030_merge_rag_reception` 汇合文档导入和基础接待两条独立 `029` 历史；`026` 增加可选登录名及部门/店铺/成员关系；`027` 允许 OAuth 短期任务在确认平台身份前不绑定内部店铺。迁移顺序是部署契约的一部分，禁止跳过或手工修改生产结构；恢复须依赖经验证的备份并保护部署后的业务增量。
+既有迁移历史中，`046_merge_templates_dispatch` 合流 `045_agent_templates` 与 `045_dept_dispatch_login`，两条045均顺接 `044_reception_assignment` 及 `042_agent_reply_delivery` 与 `043_logistics_updates`；其中 `041_merge_agent_multishop_collab` 合流 `040_agent_collaboration` 与独立的 `035_tiktok_seller_multishop`；staging 已部署头以实际发布证据为准，本次接待派单尚未部署。Agent 分支的 035～039 顺序增加多 Agent 发布版本、七段提示词草稿、运行快照、会话记忆及父子运行阶段，040 增加内部协作记录；多店分支的 035 新增卖家级加密凭证、渠道可空关联和 OAuth 待选择材料，不改既有单店凭证。旧 Agent 配置在其 035 回填版本 1，新运行器以固定保守七段模板和项目主模型读取该版本的工具与显式绑定文件；管理员发布完整新版后替换兼容投影。有多个已启用 Agent、新版配置、共享授权或待选择授权任务时不得盲目降级。`030_merge_rag_reception` 汇合文档导入和基础接待两条独立 `029` 历史；`026` 增加可选登录名及部门/店铺/成员关系；`027` 允许 OAuth 短期任务在确认平台身份前不绑定内部店铺。迁移顺序是部署契约的一部分，禁止跳过或手工修改生产结构；恢复须依赖经验证的备份并保护部署后的业务增量。
 
 `045_dept_dispatch_login` 新增登录会话和部门统一派单表，迁移既有逐店开关及成员参与资格，旧表保留作回溯；不改历史会话归属。迁移后曾开启逐店开关的部门将统一开启，部署前必须备份并核对部门店铺和安全开关；有新数据后不支持无损降级，回滚依赖私有备份。
 

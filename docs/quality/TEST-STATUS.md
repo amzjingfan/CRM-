@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-31 Agent模板界面与回复偏好本地候选 78e7069c9a0386d143c474ad9a6cd9a5fb903094：隔离PG3145通过/5条件跳过、生产前端230/230、契约78/78、Ruff/格式/类型305、048升级降级升级、16/237确定性评测与9/9真实模型合成参数测试通过；中间复核协议失败和语义评分分歧原件保留，最终未降低阈值。真实模型例只用合成物流事实，不等同真实TikTok或新RAG现场验收。临时库/自建UI服务清理、零外发，尚未部署；见 [TR](../reports/tests/TR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md)。
+
 2026-10-31 Agent调试流式与XBM全链路[TR R02](../reports/tests/TR-MVP-AGENT-DEBUG-STREAM-XBM-001-20261031-R02.md) PASS：候选本地3018/5条件跳过、生产浏览器214/214、78契约、16/237确定性评测；合并8bf的实际部署、中文/英文四工具+知识引用、126公网早片/终态和断连取消持久记录通过。模板与XBM Agent保留启用，合成指南已软删、有效文件/绑定0，清理后仅工具物流回答通过，零真实外发。未运行项及测量时间见R02，不等于production放行。
 
 2026-10-31 客服主管店铺授权[TR R02](../reports/tests/TR-MVP-SUPERVISOR-STORE-AUTH-001-20261031-R02.md) **PASS（本地行为与 staging 部署门禁）**：PR #686 合入主线 `8d296227`，本地隔离 PostgreSQL 2984 通过/5 跳过、前端契约 77 通过；已按该主线直构建并部署前后端，私有备份、源码核验、不可变镜像、ValidateOnly/Deploy、047、12 服务和三健康通过。现场主管角色的新权限关联为 1 行；原两店人工发送及所有安全开关保持，零外发。已登录主管页面的浏览器工具两次超时，记 `UI_UNAVAILABLE`；真实 TikTok 新店授权未执行，不记现场 OAuth 验收。见[低敏证据](../../release/evidence/staging/crm-staging-supervisor-store-authorization-20261031.json)，production No-Go。

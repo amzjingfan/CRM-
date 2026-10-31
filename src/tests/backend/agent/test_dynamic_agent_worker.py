@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from app.agents.core.reply_policy import AgentReplyProfile, compile_reply_policy
 from app.agents.management.repository import PublishedAgent
 from app.agents.memory.service import MemoryFact
 from app.agents.orchestration.router import RoutedAgent
@@ -23,6 +24,16 @@ from app.tools.contracts import ToolResult
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
+    "profile",
+    [None]
+    + [
+        AgentReplyProfile(tone=tone, reply_language=language, operator_language=operator)
+        for tone in ("friendly", "professional", "concise", "empathetic")
+        for language in ("auto", "zh-CN", "en")
+        for operator in ("zh-CN", "en")
+    ],
+)
+@pytest.mark.parametrize(
     "answer,expected_reason",
     [
         ("物流仍在运输中。", None),
@@ -32,7 +43,7 @@ from app.tools.contracts import ToolResult
     ],
 )
 async def test_specialist_calls_configured_logistics_tool_without_regex_route(
-    monkeypatch, answer, expected_reason
+    monkeypatch, answer, expected_reason, profile
 ) -> None:
     store, conversation, customer, agent_id = (uuid.uuid4() for _ in range(4))
     sections = {key: "只按当前授权和证据处理。" for key, _ in SECTION_TITLES}
@@ -52,6 +63,7 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(
         tool_names=("query_logistics",),
         file_ids=(),
         ready_for_v2=True,
+        reply_profile=profile,
     )
     now = datetime.now(UTC)
     snapshot = RunSnapshot(
@@ -119,6 +131,11 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(
     import json
 
     question_data = json.loads(first_call["messages"][-1]["content"])
+    system = first_call["messages"][0]["content"]
+    if profile:
+        assert compile_reply_policy(profile) in system
+    else:
+        assert "published-reply-preferences" not in system
     assert question_data["question_language"] == "zh-CN"
     assert question_data["untrusted_question"] == "我的包裹在哪里"
     assert [tool.name for tool in first_call["tools"]] == ["query_logistics"]

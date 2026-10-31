@@ -19,7 +19,7 @@ export function FieldReview({ diff, decision, skipped, catalog, onChange }: { di
   const value = decision?.choice === "manual" ? decision.value : initial(diff.field, diff.local);
   const manual = (next: FieldValue) => onChange({ choice: "manual", value: next });
   return <fieldset className="slot-row"><legend>{fieldLabel(diff.field)} · {statuses[diff.status]}</legend>
-    <div>基线 A：<TemplateValue value={diff.baseline} /></div><div>本店 B：<TemplateValue value={diff.local} /></div><div>模板 C：<TemplateValue value={diff.target} /></div>
+    <details className="template-details"><summary>查看字段完整值</summary><div>基线：<TemplateValue value={diff.baseline} /></div><div>本店：<TemplateValue value={diff.local} /></div><div>模板：<TemplateValue value={diff.target} /></div></details>
     <label className="field-group"><span>本次选择</span><select className="field" value={choice} onChange={(event) => {
       const next = event.target.value;
       if (next === "skip") onChange();

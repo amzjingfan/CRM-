@@ -11,6 +11,7 @@ from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.core.reply_policy import AgentReplyProfile
 from app.agents.management.config_models import AgentConfig
 from app.agents.management.models import AgentConfigVersion
 from app.agents.management.templates.diff import FIELD_KEYS
@@ -71,12 +72,13 @@ def version_snapshot(version: AgentConfigVersion) -> dict[str, JsonValue]:
             "prompt_sections": dict(version.prompt_sections),
             "enabled_tools": sorted(set(version.tool_names)),
             "knowledge_file_ids": sorted(set(version.file_ids)),
+            "reply_profile": copy.deepcopy(version.reply_profile),
         },
     )
 
 
 def running_snapshot(snapshot: dict[str, JsonValue]) -> dict[str, JsonValue]:
-    result = {key: value for key, value in snapshot.items() if key != "reply_profile"}
+    result = dict(snapshot)
     result["prompt_sections"] = {
         key: value.strip() for key, value in cast(dict[str, str], result["prompt_sections"]).items()
     }
@@ -127,6 +129,8 @@ async def prepare_publication(snapshot: dict[str, JsonValue], settings: Settings
     if not isinstance(provider, str) or not isinstance(model, str):
         raise AppError(ErrorCode.VALIDATION_ERROR, "尚未配置模型", 422)
     compiled = compile_prompt(cast(dict[str, str], snapshot["prompt_sections"]))
+    if snapshot.get("reply_profile") is not None:
+        AgentReplyProfile.model_validate(snapshot["reply_profile"])
     review_input, review_output = await review_configured_prompt(
         sections=compiled.sections, settings=settings, provider_name=provider, model_name=model
     )
@@ -169,6 +173,7 @@ def write_publication(
         ready_for_v2=True,
         published_by=publisher_id,
         template_source_json=template_source(config),
+        reply_profile=copy.deepcopy(cast(dict[str, object] | None, snapshot["reply_profile"])),
     )
     session.add(version)
     config.__dict__["_published_template_source_json"] = version.template_source_json

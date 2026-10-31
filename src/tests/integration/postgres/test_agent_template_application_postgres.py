@@ -698,6 +698,48 @@ async def test_normal_publish_freezes_actual_local_source_and_read_view(env, mon
         assert config_service.config_view(loaded).published_template_source_json == version.template_source_json
 
 
+async def test_reply_preferences_publish_freezes_local_values_and_isolates_draft_and_store(env, monkeypatch):
+    from app.agents.management import repository, service
+
+    initial = await make_preview(env)
+    await execute(env, initial)
+    local_profile = {"tone": "empathetic", "reply_language": "en", "operator_language": "zh-CN"}
+    async with env.sessions() as db:
+        agent = await db.scalar(select(AgentConfig).where(AgentConfig.store_id == env.store))
+        cid = agent.id
+        agent.knowledge_scope = {**agent.knowledge_scope, "reply_profile": local_profile}
+        agent.draft_revision += 1
+        await db.commit()
+        monkeypatch.setattr(service, "get_settings", lambda: env.settings)
+        first = await service.publish_agent(
+            db, store_id=env.store, config_id=cid, expected_revision=agent.draft_revision, publisher_id=env.actor
+        )
+        assert first.reply_profile == local_profile
+        published = await repository.get_published_agent(db, store_id=env.store, config_id=cid)
+        assert published.reply_profile.reply_language == "en"
+        assert await repository.get_published_agent(db, store_id=env.other, config_id=cid) is None
+        agent.knowledge_scope = {**agent.knowledge_scope, "reply_profile": {**local_profile, "reply_language": "zh-CN"}}
+        agent.draft_revision += 1
+        await db.commit()
+        revision = agent.draft_revision
+        assert (
+            await repository.get_published_agent(db, store_id=env.store, config_id=cid)
+        ).reply_profile.reply_language == "en"
+    # 重新应用模板不能带入模板偏好，也不能丢失本店草稿；显式发布才改变运行。
+    adopted = await make_preview(
+        env, action="update", agent_id=str(cid), expected_revision=revision, publish=True, include_existing_draft=True
+    )
+    await execute(env, adopted)
+    async with env.sessions() as db:
+        published = await repository.get_published_agent(db, store_id=env.store, config_id=cid)
+        assert published.config_version == 2
+        assert published.reply_profile.reply_language == "zh-CN"
+        old = await db.scalar(
+            select(AgentConfigVersion).where(AgentConfigVersion.agent_config_id == cid, AgentConfigVersion.version == 1)
+        )
+        assert old.reply_profile == local_profile
+
+
 async def test_normal_publication_preserves_explicit_local_override_source(env, monkeypatch):
     from app.agents.management import service
 

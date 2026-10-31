@@ -187,6 +187,7 @@ class AgentWorkflowResult(BaseModel):
     detected_language: CustomerLanguage
     reply_language: SupportedLanguage
     customer_translation: TranslationBundleResult | None = None
+    customer_translation_error_code: str | None = None
     safety_reason_codes: list[str] = Field(default_factory=list, max_length=8)
     provider: str
     model: str

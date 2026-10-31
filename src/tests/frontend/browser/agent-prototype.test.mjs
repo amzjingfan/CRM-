@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
 const require = createRequire(new URL("../../../frontend/package.json", import.meta.url));
@@ -69,6 +70,7 @@ async function openAgentPage(options = {}) {
       const payload = JSON.parse(request.postData() ?? "{}");
       writes.push({ debug: payload, path: url.pathname });
       data = { agent_run_id: "00000000-0000-4000-8000-0000000000b1", content: "已查询绑定知识，订单信息需要关联会话。", action: "human_review", terminal_state: "HUMAN_REVIEW", citations: [], tool_calls: [], tool_events: payload.mode === "store" ? [{ agent_id: agents[0].id, tool_name: "query_order", status: "succeeded", call_id: "call-1" }] : [], routed_agents: payload.mode === "store" ? [{ id: agents[0].id, name: agents[0].name }] : [], trace_id: "debug-trace", send_performed: false };
+      if (options.operatorTranslation) Object.assign(data, { content: "Your parcel arrives tomorrow.", customer_translation: { trigger_message_id: "synthetic", source_text_sha256: "0".repeat(64), source_language: "en", target_language: "zh-CN", message_translation: "包裹何时到？", draft_translation: "您的包裹明天送达。", prompt_version: "test", provider: "test", model: "test", input_tokens: 1, output_tokens: 1, latency_ms: 1 } });
       if (url.pathname.endsWith("/stream")) {
         if (options.debugGate) await options.debugGate();
         return route.fulfill({ status: 200, contentType: "text/event-stream", body: `event: accepted\ndata: {}\n\nevent: result\ndata: ${JSON.stringify(data)}\n\nevent: done\ndata: {}\n\n` });
@@ -86,6 +88,11 @@ async function openAgentPage(options = {}) {
   });
   if (process.env.AGENT_CAPTURE) await page.screenshot({ path: process.env.AGENT_CAPTURE, fullPage: true });
   return { context, page, writes };
+}
+
+async function openMore(page) {
+  const menu = page.locator(".agent-more");
+  if (await menu.getAttribute("open") === null) await page.getByText("更多", { exact: true }).click();
 }
 
 test("temporary preview auto-send switch is absent and real Agent settings remain", async () => {
@@ -131,31 +138,42 @@ test("mobile Agent action toolbar keeps all actions reachable before and after e
   } finally { await context.close(); }
 });
 
-test("来源分开显示草稿与运行，解除关联使用准确 revision 并保留运行来源", async () => {
+test("compact More menu keeps template update and exact-revision detach available without a source panel", async () => {
   const { context, page, writes } = await openAgentPage({ templateSource: true });
   try {
-    await page.getByText("草稿来源：共享模板 · 目标 v2").waitFor();
-    await page.getByText(/当前运行：Agent 发布 v1/).waitFor(); assert.equal(await page.getByText("不应展示的基线正文").count(), 0);
+    assert.equal(await page.getByRole("heading", { name: "模板来源", exact: true }).count(), 0);
+    assert.equal(await page.getByText("不应展示的基线正文").count(), 0);
+    await openMore(page);
+    await page.getByText("共享模板 · v2", { exact: true }).waitFor();
+    assert.match(await page.getByRole("link", { name: "本店差异更新 / 恢复跟随" }).getAttribute("href"), /version=2&store_id=.+&agent_id=/);
     await page.getByRole("button", { name: "解除模板关联" }).click();
     await page.getByRole("button", { name: "确认解除" }).click();
+    await openMore(page);
     await page.getByText("当前草稿为独立 Agent，未关联模板。").waitFor();
     assert.deepEqual(writes.at(-1), { detach: { expected_revision: 1 } });
-    await page.getByText(/当前运行：Agent 发布 v1/).waitFor();
+    await page.locator(".config-head").getByText(/已发布 v1/).waitFor();
   } finally { await context.close(); }
 });
 
-test("fixround1 来源随保存和发布刷新，加载期间不能解除旧 revision", async () => {
-  let release; let started; const gate = new Promise((r) => { release = r; }); const requested = new Promise((r) => { started = r; });
+test("template association refresh after saving and publishing cannot detach an old revision", async () => {
+  let release; let started; const gate = new Promise((resolve) => { release = resolve; }); const requested = new Promise((resolve) => { started = resolve; });
   const { context, page, writes } = await openAgentPage({ templateSource: true, sourceGate: async () => { started(); await gate; } });
   try {
-    await page.getByText("本店覆盖 1", { exact: false }).waitFor();
-    await page.getByLabel("用途描述").fill("新职责"); await page.getByRole("button", { name: "保存配置", exact: true }).click();
+    await openMore(page);
+    await page.getByText("共享模板 · v2", { exact: true }).waitFor();
+    await page.getByLabel("用途描述").fill("新职责");
+    assert.equal(await page.getByRole("button", { name: "解除模板关联" }).isDisabled(), true);
+    await page.getByRole("button", { name: "保存配置", exact: true }).click();
     await page.getByText("配置已保存").waitFor();
-    await Promise.race([requested, new Promise((_, reject) => setTimeout(() => reject(new Error("保存后未请求最新来源")), 3000))]);
+    await Promise.race([requested, new Promise((_, reject) => setTimeout(() => reject(new Error("保存后未请求最新关联")), 3000))]);
+    await openMore(page);
     assert.equal(await page.getByRole("button", { name: "解除模板关联" }).count(), 0);
-    release(); await page.getByText("本店覆盖 2", { exact: false }).waitFor();
-    await page.getByRole("button", { name: "发布版本" }).click(); await page.getByText(/当前运行：Agent 发布 v2/).waitFor({ timeout: 3000 });
+    release(); await page.getByRole("button", { name: "解除模板关联" }).waitFor();
+    await page.getByRole("button", { name: "发布版本" }).click();
+    await page.locator(".config-head").getByText(/已发布 v2/).waitFor({ timeout: 3000 });
+    await openMore(page);
     await page.getByRole("button", { name: "解除模板关联" }).click(); await page.getByRole("button", { name: "确认解除" }).click();
+    await openMore(page);
     await page.getByText("当前草稿为独立 Agent，未关联模板。").waitFor(); assert.deepEqual(writes.at(-1), { detach: { expected_revision: 2 } });
   } finally { release(); await context.close(); }
 });
@@ -371,6 +389,46 @@ async function installDebugStream(page) {
     };
   });
 }
+
+test("operator translation remains separate from the customer reply in debug", async () => {
+  const { context, page } = await openAgentPage({ operatorTranslation: true });
+  try {
+    await page.getByPlaceholder(/试试/).fill("When does my parcel arrive?");
+    await page.getByRole("button", { name: "运行调试" }).click();
+    await page.locator(".preview-bubble.assistant").getByText("Your parcel arrives tomorrow.", { exact: true }).waitFor();
+    await page.getByText("坐席译文 · 简体中文", { exact: true }).click({ timeout: 5000 });
+    await page.getByText("您的包裹明天送达。", { exact: true }).waitFor();
+    assert.equal(await page.locator(".preview-bubble.assistant").getByText("您的包裹明天送达。", { exact: true }).count(), 0);
+  } finally { await context.close(); }
+});
+
+test("reply preferences explain separate customer and operator languages and retain saved selections", async () => {
+  const { context, page, writes } = await openAgentPage();
+  try {
+    await page.getByRole("tab", { name: /模型与提示词/ }).click();
+    await page.getByRole("heading", { name: "回复偏好", exact: true }).waitFor();
+    await page.getByText(/坐席语言用于内部说明或译文，不改变客户正文/).waitFor();
+    await page.getByLabel("回复语气", { exact: true }).selectOption("empathetic");
+    await page.getByLabel("客户回复语言", { exact: true }).selectOption("en");
+    await page.getByLabel("坐席工作语言", { exact: true }).selectOption("zh-CN");
+    await page.getByRole("button", { name: "保存配置", exact: true }).click();
+    await page.getByText("配置已保存", { exact: true }).waitFor();
+    assert.deepEqual(writes.at(-1).reply_profile, { tone: "empathetic", reply_language: "en", operator_language: "zh-CN", brand_name: null });
+    await page.getByRole("button", { name: "发布版本", exact: true }).click();
+    await page.getByText("Agent 已发布，后续运行将使用这个不可变版本", { exact: true }).waitFor();
+    assert.equal(await page.getByLabel("回复语气", { exact: true }).inputValue(), "empathetic");
+    assert.equal(await page.getByLabel("客户回复语言", { exact: true }).inputValue(), "en");
+    assert.equal(await page.getByLabel("坐席工作语言", { exact: true }).inputValue(), "zh-CN");
+    if (process.env.AGENT_TEMPLATE_UI_CAPTURE) {
+      await page.locator(".policy-card").evaluate((element) => element.scrollIntoView({ block: "start" }));
+      await page.screenshot({ path: fileURLToPath(new URL("../../.artifacts/agent-template-ui-20261031/frontend-preferences-desktop.png", import.meta.url)) });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator(".policy-card").evaluate((element) => element.scrollIntoView({ block: "start" }));
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+      await page.screenshot({ path: fileURLToPath(new URL("../../.artifacts/agent-template-ui-20261031/frontend-preferences-mobile.png", import.meta.url)) });
+    }
+  } finally { await context.close(); }
+});
 
 test("debug renders progressive drafts then replaces with reviewed result", async () => {
   const { context, page } = await openAgentPage();

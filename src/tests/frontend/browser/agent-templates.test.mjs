@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
 const require = createRequire(new URL("../../../frontend/package.json", import.meta.url));
@@ -82,6 +83,60 @@ async function open(options = {}) {
   return { page, context, writes, items, releaseHistory, oldHistoryStarted, releaseSave, pendingSaveStarted };
 }
 
+async function showHistory(page) {
+  const details = page.locator("details").filter({ has: page.getByText("高级设置与历史", { exact: true }) }).first();
+  if (!await details.getAttribute("open").then((value) => value !== null)) await page.getByText("高级设置与历史", { exact: true }).click();
+}
+
+test("template UI keeps routing responsibilities editable and preserves hidden legacy description on save", async () => {
+  const { page, context, writes } = await open();
+  try {
+    await page.getByLabel("默认 Agent 名称").waitFor();
+    assert.equal(await page.getByLabel("模板职责说明", { exact: true }).count(), 0);
+    assert.ok((await page.getByLabel("模板名称", { exact: true }).boundingBox()).width <= 400);
+    assert.ok((await page.getByLabel("默认 Agent 名称").boundingBox()).width <= 400);
+    for (const name of ["基础信息", "模型与提示词", "工具与知识"]) await page.getByRole("heading", { name, exact: true }).waitFor();
+    if (process.env.AGENT_TEMPLATE_UI_CAPTURE) {
+      await page.screenshot({ path: fileURLToPath(new URL("../../.artifacts/agent-template-ui-20261031/frontend-template-desktop.png", import.meta.url)) });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator(".template-editor").evaluate((element) => element.scrollIntoView({ block: "start" }));
+      await page.screenshot({ path: fileURLToPath(new URL("../../.artifacts/agent-template-ui-20261031/frontend-template-mobile.png", import.meta.url)) });
+      await page.setViewportSize({ width: 1440, height: 980 });
+    }
+    await page.getByLabel("Agent 职责描述", { exact: true }).fill("处理退货和退款问题，用于路由");
+    await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+    await page.getByText("草稿已保存；已发布版本和店铺运行保持原样", { exact: true }).waitFor();
+    assert.equal(writes[0].body.description, "模板职责");
+    assert.equal(writes[0].body.config.description, "处理退货和退款问题，用于路由");
+    assert.equal(await page.getByLabel("建议 Agent 编码").isVisible(), false);
+    await page.getByText("高级设置与历史", { exact: true }).click();
+    await showHistory(page); await page.getByLabel("查看版本").selectOption("1");
+    assert.equal(await page.getByLabel("Agent 职责描述", { exact: true }).isDisabled(), true);
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+
+  } finally { await context.close(); }
+});
+
+test("invalid advanced Agent code opens its field and prevents losing the edited template", async () => {
+  const { page, context, writes } = await open();
+  try {
+    await page.getByLabel("默认 Agent 名称").fill("待校验草稿");
+    await page.getByText("新建 Agent 编码", { exact: true }).click();
+    await page.getByLabel("建议 Agent 编码").fill("invalid code");
+    await page.getByText("新建 Agent 编码", { exact: true }).click();
+    await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+    assert.equal(await page.getByLabel("建议 Agent 编码").isVisible(), true);
+    assert.equal(await page.getByLabel("建议 Agent 编码").evaluate((field) => field.validity.patternMismatch), true);
+    assert.equal(writes.length, 0);
+    assert.equal(await page.getByLabel("默认 Agent 名称").inputValue(), "待校验草稿");
+    await page.getByLabel("建议 Agent 编码").fill("valid_agent");
+    await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+    await page.getByText("草稿已保存；已发布版本和店铺运行保持原样", { exact: true }).waitFor();
+    assert.equal(writes[0].body.config.suggested_code, "valid_agent");
+  } finally { await context.close(); }
+});
+
 test("empty global library can be created by server-authorized manager with no shop", async () => {
   const { page, context, writes } = await open({ empty: true });
   try {
@@ -123,10 +178,10 @@ test("shared model pair and seven sections save draft independently from immutab
     assert.deepEqual(writes[0].body.config.tool_names, [catalog.tools[0].name]);
     assert.deepEqual(writes[0].body.config.knowledge_slots, [{ key: "shipping_policy", name: "物流政策", purpose: "核实物流时效", required: false }]);
     assert.equal("reply_profile" in writes[0].body.config, false);
-    await page.getByLabel("查看版本").selectOption("1");
+    await showHistory(page); await page.getByLabel("查看版本").selectOption("1");
     assert.equal(await page.getByLabel("默认 Agent 名称").inputValue(), "已发布客服");
     assert.equal(await page.getByLabel("默认 Agent 名称").isDisabled(), true);
-    await page.getByLabel("查看版本").selectOption("draft");
+    await showHistory(page); await page.getByLabel("查看版本").selectOption("draft");
     await page.getByRole("button", { name: "发布模板", exact: true }).click();
     await page.getByText("模板已发布；关联店铺须另行审阅应用", { exact: true }).waitFor();
     assert.deepEqual(writes.at(-1).body, { expected_revision: 3 });
@@ -149,6 +204,7 @@ test("409 keeps unsaved form and lets user explicitly reload", async () => {
 test("archive and restore use keyboard-accessible modal with focus restored", async () => {
   const { page, context, writes } = await open();
   try {
+    await showHistory(page);
     const archive = page.getByRole("button", { name: "归档模板", exact: true });
     await archive.click();
     const dialog = page.getByRole("dialog", { name: "归档模板", exact: true }); await dialog.waitFor();
@@ -213,7 +269,7 @@ test("late publication history cannot replace a different template history", asy
     await page.getByText("模板已发布；关联店铺须另行审阅应用", { exact: true }).waitFor();
     await page.getByRole("button", { name: /物流模板.*服务类/ }).click();
     await page.getByRole("heading", { name: "物流模板", exact: true }).waitFor();
-    await page.getByLabel("查看版本").selectOption("1");
+    await showHistory(page); await page.getByLabel("查看版本").selectOption("1");
     await page.waitForTimeout(850);
     assert.equal(await page.getByLabel("默认 Agent 名称").inputValue(), "two 已发布客服");
   } finally { await context.close(); }
@@ -232,13 +288,14 @@ test("template search filters rows and archive filter retrieves archived library
   const { page, context } = await open();
   try {
     await page.getByLabel("默认 Agent 名称").waitFor();
-    await page.getByRole("button", { name: "归档模板", exact: true }).click();
+    await showHistory(page); await page.getByRole("button", { name: "归档模板", exact: true }).click();
     await page.getByRole("button", { name: "确认归档" }).click();
     await page.getByText("模板已归档", { exact: true }).waitFor();
     assert.equal(await page.locator(".template-list-item").count(), 1);
     await page.getByRole("checkbox", { name: "包含已归档模板" }).check();
     await page.locator(".template-list-item").filter({ hasText: "已归档" }).waitFor();
     await page.getByLabel("搜索模板", { exact: true }).fill("物流");
+    await page.locator(".template-list-item").filter({ hasText: "物流模板" }).waitFor();
     assert.equal(await page.locator(".template-list-item").count(), 1);
     await page.getByLabel("搜索模板", { exact: true }).fill("无匹配需求");
     await page.getByText("没有符合搜索条件的模板", { exact: true }).waitFor();
@@ -284,7 +341,9 @@ test("template editor desktop layout remains usable with all shared controls", a
     await page.getByLabel("默认 Agent 名称").waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
     const editor = page.locator(".template-editor .config-body");
-    assert.equal(await editor.evaluate((element) => element.scrollHeight > element.clientHeight), true);
+    assert.equal(await editor.evaluate((element) => getComputedStyle(element).overflowY), "visible");
+    await page.getByRole("heading", { name: "工具与知识", exact: true }).scrollIntoViewIfNeeded();
+    assert.equal(await page.getByRole("button", { name: "添加知识需求", exact: true }).isVisible(), true);
     if (process.env.TEMPLATE_DESKTOP_CAPTURE) await page.screenshot({ path: process.env.TEMPLATE_DESKTOP_CAPTURE, fullPage: true });
   } finally { await context.close(); }
 });
@@ -300,7 +359,7 @@ for (const rejectOldHistory of [false, true]) test(`same-template publication ig
     await page.getByText("草稿已保存；已发布版本和店铺运行保持原样", { exact: true }).waitFor();
     await page.getByRole("button", { name: "发布模板", exact: true }).click();
     await page.locator('option[value="3"]').waitFor({ state: "attached" });
-    await page.getByLabel("查看版本").selectOption("3");
+    await showHistory(page); await page.getByLabel("查看版本").selectOption("3");
     const oldResponse = page.waitForResponse(async (response) => response.url().endsWith("/templates/one/versions") && (rejectOldHistory ? response.status() === 503 : (await response.json()).data.length === 2));
     releaseHistory(); await (await oldResponse).finished();
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -403,9 +462,9 @@ for (const failureStatus of [422, 503]) test(`rejected later publication ${failu
     assert.equal(await page.getByRole("alert").filter({ hasText: "旧历史读取失败" }).count(), 0);
     assert.equal(await page.getByLabel("默认 Agent 名称").inputValue(), "失败后尚未保存的编辑");
     assert.equal(await page.locator('option[value="3"]').count(), 0);
-    await page.getByLabel("查看版本").selectOption("2");
+    await showHistory(page); await page.getByLabel("查看版本").selectOption("2");
     assert.equal(await page.getByLabel("默认 Agent 名称").inputValue(), "私有草稿");
-    await page.getByLabel("查看版本").selectOption("draft");
+    await showHistory(page); await page.getByLabel("查看版本").selectOption("draft");
     assert.equal(await page.getByLabel("默认 Agent 名称").inputValue(), "失败后尚未保存的编辑");
   } finally { releaseHistory(); await context.close(); }
 });

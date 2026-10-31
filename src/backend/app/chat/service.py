@@ -226,6 +226,7 @@ def suggestion_view(result: AgentWorkflowResult) -> SuggestionView:
             if translation is not None
             else None
         ),
+        translation_error_code=result.customer_translation_error_code,
         trace_id=result.trace_id,
     )
 

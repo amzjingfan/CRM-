@@ -9,7 +9,7 @@
 .template-page .archive-filter{display:flex;align-items:center;gap:8px;margin-top:15px;font-size:12px;color:#52627b;min-height:44px}
 .template-page .config-actions{flex-wrap:wrap;justify-content:flex-end}
 .template-page .template-editor{min-width:0}
-.template-page .config-body{max-height:calc(100vh - 305px);min-height:400px;overflow:auto;scrollbar-gutter:stable}
+.template-page .config-body{max-height:none;min-height:0;overflow:visible}
 .template-page .version-field{max-width:280px}
 .agent-page .knowledge-slots{margin-top:26px;padding-top:22px;border-top:1px solid #e3e8f0}
 .agent-page .slot-row{border:1px solid #dfe6f0;border-radius:9px;padding:16px;margin:16px 0;min-width:0}
@@ -21,3 +21,122 @@
 .agent-page .template-modal .modal-foot{flex:none}
 @media(max-width:1000px){.template-page .template-layout{grid-template-columns:230px minmax(0,1fr)}.template-page .config-head{flex-wrap:wrap}}
 @media(max-width:780px){.template-page .template-layout{grid-template-columns:minmax(0,1fr)}.template-page .template-list{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}.template-page .config-body{max-height:none;min-height:0}.template-page .template-library{padding:16px}.template-page .topbar{flex-wrap:wrap}.template-page .config-actions{justify-content:flex-start}}
+
+/* 模板流程随页面滚动，完整值按需展开，避免多层固定高度容器。 */
+.template-page .main{max-width:1600px}
+.template-page .template-section{padding:24px 0;border-top:1px solid #e3e8f0}
+.template-page .template-section:first-child{border-top:0;padding-top:18px}
+.template-page .template-name{margin-bottom:20px;max-width:360px}
+.agent-page .template-details{border-top:1px solid #e5ebf4;margin:16px 0;padding:12px 0;color:#52627b;min-width:0;overflow-wrap:anywhere}
+.agent-page .template-details>summary{cursor:pointer;font-size:13px;font-weight:600;min-height:32px;line-height:32px;color:#365b9b}
+.agent-page .template-details[open]>summary{margin-bottom:12px}
+.template-page .template-advanced{margin:0;border-top:0}
+.template-page .template-advanced .field-group{margin-bottom:14px}
+.template-page .help,.template-page .section-head p{color:#65748b;font-size:12px;line-height:1.7}
+.template-page .field{min-height:44px;min-width:0;max-width:100%}
+.template-page .config-head h2,.template-page h2,.template-page h3{overflow-wrap:anywhere}
+.template-page .config-head{align-items:flex-start}
+.template-page .template-list-item{width:100%;cursor:pointer}
+.template-page .template-list-item:hover{border-color:#9bb3e8}
+.template-page .template-section .model-section{margin-top:0}
+.template-page .template-section .prompt-section{margin-top:22px}
+.template-page .template-section .prompt-section textarea{min-height:106px}
+.template-page .batch-main,.template-page .application-main{display:grid;gap:20px}
+.template-page .batch-selector{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.template-page .batch-selector>.field-group{flex:0 1 480px;min-width:200px;max-width:480px}
+.template-page .template-pagination{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:#65748b;font-size:12px}
+.template-page .batch-heading,.template-page .batch-result-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.template-page .batch-heading h2,.template-page .batch-result-head h3{margin:0}
+.template-page .batch-stats{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 16px}
+.template-page .batch-stats>div{border:1px solid #dfe8f5;background:#f7faff;border-radius:9px;padding:14px 20px;color:#365989;font-weight:650}
+.template-page .batch-progress{display:flex;gap:14px;align-items:center;color:#65748b;font-size:12px;margin:14px 0}
+.template-page .batch-progress progress{flex:1;min-width:0;height:10px;accent-color:#315fd6}
+.template-page .batch-results{display:grid;gap:14px;margin:24px 0}
+.template-page .batch-result{border:1px solid #e0e7f0;border-radius:10px;padding:20px;min-width:0;overflow-wrap:anywhere}
+.template-page .batch-result .template-details:last-child{margin-bottom:0;padding-bottom:0}
+.template-page .batch-state{padding:5px 10px;border-radius:30px;color:#52627b;background:#eef2f7;font-size:12px}
+.template-page .batch-state.succeeded{color:#157452;background:#e8f6ef}
+.template-page .batch-state.failed,.template-page .batch-state.needs_repreview{color:#a24b32;background:#fff0ea}
+.template-page .batch-state.running{color:#315fd6;background:#edf3ff}
+.template-page .application-steps{list-style:none;display:flex;padding:18px 24px;margin:0;gap:28px;flex-wrap:wrap;border:1px solid #e0e7f0;background:#fff;border-radius:12px;color:#65748b}
+.template-page .application-steps li{display:flex;align-items:center;gap:10px;font-weight:600}
+.template-page .application-steps span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#edf1f6}
+.template-page .application-steps [aria-current=step]{color:#315fd6}
+.template-page .application-steps [aria-current=step] span{background:#315fd6;color:#fff}
+.template-page .application-store-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}
+.template-page .application-store-grid .bound-item{cursor:pointer;min-height:50px;overflow-wrap:anywhere}
+.template-page .application-store-grid .bound-item:has(input:checked){background:#f1f6ff;border-color:#8da9e9}
+.template-page input[type=checkbox]{accent-color:#315fd6;width:16px;height:16px;flex:none}
+.template-page .application-store-config{padding:0;border:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+.template-page .application-store-config>label{display:flex;align-items:center;gap:9px;line-height:1.6}
+.template-page .application-store-config>.field-group{display:block}
+.template-page .application-store-config>fieldset{min-width:0;border:0;padding:0;margin:0}
+.template-page .application-store-config legend{font-size:14px;font-weight:650;margin-bottom:10px}
+.template-page .application-store-config .template-details{margin:0}
+.template-page .application-store-config .slot-row{margin:12px 0}
+.template-page .application-store-config .slot-row .field-group{margin-top:14px}
+.template-page .application-section-head h2{font-size:18px;margin:0 0 7px}
+.template-page .application-section-head p{font-size:13px;color:#65748b;margin:0}
+.template-page .application-main>.field-group{max-width:320px}
+.template-page .application-main>.btn{justify-self:start}
+.template-page .knowledge-review .bound-item{margin-top:8px}
+.agent-page .agent-more{position:relative;align-self:stretch}
+.agent-page .agent-more>summary{list-style:none;display:flex;align-items:center}
+.agent-page .agent-more>summary::-webkit-details-marker{display:none}
+.agent-page .agent-more-menu{display:grid;gap:10px;position:absolute;right:0;top:calc(100% + 8px);width:280px;max-width:calc(100vw - 50px);padding:16px;background:#fff;box-shadow:0 8px 28px #243b6320;border:1px solid #dfe7f2;border-radius:10px;z-index:12}
+.agent-page .agent-more-menu p{margin:0;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.agent-page .agent-more-menu a{text-decoration:none;white-space:normal}
+.agent-page .policy-card .form-grid{margin-top:16px}
+.agent-page .config:has(.agent-more[open]){overflow:visible}
+@media(max-width:1100px){.template-page .application-store-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.template-page .config-head{flex-wrap:wrap}}
+@media(max-width:780px){.template-page .application-store-grid{grid-template-columns:minmax(0,1fr)}.template-page .application-steps{gap:12px;padding:16px}.template-page .application-steps li{font-size:12px;gap:6px}.template-page .application-steps span{width:24px;height:24px}.template-page .batch-selector{display:grid;gap:15px}.template-page .batch-selector>.field-group{min-width:0}.template-page .batch-stats{gap:8px}.template-page .batch-stats>div{padding:12px}.template-page .batch-result{padding:16px}.template-page .config-actions{justify-content:flex-start}.agent-page .agent-more-menu{left:0;right:auto}}
+
+.agent-page .operator-translation{margin-top:14px;border-top:1px solid #dce6f5;padding-top:12px}
+.agent-page .operator-translation summary{cursor:pointer;font-weight:650;min-height:32px;line-height:32px}
+.agent-page .operator-translation p{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* 短字段与列表操作就近排成工具栏，长提示词仍占用内容宽度。 */
+.template-page .application-toolbar{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-top:18px}
+.template-page .application-version{width:160px;flex:0 1 160px}
+.template-page .application-search{width:300px;flex:0 1 300px;max-width:400px}
+.template-page .application-toolbar .template-pagination{margin-left:0}
+.template-page .application-toolbar .btn,.template-page .batch-selector .btn{min-height:44px}
+.template-page .application-selection-summary{margin-top:14px}
+.template-page .template-section>.form-grid{grid-template-columns:repeat(2,minmax(0,340px))}
+.template-page .template-details>.field-group{max-width:340px}
+.template-page .version-field{max-width:200px}
+.template-page .application-target-toolbar{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.template-page .application-target-toolbar>.field-group{flex:0 1 320px;width:320px;max-width:100%}
+.template-page .application-target-toolbar>.template-details{flex:0 1 240px;max-width:100%}
+.template-page .application-target-toolbar>.template-details>label{display:block}
+.template-page .slot-row>.field-group{max-width:320px}
+.agent-page .form-grid>.field-group:has(>input),.agent-page .form-grid>.field-group:has(>select){max-width:400px}
+.agent-page .model-section>.field-group{max-width:420px}
+.agent-page .policy-card .form-grid{grid-template-columns:repeat(auto-fit,minmax(180px,240px))}
+@media(max-width:1000px){.template-page .application-toolbar .template-pagination{margin-left:0}}
+@media(max-width:780px){.template-page .template-section>.form-grid{grid-template-columns:minmax(0,1fr)}.template-page .application-toolbar{gap:14px}.template-page .application-search,.template-page .application-version{max-width:100%}.template-page .batch-selector>.field-group{max-width:100%}.template-page .application-target-toolbar>.field-group{flex-basis:100%}.agent-page .policy-card .form-grid{grid-template-columns:minmax(0,1fr)}}
+
+.template-page .template-control-toolbar{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.template-page .template-control-toolbar>.version-field{flex:0 1 200px;margin-bottom:0}
+.template-page .template-control-toolbar>p{font-size:12px;max-width:280px;margin:0;overflow-wrap:anywhere}
+.template-page .template-control-toolbar .btn{min-height:44px}
+
+.template-page .application-store-picker{overflow:visible}
+.template-page .application-store-select{position:relative;width:340px;flex:0 1 340px;max-width:400px;min-width:0}
+.template-page .store-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer}
+.template-page .store-select-trigger>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.template-page .store-select-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;display:flex;flex-direction:column;min-height:0;padding:12px;border:1px solid #dce5f2;border-radius:10px;background:#fff;box-shadow:0 10px 32px #1d365a24}
+.template-page .store-select-menu[data-above=true]{top:auto;bottom:calc(100% - 18px)}
+.template-page .store-select-search{display:block;flex:none;margin-bottom:10px}
+.template-page .store-options-scroll{overflow-y:auto;overscroll-behavior:contain;min-height:0;max-height:280px}
+.template-page .store-select-option{display:flex;align-items:center;gap:9px;min-height:44px;padding:10px 8px;border-radius:6px;cursor:pointer;overflow-wrap:anywhere}
+.template-page .store-select-option:has(input:checked){background:#edf3ff;color:#254fa9}
+.template-page .store-select-option:hover{background:#f4f7fc}
+.template-page .store-selected-chips{display:flex;gap:6px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid #e4ebf4;margin-bottom:8px}
+.template-page .store-selected-chips>span{display:flex;align-items:center;gap:5px;border-radius:6px;background:#edf3ff;color:#365b9b;padding:0 4px 0 8px;max-width:100%;overflow-wrap:anywhere;font-size:12px}
+.template-page .store-selected-chips button{border:0;background:none;color:#365b9b;min-width:32px;min-height:36px;font-size:18px;flex:none}
+.template-page .store-select-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #e4ebf4;padding-top:10px;margin-top:10px;flex:none}
+.template-page .store-select-footer small{font-size:12px;color:#65748b}
+@media(max-width:780px){.template-page .application-store-select{max-width:100%;flex-basis:300px}.template-page .store-select-menu{padding:10px}}
+.template-page .application-main,.template-page .batch-main{grid-template-columns:minmax(0,1fr)}
+.template-page .application-main>.config{min-width:0}

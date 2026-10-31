@@ -136,7 +136,9 @@ async def finalize_result_evidence(
         result,
         phase=RunPhase.REVIEW_REQUIRED,
         reason_code=reason,
-        suggestion=replace(result.suggestion, content=None, citations=(), reply_parts=(), reason_code=reason),
+        suggestion=replace(
+            result.suggestion, content=None, citations=(), reply_parts=(), customer_translation=None, reason_code=reason
+        ),
         specialists=tuple(
             replace(
                 item,
@@ -167,7 +169,11 @@ async def persist_dynamic_result(
     run.status = "timeout" if result.phase.value == "timeout" else "succeeded"
     run.phase = result.phase.value
     run.error_code = result.reason_code
-    run.output_summary = f"phase={result.phase.value};selected={len(result.route.selections)}"
+    run.output_summary = (
+        f"phase={result.phase.value};selected={len(result.route.selections)};"
+        f"reply_policy={result.suggestion.reply_policy_source};"
+        f"translation_error={result.suggestion.customer_translation_error_code or 'none'}"
+    )
     run.input_tokens = (
         result.route.input_tokens
         + result.suggestion.input_tokens
@@ -339,5 +345,7 @@ async def execute_model_run(
                 settings, settings.llm_primary_provider, settings.llm_primary_model
             ).output_reserve_tokens,
             progress=progress,
+            provider_name=settings.llm_primary_provider,
+            model_name=settings.llm_primary_model,
         )
     return await finalize_result_evidence(result, snapshot, user=user)

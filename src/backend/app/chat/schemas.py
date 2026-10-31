@@ -50,6 +50,7 @@ class SuggestionView(BaseModel):
     send_performed: Literal[False] = False
     citations: list[SuggestionCitation]
     translation: SuggestionTranslation | None = None
+    translation_error_code: str | None = None
     trace_id: str
     demo_mode: bool = False
     demo_scenario: str | None = None

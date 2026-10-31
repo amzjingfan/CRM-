@@ -1900,6 +1900,7 @@ def test_public_suggestion_maps_low_sensitivity_translation_without_provider_met
         citations=[],
         trace_id="trace-public-translation",
         customer_translation=translation,
+        customer_translation_error_code=None,
         reply_parts=[],
         logistics_order_numbers=[],
         trigger_message_id=trigger_message_id,
@@ -1920,6 +1921,7 @@ def test_public_suggestion_maps_low_sensitivity_translation_without_provider_met
     }
     assert "provider" not in payload["translation"]
     assert "input_tokens" not in payload["translation"]
+    assert payload["translation_error_code"] is None
     assert payload["reply_parts"] == []
     assert payload["trigger_message_id"] == str(trigger_message_id)
 

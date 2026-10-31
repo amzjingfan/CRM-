@@ -1,0 +1,112 @@
+{
+  "task_id": "MVP-AGENT-TEMPLATE-UI-001",
+  "candidate_subject_sha": "78e7069c9a0386d143c474ad9a6cd9a5fb903094",
+  "base_sha": "d5fe2735eeb7b5d6d48939a0b32b10b1803930e8",
+  "evidence_head_sha": "READ_AT_GATE",
+  "deployment_performed": false,
+  "platform_messages_sent": 0,
+  "backend": {
+    "passed": 3145,
+    "skipped": 5,
+    "migration_head": "048_published_reply_profile",
+    "new_migration_roundtrip": true,
+    "ruff": true,
+    "mypy_sources": 305
+  },
+  "frontend": {
+    "browser_passed": 230,
+    "browser_failed": 0,
+    "contract_passed": 78,
+    "lint_errors": 0,
+    "existing_lint_warnings": 11,
+    "typecheck": true,
+    "production_build": true,
+    "no_visible_store_pagination": true
+  },
+  "ai": {
+    "dynamic_contract_samples": 16,
+    "deterministic_safety_samples": 237,
+    "unsafe_escape_count": 0,
+    "live_model": "deepseek-v4-flash",
+    "synthetic_only": true,
+    "final_cases": [
+      {
+        "case": "auto_cn",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 30
+      },
+      {
+        "case": "auto_en",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 20
+      },
+      {
+        "case": "forced_cn",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 33
+      },
+      {
+        "case": "forced_en",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 24
+      },
+      {
+        "case": "tone_professional",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 32
+      },
+      {
+        "case": "tone_concise",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 23
+      },
+      {
+        "case": "tone_empathetic",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 59
+      },
+      {
+        "case": "operator_zh",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 19
+      },
+      {
+        "case": "operator_en",
+        "passed": true,
+        "tool_calls": 1,
+        "draft_events": 19
+      }
+    ],
+    "preflight_protocol_rejections": 1,
+    "preflight_judge_disagreements": 1
+  },
+  "review": {
+    "open_findings": 0,
+    "found_and_fixed": [
+      "workspace_translation_consumer",
+      "preview_resume_parameters",
+      "store_label_focus",
+      "mobile_inner_grid_overflow",
+      "html_pattern_validation"
+    ]
+  },
+  "cleanup": {
+    "real_business_records_modified": 0,
+    "temporary_databases_removed": true,
+    "synthetic_model_data_persisted": false,
+    "test_services_stopped": true
+  },
+  "records": {
+    "IR": "docs/records/implementation/IR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md",
+    "TR": "docs/reports/tests/TR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md",
+    "RR": "docs/reports/reviews/RR-MVP-AGENT-TEMPLATE-UI-001-20261031-R01.md"
+  }
+}

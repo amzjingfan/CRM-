@@ -1,10 +1,12 @@
 """一次动态多 Agent 运行的纯编排入口；具体数据库会话由外层注入。"""
 
+import asyncio
 import time
 import uuid
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
+from app.agents.core.reply_policy import compile_reply_policy, resolve_published_reply_profile
 from app.agents.delivery.reply_parts import DraftPartSink
 from app.agents.orchestration.aggregator import ReviewedSuggestion, aggregate_results
 from app.agents.orchestration.coordinator import SpecialistResult, run_selected
@@ -16,6 +18,7 @@ from app.agents.orchestration.router import (
     route_agents,
 )
 from app.agents.runtime.context import ContextBudgetExceeded
+from app.agents.runtime.operator_translation import translate_for_operator
 from app.agents.runtime.snapshot import RunSnapshot
 from app.agents.runtime.state import RunPhase, RunStateMachine
 
@@ -39,6 +42,8 @@ class RunProgress:
     aggregate_output_tokens: int = 0
     reply_plan: bool = False
     on_draft: DraftPartSink | None = None
+    primary_agent_id: uuid.UUID | None = None
+    run_timeout: asyncio.Timeout | None = None
 
     def capture_aggregate_usage(self, input_tokens: int, output_tokens: int) -> None:
         """每轮完成即记录数值，后续外层取消也不丢失已知用量。"""
@@ -99,6 +104,8 @@ async def execute_dynamic_run(
     routing_context: str = "",
     max_answer_tokens: int = 1024,
     progress: RunProgress | None = None,
+    provider_name: str = "unconfigured",
+    model_name: str = "unconfigured",
 ) -> DynamicRunResult:
     """同一快照和截止时间贯穿路由、所有专家与最终汇总。"""
     state = RunStateMachine()
@@ -163,6 +170,19 @@ async def execute_dynamic_run(
             reason,
         )
     state.advance(RunPhase.AGGREGATING)
+    participating = tuple(
+        agent for agent in snapshot.published_agents if agent.id in {item.agent_id for item in specialists}
+    )
+    preferences = resolve_published_reply_profile(
+        participating, primary_agent_id=progress.primary_agent_id if progress else None
+    )
+    compiled_policy = compile_reply_policy(preferences.profile)
+    output_policies = (
+        tuple(agent.prompt_sections.get("language_format", "") for agent in participating) + language_policy
+    )
+    if compiled_policy:
+        output_policies += (compiled_policy,)
+    privacy_policies = tuple(agent.prompt_sections.get("compliance", "") for agent in participating)
     aggregate = aggregate_results
     if progress is not None and progress.reply_plan:
         from app.agents.delivery.generation import aggregate_reply_plan
@@ -179,12 +199,7 @@ async def execute_dynamic_run(
                 for agent in snapshot.published_agents
                 if agent.id in {item.agent_id for item in specialists}
             ),
-            output_policies=tuple(
-                agent.prompt_sections.get("language_format", "")
-                for agent in snapshot.published_agents
-                if agent.id in {item.agent_id for item in specialists}
-            )
-            + language_policy,
+            output_policies=output_policies,
             on_usage=progress.capture_aggregate_usage,
             on_draft=progress.on_draft,
         )
@@ -201,13 +216,38 @@ async def execute_dynamic_run(
                 for agent in snapshot.published_agents
                 if any(item.agent_id == agent.id for item in specialists) and "compliance" in agent.prompt_sections
             ),
-            output_policies=tuple(
-                agent.prompt_sections["language_format"]
-                for agent in snapshot.published_agents
-                if any(item.agent_id == agent.id for item in specialists) and "language_format" in agent.prompt_sections
-            )
-            + language_policy,
+            output_policies=output_policies,
             on_usage=progress.capture_aggregate_usage if progress is not None else None,
+        )
+    reply_language = (
+        preferences.profile.reply_language
+        if preferences.profile and preferences.profile.reply_language != "auto"
+        else route.question_language
+    )
+    suggestion = replace(suggestion, reply_language=reply_language, reply_policy_source=preferences.source)
+    if suggestion.content is not None and preferences.operator_language is not None:
+        translation = await translate_for_operator(
+            question=question,
+            answer="\n\n".join(suggestion.reply_parts) if suggestion.reply_parts else suggestion.content,
+            question_language=route.question_language,
+            reply_language=reply_language,
+            operator_language=preferences.operator_language,
+            trigger_message_id=snapshot.trigger_message_id,
+            provider=aggregator,
+            provider_name=provider_name,
+            model_name=model_name,
+            deadline=deadline,
+            on_usage=progress.capture_aggregate_usage if progress else None,
+            max_output_tokens=max_answer_tokens,
+            privacy_policies=privacy_policies,
+            run_timeout=progress.run_timeout if progress else None,
+        )
+        suggestion = replace(
+            suggestion,
+            customer_translation=translation.translation,
+            customer_translation_error_code=translation.error_code,
+            input_tokens=suggestion.input_tokens + translation.input_tokens,
+            output_tokens=suggestion.output_tokens + translation.output_tokens,
         )
     phase = (
         RunPhase.REVIEW_READY

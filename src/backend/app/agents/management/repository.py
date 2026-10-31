@@ -8,6 +8,7 @@ from types import MappingProxyType
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.core.reply_policy import AgentReplyProfile
 from app.agents.management.config_models import AgentConfig
 from app.agents.management.models import AgentConfigVersion
 from app.agents.prompts.compiler import compile_prompt
@@ -31,6 +32,7 @@ class PublishedAgent:
     tool_names: tuple[str, ...]
     file_ids: tuple[str, ...]
     ready_for_v2: bool
+    reply_profile: AgentReplyProfile | None = None
 
 
 def _project(config: AgentConfig, version: AgentConfigVersion | None) -> PublishedAgent:
@@ -77,6 +79,11 @@ def _project(config: AgentConfig, version: AgentConfigVersion | None) -> Publish
         tool_names=tuple(version.tool_names) if version is not None else tuple(config.enabled_tools),
         file_ids=tuple(version.file_ids) if version is not None else file_ids,
         ready_for_v2=(bool(legacy_model) if legacy else bool(version.ready_for_v2) if version else False),
+        reply_profile=(
+            AgentReplyProfile.model_validate(version.reply_profile)
+            if version is not None and getattr(version, "reply_profile", None) is not None
+            else None
+        ),
     )
 
 

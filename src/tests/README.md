@@ -69,6 +69,8 @@ Set-Location ../..
 
 ## 冒烟、真实平台与 AI eval
 
+`ai/agent_reply_preferences_live.py` 是显式启用的合成表达偏好验收，不由普通 pytest 发现。仅在受控非生产进程中、使用当前已配置模型凭证运行：从 `src/backend/` 执行 `python ../tests/ai/agent_reply_preferences_live.py --enable-live`（可重复 `--case <名称>` 选择案例）。它用合成快照与物流事实调用实际 Worker、模型路由、流式汇总和独立复核；拒绝数据库访问，不读取真实买家或创建消息。输出含合成答复及独立模型语义评审，评审意见需要结合正文人工核对，不能将模型评分当作绝对事实；它不替代保存/发布/权限的隔离数据库测试或真实 TikTok 验收。输出只保存到 `src/tests/.artifacts/`。
+
 - `src/tests/backend/runtime_infrastructure/test_health.py` 是确定性健康检查入口。
 - `src/backend/scripts/verify_*.py` 只在其 README、任务或门禁明确要求的环境运行；脚本存在不代表真实环境已验收。
 - `src/backend/scripts/verify_tiktok_readonly.py` 在真实只读冒烟成功时只向标准输出写入店铺、Webhook、订单、物流、会话和消息的聚合计数 JSON；第三方 HTTP 日志通过项目低敏结构化日志出口，不输出带签名的请求 URL。调用失败仍是非零退出，不得把部分成功计为 G1 通过。

@@ -8,6 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, replace
 
 from app.agents.core.errors import LLMProviderError
+from app.agents.core.translation import TranslationBundleResult
 from app.agents.orchestration.coordinator import SpecialistResult
 from app.agents.orchestration.router import RouteModelPort
 from app.agents.runtime.context import ContextBudgetExceeded
@@ -17,7 +18,7 @@ from app.agents.safety.input import prepare_untrusted_text
 from app.agents.tools.business_identifiers import business_identifier_values
 from app.shared.exceptions.errors import AppError
 
-AGGREGATE_PROMPT_VERSION = "agent-answer-output-v2.3.0"
+AGGREGATE_PROMPT_VERSION = "agent-answer-output-v2.4.0"
 
 _AGGREGATE_SYSTEM = (
     "你是人工客服的内部建议汇总器。将多个 Agent 的已核验草稿合为一段回答。"
@@ -34,7 +35,8 @@ _AGGREGATE_SYSTEM = (
     "max_answer_characters 是平台长度预算（UTF-16单元），回答应在预算内完整表达。"
     "平台长度优先于详细列举要求；内容过多时精简重复和无关细节，缩写冗长商品标题、合并轨迹节点，"
     "保留关键事实、结论和必要编号，不输出被截断的句子。目标不超过 target_answer_characters，为排版留出余量。"
-    "evidence_status 为 no_verified_evidence 时只用买家原文语言说明无法确认并澄清或建议人工核实，"
+    "evidence_status 为 no_verified_evidence 时按已发布输出要求（未显式指定时跟随本轮买家语言）"
+    "说明无法确认并澄清或建议人工核实，"
     "不能从草稿、常识或服务端缺证状态推导任何真实政策、状态或承诺。"
 )
 
@@ -49,6 +51,10 @@ class ReviewedSuggestion:
     input_tokens: int = 0
     output_tokens: int = 0
     reply_parts: tuple[str, ...] = ()
+    customer_translation: TranslationBundleResult | None = None
+    customer_translation_error_code: str | None = None
+    reply_language: str | None = None
+    reply_policy_source: str = "legacy"
 
 
 def _conflicting_facts(results: tuple[SpecialistResult, ...]) -> bool:

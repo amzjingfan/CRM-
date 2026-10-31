@@ -19,3 +19,8 @@
 .reply-notification-policy select { max-width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: 6px; padding: 6px; background: var(--surface); }
 .reply-notification-policy { margin: 14px 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; font-size: .85rem; }
 @media (max-height: 600px) { .reply-review-body { max-height: 20vh; } .reply-review-heading { padding-block: 4px; } }
+
+.reply-review-translation { margin: 10px 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); background: var(--surface); }
+.reply-review-translation summary { min-height: 32px; line-height: 32px; cursor: pointer; font-weight: 600; }
+.reply-review-translation p { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.reply-review-translation-note { color: var(--muted); font-size: .75rem; }

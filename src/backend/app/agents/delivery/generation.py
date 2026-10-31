@@ -27,7 +27,7 @@ from app.agents.safety.input import prepare_untrusted_text
 from app.agents.tools.business_identifiers import business_identifier_values
 from app.shared.exceptions.errors import AppError
 
-REPLY_PLAN_PROMPT_VERSION = "agent-reply-plan-v1.1.0"
+REPLY_PLAN_PROMPT_VERSION = "agent-reply-plan-v1.2.0"
 
 
 @runtime_checkable

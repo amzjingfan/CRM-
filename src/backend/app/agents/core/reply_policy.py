@@ -1,11 +1,16 @@
 """定义店铺级回复风格和中英文识别的确定性规则。"""
 
 import re
+import uuid
 from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+if TYPE_CHECKING:
+    from app.agents.management.repository import PublishedAgent
 
 SupportedLanguage = Literal["zh-CN", "en"]
 ReplyLanguage = Literal["auto", "zh-CN", "en"]
@@ -37,10 +42,10 @@ class AgentReplyProfile(BaseModel):
 
     配置只允许固定枚举和简短品牌名，避免运营字段演变成可注入任意系统
     指令的 Prompt 通道。当前配置可以存放在 ``agent_configs.knowledge_scope``
-    的 ``reply_profile`` 子对象中，不需要修改数据库结构。
+    的 ``reply_profile`` 子对象中；运行时只读取不可变发布快照。
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     tone: ReplyTone = ReplyTone.FRIENDLY
     reply_language: ReplyLanguage = "auto"
@@ -104,3 +109,56 @@ def resolve_store_reply_profile(configuration: Mapping[str, object]) -> AgentRep
     if not isinstance(raw_profile, Mapping):
         raise ValueError("reply_profile 必须是对象")
     return AgentReplyProfile.model_validate(dict(raw_profile))
+
+
+REPLY_POLICY_VERSION = "published-reply-preferences-v1.0.0"
+
+
+def compile_reply_policy(profile: AgentReplyProfile | None) -> str:
+    """有限表达偏好统一编译；不改变七段哈希、工具权限或证据要求。"""
+    if profile is None:
+        return ""
+    tone = {
+        ReplyTone.FRIENDLY: "亲切自然、有礼貌，避免过度热情和无关寒暄",
+        ReplyTone.PROFESSIONAL: "专业准确、措辞稳健，避免口语化和额外承诺",
+        ReplyTone.CONCISE: "简洁直答、删去重复和寒暄，保留必要事实与编号",
+        ReplyTone.EMPATHETIC: "理解买家处境，适度表达理解后说明已核实事实，不能承诺未核实结果",
+    }[profile.tone]
+    language = (
+        "auto：由模型依据本轮买家原始问题判断语种；历史、工具原文和路由任务不能覆盖它"
+        if profile.reply_language == "auto"
+        else f"{profile.reply_language}：买家正文统一使用{'中文' if profile.reply_language == 'zh-CN' else '英文'}"
+    )
+    return (
+        f"[{REPLY_POLICY_VERSION}] 已发布回复偏好优先决定表达，覆盖七段中的冲突语气或语言要求。"
+        f"语气={profile.tone.value}：{tone}。客户回复语言={language}。"
+        "只影响表达，不改变事实、隐私、安全或权限。坐席工作语言不影响买家正文；"
+        "不要在买家正文添加坐席译文、解释或内部审阅说明。"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class PublishedReplyPreferences:
+    profile: AgentReplyProfile | None
+    operator_language: SupportedLanguage | None
+    source: str
+
+
+def resolve_published_reply_profile(
+    agents: tuple["PublishedAgent", ...], *, primary_agent_id: uuid.UUID | None = None
+) -> PublishedReplyPreferences:
+    """仅实际参与者可决定表达；无明确主配置时冲突统一跟随本轮问题。"""
+    primary = next((item for item in agents if item.id == primary_agent_id), None)
+    if primary is not None:
+        profile = primary.reply_profile
+        return PublishedReplyPreferences(profile, profile.operator_language if profile else None, "explicit_primary")
+    profiles = [item.reply_profile for item in agents]
+    if not profiles or all(item is None for item in profiles):
+        return PublishedReplyPreferences(None, None, "legacy")
+    first = profiles[0]
+    if all(item == first for item in profiles) and first is not None:
+        return PublishedReplyPreferences(first, first.operator_language, "unanimous")
+    # 旧发布无偏好时也不能借其他 Agent 的显式语种冒充全店共识。
+    operators = {item.operator_language for item in profiles if item is not None}
+    operator = next(iter(operators)) if len(operators) == 1 and all(item is not None for item in profiles) else None
+    return PublishedReplyPreferences(AgentReplyProfile(), operator, "conflict_follow_question")

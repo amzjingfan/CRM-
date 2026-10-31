@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.core.factory import SharedAgentRuntime
-from app.agents.core.reply_policy import CustomerLanguage, detect_customer_language
+from app.agents.core.reply_policy import REPLY_POLICY_VERSION, CustomerLanguage, detect_customer_language
 from app.agents.core.schemas import (
     AgentAction,
     AgentWorkflowResult,
@@ -25,6 +25,7 @@ from app.agents.orchestration.service import RunProgress
 from app.agents.providers.factory import validate_tool_model
 from app.agents.runtime.execution import execute_model_run, persist_dynamic_result
 from app.agents.runtime.models import AgentRun
+from app.agents.runtime.operator_translation import OPERATOR_TRANSLATION_VERSION
 from app.agents.runtime.snapshot import freeze_run_context
 from app.agents.safety.grounding import GROUNDING_PROMPT_VERSION
 from app.conversations.models import Conversation, Message
@@ -104,7 +105,8 @@ async def run_formal_suggestion(
     await session.commit()
     progress = progress or RunProgress()
     try:
-        async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
+        async with asyncio.timeout(max(0.0, deadline - time.monotonic())) as run_timeout:
+            progress.run_timeout = run_timeout
             result = await execute_model_run(
                 snapshot=snapshot,
                 question=trigger.content,
@@ -164,6 +166,8 @@ async def run_formal_suggestion(
         await session.rollback()
     language = detect_customer_language(trigger.content)
     reply_language: Literal["zh-CN", "en"] = "en" if language == CustomerLanguage.EN else "zh-CN"
+    if result.suggestion.reply_language in {"zh-CN", "en"}:
+        reply_language = "en" if result.suggestion.reply_language == "en" else "zh-CN"
     citations = list(
         {item.chunk_id: item for specialist in result.specialists for item in specialist.citation_details}.values()
     )
@@ -199,12 +203,18 @@ async def run_formal_suggestion(
         requires_human=True,
         detected_language=language,
         reply_language=reply_language,
+        customer_translation=result.suggestion.customer_translation,
+        customer_translation_error_code=result.suggestion.customer_translation_error_code,
         provider=settings.llm_primary_provider,
         model=settings.llm_primary_model,
         prompt_versions={
             "dynamic_router": ROUTER_PROMPT_VERSION,
             "evidence_review": GROUNDING_PROMPT_VERSION,
             "answer_output": AGGREGATE_PROMPT_VERSION,
+            "reply_preferences": REPLY_POLICY_VERSION,
+            **(
+                {"operator_translation": OPERATOR_TRANSLATION_VERSION} if result.suggestion.customer_translation else {}
+            ),
             **({"reply_plan": REPLY_PLAN_PROMPT_VERSION} if progress.reply_plan else {}),
         },
         input_tokens=run.input_tokens or 0,

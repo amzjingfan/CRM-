@@ -119,8 +119,10 @@ async def run_agent_debug_v2(
     )
     await session.commit()
     progress = progress if progress is not None else RunProgress()
+    progress.primary_agent_id = config.id
     try:
-        async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
+        async with asyncio.timeout(max(0.0, deadline - time.monotonic())) as run_timeout:
+            progress.run_timeout = run_timeout
             result = await execute_model_run(
                 snapshot=snapshot,
                 question=payload.message,
@@ -199,4 +201,6 @@ async def run_agent_debug_v2(
         ],
         tool_events=tool_events,
         reason_code=result.reason_code,
+        customer_translation=result.suggestion.customer_translation,
+        customer_translation_error_code=result.suggestion.customer_translation_error_code,
     )

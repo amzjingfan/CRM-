@@ -1,5 +1,11 @@
 # 当前 API 契约
 
+## 回复偏好与内部译文（2026-10-31 本地候选，未部署）
+
+现有 Agent 配置 `reply_profile={tone,reply_language,operator_language,brand_name?}` 请求字段不变；发布后冻结偏好，保存草稿不改变运行。模板仍不复制该字段，批量发布保留本店值。
+
+Agent 调试结果兼容新增 `customer_translation: TranslationBundleResult|null`、`customer_translation_error_code: string|null`。正式工作台沿用 `translation` 内部视图，兼容新增 `translation_error_code: string|null`；不向正式视图暴露 Provider/模型/用量。买家正文 `content`、`draft_reply`、`reply_parts` 与未复核流式草稿不混入坐席译文。译文错误为 `translation_unavailable` 或 `deadline_exceeded`，不会抹除已安全通过的买家正文；无偏好、同语或无共识跳过时为 NULL。认证、CSRF、店铺范围、权限和发送确认保持原契约。
+
 ## Agent 模板与后台批量应用（2026-10-30 本地候选，未部署）
 
 模板是配置复用入口，店铺运行仍读取自己的已发布 AgentConfigVersion。以下后端接口已实现；完整批量 UI 与最终联合验收仍按实施任务推进，不把接口就绪当作上线。

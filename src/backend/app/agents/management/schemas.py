@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.agents.core.reply_policy import AgentReplyProfile
 from app.agents.core.schemas import AgentCitation, AgentToolCallView
+from app.agents.core.translation import TranslationBundleResult
 from app.agents.tools.metadata import TOOL_METADATA
 
 AgentType = Literal["service", "operations"]
@@ -130,6 +131,8 @@ class AgentDebugView(BaseModel):
     routed_agents: list[dict[str, str]] = Field(default_factory=list)
     tool_events: list[dict[str, str]] = Field(default_factory=list)
     reason_code: str | None = None
+    customer_translation: TranslationBundleResult | None = None
+    customer_translation_error_code: str | None = None
 
 
 class AgentConfigView(BaseModel):
