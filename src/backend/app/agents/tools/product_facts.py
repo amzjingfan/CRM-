@@ -32,10 +32,11 @@ def product_facts(product: SidebarProduct, args: ProductSelectionArguments) -> d
     parser = _ProductText()
     parser.feed(product.description_html or "")
     text = "".join(parser.parts).strip()
+    available_skus = [sku for sku in product.skus if sku.quantity is not None and sku.quantity > 0]
     start = (args.page - 1) * args.page_size
     text_start = (args.page - 1) * 3000
     pages = max(
-        math.ceil(len(product.skus) / args.page_size),
+        math.ceil(len(available_skus) / args.page_size),
         math.ceil(len(product.attributes) / args.page_size),
         math.ceil(len(text) / 3000),
     )
@@ -50,9 +51,9 @@ def product_facts(product: SidebarProduct, args: ProductSelectionArguments) -> d
         "attribute_count": len(product.attributes),
         "skus": [
             {"sku_number": sku.id, **sku.model_dump(exclude={"id"})}
-            for sku in product.skus[start : start + args.page_size]
+            for sku in available_skus[start : start + args.page_size]
         ],
-        "sku_count": len(product.skus),
+        "sku_count": len(available_skus),
         "page": args.page,
         "next_page": args.page + 1 if args.page < pages else None,
     }

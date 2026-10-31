@@ -11,6 +11,12 @@ from fastapi.responses import StreamingResponse
 
 from app.agents.core.factory import SharedAgentRuntime
 from app.agents.delivery.reply_parts import DraftPartSink
+from app.agents.management.auto_reply_preview import (
+    AutoReplyPreviewUpdate,
+    AutoReplyPreviewView,
+    get_policy,
+    set_policy,
+)
 from app.agents.management.config_service import (
     config_view,
     create_config,
@@ -107,6 +113,31 @@ async def agent_collaboration(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ApiResponse[list[CollaborationView]]:
     return ApiResponse(data=await list_collaboration(session, user, conversation_id, offset))
+
+
+@router.get(
+    "/auto-reply-preview",
+    response_model=ApiResponse[AutoReplyPreviewView],
+    dependencies=[Depends(require_permission("agent.view"))],
+)
+async def auto_reply_preview_policy(
+    store_id: uuid.UUID, session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[AutoReplyPreviewView]:
+    return ApiResponse(data=await get_policy(session, user, store_id))
+
+
+@router.put(
+    "/auto-reply-preview",
+    response_model=ApiResponse[AutoReplyPreviewView],
+    dependencies=[Depends(require_csrf), Depends(require_permission("agent.manage"))],
+)
+async def update_auto_reply_preview_policy(
+    store_id: uuid.UUID,
+    payload: AutoReplyPreviewUpdate,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[AutoReplyPreviewView]:
+    return ApiResponse(data=await set_policy(session, user, store_id, payload))
 
 
 @router.get(

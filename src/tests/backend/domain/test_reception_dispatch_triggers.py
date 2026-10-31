@@ -39,7 +39,7 @@ async def test_webhook_dispatches_new_buyer_message_once(monkeypatch: pytest.Mon
         language="en",
     )
     session = Mock(spec=AsyncSession)
-    session.scalar = AsyncMock(side_effect=[conversation, None])
+    session.scalar = AsyncMock(side_effect=[conversation, None, None])
     session.flush = AsyncMock()
     dispatch = AsyncMock(return_value=None)
     monkeypatch.setattr(webhook_service, "_upsert_customer", AsyncMock(return_value=customer))

@@ -451,6 +451,12 @@ function Assert-ProductionComposeContract {
         if ($backendToken.Length -lt 32 -or $backendToken -cne $retrievalToken) {
             throw "G5 backend and retrieval model service must share a valid internal model token."
         }
+        if ($EnableAgentSuggestions) {
+            $agentWorkerToken = [string]$Config.services.'agent-worker'.environment.RETRIEVAL_MODEL_SERVICE_TOKEN
+            if ($agentWorkerToken -cne $retrievalToken) {
+                throw "Agent Worker and retrieval model service must share a valid internal model token."
+            }
+        }
     }
     if ($EnableDocumentIngestion) {
         $documentService = $Config.services.PSObject.Properties["document-parser"].Value
@@ -524,7 +530,9 @@ function Assert-ProductionComposeContract {
                  ($serviceName -eq "worker" -and $capabilityName -eq "TIKTOK_CONVERSATION_SYNC_ENABLED"))) {
                 "true"
             } else { "false" }
-            if (($EnableG5SSELoadTest -or $EnableAgentSuggestions) -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
+            if ((($EnableG5SSELoadTest -and $serviceName -ceq "backend") -or
+                ($EnableAgentSuggestions -and $serviceName -in @("backend", "agent-worker"))) -and
+                $capabilityName -ceq "LLM_ENABLED") {
                 $expectedValue = "true"
             }
             if ($EnableTikTokManualSend -and $serviceName -ceq "backend" -and
@@ -551,7 +559,8 @@ function Assert-ProductionComposeContract {
         if ($storeActual -cne $storeExpected) {
             throw "Staging Compose manual send target does not match reviewed mode: $serviceName"
         }
-        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug -or $EnableAgentSuggestions) -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $expectedEmbedding = if ((($EnableG5SSELoadTest -or $EnableAgentDebug) -and $serviceName -ceq "backend") -or
+            ($EnableAgentSuggestions -and $serviceName -in @("backend", "agent-worker"))) { "true" } else { "false" }
         $embeddingProperty = $applicationEnvironment.PSObject.Properties["EMBEDDING_ENABLED"]
         $actualEmbedding = if ($null -eq $embeddingProperty) { "false" } else { [string]$embeddingProperty.Value }
         if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
@@ -561,10 +570,9 @@ function Assert-ProductionComposeContract {
         foreach ($name in @("AGENT_DEBUG_ENABLED", "AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED")) {
             $property = $applicationEnvironment.PSObject.Properties[$name]
             $actual = if ($null -eq $property) { "false" } else { [string]$property.Value }
-            $expected = if ($serviceName -ceq "backend" -and (
-                ($EnableAgentDebug -and $name -cne "AGENT_V2_FORMAL_ENABLED") -or
-                ($EnableAgentSuggestions -and $name -ceq "AGENT_V2_FORMAL_ENABLED")
-            )) { "true" } else { "false" }
+            $expected = if (($serviceName -ceq "backend" -and $EnableAgentDebug -and $name -cne "AGENT_V2_FORMAL_ENABLED") -or
+                ($serviceName -in @("backend", "agent-worker") -and $EnableAgentSuggestions -and
+                $name -ceq "AGENT_V2_FORMAL_ENABLED")) { "true" } else { "false" }
             if ($actual -cne $expected) {
                 throw "Staging Compose Agent capability does not match reviewed mode: $serviceName/$name"
             }
@@ -654,6 +662,7 @@ function Assert-RunningStagingMode {
         [switch]$EnableAgentDebug,
     [switch]$EnableAgentSuggestions,
         [switch]$EnableG5SSELoadTest,
+        [string]$ExpectedRetrievalToken,
         [Parameter(Mandatory = $true)][hashtable]$G2ProbeExpected
     )
 
@@ -697,7 +706,9 @@ function Assert-RunningStagingMode {
                  ($serviceName -eq "worker" -and $capabilityName -eq "TIKTOK_CONVERSATION_SYNC_ENABLED"))) {
                 "true"
             } else { "false" }
-            if (($EnableG5SSELoadTest -or $EnableAgentSuggestions) -and $serviceName -ceq "backend" -and $capabilityName -ceq "LLM_ENABLED") {
+            if ((($EnableG5SSELoadTest -and $serviceName -ceq "backend") -or
+                ($EnableAgentSuggestions -and $serviceName -in @("backend", "agent-worker"))) -and
+                $capabilityName -ceq "LLM_ENABLED") {
                 $expectedValue = "true"
             }
             if ($EnableTikTokManualSend -and $serviceName -ceq "backend" -and
@@ -722,19 +733,23 @@ function Assert-RunningStagingMode {
         if ($storeActual -cne $storeExpected) {
             throw "Staging runtime manual send target does not match reviewed mode: $serviceName"
         }
-        $expectedEmbedding = if (($EnableG5SSELoadTest -or $EnableAgentDebug -or $EnableAgentSuggestions) -and $serviceName -ceq "backend") { "true" } else { "false" }
+        $expectedEmbedding = if ((($EnableG5SSELoadTest -or $EnableAgentDebug) -and $serviceName -ceq "backend") -or
+            ($EnableAgentSuggestions -and $serviceName -in @("backend", "agent-worker"))) { "true" } else { "false" }
         $actualEmbedding = [string]$runtimeEnvironment["EMBEDDING_ENABLED"]
         if ([string]::IsNullOrEmpty($actualEmbedding)) { $actualEmbedding = "false" }
         if ($actualEmbedding -cne $expectedEmbedding) {
             throw "Staging runtime embedding capability does not match reviewed mode: $serviceName"
         }
+        if ($EnableAgentSuggestions -and $serviceName -ceq "agent-worker" -and
+            $runtimeEnvironment["RETRIEVAL_MODEL_SERVICE_TOKEN"] -cne $ExpectedRetrievalToken) {
+            throw "Staging runtime Agent Worker retrieval token does not match reviewed mode."
+        }
         foreach ($name in @("AGENT_DEBUG_ENABLED", "AGENT_V2_DEBUG_ENABLED", "AGENT_V2_FORMAL_ENABLED")) {
             $actual = [string]$runtimeEnvironment[$name]
             if ([string]::IsNullOrEmpty($actual)) { $actual = "false" }
-            $expected = if ($serviceName -ceq "backend" -and (
-                ($EnableAgentDebug -and $name -cne "AGENT_V2_FORMAL_ENABLED") -or
-                ($EnableAgentSuggestions -and $name -ceq "AGENT_V2_FORMAL_ENABLED")
-            )) { "true" } else { "false" }
+            $expected = if (($serviceName -ceq "backend" -and $EnableAgentDebug -and $name -cne "AGENT_V2_FORMAL_ENABLED") -or
+                ($serviceName -in @("backend", "agent-worker") -and $EnableAgentSuggestions -and
+                $name -ceq "AGENT_V2_FORMAL_ENABLED")) { "true" } else { "false" }
             if ($actual -cne $expected) {
                 throw "Staging runtime Agent capability does not match reviewed mode: $serviceName/$name"
             }
@@ -1321,6 +1336,7 @@ try {
         -AllowedTikTokStoreIds $AllowedTikTokStoreIds `
         -EnableWorkspaceTranslation:$EnableWorkspaceTranslation -EnableAgentDebug:$EnableAgentDebug `
         -EnableAgentSuggestions:$EnableAgentSuggestions `
+        -ExpectedRetrievalToken $environmentValues["RETRIEVAL_MODEL_SERVICE_TOKEN"] `
         -G2ProbeExpected $g2ProbeExpected
     if ($EnableDocumentIngestion) {
         Assert-RunningDocumentWorker -Command $compose -Arguments $composeArguments `

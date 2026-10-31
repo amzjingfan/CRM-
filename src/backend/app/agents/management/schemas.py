@@ -11,7 +11,7 @@ from app.agents.core.schemas import AgentCitation, AgentToolCallView
 from app.agents.core.translation import TranslationBundleResult
 from app.agents.tools.metadata import TOOL_METADATA
 
-AgentType = Literal["service", "operations"]
+AgentType = Literal["service", "operations", "logistics_event", "fallback"]
 
 
 class AgentConfigCreate(BaseModel):

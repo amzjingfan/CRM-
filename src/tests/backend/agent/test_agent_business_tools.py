@@ -11,6 +11,32 @@ from app.workspace.schemas import PageMeta
 from app.workspace.sidebar import SidebarOrder, SidebarOrders
 
 
+def test_product_tool_details_omit_unavailable_skus_and_page_only_available_variants() -> None:
+    from app.agents.tools.arguments import ProductSelectionArguments
+    from app.agents.tools.product_facts import product_facts
+    from app.workspace.sidebar import SidebarProduct, SidebarSku
+
+    product = SidebarProduct(
+        id="p100",
+        title="Mixed stock",
+        status="ACTIVATE",
+        image_url=None,
+        skus=[
+            SidebarSku(id="available", seller_sku="IN", name="Available", currency="USD", sale_price="5", quantity=2),
+            SidebarSku(id="sold-out", seller_sku="OUT", name="Sold out", currency="USD", sale_price="5", quantity=0),
+            SidebarSku(
+                id="unknown", seller_sku="UNKNOWN", name="Unknown", currency="USD", sale_price="5", quantity=None
+            ),
+        ],
+    )
+
+    facts = product_facts(product, ProductSelectionArguments(product_ref="p1", page_size=1))
+
+    assert [sku["sku_number"] for sku in facts["skus"]] == ["available"]
+    assert facts["sku_count"] == 1
+    assert facts["next_page"] is None
+
+
 def order(name: str) -> SidebarOrder:
     return SidebarOrder(
         id=uuid.uuid4(),
@@ -363,7 +389,11 @@ async def test_standard_tracking_does_not_hide_known_parcels_or_assign_order_eve
 @pytest.mark.asyncio
 async def test_aftersales_requires_case_selection_before_reading_processing_records(monkeypatch):
     from app.agents.tools import business
-    from app.integrations.tiktok_read import TikTokReturn, TikTokReturnLine, TikTokReturnRecord
+    from app.integrations.tiktok_read import (
+        TikTokReturn,
+        TikTokReturnLine,
+        TikTokReturnRecord,
+    )
 
     service, _ = executor(monkeypatch, [order("111")])
     rows = [

@@ -1,5 +1,11 @@
 # 当前 API 契约
 
+## 店铺多 Agent 自动建议预演（2026-10-31 本地候选）
+
+`GET/PUT /v1/agents/auto-reply-preview?store_id=` 读取或修改当前店铺预演策略。读取需 `agent.view`；修改需 `agent.manage`、CSRF，开启时还需当前操作者拥有 `workspace.view` 且店铺已有已发布、已启用 Agent。PUT body 为 `{enabled,expected_revision}`，冲突返回 409。返回 `{store_id,enabled,revision,mode:"review_preview",send_performed:false}`。默认关闭；开启者身份用于后台按实时权限执行，撤权、停用或关闭后任务取消。
+
+`GET /v1/workspace/sessions/{id}/auto-preview` 需 `workspace.view` 和当前会话店铺权限，返回当前会话最新预演任务或 `null`；结果含 `task_id,trigger_message_id,agent_run_id,status,content,processed_at,send_performed:false`。客户端只展示与当前买家消息 ID 一致的草稿，坐席可手动填入编辑框。入站任务按平台消息去重，预演调用店铺已发布多 Agent、已授权只读工具及绑定知识；不写买家消息，也不触发平台发送。现有真实发送开关不因该策略改变。
+
 ## 回复偏好与内部译文（2026-10-31 本地候选，未部署）
 
 现有 Agent 配置 `reply_profile={tone,reply_language,operator_language,brand_name?}` 请求字段不变；发布后冻结偏好，保存草稿不改变运行。模板仍不复制该字段，批量发布保留本店值。

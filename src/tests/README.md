@@ -1,5 +1,7 @@
 # 测试入口与执行约定
 
+五类 Agent 本地候选的快速回归：`backend/agent/test_five_agent_template_manifest.py` 检查四个新增共享模板的七段提示词与工具清单；`backend/agent/test_fallback_sequence.py` 和 `test_dynamic_run_coordinator.py` 检查普通问题排除事件/兜底及第三轮固定话术；`backend/agent/test_auto_reply_preview_*.py` 检查逐店策略、只读后台预演和工作台读取；`backend/agent/test_agent_business_tools.py`、`backend/domain/test_workspace_catalog_availability.py` 检查有货商品投影。真实迁移、JWT/CSRF、权限与版本锁仍须由隔离 PostgreSQL 脚本运行，前端交互用 `frontend/browser/agent-prototype.test.mjs` 和 `reply-review.test.mjs`。这些合成用例不等于 TikTok US 现场工具、RAG 或零外发验收。
+
 本目录是项目唯一跟踪的测试资产根。项目整体采用 `TEST_LAYOUT: centralized` 布局，测试策略见 [`../../docs/quality/TEST-STRATEGY.md`](../../docs/quality/TEST-STRATEGY.md)。
 
 ## 权威路径与发现规则

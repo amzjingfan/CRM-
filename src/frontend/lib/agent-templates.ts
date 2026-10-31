@@ -2,9 +2,12 @@ import { createIdempotencyKey, requestApi, type AgentToolMetadata } from "./api"
 
 export type KnowledgeSlot = { key: string; name: string; purpose: string; required: boolean };
 export type TemplateConfig = {
-  default_agent_name: string; suggested_code: string; agent_type: "service" | "operations"; description: string | null;
+  default_agent_name: string; suggested_code: string; agent_type: "service" | "operations" | "logistics_event" | "fallback"; description: string | null;
   model_provider: string | null; model_name: string | null; prompt_sections: Record<string, string>;
   tool_names: string[]; knowledge_slots: KnowledgeSlot[];
+};
+export const AGENT_TYPE_LABELS: Record<TemplateConfig["agent_type"], string> = {
+  service: "服务类", operations: "经营类", logistics_event: "物流事件通知", fallback: "无解兜底",
 };
 export type AgentTemplate = {
   id: string; code: string; name: string; description: string | null; draft_revision: number | null;

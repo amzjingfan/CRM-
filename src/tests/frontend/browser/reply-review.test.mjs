@@ -29,6 +29,7 @@ async function openReview(options = {}) {
     if (path.endsWith("/auth/me")) data = { id: "agent-1", name: "Agent", permissions: ["workspace.view", "workspace.reply"], store_ids: ["store-1"], role: "agent", email: null, avatar: null };
     else if (path.endsWith("/settings/stores")) data = [{ id: "store-1", name: "Test store", alias: null, code: "test", status: "active", timezone: "UTC", currency: "USD", created_at: "2026-10-29T00:00:00Z" }];
     else if (path.endsWith("/workspace/sessions")) data = { items: records, pagination: { page: 1, page_size: 30, total: 2 }, unread_messages_total: 0 };
+    else if (path.endsWith("/auto-preview")) data = options.autoPreview ?? null;
     else if (path.endsWith("/messages") && req.method() === "GET") { const record = records.find((item) => path.includes(item.id)); data = { session: record, customer: record.customer, messages: [{ id: "buyer-1", role: "user", content: "Where is my parcel?", status: "received", created_at: "2026-10-29T01:00:00Z", error_code: null, delivery_mode: "inbound" }], recent_orders: [], ai_suggestion: null, pagination: { page: 1, page_size: 100, total: 1 }, send_mode: "mock", requires_confirmation: true, draft_translation_enabled: true }; }
     else if (path.endsWith("/sidebar/search")) data = { items: state.orders, pagination: { page: 1, page_size: 20, total: state.orders.length } };
     else if (path.endsWith("/logistics-notifications/policy")) data = { store_id: "store-1", agent_id: "agent-1", enabled: true, mode: "preview", enabled_at: "2026-10-29T00:00:00Z", revision: 1, global_enabled: false, real_delivery_enabled: false, last_scan_at: null };
@@ -85,6 +86,23 @@ test("final stream operator translation stays internal and never enters the repl
     await panel.getByRole("button", { name: "刷新", exact: true }).click();
     await finish(["Another reviewed reply."]);
     assert.equal(await panel.getByText("您的包裹明天送达。", { exact: true }).count(), 0);
+  } finally { await context.close(); }
+});
+
+test("automatic preview stays in review until the operator explicitly uses its draft", async () => {
+  const { context, page, batches } = await openReview({ autoPreview: {
+    task_id: "task-1", trigger_message_id: "buyer-1", agent_run_id: "run-1", status: "human_review",
+    content: "Your parcel is in transit.", processed_at: "2026-10-29T01:01:00Z", send_performed: false,
+  } });
+  try {
+    const panel = page.getByRole("region", { name: "回复审阅" });
+    await panel.getByText("Your parcel is in transit.", { exact: true }).waitFor();
+    const composer = page.getByRole("textbox", { name: "回复内容", exact: true });
+    assert.equal(await composer.inputValue(), "");
+    assert.equal(batches.length, 0);
+    await panel.getByRole("button", { name: "使用草稿" }).click();
+    assert.equal(await composer.inputValue(), "Your parcel is in transit.");
+    assert.equal(batches.length, 0);
   } finally { await context.close(); }
 });
 

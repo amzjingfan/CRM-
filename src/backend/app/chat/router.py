@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from app.agents.core.factory import SharedAgentRuntime
 from app.agents.orchestration.service import RunProgress
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
+from app.chat.auto_preview import AutoPreviewView, get_auto_preview
 from app.chat.schemas import ChatQueryRequest, SuggestionRequest, SuggestionView
 from app.chat.service import (
     mark_suggestion_delivery_interrupted,
@@ -43,6 +44,17 @@ SSE_DESCRIPTION = (
     "accepted/status/delta/result/error/done，等待期间使用无业务数据的注释心跳，总超时后以 "
     "error + done(timeout) 结束；delta 为安全草稿完成后的传输层分块。"
 )
+
+
+@router.get(
+    "/workspace/sessions/{session_id}/auto-preview",
+    response_model=ApiResponse[AutoPreviewView | None],
+    dependencies=[Depends(require_permission("workspace.view"))],
+)
+async def auto_preview(
+    session_id: uuid.UUID, session: DbSession, user: Annotated[User, Depends(get_current_user)]
+) -> ApiResponse[AutoPreviewView | None]:
+    return ApiResponse(data=await get_auto_preview(session, user, session_id))
 
 
 def _agent_runtime(request: Request) -> SharedAgentRuntime | None:

@@ -12,14 +12,20 @@ import { SaveAgentTemplate } from "../../components/agents/templates/SaveAgentTe
 import { listAgentTemplates } from "../../lib/agent-templates";
 import { AppShell } from "../../components/AppShell";
 import {
-  approveDocumentVersion, createAgent, streamAgentDebug, getAgentLogs, listAgents, listDocumentFiles, listSessions, listStores, publishAgent, revokeDocumentVersion, setAgentEnabled, updateAgent,
-  type AgentConfig, type AgentDebugResult, type AgentRunLog, type DocumentFileSummary, type SessionSummary, type StoreView,
+  approveDocumentVersion, createAgent, streamAgentDebug, getAgentLogs, getAutoReplyPreviewPolicy, setAutoReplyPreviewPolicy, listAgents, listDocumentFiles, listSessions, listStores, publishAgent, revokeDocumentVersion, setAgentEnabled, updateAgent,
+  type AgentConfig, type AgentDebugResult, type AgentRunLog, type AutoReplyPreviewPolicy, type DocumentFileSummary, type SessionSummary, type StoreView,
 } from "../../lib/api";
 import "./agent-prototype.css";
 import "../workspace/reply-review.css";
 
 type Tab = "basic" | "reply" | "tools" | "knowledge" | "logs";
 type Draft = Pick<AgentConfig, "name" | "description" | "agent_type" | "enabled_tools" | "knowledge_file_ids" | "reply_profile" | "model_provider" | "model_name" | "prompt_sections">;
+const agentTypes: { value: AgentConfig["agent_type"]; label: string; description: string; icon: string }[] = [
+  { value: "service", label: "服务类 Agent", description: "售前 / 售后 / 物流咨询", icon: "🤝" },
+  { value: "operations", label: "经营类 Agent", description: "数据监测与内部分析", icon: "📈" },
+  { value: "logistics_event", label: "物流事件通知", description: "仅由新物流节点触发", icon: "📦" },
+  { value: "fallback", label: "无解兜底", description: "业务 Agent 无法回答后接手", icon: "↗" },
+];
 const tabs: { key: Tab; label: string }[] = [
   { key: "basic", label: "⚙ 基础设置" }, { key: "reply", label: "◇ 模型与提示词" },
   { key: "tools", label: "▧ 工具能力" }, { key: "knowledge", label: "▤ 知识库" }, { key: "logs", label: "◷ 运行记录" },
@@ -41,6 +47,8 @@ export default function AgentsPage() {
   const [stores, setStores] = useState<StoreView[]>([]);
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [storeId, setStoreId] = useState("");
+  const currentStoreRef = useRef("");
+  const changeStore = (nextStore: string) => { currentStoreRef.current = nextStore; setStoreId(nextStore); };
   const [selectedId, setSelectedId] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [tab, setTab] = useState<Tab>("basic");
@@ -55,7 +63,9 @@ export default function AgentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [canManageTemplates, setCanManageTemplates] = useState(false);
   const [templateSource, setTemplateSource] = useState<AgentConfig | null>(null);
-  const [newType, setNewType] = useState<"service" | "operations">("service");
+  const [newType, setNewType] = useState<AgentConfig["agent_type"]>("service");
+  const [autoPolicy, setAutoPolicy] = useState<AutoReplyPreviewPolicy | null>(null);
+  const [autoPolicyBusy, setAutoPolicyBusy] = useState(false);
   const [previewInput, setPreviewInput] = useState("");
   const [previewLines, setPreviewLines] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
   const [previewDrafts, setPreviewDrafts] = useState<Record<number, string>>({});
@@ -91,7 +101,7 @@ export default function AgentsPage() {
       if (!active) return;
       setStores(storeItems); setAgents(agentItems);
       const requested = new URLSearchParams(window.location.search).get("store_id");
-      setStoreId(storeItems.find((item) => item.id === requested)?.id ?? storeItems[0]?.id ?? "");
+      changeStore(storeItems.find((item) => item.id === requested)?.id ?? storeItems[0]?.id ?? "");
     }).catch((caught) => { if (active) setError(message(caught)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -118,6 +128,14 @@ export default function AgentsPage() {
     if (storeId) void listSessions(new URLSearchParams({ store_id: storeId, page: "1", page_size: "50" }))
       .then((page) => { if (active) setSessions(page.items.filter((item) => item.store_id === storeId)); })
       .catch(() => { if (active) setSessions([]); });
+    return () => { active = false; };
+  }, [storeId]);
+  useEffect(() => {
+    let active = true;
+    setAutoPolicy(null);
+    if (storeId) void getAutoReplyPreviewPolicy(storeId)
+      .then((policy) => { if (active) setAutoPolicy(policy); })
+      .catch((caught) => { if (active) setError(message(caught)); });
     return () => { active = false; };
   }, [storeId]);
   useEffect(() => {
@@ -160,6 +178,21 @@ export default function AgentsPage() {
       await refreshAgents();
       setNotice("配置已保存");
     } catch (caught) { setNotice(message(caught)); }
+  }
+  async function toggleAutoPreview() {
+    if (!autoPolicy || autoPolicyBusy || !storeId) return;
+    const targetStore = storeId;
+    setAutoPolicyBusy(true);
+    try {
+      const updated = await setAutoReplyPreviewPolicy(targetStore, {
+        enabled: !autoPolicy.enabled, expected_revision: autoPolicy.revision,
+      });
+      if (targetStore === currentStoreRef.current) {
+        setAutoPolicy(updated);
+        setNotice(updated.enabled ? "当前店铺已开启多 Agent 自动建议预演；只生成坐席草稿" : "当前店铺已关闭自动建议预演");
+      }
+    } catch (caught) { if (targetStore === currentStoreRef.current) setNotice(message(caught)); }
+    finally { setAutoPolicyBusy(false); }
   }
   async function publish() {
     if (!selected || dirty) return;
@@ -247,21 +280,22 @@ export default function AgentsPage() {
   }
   return <AppShell><div className="agent-page"><div className="shell">
     <header className="topbar"><div className="title"><span className="title-icon">◇</span><div><h1>Agent 管理</h1><p>配置 TikTok 店铺的人工辅助客服建议</p></div></div>
-      <div className="top-actions"><label className="store">▣ 当前店铺：<select aria-label="当前店铺" value={storeId} onChange={(event) => setStoreId(event.target.value)}>{stores.map((store) => <option value={store.id} key={store.id}>{store.name}</option>)}</select></label>
+      <div className="top-actions"><label className="store">▣ 当前店铺：<select aria-label="当前店铺" value={storeId} onChange={(event) => changeStore(event.target.value)}>{stores.map((store) => <option value={store.id} key={store.id}>{store.name}</option>)}</select></label>
         <button type="button" className="btn primary" onClick={() => setModalOpen(true)} disabled={!storeId}>＋ 新建 Agent</button></div></header>
     <AgentTemplateNav current="agents" />
     {error ? <p className="agent-error" role="alert">{error}</p> : null}
     {notice ? <p className="agent-error" role="status">{notice}</p> : null}
     <main className="main">
       <section className="hero"><div className="hero-copy"><span className="eyebrow">TIKTOK · HUMAN ASSISTED SERVICE</span><h2>让客服建议保持可控</h2><p>按店铺管理 Agent、工具和知识范围。由坐席审阅模型建议并确认回复。</p></div><div className="hero-stats"><div className="hero-stat"><strong>{visibleAgents.filter((item) => item.status === "enabled").length}</strong><small>当前启用</small></div><div className="hero-stat"><strong>{visibleAgents.filter((item) => item.published_version !== null).length}</strong><small>已发布</small></div></div></section>
+      <section className="auto-preview-policy" aria-label="多 Agent 自动回复预演"><div><h3>多 Agent 自动回复预演</h3><p>当前店铺收到新买家消息后自动生成待审阅建议；不会发送平台消息。</p></div><button type="button" className={`btn ${autoPolicy?.enabled ? "" : "primary"}`} disabled={!autoPolicy || autoPolicyBusy || (!autoPolicy.enabled && !visibleAgents.some((item) => item.status === "enabled" && item.published_version !== null))} onClick={() => void toggleAutoPreview()}>{autoPolicyBusy ? "处理中…" : autoPolicy?.enabled ? "关闭预演" : "开启预演"}</button></section>
       <div className="page-head"><div><h2>选择 Agent</h2><p>横向切换当前店铺的 Agent 配置。</p></div><span className="count-pill">{visibleAgents.length} 个 Agent</span></div>
-      <div className="agent-nav" aria-label="当前店铺的 Agent">{visibleAgents.map((item) => <button type="button" key={item.id} className={`agent-card ${item.id === selectedId ? "active" : ""}`} onClick={() => setSelectedId(item.id)}><span className="agent-card-top"><strong>{item.name}</strong><span className={`status ${item.status === "enabled" ? "" : "off"}`}>{item.status === "enabled" ? "运行中" : "已停用"}</span></span><small>{item.description || "当前店铺 Agent"}</small><span className="agent-card-foot"><span className="scenario">{item.agent_type === "operations" ? "经营类" : "服务类"}</span><span>{new Set([...item.enabled_tools, ...(item.knowledge_file_ids?.length ? ["search_knowledge"] : [])]).size} 项工具</span></span></button>)}</div>
+      <div className="agent-nav" aria-label="当前店铺的 Agent">{visibleAgents.map((item) => <button type="button" key={item.id} className={`agent-card ${item.id === selectedId ? "active" : ""}`} onClick={() => setSelectedId(item.id)}><span className="agent-card-top"><strong>{item.name}</strong><span className={`status ${item.status === "enabled" ? "" : "off"}`}>{item.status === "enabled" ? "运行中" : "已停用"}</span></span><small>{item.description || "当前店铺 Agent"}</small><span className="agent-card-foot"><span className="scenario">{agentTypes.find((type) => type.value === item.agent_type)?.label ?? "服务类 Agent"}</span><span>{new Set([...item.enabled_tools, ...(item.knowledge_file_ids?.length ? ["search_knowledge"] : [])]).size} 项工具</span></span></button>)}</div>
       {loading ? <p className="agent-empty">正在加载 Agent 配置…</p> : !selected || !draft ? <p className="agent-empty">{stores.length ? "当前店铺暂无 Agent，请点击“新建 Agent”。" : <>请先<Link href="/settings/stores">创建店铺</Link>，再配置 Agent。</>}</p> : <>
       <section className="config" aria-labelledby="configTitle"><div className="config-head"><div><h2 id="configTitle">{selected.name}</h2><p>{currentStore?.name} · {selected.code} · {selected.published_version ? `已发布 v${selected.published_version}` : "未发布"}</p></div><div className="config-actions"><AgentSource key={`${selected.id}:${selected.draft_revision}:${selected.published_version ?? "none"}`} agentId={selected.id} disabled={dirty} onDetached={refreshAgents} />{canManageTemplates ? <button className="btn small" type="button" onClick={() => setTemplateSource(selected)}>保存为模板</button> : null}{dirty ? <span className="dirty">未保存</span> : null}<button className="btn small" type="button" onClick={() => void toggleStatus()}>{selected.status === "enabled" ? "停用" : "启用"}</button><button className="btn small" type="button" disabled={dirty || !draft.model_provider || !draft.model_name || promptSections.some((section) => !draft.prompt_sections[section.key]?.trim())} onClick={() => void publish()}>发布版本</button><button className="btn primary small" type="button" onClick={() => void save()}>保存配置</button></div></div>
         <div className="tabs" role="tablist" aria-label="Agent 配置">{tabs.map((item) => <button type="button" role="tab" aria-selected={tab === item.key} className={`tab ${tab === item.key ? "active" : ""}`} key={item.key} onClick={() => setTab(item.key)}>{item.label}</button>)}</div>
         <div className="config-body">
           {tab === "basic" ? <section className="panel active" role="tabpanel"><div className="section-head"><h3>基础设置</h3><p>管理当前店铺的 Agent 名称和用途。</p></div><div className="form-grid">
-            <label className="field-group wide"><span>Agent 类型</span><select className="field" value={draft.agent_type} onChange={(event) => updateDraft({ agent_type: event.target.value as Draft["agent_type"] })}><option value="service">服务类 Agent（人工辅助客服）</option><option value="operations">经营类 Agent（内部分析）</option></select><p className="help">发布并启用后，模型可根据职责描述选择当前店铺的任意 Agent。</p></label>
+            <label className="field-group wide"><span>Agent 类型</span><select className="field" value={draft.agent_type} onChange={(event) => updateDraft({ agent_type: event.target.value as Draft["agent_type"] })}>{agentTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select><p className="help">普通问题路由服务与经营类；物流事件和无解兜底有各自的触发条件。</p></label>
             <label className="field-group"><span>所属店铺</span><input className="field" value={currentStore?.name ?? ""} disabled /></label><label className="field-group"><span>Agent 编码</span><input className="field" value={selected.code} disabled /></label>
             <label className="field-group wide"><span>Agent 名称</span><input className="field" maxLength={200} value={draft.name} onChange={(event) => updateDraft({ name: event.target.value })} /></label>
             <label className="field-group wide"><span>用途描述</span><textarea className="field fieldarea" maxLength={1000} value={draft.description ?? ""} onChange={(event) => updateDraft({ description: event.target.value || null })} /></label>
@@ -286,6 +320,6 @@ export default function AgentsPage() {
       </>}
     </main>
     {templateSource ? <SaveAgentTemplate key={`${templateSource.id}:${templateSource.draft_revision}`} agent={templateSource} onClose={() => setTemplateSource(null)} onSaved={() => { setTemplateSource(null); setNotice("模板草稿已创建，尚未发布"); }} /> : null}
-    {modalOpen ? <div className="overlay"><form className="modal" role="dialog" aria-modal="true" aria-label="新建 Agent" onSubmit={(event) => void create(event)}><div className="modal-head"><h2>新建 Agent</h2><button type="button" className="close" aria-label="关闭" onClick={() => setModalOpen(false)}>×</button></div><div className="modal-body"><div className="section-head"><h3>选择 Agent 类别</h3><p>新建后默认停用；完成模型、提示词、工具和知识配置并发布后可启用。</p></div><div className="template-grid">{(["service", "operations"] as const).map((type) => <button type="button" className={`template ${newType === type ? "selected" : ""}`} onClick={() => setNewType(type)} key={type}><span className="template-icon">{type === "service" ? "🤝" : "📈"}</span><strong>{type === "service" ? "服务类 Agent" : "经营类 Agent"}</strong><small>{type === "service" ? "售前 / 售后 / 物流咨询" : "数据监测与内部分析"}</small></button>)}</div><div className="form-grid"><label className="field-group"><span>所属店铺</span><input className="field" value={currentStore?.name ?? ""} disabled /></label><label className="field-group"><span>Agent 编码</span><input className="field" name="code" aria-label="Agent 编码" required pattern="[a-z0-9](?:[a-z0-9_]|-){1,99}" maxLength={100} placeholder="例如：service_us_02" /></label><label className="field-group wide"><span>Agent 名称</span><input className="field" name="name" aria-label="Agent 名称" required maxLength={200} placeholder="例如：售前咨询 Agent" /></label></div></div><div className="modal-foot"><button type="button" className="btn" onClick={() => setModalOpen(false)}>取消</button><button type="submit" className="btn primary">创建 Agent</button></div></form></div> : null}
+    {modalOpen ? <div className="overlay"><form className="modal" role="dialog" aria-modal="true" aria-label="新建 Agent" onSubmit={(event) => void create(event)}><div className="modal-head"><h2>新建 Agent</h2><button type="button" className="close" aria-label="关闭" onClick={() => setModalOpen(false)}>×</button></div><div className="modal-body"><div className="section-head"><h3>选择 Agent 类别</h3><p>新建后默认停用；完成模型、提示词、工具和知识配置并发布后可启用。</p></div><div className="template-grid">{agentTypes.map((type) => <button type="button" className={`template ${newType === type.value ? "selected" : ""}`} onClick={() => setNewType(type.value)} key={type.value}><span className="template-icon">{type.icon}</span><strong>{type.label}</strong><small>{type.description}</small></button>)}</div><div className="form-grid"><label className="field-group"><span>所属店铺</span><input className="field" value={currentStore?.name ?? ""} disabled /></label><label className="field-group"><span>Agent 编码</span><input className="field" name="code" aria-label="Agent 编码" required pattern="[a-z0-9](?:[a-z0-9_]|-){1,99}" maxLength={100} placeholder="例如：service_us_02" /></label><label className="field-group wide"><span>Agent 名称</span><input className="field" name="name" aria-label="Agent 名称" required maxLength={200} placeholder="例如：售前咨询 Agent" /></label></div></div><div className="modal-foot"><button type="button" className="btn" onClick={() => setModalOpen(false)}>取消</button><button type="submit" className="btn primary">创建 Agent</button></div></form></div> : null}
   </div></div></AppShell>;
 }

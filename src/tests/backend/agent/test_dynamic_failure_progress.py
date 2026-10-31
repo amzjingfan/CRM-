@@ -68,7 +68,9 @@ async def test_entry_outer_deadline_persists_partial_tool_metadata(monkeypatch, 
 
     module = debug if mode == "debug" else formal
     store, agent_id, conversation_id, customer, trigger_id = (uuid.uuid4() for _ in range(5))
-    agent = SimpleNamespace(id=agent_id, config_version=1, name="合成 Agent", file_ids=(), ready_for_v2=True)
+    agent = SimpleNamespace(
+        id=agent_id, config_version=1, name="合成 Agent", agent_type="service", file_ids=(), ready_for_v2=True
+    )
     conversation = SimpleNamespace(id=conversation_id, store_id=store, customer_id=customer)
     snapshot = SimpleNamespace(
         store_id=store, published_agents=(agent,), snapshot_hash="test", low_sensitive_reference=lambda: {}
@@ -84,7 +86,11 @@ async def test_entry_outer_deadline_persists_partial_tool_metadata(monkeypatch, 
     )
     monkeypatch.setattr(module, "get_settings", lambda: settings)
     monkeypatch.setattr(module, "validate_tool_model", lambda *_: None)
-    monkeypatch.setattr(module, "load_memory", AsyncMock(return_value=SimpleNamespace(summary="", facts=())))
+    monkeypatch.setattr(
+        module,
+        "load_memory",
+        AsyncMock(return_value=SimpleNamespace(summary="", facts=(), source_message_ids=())),
+    )
     monkeypatch.setattr(
         service, "route_agents", AsyncMock(return_value=RoutePlan((RoutedAgent(agent_id, "订单"),), 1, 3, 2))
     )

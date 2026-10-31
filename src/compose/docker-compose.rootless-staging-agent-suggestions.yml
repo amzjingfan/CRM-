@@ -1,6 +1,15 @@
-# staging 工作台人工建议：只为 backend 开启模型与动态 Agent，不授予平台发送或自动回复能力。
+# staging 建议与店铺预演：API 和 Agent Worker 可生成草稿，不授予平台发送或自动回复能力。
 services:
   backend:
+    environment:
+      LLM_ENABLED: "true"
+      AGENT_V2_FORMAL_ENABLED: "true"
+      LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-2048}
+      LLM_PRIMARY_CONTEXT_WINDOW_TOKENS: ${LLM_PRIMARY_CONTEXT_WINDOW_TOKENS:-8192}
+      LLM_FALLBACK_CONTEXT_WINDOW_TOKENS: ${LLM_FALLBACK_CONTEXT_WINDOW_TOKENS:-8192}
+      EMBEDDING_ENABLED: "true"
+      RETRIEVAL_MODEL_SERVICE_TOKEN: ${RETRIEVAL_MODEL_SERVICE_TOKEN:?RETRIEVAL_MODEL_SERVICE_TOKEN is required}
+  agent-worker:
     environment:
       LLM_ENABLED: "true"
       AGENT_V2_FORMAL_ENABLED: "true"

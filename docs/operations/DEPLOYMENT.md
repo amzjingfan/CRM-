@@ -1,5 +1,11 @@
 # 部署与运行边界
 
+## 五类 Agent 与预演候选发布检查（2026-10-31）
+
+本轮候选须先合并固定源码并完成隔离 PostgreSQL/pgvector 全量回归，再对固定前后端镜像执行私有备份、原版与候选 `ValidateOnly`、共享锁手动部署。迁移 `049_agent_auto_reply_preview` 顺接 048，只追加任务模式、待审阅正文与索引，旧任务默认 `legacy`；升级不允许手工修改业务表。`-EnableAgentSuggestions` 本轮同时给 backend 和 agent-worker 开启正式建议、模型及检索，受审门禁核对两者与检索服务共享令牌；worker/jobs 仍不启用模型，所有服务的 `AUTO_REPLY_ENABLED` 和真实消息写入继续按原受控范围关闭。部署后核对迁移头、Worker、原两店人工发送范围、自动回复关闭、高风险写入关闭、健康与固定出口。店铺预演策略默认关闭，仅在 TikTok US 现场验收窗口短时启用并在清理时恢复原 revision/状态；不得把预演草稿或物流事件预览当作实际买家发送。恢复旧镜像时保留 049 数据与后续业务增量，若要降级结构须先单独备份并取得数据处置批准。
+
+## 已部署的工作台目录与订单一致性（2026-10-31）
+
 2026-10-31 工作台目录与订单一致性修复已获用户批准，从干净合并主线 `743eb782904e39065c1a9d8779749f4af613198c` 手动部署 staging 前后端；精确镜像摘要见[低敏发布证据](../../release/evidence/staging/crm-staging-workspace-catalog-20261031.json)。私有环境、PostgreSQL、MinIO 备份可读，旧版和候选 `ValidateOnly` 均通过，`Deploy` 通过；迁移头 `048_published_reply_profile`、12 服务、固定出口和九条公网健康/页面路径通过。两店人工真实发送范围、翻译、Agent 调试及正式建议、文档解析保持原值；自动回复、营销、高风险写入继续关闭。已登录工作台只读可见统一导航及 XBM 已取消订单的基础字段；商品标签浏览器操作超时，真实商品/优惠券列表记 `UI_UNAVAILABLE`，见[TR R02](../reports/tests/TR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R02.md)。零真实买家测试发送、退款或 production 操作；未使用 GitHub Actions。回滚仅切回证据中的旧前后端精确摘要，并保留部署后业务数据增量。
 
 2026-10-31 用户批准的 Agent 模板 UI/回复参数修复已从固定主线 `6074c4b001aa37e1653db3a3a7f226dd3e2077e3` 手动部署 staging，后端 `sha256:dc16ae47…19fa`、前端 `sha256:250d680d…75df`；检索与解析镜像保持。私有备份、原版/候选预检、Deploy、048、12服务、固定出口及三公网健康通过；原翻译/Agent及两店人工发送保持，自动回复/营销/高风险写入关闭。真实绑定合成文件的8项参数/流式验收最终通过（一次坐席译文不可用后重试），两店批次与搜索多选页面核对通过；7合成Agent/4文件软删、2模板归档，原配置保留，零外发。见[TR](../reports/tests/TR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01.md)与[完整摘要证据](../../release/evidence/staging/crm-staging-agent-template-ui-20261031.json)。后合入工作台变更不包含在该冻结发布；回退保留048与业务增量，不等同生产放行。

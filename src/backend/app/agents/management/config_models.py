@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -86,4 +86,6 @@ class AgentTask(TimestampMixin, Base):
     result_action: Mapped[str | None] = mapped_column(String(30), nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     trace_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    mode: Mapped[str] = mapped_column(String(20), default="legacy", nullable=False)
+    preview_content: Mapped[str | None] = mapped_column(Text, nullable=True)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

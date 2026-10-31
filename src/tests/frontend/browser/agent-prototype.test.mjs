@@ -33,6 +33,7 @@ async function openAgentPage(options = {}) {
   if (options.notificationAgent) Object.assign(agents[0], { status: "enabled", published_version: 1, enabled_tools: ["notify_logistics_update"] });
   const writes = [];
   let detached = false;
+  const previewPolicies = new Map();
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -52,6 +53,17 @@ async function openAgentPage(options = {}) {
       const policy = { store_id: url.searchParams.get("store_id"), agent_id: null, enabled: false, mode: "preview", enabled_at: null, revision: 0, global_enabled: false, real_delivery_enabled: false, last_scan_at: null };
       if (request.method() === "PATCH") { const payload = JSON.parse(request.postData()); writes.push({ policy: payload, store_id: policy.store_id }); Object.assign(policy, payload, { revision: 1 }); }
       data = policy;
+    }
+    else if (url.pathname === "/v1/agents/auto-reply-preview") {
+      const storeId = url.searchParams.get("store_id");
+      const current = previewPolicies.get(storeId) ?? { store_id: storeId, enabled: false, revision: 0, mode: "review_preview", send_performed: false };
+      if (request.method() === "PUT") {
+        const payload = request.postDataJSON();
+        writes.push({ auto_preview: payload, store_id: storeId });
+        Object.assign(current, { enabled: payload.enabled, revision: current.revision + 1 });
+        previewPolicies.set(storeId, current);
+      }
+      data = current;
     }
     else if (url.pathname === "/v1/agents" && request.method() === "GET") data = agents;
     else if (url.pathname === "/v1/agents" && request.method() === "POST") {
@@ -102,6 +114,20 @@ test("temporary preview auto-send switch is absent and real Agent settings remai
     assert.equal(await page.getByText("模拟自动发送", { exact: true }).count(), 0);
     assert.equal(await page.getByRole("button", { name: "保存配置", exact: true }).isEnabled(), true);
     assert.equal(writes.length, 0);
+  } finally { await context.close(); }
+});
+
+test("auto suggestion preview toggles only the selected store and never offers buyer delivery", async () => {
+  const { context, page, writes } = await openAgentPage({ notificationAgent: true });
+  try {
+    const switchButton = page.getByRole("button", { name: "开启预演" });
+    await switchButton.click();
+    await page.getByRole("button", { name: "关闭预演" }).waitFor();
+    assert.deepEqual(writes.at(-1), { auto_preview: { enabled: true, expected_revision: 0 }, store_id: us.id });
+    await page.getByLabel("当前店铺", { exact: true }).selectOption(uk.id);
+    await page.getByRole("button", { name: "开启预演" }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "开启预演" }).isDisabled(), true);
+    assert.equal(await page.getByText("当前店铺收到新买家消息后自动生成待审阅建议；不会发送平台消息。").count(), 1);
   } finally { await context.close(); }
 });
 

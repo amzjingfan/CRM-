@@ -23,6 +23,7 @@ from app.integrations.tiktok_read import (
     TikTokCouponDuration,
     TikTokOrder,
     TikTokProduct,
+    TikTokProductSku,
     TikTokReadClient,
 )
 from app.orders.models import Order, OrderItem
@@ -836,6 +837,8 @@ def _product_view(product: TikTokProduct, *, include_details: bool = False) -> S
             image_url = urls[0]
     skus = []
     for sku in product.skus:
+        if not _sku_in_stock(sku):
+            continue
         names = [value for attr in sku.sales_attributes if isinstance((value := attr.get("value_name")), str)]
         skus.append(
             SidebarSku(
@@ -865,11 +868,13 @@ def _product_view(product: TikTokProduct, *, include_details: bool = False) -> S
     )
 
 
+def _sku_in_stock(sku: TikTokProductSku) -> bool:
+    return any(inventory.quantity is not None and inventory.quantity > 0 for inventory in sku.inventory)
+
+
 def _listed_in_stock(product: TikTokProduct) -> bool:
     # 平台目录的未知库存不能当作有货；客服和 Agent 共用此保守筛选。
-    return product.status == "ACTIVATE" and any(
-        inventory.quantity is not None and inventory.quantity > 0 for sku in product.skus for inventory in sku.inventory
-    )
+    return product.status == "ACTIVATE" and any(_sku_in_stock(sku) for sku in product.skus)
 
 
 async def search_sidebar_products(

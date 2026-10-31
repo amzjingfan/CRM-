@@ -219,9 +219,14 @@ def test_agent_debug_overlay_only_opens_backend_model_clients(
         service = config["services"][name]["environment"]
         assert service.get("AGENT_DEBUG_ENABLED", "false") == "false"
         assert service["AGENT_V2_DEBUG_ENABLED"] == "false"
-        assert service["AGENT_V2_FORMAL_ENABLED"] == "false"
-        assert service.get("EMBEDDING_ENABLED", "false") == "false"
-        assert service["LLM_ENABLED"] == "false"
+        expected = "true" if suggestions_enabled and name == "agent-worker" else "false"
+        assert service["AGENT_V2_FORMAL_ENABLED"] == expected
+        assert service.get("EMBEDDING_ENABLED", "false") == expected
+        assert service["LLM_ENABLED"] == expected
+        assert service["AUTO_REPLY_ENABLED"] == "false"
+        assert service["REAL_TIKTOK_MESSAGE_WRITE_ENABLED"] == "false"
+        if expected == "true":
+            assert service["RETRIEVAL_MODEL_SERVICE_TOKEN"] == retrieval_token
 
 
 def test_g5_workflow_opt_in_is_limited_to_validate_and_deploy() -> None:
@@ -1030,7 +1035,7 @@ def test_staging_agent_debug_requires_explicit_mode_and_shared_token(staging_env
     assert rejected.returncode != 0
 
 
-def test_staging_agent_suggestions_require_explicit_backend_only_mode(staging_env_file: Path, tmp_path: Path) -> None:
+def test_staging_agent_suggestions_enable_backend_and_preview_worker(staging_env_file: Path, tmp_path: Path) -> None:
     model_asset_dir = Path(
         next(
             line.split("=", 1)[1]
@@ -1042,6 +1047,14 @@ def test_staging_agent_suggestions_require_explicit_backend_only_mode(staging_en
     config_path = tmp_path / "fake-compose-config.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     config["services"]["backend"]["environment"].update(
+        {
+            "AGENT_V2_FORMAL_ENABLED": "true",
+            "LLM_ENABLED": "true",
+            "EMBEDDING_ENABLED": "true",
+            "RETRIEVAL_MODEL_SERVICE_TOKEN": RETRIEVAL_TOKEN_SENTINEL,
+        }
+    )
+    config["services"]["agent-worker"]["environment"].update(
         {
             "AGENT_V2_FORMAL_ENABLED": "true",
             "LLM_ENABLED": "true",
@@ -1083,7 +1096,12 @@ def test_staging_agent_suggestions_require_explicit_backend_only_mode(staging_en
     assert evidence["agent_debug_enabled"] is False
     assert evidence["g5_sse_load_test_enabled"] is False
     assert evidence["tiktok_manual_send_enabled"] is False
-    config["services"]["agent-worker"]["environment"]["AGENT_V2_FORMAL_ENABLED"] = "true"
+    config["services"]["agent-worker"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = "wrong" * 8
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    rejected_token = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentSuggestions", environment=environment)
+    assert rejected_token.returncode != 0
+    config["services"]["agent-worker"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = RETRIEVAL_TOKEN_SENTINEL
+    config["services"]["agent-worker"]["environment"]["AUTO_REPLY_ENABLED"] = "true"
     config_path.write_text(json.dumps(config), encoding="utf-8")
     rejected = run_powershell(PREFLIGHT_SCRIPT, *args, "-EnableAgentSuggestions", environment=environment)
     assert rejected.returncode != 0

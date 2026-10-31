@@ -9,6 +9,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.management.auto_reply_preview import policy_from_store
 from app.agents.management.config_models import AgentTask
 from app.agents.management.config_repository import find_enabled_config
 from app.audit.models import AuditLog
@@ -31,7 +32,7 @@ from app.reception_assignment.dispatch import dispatch_conversation
 from app.shared.config.settings import get_settings
 from app.shared.database.redis import redis_client
 from app.shared.exceptions.errors import AppError, ErrorCode
-from app.stores.models import ChannelAccount, TikTokSellerAuthorization
+from app.stores.models import ChannelAccount, Store, TikTokSellerAuthorization
 
 AUTHORIZATION_LIFECYCLE_EVENTS = {"SELLER_DEAUTHORIZATION", "UPCOMING_AUTHORIZATION_EXPIRATION"}
 
@@ -369,7 +370,14 @@ async def _process_message(
         if conversation.awaiting_reply_since is None or normalized.created_at < conversation.awaiting_reply_since:
             conversation.awaiting_reply_since = normalized.created_at
         await dispatch_conversation(session, conversation.id, now=datetime.now(UTC))
-    if get_settings().auto_reply_enabled:
+    store = await session.scalar(
+        select(Store).where(Store.id == channel.store_id, Store.status == "active", Store.deleted_at.is_(None))
+    )
+    try:
+        preview_enabled = store is not None and policy_from_store(store).enabled
+    except AppError:
+        preview_enabled = False
+    if preview_enabled or get_settings().auto_reply_enabled:
         config = await find_enabled_config(session, channel.store_id)
         if config is not None:
             session.add(
@@ -379,6 +387,7 @@ async def _process_message(
                     conversation_id=conversation.id,
                     trigger_message_id=message.id,
                     trace_id=str(event.id),
+                    mode="preview" if preview_enabled else "legacy",
                 )
             )
 

@@ -338,6 +338,35 @@ async def test_manage_only_actor_cannot_read_but_can_detach_return_projection(ap
     assert response.json()["data"]["id"] == str(api.configs[1])
 
 
+async def test_auto_preview_policy_requires_store_permissions_and_revision(api):
+    path = f"/v1/agents/auto-reply-preview?store_id={api.stores[1]}"
+    admin = headers(api, "admin")
+    initial = await api.client.get(path, headers=admin)
+    assert initial.status_code == 200, initial.text
+    assert initial.json()["data"]["enabled"] is False
+    assert initial.json()["data"]["revision"] == 0
+    denied = await api.client.put(
+        path,
+        headers=headers(api, "both_b"),
+        json={
+            "enabled": True,
+            "expected_revision": 0,
+        },
+    )
+    assert denied.status_code == 404, denied.text
+    enabled = await api.client.put(path, headers=admin, json={"enabled": True, "expected_revision": 0})
+    assert enabled.status_code == 200, enabled.text
+    assert enabled.json()["data"]["enabled"] is True
+    assert enabled.json()["data"]["send_performed"] is False
+    stale = await api.client.put(path, headers=admin, json={"enabled": False, "expected_revision": 0})
+    assert stale.status_code == 409, stale.text
+    disabled = await api.client.put(path, headers=admin, json={"enabled": False, "expected_revision": 1})
+    assert disabled.status_code == 200, disabled.text
+    async with api.sessions() as db:
+        store = await db.get(Store, api.stores[1])
+        assert store.metadata_json["agent_auto_reply_preview"]["enabled"] is False
+
+
 async def test_actual_auth_and_cookie_csrf_guards_remain(api):
     assert (await api.client.get("/v1/agents")).status_code == 401
     api.client.cookies.set("crm_access_token", api.token("admin"))

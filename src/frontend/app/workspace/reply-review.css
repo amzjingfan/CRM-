@@ -9,6 +9,11 @@
 .reply-review-parts > li > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .reply-review-parts p, .reply-review-unverified p, .reply-review-confirm-parts { white-space: pre-wrap; overflow-wrap: anywhere; }
 .reply-review-unverified { border-left: 3px solid var(--border); margin: 0 16px 8px; color: var(--muted); }
+.reply-review-auto-preview { margin: 0 16px 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.reply-review-auto-preview > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.reply-review-auto-preview p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.reply-review-auto-preview small, .reply-review-auto-status { color: var(--muted); }
+.reply-review-auto-status { padding: 0 16px 8px; }
 .reply-review-result, .reply-review-delivery-status { padding: 4px 16px 8px; overflow-wrap: anywhere; }
 .reply-review-confirm-parts { max-height: 45vh; overflow-y: auto; padding-left: 20px; }
 .reply-review-confirm-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; border: 1px solid var(--border); color: var(--text); }

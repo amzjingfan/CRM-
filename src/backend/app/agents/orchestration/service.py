@@ -6,10 +6,16 @@ import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field, replace
 
-from app.agents.core.reply_policy import compile_reply_policy, resolve_published_reply_profile
+from app.agents.core.reply_policy import (
+    CustomerLanguage,
+    compile_reply_policy,
+    detect_customer_language,
+    resolve_published_reply_profile,
+)
 from app.agents.delivery.reply_parts import DraftPartSink
 from app.agents.orchestration.aggregator import ReviewedSuggestion, aggregate_results
 from app.agents.orchestration.coordinator import SpecialistResult, run_selected
+from app.agents.orchestration.fallback import UNRESOLVED_REASONS, fixed_fallback_copy
 from app.agents.orchestration.router import (
     RoutedAgent,
     RouteDecisionError,
@@ -44,6 +50,7 @@ class RunProgress:
     on_draft: DraftPartSink | None = None
     primary_agent_id: uuid.UUID | None = None
     run_timeout: asyncio.Timeout | None = None
+    fallback_due: bool = False
 
     def capture_aggregate_usage(self, input_tokens: int, output_tokens: int) -> None:
         """每轮完成即记录数值，后续外层取消也不丢失已知用量。"""
@@ -81,7 +88,9 @@ class RunProgress:
         )
 
 
-def _review_required(reason: str, agent_ids: tuple[uuid.UUID, ...] = ()) -> ReviewedSuggestion:
+def _review_required(
+    reason: str, agent_ids: tuple[uuid.UUID, ...] = (), *, question_language: str | None = None
+) -> ReviewedSuggestion:
     clarification = {
         "no_matching_agent": "当前没有适合处理该问题的已启用 Agent，请由人工确认。",
         "deadline_exceeded": "本次处理超时，暂时无法核实答案，请由人工继续确认。",
@@ -89,7 +98,78 @@ def _review_required(reason: str, agent_ids: tuple[uuid.UUID, ...] = ()) -> Revi
         "rag_retrieval_timeout": "知识检索超时，暂时无法核实相关政策，请由人工继续确认。",
         "context_budget_exceeded": "本次信息超出模型上下文预算，请缩小问题范围或由人工继续确认。",
     }.get(reason)
-    return ReviewedSuggestion(clarification, "human_review", reason, agent_ids, ())
+    reply_language = None
+    if reason == "no_matching_agent":
+        supported = fixed_fallback_copy(question_language)
+        if supported is not None:
+            reply_language = supported[0]
+            clarification = (
+                "I cannot verify an answer to this question yet. Please let a human agent review it."
+                if reply_language == "en"
+                else "当前没有可核实的答案，请由人工客服确认。"
+            )
+    return ReviewedSuggestion(clarification, "human_review", reason, agent_ids, (), reply_language=reply_language)
+
+
+async def _fixed_fallback(
+    *,
+    question: str,
+    snapshot: RunSnapshot,
+    original_route: RoutePlan,
+    original_specialists: tuple[SpecialistResult, ...],
+    original_suggestion: ReviewedSuggestion,
+    reason: str,
+    worker: Callable[[RoutedAgent], Awaitable[SpecialistResult]],
+    deadline: float,
+    progress: RunProgress | None,
+) -> DynamicRunResult | None:
+    """第三轮只借兜底 Agent 执行内部接管工具，买家文案由可信固定版本生成。"""
+    if progress is None or not progress.fallback_due or reason not in UNRESOLVED_REASONS:
+        return None
+    candidates = tuple(agent for agent in snapshot.published_agents if agent.agent_type == "fallback")
+    if not candidates:
+        return None
+    # 连续轮次和兜底用途已由可信状态机决定；无需再让模型决定是否选择兜底。
+    detected = detect_customer_language(question)
+    language = original_route.question_language or (
+        detected.value if detected in {CustomerLanguage.ZH_CN, CustomerLanguage.EN} else None
+    )
+    selected = candidates[0]
+    fallback_route = RoutePlan(
+        (RoutedAgent(selected.id, "记录本轮未解决问题与人工接管需求", language),),
+        len(candidates),
+        0,
+        0,
+        language,
+    )
+    fallback_results = await run_selected(
+        plan=fallback_route,
+        worker=worker,
+        deadline=deadline,
+        on_results=lambda results: progress.capture((*original_specialists, *results)),
+    )
+    route = RoutePlan(
+        (*original_route.selections, *fallback_route.selections),
+        original_route.examined_count + fallback_route.examined_count,
+        original_route.input_tokens + fallback_route.input_tokens,
+        original_route.output_tokens + fallback_route.output_tokens,
+        original_route.question_language or fallback_route.question_language,
+    )
+    specialists = (*original_specialists, *fallback_results)
+    # 固定文案只进入人工审阅草稿；内部接管工具失败也不能让模型改写这段文案。
+    fixed = fixed_fallback_copy(route.question_language)
+    if fixed is None:
+        return DynamicRunResult(RunPhase.REVIEW_REQUIRED, route, specialists, original_suggestion, reason)
+    language, content = fixed
+    suggestion = ReviewedSuggestion(
+        content,
+        "human_review",
+        "fallback_third_round",
+        tuple(item.agent_id for item in specialists),
+        (),
+        reply_language=language,
+    )
+    return DynamicRunResult(RunPhase.REVIEW_REQUIRED, route, specialists, suggestion, "fallback_third_round")
 
 
 async def execute_dynamic_run(
@@ -111,11 +191,15 @@ async def execute_dynamic_run(
     state = RunStateMachine()
     state.advance(RunPhase.FROZEN)
     state.advance(RunPhase.ROUTING)
-    empty_route = RoutePlan((), len(snapshot.published_agents), 0, 0)
+    # 物流更新由事件入口驱动；兜底仅在业务 Agent 无解后启动，二者不参与普通问题的语义路由。
+    question_agents = tuple(
+        agent for agent in snapshot.published_agents if agent.agent_type not in {"logistics_event", "fallback"}
+    )
+    empty_route = RoutePlan((), len(question_agents), 0, 0)
     try:
         route = await route_agents(
             question=question,
-            agents=snapshot.published_agents,
+            agents=question_agents,
             provider=router,
             deadline=deadline,
             max_catalog_tokens=max_catalog_tokens,
@@ -137,8 +221,26 @@ async def execute_dynamic_run(
     if progress is not None:
         progress.route = route
     if not route.selections:
+        detected = detect_customer_language(question)
+        question_language = route.question_language or (
+            detected.value if detected in {CustomerLanguage.ZH_CN, CustomerLanguage.EN} else None
+        )
+        no_match = _review_required("no_matching_agent", question_language=question_language)
+        fallback = await _fixed_fallback(
+            question=question,
+            snapshot=snapshot,
+            original_route=route,
+            original_specialists=(),
+            original_suggestion=no_match,
+            reason="no_matching_agent",
+            worker=worker,
+            deadline=deadline,
+            progress=progress,
+        )
         state.advance(RunPhase.REVIEW_REQUIRED)
-        return DynamicRunResult(state.phase, route, (), _review_required("no_matching_agent"), "no_matching_agent")
+        if fallback is not None:
+            return fallback
+        return DynamicRunResult(state.phase, route, (), no_match, "no_matching_agent")
     language_policy = (
         (
             f"本轮当前问题的语种为 {route.question_language}。默认跟随本轮语种，"
@@ -256,5 +358,20 @@ async def execute_dynamic_run(
     )
     if suggestion.reason_code == "deadline_exceeded":
         phase = RunPhase.TIMEOUT
+    if suggestion.reason_code in UNRESOLVED_REASONS:
+        fallback = await _fixed_fallback(
+            question=question,
+            snapshot=snapshot,
+            original_route=route,
+            original_specialists=specialists,
+            original_suggestion=suggestion,
+            reason=suggestion.reason_code,
+            worker=worker,
+            deadline=deadline,
+            progress=progress,
+        )
+        if fallback is not None:
+            state.advance(RunPhase.REVIEW_REQUIRED)
+            return fallback
     state.advance(phase)
     return DynamicRunResult(state.phase, route, specialists, suggestion, suggestion.reason_code)

@@ -1,5 +1,9 @@
 # 系统架构
 
+## 2026-10-31 五类 Agent 本地候选
+
+迁移 `049_agent_auto_reply_preview` 顺接 `048_published_reply_profile`，为现有 `agent_tasks` 增加 `mode`、`preview_content` 和店铺/会话查询索引；旧任务以 `legacy` 模式保持兼容。店铺开关存于本店 `stores.metadata_json.agent_auto_reply_preview`，乐观 revision 和审计在 API 层维护；任务由现有入站处理和 Agent Worker 执行，不增加服务、队列或真实发送路径。商品搜索与详情共用上架且正库存投影，未知库存不作为在售。共享模板发布不直接改动店铺 Agent；物流事件与连续无解兜底由既有编排按用途触发。
+
 ## 2026-10-31 回复偏好本地候选
 
 当前候选新增 `048_published_reply_profile`，顺接已发布的 `047_supervisor_store_auth`，为 `agent_config_versions` 增加可空 JSONB `reply_profile`。旧行不回填，保持历史发布语义；新发布冻结配置，草稿和模板来源不能改变运行版本。降级删除该新字段会丢失新版本的表达偏好，仅允许在获准且有备份的环境执行；本轮往返验证只使用隔离测试库。UI 精简复用既有接口和批次处理器，不增加运行服务。

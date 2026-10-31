@@ -68,6 +68,28 @@ async def test_product_detail_rechecks_current_listing_and_stock(monkeypatch: py
 
 
 @pytest.mark.asyncio
+async def test_product_detail_only_exposes_skus_with_positive_known_inventory(monkeypatch: pytest.MonkeyPatch) -> None:
+    mixed = TikTokProduct.model_validate(
+        {
+            "id": "mixed",
+            "title": "Mixed stock",
+            "status": "ACTIVATE",
+            "skus": [
+                {"id": "available", "inventory": [{"quantity": 3}]},
+                {"id": "sold-out", "inventory": [{"quantity": 0}]},
+                {"id": "unknown", "inventory": []},
+            ],
+        }
+    )
+    client = SimpleNamespace(get_product=AsyncMock(return_value=mixed))
+    monkeypatch.setattr(sidebar, "_tiktok_client", AsyncMock(return_value=client))
+
+    detail = await sidebar.get_store_product(None, uuid.uuid4(), "mixed")
+
+    assert [sku.id for sku in detail.skus] == ["available"]
+
+
+@pytest.mark.asyncio
 async def test_coupon_search_keeps_only_ongoing_claimable_items(monkeypatch: pytest.MonkeyPatch) -> None:
     now = 1_800_000_000
     monkeypatch.setattr(sidebar.time, "time", lambda: now)
