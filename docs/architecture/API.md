@@ -70,6 +70,7 @@ Agent 发布接口在既有授权、revision和模型配置校验后执行一次
 
 - 会话列表/详情、消息记录、状态更新和受控工具均位于 `/workspace`。
 - 已授权 TikTok 店铺的会话和历史经内部只读同步写入现有会话/消息表；列表和详情仍通过原 `/workspace` 接口按店铺权限读取。工作台会话列表每页取 30 条，触底按列表返回的 `pagination` 自动加载更多，店铺与平台筛选在每一页保持一致。详情消息按时间升序分页，前端先取最新页，可继续加载较早历史。TikTok 消息只读调用请求 `need_data=true` 和 `need_plaintext=true`；Webhook 与历史同步统一提取图片、表情、视频及原生卡片的展示字段，消息 `message_type` 保留平台类型，媒体 URL 与卡片摘要写入现有 `raw_payload`，不保存完整平台载荷。`MessageView.media` 可返回平台原始 `url/cover/vid/width/height/duration/expire_time` 的安全展示子集；`rich_card` 可返回类型、标题、图片、金额、状态、商品/订单/包裹标识及物流摘要及多包裹列表。外链只接受 HTTPS。旧 `[TikTok 类型]` 记录可由 staging 只读同步脚本的 `--refresh-rich` 模式按平台消息 ID 幂等补齐，不新增未读或外发。
+- 原生 TikTok `logistics_card` 的聊天记录仅在卡片带有明确 `order_id` 时显示“查看详情”；点击后复用当前会话的订单详情只读接口，按同店、同买家核验后按需读取物流轨迹。缺少订单标识时不根据相邻订单猜测卡片身份；查看不触发消息发送。
 - 工作台标签页可见时每 5 秒重新读取列表与当前会话最新消息；按消息 ID 合并并保留已加载的历史、选中会话及草稿，避免每次刷新重置界面。
 - `GET /workspace/sessions` 支持 `filter=all|unread|mine|starred|closed`；默认列表不含本地已关闭会话，`closed` 仅列出已关闭会话。列表响应额外返回 `unread_messages_total`，汇总当前用户有权访问的未关闭会话未读数，不受搜索和分页影响；列表和详情的 `session` 均返回 `unread_count`、`is_starred` 和 UTC `closed_at`。前端打开会话定位最新消息；读取较早页保持阅读位置，新消息不会把正在阅读历史的坐席拉到底部，并提供“到最新消息”。
 - 会话列表与详情的 `customer.buyer_stage_override` 为 `pre|during|after|null`；`null` 时前端按最近一笔已同步订单状态推断阶段，未知状态显示待判断。`PATCH /workspace/sessions/{session_id}/buyer-stage` 需 `workspace.reply` 与 CSRF，body 为 `{"stage":"pre|during|after"}` 或 `{"stage":null}`；服务端先按会话授权核对店铺，再锁定同店客户行，更新客户 `metadata.buyer_stage_override` 并审计。此接口不发送平台消息，也不修改订单。

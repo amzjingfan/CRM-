@@ -209,6 +209,27 @@ test("TikTok buyer images, video and product cards render their original media f
   } finally { await context.close(); }
 });
 
+test("a synced TikTok logistics card opens the matching order tracking details", async () => {
+  const message = {
+    id: "tracking-1", role: "agent", status: "sent", created_at: "2026-10-20T10:00:00Z",
+    error_code: null, delivery_mode: "real", message_type: "logistics_card", content: "物流卡片",
+    rich_card: { kind: "logistics_card", order_id: "577600000000000001", package_id: "123457", title: "Walking pad", tracking_number: "OLD-2", carrier_name: "Carrier C" },
+  };
+  const withoutOrder = { ...message, id: "tracking-without-order", rich_card: { kind: "logistics_card", title: "Card without order ID", tracking_number: "T2" } };
+  const { context, page, calls } = await openWorkspace({ richMessages: [message, withoutOrder] });
+  try {
+    const card = page.getByRole("article", { name: "客服" }).filter({ hasText: "Walking pad" }).getByLabel("物流卡片");
+    assert.equal(await page.getByRole("article", { name: "客服" }).filter({ hasText: "Card without order ID" }).getByRole("button", { name: "查看详情" }).count(), 0);
+    const detailsBeforeClick = calls.orderDetails;
+    await card.getByRole("button", { name: "查看详情" }).click();
+    const details = page.getByRole("dialog", { name: "物流完整信息" });
+    await details.getByText("Picked up by carrier").waitFor();
+    assert.ok(calls.orderDetails > detailsBeforeClick);
+    assert.equal(calls.send, 0);
+    assert.equal(calls.cardSend, 0);
+  } finally { await context.close(); }
+});
+
 test("background refresh shows new messages without waiting for the session list", async () => {
   const { context, page, messages } = await openWorkspace(2);
   let releaseList = () => {};

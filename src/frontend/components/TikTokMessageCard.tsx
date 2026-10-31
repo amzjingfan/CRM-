@@ -1,7 +1,10 @@
 import { Package, ShoppingBag, Ticket, Truck } from "@phosphor-icons/react";
-import type { RichMessageCardView } from "../lib/api";
+import type { RichMessageCardView, SidebarTrackingPackage } from "../lib/api";
+import { TrackingTimelinePopover } from "./TrackingTimelinePopover";
 
-export function TikTokMessageCard({ card, en }: { card: RichMessageCardView; en: boolean }) {
+const emptyPackages: SidebarTrackingPackage[] = [];
+
+export function TikTokMessageCard({ card, en, sessionId, translationEnabled }: { card: RichMessageCardView; en: boolean; sessionId: string; translationEnabled: boolean }) {
   const product = card.kind.includes("product");
   const logistics = card.kind === "logistics_card";
   const coupon = card.kind === "coupon_card";
@@ -33,5 +36,6 @@ export function TikTokMessageCard({ card, en }: { card: RichMessageCardView; en:
       </div>
     </div>)}
     {card.url ? <a href={card.url} rel="noopener noreferrer" referrerPolicy="no-referrer" target="_blank">{en ? "View on TikTok Shop" : "在 TikTok Shop 查看"}</a> : null}
+    {logistics && card.order_id ? <div className="tracking-message-foot"><TrackingTimelinePopover en={en} enhancedAvailable={false} initialPackages={emptyPackages} orderId={card.order_id} selectedPackageId={card.package_id} sessionId={sessionId} translationEnabled={translationEnabled} triggerLabel={en ? "View details" : "查看详情"} /></div> : null}
   </div>;
 }
