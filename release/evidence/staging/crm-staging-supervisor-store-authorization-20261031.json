@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-SUPERVISOR-STORE-AUTH-001",
+  "environment": "staging",
+  "production_release": false,
+  "source_pull_request": 686,
+  "implementation_subject_sha": "2fe8276b87d4fb26e4093ab000ccc43491453f4f",
+  "release_source_sha": "8d2962279d796709279d17b4d8aa6f0a978d87b0",
+  "source_bundle_sha256": "409f4ec909af7da7887924d954e1313420c5b10ab7f9908e74a2bac370e15815",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:6c34500632b0cafb83c90b5d982028d05de15bef25a013e986225571ec28c01f",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:aa78ad6e0be73834f00abc1321f746cad5056cdc592a90bf373653609fb73d88",
+    "backend_previous": "ghcr.io/cp11-gh/crm-backend@sha256:1ad9b54ad547b8faf38ca6daca3f9e61552ad6635e7bb21b6d101e19bb687c56",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:1a235bf2a916176e3f028945daf5d3eb20ace7b9ca97cfdc1c806048368d8df0",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "backend_and_frontend_oci_revision": "8d2962279d796709279d17b4d8aa6f0a978d87b0",
+    "transfer_tar_sha256": "fb8002a3fa0eaa0c59ce2116cdb1fdd9c14f6ef4a95b9f55cc3dcd36ba933553"
+  },
+  "scope_comparison": {
+    "backend_application_and_migration_files_changed_from_previous_backend": 6,
+    "frontend_application_files_changed_from_previous_frontend": 2,
+    "all_changed_application_files_belong_to_supervisor_store_authorization": true
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/.local/share/crm-staging-backups/supervisor-auth-8d296227-20261031",
+    "environment_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "runtime_inspect_sha256": "4072e4a898004ec3d62d0ecbd94598ab3b22a81e9e3eb6b3c498203785b7adb5",
+    "postgres_custom_dump_sha256": "ba478ca40757c906ec13ab8b1ed0f4ed6acf060bbebbe2b9640cd84673b378d3",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "62c886ded1d8ff3d4fba98e7b5ba67221d3c274b699bd0b362860ae6cfee8ae3",
+    "minio_archive_readable": true,
+    "permissions": "0700 directory; 0600 backup files"
+  },
+  "gate": {
+    "source_check": "passed_against_current_GitHub_main",
+    "candidate_and_rollback_digest_inspection": "passed",
+    "validate_evidence_sha256": "5d15339b2dbc230d676d47a10d477977e297cae4a144f0f3394ac05eeaaa50cf",
+    "deploy_evidence_sha256": "73854a00c989d34289255c064e6819e06da02cecccaf97938cb81b16a3dfdad8",
+    "validate_status": "validated",
+    "deploy_status": "passed",
+    "migration": "047_supervisor_store_auth (head)",
+    "supervisor_store_authorize_role_permission_rows": 1
+  },
+  "runtime_after": {
+    "services_running_or_healthy": 12,
+    "backend_and_frontend_image_digests_match": true,
+    "manual_send_allowed_store_count_unchanged": 2,
+    "manual_send": true,
+    "webhook_read": true,
+    "workspace_translation": true,
+    "agent_debug_and_formal_suggestions": true,
+    "document_ingestion": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_health_ready": 200,
+    "settings_stores_page": 200,
+    "settings_channels_page": 200
+  },
+  "authenticated_supervisor_ui_check": "UI_UNAVAILABLE: in-app browser tab binding timed out twice; no real OAuth callback or new shop authorization was executed",
+  "test_actions_sent_real_buyer_messages": false,
+  "github_actions_deployment_used": false
+}

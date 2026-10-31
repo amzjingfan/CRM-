@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-10-31 客服主管店铺授权[TR R02](../reports/tests/TR-MVP-SUPERVISOR-STORE-AUTH-001-20261031-R02.md) **PASS（本地行为与 staging 部署门禁）**：PR #686 合入主线 `8d296227`，本地隔离 PostgreSQL 2984 通过/5 跳过、前端契约 77 通过；已按该主线直构建并部署前后端，私有备份、源码核验、不可变镜像、ValidateOnly/Deploy、047、12 服务和三健康通过。现场主管角色的新权限关联为 1 行；原两店人工发送及所有安全开关保持，零外发。已登录主管页面的浏览器工具两次超时，记 `UI_UNAVAILABLE`；真实 TikTok 新店授权未执行，不记现场 OAuth 验收。见[低敏证据](../../release/evidence/staging/crm-staging-supervisor-store-authorization-20261031.json)，production No-Go。
+
 2026-10-31 Agent模板[TR R02](../reports/tests/TR-MVP-AGENT-TEMPLATE-STAGING-001-20261030-R02.md) **PASS（手动staging发布、业务与合成数据清理）**：统一产品PR #679合并并部署a0前端，后端沿用d670；新旧预检/046/12服务/固定出口/8路径200/11资源哈希通过。最终本地77契约及210生产浏览器、类型/lint/build与独立复审通过；真实两店创建/v2保留覆盖/离页后台（4项各attempt1）、最终中英文订单列表/物流/知识同轮回答及正确引用通过，6项持久工具mock=false。2测试Agent/2文件软删除、模板归档，非测试行哈希不变，两店知识列表0篇。用户已精确授权清理：服务器认证副本已删，本机仍受执行门禁阻止并按用户稍后处理的决定保留；不记作全部凭证已清理，任务待证据合并后收尾。production No-Go，零真实买家外发。[证据](../../release/evidence/staging/crm-staging-agent-template-batch-20261030.json)。
 
 2026-10-31 TikTok 富消息修复 [TR R02](../reports/tests/TR-MVP-WORKSPACE-TIKTOK-RICH-MESSAGES-001-20261031-R02.md) **PASS（staging）**：合并主线 `d67078db` 的前后端精确镜像、私有备份、双 ValidateOnly/Deploy、046、12 服务和公网四条路径通过；已登录工作台实际看到买家图片、商品、订单、物流卡片和两个视频播放器。两家授权店原 4301 条旧类型占位经官方只读列表与单会话补录后均清零，定向旧会话处理没有新增本地消息或错误；完整数量见[机器证据](../../release/evidence/staging/crm-staging-tiktok-rich-messages-20261031.json)。人工发送范围未变、自动发送关闭、零真实买家测试外发，production No-Go。
