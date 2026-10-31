@@ -1,6 +1,6 @@
 # 项目状态与恢复入口
 
-2026-10-31 staging 工作台翻译恢复任务 MVP-WORKSPACE-TRANSLATION-RESTORE-001 正在 VERIFYING：运行后端翻译开关先前为 false，已用原镜像和显式翻译 overlay 经私有备份、双预检和 Deploy 恢复为 true；前后端镜像摘要、046 迁移、两店人工发送及安全开关保持，三公网健康 200，已登录英文买家/客服文字消息“译成中文”按钮可见。未触发供应商译文调用、买家外发、退款或 production。文档 subject 1e7e15fba356877876e71f7d70cafcd1235d571e；EVIDENCE_HEAD_SHA=READ_AT_GATE；IR/TR/RR R01 与低敏证据见对应任务行；三索引 CANDIDATE_VIEW，待从合并主线核对后改 CURRENT。Workspace hygiene: 本证据 worktree 干净起步，其他活动 worktree 和未知文件未动。下一动作：完成证据 PR、合并并从主线关闭任务。
+2026-10-31 staging 工作台翻译恢复任务 MVP-WORKSPACE-TRANSLATION-RESTORE-001 已 DONE，证据 PR #684 合并 33a24d81：运行后端翻译开关先前为 false，已用原镜像和显式翻译 overlay 经私有备份、双预检和 Deploy 恢复为 true；前后端镜像摘要、046 迁移、两店人工发送及安全开关保持，三公网健康 200，已登录英文买家/客服文字消息“译成中文”按钮可见。未触发供应商译文调用、买家外发、退款或 production。文档 subject 1e7e15fba356877876e71f7d70cafcd1235d571e；EVIDENCE_HEAD_SHA=READ_AT_GATE；IR/TR/RR R01 与低敏证据见对应任务行；三索引从合并主线源记录核对为 CURRENT。Workspace hygiene: 本证据 worktree 干净起步，其他活动 worktree 和未知文件未动。下一动作：后续 staging 发布保留显式翻译 overlay；如需译文质量验收再做坐席主动单条请求。
 
 2026-10-31 Agent模板staging任务MVP-AGENT-TEMPLATE-STAGING-001已DONE（产品#679/a0与证据#680/fdd775d8已合并后闭合）。现场前端a0/1a235与后端d670/1ad9健康，046/12服务/8路径/11资产通过；77契约/210生产浏览器、两店模板创建/v2保留覆盖/离页后台四项各attempt1、中英文真实订单物流+知识同轮回答及6项mocked=false工具调用通过。2测试Agent/2文件软删除、模板归档，非自有行哈希不变，真实数据未动，零外发。服务器registry副本已删除；本机删除在精确授权后仍受自动审批拒绝，用户明确选择稍后处理，按决定在独占目录保留，不宣称已删；3146已停止，临时验收凭证未签发。三索引已从权威main fdd775d8的327/352/309条源记录逐项核对CURRENT。未知AGENTS及备份保留，备份未恢复演练，production No-Go。下一动作：用户稍后自行处理本机副本；其他产品待办仍以TASKS为准。
 
