@@ -252,7 +252,7 @@ G5 SSE 压测使用显式 G5 覆盖层，不能与 G2 Webhook 只读模式同时
 
 2026-10-17 G5 R23 手动路径已在 staging 从 main `7b7acc35` 发布并部署新后端 `sha256:477d571d…cb293`；六角色预取、validate/deploy、运行摘要、迁移头、三健康与固定出口通过，前端/检索不变，原后端 `sha256:deef65ee…babbe8` 可回滚。受审 tar 解包目录虽通过文件校验，下层生产门禁仍要求 Git checkout；现场改用同一 SHA 的干净浅克隆才完成部署。当前保持 TikTok Webhook 只读加工作台翻译，G5 SSE 关闭、限流 10；R22 的 `ContentCheck` 在现场确认原 50/50 会话、知识未准备、凭证原状态、Provider/数据库写入 0。尚未执行内容写入、续期或压测；步骤及证据见 [R23 TR](../reports/tests/TR-MVP-006-20261017-R23.md)。
 
-工作台单条按需译文使用手动 staging 门禁的 `-EnableWorkspaceTranslation`；在默认 Rootless 层之后追加固定的 `docker-compose.rootless-staging-translation.yml`，仅 backend 的 `WORKSPACE_MESSAGE_TRANSLATION_ENABLED=true`。可与 G2 Webhook 只读模式组合，不与 G5 SSE 模式组合；通用 `LLM_ENABLED`、`AI_TRANSLATION_ENABLED`、真实消息写入及其他服务翻译开关保持 `false`。仓库外环境仍需开关为 `false`，并提供已配置的 DeepSeek 主模型与密钥。门禁核对合并配置和运行容器；无此开关的部署恢复默认关闭状态。用户授权真实消息送 DeepSeek 仅用于当前 staging 的坐席主动单条翻译，不表示生产翻译放行。
+工作台单条按需译文使用手动 staging 门禁的 `-EnableWorkspaceTranslation`；在默认 Rootless 层之后追加固定的 `docker-compose.rootless-staging-translation.yml`，仅 backend 的 `WORKSPACE_MESSAGE_TRANSLATION_ENABLED=true`。可与 G2 Webhook 只读模式组合，不与 G5 SSE 模式组合；通用 `LLM_ENABLED`、`AI_TRANSLATION_ENABLED`、真实消息写入及其他服务翻译开关保持 `false`。仓库外环境仍需开关为 `false`，并提供已配置的 DeepSeek 主模型与密钥。门禁核对合并配置和运行容器；无此开关的部署恢复默认关闭状态。每次 staging 切换前先读取现场翻译开关；若要保留已开启的翻译，原运行版与候选版的预检及正式部署都显式传入 `-EnableWorkspaceTranslation`，部署后再次核对运行容器和已登录工作台的翻译入口。用户授权真实消息送 DeepSeek 仅用于当前 staging 的坐席主动单条翻译，不表示生产翻译放行。
 
 2026-10-20 用户在此基础上要求多语言人工回复；新 `POST /workspace/sessions/{session_id}/draft/translation` 复用同一 staging 翻译开关与现有 DeepSeek 配置，坐席显式请求时只翻译可发送会话的低敏草稿，不触发 TikTok 外发。译文经预览和审阅后由坐席另行确认发送；切换镜像时若未保留 `-EnableWorkspaceTranslation`，草稿翻译也会关闭。生产翻译和真实消息发送范围不因该功能放行。
 

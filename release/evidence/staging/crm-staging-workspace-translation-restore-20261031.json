@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-WORKSPACE-TRANSLATION-RESTORE-001",
+  "environment": "staging",
+  "production_release": false,
+  "documentation_subject_sha": "1e7e15fba356877876e71f7d70cafcd1235d571e",
+  "runtime_images_unchanged": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:1ad9b54ad547b8faf38ca6daca3f9e61552ad6635e7bb21b6d101e19bb687c56",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:1a235bf2a916176e3f028945daf5d3eb20ace7b9ca97cfdc1c806048368d8df0",
+    "retrieval": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "backend_revision": "d67078db7445b1ef71a35af095075b1280f0d70c",
+    "frontend_revision": "a0d9938e0441fb5848a51635a33dbbb27bd776a4"
+  },
+  "reviewed_server_source_sha": "d67078db7445b1ef71a35af095075b1280f0d70c",
+  "gate_script_sha256": "6ff59aef624e8a2da12dd28bd2be7ae038d392774b4a0572cccdcaea9a7388e6",
+  "translation_overlay_sha256": "fc1e4a40bcc2547bbde78ad339c2b649b574a04de34abb325b7b775dcd08797a",
+  "private_backup": {
+    "directory": "/home/crmdeploy/.local/share/crm-staging-backups/workspace-translation-restore-20261031",
+    "permissions": "0700 directory; 0600 files",
+    "environment_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "postgres_custom_dump_sha256": "f3641563c60b1fa18ff35fb0cf5a22493ef35725a5ab460403074229f9eca1ae",
+    "postgres_restore_list_readable": true,
+    "minio_archive_sha256": "63024efd815231582233e886899d9367cac3d58a223fd7fe4c16c0c0a937e443",
+    "minio_archive_readable": true
+  },
+  "gate": {
+    "evidence_directory": "/home/crmdeploy/evidence/workspace-translation-restore-20261031",
+    "current_validate_sha256": "6e2a09700e21f56b03dc3ab2849ad1c576fbb8bc740c546330b641d8db0e406e",
+    "candidate_validate_sha256": "90ab0fb10a607bb0c2fc774dc3fddaf470dede80ba7b25ea9ed89bc9e8af5839",
+    "deploy_sha256": "9e186e76e19efca81b2d4eb28279fc95f7e9f4a72bd59f80bb6dfa0535890bc8",
+    "current_validate_status": "validated",
+    "candidate_validate_status": "validated",
+    "deploy_status": "passed",
+    "migration": "046_merge_templates_dispatch (head)"
+  },
+  "runtime_after": {
+    "workspace_message_translation_enabled_before": false,
+    "workspace_message_translation_enabled_after": true,
+    "manual_send_allowed_store_count": 2,
+    "webhook_read": true,
+    "agent_debug": true,
+    "agent_formal": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false,
+    "g5_sse": false,
+    "tiktok_egress_ip": "38.55.145.52",
+    "public_healthz_http": 200,
+    "public_api_health_http": 200,
+    "public_api_ready_http": 200
+  },
+  "authenticated_ui": {
+    "workspace_text_message_translate_button_visible": true,
+    "buyer_and_seller_english_text_checked": true,
+    "system_message_translate_button_absent": true,
+    "live_provider_translation_request_not_executed": true
+  },
+  "ghcr_temporary_login_logged_out": true,
+  "test_actions_sent_real_buyer_messages": false
+}
