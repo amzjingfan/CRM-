@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-11-01 五类共享 Agent 模板与多 Agent 待审阅预演[TR R01](../reports/tests/TR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md)在批准范围内 PASS：本地隔离 PG/pgvector 3169 通过、5 条件跳过，前端契约 78 与生产浏览器 236 通过；staging 从已合并 `433715ec` 手动发布 049，12 服务及三健康通过。正式认证 API 已验证售前商品调试、售前/售后/订单物流真实会话待审阅建议、售后知识引用及只读工具；实时商品目录抽样 5 项均上架且有正库存。首轮和本轮累计 8 Agent、2 文件软删除，五模板保留，测试时段出站消息 0。物流新节点与连续三轮无解在测试店无现场触发条件，仅隔离测试通过；某物流工具调用样本失败，staging 浏览器 `UI_UNAVAILABLE`，均未冒称现场通过。自动真实发送仍关闭、production No-Go；见[低敏证据](../../release/evidence/staging/crm-staging-five-agents-20261031.json)。
+
 2026-10-31 工作台目录与订单一致性修复已从主线 `743eb782` 手动部署 staging：[TR R02](../reports/tests/TR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R02.md)记录私有备份可读、双 `ValidateOnly`、`Deploy`、048、12 服务、固定出口及九条公网只读路径通过；本地行为验证沿用同 subject 的 R01。已登录工作台可见统一导航和 XBM 已取消订单的稳定基础字段；真实商品与优惠券列表因浏览器工具超时为 `UI_UNAVAILABLE`，不能算现场验收通过。两店人工发送范围和自动发送关闭项保持，零真实消息与退款；精确摘要见[低敏证据](../../release/evidence/staging/crm-staging-workspace-catalog-20261031.json)，production No-Go。
 
 2026-10-31 用户批准的 Agent 模板 UI/回复参数修复已从固定主线 `6074c4b001aa37e1653db3a3a7f226dd3e2077e3` 手动部署 staging，后端 `sha256:dc16ae47…19fa`、前端 `sha256:250d680d…75df`；检索与解析镜像保持。私有备份、原版/候选预检、Deploy、048、12服务、固定出口及三公网健康通过；原翻译/Agent及两店人工发送保持，自动回复/营销/高风险写入关闭。真实绑定合成文件的8项参数/流式验收最终通过（一次坐席译文不可用后重试），两店批次与搜索多选页面核对通过；7合成Agent/4文件软删、2模板归档，原配置保留，零外发。见[TR](../reports/tests/TR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01.md)与[完整摘要证据](../../release/evidence/staging/crm-staging-agent-template-ui-20261031.json)。后合入工作台变更不包含在该冻结发布；回退保留048与业务增量，不等同生产放行。

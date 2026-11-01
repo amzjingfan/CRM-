@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-FIVE-TEMPLATES-AUTO-001",
+  "environment": "staging",
+  "production_release": false,
+  "source_revision": "433715ec658bf69d6cbb2724370769a5c2f6ccd0",
+  "candidate_subject_sha": "ad9a9c9c1ea76970835fd255f768c30ebf5ba7c8",
+  "source_archive_sha256": "810527de5bfd717e89b6a621582cd4db52145ce14fcbc300fdc04e075c3e317e",
+  "deployment_method": "manual staging gate; GitHub Actions did not perform deployment",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:02a670fa583b9cc428d91b6a8771c3a219a6601d62e9096d9ce94c4075d50478",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:d3b4798a99219446ee4e92404f65cba254c3164f4e6818618287efa0fcabb497"
+  },
+  "backup": {
+    "private_directory_name": "five-agents-433715ec-20261031",
+    "environment_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "postgres_sha256": "8eef5d845ae54f2d0af97f08e7d58e95e018e115fb6975cf6f29683507b803c9",
+    "postgres_archive_entries": 457,
+    "minio_file_count": 100,
+    "restore_drill_performed": false
+  },
+  "gates": {
+    "current_validate_sha256": "a96a79df2d2f62509219d7952f7e7387c63a5d77021e58a9a5c21f2b3ef36bd8",
+    "candidate_validate_sha256": "d07868852280561885f4005adb1b7ad5e339ebf53da53f2937a432676d059e7e",
+    "deploy_sha256": "c1514c14c49c594e2173f72b24ead657c37038e95f987b5f7b4c76058d693805",
+    "deploy_status": "passed"
+  },
+  "runtime": {
+    "migration": "049_agent_auto_reply_preview (head)",
+    "healthy_service_count": 12,
+    "health_status_codes": {
+      "/healthz": 200,
+      "/v1/health": 200,
+      "/v1/health/ready": 200
+    },
+    "fixed_egress_verified": true,
+    "auto_reply_enabled": false,
+    "manual_send_scope_unchanged": true,
+    "real_buyer_messages_sent_in_acceptance": 0
+  },
+  "acceptance": {
+    "status": "passed_with_documented_sample_limits",
+    "new_published_template_count": 4,
+    "existing_order_logistics_template_preserved": true,
+    "template_application_outcomes_succeeded": 4,
+    "real_model_zh_en_review_drafts_nonempty": true,
+    "bound_knowledge_citation_in_both_languages": true,
+    "order_logistics_tool_calls_succeeded": ["search_customer_orders", "query_logistics"],
+    "aftersales_tool_calls_succeeded": ["search_knowledge", "search_products", "search_customer_orders", "query_order"],
+    "aftersales_tool_call_failed_in_first_debug_sample": "query_aftersales; later real workspace query_aftersales succeeded twice",
+    "auto_preview_policy_restored_disabled": true,
+    "workbench_real_inbound_preview": {
+      "presales": "nonempty HUMAN_REVIEW, search_products and query_product succeeded, no send",
+      "aftersales": "nonempty HUMAN_REVIEW, bound knowledge citation, query_order, search_customer_orders, query_aftersales and search_knowledge succeeded, no send",
+      "order_logistics": "nonempty HUMAN_REVIEW, search_customer_orders and query_order succeeded; query_logistics failed on this sample, succeeded in prior debug sample; no send"
+    },
+    "presales_real_debug": "review_ready, nonempty; search_products and query_product succeeded, no send",
+    "in_stock_catalog_live": "5 results; each active and with at least one positive-stock SKU; more results available",
+    "fallback_three_inbound_live": "three existing chronological inbound messages each got a business HUMAN_REVIEW answer; unresolved counter did not reach third-round threshold",
+    "fallback_fixed_third_round": "English and Chinese fixed buyer-language copy passed isolated coordinator tests; not triggered live",
+    "logistics_event_preview": "no local order or verified new tracking node in authorized test store; isolated PostgreSQL event/ledger/preview tests passed",
+    "browser_ui": "UI_UNAVAILABLE_getTab_timeout",
+    "local_backend_tests": "3169 passed, 5 skipped, 2 warnings",
+    "local_frontend_contract_tests": 78,
+    "local_production_browser_tests": 236
+  },
+  "cleanup": {
+    "synthetic_agents_soft_deleted": 8,
+    "synthetic_knowledge_files_soft_deleted": 2,
+    "second_round_agent_soft_delete_count": 4,
+    "second_round_file_soft_delete_count": 1,
+    "five_templates_published_after_cleanup": true,
+    "outbound_messages_in_second_round": 0,
+    "auto_preview_store_policy_enabled": false,
+    "immutable_batch_audit_retained": true,
+    "temporary_acceptance_credentials": "process_memory_only_expired_or_destroyed",
+    "isolated_registry_auth_copy_cleanup": "blocked_by_automatic_approval_review"
+  },
+  "github_ci": {
+    "run_id": 41193578774,
+    "backend_job_id": 124515141120,
+    "frontend_job_id": 124515140914,
+    "backend_steps": 0,
+    "frontend_steps": 0,
+    "tests_executed": false,
+    "gate": "previously authorized local substitute"
+  }
+}
