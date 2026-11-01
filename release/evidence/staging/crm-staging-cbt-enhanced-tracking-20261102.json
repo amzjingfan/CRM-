@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "evidence_type": "cbt_enhanced_tracking_manual_staging_deployment",
+  "task_id": "MVP-G1-LOG-202604-001",
+  "environment": "staging",
+  "production_release": false,
+  "source_pull_request": 708,
+  "release_source_sha": "d856760c138c2884d1bad19f168066998e8eaa9c",
+  "implementation_subject_sha": "a39b8b84ada4a8f8250d3a134912d20d80b17471",
+  "source_bundle_sha256": "e81863b666a825768beb519ca883511ab9bf77d69062cbfcaf455b717fe37fff",
+  "images": {
+    "backend": "ghcr.io/cp11-gh/crm-backend@sha256:98075760e810c92bafcb6b138b2623017ceb316590d05cb77a01724248349a83",
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:b06e9fa1d99133a1d9d567ac07973b86c1b3c0c8a8db440def0b3de065b38424",
+    "backend_previous": "ghcr.io/cp11-gh/crm-backend@sha256:02a670fa583b9cc428d91b6a8771c3a219a6601d62e9096d9ce94c4075d50478",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:d3b4798a99219446ee4e92404f65cba254c3164f4e6818618287efa0fcabb497",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "oci_revision": "d856760c138c2884d1bad19f168066998e8eaa9c"
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/backups/cbt-d856760c-20261101",
+    "environment_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "postgres_custom_dump_sha256": "7aeccd466b1e399eeb9d9650a011dfb81819436c412a31aeba4a468a0500bc64",
+    "minio_archive_sha256": "31aa738ef185bbe7fbb1cd5f1e6a984480dd64b4d2a315478663169dd63fb7c0",
+    "postgres_restore_list_readable": true,
+    "minio_archive_readable": true,
+    "permissions": "0700 directory; 0600 files"
+  },
+  "gate": {
+    "previous_validate_sha256": "6dd97ba330140439cbc7b10f94ee6b00777675d8068f2808b97cb8d218497e4d",
+    "candidate_validate_sha256": "473c44992f5d12a787c0561bac65e210fdb8457bf74d7e3ac0f9c8205f3047ae",
+    "candidate_deploy_sha256": "cd107959a0a3c7e7143345a6e671a9d3a9cbfb6b63572b353545cad37ca29120",
+    "previous_validate_status": "validated",
+    "candidate_validate_status": "validated",
+    "candidate_deploy_status": "passed",
+    "migration": "049_agent_auto_reply_preview (head)"
+  },
+  "runtime_after": {
+    "service_count_running_or_healthy": 12,
+    "backend_frontend_egress_digest_match": true,
+    "manual_send_allowed_store_count_unchanged": 2,
+    "manual_send": true,
+    "webhook_read": true,
+    "workspace_translation": true,
+    "agent_debug_and_formal_suggestions": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "workspace": 200,
+    "settings_stores": 200
+  },
+  "read_only_live_cbt_probe": {
+    "distinct_fresh_delivered_order": true,
+    "enhanced_platform_request_succeeded": true,
+    "request_id_present": true,
+    "parcel_count": 1,
+    "event_count": 16,
+    "events_with_empty_tracking_number": 1,
+    "parsed_to_sidebar_timeline": true,
+    "buyer_or_order_identifiers_recorded": false
+  },
+  "authenticated_ui_check": "UI_UNAVAILABLE: Codex in-app browser binding timed out twice; no claim of live card or side-panel display acceptance.",
+  "temporary_host_ghcr_auth_cleared": true,
+  "github_actions_used_for_deployment": false,
+  "test_actions_sent_real_buyer_messages": false,
+  "refund_actions_performed": false
+}

@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-11-02 CBT 增强物流解析修复已从已合并主线 `d856760c138c2884d1bad19f168066998e8eaa9c` 直接部署 staging 前后端与同版 TikTok 出口。私有环境、PostgreSQL、MinIO 备份可读；旧版和候选 `ValidateOnly`、`Deploy`、049 迁移、12 服务及五条公网健康/页面路径通过。原两店人工发送、翻译和 Agent 开关保留，自动回复、营销和高风险写入关闭。一笔此前未查询的 CBT 已送达订单的增强接口返回 1 包裹 16 节点，其中一个节点无运单号；新后端成功解析并映射侧栏模型。内置浏览器绑定 staging 标签页超时，已登录卡片展示仍 `UI_UNAVAILABLE`，见[TR R05](../reports/tests/TR-MVP-G1-LOG-202604-001-20261102-R05.md)与[低敏发布证据](../../release/evidence/staging/crm-staging-cbt-enhanced-tracking-20261102.json)。无买家测试外发、退款或 production 操作；未使用 GitHub Actions 部署。回退须切回证据中旧前后端精确摘要，保留迁移 049 与部署后业务增量。
+
 ## 五类 Agent 与预演候选发布检查（2026-10-31）
 
 本轮候选须先合并固定源码并完成隔离 PostgreSQL/pgvector 全量回归，再对固定前后端镜像执行私有备份、原版与候选 `ValidateOnly`、共享锁手动部署。迁移 `049_agent_auto_reply_preview` 顺接 048，只追加任务模式、待审阅正文与索引，旧任务默认 `legacy`；升级不允许手工修改业务表。`-EnableAgentSuggestions` 本轮同时给 backend 和 agent-worker 开启正式建议、模型及检索，受审门禁核对两者与检索服务共享令牌；worker/jobs 仍不启用模型，所有服务的 `AUTO_REPLY_ENABLED` 和真实消息写入继续按原受控范围关闭。部署后核对迁移头、Worker、原两店人工发送范围、自动回复关闭、高风险写入关闭、健康与固定出口。店铺预演策略默认关闭，仅在 TikTok US 现场验收窗口短时启用并在清理时恢复原 revision/状态；不得把预演草稿或物流事件预览当作实际买家发送。恢复旧镜像时保留 049 数据与后续业务增量，若要降级结构须先单独备份并取得数据处置批准。
