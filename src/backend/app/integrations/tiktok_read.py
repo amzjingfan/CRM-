@@ -295,7 +295,8 @@ class TikTokTrackingEntry(TikTokModel):
     """202604 物流轨迹节点；动作码用于稳定展示，描述只作为平台补充文本。"""
 
     description: str = Field(min_length=1, max_length=1000)
-    tracking_no: str = Field(min_length=1, max_length=200)
+    # CBT 早期节点可尚未分配运单号；保留节点，不把空值伪造成包裹单号。
+    tracking_no: str = Field(max_length=200)
     update_time_millis: int = Field(ge=0)
     action_code: int
     action_code_name: str = Field(min_length=1, max_length=100)

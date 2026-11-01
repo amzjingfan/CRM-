@@ -390,6 +390,13 @@ async def test_enhanced_tracking_returns_only_verified_buyer_parcels_and_reuses_
                         "action_code": 1,
                         "action_code_name": "pickup_success",
                     },
+                    {
+                        "description": "Order placed",
+                        "tracking_no": "",
+                        "update_time_millis": 1700000000000,
+                        "action_code": 10101,
+                        "action_code_name": "order_placed",
+                    },
                 ],
             }
         )
@@ -426,7 +433,7 @@ async def test_enhanced_tracking_returns_only_verified_buyer_parcels_and_reuses_
     second = await sidebar.get_sidebar_enhanced_tracking(session, SimpleNamespace(), selected.id, "600001")
     assert first == second
     assert first.packages[0].tracking_number == "NEW-1"
-    assert [event.tracking_number for event in first.packages[0].events] == ["NEW-1", "OLD-1"]
+    assert [event.tracking_number for event in first.packages[0].events] == ["NEW-1", "OLD-1", None]
     client.get_tracking.assert_awaited_once_with("600001")
     cache[next(iter(cache))] = "pending"
     with pytest.raises(AppError) as pending:

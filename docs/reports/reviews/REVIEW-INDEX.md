@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-G1-LOG-202604-001-20261101-R01 | MVP-G1-LOG-202604-001 | R01 | APPROVE | `a39b8b84ada4a8f8250d3a134912d20d80b17471` | platform_contract, schema_failure_closed, tenant_isolation, buyer_order_proof, rate_limit, no_external_send | 2026-11-01T23:00:00+08:00 | [`RR-MVP-G1-LOG-202604-001-20261101-R01.md`](RR-MVP-G1-LOG-202604-001-20261101-R01.md) |
 | RR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01 | MVP-AGENT-FIVE-TEMPLATES-AUTO-001 | R01 | APPROVE | `ad9a9c9c1ea76970835fd255f768c30ebf5ba7c8` | template_scope, tenant_isolation, tool_authorization, knowledge_approval, inventory_truth, fallback_copy, preview_idempotency, no_external_send, cleanup | 2026-11-01T14:07:14Z | [`RR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md`](RR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md) |
 | RR-MVP-WORKSPACE-LIVE-FEEDBACK-001-20261031-R01 | MVP-WORKSPACE-LIVE-FEEDBACK-001 | R01 | APPROVE | `550316f4e8f6784c9ef6d05a4a9e5837dc8e86e6` | platform_contract, tenant_isolation, buyer_order_proof, manual_send, idempotency, unknown_delivery, payment_truth | 2026-10-31T11:13:26Z | [`RR-MVP-WORKSPACE-LIVE-FEEDBACK-001-20261031-R01.md`](RR-MVP-WORKSPACE-LIVE-FEEDBACK-001-20261031-R01.md) |
 | RR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01 | MVP-AGENT-TEMPLATE-UI-STAGING-001 | R01 | APPROVE | `d6de3be766d6656eadfe8e410dff6981c01fea4a` | release_integrity, scope_preservation, auth_csrf, knowledge_grounding, immutable_preferences, cleanup, rollback | 2026-10-31T08:33:02.179315+00:00 | [`RR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01.md`](RR-MVP-AGENT-TEMPLATE-UI-STAGING-001-20261031-R01.md) |

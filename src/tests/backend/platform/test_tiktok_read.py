@@ -774,6 +774,45 @@ async def test_tracking_202604_preserves_multiple_parcels_and_historical_numbers
 
 
 @pytest.mark.asyncio
+async def test_tracking_202604_accepts_early_event_without_tracking_number() -> None:
+    """真实 CBT 轨迹的早期节点可能带空运单号，仍须保留该节点。"""
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "data": {
+                    "order_id": "576461413038785752",
+                    "logistics_details": [
+                        {
+                            "newest_tracking_no": "LAST-MILE-2",
+                            "carrier_name": "Collections by TikTok",
+                            "track_list": [
+                                {
+                                    "description": "Order placed",
+                                    "tracking_no": "",
+                                    "update_time_millis": 1718305585000,
+                                    "action_code": 10101,
+                                    "action_code_name": "order_placed",
+                                }
+                            ],
+                        }
+                    ],
+                },
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        parcels, _ = await TikTokReadClient(real_settings(), connected_channel(), http_client).get_tracking(
+            "576461413038785752"
+        )
+
+    assert len(parcels) == 1
+    assert parcels[0].track_list[0].tracking_no == ""
+
+
+@pytest.mark.asyncio
 async def test_standard_tracking_reads_signed_202309_events_without_cbt_fields() -> None:
     """普通承运商轨迹使用通用只读端点，不要求 CBT 首程专有字段。"""
     requests: list[httpx.Request] = []

@@ -703,7 +703,7 @@ async def get_sidebar_enhanced_tracking(
                         SidebarTrackingEvent(
                             description=event.description,
                             occurred_at=_tracking_time(event.update_time_millis),
-                            tracking_number=event.tracking_no,
+                            tracking_number=event.tracking_no or None,
                             action_code=event.action_code,
                             action_code_name=event.action_code_name,
                         )
