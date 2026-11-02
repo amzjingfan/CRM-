@@ -75,10 +75,11 @@ async function downloadTimelineImage(
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, enhancedAvailable, translationEnabled, order, onCardDraft, onPackagesResolved, initialSelected = 0, selectedPackageId, triggerLabel, en }: {
+export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, initialEnhanced = false, enhancedAvailable, translationEnabled, order, onCardDraft, onPackagesResolved, initialSelected = 0, selectedPackageId, triggerLabel, en }: {
   sessionId: string;
   orderId: string;
   initialPackages: SidebarTrackingPackage[];
+  initialEnhanced?: boolean;
   enhancedAvailable: boolean;
   translationEnabled: boolean;
   order?: SidebarOrder;
@@ -91,7 +92,7 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
 }) {
   const [open, setOpen] = useState(false);
   const [packages, setPackages] = useState(initialPackages);
-  const [enhanced, setEnhanced] = useState(false);
+  const [enhanced, setEnhanced] = useState(initialEnhanced);
   const [enhancedTried, setEnhancedTried] = useState(false);
   const [enhancedLoading, setEnhancedLoading] = useState(false);
   const [selected, setSelected] = useState(initialSelected);
@@ -107,12 +108,16 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const detailVersion = useRef(0);
+  const resolvedPackages = useRef<SidebarTrackingPackage[] | null>(null);
   const current = packages[selected];
 
   useEffect(() => {
+    // 弹窗自身解析的增强轨迹会同步到订单卡；该回传不应重置增强模式及翻译来源。
+    if (initialPackages === resolvedPackages.current) return;
+    resolvedPackages.current = null;
     detailVersion.current += 1;
     setPackages(initialPackages);
-    setEnhanced(false);
+    setEnhanced(initialEnhanced);
     setEnhancedTried(false);
     setEnhancedLoading(false);
     setSelected(initialSelected);
@@ -123,7 +128,7 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
     setShowOriginal(false);
     setTranslating(false);
     setNotice("");
-  }, [initialPackages, initialSelected, enhancedAvailable]);
+  }, [initialPackages, initialSelected, initialEnhanced, enhancedAvailable]);
 
   useEffect(() => {
     if (!open || !triggerLabel || packages.length || detailTried) return;
@@ -150,6 +155,7 @@ export function TrackingTimelinePopover({ sessionId, orderId, initialPackages, e
       setEnhancedLoading(false);
       if (result.packages.length) {
         detailVersion.current += 1;
+        resolvedPackages.current = result.packages;
         setPackages(result.packages);
         onPackagesResolved?.(result.packages);
         setEnhanced(true);

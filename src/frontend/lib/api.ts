@@ -228,7 +228,18 @@ export const getSessionMessagesPage = (sessionId: string, page: number) => reque
 export const searchCustomerSidebar = <T extends SidebarOrders | SidebarProducts | SidebarCoupons>(sessionId: string, payload: SidebarSearch) => requestApi<T>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/search`, { method: "POST", body: JSON.stringify(payload) });
 export const getCustomerSidebarOrderDetail = (sessionId: string, orderId: string, signal?: AbortSignal, includeTracking = true) => requestApi<SidebarOrderDetail>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/detail`, { method: "POST", body: JSON.stringify({ order_id: orderId, include_tracking: includeTracking }), signal });
 export const getCustomerSidebarStandardTracking = (sessionId: string, orderId: string, signal?: AbortSignal) => requestApi<SidebarStandardTracking>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/standard-tracking`, { method: "POST", body: JSON.stringify({ order_id: orderId }), signal });
-export const getCustomerSidebarEnhancedTracking = (sessionId: string, orderId: string) => requestApi<SidebarTrackingTimeline>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/enhanced-tracking`, { method: "POST", body: JSON.stringify({ order_id: orderId }) });
+const enhancedTrackingRequests = new Map<string, Promise<SidebarTrackingTimeline>>();
+export function getCustomerSidebarEnhancedTracking(sessionId: string, orderId: string): Promise<SidebarTrackingTimeline> {
+  // 同一订单的卡片预取、详情和弹窗共用一次读取，避免撞上平台八小时查询间隔。
+  const key = `${sessionId}\u0000${orderId}`;
+  const pending = enhancedTrackingRequests.get(key);
+  if (pending) return pending;
+  const request = requestApi<SidebarTrackingTimeline>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/orders/enhanced-tracking`, { method: "POST", body: JSON.stringify({ order_id: orderId }) });
+  enhancedTrackingRequests.set(key, request);
+  const clear = () => { if (enhancedTrackingRequests.get(key) === request) enhancedTrackingRequests.delete(key); };
+  void request.then(clear, clear);
+  return request;
+}
 export const getCustomerSidebarProduct = (sessionId: string, productId: string) => requestApi<SidebarProduct>(`/workspace/sessions/${encodeURIComponent(sessionId)}/sidebar/products/${encodeURIComponent(productId)}`);
 export const getSessionMessages = async (sessionId: string): Promise<SessionMessagesData> => {
   const first = await getSessionMessagesPage(sessionId, 1);

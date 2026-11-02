@@ -124,6 +124,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/orders/enhanced-tracking") && method === "POST") {
       calls.enhancedTracking++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
+      if (fixtureOptions.enhancedTrackingDelay) await new Promise((resolve) => setTimeout(resolve, fixtureOptions.enhancedTrackingDelay));
       if (fixtureOptions.enhancedTrackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "增强物流暂不可用，请查看通用轨迹", data: null }) });
       data = { packages: fixtureOptions.enhancedPackages ?? [
         { package_id: "123456", tracking_number: "NEW-1", carrier_name: "Carrier B", events: [{ description: "Delivered", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "NEW-1", action_code: 2, action_code_name: "signed_personally" }] },
@@ -139,6 +140,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/orders/tracking-timeline-translation") && method === "POST") {
       calls.trackingTranslations++;
       const payload = JSON.parse(request.postData());
+      calls.lastTimelineTranslation = payload;
       assert.deepEqual(payload, { order_id: "577600000000000001", enhanced: enhancedTracking });
       if (calls.trackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "translation unavailable", data: null }) });
       const descriptions = enhancedTracking ? ["Delivered", "Picked up"] : [latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), "Picked up by carrier"];
@@ -1080,13 +1082,14 @@ test("tracking popover shows every returned event, copies all, and downloads a P
   } finally { await context.close(); }
 });
 
-test("enhanced carrier is reused by the order card and details view", async () => {
+test("cross-border carrier appears on the order card before opening tracking and stays in details", async () => {
   const { context, page, calls } = await openWorkspace({
     messageCount: 2, enhancedTracking: true, shippingProvider: "Collections by TikTok", standardCarrier: "Collections by TikTok",
     enhancedPackages: [{ package_id: "123457", tracking_number: "OLD-2", carrier_name: "SwiftX", events: [{ description: "Package has been delivered!", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "OLD-2", action_code: 2, action_code_name: null }] }],
   });
   try {
     const card = page.getByTestId("customer-order-card");
+    await card.locator(".customer-info-line").filter({ hasText: "物流商" }).getByText("SwiftX").waitFor({ timeout: 3000 });
     await card.getByRole("button", { name: "查看完整物流" }).click();
     const dialog = page.getByRole("dialog", { name: "物流完整信息" });
     await dialog.getByText("物流商：SwiftX").waitFor();
@@ -1096,6 +1099,51 @@ test("enhanced carrier is reused by the order card and details view", async () =
     await page.getByRole("region", { name: "订单详情" }).locator("#customer-order-tracking").getByText("SwiftX").waitFor();
     assert.equal(calls.enhancedTracking, 1);
     assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("cross-border carrier also loads when order details open before tracking completes", async () => {
+  const { context, page, calls } = await openWorkspace({
+    messageCount: 2, enhancedTracking: true, trackingDelay: 600,
+    shippingProvider: "Collections by TikTok", standardCarrier: "Collections by TikTok",
+    enhancedPackages: [{ package_id: "123457", tracking_number: "OLD-2", carrier_name: "SwiftX", events: [{ description: "Delivered", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "OLD-2", action_code: 2, action_code_name: null }] }],
+  });
+  try {
+    await page.getByTestId("customer-order-card").getByRole("button", { name: "详情" }).click();
+    await page.getByRole("region", { name: "订单详情" }).locator("#customer-order-tracking").getByText("SwiftX").waitFor();
+    assert.equal(calls.enhancedTracking, 1);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("opening tracking during carrier preload shares one enhanced request", async () => {
+  const { context, page, calls } = await openWorkspace({
+    messageCount: 2, enhancedTracking: true, enhancedTrackingDelay: 600, translationEnabled: true,
+    shippingProvider: "Collections by TikTok", standardCarrier: "Collections by TikTok",
+    enhancedPackages: [{ package_id: "123457", tracking_number: "OLD-2", carrier_name: "SwiftX", events: [{ description: "Delivered", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "OLD-2", action_code: 2, action_code_name: null }] }],
+  });
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByRole("button", { name: "查看完整物流" }).click();
+    const dialog = page.getByRole("dialog", { name: "物流完整信息" });
+    await dialog.getByText("物流商：SwiftX").waitFor();
+    const translation = page.waitForResponse((response) => response.url().endsWith("/sidebar/orders/tracking-timeline-translation"));
+    await dialog.getByRole("button", { name: "翻译全部" }).click();
+    await translation;
+    assert.equal(calls.lastTimelineTranslation?.enhanced, true);
+    assert.equal(calls.enhancedTracking, 1);
+  } finally { await context.close(); }
+});
+
+test("known carrier avoids automatic enhanced reads", async () => {
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, enhancedTracking: true, shippingProvider: "USPS", standardCarrier: "USPS" });
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.locator(".customer-info-line").filter({ hasText: "物流商" }).getByText("USPS").waitFor();
+    assert.equal(calls.enhancedTracking, 0);
+    await card.getByRole("button", { name: "查看完整物流" }).click();
+    await page.getByRole("dialog", { name: "物流完整信息" }).getByText("物流商：Carrier B").waitFor();
+    assert.equal(calls.enhancedTracking, 1);
   } finally { await context.close(); }
 });
 

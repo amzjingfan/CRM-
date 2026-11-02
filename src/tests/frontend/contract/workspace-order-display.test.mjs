@@ -37,3 +37,14 @@ test("carrier follows the matching package rather than the marketplace shipping 
   assert.equal(orderCarrierLabel(order, { ...detail, tracking_packages: [] }, false), "—");
   assert.equal(orderCarrierLabel(order, { ...detail, shipping_provider: "FedEx", tracking_packages: [] }, false), "FedEx");
 });
+
+test("only a tracked cross-border order with unknown carrier needs automatic enhancement", async () => {
+  const { shouldResolveEnhancedCarrier } = await displayRules();
+  const order = { status: "COMPLETED", tracking_number: "TRACK-2", items: [{ package_id: "PKG-2", tracking_number: "TRACK-2" }] };
+  const detail = { shipping_provider: "Collections by TikTok", tracking_packages: [], tracking_loaded: true, enhanced_tracking_available: true };
+  assert.equal(shouldResolveEnhancedCarrier(order, detail), true);
+  assert.equal(shouldResolveEnhancedCarrier(order, { ...detail, shipping_provider: "USPS" }), false);
+  assert.equal(shouldResolveEnhancedCarrier(order, { ...detail, enhanced_tracking_available: false }), false);
+  assert.equal(shouldResolveEnhancedCarrier(order, { ...detail, tracking_loaded: false }), false);
+  assert.equal(shouldResolveEnhancedCarrier({ ...order, status: "UNPAID", tracking_number: null, items: [] }, detail), false);
+});

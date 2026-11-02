@@ -5,8 +5,9 @@ import { ArrowLeft, Copy, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { TrackingTimelinePopover } from "./TrackingTimelinePopover";
 import type { LogisticsCardDraft } from "../lib/api";
 import { buyerAvatarText } from "../lib/message-display";
-import { orderCarrierLabel, orderLogisticsStage, orderStatusLabel, withTrackingPackages } from "../lib/order-display";
+import { orderCarrierLabel, orderLogisticsStage, orderStatusLabel, shouldResolveEnhancedCarrier, withTrackingPackages } from "../lib/order-display";
 import {
+  getCustomerSidebarEnhancedTracking,
   getCustomerSidebarOrderDetail,
   getCustomerSidebarStandardTracking,
   getCustomerSidebarProduct,
@@ -150,6 +151,8 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
   const [detailError, setDetailError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  const [carrierLoading, setCarrierLoading] = useState(false);
+  const [carrierLookupFailed, setCarrierLookupFailed] = useState(false);
   const [trackingError, setTrackingError] = useState("");
   const [trackingTranslation, setTrackingTranslation] = useState("");
   const [showTrackingTranslation, setShowTrackingTranslation] = useState(false);
@@ -157,6 +160,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
   const [trackingTranslationLoading, setTrackingTranslationLoading] = useState(false);
   const acceptEnhancedPackages = useCallback((packages: SidebarOrderDetail["tracking_packages"]) => {
     setEnhancedPackages(packages);
+    setCarrierLookupFailed(false);
     setTrackingTranslation("");
     setShowTrackingTranslation(false);
     setTrackingTranslationError("");
@@ -164,6 +168,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
   const cardRef = useRef<HTMLElement>(null);
   const detailRequestInFlight = useRef(false);
   const trackingRequestInFlight = useRef(false);
+  const carrierRequestAttempted = useRef(false);
   const detailController = useRef<AbortController | null>(null);
   const trackingRequestId = useRef(0);
   useEffect(() => () => detailController.current?.abort(), []);
@@ -185,6 +190,8 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
     setDetailLoading(true);
     setDetail(null);
     setEnhancedPackages(null);
+    carrierRequestAttempted.current = false;
+    setCarrierLookupFailed(false);
     setDetailError("");
     setTrackingError("");
     trackingRequestId.current += 1;
@@ -231,6 +238,17 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
     return () => observer.disconnect();
   }, [loadDetail, order.live_detail_available]);
   const effectiveDetail = detail && enhancedPackages ? withTrackingPackages(detail, enhancedPackages) : detail;
+  useEffect(() => {
+    if (!shouldResolveEnhancedCarrier(order, detail) || carrierRequestAttempted.current) return;
+    carrierRequestAttempted.current = true;
+    let active = true;
+    setCarrierLoading(true);
+    getCustomerSidebarEnhancedTracking(sessionId, order.external_order_id)
+      .then((result) => { if (active) { if (result.packages.length) acceptEnhancedPackages(result.packages); else setCarrierLookupFailed(true); } })
+      .catch(() => { if (active) setCarrierLookupFailed(true); })
+      .finally(() => { if (active) setCarrierLoading(false); });
+    return () => { active = false; };
+  }, [order, detail, sessionId, acceptEnhancedPackages]);
   const first = order.items[0];
   const label = orderStatusLabel(order.status, en);
   const isCancelled = ["CANCELLED", "CANCELED"].includes(order.status);
@@ -257,9 +275,9 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
     <div className="customer-info-line"><span>{en ? "Payment method" : "支付方式"}</span><span>{detail?.payment_method_name ?? "—"}</span></div>
     <div className="customer-info-line"><span>{en ? "Fulfillment" : "出货状态"}</span><span>{label}</span></div>
     <div className="customer-info-line"><span>{en ? "Ship by" : "最晚发货"}</span><span>—</span></div>
-    <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><div className="customer-logistics-status"><span>{logisticsStatus}</span>{detail?.tracking_loaded ? <TrackingTimelinePopover en={en} enhancedAvailable={detail.enhanced_tracking_available} initialPackages={detail.tracking_packages ?? []} onCardDraft={onCardDraft} onPackagesResolved={acceptEnhancedPackages} order={order} orderId={order.external_order_id} sessionId={sessionId} translationEnabled={trackingTranslationEnabled} /> : null}</div></div>
+    <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><div className="customer-logistics-status"><span>{logisticsStatus}</span>{detail?.tracking_loaded ? <TrackingTimelinePopover en={en} enhancedAvailable={detail.enhanced_tracking_available && !carrierLoading && !enhancedPackages} initialEnhanced={!!enhancedPackages} initialPackages={effectiveDetail?.tracking_packages ?? []} onCardDraft={onCardDraft} onPackagesResolved={acceptEnhancedPackages} order={order} orderId={order.external_order_id} sessionId={sessionId} translationEnabled={trackingTranslationEnabled} /> : null}</div></div>
     <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number ?? ""}>{order.tracking_number ?? "—"}</span></div>
-    <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{orderCarrierLabel(order, effectiveDetail, en)}</span></div>
+    <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span title={carrierLookupFailed ? (en ? "Carrier unavailable; open tracking to retry" : "物流商暂不可用，可打开物流详情重试") : undefined}>{orderCarrierLabel(order, effectiveDetail, en)}</span></div>
     <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><div className="customer-tracking-detail"><span className={showTrackingTranslation ? "customer-tracking-translation" : undefined}>{showTrackingTranslation ? trackingTranslation : effectiveDetail?.latest_tracking_description ?? "—"}</span>{!en && trackingTranslationEnabled && effectiveDetail?.latest_tracking_description && /[A-Za-z]/.test(effectiveDetail.latest_tracking_description) ? <button disabled={trackingTranslationLoading} onClick={() => { if (trackingTranslation) setShowTrackingTranslation((shown) => !shown); else void requestTrackingTranslation(); }} type="button">{trackingTranslationLoading ? "翻译中…" : trackingTranslation ? showTrackingTranslation ? "查看原文" : "查看译文" : trackingTranslationError ? "重试翻译" : "译成中文"}</button> : null}{trackingTranslationError ? <span className="customer-tracking-error" role="alert">{trackingTranslationError}</span> : null}</div></div>
     <div className="customer-info-line"><span>{en ? "Latest tracking time" : "最新物流时间"}</span><span>{dateTime(effectiveDetail?.latest_tracking_at ?? null, en)}</span></div>
     {isCancelled ? <><div className="customer-info-line"><span>{en ? "Cancellation reason" : "取消原因"}</span><span>—</span></div><div className="customer-info-line"><span>{en ? "Refund status" : "退款状态"}</span><span>—</span></div></> : null}
@@ -273,6 +291,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
 
 function OrderDetailsView({ order, detail: initialDetail, buyerName, storeName, en, onBack, sessionId }: { order: SidebarOrder; detail: SidebarOrderDetail | null; buyerName: string | null; storeName: string | null; en: boolean; onBack: () => void; sessionId: string }) {
   const [detail, setDetail] = useState(initialDetail);
+  const carrierRequestAttempted = useRef(false);
   const [detailError, setDetailError] = useState("");
   const [detailLoading, setDetailLoading] = useState(!initialDetail && order.live_detail_available);
   const [detailRetry, setDetailRetry] = useState(0);
@@ -305,6 +324,15 @@ function OrderDetailsView({ order, detail: initialDetail, buyerName, storeName, 
       .finally(() => { if (!controller.signal.aborted) setTrackingLoading(false); });
     return () => controller.abort();
   }, [detail, order.external_order_id, order.items, order.status, order.tracking_number, sessionId, trackingRetry]);
+  useEffect(() => {
+    if (!shouldResolveEnhancedCarrier(order, detail) || carrierRequestAttempted.current) return;
+    carrierRequestAttempted.current = true;
+    let active = true;
+    getCustomerSidebarEnhancedTracking(sessionId, order.external_order_id)
+      .then((result) => { if (active && result.packages.length) setDetail((current) => current ? withTrackingPackages(current, result.packages) : current); })
+      .catch(() => { /* 通用轨迹仍可用；详情保留未知承运商。 */ });
+    return () => { active = false; };
+  }, [order, detail, sessionId]);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [trackingExpanded, setTrackingExpanded] = useState(false);
   useEffect(() => {

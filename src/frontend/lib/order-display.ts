@@ -70,6 +70,15 @@ export function actualCarrierName(value: string | null | undefined): string | nu
   return name && name.toLowerCase() !== "collections by tiktok" ? name : null;
 }
 
+export function shouldResolveEnhancedCarrier(
+  order: Pick<SidebarOrder, "status" | "tracking_number" | "items">,
+  detail: SidebarOrderDetail | null,
+): boolean {
+  if (!detail?.tracking_loaded || !detail.enhanced_tracking_available || orderCarrierLabel(order, detail, false) !== "—") return false;
+  return ["IN_TRANSIT", "SHIPPED", "DELIVERED", "COMPLETED"].includes(order.status)
+    || !!order.tracking_number || order.items.some((item) => !!item.tracking_number);
+}
+
 export function withTrackingPackages(detail: SidebarOrderDetail, packages: SidebarTrackingPackage[]): SidebarOrderDetail {
   const latest = packages.flatMap((item) => item.events).reduce<SidebarTrackingPackage["events"][number] | null>(
     (current, event) => !current || Date.parse(event.occurred_at) > Date.parse(current.occurred_at) ? event : current,
