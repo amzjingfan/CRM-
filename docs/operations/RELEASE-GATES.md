@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-11-02 订单与物流商回显修复已在重新打开的 Codex 内置浏览器中完成两店已登录只读验收：[TR R05](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R05.md) 记录 TikTok US 的 USPS 及 XBM 的 SwiftX 均在打开详情前出现在可见订单卡；详情和弹层一致。历史部署/健康证据见 R04，本次未重新部署或核验镜像摘要。订单任务现场验收通过；G8 production 继续 No-Go。
+
 2026-11-02 后续承运商自动回显修复已由 PR #717 合入，当前 staging 前端源码 `a38f9751` 包含该合并；本任务未再次部署旧候选。健康路径和容器正常，已登录订单 UI 因内置浏览器绑定超时仍为 `UI_UNAVAILABLE`，AC-05 未通过，任务保持 VERIFYING，G8 production 继续 No-Go。见[TR R04](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R04.md)与[观察证据](../../release/evidence/staging/crm-staging-carrier-autoload-observation-20261102.json)。
 
 2026-11-02 订单与物流展示统一修复从合并主线 `64da0bd7` 手动部署 staging 前端；私有备份、`ValidateOnly`、`Deploy`、049、12 服务及五条公网路径通过。内置浏览器重新打开仍绑定超时，已登录订单状态与承运商回显保持 `UI_UNAVAILABLE`，不计为 AC-05 完成；见[TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R02.md)与[低敏证据](../../release/evidence/staging/crm-staging-order-tracking-consistency-20261102.json)。原两店人工发送范围和安全关闭项保持，零买家外发；G8 production 继续 No-Go。

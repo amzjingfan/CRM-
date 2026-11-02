@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-11-02 订单与物流商自动回显[TR R05](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R05.md) **PASS（两店已登录 staging 现场抽样）**：重新打开 Codex 内置浏览器标签并打开客户侧栏，TikTok US 订单卡在点详情前显示 USPS、已完成订单与已送达物流；XBM 订单卡显示 SwiftX、运送中订单及物流。两店详情与物流弹层承运商、最新轨迹一致，分别有 8/16 条节点，无错误横幅。关闭侧栏的旧可访问性节点不是可见缺陷。本次未重跑 R03 本地测试或 R04 镜像核验；零测试数据写入、买家外发、退款和 production 操作。
+
 2026-11-02 CBT 增强物流修复 [TR R06](../reports/tests/TR-MVP-G1-LOG-202604-001-20261102-R06.md) **PASS（staging 已登录页面）**：从已部署 `d856760c` 只读检查两笔不同 XBM CBT 已送达订单，物流详情分别展开 19 和 16 条节点；另一家 TikTok US 店铺的 USPS 订单显示通用物流轨迹。R05 的独立真实增强响应含空节点单号且解析/投影成功，R04 回归确认保留该节点而不借用其他单号。没有新建测试数据、买家外发、退款或 production 操作。平台错误 `11007009` 的其他订单仍需按单诊断，不能外推全量成功。
 
 2026-11-01 五类共享 Agent 模板与多 Agent 待审阅预演[TR R01](../reports/tests/TR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md)在批准范围内 PASS：本地隔离 PG/pgvector 3169 通过、5 条件跳过，前端契约 78 与生产浏览器 236 通过；staging 从已合并 `433715ec` 手动发布 049，12 服务及三健康通过。正式认证 API 已验证售前商品调试、售前/售后/订单物流真实会话待审阅建议、售后知识引用及只读工具；实时商品目录抽样 5 项均上架且有正库存。首轮和本轮累计 8 Agent、2 文件软删除，五模板保留，测试时段出站消息 0。物流新节点与连续三轮无解在测试店无现场触发条件，仅隔离测试通过；某物流工具调用样本失败，staging 浏览器 `UI_UNAVAILABLE`，均未冒称现场通过。自动真实发送仍关闭、production No-Go；见[低敏证据](../../release/evidence/staging/crm-staging-five-agents-20261031.json)。
