@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "evidence_type": "order_tracking_consistency_manual_staging_deployment",
+  "task_id": "MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001",
+  "environment": "staging",
+  "production_release": false,
+  "source_pull_request": 713,
+  "release_source_sha": "64da0bd76bd705cc0421e4dfcfd33770bc301738",
+  "implementation_subject_sha": "248fc487a07388ac7392339bfc262459e4ac7596",
+  "source_bundle_sha256": "1878f28d11ec22cddfa1d8669b73c18b792a213881f5625a825f487c6a6e3e46",
+  "images": {
+    "frontend": "ghcr.io/cp11-gh/crm-frontend@sha256:939758a27ebabfde15334438e6bd58b0d472c4a1f9bda9d0b9533515f855dc66",
+    "frontend_previous": "ghcr.io/cp11-gh/crm-frontend@sha256:b06e9fa1d99133a1d9d567ac07973b86c1b3c0c8a8db440def0b3de065b38424",
+    "backend_unchanged": "ghcr.io/cp11-gh/crm-backend@sha256:98075760e810c92bafcb6b138b2623017ceb316590d05cb77a01724248349a83",
+    "retrieval_unchanged": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "document_parser_unchanged": "ghcr.io/cp11-gh/crm-document-parser@sha256:8213dbbc9fa39892f8518b4a750db2ba7a6a6387a70dcb3c954d97c161dcf4d2",
+    "platform": "linux/amd64",
+    "frontend_oci_revision": "64da0bd76bd705cc0421e4dfcfd33770bc301738"
+  },
+  "private_backup": {
+    "directory": "/home/crmdeploy/backups/order-tracking-64da0bd7-20261102",
+    "environment_sha256": "0621a12288948eed93f76dc06a1599e4d143ef935ed125282891b6c7c21b5cb0",
+    "postgres_custom_dump_sha256": "3eb2ffe23ffb1441f44e6dd5e9b1fd9fa56115fc91bfa63a59cb5152fa3b955b",
+    "minio_archive_sha256": "c05a5d439cca5727303f6e8ce61462a945406996a6c1d851f8718f8b7fc7a7cf",
+    "postgres_restore_list_readable": true,
+    "minio_archive_readable": true,
+    "permissions": "0700 directory; 0600 files",
+    "restore_drill_performed": false
+  },
+  "gate": {
+    "candidate_validate_sha256": "c454625c78e68d476ab82385e236b7c2da4e79233fcb2a8017d761c93c7e5bb8",
+    "candidate_validate_status": "validated",
+    "candidate_deploy_sha256": "3073da591eb19a96ef0cf51a62b42c0e5061b33fb4841f87a4e46f860282a81b",
+    "candidate_deploy_status": "passed",
+    "migration": "049_agent_auto_reply_preview (head)"
+  },
+  "runtime_after": {
+    "service_count_running_or_healthy": 12,
+    "manual_send_allowed_store_count_unchanged": 2,
+    "manual_send": true,
+    "workspace_translation": true,
+    "agent_debug_and_formal_suggestions": true,
+    "auto_reply": false,
+    "ai_marketing": false,
+    "high_risk_tiktok_write": false
+  },
+  "public_http_status": {
+    "healthz": 200,
+    "api_health": 200,
+    "api_ready": 200,
+    "workspace": 200,
+    "settings_stores": 200
+  },
+  "authenticated_ui_check": "UI_UNAVAILABLE: Codex in-app browser tab reopened and binding retried; binding timed out. No live order-card acceptance claimed.",
+  "temporary_host_ghcr_auth_cleared": true,
+  "github_actions_used_for_deployment": false,
+  "test_actions_sent_real_buyer_messages": false,
+  "refund_actions_performed": false
+}

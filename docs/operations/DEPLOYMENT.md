@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-11-02 订单与物流展示统一修复已从已合并主线 `64da0bd76bd705cc0421e4dfcfd33770bc301738` 直接部署 staging 前端；后端、检索和解析镜像保持原精确摘要。私有环境/PostgreSQL/MinIO 备份可读，`ValidateOnly` 与 `Deploy` 通过，049 迁移头、12 服务及五条公网只读路径为 200。原两店人工发送、翻译与 Agent 模式保持，自动回复、营销和高风险写入关闭，零真实买家测试外发、退款或 production 操作。内置浏览器标签重开后绑定仍超时，已登录订单页面验收 `UI_UNAVAILABLE`；见[TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R02.md)和[低敏发布证据](../../release/evidence/staging/crm-staging-order-tracking-consistency-20261102.json)。回退仅按证据切回旧前端精确摘要，保留部署后业务增量；备份未做恢复演练。未使用 GitHub Actions 部署。
+
 2026-11-02 CBT 增强物流解析修复已从已合并主线 `d856760c138c2884d1bad19f168066998e8eaa9c` 直接部署 staging 前后端与同版 TikTok 出口。私有环境、PostgreSQL、MinIO 备份可读；旧版和候选 `ValidateOnly`、`Deploy`、049 迁移、12 服务及五条公网健康/页面路径通过。原两店人工发送、翻译和 Agent 开关保留，自动回复、营销和高风险写入关闭。一笔此前未查询的 CBT 已送达订单的增强接口返回 1 包裹 16 节点，其中一个节点无运单号；新后端成功解析并映射侧栏模型。内置浏览器绑定 staging 标签页超时，已登录卡片展示仍 `UI_UNAVAILABLE`，见[TR R05](../reports/tests/TR-MVP-G1-LOG-202604-001-20261102-R05.md)与[低敏发布证据](../../release/evidence/staging/crm-staging-cbt-enhanced-tracking-20261102.json)。无买家测试外发、退款或 production 操作；未使用 GitHub Actions 部署。回退须切回证据中旧前后端精确摘要，保留迁移 049 与部署后业务增量。
 
 ## 五类 Agent 与预演候选发布检查（2026-10-31）

@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-11-02 订单与物流展示统一修复从合并主线 `64da0bd7` 手动部署 staging 前端；私有备份、`ValidateOnly`、`Deploy`、049、12 服务及五条公网路径通过。内置浏览器重新打开仍绑定超时，已登录订单状态与承运商回显保持 `UI_UNAVAILABLE`，不计为 AC-05 完成；见[TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R02.md)与[低敏证据](../../release/evidence/staging/crm-staging-order-tracking-consistency-20261102.json)。原两店人工发送范围和安全关闭项保持，零买家外发；G8 production 继续 No-Go。
+
 2026-11-01 五类 Agent 模板和店铺自动回复待审阅预演已从已合并主线 `433715ec` 手动部署 staging：049、私有备份、双 ValidateOnly/Deploy、12 服务和三健康通过。五模板发布保留，本轮授权真实只读建议和知识引用见[TR](../reports/tests/TR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md)；8 个合成 Agent、2 个文件已累计软删除，预演关闭、真实自动发送关闭、零测试外发。新物流节点与第三轮无解无现场样本、已登录浏览器控制 `UI_UNAVAILABLE`；不据此开放 production，G8 仍 No-Go。[精确发布证据](../../release/evidence/staging/crm-staging-five-agents-20261031.json)。
 
 2026-10-30 管理员接待资格与登录标识修复从合并主线 `476cc8d5` 手动发布 staging：精确前后端摘要、私有备份、双 ValidateOnly、Deploy、045、12 服务、固定出口、三健康及设置页 200 通过；运行服务只读核对管理员 2 店资格与主管目录登录标识。已登录浏览器视觉检查 `UI_UNAVAILABLE`，真实入站未演练。人工发送两店和全部自动发送安全开关保持，零测试外发；[TR R02](../reports/tests/TR-MVP-DEPARTMENT-ADMIN-IDENTITY-001-20261030-R02.md)、[低敏证据](../../release/evidence/staging/crm-staging-department-admin-identity-20261030.json)。G8 production 继续 No-Go。
