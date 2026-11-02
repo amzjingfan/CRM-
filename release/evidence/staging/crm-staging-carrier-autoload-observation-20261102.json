@@ -1,0 +1,24 @@
+{
+  "task_id": "MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001",
+  "observation_at": "2026-11-02T20:41:42+08:00",
+  "status": "PARTIAL_UI_UNAVAILABLE",
+  "source_pr": "https://github.com/CP11-gh/CRM/pull/717",
+  "source_merge_commit": "694c52219f6d00fe17e29bc970f414c229c6d8ea",
+  "active_frontend_source_revision": "a38f97516ac0750f064c16fb8738345863acea82",
+  "merge_commit_is_ancestor_of_active_revision": true,
+  "active_frontend_digest": "ghcr.io/cp11-gh/crm-frontend@sha256:2e6fb84d78d9cc9f98260a7d4a4b306bb90a6219892ebab6306f30ae94d22651",
+  "active_backend_digest": "ghcr.io/cp11-gh/crm-backend@sha256:71237e8cb0aac215891ee08e0d0933e6db8a0fb689d07abf20cbc1fe54f0f4af",
+  "running_container_count": 12,
+  "public_readonly_http_status": {
+    "/healthz": 200,
+    "/v1/health": 200,
+    "/v1/health/ready": 200,
+    "/workspace": 200
+  },
+  "candidate_validation_only": true,
+  "candidate_deployed_by_this_task": false,
+  "browser_live_order_acceptance": "UI_UNAVAILABLE",
+  "buyer_message_sent_by_test": false,
+  "refund_performed_by_test": false,
+  "production_changed_by_test": false
+}

@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-11-02 后续承运商自动回显修复已由 PR #717 合入，当前 staging 前端源码 `a38f9751` 包含该合并；本任务未再次部署旧候选。健康路径和容器正常，已登录订单 UI 因内置浏览器绑定超时仍为 `UI_UNAVAILABLE`，AC-05 未通过，任务保持 VERIFYING，G8 production 继续 No-Go。见[TR R04](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R04.md)与[观察证据](../../release/evidence/staging/crm-staging-carrier-autoload-observation-20261102.json)。
+
 2026-11-02 订单与物流展示统一修复从合并主线 `64da0bd7` 手动部署 staging 前端；私有备份、`ValidateOnly`、`Deploy`、049、12 服务及五条公网路径通过。内置浏览器重新打开仍绑定超时，已登录订单状态与承运商回显保持 `UI_UNAVAILABLE`，不计为 AC-05 完成；见[TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R02.md)与[低敏证据](../../release/evidence/staging/crm-staging-order-tracking-consistency-20261102.json)。原两店人工发送范围和安全关闭项保持，零买家外发；G8 production 继续 No-Go。
 
 2026-11-01 五类 Agent 模板和店铺自动回复待审阅预演已从已合并主线 `433715ec` 手动部署 staging：049、私有备份、双 ValidateOnly/Deploy、12 服务和三健康通过。五模板发布保留，本轮授权真实只读建议和知识引用见[TR](../reports/tests/TR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md)；8 个合成 Agent、2 个文件已累计软删除，预演关闭、真实自动发送关闭、零测试外发。新物流节点与第三轮无解无现场样本、已登录浏览器控制 `UI_UNAVAILABLE`；不据此开放 production，G8 仍 No-Go。[精确发布证据](../../release/evidence/staging/crm-staging-five-agents-20261031.json)。

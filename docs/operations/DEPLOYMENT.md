@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-11-02 后续承运商自动回显修复 PR #717 已合入 `694c5221`；当前 staging 前端由另一项已合并发布更新为源码修订 `a38f9751`，其中包含本修复，精确摘要与只读检查见[观察证据](../../release/evidence/staging/crm-staging-carrier-autoload-observation-20261102.json)。本任务构建的旧候选未再部署，以免覆盖较新的 Agent 代码。12 容器和四条公网健康/页面路径正常；Codex 内置浏览器绑定超时，真实订单回显尚未验收，见[TR R04](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R04.md)。
+
 ## 两店客户自动化部署配置（2026-11-02 候选，尚未放行运行）
 
 用户批准测试成功后开启两家现有 staging 店铺的普通 Agent 自动回复、欢迎语、60 分钟超时回复和物流新节点通知；production 保持 No-Go。先以真实外发关闭的候选完成五类 Agent、中英文、工具、绑定文件 RAG、流式审阅、模拟物流和接待计时验收，清理本轮合成资产，再应用正式店铺策略和新生效水位。此前版本的人工发送、翻译、Webhook 只读和 Agent 建议开关须显式保留，不能通过默认部署意外关闭。
