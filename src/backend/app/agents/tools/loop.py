@@ -76,6 +76,7 @@ async def run_tool_loop(
     tools: tuple[BaseTool, ...],
     deadline: float,
     max_output_tokens: int,
+    required_tools: frozenset[str] = frozenset(),
 ) -> ToolLoopResult:
     """不限工具轮次；模型或工具每次都消耗同一绝对时限。"""
     by_name = {item.name: item for item in tools}
@@ -85,6 +86,7 @@ async def run_tool_loop(
     events: list[ToolEvent] = []
     observations: list[ToolObservation] = []
     invalid_signatures: set[str] = set()
+    last_missing: frozenset[str] | None = None
     input_tokens = 0
     output_tokens = 0
     pending_call: FunctionCall | None = None
@@ -107,6 +109,36 @@ async def run_tool_loop(
             output_tokens += turn.output_tokens
             history.append(turn.assistant_message)
             if not turn.calls:
+                missing = required_tools - {item.name for item in events if item.status in {"succeeded", "previewed"}}
+                if missing:
+                    # 只反馈真实缺项，由模型继续原生调用；无进展不能靠再次声明完成放行。
+                    if missing == last_missing:
+                        return ToolLoopResult(
+                            None,
+                            "required_tools_incomplete",
+                            tuple(events),
+                            input_tokens,
+                            output_tokens,
+                            tuple(observations),
+                        )
+                    last_missing = missing
+                    history.append(
+                        {
+                            "role": "system",
+                            "content": json.dumps(
+                                {
+                                    "required_tools_missing": sorted(missing),
+                                    "instruction": (
+                                        "Complete the missing workflow steps using native function calls. "
+                                        "Only succeeded or previewed results complete a step; "
+                                        "do not claim completion or produce a final answer until they complete."
+                                    ),
+                                },
+                                ensure_ascii=False,
+                            ),
+                        }
+                    )
+                    continue
                 return ToolLoopResult(
                     turn.content, None, tuple(events), input_tokens, output_tokens, tuple(observations)
                 )

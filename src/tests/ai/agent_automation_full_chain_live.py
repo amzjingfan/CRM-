@@ -17,15 +17,17 @@ import sys
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlsplit
 
 import httpx
 
 TEST_ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_ROOT = TEST_ROOT / ".artifacts"
-DATASET = TEST_ROOT / "ai/datasets/agent-automation-full-chain-v1.json"
+DATASET = TEST_ROOT / "ai/datasets/agent-automation-full-chain-v2.json"
+CRITERION_VERSION = "agent-automation-live-v2"
 STORES = {"us": "74bd2ebb-53fe-4049-8324-bdf9c24b4d4d", "xbm": "2d9aa744-4f05-42bc-aae9-21223de0adaa"}
 DOC_BY_TEMPLATE = {
     "presales_products_v1": "product_guide",
@@ -216,11 +218,11 @@ def save_manifest(path: Path, state: dict[str, Any]) -> None:
 def load_manifest(path: Path, dataset_hash: str) -> dict[str, Any]:
     state = json.loads(manifest_path(path).read_text(encoding="utf-8"))
     validate_manifest(state, dataset_hash)
-    return state
+    return cast(dict[str, Any], state)
 
 
-def case_question(case: dict[str, Any], product: str | None) -> str:
-    question = case.get("input", "")
+def case_question(case: dict[str, Any], product: str | None, order_number: str | None = None) -> str:
+    question = cast(str, case.get("input", ""))
     if not case.get("knowledge") and "Orbit Lamp" in question:
         if not product:
             raise Blocked("real_product_unavailable")
@@ -232,7 +234,75 @@ def case_question(case: dict[str, Any], product: str | None) -> str:
             .replace("功率", "商品规格")
             .replace("型号和额定商品规格", "型号和商品规格")
         )
+    if case.get("order_mode") == "explicit":
+        if not order_number or not order_number.isdigit():
+            raise Blocked("verified_order_number_required")
+        question += ("\n订单号：" if case["language"] == "zh-CN" else "\nOrder number: ") + order_number
     return question
+
+
+def duration_check(content: str, fact: str, role: str | None = None) -> str:
+    """仅接受明确的等值时长；否定、范围与无法确定的措辞留待复核，不靠子串猜测。"""
+    expected = {"90 seconds": 90, "90秒": 90, "45 seconds": 45, "45秒": 45, "72 hours": 259200, "72小时": 259200}
+    if fact not in expected:
+        return "unsupported_criterion"
+    value = content.casefold().replace("一分半", "1.5 minutes").replace("一分三十秒", "1 minute 30 seconds")
+    value = re.sub(r"\bninety\b", "90", value)
+    value = re.sub(r"\bforty[- ]five\b", "45", value)
+    value = re.sub(r"\bseventy[- ]two\b", "72", value)
+    # 尚不支持带分组符的数值；不能把 1,090 的尾数 090 当作 90 秒。
+    if re.search(r"\d[,，]\s*\d", value):
+        return "ambiguous"
+    pattern = re.compile(
+        r"(?<![A-Za-z0-9_.])(?P<number>\d+(?:\.\d+)?)\s*[-‐‑]?\s*"
+        r"(?P<unit>seconds?|secs?|minutes?|mins?|hours?|hrs?|days?)(?![a-z])"
+        r"|(?<![\d.])(?P<cn_number>\d+(?:\.\d+)?)\s*(?P<cn_unit>秒钟?|分钟?|小时|天)"
+    )
+    matches = list(pattern.finditer(value))
+    if not matches:
+        return "missing"
+    factors = {"s": 1, "m": 60, "h": 3600, "d": 86400, "秒": 1, "分": 60, "小": 3600, "天": 86400}
+    groups: list[Decimal] = []
+    previous_end, previous_factor = -1, 0
+    for match in matches:
+        unit = match.group("unit") or match.group("cn_unit")
+        factor = factors[unit[0]]
+        amount = Decimal(match.group("number") or match.group("cn_number")) * factor
+        # 连续降序单位构成一个量，例如 1 minute 30 seconds；括号等价说明则各自核验。
+        if groups and not value[previous_end : match.start()].strip() and factor < previous_factor:
+            groups[-1] += amount
+        else:
+            groups.append(amount)
+        previous_end, previous_factor = match.end(), factor
+    if any(amount != expected[fact] for amount in groups):
+        return "incorrect"
+    roles = {
+        "warmup": r"warm[\s-]*up|preheat|预热",
+        "reset": r"reset|disconnect|unplug|断电|重置",
+        "tracking_idle": r"tracking|event|物流|轨迹|节点",
+    }
+    # 只在承载该时长的分句核验角色，句末小数点与数值内小数点区分处理。
+    boundaries = list(re.finditer(r"[;；。!?！？\n]|(?<!\d)[.,，]|[.,，](?!\d)|\b(?:and|but|whereas)\b", value))
+    for match in matches:
+        start = max((boundary.end() for boundary in boundaries if boundary.end() <= match.start()), default=0)
+        end = next((boundary.start() for boundary in boundaries if boundary.start() >= match.end()), len(value))
+        clause = value[start:end]
+        if role and (role not in roles or not re.search(roles[role], clause)):
+            return "ambiguous"
+        if role == "tracking_idle":
+            # 没有新轨迹是本题的触发条件，不能误认为否定等待时长。
+            clause = re.sub(
+                r"\bno (?:new )?(?:tracking )?(?:events?|updates?|scans?|movement)\b", "idle tracking", clause
+            )
+        if re.search(
+            r"\b(?:not|never|no|don't|instead|or|versus|vs|rather|between|about|approximately|around|"
+            r"at least|at most|up to|over|under|more than|less than|unnecessary|unneeded|needless|optional)\b"
+            r"|不|无须|无需|至少|至多|超过|少于|多于|大约|约为|左右|或者|或是"
+            r"|(?<!\w)[-−]\s*\d|\d\s*[-–—~至到]\s*\d",
+            clause,
+        ):
+            return "ambiguous"
+    return "equivalent"
 
 
 def answer_checks(
@@ -255,20 +325,21 @@ def answer_checks(
     chinese = sum("\u4e00" <= char <= "\u9fff" for char in content)
     letters = sum(char.isascii() and char.isalpha() for char in content)
     fact = str(case.get("expected_fact", ""))
-    normalized = "".join(content.lower().split())
     checks = {
         "nonempty": bool(content.strip()),
         "no_send": answer.get("send_performed") is False,
         "concise": 0 < len(content.encode("utf-16-le")) // 2 <= 2000,
         "required_tools": set(case.get("required_tools", [])) <= successful,
         "language": chinese > 0 if case["language"] == "zh-CN" else letters > 0 and chinese < max(5, letters // 5),
-        "expected_fact": not fact or "".join(fact.lower().split()) in normalized,
+        "expected_fact": not fact or duration_check(content, fact, case.get("duration_role")) == "equivalent",
     }
     if case.get("knowledge"):
-        checks["owned_citation"] = any(
-            str(item.get("document_id")) in owned_files
-            for item in answer.get("citations", [])
-            if isinstance(item, dict)
+        citations = answer.get("citations", [])
+        checks["owned_citation"] = bool(citations) and all(
+            isinstance(item, dict)
+            and str(item.get("document_id")) in owned_files
+            and re.fullmatch(UUID_PATTERN, str(item.get("chunk_id", ""))) is not None
+            for item in citations
         )
     if case.get("scenario") == "three_unresolved":
         checks["exact_fixed_fallback"] = content == case["expected_answer"]
@@ -331,6 +402,69 @@ class Runner:
         self.args, self.state, self.dataset, self.client = args, state, dataset, client
         self.live: dict[str, Any] = {}
         self.actor_id: uuid.UUID | None = None
+        self.standard = {
+            "dataset_version": dataset.get("version", "unversioned"),
+            "dataset_sha256": state.get("dataset_sha256", digest(json.dumps(dataset, sort_keys=True))),
+            "criterion_version": CRITERION_VERSION,
+            "criterion_sha256": digest(Path(__file__).read_bytes()),
+        }
+
+    def case_key(self, case_id: str, store: str | None = None) -> str:
+        key = ":".join(
+            (
+                self.standard["dataset_version"],
+                self.standard["dataset_sha256"],
+                self.standard["criterion_sha256"],
+                self.args.entry,
+                case_id,
+            )
+        )
+        return f"{key}:{self.evidence_identity(store)['scope_sha256']}" if store else key
+
+    def evidence_identity(self, store: str) -> dict[str, str]:
+        assets = [
+            {key: item.get(key) for key in ("kind", "key", "id", "revision", "version", "sha256")}
+            for item in self.state["assets"]
+            if item["store_id"] == STORES[store] and item["kind"] in {"agent", "file"}
+        ]
+        return {
+            **self.standard,
+            "scope_sha256": digest(
+                json.dumps(
+                    {
+                        "store_id": STORES[store],
+                        "context": self.state["contexts"].get(store, {}),
+                        "assets": sorted(assets, key=lambda item: str(item["id"])),
+                    },
+                    sort_keys=True,
+                )
+            ),
+        }
+
+    def selected_cases(self) -> list[dict[str, Any]]:
+        cases = [case for case in self.dataset["cases"] if not self.args.case or case["id"] in self.args.case]
+        if not cases or set(self.args.case) - {case["id"] for case in cases}:
+            raise Blocked("unknown_selected_case")
+        return cases
+
+    def current_results(self) -> list[dict[str, Any]]:
+        """仅当前标准、选定店铺/会话/入口/用例的最新结果决定本阶段；历史记录不改写。"""
+        result = []
+        for store in self.args.store or STORES:
+            identity = self.evidence_identity(store)
+            for case in self.selected_cases():
+                scope = {"store": store, "case": case["id"], "entry": self.args.entry, **identity}
+                result.append(
+                    next(
+                        (
+                            item
+                            for item in reversed(self.state["results"])
+                            if all(item.get(key) == value for key, value in scope.items())
+                        ),
+                        {**scope, "status": "missing"},
+                    )
+                )
+        return result
 
     def save(self) -> None:
         save_manifest(self.args.manifest, self.state)
@@ -382,6 +516,10 @@ class Runner:
             record = self.state["operations"].setdefault(key, {"idempotency_key": str(uuid.uuid4()), "state": "new"})
             if record["state"] in {"started", "unknown"} and model_call:
                 raise Blocked("model_response_unknown_do_not_replay")
+            if record["state"] == "failed_known_not_executed":
+                if time.time() < record["retry_not_before"]:
+                    raise Blocked("pre_model_rate_limit_cooldown")
+                record["idempotency_key"] = str(uuid.uuid4())
             record["state"] = "started"
             self.save()
             headers["Idempotency-Key"] = record["idempotency_key"]
@@ -392,9 +530,21 @@ class Runner:
                 record["state"] = "unknown"
                 self.save()
             raise Blocked("api_transport_unknown") from error
+        if method != "GET":
+            record["last_http_status"] = response.status_code
         if response.status_code not in allowed:
             if method != "GET":
                 record["state"] = "unknown" if model_call or response.status_code >= 500 else "failed"
+                # 本地 API 的 42901 是模型调用前的入口限流；其余错误不推定模型未运行。
+                if model_call and response.status_code == 429:
+                    try:
+                        known_limit = response.json().get("code") == 42901
+                    except (ValueError, AttributeError):
+                        known_limit = False
+                    if known_limit:
+                        retry_after = response.headers.get("Retry-After", "60")
+                        delay = max(60, int(retry_after)) if retry_after.isdigit() else 60
+                        record.update(state="failed_known_not_executed", retry_not_before=time.time() + delay)
                 self.save()
             raise Blocked(f"api_http_{response.status_code}")
         if response.status_code in {204, 404}:
@@ -425,7 +575,7 @@ class Runner:
         orders = await self.api(
             "POST",
             f"/v1/workspace/sessions/{conversation_id}/sidebar/search",
-            payload={"section": "orders", "field": "order_id", "query": ""},
+            payload={"section": "orders", "field": "order", "query": ""},
         )
         products = await self.api(
             "POST",
@@ -640,9 +790,9 @@ class Runner:
                 self.save()
                 if result_agent["template_id"] != template["id"]:
                     raise Blocked("owned_agent_template_mismatch")
-                if (
-                    document_key
-                    and self.asset("file", store, document_key)["id"] not in result_agent["knowledge_file_ids"]
+                required_file = self.asset("file", store, document_key) if document_key else None
+                if document_key and (
+                    required_file is None or required_file["id"] not in result_agent["knowledge_file_ids"]
                 ):
                     raise Blocked("template_has_no_required_knowledge_mapping")
                 owned_asset["prepared"] = True
@@ -709,7 +859,7 @@ class Runner:
                     or digest(existing.content) != asset["sha256"]
                 ):
                     raise Blocked("unknown_existing_trigger")
-                return asset["id"]
+                return cast(str, asset["id"])
             # 只插入精确标记的内部验收输入，不调用Webhook/入站/派单或发送链路，不改变会话指针。
             session.add(
                 Message(
@@ -735,7 +885,7 @@ class Runner:
                 )
             )
             await session.commit()
-        return asset["id"]
+        return cast(str, asset["id"])
 
     async def traces(self, store: str, run_id: str) -> tuple[list[dict[str, Any]], set[str], str | None]:
         from sqlalchemy import or_, select
@@ -800,11 +950,14 @@ class Runner:
 
     async def suggest(self, store: str, case_key: str, question: str, language: str) -> dict[str, Any]:
         trigger_id = await self.trigger(store, case_key, question, language)
-        return await self.api(
-            "POST",
-            f"/v1/workspace/sessions/{self.state['contexts'][store]['conversation_id']}/suggest",
-            operation=f"suggest:{store}:{case_key}",
-            payload={"trigger_message_id": trigger_id},
+        return cast(
+            dict[str, Any],
+            await self.api(
+                "POST",
+                f"/v1/workspace/sessions/{self.state['contexts'][store]['conversation_id']}/suggest",
+                operation=f"suggest:{store}:{case_key}",
+                payload={"trigger_message_id": trigger_id},
+            ),
         )
 
     async def event_preview(self, store: str, case: dict[str, Any], asset: dict[str, Any]) -> dict[str, Any]:
@@ -825,7 +978,7 @@ class Runner:
             result = await self.api(
                 "POST",
                 f"/v1/agents/{asset['id']}/logistics-event-preview",
-                operation=f"event:{store}:debug:{case['id']}",
+                operation=f"event:{store}:{self.case_key(case['id'], store)}",
                 payload={
                     "conversation_id": context["conversation_id"],
                     "external_order_id": order["external_order_id"],
@@ -835,7 +988,7 @@ class Runner:
             result = await self.api(
                 "POST",
                 "/v1/agents/logistics-notifications/preview",
-                operation=f"event:{store}:suggest:{case['id']}",
+                operation=f"event:{store}:{self.case_key(case['id'], store)}",
                 payload={
                     "store_id": STORES[store],
                     "conversation_id": context["conversation_id"],
@@ -887,7 +1040,7 @@ class Runner:
         }
 
     async def run_case(self, store: str, case: dict[str, Any]) -> dict[str, Any]:
-        key = f"{self.args.entry}:{case['id']}"
+        key = self.case_key(case["id"], store)
         asset = self.asset("agent", store, case["agent"])
         if asset is None or not asset.get("prepared"):
             raise Blocked("prepare_owned_agent_required")
@@ -914,13 +1067,15 @@ class Runner:
         }
         conversation_id = self.state["contexts"][store]["conversation_id"]
         if case.get("scenario") == "three_unresolved":
-            reset_case = next(item for item in self.dataset["cases"] if item["id"] == "presales_knowledge_en")
-            reset = await self.suggest(store, f"{key}:reset", reset_case["input"], "en")
+            reset_case = next(item for item in self.dataset["cases"] if item["id"] == "order_knowledge_en")
+            reset = await self.suggest(store, f"{key}:verified-order-reset-v2", reset_case["input"], "en")
             reset_tools, _, reset_reason = await self.traces(store, reset["agent_run_id"])
             product_files = {
                 item["id"]
                 for item in self.state["assets"]
-                if item["kind"] == "file" and item["store_id"] == STORES[store] and item["key"] == "product_guide"
+                if item["kind"] == "file"
+                and item["store_id"] == STORES[store]
+                and item["key"] == reset_case["knowledge"]
             }
             if reset_reason or not all(
                 answer_checks(reset_case, reset, reset_tools, product_files, "suggest").values()
@@ -939,6 +1094,7 @@ class Runner:
                         "turn": index + 1,
                         "run_id": previous["agent_run_id"],
                         "status": "verified_no_matching_agent",
+                        **self.evidence_identity(store),
                     }
                 )
                 self.save()
@@ -948,16 +1104,12 @@ class Runner:
                 self.live[store] = await self.context(store, conversation_id)
             live = self.live[store]
             product = live["product"]["title"] if live["product"] else None
-            order_case = (
-                case["id"].startswith("order_") or case["id"].startswith("aftersales_progress")
-            ) and not case.get("knowledge")
+            order_case = case.get("order_mode") in {"explicit", "discovery"}
             if order_case:
                 if not live["orders"] or not live["orders"][0].get("items"):
                     raise Blocked("real_order_product_context_unavailable")
                 product = live["orders"][0]["items"][0]["name"]
-            question = case_question(case, product)
-            if order_case:
-                question += "\nOrder number: " + live["orders"][0]["external_order_id"]
+            question = case_question(case, product, live["orders"][0]["external_order_id"] if order_case else None)
         if self.args.entry == "suggest":
             answer = await self.suggest(store, key, question, case["language"])
         else:
@@ -970,6 +1122,12 @@ class Runner:
         tools, participants, reason = await self.traces(store, answer["agent_run_id"])
         checks = answer_checks(case, answer, tools, files, self.args.entry)
         checks["owned_target_participated"] = asset["id"] in participants
+        owned_agents = {
+            item["id"]
+            for item in self.state["assets"]
+            if item["kind"] == "agent" and item["store_id"] == STORES[store] and item.get("prepared")
+        }
+        checks["only_owned_store_participants"] = bool(participants) and participants <= owned_agents
         checks["review_result"] = (
             reason == "fallback_third_round" if case.get("scenario") == "three_unresolved" else reason is None
         )
@@ -981,6 +1139,13 @@ class Runner:
             "assertions": checks,
             "run_id": answer["agent_run_id"],
             "citation_count": len(answer.get("citations", [])),
+            "answer_sha256": digest(answer.get("content") or ""),
+            "citation_refs_sha256": digest(json.dumps(answer.get("citations", []), sort_keys=True)),
+            "duration_status": duration_check(
+                answer.get("content") or "", case["expected_fact"], case.get("duration_role")
+            )
+            if case.get("expected_fact")
+            else "not_applicable",
             "successful_tools": sorted(
                 {item["name"] for item in tools if item["status"] in {"succeeded", "retrieved"}}
             ),
@@ -989,9 +1154,7 @@ class Runner:
         }
 
     async def run(self) -> None:
-        cases = [case for case in self.dataset["cases"] if not self.args.case or case["id"] in self.args.case]
-        if not cases or set(self.args.case) - {case["id"] for case in cases}:
-            raise Blocked("unknown_selected_case")
+        cases = self.selected_cases()
         for store in self.args.store or STORES:
             if store not in self.state["contexts"]:
                 raise Blocked("inventory_required")
@@ -1001,12 +1164,12 @@ class Runner:
                     and item.get("case") == case["id"]
                     and item.get("entry") == self.args.entry
                     and item.get("status") == "pass"
-                    for item in self.state["results"]
+                    for item in self.current_results()
                 ):
                     continue
                 started = time.monotonic()
                 try:
-                    result = await self.run_case(store, case)
+                    result = dict(await self.run_case(store, case))
                 except Blocked as error:
                     result = {
                         "store": store,
@@ -1024,6 +1187,7 @@ class Runner:
                         "reason": type(error).__name__,
                     }
                 result["duration_ms"] = int((time.monotonic() - started) * 1000)
+                result.update(self.evidence_identity(store))
                 self.state["results"].append(result)
                 self.save()
 
@@ -1178,7 +1342,7 @@ async def execute(args: argparse.Namespace) -> int:
     async with httpx.AsyncClient(
         base_url=base_url,
         cookies={"crm_access_token": token, "crm_csrf_token": csrf},
-        headers={"Origin": settings.public_base_url, "X-CSRF-Token": csrf},
+        headers={"Origin": cast(str, settings.public_base_url), "X-CSRF-Token": csrf},
         timeout=httpx.Timeout(170),
         follow_redirects=False,
         trust_env=False,
@@ -1201,7 +1365,8 @@ async def execute(args: argparse.Namespace) -> int:
             status, reason = "blocked", str(error)
         except Exception as error:
             status, reason = "blocked", type(error).__name__
-        if args.phase == "run" and any(item.get("status") in {"fail", "blocked"} for item in state["results"]):
+        current = runner.current_results() if args.phase == "run" else state["results"]
+        if args.phase == "run" and any(item.get("status") != "pass" for item in current):
             status = "blocked"
         state["phase_results"].append(
             {
@@ -1209,11 +1374,15 @@ async def execute(args: argparse.Namespace) -> int:
                 "status": status,
                 "reason": reason,
                 "outbound_unchanged": before is not None and before == after,
+                **runner.standard,
+                "stores": list(args.store or STORES),
+                "entry": args.entry,
+                "cases": [case["id"] for case in runner.selected_cases()] if args.phase == "run" else list(args.case),
             }
         )
         save_manifest(path, state)
     counts = {
-        name: sum(item.get("status") == name for item in state["results"]) for name in ("pass", "fail", "blocked")
+        name: sum(item.get("status") == name for item in current) for name in ("pass", "fail", "blocked", "missing")
     }
     print(
         json.dumps(

@@ -72,6 +72,46 @@ class RouterModel:
 
 
 @pytest.mark.asyncio
+async def test_router_native_schema_limits_ids_to_the_current_capacity_batch():
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+
+    agents = tuple(_agent(uuid.uuid4(), "商品") for _ in range(1))
+    seen = []
+
+    class Model:
+        async def complete(self, *, messages, tools, max_output_tokens):
+            catalog = json.loads(messages[-1]["content"])["candidates"]
+            schema = convert_to_openai_tool(tools[0])["function"]["parameters"]
+            ids = schema["properties"]["selections"]["items"]["properties"]["agent_id"]["enum"]
+            assert ids == [item["agent_id"] for item in catalog]
+            assert not {item["name"] for item in catalog} & set(ids)
+            seen.extend(ids)
+            return ToolTurn(
+                None,
+                (
+                    FunctionCall(
+                        "r",
+                        "route_agents",
+                        {"selections": [{"agent_id": ids[0], "subquestion": "商品规格"}], "question_language": "zh-CN"},
+                    ),
+                ),
+                {},
+                1,
+                1,
+            )
+
+    plan = await route_agents(
+        question="这个 English Product 的规格是什么？",
+        agents=agents,
+        provider=Model(),
+        deadline=time.monotonic() + 3,
+        max_catalog_tokens=1024,
+    )
+    assert {x.agent_id for x in plan.selections} == {x.id for x in agents}
+    assert seen == [str(x.id) for x in agents]
+
+
+@pytest.mark.asyncio
 async def test_all_enabled_agents_are_covered_across_capacity_batches() -> None:
     store = uuid.uuid4()
     agents = tuple(_agent(store, f"专长 {i}" * 10) for i in range(7))

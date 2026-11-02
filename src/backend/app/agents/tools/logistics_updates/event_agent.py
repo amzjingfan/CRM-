@@ -416,7 +416,8 @@ def notification_toolsets(
                 knowledge_search=search if agent.file_ids else None,
             )
             proposals: list[str] = []
-            required_names = (frozenset(agent.tool_names) & REQUIRED_EVENT_TOOLS) | (
+            # 显式搜索能力可保留未绑定结果；只有当前绑定文件时才要求实际检索。
+            required_names = (frozenset(agent.tool_names) & (REQUIRED_EVENT_TOOLS - {"search_knowledge"})) | (
                 {"search_knowledge"} if agent.file_ids else set()
             )
             yield EventToolset(

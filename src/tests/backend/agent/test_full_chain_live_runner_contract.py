@@ -20,6 +20,25 @@ def runner():
     return module
 
 
+@pytest.mark.asyncio
+async def test_inventory_order_context_uses_the_real_sidebar_order_field():
+    from unittest.mock import AsyncMock
+
+    module = runner()
+    conversation_id = str(uuid.uuid4())
+    subject = module.Runner(SimpleNamespace(), {}, {}, None)
+    subject.api = AsyncMock(
+        side_effect=[
+            {"session": {"store_id": module.STORES["us"], "status": "active"}},
+            {"items": [{"id": "verified-order"}]},
+            {"items": [{"skus": [{"quantity": 1}]}]},
+        ]
+    )
+    result = await subject.context("us", conversation_id)
+    assert result["orders"] == [{"id": "verified-order"}]
+    assert subject.api.call_args_list[1].kwargs["payload"] == {"section": "orders", "field": "order", "query": ""}
+
+
 def settings(**changes):
     return SimpleNamespace(
         **{
@@ -183,7 +202,7 @@ def test_nonempty_answer_without_tool_and_owned_citation_is_not_pass():
     answer = {"content": "Wait 90 seconds.", "send_performed": False, "citations": []}
     checks = module.answer_checks(case, answer, [], {"owned-file"}, "debug")
     assert checks["required_tools"] is False and checks["owned_citation"] is False
-    answer["citations"] = [{"document_id": "owned-file"}]
+    answer["citations"] = [{"document_id": "owned-file", "chunk_id": str(uuid.uuid4())}]
     checks = module.answer_checks(
         case, answer, [{"name": "search_knowledge", "status": "retrieved", "mocked": False}], {"owned-file"}, "debug"
     )
@@ -280,3 +299,47 @@ async def test_cleanup_unknown_creation_blocks_before_touching_any_asset(tmp_pat
     with pytest.raises(module.Blocked, match="unresolved_creations"):
         await service.cleanup()
     client.request.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fallback_reset_uses_a_versioned_resolved_shipping_question():
+    from unittest.mock import AsyncMock
+
+    module = runner()
+    config_id = str(uuid.uuid4())
+    asset = {
+        "kind": "agent",
+        "key": "reply_fallback_v1",
+        "store_id": module.STORES["us"],
+        "id": config_id,
+        "code": "owned",
+        "revision": 1,
+        "version": 1,
+        "prepared": True,
+    }
+    state = {"assets": [asset], "contexts": {"us": {"conversation_id": str(uuid.uuid4()), "unavailable_tools": []}}}
+    dataset = json.loads(module.DATASET.read_text(encoding="utf-8"))
+    subject = module.Runner(SimpleNamespace(entry="suggest"), state, dataset, None)
+    subject.api = AsyncMock(
+        side_effect=[
+            {
+                "store_id": asset["store_id"],
+                "code": "owned",
+                "draft_revision": 1,
+                "published_version": 1,
+                "status": "enabled",
+            },
+            {"global_enabled": False},
+        ]
+    )
+    subject.suggest = AsyncMock(side_effect=module.Blocked("stop_before_any_model_call"))
+    case = next(item for item in dataset["cases"] if item["id"] == "fallback_en")
+    with pytest.raises(module.Blocked, match="stop_before_any_model_call"):
+        await subject.run_case("us", case)
+    expected = next(item for item in dataset["cases"] if item["id"] == "order_knowledge_en")
+    assert subject.suggest.await_args.args == (
+        "us",
+        f"{subject.case_key('fallback_en', 'us')}:verified-order-reset-v2",
+        expected["input"],
+        "en",
+    )

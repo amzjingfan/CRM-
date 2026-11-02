@@ -193,6 +193,12 @@ async def run_specialist(
             tools=tools,
             deadline=deadline,
             max_output_tokens=max_output_tokens,
+            required_tools=(
+                frozenset(item.name for item in tools)
+                & {"query_conversation_messages", "create_handoff_request", "add_internal_note"}
+                if agent.agent_type == "fallback"
+                else frozenset()
+            ),
         )
     except ToolLoopTimeout as error:
         return SpecialistResult(

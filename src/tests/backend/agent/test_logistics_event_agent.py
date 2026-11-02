@@ -503,8 +503,9 @@ async def test_logistics_tool_reads_current_official_package_and_rejects_changed
 @pytest.mark.asyncio
 @pytest.mark.parametrize("external,public", [(False, False), (True, False), (True, True)])
 @pytest.mark.parametrize("customized", [False, True])
+@pytest.mark.parametrize("bound_files", [False, True])
 async def test_production_event_toolset_limits_rag_to_frozen_files_and_rechecks_approval(
-    monkeypatch, external, public, customized
+    monkeypatch, external, public, customized, bound_files
 ):
     import time
     from decimal import Decimal
@@ -524,6 +525,8 @@ async def test_production_event_toolset_limits_rag_to_frozen_files_and_rechecks_
     extras = ("query_customer_profile", "search_customer_orders", "query_conversation_messages") if customized else ()
     agent.tool_names = (*agent.tool_names, *extras)
     file_id = uuid.UUID(agent.file_ids[0])
+    if not bound_files:
+        agent.file_ids = ()
     chunk_id = uuid.uuid4()
     actor = SimpleNamespace(id=uuid.uuid4(), status="active")
     local = SimpleNamespace(id=context.scope.order_id, external_order_id="771100")
@@ -576,7 +579,7 @@ async def test_production_event_toolset_limits_rag_to_frozen_files_and_rechecks_
         conversation_id=context.scope.conversation_id,
         debug_without_conversation=False,
         message_ids=(),
-        file_versions=(FileVersionRef(file_id, uuid.uuid4(), 1),),
+        file_versions=(FileVersionRef(file_id, uuid.uuid4(), 1),) if bound_files else (),
     )
     hit = SimpleNamespace(
         document_id=file_id,
@@ -636,7 +639,9 @@ async def test_production_event_toolset_limits_rag_to_frozen_files_and_rechecks_
         propose = next(item for item in tools.tools if item.name == "notify_logistics_update")
         incomplete = await invoke_selected_tool(propose, {"candidate_text": "Your parcel reached the latest hub."})
         assert incomplete["status"] == "missing_required_tools"
-        assert incomplete["missing_tools"] == ["query_logistics", "query_order", "search_knowledge"]
+        assert incomplete["missing_tools"] == ["query_logistics", "query_order"] + (
+            ["search_knowledge"] if bound_files else []
+        )
         assert tools.proposals == [] and rag.retrieve.await_count == 0
         for name in extras:
             result = await invoke_selected_tool(next(item for item in tools.tools if item.name == name), {})
@@ -661,10 +666,10 @@ async def test_production_event_toolset_limits_rag_to_frozen_files_and_rechecks_
             granted.add("workspace.view")
         selected = next(item for item in tools.tools if item.name == "search_knowledge")
         result = await invoke_selected_tool(selected, {"query": "latest transit hub"})
-        used = not external or public
-        assert result["status"] == ("retrieved" if used else "no_hits")
+        used = bound_files and (not external or public)
+        assert result["status"] == ("no_knowledge_bound" if not bound_files else "retrieved" if used else "no_hits")
         assert tools.citations == ([str(chunk_id)] if used else [])
-        assert "knowledge.view" in tools.used_permissions
+        assert ("knowledge.view" in tools.used_permissions) is bound_files
         assert tools.file_versions == (
             [{"file_id": str(file_id), "version_id": str(snapshot.file_versions[0].version_id), "version_number": 1}]
             if used
@@ -672,13 +677,62 @@ async def test_production_event_toolset_limits_rag_to_frozen_files_and_rechecks_
         )
         if customized:
             assert "workspace.view" in tools.used_permissions
-        assert rag.retrieve.await_args.kwargs["file_ids"] == (file_id,)
+        if bound_files:
+            assert rag.retrieve.await_args.kwargs["file_ids"] == (file_id,)
+        else:
+            rag.retrieve.assert_not_awaited()
         incomplete = await invoke_selected_tool(propose, {"candidate_text": "Your parcel reached the latest hub."})
         assert incomplete["status"] == "missing_required_tools"
         assert incomplete["missing_tools"] == ["query_logistics", "query_order"]
         assert tools.proposals == []
+        if not bound_files:
+            from app.agents.tools.loop import run_tool_loop
+            from app.tools.contracts import ToolResult
+
+            execute = AsyncMock(
+                return_value=ToolResult(tool_call_id=uuid.uuid4(), status="succeeded", data={"status": "IN_TRANSIT"})
+            )
+            monkeypatch.setattr("app.agents.tools.logistics_updates.event_agent.EventOrderExecutor.execute", execute)
+            provider = SimpleNamespace(
+                complete=AsyncMock(
+                    side_effect=[
+                        ToolTurn(
+                            None,
+                            (
+                                FunctionCall("order", "query_order", {}),
+                                FunctionCall("logistics", "query_logistics", {}),
+                                FunctionCall(
+                                    "proposal",
+                                    "notify_logistics_update",
+                                    {"candidate_text": "Your parcel reached the latest hub."},
+                                ),
+                            ),
+                            {"role": "assistant", "content": None},
+                            3,
+                            2,
+                        ),
+                        ToolTurn("Proposal ready.", (), {"role": "assistant", "content": "Proposal ready."}, 2, 1),
+                    ]
+                )
+            )
+            outcome = await run_tool_loop(
+                provider=provider, messages=(), tools=tools.tools, deadline=time.monotonic() + 2, max_output_tokens=128
+            )
+            assert outcome.reason_code is None
+            assert [(item.name, item.status) for item in outcome.events] == [
+                ("query_order", "succeeded"),
+                ("query_logistics", "succeeded"),
+                ("notify_logistics_update", "proposed"),
+            ]
+            assert tools.required_names == frozenset({"query_order", "query_logistics", "notify_logistics_update"})
+            assert tools.proposals == ["Your parcel reached the latest hub."]
+            assert tools.citations == [] and tools.file_versions == []
+            assert "search_knowledge" not in {item.name for item in outcome.events}
+            assert execute.await_count == 2
+            assert {item.name for item in tools.tools} == set(agent.tool_names)
+            assert "search_store_coupons" not in {item.name for item in tools.tools}
         assert await tools.validate()
-        if external and public:
+        if external and public and bound_files:
             public_rows.clear()
             assert not await tools.validate()
         else:

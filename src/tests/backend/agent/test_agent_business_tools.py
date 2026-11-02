@@ -384,6 +384,9 @@ async def test_standard_tracking_does_not_hide_known_parcels_or_assign_order_eve
     result = await service.invoke("query_logistics", {})
     assert len(result["facts"]["packages"]) == 2
     assert result["facts"]["event_scope"] == "order"
+    assert {item["carrier"] for item in result["facts"]["packages"]} == {None}
+    assert result["facts"]["shipping_provider"] == "Carrier"
+    assert result["facts"]["carrier_source"] == "not_verified_by_standard_timeline"
 
 
 @pytest.mark.asyncio

@@ -12,6 +12,163 @@ from app.agents.providers.tool_calling import FunctionCall, ToolTurn
 from app.tools.contracts import ToolResult
 
 
+def final_turn(content="Your question is being handled."):
+    return ToolTurn(content, (), {"role": "assistant", "content": content}, 2, 1)
+
+
+def calling_turn(*names):
+    return ToolTurn(
+        None,
+        tuple(FunctionCall(f"call_{name}", name, {}) for name in names),
+        {"role": "assistant", "content": None},
+        2,
+        1,
+    )
+
+
+@pytest.mark.asyncio
+async def test_required_workflow_feedback_leads_to_native_missing_calls_without_server_invocation():
+    import json
+
+    from langchain_core.tools import tool
+
+    from app.agents.tools.loop import run_tool_loop
+
+    called = []
+
+    @tool
+    async def query_conversation_messages() -> dict:
+        """读取合成会话历史。"""
+        called.append("history")
+        return {"status": "succeeded"}
+
+    @tool
+    async def create_handoff_request() -> dict:
+        """生成内部接管记录。"""
+        called.append("handoff")
+        return {"status": "succeeded"}
+
+    @tool
+    async def add_internal_note() -> dict:
+        """生成内部备注。"""
+        called.append("note")
+        return {"status": "succeeded"}
+
+    tools = (query_conversation_messages, create_handoff_request, add_internal_note)
+    provider = SimpleNamespace(
+        complete=AsyncMock(
+            side_effect=[
+                calling_turn("query_conversation_messages"),
+                final_turn(),
+                calling_turn("create_handoff_request", "add_internal_note"),
+                final_turn(),
+            ]
+        )
+    )
+    result = await run_tool_loop(
+        provider=provider,
+        messages=(),
+        tools=tools,
+        required_tools=frozenset(item.name for item in tools),
+        deadline=time.monotonic() + 2,
+        max_output_tokens=256,
+    )
+    assert result.reason_code is None and result.answer == final_turn().content
+    assert called == ["history", "handoff", "note"]
+    assert [item.status for item in result.events] == ["succeeded"] * 3
+    feedback = json.loads(provider.complete.await_args_list[2].kwargs["messages"][-1]["content"])
+    assert feedback["required_tools_missing"] == ["add_internal_note", "create_handoff_request"]
+    assert (result.input_tokens, result.output_tokens) == (8, 4)
+    assert all(call.kwargs["max_output_tokens"] == 256 for call in provider.complete.await_args_list)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("outcome", ["missing", "failed", "oversized"])
+async def test_same_missing_required_set_stops_on_second_final_without_faking_success(outcome):
+    from langchain_core.tools import tool
+
+    from app.agents.tools.loop import run_tool_loop
+
+    @tool
+    async def required_step() -> dict:
+        """合成必需内部步骤。"""
+        return {"status": "failed"} if outcome == "failed" else {"status": "succeeded", "facts": {"text": "x" * 17000}}
+
+    turns = (
+        [final_turn(), final_turn()]
+        if outcome == "missing"
+        else [calling_turn("required_step"), final_turn(), final_turn()]
+    )
+    provider = SimpleNamespace(complete=AsyncMock(side_effect=turns))
+    result = await run_tool_loop(
+        provider=provider,
+        messages=(),
+        tools=(required_step,),
+        required_tools=frozenset({"required_step"}),
+        deadline=time.monotonic() + 2,
+        max_output_tokens=256,
+    )
+    assert result.answer is None and result.reason_code == "required_tools_incomplete"
+    assert provider.complete.await_count == len(turns)
+    assert [item.status for item in result.events] == (
+        [] if outcome == "missing" else ["failed" if outcome == "failed" else "tool_result_too_large"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_required_debug_preview_completes_without_saving_business_records(monkeypatch):
+    from unittest.mock import Mock
+
+    from app.agents.tools.business import AgentBusinessExecutor
+    from app.agents.tools.catalog import AgentToolContext, build_agent_tools
+    from app.agents.tools.loop import run_tool_loop
+
+    session = SimpleNamespace(add=Mock(), commit=AsyncMock(), rollback=AsyncMock())
+    snapshot = SimpleNamespace(store_id=uuid.uuid4(), conversation_id=uuid.uuid4(), customer_id=uuid.uuid4())
+    saved = AsyncMock()
+    monkeypatch.setattr("app.agents.tools.collaboration.save_collaboration", saved)
+    business = AgentBusinessExecutor(
+        session,
+        SimpleNamespace(id=uuid.uuid4()),
+        snapshot,
+        uuid.uuid4(),
+        frozenset({"workspace.reply"}),
+        "workflow-preview",
+        preview_only=True,
+    )
+    monkeypatch.setattr(business, "authorize", AsyncMock(return_value=SimpleNamespace(platform="tiktok")))
+    names = ("create_handoff_request", "add_internal_note")
+    context = AgentToolContext(
+        snapshot.store_id, uuid.uuid4(), None, snapshot.customer_id, frozenset({"workspace.reply"}), "workflow-preview"
+    )
+    tools = build_agent_tools(
+        names, context=context, executor=SimpleNamespace(execute=AsyncMock()), business_executor=business
+    )
+    calls = tuple(FunctionCall(name, name, {"content": "Please review this question."}) for name in names)
+    provider = SimpleNamespace(
+        complete=AsyncMock(
+            side_effect=[
+                final_turn(),
+                ToolTurn(None, calls, {"role": "assistant", "content": None}, 2, 1),
+                final_turn(),
+            ]
+        )
+    )
+    result = await run_tool_loop(
+        provider=provider,
+        messages=(),
+        tools=tools,
+        required_tools=frozenset(names),
+        deadline=time.monotonic() + 2,
+        max_output_tokens=256,
+    )
+    assert result.answer is not None and result.reason_code is None
+    assert [item.status for item in result.events] == ["previewed", "previewed"]
+    saved.assert_not_awaited()
+    session.add.assert_not_called()
+    session.commit.assert_not_awaited()
+
+
 @pytest.mark.asyncio
 async def test_tool_loop_executes_two_read_calls_and_keeps_write_as_proposal() -> None:
     from app.agents.tools.catalog import AgentToolContext, build_agent_tools

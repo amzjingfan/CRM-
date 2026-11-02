@@ -1,5 +1,9 @@
 # 当前 API 契约
 
+2026-11-02 现场修复候选不新增公开路径。官方 [Search Returns 202602](https://partner.tiktokshop.com/docv2/page/search-returns-202602) 仍以已核实订单、原授权和分页参数读取；当响应明确 `total_count` 为整数 0、无下一页且省略可选 `return_orders` 时返回空申请列表。缺少总数、非整数/布尔总数、显式 null/畸形列表或仍有分页不能推断“无售后”，权限与平台错误照常失败关闭。两家 staging 店均观察到上述零结果形状，不能误报为解析故障。
+
+Agent 通用订单轨迹中的 `shipping_provider` 保留平台履约服务原值，`carrier_source=not_verified_by_standard_timeline`，未核实的 `carrier` 为 null；不再把揽收/履约服务标签冒充实际末端承运商。增强轨迹提供已核实的包裹承运商并标记 `official_enhanced_tracking`。最新节点、包裹、运单、内部历史分页与原订单归属校验保持。
+
 ## 客户自动化接口（2026-11-02 候选）
 
 以下路径统一带 /v1。GET /agents/automation?store_id=... 返回 mode=off|preview|auto、revision、授权人、生效水位和全局是否开放；PUT 接受 mode 与 expected_revision，需要 agent.manage、Cookie CSRF，启用时另核对 workspace.view/reply 和当前店铺真实渠道/已发布 Agent。revision 冲突返回409。auto 还要求部署主开关；旧预演 API 保留兼容，前端统一使用此入口，不同时提供互相冲突的两个开关。

@@ -505,7 +505,7 @@ class AgentBusinessExecutor:
         events: list[dict[str, object]] = [
             {
                 "package": index + 1 if args.enhanced else None,
-                "carrier": parcel.carrier_name,
+                "carrier": parcel.carrier_name if args.enhanced else None,
                 "tracking_number": event.tracking_number or parcel.tracking_number,
                 "description": event.description,
                 "occurred_at": event.occurred_at,
@@ -538,7 +538,7 @@ class AgentBusinessExecutor:
             if not known:
                 known = [(item.package_id, item.tracking_number) for item in packages]
             package_facts = [
-                {"package": index + 1, "carrier": detail.shipping_provider, "tracking_number": number}
+                {"package": index + 1, "carrier": None, "tracking_number": number}
                 for index, (_package_id, number) in enumerate(dict.fromkeys(known))
             ]
         event_page, next_event = (
@@ -551,6 +551,9 @@ class AgentBusinessExecutor:
             "enhanced": args.enhanced,
             "detail": args.detail,
             "enhanced_available": detail.enhanced_tracking_available,
+            # 通用轨迹没有核实实际承运商；保留平台履约服务原值，不把揽收方式冒充末端承运商。
+            "shipping_provider": detail.shipping_provider,
+            "carrier_source": "official_enhanced_tracking" if args.enhanced else "not_verified_by_standard_timeline",
             "packages": package_page,
             "package_count": len(package_facts),
             "next_package_offset": next_package,

@@ -132,6 +132,49 @@ async def test_search_returns_rejects_cross_order_response() -> None:
         await client.search_returns("123")
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("token", [None, ""])
+async def test_search_returns_accepts_explicit_zero_total_with_omitted_optional_rows(token):
+    from unittest.mock import AsyncMock
+
+    from app.integrations.tiktok_read import TikTokApiEnvelope
+
+    channel = connected_channel()
+    channel.scopes = [*channel.scopes, "seller.return_refund.basic"]
+    client = TikTokReadClient(real_settings(), channel)
+    client._request = AsyncMock(
+        return_value=TikTokApiEnvelope(code=0, message="Success", data={"total_count": 0, "next_page_token": token})
+    )
+    assert await client.search_returns("123") == ([], None)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "data",
+    [
+        {},
+        {"total_count": 1},
+        {"total_count": False},
+        {"total_count": "0"},
+        {"total_count": 0, "next_page_token": "more"},
+        {"total_count": 0, "next_page_token": 0},
+        {"total_count": 0, "return_orders": None},
+        {"total_count": 0, "return_orders": {}},
+    ],
+)
+async def test_search_returns_does_not_treat_unknown_or_malformed_results_as_no_returns(data):
+    from unittest.mock import AsyncMock
+
+    from app.integrations.tiktok_read import TikTokApiEnvelope
+
+    channel = connected_channel()
+    channel.scopes = [*channel.scopes, "seller.return_refund.basic"]
+    client = TikTokReadClient(real_settings(), channel)
+    client._request = AsyncMock(return_value=TikTokApiEnvelope(code=0, message="Success", data=data))
+    with pytest.raises(AppError):
+        await client.search_returns("123")
+
+
 def test_return_optional_money_deadlines_and_lines_are_typed_without_private_addresses() -> None:
     from app.integrations.tiktok_read import TikTokReturn
 

@@ -73,6 +73,8 @@ Set-Location ../..
 
 `ai/agent_automation_full_chain_live.py` 为显式启用的 staging 正式认证验收：`--phase inventory|prepare|run|cleanup --enable-live --manifest <src/tests/.artifacts/...json>`，可按 `--store us|xbm`、`--entry debug|suggest`、`--case <冻结用例>` 分批执行。仅在双自动化开关关闭时运行，不含发送/开启能力；使用既有有效管理员会话派生的内存凭证，保留 CSRF 与逐店授权。其精确合成入站、协作记录及会话记忆恢复由 controller 私有备份和清理批次处理，不能仅凭文件软删除宣称已清空。
 
+该入口当前采用 `agent-automation-full-chain-v2.json`；v1 原文和失败记录保留。v2 明确售前/售后问题语境、补充不附订单号的搜索场景，记录实际 dataset/criterion hash，并按当前标准与店铺/入口/用例核对最新结果。跨标准资产复用必须由 controller 新建关联旧运行的 manifest 并记录来源，不能覆盖旧记录或自动重标通过。只有 HTTP429 且正式错误码42901才认定模型前限流未执行，经过冷却后用新幂等键请求；超时、503和其他未知结果仍禁止自动重放。
+
 `ai/logistics_event_model_live.py --enable-live --output <src/tests/.artifacts/agent-automation-20261102/新文件.json>` 仅限白名单 loopback 隔离测试库、test/integration 环境及全部平台能力关闭。它以声明的两段合成知识、模拟已核实物流节点调用实际 DeepSeek、BGE、PostgreSQL 检索和重排；逐条核对冻结引用原文与真实命中、独立复核和零投递。其组件结果不能替代正式 API、真实平台或买家送达证据；旧失败结果保留，新判据必须版本化并重新执行。
 
 `ai/agent_reply_preferences_live.py` 是显式启用的合成表达偏好验收，不由普通 pytest 发现。仅在受控非生产进程中、使用当前已配置模型凭证运行：从 `src/backend/` 执行 `python ../tests/ai/agent_reply_preferences_live.py --enable-live`（可重复 `--case <名称>` 选择案例）。它用合成快照与物流事实调用实际 Worker、模型路由、流式汇总和独立复核；拒绝数据库访问，不读取真实买家或创建消息。输出含合成答复及独立模型语义评审，评审意见需要结合正文人工核对，不能将模型评分当作绝对事实；它不替代保存/发布/权限的隔离数据库测试或真实 TikTok 验收。输出只保存到 `src/tests/.artifacts/`。

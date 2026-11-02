@@ -629,13 +629,21 @@ class TikTokReadClient:
             query["page_token"] = page_token
         envelope = await self._request("POST", "/return_refund/202602/returns/search", query, {"order_ids": [order_id]})
         data = envelope.data or {}
+        token = data.get("next_page_token")
+        if token is not None and not isinstance(token, str):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "售后分页结构异常", 502)
+        # 平台在明确零结果时省略可选列表；缺少总数、仍有下一页或显式畸形列表不能解释为无售后。
+        if (
+            "return_orders" not in data
+            and type(data.get("total_count")) is int
+            and data["total_count"] == 0
+            and not token
+        ):
+            return [], None
         rows = self._validated_list(data, "return_orders", TikTokReturn)
         items = [item for item in rows if isinstance(item, TikTokReturn)]
         if any(item.order_id != order_id for item in items):
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "售后订单归属异常", 502)
-        token = data.get("next_page_token")
-        if token is not None and not isinstance(token, str):
-            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "售后分页结构异常", 502)
         return items, token or None
 
     async def get_return_records(self, return_id: str) -> list[TikTokReturnRecord]:
