@@ -1,0 +1,1521 @@
+{
+  "schema": 1,
+  "source_subject_sha": "20c9103cac541ed43c164a68e7ed2abe03430370",
+  "source_merge_sha": "f71fca80703d1abab0d735a4a28e9c1f5061aca3",
+  "source_pr": 719,
+  "stores": {
+    "us": {
+      "logical_scene_coverage": [
+        {
+          "case": "presales_product_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "fe3071f37424be8eb0662311e908562bb3d51d8d679b744276f8c5d69be2bd08",
+          "answer_sha256": "57c0cbe911cf4148f6ea8da52854e848f57604061daaca8db4651f6be20b5c70",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_product_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "d3bcf3ec1a02c4014e0f837cd69a7ddb3c693e4b955509d2e863feccb11a189e",
+          "answer_sha256": "d04772f530f53997ec45d73703bc7a0cbdfef404d965b9f3f2fbe71e9eb48659",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_product_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "657c9a28e2a0762b95b67ef8c2697dee9aebca7203d8b6589b566a6fb3a9647b",
+          "answer_sha256": "810ddd5637db1cfb0dc7ef4248cb1be2db8659d869dd8acd67b308903e15676d",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_product_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "c574923d5ac7a815c8f11bcdfa7462cf6d5963105a9f6a6de235585d066d39ec",
+          "answer_sha256": "384c7c884e41c77e4d641d5a3190de6460d18a9ebc8bf8aa4ff0195b44049554",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "ffe4f46fb83a24cb35a6da168beb59afba436833a78c4336ab2bd97cd3c3ca60",
+          "answer_sha256": "2378ec3488a9cb74224f043c76b036aaa23134575110f8934177aac26c69e28f",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "d1fd3481b8363f1c6b4a1a44243bcbe0ed597b642baf49f3ec2cbf3694cf3d42",
+          "answer_sha256": "c269ae043d53bf407415564d2091c13784f63a1a36e7feccb6deacbc37c13e81",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "1aef0a4b8b56b567231cb6785a388a3868a228b7430ba8858afc8c6d7fa5c5be",
+          "answer_sha256": "e741f4ceeee3cec5a6d203e5316960646e195cf36f55aa2f803dd3c398654883",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "27db87e20cf2f1383fd12d55317b41b33395ebf090c6bf40b3b940b563bf6046",
+          "answer_sha256": "bf90c8b707148b1813ddfe510be1db38dfd328cbfcb51e012ea64d4555c4ff86",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_knowledge_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "7fbc1405c48b2569f927f3919ca252fad1e8393124b5720cd278524bce923f9f",
+          "answer_sha256": "c7641f7af2f602b7c957a534e0b428a290347f1f832f4acd57ebcaa4ccf645c1",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "presales_knowledge_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "5a378019dc1ac5fd5fbeb4a9cf32c7dd57b470b671452f41901ca3d26e297622",
+          "answer_sha256": "a7b36e53ea2a1933073da13fca2da30215a7fc352aaca180e0d9308e9dd58d89",
+          "successful_tools": [
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "presales_knowledge_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "d5e63989c46d6342ae4ee7652a1ec6d86f871a06908a2fb311cb97fbb16ab444",
+          "answer_sha256": "e8ad096196b5bf45576dcc150e9ded1cd5c30034ddcee53934f4458aec61809a",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "presales_knowledge_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "fc8db31cb72ff5741a6af8b0d4736cd440b753ea8b571862b153b6f7ec939a49",
+          "answer_sha256": "4e6290f7d6596491aca65568e2d01b1842b249b653a9537e4923174bab55a236",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_detail_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "b2443c87f2a55e156308247124a200f9b2f3dfc2138dbdb812ac004081fa7ab2",
+          "answer_sha256": "007282c84eea2a804ba427dacd78ece2c3423d49576e3524d14aa81c8655110a",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_detail_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "efca36b2b84e7069374ed187927e002e590de7924a704ac33a8c87148893d1b8",
+          "answer_sha256": "b678cba332361a5e7d076f2e994ba0a998ccb7d7adf321aef74c7a61b63b6dd1",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_detail_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "e3609e3260fbf44862a5b801381eeda067b7168b312a3093b4bbe6b9715b615c",
+          "answer_sha256": "11639cfddae83f4052f1594dcb6abe1af8380f53f0ea56c1db5bc2d7e192ae20",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_detail_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "b811810621a32ec6022b42cc12e0b5fa7cd7a39e9705a994fefb7dad1f6dfbfb",
+          "answer_sha256": "092ee3bd611241c6f56159917f82ac58018e7897020a2127c305fe04eeec3e17",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "289be503ca2bf5a999aebff4fdaa0dc24677213bfbeabddb7b83d9f757dd7806",
+          "answer_sha256": "89c34b079671ead44f131843e1e7dcff063ef261d9ed984524a3eee0b963716c",
+          "successful_tools": [
+            "query_logistics",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "c03872f0c39a2169a1fb21bab9febc0e0b17ca904519ca98f41226a81c2d9e78",
+          "answer_sha256": "f360011207c677b72a39cc845b6ea6f74648daa57f7cee19ffdacc34458b1a56",
+          "successful_tools": [
+            "query_logistics",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "8c58400c52c3704d8b6314b9c8ba1e166cecf08ae2d50d4b25d81bc1c85dd99b",
+          "answer_sha256": "0bb46c720bed21496a38ab8a1cd448c155d07200a91f6dfe4bda955290e84cc8",
+          "successful_tools": [
+            "query_logistics",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "9d873f6df014d3b99ff6ae519fa74357e327abf22f0ff953947685fea400c4a4",
+          "answer_sha256": "406ba04647d3cde740e1492de6182a8f73b172f60e6d70f08bc77deca4708607",
+          "successful_tools": [
+            "query_logistics",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_knowledge_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "dbea7264ad19b2f40ebc2cb727f96ee65e3d6b025b5831959458c2cbd17863e6",
+          "answer_sha256": "320eec756e1569905a024b23e78bd20b450be8850e56909f11e4fc1503f69fef",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_knowledge_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "6746e432354e76733b1ea00d55bb4a56a0784cfd01906087f73fcf6c8c153333",
+          "answer_sha256": "5880b5813938b74b07bd937e326b9cd2b5ed105ade3bbb6903e1d7491939000f",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_knowledge_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "e5bb45e557694c9272d6b914ef6662b1c56e73f6d3d530cb7577aad1680b697a",
+          "answer_sha256": "c9fbf54b1a6ce166be4e868e0cb7f4e9394143c9510fbcb920f14e6b9fba5879",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_knowledge_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "b35b0a07d567cef738ebc57ef014b5d624484b85676bc0d9bd63f9e075e56194",
+          "answer_sha256": "588bb9b44fe519ce54b5773d464a00efa863e122b269d9eb90474946e2fb5d10",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_progress_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "17f089f560f629933f3a7dabc1ec17c2635d1a71924ab77b0d82e88ad58a1c89",
+          "answer_sha256": "108e21e3393ef28052543903127672342907fe0068757de219002b593b197b61",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders",
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_progress_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "b1203c70896d067f2d16b1765266fba926d2afdcf97ded7c623be914e74a1ec2",
+          "answer_sha256": "9c480fda842fb456edd7c8aa30fd7ee1bd600f10c8a26f4bd862b88d1e6768c8",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders",
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_progress_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "d93a9eb2d1b44d6676dd3e17f05d4bbd38da3542895f3cfe5b6289086d02089d",
+          "answer_sha256": "4c1381a049785eb3ced196d08d5d7d0e063378d7e6361a4f553cce0e7ba834c3",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_progress_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "997263ba577b1cba67495222f6786f7bcaa89613a083c0ea8e4ff0377f706497",
+          "answer_sha256": "65a97db635801c0d92a69545186b5d5239df518ed4db5a672b5a5181dacbd6fe",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_product_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "b7f32079ac22adac432072f29bbefe3caaf4a1089e6f864ca71e46ad59013dbc",
+          "answer_sha256": "74dbc99f3c31adfc8e1717163bdd4c2bb66875aab99f697be0d75171b4eabae0",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_product_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "e60f0f98a48e9bdc4a599d0c680186f9b53017f38daf1739c94ce58fd139b4ab",
+          "answer_sha256": "c99952b8341f9b3c39320cea1d40df388ad2c6c7ec255cd30d3ad8076e8ab288",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_product_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "fa5985a4b7d7adbe19ade9ab611d306d14f42dc418cd90627c5619c2ff35a798",
+          "answer_sha256": "f78b795a24338489df75c0b83605c214d74285db8267ea977a76d547c8d4ee80",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_product_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "949ee6b7d4fe444152567bc45dab403d32a7ba32437a2c05c98d65772f992a57",
+          "answer_sha256": "a5faaea0fac57dc3480cb2e8f3a7b80e8cd75dce9169ccbc2c57455e2caae7ce",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_knowledge_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "9267e541326b4325afd45224404f7ca0a1f32d6a62cffa5be053f84fd11e6380",
+          "answer_sha256": "cb0c571b8b75df0be3a3ceb1591625f5b65bffc960fec19031cba73ca0f40faf",
+          "successful_tools": [
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_knowledge_en",
+          "entry": "suggest",
+          "status": "manual_fact_adjudicated",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "3c327db05de292b56dc33720b2d88a5af90fa5a964323aa87e57b3f15d214127",
+          "answer_sha256": "e7e85d89017ae0d6a5425a2b56223009569efcfa93d858f9323b6872315223f5",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_knowledge_zh",
+          "entry": "debug",
+          "status": "manual_fact_adjudicated",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "592792adbb9b151cb01fc40507504b4f75058eead0972c51ea7a70a70ab97870",
+          "answer_sha256": "2e83ba3569f0e3f3af1a46f0a7289474de10832e534db99842e8164a87e94275",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_knowledge_zh",
+          "entry": "suggest",
+          "status": "manual_fact_adjudicated",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "445a43534392cdf5de38881b943912fe138299e12a6edbdb6b89af274c06ea99",
+          "answer_sha256": "c239b6583ec8d8c3ab4c96c9b84aa91bba332fea336590bfc87e68faa6724254",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "fallback_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "d1f8c1028f43a792079282b9f022058894ad0afec63fc481a19fa97733bbeada",
+          "answer_sha256": "0e76e44ea9a021d436945b26aef1b4f406b97b9c564e6ec49ab330ed28d6e0d5",
+          "successful_tools": [
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [
+            "add_internal_note",
+            "create_handoff_request"
+          ],
+          "citation_count": 0
+        },
+        {
+          "case": "fallback_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "ad8167259f2e633a02cb964118b2a6b650932a03a1e151a9bea7cf37468d0b94",
+          "answer_sha256": "0e76e44ea9a021d436945b26aef1b4f406b97b9c564e6ec49ab330ed28d6e0d5",
+          "successful_tools": [
+            "add_internal_note",
+            "create_handoff_request",
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "fallback_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "c674abf80f63e30797ef0ea290e2bba5ad50437ed2ec6c35f1e21f8ac53b012b",
+          "answer_sha256": "daef6119ea0ea5b75c67bb4267279b519d91754418e3b372f1e485669808e7b6",
+          "successful_tools": [
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [
+            "add_internal_note",
+            "create_handoff_request"
+          ],
+          "citation_count": 0
+        },
+        {
+          "case": "fallback_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "b7880a57314b63459fefac65d19a3dcbe60d79a52d604c2d5ca23cc373b5333f",
+          "answer_sha256": "daef6119ea0ea5b75c67bb4267279b519d91754418e3b372f1e485669808e7b6",
+          "successful_tools": [
+            "add_internal_note",
+            "create_handoff_request",
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "1d4a13a5996156f70450f9763032fb71552ea0adc0b4f8d42795774225034977",
+          "answer_sha256": "7cf327221062d16ee18e442ef428914f345a72da96c4aa415ae04aee75867af4",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "595f4bc2f3f55340a61d72dd1e3872e98b2361bcb53194c14438328a12a11301",
+          "answer_sha256": "e3908f5641a15c5910a8424eddc24588022a5c5b0e52d28802b3a8b1cf4d47ef",
+          "successful_tools": [
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "36bf56830be4a22c94c546aae26115359dd948b05ec49f492dfc7c17e5d31173",
+          "answer_sha256": "3a50fa6db647db8f219d659163c64911c7e96e64c37d82a1a8c163967c454d7e",
+          "successful_tools": [
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "fc659733b7ffe99a983b8e82675f8c1b9e801e1c1dd2ddd1dbe11cb19a4be0bc",
+          "answer_sha256": "9353d5d54507102f5d63620721e61fa0e52840e7b64f560935bc91e1d15535b5",
+          "successful_tools": [
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        }
+      ],
+      "coverage_counts": {
+        "pass": 41,
+        "manual_fact_adjudicated": 3
+      },
+      "cleanup": {
+        "active_owned_agents": 0,
+        "active_owned_files": 0,
+        "owned_message_rows": 0,
+        "completed": true,
+        "message_count": 70,
+        "collaboration_count": 6,
+        "original_memory_restored": true,
+        "new_genuine_inbound": false
+      },
+      "original_configurations_preserved": true,
+      "manifest_sha256": "c04365966c4e2a83dbcd0c663c5599c88526660ab007f59133fdbb4047a33b4e",
+      "datasets_observed": [
+        "agent-automation-focused-supplement-v3",
+        "agent-automation-full-chain-v2",
+        "historical-v1"
+      ],
+      "raw_v2_results": {
+        "fail": 11,
+        "pass": 30,
+        "blocked": 1
+      }
+    },
+    "xbm": {
+      "logical_scene_coverage": [
+        {
+          "case": "presales_product_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "25600bf478fa45a529707c56305829da7e6a9168cb15f1e39e761ed6a2d7da00",
+          "answer_sha256": "bdfdef65e6a6deb9fb4738bc467ca09a882b42df291aeead871ca7c790352291",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_product_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "18ef8f8b27f892f8cc7bdd3221821c3155387afb3fa721ca40a4511d5302ecce",
+          "answer_sha256": "2426c94fecace1849bc299d1c98cac505e9055a4efc285ffbeee4fa011ed5858",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_product_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "f4310add80f152163b4e81a0ef04120d53993d59baa67afcc19b08191307ad40",
+          "answer_sha256": "bb060c492bb5ad29f3e9ea9d3f274febda26bb0abf0b4eb939cd3653fa089dc7",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_product_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "6394cdd4f40dc6721c915e8c4122f6c5dea6e6b3bcdfae1643fbf92dcd45674c",
+          "answer_sha256": "fde06e7ebd8cd1edf73e208ea0209a243d90275c832e8b14a53e0c1d3ad2a6fd",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "739d29467fb1c35358d10a2e9575e78d3ec359560b8eb77c2fa2ce738ba2a92e",
+          "answer_sha256": "f7c926b7598500a24d322cf331f13d8a1f028cd1d29685eea6869c740f9cb7f0",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "4b774d616f895ed96e63b582b44b054245bb0eaf2f35f1d4689f1a4710cce586",
+          "answer_sha256": "6b8a8973af8dbbdc671f72c1f3f26565c7db7e6afea537db3a3465b3d5e1ac04",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "bd37dacf3a37d92f3cd469e0f98b300c09efb24c26b3725f20e2af1874728df3",
+          "answer_sha256": "0a1791b025c5809d3821d7dddedfda3c1f22cc5e5f086d40864e1d300c96b8f3",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_coupon_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "8dd7b81166ad97eaa427e08a1dd9405183bde80e1afca3af4648846764dee972",
+          "answer_sha256": "85930e6a3a7391b6a0a110aa2a9e72b4de5b0f3445b9e262328fcd0d162f2664",
+          "successful_tools": [
+            "query_available_coupons"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "presales_knowledge_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "3a2a5be924c96913c04679ed7f3ab81d4c41139641891ed9f63bc8059dc886bd",
+          "answer_sha256": "48ea53055c9559da00bf93ac89929ca75fb4e6e812eb69950114cd245b183285",
+          "successful_tools": [
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "presales_knowledge_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "cc9e3133a935d879e7209de3628bce168c148afa1f8509caa0983bbe801c9ce7",
+          "answer_sha256": "cfdd3dfccd12296de23f58ee483d10cdec9f2156c029e33670d8fdc42b5a6b85",
+          "successful_tools": [
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "presales_knowledge_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "0a0ffd6bf98d7815f29662eef8de3cad3062882e3768f182ff7302f7cfe9b167",
+          "answer_sha256": "84a7e7903eb01d3928449649d6138ceb5365ebdadb9d83d3f74cfd76cc1e942d",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "presales_knowledge_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "94a5c4a1e1f89fe617db9a14cd55639a90220e705abaf426473c7dac04c58a85",
+          "answer_sha256": "0837d85f01fd080bd761bcaba622c1944441888323bb8425b8720527d9c46b2f",
+          "successful_tools": [
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_detail_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "ca7df0ef5043f00c32d8ac24f12c517b36d017f5193f8b769b589cb0d5d840a8",
+          "answer_sha256": "457a4d6604a177268b788f7d9ec393d3815e08a6743c8694e5726ee3bfc38a92",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_detail_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "8ccafc9cb9b9c4bd4fe909ad8c1bf938e2b6d777e212dbe344f8d58de6a70945",
+          "answer_sha256": "f2f948245631ad27976c61c1d56ebeef628676482236c80468dfc6d8df5252fb",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_detail_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "8c3355860fa837c42b5c48c81f3c0d584e80ec5e849cf1b5c5fbb4fbddaa6ec4",
+          "answer_sha256": "a44a76673103a22410f7cd0d5da29bb71f15b6ff3fa026378ed94937d49c182c",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_detail_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "4af43df4e566a8b5ff7228b8ef1f6e3c49685d0e82bfd222bc56ab5bfc8620ed",
+          "answer_sha256": "1cf01333c9fdea85f7746c14005792e0deece24906eb83b8ec7ed52fff4a0d4b",
+          "successful_tools": [
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "434f51ed9b998f0bc21c82734941098f2aeb636bdbf9bcd29f95cd63360b4892",
+          "answer_sha256": "cd621c94fbaffb0a6ae62b535e78568fa188d4e5b5629c2ab22ad0c0a412ed1e",
+          "successful_tools": [
+            "query_logistics",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "85799bcccb4aa5bba70a8085c7fa9b4cd9bcb2326667cefe0d2a4224f4926699",
+          "answer_sha256": "2aa49a9067bf0f90e3c2e0acccc3e282d52c0219f8270a268b47d2fa5af43960",
+          "successful_tools": [
+            "query_logistics",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "8c26d9d744193b1c3b03381f1e6885bae04fdfde841c4a1cb8b3b5d7b0cd666f",
+          "answer_sha256": "4703b0b1f103d8c138b9d75391056998363782886c092307552d15f257f0ff4a",
+          "successful_tools": [
+            "query_logistics",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_tracking_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "30502881225acb96f02ea6298bbb9d63c0931bc12165e6af671b7f77d7a965a0",
+          "answer_sha256": "724363848f0ba97be40c0c36ab97574cbc8215ccfae6fc44e40916ef3f6c6a2a",
+          "successful_tools": [
+            "query_logistics",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_knowledge_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "51222885b3a02f7227e1ea0173c635831458526974bcbb1726d9fe66af55c125",
+          "answer_sha256": "8140c5b8bd9f701b35b854c5159a927ba75729d9dd673732e07ac6c611521fb8",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_knowledge_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "01280355c1b6792ad9c42017466a344486876bafbd74b32721f711b4931acecf",
+          "answer_sha256": "c8513a156b135f594336e20fb85c3a349b071930d12669019e81ed88f180fece",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_knowledge_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "b4fdb6cddb60375ad9009181088335451de82627105cccb1e665ecd7d6a24d73",
+          "answer_sha256": "22b3e629d109571223940ad2c68d0c69cb2336b16e5a09d924ebe0bd4d4722ed",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "order_knowledge_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "d0e1330015d20d15c2bfebc179294ac379d88989100c42f4e9c52fd95a43d126",
+          "answer_sha256": "6b708c293ada6a7aa374bf4919370d463791c89ecd063d819878fd9e724476eb",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_progress_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "cc70e55786a1a7d3ccb680758572e059a268d458f32429644ee6d3b7f8df9242",
+          "answer_sha256": "baa6fba8808bb148f2e8dbe2efe6330650306bb0d04ef44dc8129c5ac8ab2e5a",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_progress_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "b4f213ec91fdba66aa20a5bc3f5d5a2df6c905d9b0216e26a184c08f84797a72",
+          "answer_sha256": "1b9345c8441d08c23022e7341b7044efa141d9f5c685edf06d51398a57e41150",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_progress_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "24fe4cf8b67d47aba15006ba57054d42c133dd2620d2427a8f6b5661c0104bc3",
+          "answer_sha256": "05b03f428225d4d14d3fec21d8b60f864a6015b16bee01013dca29b0e21c59e0",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders",
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_progress_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-buyer-confirmation-v5",
+          "run_ref_sha256": "9bb7a06ef85c86b6b6cdb187a9b05c870ed670a91f99618bb38eb9516bae992e",
+          "answer_sha256": "56c5dc3096d0ffb3d3f24f8cc7822e11db0cdafee0067b02fd398d420bd54b5b",
+          "successful_tools": [
+            "query_aftersales",
+            "query_order",
+            "search_customer_orders",
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_product_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "4b33b1c4c2e53f0ed5b050c8cb728f9d74e7e0e0bf396ad7f9e665f827cb0663",
+          "answer_sha256": "7613ddbce8fc7c7f64eca32dac0d0f571403475d9c7a5a2406d10b50087d1f1d",
+          "successful_tools": [
+            "query_product",
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_product_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "0da362e55d3d6791ad9ceb8128181943aa86703fab9b29eb06273016fb25cb94",
+          "answer_sha256": "5cd79cdad7422d5252073759632a8c1b3821d27ff82b3e1b9a9ce8a187fbc27f",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_product_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "a348ba832380844e693814a09065f41e7faf6b37b5e8bbafa281a732b476e044",
+          "answer_sha256": "7248dac18b63b11399dbfc86cfdd7229156b9ed00c1f002f864d3c9542f740b9",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_product_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "8b3d62113bbe3199d88fa5d0a910eb92a918979538d8d00944ad5986d5d499f2",
+          "answer_sha256": "f2a5071755a3c33057c2d3bda689f6b4b46e3bea05e347098e52deaddbc6cf34",
+          "successful_tools": [
+            "query_product",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "aftersales_knowledge_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "d89bf78148697a09b808326fe70b06cd88f918eca4586a66a055e9f3587b9dd5",
+          "answer_sha256": "374d25e64804303ba4cb09d055a595fb9f96281a0026b6d256f569e0a99ae6e2",
+          "successful_tools": [
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_knowledge_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "896df09a4c1f4bf1d12bce536131d04f47c449e2425b1a6e7e24601726346952",
+          "answer_sha256": "d830c82c029506fe8a3c2f6ad2a6dafa17ca316bf134614ac0d8441a051e94f4",
+          "successful_tools": [
+            "search_knowledge",
+            "search_products"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_knowledge_zh",
+          "entry": "debug",
+          "status": "manual_fact_adjudicated",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "538ffbc369d5bb7e6ca56de7de1f776a3086493cb3bc0088e1ebc0de1ee38095",
+          "answer_sha256": "da30aa4258b08a393799b555f2d3b4bb3863a5bf13de2cb44ec7412bb37eccf3",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "aftersales_knowledge_zh",
+          "entry": "suggest",
+          "status": "manual_fact_adjudicated",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "2c5d896c2b4fea5bb1a8e197c61888324ae9e00d1dc8ca74ae7ea4fef90d4285",
+          "answer_sha256": "90cc2d07d81a060d407ded45b0caceb8cd4d1aa418dfc75e4ce14d05a6b58cd3",
+          "successful_tools": [
+            "search_knowledge"
+          ],
+          "previewed_tools": [],
+          "citation_count": 1
+        },
+        {
+          "case": "fallback_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "c2bad287150e78e94da209d5e78b359d8a295dbba95412cee9d9e72cfa99093f",
+          "answer_sha256": "0e76e44ea9a021d436945b26aef1b4f406b97b9c564e6ec49ab330ed28d6e0d5",
+          "successful_tools": [
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [
+            "add_internal_note",
+            "create_handoff_request"
+          ],
+          "citation_count": 0
+        },
+        {
+          "case": "fallback_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "49b2e75555acb5bf1dbf62338f5e6c0081dfc7b24b42985c3f8d1502ed55912b",
+          "answer_sha256": "0e76e44ea9a021d436945b26aef1b4f406b97b9c564e6ec49ab330ed28d6e0d5",
+          "successful_tools": [
+            "add_internal_note",
+            "create_handoff_request",
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "fallback_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-focused-supplement-v3",
+          "run_ref_sha256": "839f04bc886c8d0c4268a6f652be6a4e6c22c024c13c4bda30edbf4933b1026a",
+          "answer_sha256": "daef6119ea0ea5b75c67bb4267279b519d91754418e3b372f1e485669808e7b6",
+          "successful_tools": [
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [
+            "add_internal_note",
+            "create_handoff_request"
+          ],
+          "citation_count": 0
+        },
+        {
+          "case": "fallback_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "ec4dc686271875c281b427401b5000a8b9e6a9e3e7e82cb04bd152c56fd88b11",
+          "answer_sha256": "daef6119ea0ea5b75c67bb4267279b519d91754418e3b372f1e485669808e7b6",
+          "successful_tools": [
+            "add_internal_note",
+            "create_handoff_request",
+            "query_conversation_messages"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_en",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "4516a2260ad837369052371c6f7ba0520b6fd9ad63418103c59c47706db15159",
+          "answer_sha256": "2e775db981821aa16250e92606b5af0e2a35bf2965ed45447d83a53531d6fdba",
+          "successful_tools": [
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_en",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "949007d2bf50c0712a5a297c04e22aee769c9aab9b1af5e6d18ef8107df352b1",
+          "answer_sha256": "485a7a61d25220913f7e2b905a0fbce03351691b1139c27c0a4758250d69f37e",
+          "successful_tools": [
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_zh",
+          "entry": "debug",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "c334ed160f279173f26df644abf87b91f014f56993971a62f5a37a911640ead8",
+          "answer_sha256": "6d8c99a8e205b4873136bcfa53c2d8a5a83eab993ea56930cae768c93049c84f",
+          "successful_tools": [
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        },
+        {
+          "case": "order_discovery_zh",
+          "entry": "suggest",
+          "status": "pass",
+          "dataset_version": "agent-automation-full-chain-v2",
+          "run_ref_sha256": "60be20f03de589ff354f9ff05689ee0c7cd3973de788708d6aceda22dc53dd02",
+          "answer_sha256": "5e1f97a5628ee697a22340060c5c9b4a596656b0ec5ef5023c504d670cc498bc",
+          "successful_tools": [
+            "search_customer_orders"
+          ],
+          "previewed_tools": [],
+          "citation_count": 0
+        }
+      ],
+      "coverage_counts": {
+        "pass": 42,
+        "manual_fact_adjudicated": 2
+      },
+      "cleanup": {
+        "active_owned_agents": 0,
+        "active_owned_files": 0,
+        "owned_message_rows": 0,
+        "completed": true,
+        "message_count": 69,
+        "collaboration_count": 6,
+        "original_memory_restored": false,
+        "new_genuine_inbound": false
+      },
+      "original_configurations_preserved": true,
+      "manifest_sha256": "b0401d0638b2bf5befbdba2bdce9c089643fff43e574921a2a9a39b827e73f01",
+      "datasets_observed": [
+        "agent-automation-buyer-confirmation-v5",
+        "agent-automation-confirmed-order-v4",
+        "agent-automation-focused-supplement-v3",
+        "agent-automation-full-chain-v2",
+        "historical-v1"
+      ],
+      "raw_v2_results": {
+        "pass": 28,
+        "fail": 6,
+        "blocked": 8
+      }
+    }
+  },
+  "external_test_send_calls": 0,
+  "browser": "UI_UNAVAILABLE",
+  "raw_historical_failures_preserved": true,
+  "original_matrix_automatically_all_green": false,
+  "customer_profile": {
+    "effective": true,
+    "logistics_poll_seconds": 3600
+  },
+  "activation_readback": {
+    "us": {
+      "agent": "auto",
+      "logistics": "external",
+      "reception": {
+        "welcome": {
+          "enabled": true,
+          "minutes": null,
+          "idle_hours": 24,
+          "content_sha256": "a2772d39a85da34ba4db9593dba9e2bba1c499f460a39025cec7d9da93d4cfae"
+        },
+        "timeout": {
+          "enabled": true,
+          "minutes": 60,
+          "idle_hours": null,
+          "content_sha256": "7242f6396ebc5042de37e68a04fef359ed3e37fc1f7bc197c7f59f869fbf657c"
+        }
+      }
+    },
+    "xbm": {
+      "agent": "auto",
+      "logistics": "external",
+      "reception": {
+        "welcome": {
+          "enabled": true,
+          "minutes": null,
+          "idle_hours": 24,
+          "content_sha256": "a2772d39a85da34ba4db9593dba9e2bba1c499f460a39025cec7d9da93d4cfae"
+        },
+        "timeout": {
+          "enabled": true,
+          "minutes": 60,
+          "idle_hours": null,
+          "content_sha256": "7242f6396ebc5042de37e68a04fef359ed3e37fc1f7bc197c7f59f869fbf657c"
+        }
+      }
+    }
+  },
+  "permanent_agents": {
+    "us": 5,
+    "xbm": 5
+  },
+  "old_reception_quiesced_before_global_enable": true,
+  "deployment": {
+    "status": "passed",
+    "environment": "staging",
+    "production_release": false,
+    "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:0028c298afc043dbd83708095369ce6eb95976e96802009530b634e5c5033728",
+    "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:2e6fb84d78d9cc9f98260a7d4a4b306bb90a6219892ebab6306f30ae94d22651",
+    "retrieval_model_image": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "database_migration": "heads_applied",
+    "customer_automation_enabled": true,
+    "runtime_mode_verified": true,
+    "health_checks": [
+      {
+        "path": "/healthz",
+        "status_code": 200
+      },
+      {
+        "path": "/v1/health",
+        "status_code": 200
+      },
+      {
+        "path": "/v1/health/ready",
+        "status_code": 200
+      }
+    ],
+    "customer_automation_overlay_sha256": "d0d7b3f68c23b0c528cc0de8a76f11bdf99122700b7b6ef24bc910cd5d237530"
+  },
+  "local_backend": {
+    "passed": 3652,
+    "skipped": 5,
+    "failed": 0,
+    "seconds": 368.63
+  },
+  "safety": {
+    "gate": "deterministic_safety_gate",
+    "sample_count": 237,
+    "safety_accuracy": 1.0,
+    "reason_code_accuracy": 1.0,
+    "unsafe_escape_count": 0,
+    "failed_case_ids": [],
+    "passed": true,
+    "live_model_evaluation": false
+  },
+  "source_ci": {
+    "run_id": 41461488340,
+    "head_sha": "20c9103cac541ed43c164a68e7ed2abe03430370",
+    "backend": "SUCCESS",
+    "frontend": "SUCCESS"
+  },
+  "simulated_logistics": {
+    "scope": "isolated_component_with_real_model_bge_rerank",
+    "status": "passed",
+    "criterion_version": "logistics-component-owned-evidence-v2",
+    "platform_facts": "simulated_verified_fixture",
+    "real_buyer_delivery_tested": false,
+    "cases": [
+      {
+        "language": "en",
+        "status": "passed",
+        "model_provider": "deepseek",
+        "model": "deepseek-v4-flash",
+        "tool_calls": [
+          {
+            "name": "query_order",
+            "status": "succeeded"
+          },
+          {
+            "name": "query_logistics",
+            "status": "succeeded"
+          },
+          {
+            "name": "search_knowledge",
+            "status": "retrieved"
+          },
+          {
+            "name": "notify_logistics_update",
+            "status": "proposed"
+          }
+        ],
+        "citation_count": 2,
+        "review": "approved",
+        "platform_facts": "simulated_verified_fixture"
+      },
+      {
+        "language": "zh",
+        "status": "passed",
+        "model_provider": "deepseek",
+        "model": "deepseek-v4-flash",
+        "tool_calls": [
+          {
+            "name": "query_order",
+            "status": "succeeded"
+          },
+          {
+            "name": "query_logistics",
+            "status": "succeeded"
+          },
+          {
+            "name": "notify_logistics_update",
+            "status": "missing_required_tools"
+          },
+          {
+            "name": "search_knowledge",
+            "status": "retrieved"
+          },
+          {
+            "name": "notify_logistics_update",
+            "status": "proposed"
+          }
+        ],
+        "citation_count": 1,
+        "review": "approved",
+        "platform_facts": "simulated_verified_fixture"
+      }
+    ]
+  },
+  "manual_fact_review": [
+    {
+      "store": "us",
+      "case": "aftersales_knowledge_zh",
+      "entry": "debug",
+      "answer_sha256": "2e83ba3569f0e3f3af1a46f0a7289474de10832e534db99842e8164a87e94275",
+      "owned_citation_count": 1,
+      "automatic_status": "fail_preserved",
+      "manual_fact_status": "SATISFIED"
+    },
+    {
+      "store": "us",
+      "case": "aftersales_knowledge_zh",
+      "entry": "suggest",
+      "answer_sha256": "c239b6583ec8d8c3ab4c96c9b84aa91bba332fea336590bfc87e68faa6724254",
+      "owned_citation_count": 1,
+      "automatic_status": "fail_preserved",
+      "manual_fact_status": "SATISFIED"
+    },
+    {
+      "store": "us",
+      "case": "aftersales_knowledge_en",
+      "entry": "suggest",
+      "answer_sha256": "e7e85d89017ae0d6a5425a2b56223009569efcfa93d858f9323b6872315223f5",
+      "owned_citation_count": 1,
+      "automatic_status": "fail_preserved",
+      "manual_fact_status": "SATISFIED"
+    },
+    {
+      "store": "xbm",
+      "case": "aftersales_knowledge_zh",
+      "entry": "suggest",
+      "answer_sha256": "90cc2d07d81a060d407ded45b0caceb8cd4d1aa418dfc75e4ce14d05a6b58cd3",
+      "owned_citation_count": 1,
+      "automatic_status": "fail_preserved",
+      "manual_fact_status": "SATISFIED"
+    },
+    {
+      "store": "xbm",
+      "case": "aftersales_knowledge_zh",
+      "entry": "debug",
+      "answer_sha256": "da30aa4258b08a393799b555f2d3b4bb3863a5bf13de2cb44ec7412bb37eccf3",
+      "owned_citation_count": 1,
+      "automatic_status": "fail_preserved",
+      "manual_fact_status": "SATISFIED"
+    }
+  ],
+  "known_limits": [
+    "Original frozen automated matrices retain failures; final functional coverage combines versioned fresh cases and five separate manual fact adjudications.",
+    "Long product/identifier-rich free text can still be conservatively rejected by input DLP; repeated invalid native parameters fail closed.",
+    "XBM buyer order selection was completed with explicit clarification, not by defaulting to latest.",
+    "Shop-wide outbound count drift during one phase was traced to 12 TikTok sync rows in OTHER conversations; test conversations and automation delivery ledger remained unchanged.",
+    "Staging browser bind timed out; authenticated real API acceptance and earlier local production UI regression are separate evidence.",
+    "Synthetic files were deleted; permanent agents have no synthetic bindings and must clarify or hand off when tools lack policy evidence."
+  ]
+}

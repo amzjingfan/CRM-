@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-11-03 Agent全链路验收与两店自动化已完成：源码PR #719已合并；手动部署subject `20c9103cac541ed43c164a68e7ed2abe03430370`、050及三健康通过。两店各5永久Agent，auto、欢迎24小时咨询段、60分钟超时及60分钟物流轮询external已正式API回读；10测试Agent/8文件软删、139临时消息/12协作清理，原草稿/发布版本及会话记忆保留。88个功能组合中83自动新执行通过、5独立人工事实裁定，原始自动矩阵非全绿；物流为实际模型/BGE的双语模拟，未向真实买家测试发送。长复杂输入仍可被DLP拒绝、模型错误参数失败关闭；现场浏览器UI_UNAVAILABLE；production继续No-Go。见[TR R02](../reports/tests/TR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02.md)和[低敏证据](../../release/evidence/staging/crm-staging-agent-automation-20261103.json)。
+
 2026-11-02 订单与物流商自动回显[TR R05](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R05.md) **PASS（两店已登录 staging 现场抽样）**：重新打开 Codex 内置浏览器标签并打开客户侧栏，TikTok US 订单卡在点详情前显示 USPS、已完成订单与已送达物流；XBM 订单卡显示 SwiftX、运送中订单及物流。两店详情与物流弹层承运商、最新轨迹一致，分别有 8/16 条节点，无错误横幅。关闭侧栏的旧可访问性节点不是可见缺陷。本次未重跑 R03 本地测试或 R04 镜像核验；零测试数据写入、买家外发、退款和 production 操作。
 
 2026-11-02 CBT 增强物流修复 [TR R06](../reports/tests/TR-MVP-G1-LOG-202604-001-20261102-R06.md) **PASS（staging 已登录页面）**：从已部署 `d856760c` 只读检查两笔不同 XBM CBT 已送达订单，物流详情分别展开 19 和 16 条节点；另一家 TikTok US 店铺的 USPS 订单显示通用物流轨迹。R05 的独立真实增强响应含空节点单号且解析/投影成功，R04 回归确认保留该节点而不借用其他单号。没有新建测试数据、买家外发、退款或 production 操作。平台错误 `11007009` 的其他订单仍需按单诊断，不能外推全量成功。

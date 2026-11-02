@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-11-03 Agent全链路验收与两店自动化已完成：源码PR #719已合并；手动部署subject `20c9103cac541ed43c164a68e7ed2abe03430370`、050及三健康通过。两店各5永久Agent，auto、欢迎24小时咨询段、60分钟超时及60分钟物流轮询external已正式API回读；10测试Agent/8文件软删、139临时消息/12协作清理，原草稿/发布版本及会话记忆保留。88个功能组合中83自动新执行通过、5独立人工事实裁定，原始自动矩阵非全绿；物流为实际模型/BGE的双语模拟，未向真实买家测试发送。长复杂输入仍可被DLP拒绝、模型错误参数失败关闭；现场浏览器UI_UNAVAILABLE；production继续No-Go。见[TR R02](../reports/tests/TR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02.md)和[低敏证据](../../release/evidence/staging/crm-staging-agent-automation-20261103.json)。
+
 2026-11-02 订单与物流商回显修复已在重新打开的 Codex 内置浏览器中完成两店已登录只读验收：[TR R05](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R05.md) 记录 TikTok US 的 USPS 及 XBM 的 SwiftX 均在打开详情前出现在可见订单卡；详情和弹层一致。历史部署/健康证据见 R04，本次未重新部署或核验镜像摘要。订单任务现场验收通过；G8 production 继续 No-Go。
 
 2026-11-02 后续承运商自动回显修复已由 PR #717 合入，当前 staging 前端源码 `a38f9751` 包含该合并；本任务未再次部署旧候选。健康路径和容器正常，已登录订单 UI 因内置浏览器绑定超时仍为 `UI_UNAVAILABLE`，AC-05 未通过，任务保持 VERIFYING，G8 production 继续 No-Go。见[TR R04](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R04.md)与[观察证据](../../release/evidence/staging/crm-staging-carrier-autoload-observation-20261102.json)。

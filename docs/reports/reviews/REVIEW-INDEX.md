@@ -1,9 +1,10 @@
 # 审查记录索引
 
-View: `CURRENT`
+View: `CANDIDATE_VIEW`
 
 | Record ID | Task ID | Revision | Status | SHA | REQ/AC or Focus | Updated | Source path |
 |---|---|---|---|---|---|---|---|
+| RR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02 | MVP-AGENT-AUTOMATION-FULL-001 | R02 | APPROVE | `20c9103cac541ed43c164a68e7ed2abe03430370` | native_tool_routing, language, platform_empty_results, fallback_workflow, tenant_isolation, privacy, acceptance_integrity, deployment | 2026-11-02 16:13:25+00:00 | [`RR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02.md`](RR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02.md) |
 | RR-MVP-AGENT-AUTOMATION-FULL-001-20261102-R01 | MVP-AGENT-AUTOMATION-FULL-001 | R01 | APPROVE | `c76e046de745bef6c18b475fe203664de378df54` | tenant_isolation, authorization_proof, concurrency, knowledge_publication, privacy_review, timeout, idempotency, migration, deployment_gates | 2026-11-02 10:25:00+00:00 | [`RR-MVP-AGENT-AUTOMATION-FULL-001-20261102-R01.md`](RR-MVP-AGENT-AUTOMATION-FULL-001-20261102-R01.md) |
 | RR-MVP-G1-LOG-202604-001-20261101-R01 | MVP-G1-LOG-202604-001 | R01 | APPROVE | `a39b8b84ada4a8f8250d3a134912d20d80b17471` | platform_contract, schema_failure_closed, tenant_isolation, buyer_order_proof, rate_limit, no_external_send | 2026-11-01 23:00:00+08:00 | [`RR-MVP-G1-LOG-202604-001-20261101-R01.md`](RR-MVP-G1-LOG-202604-001-20261101-R01.md) |
 | RR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01 | MVP-AGENT-FIVE-TEMPLATES-AUTO-001 | R01 | APPROVE | `ad9a9c9c1ea76970835fd255f768c30ebf5ba7c8` | template_scope, tenant_isolation, tool_authorization, knowledge_approval, inventory_truth, fallback_copy, preview_idempotency, no_external_send, cleanup | 2026-11-01 14:07:14+00:00 | [`RR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md`](RR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md) |
