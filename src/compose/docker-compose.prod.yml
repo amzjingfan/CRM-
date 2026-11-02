@@ -26,6 +26,9 @@ x-production-runtime: &production-runtime
   AI_TRANSLATION_ENABLED: "false"
   AI_MARKETING_ENABLED: "false"
   AUTO_REPLY_ENABLED: "false"
+  REAL_TIKTOK_AUTOMATION_ENABLED: "false"
+  LOGISTICS_NOTIFICATIONS_ENABLED: "false"
+  REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED: "false"
 
 # 平台与模型凭据按进程职责独立注入，禁止通过公共锚点整包扩散。
 x-production-platform: &production-platform

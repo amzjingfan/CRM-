@@ -17,7 +17,7 @@ def knowledge_version_publishable(version: KnowledgeFileVersion | None) -> bool:
     return (
         version is not None
         and version.status == "ready"
-        and version.publication_approval == "approved_for_internal_review"
+        and version.publication_approval in {"approved_for_internal_review", "approved_for_public_reply"}
         and version.approved_by is not None
         and version.approved_at is not None
     )

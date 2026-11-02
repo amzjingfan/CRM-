@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 Scope = Literal["personal", "team"]
 PolicyKind = Literal["timeout", "welcome"]
+DeliveryMode = Literal["off", "preview", "auto"]
 ValidityMode = Literal["long_term", "date_range", "fixed_hours"]
 
 
@@ -173,6 +174,9 @@ class PolicyCreate(BaseModel):
     kind: PolicyKind
     name: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=2000)
+    content_en: str | None = Field(default=None, min_length=1, max_length=2000)
+    delivery_mode: DeliveryMode = "preview"
+    welcome_idle_hours: int = Field(default=24, ge=1, le=720)
     timeout_minutes: int | None = Field(default=None, ge=1, le=43_200)
     valid_from: datetime | None = None
     valid_to: datetime | None = None
@@ -185,6 +189,11 @@ class PolicyCreate(BaseModel):
     @classmethod
     def validate_text(cls, value: str) -> str:
         return _nonblank(value)
+
+    @field_validator("content_en")
+    @classmethod
+    def validate_english_text(cls, value: str | None) -> str | None:
+        return _nonblank(value) if value is not None else None
 
     @model_validator(mode="after")
     def validate_policy(self) -> "PolicyCreate":
@@ -208,6 +217,9 @@ class PolicyUpdate(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=200)
     content: str | None = Field(default=None, min_length=1, max_length=2000)
+    content_en: str | None = Field(default=None, min_length=1, max_length=2000)
+    delivery_mode: DeliveryMode | None = None
+    welcome_idle_hours: int | None = Field(default=None, ge=1, le=720)
     timeout_minutes: int | None = Field(default=None, ge=1, le=43_200)
     valid_from: datetime | None = None
     valid_to: datetime | None = None
@@ -224,6 +236,11 @@ class PolicyView(BaseModel):
     kind: PolicyKind
     name: str
     content: str
+    content_en: str | None = None
+    delivery_mode: DeliveryMode = "preview"
+    welcome_idle_hours: int = 24
+    revision: int = 1
+    authorized_by: uuid.UUID | None = None
     timeout_minutes: int | None
     valid_from: datetime | None
     valid_to: datetime | None
@@ -231,7 +248,8 @@ class PolicyView(BaseModel):
     enabled: bool
     sort_order: int
     store_ids: list[uuid.UUID]
-    delivery_enabled: Literal[False] = False
+    # 仅表示当前全局开关与策略模式具备资格；实际投递仍逐项核验店铺、时段、权限与会话。
+    delivery_enabled: bool = False
 
 
 class GroupPage(BaseModel):

@@ -8,13 +8,11 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agents.core.schemas import AgentAction
 from app.agents.management.auto_reply_preview import policy_from_store
 from app.agents.management.config_models import AgentConfig, AgentTask
 from app.agents.management.config_repository import find_enabled_config
 from app.agents.tools.access import current_permissions
 from app.chat.service import load_automation_context, run_agent_for_message
-from app.integrations.adapters import get_platform_adapter
 from app.shared.config.settings import Settings, get_settings
 from app.shared.database.base import User
 from app.shared.database.session import session_factory
@@ -22,8 +20,6 @@ from app.shared.exceptions.errors import AppError
 from app.shared.health import collect_readiness
 from app.shared.logging.setup import configure_logging
 from app.stores.models import Store
-from app.tools.contracts import ToolExecutionContext, ToolInvocation
-from app.tools.executor import SqlAlchemyToolExecutor
 
 logger = logging.getLogger(__name__)
 AUTOMATION_PERMISSIONS = {"workspace.view", "workspace.reply", "workspace.transfer", "orders.view"}
@@ -35,10 +31,13 @@ async def claim_task(session: AsyncSession, settings: Settings) -> AgentTask | N
     now = datetime.now(UTC)
     stale_before = now - timedelta(minutes=5)
     statement = select(AgentTask)
-    if not settings.auto_reply_enabled:
-        statement = statement.where(AgentTask.mode == "preview")
+    if not settings.auto_reply_enabled and not settings.tiktok_automation_effective_enabled:
+        statement = statement.where(or_(AgentTask.mode == "preview", AgentTask.mode == "automation"))
+    from app.agents.automation.service import task_has_predecessor
+
     task = await session.scalar(
         statement.where(
+            ~task_has_predecessor(settings),
             or_(
                 and_(
                     AgentTask.status.in_(["pending", "failed"]),
@@ -65,67 +64,17 @@ async def process_task(session: AsyncSession, task: AgentTask, settings: Setting
     if task.mode == "preview":
         await process_preview_task(session, task)
         return
-    config = await session.get(AgentConfig, task.agent_config_id)
-    if config is None or config.deleted_at is not None or config.status != "enabled":
-        task.status = "failed"
-        task.error_code = "AGENT_CONFIG_DISABLED"
-        task.processed_at = datetime.now(UTC)
-        await session.commit()
+    if task.mode == "automation":
+        from app.agents.automation.runner import process_agent_task
+
+        await process_agent_task(session, task, settings)
         return
-    conversation, trigger = await load_automation_context(session, task.conversation_id, task.trigger_message_id)
-    result = await run_agent_for_message(
-        session,
-        config,
-        conversation,
-        trigger,
-        task.trace_id,
-        AUTOMATION_PERMISSIONS,
-        allow_transfer=True,
-    )
-    refreshed_task = await session.get(AgentTask, task.id)
-    assert refreshed_task is not None
-    task = refreshed_task
-    task.agent_run_id = result.agent_run_id
-    task.result_action = result.action.value
+    # 旧全局自动任务没有逐店持久授权与复核证明，不得重放历史积压。
+    task.status = "cancelled"
+    task.error_code = "LEGACY_AUTOMATION_NOT_AUTHORIZED"
     task.processed_at = datetime.now(UTC)
-    if result.action == AgentAction.HUMAN_REVIEW:
-        task.status = "human_review"
-    elif result.action == AgentAction.TRANSFER_HUMAN:
-        task.status = "transferred" if result.transfer_performed else "human_review"
-    elif result.action == AgentAction.AUTO_REPLY:
-        adapter = get_platform_adapter(conversation.platform)
-        if not adapter.real_writes:
-            task.status = "blocked_mock"
-            task.error_code = "MOCK_AUTO_SEND_BLOCKED"
-        elif "send_platform_message" not in config.enabled_tools or not result.draft_reply:
-            task.status = "human_review"
-            task.error_code = "AUTO_SEND_NOT_APPROVED"
-        else:
-            invocation = ToolInvocation(
-                tool_name="send_platform_message",
-                idempotency_key=f"agent:{result.agent_run_id}:send",
-                arguments={"conversation_id": str(conversation.id), "content": result.draft_reply},
-                context=ToolExecutionContext(
-                    store_id=conversation.store_id,
-                    actor_type="agent",
-                    permissions=AUTOMATION_PERMISSIONS,
-                    agent_run_id=result.agent_run_id,
-                    trace_id=task.trace_id,
-                ),
-            )
-            dispatch = await SqlAlchemyToolExecutor(session).execute(invocation)
-            if dispatch.status == "succeeded" and not dispatch.mocked:
-                task.status = "succeeded"
-            elif dispatch.status == "unknown":
-                task.status = "failed"
-                task.error_code = "TOOL_RESULT_UNKNOWN"
-            else:
-                task.status = "human_review"
-                task.error_code = dispatch.error_code or "AUTO_SEND_FAILED"
-    else:
-        task.status = "failed"
-        task.error_code = "AGENT_FAILED"
     await session.commit()
+    return
 
 
 async def process_preview_task(session: AsyncSession, task: AgentTask) -> None:
@@ -211,27 +160,37 @@ async def process_preview_task(session: AsyncSession, task: AgentTask) -> None:
 
 async def process_one(settings: Settings) -> bool:
     async with session_factory() as session:
+        from app.agents.automation.runner import process_one_delivery
+
+        try:
+            if await process_one_delivery(session, settings):
+                return True
+        except Exception:
+            logger.exception("自动投递失败，已保存失败关闭状态", extra={"event": "automation_delivery_failed"})
+            return True
         task = await claim_task(session, settings)
         if task is None:
             return False
-        task_id = task.id
+        task_id, claimed_attempt, trace_id = task.id, task.attempt_count, task.trace_id
         try:
             await process_task(session, task, settings)
         except Exception as exc:
             error_code = type(exc).__name__[:100]
             await session.rollback()
-            failed = await session.get(AgentTask, task_id, with_for_update=True)
-            if failed is not None:
-                failed.status = "failed"
-                failed.error_code = error_code
-                if failed.attempt_count < settings.auto_reply_max_attempts:
-                    failed.next_attempt_at = datetime.now(UTC) + timedelta(seconds=30)
-                else:
-                    failed.processed_at = datetime.now(UTC)
-                await session.commit()
+            failed = await session.get(AgentTask, task_id, with_for_update=True, populate_existing=True)
+            # 过期Worker的异常不能覆盖新持有者，也不能释放仍在处理的会话后继任务。
+            if failed is None or failed.attempt_count != claimed_attempt or failed.status != "processing":
+                return True
+            failed.status = "failed"
+            failed.error_code = error_code
+            if failed.attempt_count < settings.auto_reply_max_attempts:
+                failed.next_attempt_at = datetime.now(UTC) + timedelta(seconds=30)
+            else:
+                failed.processed_at = datetime.now(UTC)
+            await session.commit()
             logger.exception(
                 "Agent 自动任务失败",
-                extra={"trace_id": task.trace_id, "event": "agent_task_failed", "error_code": error_code},
+                extra={"trace_id": trace_id, "event": "agent_task_failed", "error_code": error_code},
             )
         return True
 
@@ -257,9 +216,9 @@ async def run_worker() -> None:
         int(enabled_count or 0),
         extra={"trace_id": worker_trace_id, "event": "agent_worker_ready"},
     )
-    if not settings.auto_reply_enabled:
+    if not settings.tiktok_automation_effective_enabled:
         logger.info(
-            "平台自动回复开关关闭，Worker 仅认领店铺预演任务",
+            "真实自动投递双开关未同时开启，Worker 仅生成预演并取消无有效授权的自动任务",
             extra={"trace_id": worker_trace_id, "event": "agent_worker_disabled"},
         )
     while True:

@@ -454,6 +454,7 @@ async def test_sql_repository_persists_baseline_claim_and_unknown_across_service
     from sqlalchemy.orm import Session
 
     from app.agents.tools.logistics_updates.models import LogisticsNotification, LogisticsObservationRow
+    from app.agents.tools.logistics_updates.proof import NotificationAuthorization, text_sha256
     from app.agents.tools.logistics_updates.repository import SqlAlchemyLogisticsRepository
 
     class AsyncFacade:
@@ -486,7 +487,20 @@ async def test_sql_repository_persists_baseline_claim_and_unknown_across_service
         with Session(engine) as session:
             yield AsyncFacade(session)
 
-    repo = SqlAlchemyLogisticsRepository(sessions)
+    def proof(context, text):
+        return NotificationAuthorization(
+            event_key=context.idempotency_key,
+            text_sha256=text_sha256(text),
+            policy_revision=1,
+            authorized_by=uuid.uuid4(),
+            agent_id=uuid.uuid4(),
+            agent_version=1,
+            prompt_hash="0" * 64,
+            file_versions=(),
+            required_permissions=frozenset({"workspace.reply", "orders.view"}),
+        )
+
+    repo = SqlAlchemyLogisticsRepository(sessions, authorization=proof)
     delivery = LocalDelivery(status="unknown")
     service, _, _ = _service(mode="external", delivery=delivery)
     service.repository = repo
@@ -494,7 +508,7 @@ async def test_sql_repository_persists_baseline_claim_and_unknown_across_service
     event = await service.observe(_observation(1))
     assert (await service.notify(event.context, "Latest update")).status == "unknown"
     restarted, _, _ = _service(mode="external", delivery=delivery)
-    restarted.repository = SqlAlchemyLogisticsRepository(sessions)
+    restarted.repository = SqlAlchemyLogisticsRepository(sessions, authorization=proof)
     assert (await restarted.observe(_observation(0))).status == "ignored"
     assert (await restarted.notify(event.context, "Repeat")).status == "unknown"
     assert len(delivery.sent) == 1

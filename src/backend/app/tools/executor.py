@@ -186,7 +186,7 @@ class SqlAlchemyToolExecutor:
             await self._finish_after_error(call.id, started_at, status, error_code, invocation)
             return ToolResult(tool_call_id=call.id, status=status, error_code=error_code)
         except ToolDispatchError as error:
-            await self._finish_after_error(call.id, started_at, "failed", error.error_code)
+            await self._finish_after_error(call.id, started_at, "failed", error.error_code, invocation)
             return ToolResult(tool_call_id=call.id, status="failed", error_code=error.error_code)
         except Exception as error:
             status = "unknown" if invocation.tool_name == "send_platform_message" else "failed"
@@ -537,6 +537,15 @@ class SqlAlchemyToolExecutor:
         )
         if channel is None:
             raise ToolDispatchError("TOOL_CHANNEL_NOT_AVAILABLE")
+        automation = None
+        if invocation.context.automation_delivery_id is not None:
+            from app.agents.automation.authorization import authorize_persisted_send as authorize_automation
+
+            automation = await authorize_automation(
+                self.session, get_settings(), invocation, arguments, verify_remote=False
+            )
+            if automation is None:
+                raise ToolDispatchError("TOOL_AUTOMATION_NOT_AUTHORIZED")
         notification_authorized = False
         if invocation.context.logistics_notification_key is not None:
             from app.agents.tools.logistics_updates.authorization import authorize_persisted_send
@@ -557,10 +566,14 @@ class SqlAlchemyToolExecutor:
                 raise ToolDispatchError("TOOL_PLATFORM_DISABLED")
             # 普通消息真实写开关只授权“当前人工用户已二次确认”的入口。
             # Agent/Job 即使伪造 human_confirmed，也必须在创建消息和调用平台前失败关闭。
-            if not notification_authorized and (
-                invocation.context.actor_type != "user"
-                or invocation.context.actor_id is None
-                or not invocation.context.human_confirmed
+            if (
+                automation is None
+                and not notification_authorized
+                and (
+                    invocation.context.actor_type != "user"
+                    or invocation.context.actor_id is None
+                    or not invocation.context.human_confirmed
+                )
             ):
                 raise ToolDispatchError("TOOL_HUMAN_CONFIRMATION_REQUIRED")
             # 同店铺发送在落下 processing 消息前串行化，避免两个并发请求
@@ -591,11 +604,15 @@ class SqlAlchemyToolExecutor:
                 raise ToolDispatchError("TOOL_RECONCILIATION_REQUIRED")
         if arguments.message_type in {"logistics_card", "order_card"} and (
             conversation.platform != "tiktok"
-            or invocation.context.actor_type != "user"
-            or not invocation.context.human_confirmed
+            or (
+                automation is None
+                and (invocation.context.actor_type != "user" or not invocation.context.human_confirmed)
+            )
             or not arguments.card_order_id
         ):
             raise ToolDispatchError("TOOL_HUMAN_CONFIRMATION_REQUIRED")
+        if automation is not None and not adapter.real_writes:
+            raise ToolDispatchError("TOOL_AUTOMATION_MOCK_BLOCKED")
         media_claim = None
         if arguments.message_type in {"image", "video"}:
             if (
@@ -652,6 +669,7 @@ class SqlAlchemyToolExecutor:
             agent_run_id=invocation.context.agent_run_id,
             raw_payload={
                 "delivery_mode": "unknown",
+                **({"automation_source_kind": automation.source_kind} if automation else {}),
                 **({"logistics_card": logistics_payload} if logistics_payload else {}),
                 **({"card": order_card_payload} if order_card_payload else {}),
                 **({"media": media_payload} if media_payload else {}),
@@ -659,6 +677,18 @@ class SqlAlchemyToolExecutor:
         )
         self.session.add(message)
         await self.session.commit()
+        if automation is not None or notification_authorized:
+            # processing 已持久化；重新取得会话/策略锁并复核当前授权，覆盖提交后到网络前的竞态。
+            await self.session.refresh(conversation, with_for_update=True)
+            await self.session.scalar(select(Store.id).where(Store.id == conversation.store_id).with_for_update())
+            if automation is not None:
+                automation = await authorize_automation(self.session, get_settings(), invocation, arguments)
+                if automation is None:
+                    raise ToolDispatchError("TOOL_AUTOMATION_NOT_AUTHORIZED")
+            if notification_authorized and not await authorize_persisted_send(
+                self.session, get_settings(), invocation, arguments
+            ):
+                raise ToolDispatchError("TOOL_LOGISTICS_NOTIFICATION_NOT_AUTHORIZED")
         result = await adapter.send_message(
             channel,
             SendMessageCommand(
@@ -673,6 +703,12 @@ class SqlAlchemyToolExecutor:
                 idempotency_key=invocation.idempotency_key,
                 human_confirmed=invocation.context.human_confirmed,
                 logistics_notification_authorized=notification_authorized,
+                automation_authorized=automation is not None,
+                sender_role="ROBOT"
+                if notification_authorized or (automation is not None and automation.source_kind == "agent")
+                else "SYSTEM"
+                if automation is not None
+                else "CUSTOMER_SERVICE",
             ),
         )
         if result.external_message_id is not None:
@@ -695,10 +731,17 @@ class SqlAlchemyToolExecutor:
             conversation.last_human_replied_at = message.sent_at
         message.raw_payload = {
             "delivery_mode": "mock" if result.mock else "real",
+            **({"automation_source_kind": automation.source_kind} if automation else {}),
             **({"logistics_card": logistics_payload} if logistics_payload else {}),
             **({"card": order_card_payload} if order_card_payload else {}),
             **({"media": media_payload} if media_payload else {}),
         }
+        if result.status == "sent":
+            from app.reception.automation import on_reception_outbound
+
+            await on_reception_outbound(
+                self.session, conversation, message, source_kind=automation.source_kind if automation else None
+            )
         conversation.last_message_id = message.id
         conversation.last_message_at = datetime.now(UTC)
         audit_action = {

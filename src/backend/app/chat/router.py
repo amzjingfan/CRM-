@@ -14,6 +14,7 @@ import anyio
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
+from app.agents.automation.http import router as automation_router
 from app.agents.core.factory import SharedAgentRuntime
 from app.agents.orchestration.service import RunProgress
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
@@ -37,6 +38,7 @@ from app.shared.exceptions.errors import AppError, ErrorCode
 from app.shared.schemas.responses import ApiResponse
 
 router = APIRouter(tags=["AI 建议与 SSE"])
+router.include_router(automation_router)
 logger = logging.getLogger(__name__)
 SUGGEST_DESCRIPTION = "权限：workspace.view；按会话的 store_id 服务端隔离。仅读取可信上下文，不执行写工具或自动发送。"
 SSE_DESCRIPTION = (

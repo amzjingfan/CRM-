@@ -10,20 +10,82 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.core.factory import SharedAgentRuntime
 from app.agents.management.config_service import get_config, require_knowledge_view_for_binding
 from app.agents.management.repository import get_published_agent, list_enabled_agents
-from app.agents.management.schemas import AgentDebugRequest, AgentDebugView
+from app.agents.management.schemas import AgentDebugRequest, AgentDebugView, AgentLogisticsPreviewRequest
 from app.agents.memory.service import MemoryFact, load_memory
 from app.agents.orchestration.service import RunProgress
 from app.agents.providers.factory import validate_tool_model
 from app.agents.runtime.execution import execute_model_run, persist_dynamic_result
+from app.agents.runtime.fallback_history import fallback_due_from_history
 from app.agents.runtime.models import AgentRun
 from app.agents.runtime.snapshot import freeze_debug_context
+from app.agents.tools.logistics_updates.integration import (
+    ManualLogisticsPreview,
+    ManualLogisticsPreviewRequest,
+    manual_preview,
+)
+from app.agents.tools.logistics_updates.models import LogisticsNotificationPolicy
+from app.agents.tools.logistics_updates.policy import require_policy_access
 from app.audit.models import AuditLog
 from app.chat.service import user_permissions
 from app.conversations.models import Conversation
+from app.orders.models import Order
 from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.exceptions.errors import AppError, ErrorCode
 from app.workspace.sidebar import SidebarOrder
+
+
+async def run_logistics_agent_preview(
+    session: AsyncSession,
+    user: User,
+    config_id: uuid.UUID,
+    payload: AgentLogisticsPreviewRequest,
+) -> ManualLogisticsPreview:
+    """复用事件专用预演，并在服务端拒绝把选中 Agent 偷换成另一策略绑定。"""
+    settings = get_settings()
+    if not settings.agent_debug_enabled or not settings.agent_v2_debug_enabled:
+        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "Agent 真实调试尚未启用", 503)
+    config = await get_config(session, user, config_id, permission_code="agent.manage")
+    permissions = await require_policy_access(session, user, config.store_id)
+    if "orders.view" not in permissions:
+        raise AppError(ErrorCode.PERMISSION_DENIED, "物流事件预演需要当前店铺订单权限", 403)
+    published = await get_published_agent(session, store_id=config.store_id, config_id=config_id)
+    if published is None or not published.ready_for_v2 or published.agent_type != "logistics_event":
+        raise AppError(ErrorCode.VALIDATION_ERROR, "请选择已发布的物流事件 Agent", 422)
+    policy = await session.get(LogisticsNotificationPolicy, config.store_id)
+    if policy is None or policy.agent_id != config_id:
+        raise AppError(ErrorCode.RESOURCE_CONFLICT, "物流通知策略须绑定当前选中的 Agent 后再预演", 409)
+    conversation = await session.scalar(
+        select(Conversation).where(
+            Conversation.id == payload.conversation_id,
+            Conversation.store_id == config.store_id,
+            Conversation.platform == "tiktok",
+            Conversation.status != "closed",
+        )
+    )
+    if conversation is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "当前店铺授权会话不存在", 404)
+    order = await session.scalar(
+        select(Order).where(
+            Order.store_id == config.store_id,
+            Order.customer_id == conversation.customer_id,
+            Order.platform == "tiktok",
+            Order.external_order_id == payload.external_order_id,
+        )
+    )
+    if order is None:
+        raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "该会话订单尚未同步至物流通知，请等待订单补查后重试", 404)
+    return await manual_preview(
+        session,
+        user,
+        ManualLogisticsPreviewRequest(
+            store_id=config.store_id,
+            conversation_id=payload.conversation_id,
+            order_id=order.id,
+            package_id=payload.package_id,
+        ),
+        settings,
+    )
 
 
 async def run_agent_debug_v2(
@@ -82,10 +144,12 @@ async def run_agent_debug_v2(
     )
     memory_summary = ""
     memory_facts: tuple[MemoryFact, ...] = ()
+    fallback_due = False
     if conversation is not None:
         memory = await load_memory(session, snapshot)
         memory_summary = memory.summary
         memory_facts = memory.facts
+        fallback_due = await fallback_due_from_history(session, snapshot, memory.source_message_ids)
     run = AgentRun(
         store_id=config.store_id,
         agent_config_id=config.id,
@@ -120,6 +184,7 @@ async def run_agent_debug_v2(
     await session.commit()
     progress = progress if progress is not None else RunProgress()
     progress.primary_agent_id = config.id
+    progress.fallback_due = fallback_due
     try:
         async with asyncio.timeout(max(0.0, deadline - time.monotonic())) as run_timeout:
             progress.run_timeout = run_timeout
@@ -139,6 +204,7 @@ async def run_agent_debug_v2(
                 memory_facts=memory_facts,
                 user=user,
                 progress=progress,
+                preview_only=True,
             )
     except (Exception, asyncio.CancelledError) as error:
         timed_out = isinstance(error, TimeoutError)

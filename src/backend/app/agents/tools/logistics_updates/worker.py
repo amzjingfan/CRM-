@@ -17,6 +17,7 @@ from app.shared.config.settings import Settings
 
 from .authorization import bound_agent, policy_authorizer, utc
 from .contracts import BoundLogisticsEvent, PreparedLogisticsNotification
+from .discovery import discover_eligible_orders
 from .integration import (
     NativeNotificationModel,
     Sessions,
@@ -103,7 +104,7 @@ async def claim_due_scan(sessions: Sessions, settings: Settings) -> LogisticsSca
             return None
         token = uuid.uuid4()
         row.claim_token, row.claimed_until = token, now + timedelta(minutes=10)
-        # 即使进程退出，下一实例也不能在八小时窗口内重复拉取此订单。
+        # 即使进程退出，下一实例也不能在补查周期内重复拉取此订单。
         row.next_poll_at = now + timedelta(seconds=settings.logistics_notification_poll_seconds)
         return LogisticsScanClaim(row.store_id, row.order_id, token)
 
@@ -127,9 +128,6 @@ async def finish_scan(sessions: Sessions, settings: Settings, claim: LogisticsSc
         row.failure_count = min(row.failure_count + 1, 4) if reason else 0
         delay = settings.logistics_notification_poll_seconds * (2**row.failure_count)
         row.next_poll_at = now + timedelta(seconds=delay)
-        policy = await session.get(LogisticsNotificationPolicy, claim.store_id)
-        if policy is not None:
-            policy.last_scan_at = now
 
 
 async def recover_local_notifications(sessions: Sessions, settings: Settings) -> bool:
@@ -221,7 +219,14 @@ async def recover_local_notifications(sessions: Sessions, settings: Settings) ->
             continue
         try:
             buyer_text = prepare_untrusted_text(buyer, source="user_message").text
-            model = NativeNotificationModel(settings, agent, buyer_text)
+            model = NativeNotificationModel(
+                settings,
+                agent,
+                buyer_text,
+                sessions=sessions,
+                actor_id=user.id,
+                delivery_mode="external" if policy.mode == "external" else "preview",
+            )
         except Exception:
             if await block(context, "recovery_configuration_unavailable"):
                 return True
@@ -255,9 +260,10 @@ async def process_logistics_notification_cycle(sessions: Sessions, settings: Set
         return False
     if await recover_local_notifications(sessions, settings):
         return True
+    discovered = await discover_eligible_orders(sessions, settings)
     claim = await claim_due_scan(sessions, settings)
     if claim is None:
-        return False
+        return discovered
     reason: str | None = "observation_unavailable"
     try:
         async with sessions() as session:
@@ -310,7 +316,14 @@ async def process_logistics_notification_cycle(sessions: Sessions, settings: Set
                     .limit(50)
                 )
             ).all()
-        model = NativeNotificationModel(settings, agent, source.buyer_text)
+        model = NativeNotificationModel(
+            settings,
+            agent,
+            source.buyer_text,
+            sessions=sessions,
+            actor_id=user.id,
+            delivery_mode="external" if policy.mode == "external" else "preview",
+        )
         service = build_notification_service(sessions, settings, policy, model)
         for row in pending_unknown:
             await service.reconcile(BoundLogisticsEvent.model_validate(row.context_json))

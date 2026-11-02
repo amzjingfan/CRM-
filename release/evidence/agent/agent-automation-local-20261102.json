@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "subject_sha": "c76e046de745bef6c18b475fe203664de378df54",
+  "scope": "local_candidate_only",
+  "backend": {
+    "passed": 3581,
+    "skipped": 5,
+    "failed": 0,
+    "executed_sha": "4179df985f2c1702e3f85829ca75a4b1eba750e4",
+    "integrated_tree_identical": true
+  },
+  "frontend": {
+    "browser_passed": 237,
+    "contracts_passed": 82,
+    "errors": 0,
+    "existing_warnings": 12,
+    "integrated_contracts_passed": 84,
+    "integrated_affected_browser_passed": 65,
+    "integrated_build": "passed"
+  },
+  "safety": {
+    "gate": "deterministic_safety_gate",
+    "sample_count": 237,
+    "safety_accuracy": 1.0,
+    "reason_code_accuracy": 1.0,
+    "unsafe_escape_count": 0,
+    "failed_case_ids": [],
+    "passed": true,
+    "live_model_evaluation": false
+  },
+  "logistics_component": {
+    "scope": "isolated_component",
+    "status": "passed",
+    "runner_sha256": "cb78ef3fe303f775c3662364af949de833a0748e681c53c5850afd0be5ef8a59",
+    "criterion_version": "logistics-component-owned-evidence-v2",
+    "criterion_sha256": "837fa8c4efaab38ecd5a434beae2a34fecb5c1b8c5b4498b2b28006a9dce27e2"
+  },
+  "cases": [
+    {
+      "language": "en",
+      "status": "passed",
+      "model_provider": "deepseek",
+      "model": "deepseek-v4-flash",
+      "tool_calls": [
+        {
+          "name": "query_order",
+          "status": "succeeded"
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded"
+        },
+        {
+          "name": "search_knowledge",
+          "status": "retrieved"
+        },
+        {
+          "name": "notify_logistics_update",
+          "status": "proposed"
+        }
+      ],
+      "citation_count": 1,
+      "review": "approved",
+      "platform_facts": "simulated_verified_fixture"
+    },
+    {
+      "language": "zh",
+      "status": "passed",
+      "model_provider": "deepseek",
+      "model": "deepseek-v4-flash",
+      "tool_calls": [
+        {
+          "name": "query_order",
+          "status": "succeeded"
+        },
+        {
+          "name": "query_logistics",
+          "status": "succeeded"
+        },
+        {
+          "name": "search_knowledge",
+          "status": "retrieved"
+        },
+        {
+          "name": "notify_logistics_update",
+          "status": "proposed"
+        }
+      ],
+      "citation_count": 2,
+      "review": "approved",
+      "platform_facts": "simulated_verified_fixture"
+    }
+  ],
+  "staging_deployed": false,
+  "customer_automation_enabled": false,
+  "external_test_sends": 0,
+  "ui_staging": "UI_UNAVAILABLE"
+}

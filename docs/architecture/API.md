@@ -1,5 +1,17 @@
 # 当前 API 契约
 
+## 客户自动化接口（2026-11-02 候选）
+
+以下路径统一带 /v1。GET /agents/automation?store_id=... 返回 mode=off|preview|auto、revision、授权人、生效水位和全局是否开放；PUT 接受 mode 与 expected_revision，需要 agent.manage、Cookie CSRF，启用时另核对 workspace.view/reply 和当前店铺真实渠道/已发布 Agent。revision 冲突返回409。auto 还要求部署主开关；旧预演 API 保留兼容，前端统一使用此入口，不同时提供互相冲突的两个开关。
+
+GET/PUT /workspace/sessions/{id}/automation 读取或设置当前会话 paused 和 expected_revision；沿用 workspace.view/reply、同店授权和 CSRF。暂停不删除历史记录，待发送任务必须重新检查。
+
+接待策略接口增加 content_en、delivery_mode=off|preview|auto、welcome_idle_hours（默认24）、revision 与 authorized_by；响应 delivery_enabled 由实际策略及全局开关计算，不再恒定 false。timeout_minutes 用于最早未答消息计时，欢迎语不重置它。日期、时区、策略/分组开关与原有管理权限继续有效；配置保存不代表已经送达。
+
+POST /knowledge/files/{id}/versions/{version}/approve 增加 purpose=internal_review|public_reply，默认内部建议。对外审批仅接受 generic 的政策/使用说明资料；已有内部审批不得以相同幂等键升级，需显式撤销后重新审批。实际可用性仍核对当前文件与版本。
+
+POST /agents/{id}/logistics-event-preview 接受 conversation_id、external_order_id 和可选 package_id，要求所选已发布 Agent 与该店物流通知策略完全一致，真实订单已由正常同步创建本地上下文；复用现有官方事件只读预演，不接受客户端节点正文或伪事件。普通 debug 及该入口都不发送消息；debug 的接管/备注工具只返回 previewed 意图、record_saved=false，正式建议仍按权限保存内部记录。第三轮调试只读取同店同买家真实前两次已完成无解正式运行，不能传入计数或理由伪造状态。
+
 ## 店铺多 Agent 自动建议预演（2026-10-31 本地候选）
 
 `GET/PUT /v1/agents/auto-reply-preview?store_id=` 读取或修改当前店铺预演策略。读取需 `agent.view`；修改需 `agent.manage`、CSRF，开启时还需当前操作者拥有 `workspace.view` 且店铺已有已发布、已启用 Agent。PUT body 为 `{enabled,expected_revision}`，冲突返回 409。返回 `{store_id,enabled,revision,mode:"review_preview",send_performed:false}`。默认关闭；开启者身份用于后台按实时权限执行，撤权、停用或关闭后任务取消。
@@ -132,7 +144,7 @@ Agent 发布接口在既有授权、revision和模型配置校验后执行一次
 ### 营销
 
 - `/marketing` 提供活动/任务的列表、新建、详情、受控更新、启停、预览/执行和报表能力。
-- `GET/POST /marketing/reception/groups|replies|policies` 及 `PATCH/DELETE /marketing/reception/{groups|replies|policies}/{id}` 管理基础接待配置，统一使用 `/v1` 前缀。列表返回 `items,total,page,page_size`；分组与回复必须按 `store_id`、`scope=personal|team` 查询。分组返回 `enabled` 和 `reply_count`，`PATCH /groups/{id}` 可切换 `enabled`；回复还可按 `group_id`、`q` 模糊查找或 `shortcut` 精确查找。回复列表默认排除停用分组，管理页可传 `include_disabled=true` 查看和编辑，仍按原权限与店铺隔离；工作台及快捷键查询不传该参数。策略按必填 `kind=timeout|welcome` 查询，可选 `store_id` 限定单店；省略时只返回当前账号对所有关联店铺均有 `marketing.view` 权限的策略，按策略去重后分页。新建和更新策略还需对全部关联店铺同时具备 `marketing.manage` 与 `marketing.view`。回复只接受文本 `messages`、快捷键、最多三个标签及站点展示码；策略包含文本、适用店铺、有效期、配置开关和顺序；`schedule` 可为空以兼容旧版 `valid_from/valid_to` UTC 时间，新增配置用 `schedule.mode=long_term|date_range|fixed_hours`，后两种要求本地起止日期，固定时段还要求同一天内的每日起止时间，均按各店铺时区解释；响应固定 `delivery_enabled=false`。写入要求 Cookie CSRF、幂等键及审计；个人回复绑定当前用户，团队写入与策略写入要求 `marketing.manage`，所有资源先核对服务端店铺范围。该组接口没有执行或平台发送操作。
+- `GET/POST /marketing/reception/groups|replies|policies` 及 `PATCH/DELETE /marketing/reception/{groups|replies|policies}/{id}` 管理基础接待配置，统一使用 `/v1` 前缀。列表返回 `items,total,page,page_size`；分组与回复必须按 `store_id`、`scope=personal|team` 查询。分组返回 `enabled` 和 `reply_count`，`PATCH /groups/{id}` 可切换 `enabled`；回复还可按 `group_id`、`q` 模糊查找或 `shortcut` 精确查找。回复列表默认排除停用分组，管理页可传 `include_disabled=true` 查看和编辑，仍按原权限与店铺隔离；工作台及快捷键查询不传该参数。策略按必填 `kind=timeout|welcome` 查询，可选 `store_id` 限定单店；省略时只返回当前账号对所有关联店铺均有 `marketing.view` 权限的策略，按策略去重后分页。新建和更新策略还需对全部关联店铺同时具备 `marketing.manage` 与 `marketing.view`。回复只接受文本 `messages`、快捷键、最多三个标签及站点展示码；策略包含文本、适用店铺、有效期、配置开关和顺序；`schedule` 可为空以兼容旧版 `valid_from/valid_to` UTC 时间，新增配置用 `schedule.mode=long_term|date_range|fixed_hours`，后两种要求本地起止日期，固定时段还要求同一天内的每日起止时间，均按各店铺时区解释；响应的投递资格与2026-11-02节新增模式/主开关一致，不表示已发送。写入要求 Cookie CSRF、幂等键及审计；个人回复绑定当前用户，团队写入与策略写入要求 `marketing.manage`，所有资源先核对服务端店铺范围。该组管理接口本身不执行平台发送；投递由可信入站/计时Worker与独立授权链路完成。
 - 当前能力用于内部管理和验证；自动营销与真实高风险写入未放行。
 
 ### Agent 运营
@@ -177,7 +189,7 @@ Agent 发布接口在既有授权、revision和模型配置校验后执行一次
 
 ## 规划但未放行
 
-Shopee/Amazon 真实接口、公开自动回复、无需人工确认的发送、自动营销、高风险工具和生产翻译仍是规划能力。早期 `/marketing/flows`、无确认发送或宽泛 PUT 更新草案不构成当前公开契约；以运行代码生成的 OpenAPI 和本文件为准。
+Shopee/Amazon真实接口、production自动回复、自动营销、高风险工具和生产翻译仍是规划能力；两店staging客户自动化为本轮单独批准的范围。早期 `/marketing/flows`、无确认发送或宽泛 PUT 更新草案不构成当前公开契约；以运行代码生成的 OpenAPI 和本文件为准。
 
 ## Agent 业务工具目录与内部协作（本地候选，未部署）
 

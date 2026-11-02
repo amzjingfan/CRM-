@@ -102,6 +102,8 @@ class SendMessageCommand(BaseModel):
     human_confirmed: bool = False
     # 只由 ToolExecutor 在持久通知与当前授权全部匹配后设置，不能来自 HTTP/模型参数。
     logistics_notification_authorized: bool = False
+    automation_authorized: bool = False
+    sender_role: Literal["CUSTOMER_SERVICE", "ROBOT", "SYSTEM"] = "CUSTOMER_SERVICE"
 
 
 class SendMessageResult(BaseModel):

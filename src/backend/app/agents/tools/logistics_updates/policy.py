@@ -70,7 +70,9 @@ def policy_view(
         enabled_at=row.enabled_at if row else None,
         revision=row.revision if row else 0,
         global_enabled=settings.logistics_notifications_enabled,
-        real_delivery_enabled=settings.real_tiktok_logistics_notifications_enabled,
+        real_delivery_enabled=(
+            settings.real_tiktok_logistics_notifications_enabled and settings.tiktok_automation_effective_enabled
+        ),
         last_scan_at=row.last_scan_at if row else None,
     )
 
@@ -90,7 +92,9 @@ async def update_policy(
     permissions = await require_policy_access(session, user, store_id)
     if payload.enabled and not NOTIFICATION_PERMISSIONS.issubset(permissions):
         raise AppError(ErrorCode.PERMISSION_DENIED, "启用物流通知还需当前店铺订单权限", 403)
-    if payload.mode == "external" and not settings.real_tiktok_logistics_notifications_enabled:
+    if payload.mode == "external" and not (
+        settings.real_tiktok_logistics_notifications_enabled and settings.tiktok_automation_effective_enabled
+    ):
         raise AppError(ErrorCode.PERMISSION_DENIED, "真实物流通知未获部署授权", 403)
     if payload.agent_id is not None and await bound_agent(session, store_id, payload.agent_id) is None:
         raise AppError(ErrorCode.VALIDATION_ERROR, "须选择同店已启用且已发布物流通知工具的 Agent", 422)

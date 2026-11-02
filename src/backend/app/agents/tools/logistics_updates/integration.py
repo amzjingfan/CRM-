@@ -4,7 +4,7 @@ import asyncio
 import json
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -21,6 +21,7 @@ from app.agents.providers.factory import tool_provider
 from app.agents.runtime.output import plain_text_answer
 from app.agents.safety.grounding import review_final_answer
 from app.agents.safety.input import prepare_untrusted_text
+from app.agents.tools.loop import ToolEvent, ToolLoopTimeout, run_tool_loop
 from app.audit.models import AuditLog
 from app.conversations.models import Conversation, Message
 from app.orders.models import Order
@@ -53,8 +54,10 @@ from .contracts import (
     ReviewDecision,
     TrackingEvent,
 )
+from .event_agent import NOTIFICATION_TOOLS, EventToolset, notification_toolsets
 from .models import LogisticsNotificationPolicy
 from .policy import require_policy_access
+from .proof import FileProof, NotificationAuthorization, text_sha256
 from .repository import SqlAlchemyLogisticsRepository
 from .service import LogisticsUpdateService
 
@@ -165,13 +168,43 @@ async def read_verified_observations(
 class NativeNotificationModel:
     """生成与独立复核分别使用新上下文，共用绝对 deadline 和真实用量。"""
 
-    def __init__(self, settings: Settings, agent: PublishedAgent, buyer_text: str) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        agent: PublishedAgent,
+        buyer_text: str,
+        *,
+        sessions: Sessions | None = None,
+        actor_id: uuid.UUID | None = None,
+        delivery_mode: Literal["preview", "external"] = "preview",
+        toolsets: Callable[[BoundLogisticsEvent], AbstractAsyncContextManager[EventToolset]] | None = None,
+    ) -> None:
         if not settings.llm_enabled or not agent.model_provider or not agent.model_name or not agent.prompt_hash:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "物流通知模型未启用", 503)
         self.settings, self.agent, self.buyer_text = settings, agent, buyer_text
+        self.actor_id = actor_id
         self.prompt = verify_published_prompt(agent.prompt_sections, agent.prompt_hash)
         self.deadline = time.monotonic() + settings.chat_stream_timeout_seconds
         self.input_tokens = self.output_tokens = 0
+        self.toolsets = toolsets or (
+            notification_toolsets(
+                sessions,
+                settings,
+                agent,
+                actor_id,
+                self.deadline,
+                require_public_knowledge=delivery_mode == "external",
+            )
+            if sessions is not None and actor_id is not None
+            else None
+        )
+        self.toolset: EventToolset | None = None
+        self.citations: tuple[str, ...] = ()
+        self.tool_events: tuple[ToolEvent, ...] = ()
+        self.reviewed_event_key: str | None = None
+        self.reviewed_text_hash: str | None = None
+        self.generated_event_key: str | None = None
+        self.generated_text_hash: str | None = None
 
     @staticmethod
     def evidence(context: BoundLogisticsEvent) -> dict[str, object]:
@@ -188,20 +221,36 @@ class NativeNotificationModel:
         self.output_tokens += output_tokens
 
     async def generate(self, context: BoundLogisticsEvent) -> str:
+        self.generated_event_key = self.generated_text_hash = None
+        self.reviewed_event_key = self.reviewed_text_hash = None
         assert self.agent.model_provider is not None and self.agent.model_name is not None
+        if self.toolsets is None:
+            raise ValueError("notification_tool_context_unavailable")
         try:
             async with (
+                asyncio.timeout(max(0.0, self.deadline - time.monotonic())),
+                self.toolsets(context) as tools,
                 tool_provider(
                     self.settings,
                     self.agent.model_provider,
                     self.agent.model_name,
                     deadline=self.deadline,
                 ) as provider,
-                asyncio.timeout(max(0.0, self.deadline - time.monotonic())),
             ):
-                turn = await provider.complete(
+                self.toolset = tools
+                result = await run_tool_loop(
+                    provider=provider,
                     messages=(
-                        {"role": "system", "content": self.prompt.text + "\n" + NOTIFICATION_OUTPUT_POLICY},
+                        {
+                            "role": "system",
+                            "content": self.prompt.text
+                            + "\n"
+                            + NOTIFICATION_OUTPUT_POLICY
+                            + "\n必须实际调用本次事件已配置的订单和物流工具以及绑定文件检索。"
+                            "其他已配置只读工具由你按需选择，不要求每次调用。"
+                            "再调用 notify_logistics_update 提出候选。"
+                            "工具或检索失败不能用初始事件或非空正文代替。提案后结束本轮，不自行声称已经发送。",
+                        },
                         {
                             "role": "user",
                             "content": json.dumps(
@@ -214,20 +263,61 @@ class NativeNotificationModel:
                             ),
                         },
                     ),
-                    tools=(),
+                    tools=tools.tools,
+                    deadline=self.deadline,
                     max_output_tokens=self.settings.llm_max_output_tokens,
                 )
+                self.usage(result.input_tokens, result.output_tokens)
+                self.tool_events = result.events
+                await tools.audit(result.events)
+                completed = {
+                    item.name
+                    for item in result.events
+                    if item.status
+                    in {
+                        "succeeded",
+                        "retrieved",
+                        "no_hits",
+                        "no_knowledge_bound",
+                        "proposed",
+                    }
+                }
+                required = tools.required_names or frozenset(self.agent.tool_names)
+                if not required <= completed or not tools.proposals:
+                    raise ValueError("notification_required_tool_missing")
+                if result.reason_code or not await tools.validate():
+                    raise ValueError("notification_generation_invalid")
+                for item in result.observations:
+                    if item.status == "succeeded" and item.facts:
+                        tools.evidence[f"tool:{item.name}"] = item.facts
+                self.citations = tuple(tools.citations)
+                candidate = plain_text_answer(tools.proposals[0])
+                self.generated_event_key, self.generated_text_hash = context.idempotency_key, text_sha256(candidate)
+                return candidate
+        except ToolLoopTimeout as error:
+            self.usage(error.result.input_tokens, error.result.output_tokens)
+            self.tool_events = error.result.events
+            if self.toolset is not None:
+                await self.toolset.audit(error.result.events)
+            raise
         except LLMProviderError as error:
             self.usage(error.input_tokens, error.output_tokens)
             raise
-        self.usage(turn.input_tokens, turn.output_tokens)
-        if turn.calls or not turn.content:
-            raise ValueError("notification_generation_invalid")
-        return plain_text_answer(turn.content)
+
+    async def revalidate(self) -> bool:
+        return self.toolset is None or await self.toolset.validate()
 
     async def review(self, context: BoundLogisticsEvent, candidate: str) -> ReviewDecision:
+        self.reviewed_event_key = self.reviewed_text_hash = None
         assert self.agent.model_provider is not None and self.agent.model_name is not None
-        candidate = prepare_untrusted_text(candidate, source="agent_draft").text
+        if (
+            self.toolset is None
+            or self.generated_event_key != context.idempotency_key
+            or self.generated_text_hash != text_sha256(candidate)
+            or not await self.revalidate()
+        ):
+            return ReviewDecision(status="rejected", reason="notification_evidence_changed")
+        # 已生成草稿保持原文交给语义隐私复核；仅复核后的正文可获得发送 proof。
         async with tool_provider(
             self.settings,
             self.agent.model_provider,
@@ -237,7 +327,7 @@ class NativeNotificationModel:
             decision = await review_final_answer(
                 question=self.buyer_text,
                 answer=candidate,
-                evidence=self.evidence(context),
+                evidence={**self.evidence(context), **self.toolset.evidence},
                 provider=provider,
                 deadline=self.deadline,
                 max_output_tokens=self.settings.llm_max_output_tokens,
@@ -246,16 +336,46 @@ class NativeNotificationModel:
                 max_answer_characters=2000,
                 on_usage=self.usage,
             )
-        return (
-            ReviewDecision(status="approved", text=decision.answer)
-            if decision.supported and decision.answer
-            else (ReviewDecision(status="rejected", reason="notification_review_rejected"))
+        if not await self.revalidate():
+            return ReviewDecision(status="rejected", reason="notification_evidence_changed")
+        if decision.supported and decision.answer:
+            approved = ReviewDecision(status="approved", text=decision.answer)
+            self.reviewed_event_key = context.idempotency_key
+            self.reviewed_text_hash = text_sha256(approved.text or "")
+            return approved
+        return ReviewDecision(status="rejected", reason="notification_review_rejected")
+
+    def authorization_proof(
+        self, context: BoundLogisticsEvent, text: str, *, policy_revision: int, authorized_by: uuid.UUID
+    ) -> NotificationAuthorization:
+        if (
+            self.toolset is None
+            or self.actor_id != authorized_by
+            or self.reviewed_event_key != context.idempotency_key
+            or self.reviewed_text_hash != text_sha256(text)
+            or self.agent.config_version is None
+            or self.agent.prompt_hash is None
+        ):
+            raise ValueError("notification_review_proof_unavailable")
+        return NotificationAuthorization(
+            event_key=context.idempotency_key,
+            text_sha256=self.reviewed_text_hash,
+            policy_revision=policy_revision,
+            authorized_by=authorized_by,
+            agent_id=self.agent.id,
+            agent_version=self.agent.config_version,
+            prompt_hash=self.agent.prompt_hash,
+            file_versions=tuple(FileProof.model_validate(item) for item in self.toolset.file_versions),
+            required_permissions=frozenset(NOTIFICATION_PERMISSIONS | self.toolset.used_permissions),
         )
 
 
 class SqlNotificationDelivery:
-    def __init__(self, sessions: Sessions, settings: Settings) -> None:
+    def __init__(
+        self, sessions: Sessions, settings: Settings, *, validate: Callable[[], Awaitable[bool]] | None = None
+    ) -> None:
         self.sessions, self.settings = sessions, settings
+        self.validate = validate
 
     async def preview(self, notification: PreparedLogisticsNotification) -> DeliveryReceipt:
         # 正文已由 prepare 持久化；审阅 API 读取该台账，不创建任何出站消息。
@@ -265,6 +385,8 @@ class SqlNotificationDelivery:
         if not (
             self.settings.logistics_notifications_enabled and self.settings.real_tiktok_logistics_notifications_enabled
         ):
+            return DeliveryReceipt(status="failed")
+        if self.validate is None or not await self.validate():
             return DeliveryReceipt(status="failed")
         async with self.sessions() as session:
             policy = await session.get(LogisticsNotificationPolicy, notification.scope.store_id)
@@ -317,23 +439,32 @@ def build_notification_service(
     policy: LogisticsNotificationPolicy,
     model: NativeNotificationModel,
 ) -> LogisticsUpdateService:
+    policy_revision, authorized_by, policy_mode = policy.revision, policy.authorized_by, policy.mode
+
+    def authorization(context: BoundLogisticsEvent, text: str) -> NotificationAuthorization:
+        if authorized_by is None:
+            raise ValueError("notification_authorizer_unavailable")
+        return model.authorization_proof(context, text, policy_revision=policy_revision, authorized_by=authorized_by)
+
     async def authorize(context: BoundLogisticsEvent) -> AuthorizationSnapshot:
+        if not await model.revalidate():
+            return AuthorizationSnapshot(scope_available=False)
         async with sessions() as session:
             return await authorize_event(
                 session,
                 settings,
                 context,
-                expected_revision=policy.revision,
-                require_external=policy.mode == "external",
+                expected_revision=policy_revision,
+                require_external=policy_mode == "external",
             )
 
     return LogisticsUpdateService(
-        repository=SqlAlchemyLogisticsRepository(sessions),
+        repository=SqlAlchemyLogisticsRepository(sessions, authorization=authorization),
         authorize=authorize,
         generate=model.generate,
         review=model.review,
-        delivery=SqlNotificationDelivery(sessions, settings),
-        mode="external" if policy.mode == "external" else "preview",
+        delivery=SqlNotificationDelivery(sessions, settings, validate=model.revalidate),
+        mode="external" if policy_mode == "external" else "preview",
     )
 
 
@@ -351,6 +482,8 @@ class ManualLogisticsPreview(BaseModel):
     preview_text: str | None = None
     event_at: datetime | None = None
     buyer_language: str | None = None
+    citations: list[str] = Field(default_factory=list)
+    tool_calls: list[dict[str, str]] = Field(default_factory=list)
 
 
 async def manual_preview(
@@ -393,7 +526,9 @@ async def manual_preview(
         event=observation.latest,
         buyer_language=observation.buyer_language,
     )
-    model = NativeNotificationModel(settings, agent, source.buyer_text)
+    from app.shared.database.session import session_factory
+
+    model = NativeNotificationModel(settings, agent, source.buyer_text, sessions=session_factory, actor_id=user.id)
     model_failed = False
     try:
         candidate = await model.generate(context)
@@ -432,6 +567,8 @@ async def manual_preview(
                 "review_status": decision.status,
                 "input_tokens": model.input_tokens,
                 "output_tokens": model.output_tokens,
+                "citation_count": len(model.citations),
+                "tool_call_count": len(model.tool_events),
             },
             result="succeeded" if decision.status == "approved" else "failed",
         )
@@ -443,4 +580,9 @@ async def manual_preview(
         preview_text=decision.text if decision.status == "approved" else None,
         event_at=context.event.occurred_at,
         buyer_language=context.buyer_language,
+        citations=list(model.citations) if decision.status == "approved" else [],
+        tool_calls=[
+            {"name": item.name if item.name in NOTIFICATION_TOOLS else "unavailable", "status": item.status}
+            for item in model.tool_events
+        ],
     )

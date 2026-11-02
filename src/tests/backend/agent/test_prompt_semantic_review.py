@@ -119,6 +119,40 @@ async def test_review_deadline_and_request_cancellation_do_not_allow_publication
 
 
 @pytest.mark.asyncio
+async def test_expired_review_scope_cannot_approve_when_clock_reading_lags(monkeypatch):
+    from app.agents.prompts import review
+
+    deadline = time.monotonic() + 1
+    # Windows 定时器可先取消，再读到略早于 deadline 的时钟；过期作用域本身必须阻断发布。
+    monkeypatch.setattr(review, "time", SimpleNamespace(monotonic=lambda: deadline - 0.001))
+
+    async def complete(**_kwargs):
+        try:
+            await asyncio.sleep(10)
+        except asyncio.CancelledError:
+            return ToolTurn(
+                None,
+                (
+                    FunctionCall(
+                        "review", "review_agent_prompt_configuration", {"privacy_reviewed": True, "outcome": "safe"}
+                    ),
+                ),
+                {},
+                2,
+                1,
+            )
+
+    with pytest.raises(AppError) as error:
+        await review.review_prompt_configuration(
+            sections={"identity": "规则"},
+            provider=SimpleNamespace(complete=complete),
+            deadline=deadline,
+            max_output_tokens=900,
+        )
+    assert error.value.status_code == 504
+
+
+@pytest.mark.asyncio
 async def test_rejected_semantic_review_does_not_change_published_version(monkeypatch):
     from app.agents.management import service
     from app.agents.management.config_models import AgentConfig

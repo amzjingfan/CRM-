@@ -197,7 +197,8 @@ async def update_member(
     member_id: uuid.UUID,
     payload: TeamMemberUpdate,
 ) -> TeamMemberView:
-    member = await session.get(User, member_id)
+    # 与自动投递保持用户→角色的锁顺序，撤权提交后不可继续使用旧授权。
+    member = await session.get(User, member_id, with_for_update=True, populate_existing=True)
     if member is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "员工不存在", 404)
     role_change_before: list[dict[str, str | None]] | None = None
@@ -285,7 +286,7 @@ async def change_member_password(session: AsyncSession, actor: User, member_id: 
 async def disable_member(session: AsyncSession, actor: User, member_id: uuid.UUID) -> None:
     if member_id == actor.id:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "不能禁用当前登录用户", 409)
-    member = await session.get(User, member_id)
+    member = await session.get(User, member_id, with_for_update=True, populate_existing=True)
     if member is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "员工不存在", 404)
     is_admin = await session.scalar(

@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy import delete, func, insert, select
+from sqlalchemy import delete, func, insert, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 import app.shared.database.models  # noqa: F401
@@ -36,7 +36,7 @@ from app.customers.models import Customer
 from app.integrations.schemas import SendMessageResult
 from app.orders.models import Order
 from app.shared.config.settings import Settings
-from app.shared.database.base import Role, User, user_roles
+from app.shared.database.base import Permission, Role, User, role_permissions, user_roles
 from app.stores.models import ChannelAccount, Store
 from app.tools.contracts import SendPlatformMessageArguments, ToolExecutionContext, ToolInvocation
 from app.tools.executor import SqlAlchemyToolExecutor
@@ -55,6 +55,9 @@ def _settings(*, external: bool = False, enabled: bool = True) -> Settings:
             "LLM_PRIMARY_MODEL": "synthetic",
             "LOGISTICS_NOTIFICATIONS_ENABLED": enabled,
             "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED": external,
+            "REAL_TIKTOK_AUTOMATION_ENABLED": external,
+            "AUTO_REPLY_ENABLED": external,
+            "AGENT_V2_FORMAL_ENABLED": external,
             "REAL_TIKTOK_READ_ENABLED": True,
             "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": external,
             "TIKTOK_MESSAGE_WRITE_ALLOWED_CONVERSATION_ID": "710688832392260838",
@@ -208,6 +211,364 @@ def _observation(shop, offset: int, *, first: str = "baseline"):
     )
 
 
+def _synthetic_authorization(shop):
+    from app.agents.tools.logistics_updates.proof import NotificationAuthorization, text_sha256
+
+    def proof(context, text):
+        return NotificationAuthorization(
+            event_key=context.idempotency_key,
+            text_sha256=text_sha256(text),
+            policy_revision=1,
+            authorized_by=shop.user_id,
+            agent_id=shop.agent_id,
+            agent_version=1,
+            prompt_hash=compile_prompt(legacy_safe_sections()).content_sha256,
+            file_versions=(),
+            required_permissions=frozenset({"workspace.reply", "orders.view"}),
+        )
+
+    return proof
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("revocation", ["policy", "actor", "grant", "agent_version"])
+async def test_event_rechecks_current_authority_after_remote_window_wait(shop, monkeypatch, revocation):
+    from app.agents.tools.logistics_updates import BoundLogisticsEvent
+
+    settings = _settings(external=True)
+    context = BoundLogisticsEvent(scope=shop.scope, event=_observation(shop, 1).latest, buyer_language="en")
+    async with shop.sessions() as session:
+        policy = await session.get(LogisticsNotificationPolicy, shop.store_id)
+        policy.mode = "external"
+        await session.commit()
+
+    async def remote_window(*args, **kwargs):
+        async with shop.sessions() as other:
+            if revocation == "policy":
+                await other.execute(
+                    update(LogisticsNotificationPolicy)
+                    .where(LogisticsNotificationPolicy.store_id == shop.store_id)
+                    .values(enabled=False, revision=2)
+                )
+            elif revocation == "actor":
+                await other.execute(update(User).where(User.id == shop.user_id).values(status="disabled"))
+            elif revocation == "grant":
+                await other.execute(delete(user_roles).where(user_roles.c.user_id == shop.user_id))
+            else:
+                await other.execute(
+                    update(AgentConfig).where(AgentConfig.id == shop.agent_id).values(published_version=2)
+                )
+            await other.commit()
+        return True, True, True
+
+    monkeypatch.setattr("app.agents.tools.logistics_updates.authorization.verified_remote_window", remote_window)
+    async with shop.sessions() as session:
+        decision = await authorize_event(session, settings, context, expected_revision=1, require_external=True)
+        assert decision.blocking_reason is not None
+
+
+@pytest.fixture
+async def external_proof(shop):
+    from app.agents.tools.logistics_updates.proof import FileProof, NotificationAuthorization, text_sha256
+    from app.knowledge_base.document_models import KnowledgeFile, KnowledgeFileVersion
+
+    role_id, file_id, version_id = (uuid.uuid4() for _ in range(3))
+    required = {"workspace.reply", "orders.view", "workspace.view", "knowledge.view"}
+    async with shop.sessions() as session:
+        policy = await session.get(LogisticsNotificationPolicy, shop.store_id)
+        policy.mode = "external"
+        session.add(Role(id=role_id, code=f"logistics-proof-{role_id.hex}", name="合成物流证明角色"))
+        session.add(
+            KnowledgeFile(
+                id=file_id,
+                store_id=shop.store_id,
+                original_filename="synthetic.txt",
+                filename_key="synthetic.txt",
+                active_version_number=1,
+            )
+        )
+        await session.flush()
+        permission_ids = (
+            await session.execute(select(Permission.id, Permission.code).where(Permission.code.in_(required)))
+        ).all()
+        assert len(permission_ids) == len(required)
+        await session.execute(
+            insert(role_permissions), [{"role_id": role_id, "permission_id": item.id} for item in permission_ids]
+        )
+        await session.execute(delete(user_roles).where(user_roles.c.user_id == shop.user_id))
+        await session.execute(insert(user_roles).values(user_id=shop.user_id, role_id=role_id, store_id=shop.store_id))
+        session.add(
+            KnowledgeFileVersion(
+                id=version_id,
+                store_id=shop.store_id,
+                file_id=file_id,
+                version_number=1,
+                source_object_key="synthetic",
+                file_sha256="0" * 64,
+                media_type="text/plain",
+                config_json={},
+                status="ready",
+                created_by=shop.user_id,
+                publication_approval="approved_for_public_reply",
+                approved_by=shop.user_id,
+                approved_at=shop.now,
+            )
+        )
+        version = await session.scalar(
+            select(AgentConfigVersion).where(AgentConfigVersion.agent_config_id == shop.agent_id)
+        )
+        version.file_ids = [str(file_id)]
+        version.tool_names = [
+            "query_order",
+            "query_logistics",
+            "search_knowledge",
+            "notify_logistics_update",
+            "query_customer_profile",
+        ]
+        prompt_hash = version.prompt_hash
+        session.add(
+            AgentConfigVersion(
+                store_id=shop.store_id,
+                agent_config_id=shop.agent_id,
+                version=2,
+                name=version.name,
+                code=version.code,
+                agent_type=version.agent_type,
+                model_provider=version.model_provider,
+                model_name=version.model_name,
+                prompt_sections=dict(version.prompt_sections),
+                prompt_hash=version.prompt_hash,
+                tool_names=list(version.tool_names),
+                file_ids=list(version.file_ids),
+                ready_for_v2=True,
+            )
+        )
+        await session.commit()
+
+    def proof(context, text):
+        return NotificationAuthorization(
+            event_key=context.idempotency_key,
+            text_sha256=text_sha256(text),
+            policy_revision=1,
+            authorized_by=shop.user_id,
+            agent_id=shop.agent_id,
+            agent_version=1,
+            prompt_hash=prompt_hash,
+            file_versions=(FileProof(file_id=file_id, version_id=version_id, version_number=1),),
+            required_permissions=frozenset(required),
+        )
+
+    repo = SqlAlchemyLogisticsRepository(shop.sessions, authorization=proof)
+    context = (await repo.record(_observation(shop, 1, first="notify"))).context
+    token = await repo.claim(context)
+    assert await repo.prepare(context, "Your parcel arrived.", "external", claim_token=token)
+    invocation = ToolInvocation(
+        tool_name="send_platform_message",
+        idempotency_key=context.idempotency_key,
+        arguments={"conversation_id": str(shop.scope.conversation_id), "content": "Your parcel arrived."},
+        context=ToolExecutionContext(
+            store_id=shop.store_id,
+            actor_type="job",
+            actor_id=shop.user_id,
+            permissions={"workspace.reply"},
+            logistics_notification_key=context.idempotency_key,
+        ),
+    )
+    try:
+        yield SimpleNamespace(
+            shop=shop,
+            context=context,
+            invocation=invocation,
+            role_id=role_id,
+            file_id=file_id,
+            version_id=version_id,
+            optional_permission_id=next(item.id for item in permission_ids if item.code == "workspace.view"),
+            proof=proof,
+        )
+    finally:
+        async with shop.sessions() as session:
+            await session.execute(delete(Role).where(Role.id == role_id))
+            await session.commit()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("revocation", ["policy", "actor", "grant", "agent_version", "file", "optional_permission"])
+async def test_final_remote_wait_revocation_blocks_adapter_with_persisted_proof(
+    external_proof, monkeypatch, revocation
+):
+    from app.knowledge_base.document_models import KnowledgeFileVersion
+
+    fixture, calls, windows = external_proof, [], 0
+    shop = fixture.shop
+    async with shop.sessions() as session:
+        row = await session.get(LogisticsNotification, fixture.context.idempotency_key)
+        assert row.authorization_json == fixture.proof(fixture.context, "Your parcel arrived.").model_dump(mode="json")
+
+    async def remote_window(*args, **kwargs):
+        nonlocal windows
+        windows += 1
+        if windows == 2:
+            async with shop.sessions() as other:
+                if revocation == "policy":
+                    await other.execute(
+                        update(LogisticsNotificationPolicy)
+                        .where(LogisticsNotificationPolicy.store_id == shop.store_id)
+                        .values(enabled=False, revision=2)
+                    )
+                elif revocation == "actor":
+                    await other.execute(update(User).where(User.id == shop.user_id).values(status="disabled"))
+                elif revocation == "grant":
+                    await other.execute(delete(user_roles).where(user_roles.c.user_id == shop.user_id))
+                elif revocation == "agent_version":
+                    await other.execute(
+                        update(AgentConfig).where(AgentConfig.id == shop.agent_id).values(published_version=2)
+                    )
+                elif revocation == "file":
+                    await other.execute(
+                        update(KnowledgeFileVersion)
+                        .where(KnowledgeFileVersion.id == fixture.version_id)
+                        .values(publication_approval="draft")
+                    )
+                else:
+                    await other.execute(
+                        delete(role_permissions).where(
+                            role_permissions.c.role_id == fixture.role_id,
+                            role_permissions.c.permission_id == fixture.optional_permission_id,
+                        )
+                    )
+                await other.commit()
+        return True, True, True
+
+    class LocalAdapter:
+        real_writes = True
+
+        async def send_message(self, channel, command):
+            calls.append(command)
+            return SendMessageResult(status="sent", mock=False, external_message_id=uuid.uuid4().hex)
+
+    monkeypatch.setattr("app.agents.tools.logistics_updates.authorization.verified_remote_window", remote_window)
+    monkeypatch.setattr("app.tools.executor.get_settings", lambda: _settings(external=True))
+    monkeypatch.setattr("app.tools.executor.get_message_adapter", lambda platform: LocalAdapter())
+    async with shop.sessions() as session:
+        result = await SqlAlchemyToolExecutor(session).execute(fixture.invocation)
+    assert result.status == "failed" and result.error_code == "TOOL_LOGISTICS_NOTIFICATION_NOT_AUTHORIZED"
+    assert windows == 2 and calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("revocation", ["policy", "actor", "grant", "agent_version", "file", "optional_permission"])
+async def test_send_authority_locks_delay_revocation_until_adapter_result_commits(
+    external_proof, monkeypatch, revocation
+):
+    from app.knowledge_base.document_models import KnowledgeFileVersion
+
+    fixture, entered, release, changing = external_proof, asyncio.Event(), asyncio.Event(), asyncio.Event()
+    shop = fixture.shop
+    calls, committed_statuses = [], []
+
+    class LocalAdapter:
+        real_writes = True
+
+        async def send_message(self, channel, command):
+            calls.append(command)
+            entered.set()
+            await release.wait()
+            return SendMessageResult(status="sent", mock=False, external_message_id=uuid.uuid4().hex)
+
+    async def send():
+        async with shop.sessions() as session:
+            return await SqlAlchemyToolExecutor(session).execute(fixture.invocation)
+
+    async def revoke():
+        async with shop.sessions() as other:
+            changing.set()
+            if revocation == "policy":
+                statement = (
+                    update(LogisticsNotificationPolicy)
+                    .where(LogisticsNotificationPolicy.store_id == shop.store_id)
+                    .values(enabled=False, revision=2)
+                )
+            elif revocation == "actor":
+                statement = update(User).where(User.id == shop.user_id).values(status="disabled")
+            elif revocation == "grant":
+                statement = delete(user_roles).where(user_roles.c.user_id == shop.user_id)
+            elif revocation == "agent_version":
+                statement = update(AgentConfig).where(AgentConfig.id == shop.agent_id).values(published_version=2)
+            elif revocation == "file":
+                statement = (
+                    update(KnowledgeFileVersion)
+                    .where(KnowledgeFileVersion.id == fixture.version_id)
+                    .values(publication_approval="draft")
+                )
+            else:
+                statement = delete(role_permissions).where(
+                    role_permissions.c.role_id == fixture.role_id,
+                    role_permissions.c.permission_id == fixture.optional_permission_id,
+                )
+            await other.execute(statement)
+            committed_statuses.append(
+                await other.scalar(
+                    select(Message.status).where(
+                        Message.store_id == shop.store_id, Message.idempotency_key == fixture.context.idempotency_key
+                    )
+                )
+            )
+            await other.commit()
+
+    monkeypatch.setattr("app.tools.executor.get_settings", lambda: _settings(external=True))
+    monkeypatch.setattr("app.tools.executor.get_message_adapter", lambda platform: LocalAdapter())
+    sender = asyncio.create_task(send())
+    revoker = None
+    try:
+        await asyncio.wait_for(entered.wait(), 3)
+        revoker = asyncio.create_task(revoke())
+        await changing.wait()
+        done, _ = await asyncio.wait({revoker}, timeout=0.1)
+        assert not done, "revocation crossed the final send transaction locks"
+        release.set()
+        assert (await asyncio.wait_for(sender, 3)).status == "succeeded"
+        await asyncio.wait_for(revoker, 3)
+        assert len(calls) == 1
+        assert committed_statuses == ["sent"]
+    finally:
+        release.set()
+        await asyncio.gather(sender, *(tuple([revoker]) if revoker else ()), return_exceptions=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("invalid", ["legacy", "text_hash", "original_revision", "original_agent"])
+async def test_external_proof_cannot_be_replaced_by_nonempty_reviewed_text(external_proof, invalid):
+    fixture, shop = external_proof, external_proof.shop
+    async with shop.sessions() as session:
+        row = await session.get(LogisticsNotification, fixture.context.idempotency_key)
+        proof = dict(row.authorization_json)
+        if invalid == "legacy":
+            proof = {}
+        elif invalid == "text_hash":
+            proof["text_sha256"] = "0" * 64
+        elif invalid == "original_revision":
+            proof["policy_revision"] = 2
+        else:
+            proof["agent_version"] = 2
+        row.authorization_json = proof
+        await session.commit()
+    async with shop.sessions() as session:
+        args = SendPlatformMessageArguments.model_validate(fixture.invocation.arguments)
+        assert not await authorize_persisted_send(session, _settings(external=True), fixture.invocation, args)
+
+
+@pytest.mark.asyncio
+async def test_sql_repository_without_trusted_review_proof_cannot_prepare_external_but_can_preview(shop):
+    repo = SqlAlchemyLogisticsRepository(shop.sessions)
+    context = (await repo.record(_observation(shop, 1, first="notify"))).context
+    token = await repo.claim(context)
+    assert not await repo.prepare(context, "Nonempty reviewed-looking body", "external", claim_token=token)
+    async with shop.sessions() as session:
+        row = await session.get(LogisticsNotification, context.idempotency_key)
+        assert row.state == "reviewing" and row.reviewed_text is None and row.authorization_json == {}
+    assert await repo.prepare(context, "Read-only preview", "preview", claim_token=token)
+
+
 @pytest.mark.asyncio
 async def test_postgres_concurrent_observation_and_review_claim_produce_one_preview(shop):
     from app.agents.tools.logistics_updates import DeliveryReceipt
@@ -253,13 +614,69 @@ async def AsyncGeneratorNotCalled(context):
 
 
 @pytest.mark.asyncio
+async def test_verified_conversation_discovers_orders_from_empty_local_store_and_creates_scan(shop, monkeypatch):
+    from decimal import Decimal
+    from unittest.mock import AsyncMock
+
+    from app.agents.tools.logistics_updates.discovery import discover_eligible_orders
+    from app.workspace.sidebar import SidebarOrder
+
+    async with shop.sessions() as session:
+        await session.execute(delete(Order).where(Order.store_id == shop.store_id))
+        session.add(
+            Message(
+                store_id=shop.store_id,
+                conversation_id=shop.scope.conversation_id,
+                customer_id=shop.scope.customer_id,
+                platform="tiktok",
+                external_message_id=uuid.uuid4().hex,
+                role="user",
+                direction="inbound",
+                content="Where is my parcel?",
+                message_type="text",
+                status="received",
+            )
+        )
+        await session.commit()
+    live = SidebarOrder(
+        id=uuid.uuid4(),
+        external_order_id="771101",
+        status="IN_TRANSIT",
+        payment_status="PAID",
+        currency="USD",
+        total_amount=Decimal("19.99"),
+        payment_breakdown={},
+        ordered_at=shop.now - timedelta(days=1),
+        tracking_number=None,
+        tracking_status=None,
+        items=[],
+    )
+    read = AsyncMock(return_value=(live,))
+    monkeypatch.setattr("app.agents.tools.logistics_updates.discovery.read_verified_buyer_orders", read)
+    monkeypatch.setattr(
+        "app.agents.tools.logistics_updates.discovery.verified_remote_window",
+        AsyncMock(return_value=(True, True, True)),
+    )
+    assert await discover_eligible_orders(shop.sessions, _settings())
+    assert not await discover_eligible_orders(shop.sessions, _settings())
+    assert read.await_count == 1
+    async with shop.sessions() as session:
+        local = await session.scalar(select(Order).where(Order.store_id == shop.store_id))
+        assert local.customer_id == shop.scope.customer_id and local.external_order_id == "771101"
+        assert local.shipping_address is None and local.raw_payload == {}
+        local_id = local.id
+    claim = await claim_due_scan(shop.sessions, _settings())
+    assert claim is not None and claim.order_id == local_id
+
+
+@pytest.mark.asyncio
 async def test_executor_job_notification_uses_ledger_without_forged_human_and_revocation_blocks_next(shop, monkeypatch):
     settings = _settings(external=True)
     async with shop.sessions() as session:
         policy = await session.get(LogisticsNotificationPolicy, shop.store_id)
         policy.mode = "external"
         await session.commit()
-    repo = SqlAlchemyLogisticsRepository(shop.sessions)
+    repo = SqlAlchemyLogisticsRepository(shop.sessions, authorization=_synthetic_authorization(shop))
     await repo.record(_observation(shop, 0))
     recorded = await repo.record(_observation(shop, 1))
     token = await repo.claim(recorded.context)
@@ -303,6 +720,7 @@ async def test_executor_job_notification_uses_ledger_without_forged_human_and_re
         replay = await SqlAlchemyToolExecutor(session).execute(invocation(recorded.context))
         assert replay.status == "succeeded" and replay.replayed
     assert len(sent) == 1
+
     second = await repo.record(_observation(shop, 2))
     token = await repo.claim(second.context)
     assert token is not None
@@ -322,6 +740,28 @@ async def test_executor_job_notification_uses_ledger_without_forged_human_and_re
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("gate", ["master", "automatic", "pause"])
+async def test_external_logistics_master_and_conversation_pause_do_not_block_preview(shop, gate):
+    from app.agents.tools.logistics_updates import BoundLogisticsEvent
+
+    settings = _settings(external=True)
+    context = BoundLogisticsEvent(scope=shop.scope, event=_observation(shop, 1).latest, buyer_language="en")
+    async with shop.sessions() as session:
+        policy = await session.get(LogisticsNotificationPolicy, shop.store_id)
+        policy.mode = "external"
+        conversation = await session.get(Conversation, shop.scope.conversation_id)
+        if gate == "pause":
+            conversation.metadata_json = {**(conversation.metadata_json or {}), "automation_paused": True}
+        else:
+            settings = settings.model_copy(
+                update={"real_tiktok_automation_enabled" if gate == "master" else "auto_reply_enabled": False}
+            )
+        await session.commit()
+        assert (await authorize_event(session, settings, context)).blocking_reason is None
+        assert (await authorize_event(session, settings, context, require_external=True)).blocking_reason is not None
+
+
+@pytest.mark.asyncio
 async def test_postgres_scan_claim_is_per_order_eight_hours_and_failure_backs_off(shop):
     settings = _settings()
     claims = await asyncio.gather(*(claim_due_scan(shop.sessions, settings) for _ in range(8)))
@@ -329,11 +769,11 @@ async def test_postgres_scan_claim_is_per_order_eight_hours_and_failure_backs_of
     assert len(claimed) == 1
     async with shop.sessions() as session:
         row = await session.get(LogisticsOrderScan, (shop.store_id, shop.scope.order_id))
-        assert row.next_poll_at >= shop.now + timedelta(hours=8)
+        assert row.next_poll_at >= shop.now + timedelta(hours=1)
     await finish_scan(shop.sessions, settings, claimed[0], "observation_unavailable")
     async with shop.sessions() as session:
         row = await session.get(LogisticsOrderScan, (shop.store_id, shop.scope.order_id))
-        assert row.failure_count == 1 and row.next_poll_at >= shop.now + timedelta(hours=16)
+        assert row.failure_count == 1 and row.next_poll_at >= shop.now + timedelta(hours=2)
         assert row.claim_token is None
 
 
@@ -348,8 +788,11 @@ async def test_jobs_cycle_persists_reviewed_preview_without_outbound_messages(sh
         input_tokens = 4
         output_tokens = 5
 
-        def __init__(self, *args):
+        def __init__(self, *args, **kwargs):
             pass
+
+        async def revalidate(self):
+            return True
 
         async def generate(self, context):
             return "Your parcel arrived at the hub."
@@ -383,9 +826,14 @@ async def test_manual_preview_works_with_background_off_without_consuming_ledger
     class LocalModel:
         input_tokens = 2
         output_tokens = 3
+        citations = ()
+        tool_events = ()
 
-        def __init__(self, *args):
+        def __init__(self, *args, **kwargs):
             pass
+
+        async def revalidate(self):
+            return True
 
         async def generate(self, context):
             return "Your parcel arrived."
@@ -517,8 +965,11 @@ async def test_worker_recovers_crashed_notification_before_eight_hour_poll_witho
         input_tokens = 2
         output_tokens = 3
 
-        def __init__(self, *args):
+        def __init__(self, *args, **kwargs):
             pass
+
+        async def revalidate(self):
+            return True
 
         async def generate(self, context):
             return "Recovered latest logistics update."
@@ -582,12 +1033,16 @@ async def test_postgres_expired_review_lease_has_one_new_owner_and_rejects_stale
 
 @pytest.mark.asyncio
 async def test_worker_unknown_only_reconciles_without_model_delivery_or_early_tracking_poll(shop, monkeypatch):
-    repo = SqlAlchemyLogisticsRepository(shop.sessions)
+    repo = SqlAlchemyLogisticsRepository(shop.sessions, authorization=_synthetic_authorization(shop))
     await repo.record(_observation(shop, 0))
     event = await repo.record(_observation(shop, 1))
     token = await repo.claim(event.context)
     assert token is not None
     assert await repo.prepare(event.context, "Original reviewed body", "external", claim_token=token)
+    async with shop.sessions() as session:
+        legacy = await session.get(LogisticsNotification, event.context.idempotency_key)
+        legacy.authorization_json = {}
+        await session.commit()
     scan = await claim_due_scan(shop.sessions, _settings())
     await finish_scan(shop.sessions, _settings(), scan, None)
 

@@ -95,7 +95,9 @@ async def revalidate_evidence(
             KnowledgeFile.archived_at.is_(None),
             KnowledgeFile.deleted_at.is_(None),
             KnowledgeFileVersion.status == "ready",
-            KnowledgeFileVersion.publication_approval == "approved_for_internal_review",
+            KnowledgeFileVersion.publication_approval.in_(
+                ("approved_for_internal_review", "approved_for_public_reply")
+            ),
             KnowledgeFileVersion.approved_by.is_not(None),
             KnowledgeFileVersion.approved_at.is_not(None),
         )

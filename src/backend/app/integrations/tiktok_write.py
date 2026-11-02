@@ -246,11 +246,21 @@ class TikTokMessageClient:
         """按官方 202606 契约发送一次人工消息，不自动重试。"""
         notification_allowed = (
             command.logistics_notification_authorized
+            and self.settings.tiktok_automation_effective_enabled
+            and self.settings.app_env != "production"
             and command.message_type == "text"
             and self.settings.logistics_notifications_enabled
             and self.settings.real_tiktok_logistics_notifications_enabled
         )
-        if not command.human_confirmed and not notification_allowed:
+        automation_allowed = (
+            command.automation_authorized
+            and self.settings.tiktok_automation_effective_enabled
+            and self.settings.app_env != "production"
+            and command.sender_role in {"ROBOT", "SYSTEM"}
+        )
+        if command.sender_role != "CUSTOMER_SERVICE" and not (automation_allowed or notification_allowed):
+            return SendMessageResult(status="failed", mock=False, error_code="AUTOMATION_IDENTITY_INVALID")
+        if not command.human_confirmed and not notification_allowed and not automation_allowed:
             return self._failed("REAL_WRITE_REQUIRES_HUMAN_CONFIRMATION")
         if not command.external_conversation_id.isdigit():
             return self._failed("TIKTOK_CONVERSATION_ID_INVALID")
@@ -285,7 +295,7 @@ class TikTokMessageClient:
         body = {
             "type": command.message_type.upper(),
             "content": json.dumps(content, ensure_ascii=False, separators=(",", ":")),
-            "sender_role": "CUSTOMER_SERVICE",
+            "sender_role": command.sender_role,
         }
         body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         params: dict[str, str | int] = {

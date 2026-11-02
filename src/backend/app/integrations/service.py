@@ -370,6 +370,14 @@ async def _process_message(
         if conversation.awaiting_reply_since is None or normalized.created_at < conversation.awaiting_reply_since:
             conversation.awaiting_reply_since = normalized.created_at
         await dispatch_conversation(session, conversation.id, now=datetime.now(UTC))
+    # 只对本次已验签且新入库的买家消息调度，幂等重投不会重建自动任务。
+    from app.agents.automation.service import on_agent_inbound
+    from app.reception.automation import on_reception_inbound
+
+    settings = get_settings()
+    await session.flush()
+    await on_reception_inbound(session, conversation, message, settings)
+    automation_handled = await on_agent_inbound(session, conversation, message, settings)
     store = await session.scalar(
         select(Store).where(Store.id == channel.store_id, Store.status == "active", Store.deleted_at.is_(None))
     )
@@ -377,7 +385,7 @@ async def _process_message(
         preview_enabled = store is not None and policy_from_store(store).enabled
     except AppError:
         preview_enabled = False
-    if preview_enabled or get_settings().auto_reply_enabled:
+    if not automation_handled and preview_enabled:
         config = await find_enabled_config(session, channel.store_id)
         if config is not None:
             session.add(
@@ -387,7 +395,7 @@ async def _process_message(
                     conversation_id=conversation.id,
                     trigger_message_id=message.id,
                     trace_id=str(event.id),
-                    mode="preview" if preview_enabled else "legacy",
+                    mode="preview",
                 )
             )
 

@@ -131,6 +131,15 @@ async def _persist_page(
                     )
                 if (is_new_since_sync or is_new_since_close) and conversation.awaiting_reply_since is not None:
                     await dispatch_conversation(session, conversation.id, now=datetime.now(UTC))
+                if is_new_since_sync or is_new_since_close:
+                    # 首次历史回填不触发接待；增量同步补偿丢失 Webhook 时沿同一幂等来源调度。
+                    from app.agents.automation.service import on_agent_inbound
+                    from app.reception.automation import on_reception_inbound
+                    from app.shared.config.settings import get_settings
+
+                    await session.flush()
+                    await on_reception_inbound(session, conversation, message, get_settings())
+                    await on_agent_inbound(session, conversation, message, get_settings())
         if conversation.last_message_at is None or message.created_at > conversation.last_message_at:
             conversation.last_message_id = message.id
             conversation.last_message_at = message.created_at

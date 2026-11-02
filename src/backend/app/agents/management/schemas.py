@@ -135,6 +135,15 @@ class AgentDebugView(BaseModel):
     customer_translation_error_code: str | None = None
 
 
+class AgentLogisticsPreviewRequest(BaseModel):
+    """目标来自坐席选择的授权会话订单；事件事实仅由现有官方只读路径获取。"""
+
+    conversation_id: uuid.UUID
+    external_order_id: str = Field(pattern=r"^[0-9]+$", max_length=200)
+    package_id: str | None = Field(default=None, min_length=1, max_length=200)
+    model_config = {"extra": "forbid"}
+
+
 class AgentConfigView(BaseModel):
     id: uuid.UUID
     store_id: uuid.UUID

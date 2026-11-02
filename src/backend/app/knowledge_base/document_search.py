@@ -59,7 +59,7 @@ async def hybrid_search_files(
         KnowledgeFile.archived_at.is_(None),
         KnowledgeFile.active_version_number == KnowledgeFileVersion.version_number,
         KnowledgeFileVersion.status == "ready",
-        KnowledgeFileVersion.publication_approval == "approved_for_internal_review",
+        KnowledgeFileVersion.publication_approval.in_(("approved_for_internal_review", "approved_for_public_reply")),
         KnowledgeFileChunk.embedding_model == get_settings().embedding_model,
         KnowledgeFileVersion.approved_by.is_not(None),
         KnowledgeFileVersion.approved_at.is_not(None),

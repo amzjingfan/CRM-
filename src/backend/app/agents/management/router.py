@@ -27,7 +27,7 @@ from app.agents.management.config_service import (
     set_config_status,
     update_config,
 )
-from app.agents.management.debug import run_agent_debug_v2
+from app.agents.management.debug import run_agent_debug_v2, run_logistics_agent_preview
 from app.agents.management.debug_stream import stream_debug_events
 from app.agents.management.schemas import (
     AgentConfigCreate,
@@ -35,6 +35,7 @@ from app.agents.management.schemas import (
     AgentConfigView,
     AgentDebugRequest,
     AgentDebugView,
+    AgentLogisticsPreviewRequest,
     AgentPublishRequest,
     AgentRunLogPage,
 )
@@ -47,6 +48,7 @@ from app.agents.orchestration.service import RunProgress
 from app.agents.tools.access import tool_catalog
 from app.agents.tools.collaboration import CollaborationView, list_collaboration
 from app.agents.tools.logistics_updates.http import router as logistics_notification_router
+from app.agents.tools.logistics_updates.integration import ManualLogisticsPreview
 from app.agents.tools.metadata import ToolCatalogView
 from app.auth.dependencies import get_current_user, require_csrf, require_permission
 from app.shared.config.settings import get_settings
@@ -262,6 +264,30 @@ async def toggle_agent(
     return ApiResponse(
         data=await set_config_status(session, user, agent_id, "disabled" if current.status == "enabled" else "enabled")
     )
+
+
+@router.post(
+    "/{agent_id}/logistics-event-preview",
+    response_model=ApiResponse[ManualLogisticsPreview],
+    dependencies=[
+        Depends(require_csrf),
+        Depends(require_permission("agent.manage")),
+        Depends(require_permission("workspace.reply")),
+    ],
+    description="预演选中物流事件 Agent；仅使用授权会话的已核实订单与包裹，不发送或注入事件。",
+)
+async def debug_logistics_event(
+    agent_id: uuid.UUID,
+    payload: AgentLogisticsPreviewRequest,
+    request: Request,
+    session: DbSession,
+    user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[ManualLogisticsPreview]:
+    settings = get_settings()
+    client_ip = request.client.host if request.client else "unknown"
+    if not await consume_chat_query(user.id, client_ip, settings.chat_query_limit, settings.chat_query_window_seconds):
+        raise AppError(ErrorCode.RATE_LIMITED, "Agent 调试请求过于频繁", 429)
+    return ApiResponse(data=await run_logistics_agent_preview(session, user, agent_id, payload))
 
 
 @router.post(

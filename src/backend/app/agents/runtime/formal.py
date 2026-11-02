@@ -20,11 +20,11 @@ from app.agents.management.repository import list_enabled_agents
 from app.agents.memory.models import AgentSessionMemory
 from app.agents.memory.service import load_memory, remember_session_question
 from app.agents.orchestration.aggregator import AGGREGATE_PROMPT_VERSION
-from app.agents.orchestration.fallback import UNRESOLVED_REASONS, prior_question_reasons
 from app.agents.orchestration.router import ROUTER_PROMPT_VERSION
 from app.agents.orchestration.service import RunProgress
 from app.agents.providers.factory import validate_tool_model
 from app.agents.runtime.execution import execute_model_run, persist_dynamic_result
+from app.agents.runtime.fallback_history import fallback_due_from_history
 from app.agents.runtime.models import AgentRun
 from app.agents.runtime.operator_translation import OPERATOR_TRANSLATION_VERSION
 from app.agents.runtime.snapshot import freeze_run_context
@@ -83,23 +83,9 @@ async def run_formal_suggestion(
         memory_revision=memory_revision,
     )
     memory = await load_memory(session, snapshot)
-    previous_ids = tuple(dict.fromkeys(item for item in memory.source_message_ids if item != trigger.id))[-2:]
-    prior_reasons: tuple[str | None, ...] = ()
-    if len(previous_ids) == 2:
-        prior_runs = (
-            await session.scalars(
-                select(AgentRun)
-                .where(
-                    AgentRun.store_id == conversation.store_id,
-                    AgentRun.conversation_id == conversation.id,
-                    AgentRun.parent_run_id.is_(None),
-                    AgentRun.trigger_message_id.in_(previous_ids),
-                    AgentRun.input_summary.like("mode=formal-v2%"),
-                )
-                .order_by(AgentRun.created_at.desc(), AgentRun.id.desc())
-            )
-        ).all()
-        prior_reasons = prior_question_reasons(previous_ids, prior_runs)
+    fallback_due = await fallback_due_from_history(
+        session, snapshot, memory.source_message_ids, current_message_id=trigger.id
+    )
     order_id: str | None = None
     live_order: SidebarOrder | None = None
 
@@ -122,7 +108,7 @@ async def run_formal_suggestion(
     session.add(run)
     await session.commit()
     progress = progress or RunProgress()
-    progress.fallback_due = len(prior_reasons) == 2 and all(reason in UNRESOLVED_REASONS for reason in prior_reasons)
+    progress.fallback_due = fallback_due
     try:
         async with asyncio.timeout(max(0.0, deadline - time.monotonic())) as run_timeout:
             progress.run_timeout = run_timeout

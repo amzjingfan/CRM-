@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { StoreAutomationControls } from "../../components/AutomationControls";
 import { LogisticsNotificationPolicyControls } from "../../components/ReplyReviewPanel";
 import { AgentToolCatalog } from "../../components/AgentToolCatalog";
 import { AgentCollaboration } from "../../components/AgentCollaboration";
@@ -12,8 +13,9 @@ import { SaveAgentTemplate } from "../../components/agents/templates/SaveAgentTe
 import { listAgentTemplates } from "../../lib/agent-templates";
 import { AppShell } from "../../components/AppShell";
 import {
-  approveDocumentVersion, createAgent, streamAgentDebug, getAgentLogs, getAutoReplyPreviewPolicy, setAutoReplyPreviewPolicy, listAgents, listDocumentFiles, listSessions, listStores, publishAgent, revokeDocumentVersion, setAgentEnabled, updateAgent,
-  type AgentConfig, type AgentDebugResult, type AgentRunLog, type AutoReplyPreviewPolicy, type DocumentFileSummary, type SessionSummary, type StoreView,
+  approveDocumentVersion, createAgent, streamAgentDebug, getAgentLogs, listAgents, listDocumentFiles, listSessions, listStores, publishAgent, revokeDocumentVersion, setAgentEnabled, updateAgent,
+  searchCustomerSidebar, getCustomerSidebarOrderDetail, previewAgentLogisticsEvent,
+  type AgentConfig, type AgentDebugResult, type AgentRunLog, type DocumentFileSummary, type SessionSummary, type StoreView, type SidebarOrder, type SidebarOrders, type LogisticsNotificationPreview,
 } from "../../lib/api";
 import "./agent-prototype.css";
 import "../workspace/reply-review.css";
@@ -47,13 +49,13 @@ export default function AgentsPage() {
   const [stores, setStores] = useState<StoreView[]>([]);
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [storeId, setStoreId] = useState("");
-  const currentStoreRef = useRef("");
-  const changeStore = (nextStore: string) => { currentStoreRef.current = nextStore; setStoreId(nextStore); };
+  const changeStore = (nextStore: string) => setStoreId(nextStore);
   const [selectedId, setSelectedId] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [tab, setTab] = useState<Tab>("basic");
   const [files, setFiles] = useState<DocumentFileSummary[]>([]);
   const [fileChoice, setFileChoice] = useState("");
+  const [approvalPurposes, setApprovalPurposes] = useState<Record<string, "internal_review" | "public_reply">>({});
   const [approvalTypes, setApprovalTypes] = useState<Record<string, "policy" | "technical_artifact" | "non_assertive_proposition" | "">>({});
   const [logs, setLogs] = useState<AgentRunLog[]>([]);
   const [logsError, setLogsError] = useState("");
@@ -64,8 +66,6 @@ export default function AgentsPage() {
   const [canManageTemplates, setCanManageTemplates] = useState(false);
   const [templateSource, setTemplateSource] = useState<AgentConfig | null>(null);
   const [newType, setNewType] = useState<AgentConfig["agent_type"]>("service");
-  const [autoPolicy, setAutoPolicy] = useState<AutoReplyPreviewPolicy | null>(null);
-  const [autoPolicyBusy, setAutoPolicyBusy] = useState(false);
   const [previewInput, setPreviewInput] = useState("");
   const [previewLines, setPreviewLines] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
   const [previewDrafts, setPreviewDrafts] = useState<Record<number, string>>({});
@@ -77,9 +77,17 @@ export default function AgentsPage() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [conversationId, setConversationId] = useState("");
   const [previewMode, setPreviewMode] = useState<"single" | "store">("single");
+  const [eventOrders, setEventOrders] = useState<SidebarOrder[]>([]);
+  const [eventOrderId, setEventOrderId] = useState("");
+  const [eventPackageIds, setEventPackageIds] = useState<string[]>([]);
+  const [eventPackageId, setEventPackageId] = useState("");
+  const [eventOrdersBusy, setEventOrdersBusy] = useState(false);
+  const [eventPackagesBusy, setEventPackagesBusy] = useState(false);
+  const [eventPreview, setEventPreview] = useState<LogisticsNotificationPreview | null>(null);
   const requestId = useRef(0);
   const previewRequestId = useRef(0);
   const selected = agents.find((item) => item.id === selectedId && item.store_id === storeId) ?? null;
+  const isEventPreview = selected?.agent_type === "logistics_event";
   const currentStore = stores.find((item) => item.id === storeId);
   const visibleAgents = agents.filter((item) => item.store_id === storeId);
   const dirty = Boolean(selected && draft && JSON.stringify(draft) !== JSON.stringify(draftOf(selected)));
@@ -119,6 +127,31 @@ export default function AgentsPage() {
   }, [previewLines, previewDrafts]);
   useEffect(() => () => { previewRequestId.current++; previewAbort.current?.abort(); }, []);
   useEffect(() => {
+    let active = true;
+    setEventOrders([]); setEventOrderId(""); setEventPackageIds([]); setEventPackageId(""); setEventPreview(null);
+    setEventOrdersBusy(false);
+    if (isEventPreview && conversationId) {
+      setEventOrdersBusy(true);
+      void searchCustomerSidebar<SidebarOrders>(conversationId, { section: "orders", field: "order", query: "", page: 1, refresh: true })
+        .then((page) => { if (active) setEventOrders(page.items); })
+        .catch((caught) => { if (active) setPreviewError(message(caught)); })
+        .finally(() => { if (active) setEventOrdersBusy(false); });
+    }
+    return () => { active = false; };
+  }, [isEventPreview, conversationId, selectedId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setEventPackageIds([]); setEventPackageId(""); setEventPackagesBusy(false);
+    if (isEventPreview && conversationId && eventOrderId) {
+      setEventPackagesBusy(true);
+      void getCustomerSidebarOrderDetail(conversationId, eventOrderId, controller.signal)
+        .then((detail) => { if (!controller.signal.aborted) setEventPackageIds([...new Set(detail.tracking_packages.map((item) => item.package_id).filter((id): id is string => Boolean(id)))]); })
+        .catch((caught) => { if (!controller.signal.aborted) setPreviewError(message(caught)); })
+        .finally(() => { if (!controller.signal.aborted) setEventPackagesBusy(false); });
+    }
+    return () => controller.abort();
+  }, [isEventPreview, conversationId, eventOrderId]);
+  useEffect(() => {
     setDraft(selected ? draftOf(selected) : null);
     setPreviewLines([]);
   }, [selected]);
@@ -128,14 +161,6 @@ export default function AgentsPage() {
     if (storeId) void listSessions(new URLSearchParams({ store_id: storeId, page: "1", page_size: "50" }))
       .then((page) => { if (active) setSessions(page.items.filter((item) => item.store_id === storeId)); })
       .catch(() => { if (active) setSessions([]); });
-    return () => { active = false; };
-  }, [storeId]);
-  useEffect(() => {
-    let active = true;
-    setAutoPolicy(null);
-    if (storeId) void getAutoReplyPreviewPolicy(storeId)
-      .then((policy) => { if (active) setAutoPolicy(policy); })
-      .catch((caught) => { if (active) setError(message(caught)); });
     return () => { active = false; };
   }, [storeId]);
   useEffect(() => {
@@ -179,21 +204,6 @@ export default function AgentsPage() {
       setNotice("配置已保存");
     } catch (caught) { setNotice(message(caught)); }
   }
-  async function toggleAutoPreview() {
-    if (!autoPolicy || autoPolicyBusy || !storeId) return;
-    const targetStore = storeId;
-    setAutoPolicyBusy(true);
-    try {
-      const updated = await setAutoReplyPreviewPolicy(targetStore, {
-        enabled: !autoPolicy.enabled, expected_revision: autoPolicy.revision,
-      });
-      if (targetStore === currentStoreRef.current) {
-        setAutoPolicy(updated);
-        setNotice(updated.enabled ? "当前店铺已开启多 Agent 自动建议预演；只生成坐席草稿" : "当前店铺已关闭自动建议预演");
-      }
-    } catch (caught) { if (targetStore === currentStoreRef.current) setNotice(message(caught)); }
-    finally { setAutoPolicyBusy(false); }
-  }
   async function publish() {
     if (!selected || dirty) return;
     try {
@@ -228,11 +238,11 @@ export default function AgentsPage() {
     const statementType = approvalTypes[file.id];
     if (!statementType) return;
     try {
-      await approveDocumentVersion(file.id, file.latest_version.version_number, statementType);
+      await approveDocumentVersion(file.id, file.latest_version.version_number, statementType, approvalPurposes[file.id] ?? "internal_review");
       setFiles((current) => current.map((item) => item.id === file.id ? {
-        ...item, latest_version: { ...item.latest_version, approval_status: "approved_for_internal_review", statement_type: statementType },
+        ...item, latest_version: { ...item.latest_version, approval_status: approvalPurposes[file.id] === "public_reply" ? "approved_for_public_reply" : "approved_for_internal_review", statement_type: statementType },
       } : item));
-      setNotice("当前文件版本已批准用于内部建议");
+      setNotice(approvalPurposes[file.id] === "public_reply" ? "当前文件版本已批准用于客户回复" : "当前文件版本已批准用于内部建议");
     } catch (caught) { setNotice(message(caught)); }
   }
   async function revokeFile(file: DocumentFileSummary) {
@@ -243,6 +253,30 @@ export default function AgentsPage() {
       } : item));
       setNotice("文件版本内部建议审批已撤销");
     } catch (caught) { setNotice(message(caught)); }
+  }
+  function cancelPreviewForContext() {
+    previewRequestId.current++; previewAbort.current?.abort();
+    setPreviewBusy(false); setPreviewDrafts({}); setPreviewLines([]); setPreviewResult(null); setEventPreview(null); setPreviewError("");
+  }
+  async function previewLogistics() {
+    if (!selected || !conversationId || !eventOrderId || previewBusy || dirty || eventOrdersBusy || eventPackagesBusy) return;
+    const sequence = ++previewRequestId.current;
+    const controller = new AbortController();
+    previewAbort.current?.abort(); previewAbort.current = controller;
+    setPreviewBusy(true); setPreviewError(""); setPreviewResult(null); setPreviewDrafts({}); setEventPreview(null);
+    try {
+      const result = await previewAgentLogisticsEvent(selected.id, {
+        conversation_id: conversationId, external_order_id: eventOrderId,
+        ...(eventPackageId ? { package_id: eventPackageId } : {}),
+      }, controller.signal);
+      if (sequence !== previewRequestId.current || controller.signal.aborted) return;
+      setEventPreview(result);
+      setPreviewLines((old) => [...old, { role: "assistant", text: result.preview_text || "当前没有可安全展示的已核实事件预演。" }]);
+    } catch (caught) {
+      if (sequence === previewRequestId.current && !controller.signal.aborted) setPreviewError(message(caught));
+    } finally {
+      if (sequence === previewRequestId.current) setPreviewBusy(false);
+    }
   }
   async function preview() {
     const input = previewInput.trim();
@@ -287,7 +321,7 @@ export default function AgentsPage() {
     {notice ? <p className="agent-error" role="status">{notice}</p> : null}
     <main className="main">
       <section className="hero"><div className="hero-copy"><span className="eyebrow">TIKTOK · HUMAN ASSISTED SERVICE</span><h2>让客服建议保持可控</h2><p>按店铺管理 Agent、工具和知识范围。由坐席审阅模型建议并确认回复。</p></div><div className="hero-stats"><div className="hero-stat"><strong>{visibleAgents.filter((item) => item.status === "enabled").length}</strong><small>当前启用</small></div><div className="hero-stat"><strong>{visibleAgents.filter((item) => item.published_version !== null).length}</strong><small>已发布</small></div></div></section>
-      <section className="auto-preview-policy" aria-label="多 Agent 自动回复预演"><div><h3>多 Agent 自动回复预演</h3><p>当前店铺收到新买家消息后自动生成待审阅建议；不会发送平台消息。</p></div><button type="button" className={`btn ${autoPolicy?.enabled ? "" : "primary"}`} disabled={!autoPolicy || autoPolicyBusy || (!autoPolicy.enabled && !visibleAgents.some((item) => item.status === "enabled" && item.published_version !== null))} onClick={() => void toggleAutoPreview()}>{autoPolicyBusy ? "处理中…" : autoPolicy?.enabled ? "关闭预演" : "开启预演"}</button></section>
+      <StoreAutomationControls storeId={storeId} canEnable={visibleAgents.some((item) => item.status === "enabled" && item.published_version !== null)} key={`automation-${storeId}`} />
       <div className="page-head"><div><h2>选择 Agent</h2><p>横向切换当前店铺的 Agent 配置。</p></div><span className="count-pill">{visibleAgents.length} 个 Agent</span></div>
       <div className="agent-nav" aria-label="当前店铺的 Agent">{visibleAgents.map((item) => <button type="button" key={item.id} className={`agent-card ${item.id === selectedId ? "active" : ""}`} onClick={() => setSelectedId(item.id)}><span className="agent-card-top"><strong>{item.name}</strong><span className={`status ${item.status === "enabled" ? "" : "off"}`}>{item.status === "enabled" ? "运行中" : "已停用"}</span></span><small>{item.description || "当前店铺 Agent"}</small><span className="agent-card-foot"><span className="scenario">{agentTypes.find((type) => type.value === item.agent_type)?.label ?? "服务类 Agent"}</span><span>{new Set([...item.enabled_tools, ...(item.knowledge_file_ids?.length ? ["search_knowledge"] : [])]).size} 项工具</span></span></button>)}</div>
       {loading ? <p className="agent-empty">正在加载 Agent 配置…</p> : !selected || !draft ? <p className="agent-empty">{stores.length ? "当前店铺暂无 Agent，请点击“新建 Agent”。" : <>请先<Link href="/settings/stores">创建店铺</Link>，再配置 Agent。</>}</p> : <>
@@ -304,18 +338,27 @@ export default function AgentsPage() {
             <AgentPromptFields value={draft} modelOptions={selected.runtime.model_options?.length ? selected.runtime.model_options : (selected.runtime.available_models ?? []).map((model) => ({ provider: selected.runtime.llm_provider, model_name: model }))} onChange={updateDraft} />
             <div className="policy-card"><h4>回复偏好</h4><p>客户语言用于面向买家的正文；坐席语言用于内部说明或译文，不改变客户正文。随发布版本生效，保存草稿不影响运行。</p><div className="form-grid"><label className="field-group"><span>回复语气</span><select aria-label="回复语气" className="field" value={draft.reply_profile.tone} onChange={(event) => updateDraft({ reply_profile: { ...draft.reply_profile, tone: event.target.value as typeof draft.reply_profile.tone } })}><option value="friendly">友好</option><option value="professional">专业</option><option value="concise">简洁</option><option value="empathetic">共情</option></select></label>
             <label className="field-group"><span>客户回复语言</span><select aria-label="客户回复语言" className="field" value={draft.reply_profile.reply_language} onChange={(event) => updateDraft({ reply_profile: { ...draft.reply_profile, reply_language: event.target.value as typeof draft.reply_profile.reply_language } })}><option value="auto">自动跟随客户</option><option value="zh-CN">简体中文</option><option value="en">英语</option></select></label>
-            <label className="field-group"><span>坐席工作语言</span><select aria-label="坐席工作语言" className="field" value={draft.reply_profile.operator_language} onChange={(event) => updateDraft({ reply_profile: { ...draft.reply_profile, operator_language: event.target.value as typeof draft.reply_profile.operator_language } })}><option value="zh-CN">简体中文</option><option value="en">英语</option></select></label></div></div><div className="policy-list"><span>输入字段白名单</span><span>只引用已审批知识</span><span>未知事实转人工</span><span>真实自动回复未接入</span></div></section> : null}
+            <label className="field-group"><span>坐席工作语言</span><select aria-label="坐席工作语言" className="field" value={draft.reply_profile.operator_language} onChange={(event) => updateDraft({ reply_profile: { ...draft.reply_profile, operator_language: event.target.value as typeof draft.reply_profile.operator_language } })}><option value="zh-CN">简体中文</option><option value="en">英语</option></select></label></div></div><div className="policy-list"><span>输入字段白名单</span><span>只引用已审批知识</span><span>未知事实转人工</span><span>自动投递受店铺策略控制</span></div></section> : null}
           {tab === "tools" ? <><AgentToolCatalog storeId={storeId} enabled={draft.enabled_tools} boundFileCount={draft.knowledge_file_ids.length} onChange={(names) => updateDraft({ enabled_tools: names })} onConfigureKnowledge={() => setTab("knowledge")} /><LogisticsNotificationPolicyControls agents={agents} key={storeId} storeId={storeId} /></> : null}
           {tab === "knowledge" ? <section className="panel active" role="tabpanel"><div className="section-head"><h3>绑定知识库中的文档</h3><p>选择当前店铺已导入的文件。仅已审批且索引就绪的有效版本用于 Agent 检索。</p></div>
             <div className="binding-picker"><label htmlFor="knowledgeChoice">选择已导入知识</label><div className="binding-row"><select id="knowledgeChoice" aria-label="选择已导入知识" className="field" value={fileChoice} onChange={(event) => setFileChoice(event.target.value)}><option value="">请选择文件</option>{files.filter((file) => !draft.knowledge_file_ids.includes(file.id)).map((file) => <option key={file.id} value={file.id}>{file.filename}</option>)}</select><button className="btn primary" type="button" disabled={!fileChoice} onClick={() => { updateDraft({ knowledge_file_ids: [...draft.knowledge_file_ids, fileChoice] }); setFileChoice(""); }}>＋ 绑定知识</button></div><p className="binding-help">绑定范围随 Agent 配置保存；不可跨店铺绑定。</p></div>
-            <div className="bound-head"><h4>当前 Agent 已绑定</h4><span className="bound-count">{draft.knowledge_file_ids.length} 个文件</span></div><div className="bound-list">{draft.knowledge_file_ids.length ? draft.knowledge_file_ids.map((id) => { const file = files.find((item) => item.id === id); const activeReady = Boolean(file && file.latest_version.is_active && file.latest_version.status === "ready"); const approved = activeReady && file?.latest_version.approval_status === "approved_for_internal_review"; return <div className="bound-item" key={id}><span className="doc-icon">▤</span><div className="bound-item-body"><strong>{file?.filename ?? "文件不可用"}</strong><small>{file ? `v${file.active_version_number ?? "—"} · ${file.latest_version.status}` : "当前店铺无此文件"}</small></div><span className={`bound-state ${approved ? "" : "pending"}`}>{approved ? "可用于内部建议" : "暂不可检索"}</span>{activeReady && !approved && file ? <div className="file-approval-action"><select className="field" aria-label={`确认语义类型：${file.filename}`} value={approvalTypes[file.id] ?? ""} onChange={(event) => setApprovalTypes((old) => ({ ...old, [file.id]: event.target.value as typeof approvalTypes[string] }))}><option value="">确认语义类型</option><option value="policy">政策</option><option value="technical_artifact">技术资料</option><option value="non_assertive_proposition">非断言资料</option></select><button className="btn small" type="button" disabled={!approvalTypes[file.id]} onClick={() => void approveFile(file)}>批准内部建议</button></div> : null}{approved && file ? <button className="btn small" type="button" onClick={() => void revokeFile(file)}>撤销审批</button> : null}<button className="remove-bound" type="button" aria-label={`移除绑定：${file?.filename ?? id}`} onClick={() => updateDraft({ knowledge_file_ids: draft.knowledge_file_ids.filter((value) => value !== id) })}>×</button></div>; }) : <div className="bound-empty">尚未绑定知识库文件</div>}</div>
-            <div className="binding-meta"><span>当前店铺：<b>{currentStore?.name}</b></span><span>真实平台自动回复：<b>关闭</b></span><span>检索失败：<b>失败关闭</b></span></div><Link className="binding-link" href={`/knowledge?store_id=${storeId}`}>打开知识库 →</Link></section> : null}
+            <div className="bound-head"><h4>当前 Agent 已绑定</h4><span className="bound-count">{draft.knowledge_file_ids.length} 个文件</span></div><div className="bound-list">{draft.knowledge_file_ids.length ? draft.knowledge_file_ids.map((id) => { const file = files.find((item) => item.id === id); const activeReady = Boolean(file && file.latest_version.is_active && file.latest_version.status === "ready"); const approved = activeReady && ["approved_for_internal_review", "approved_for_public_reply"].includes(file?.latest_version.approval_status ?? ""); return <div className="bound-item" key={id}><span className="doc-icon">▤</span><div className="bound-item-body"><strong>{file?.filename ?? "文件不可用"}</strong><small>{file ? `v${file.active_version_number ?? "—"} · ${file.latest_version.status}` : "当前店铺无此文件"}</small></div><span className={`bound-state ${approved ? "" : "pending"}`}>{approved ? (file?.latest_version.approval_status === "approved_for_public_reply" ? "可用于客户回复" : "仅内部建议") : "暂不可检索"}</span>{activeReady && !approved && file ? <div className="file-approval-action"><select className="field" aria-label={`确认语义类型：${file.filename}`} value={approvalTypes[file.id] ?? ""} onChange={(event) => setApprovalTypes((old) => ({ ...old, [file.id]: event.target.value as typeof approvalTypes[string] }))}><option value="">确认语义类型</option><option value="policy">政策</option><option value="technical_artifact">技术资料</option><option value="non_assertive_proposition">非断言资料</option></select><select className="field" aria-label={`审批用途：${file.filename}`} value={approvalPurposes[file.id] ?? "internal_review"} onChange={(event) => setApprovalPurposes((old) => ({ ...old, [file.id]: event.target.value as "internal_review" | "public_reply" }))}><option value="internal_review">仅内部建议</option><option value="public_reply">客户回复</option></select><button className="btn small" type="button" disabled={!approvalTypes[file.id]} onClick={() => void approveFile(file)}>{approvalPurposes[file.id] === "public_reply" ? "批准客户回复" : "批准内部建议"}</button></div> : null}{approved && file ? <button className="btn small" type="button" onClick={() => void revokeFile(file)}>撤销审批</button> : null}<button className="remove-bound" type="button" aria-label={`移除绑定：${file?.filename ?? id}`} onClick={() => updateDraft({ knowledge_file_ids: draft.knowledge_file_ids.filter((value) => value !== id) })}>×</button></div>; }) : <div className="bound-empty">尚未绑定知识库文件</div>}</div>
+            <div className="binding-meta"><span>当前店铺：<b>{currentStore?.name}</b></span><span>知识用于自动回复须单独批准客户回复用途</span><span>检索失败：<b>失败关闭</b></span></div><Link className="binding-link" href={`/knowledge?store_id=${storeId}`}>打开知识库 →</Link></section> : null}
           {tab === "logs" ? <section className="panel active" role="tabpanel"><div className="section-head"><h3>脱敏运行记录</h3><p>展示父子运行阶段和版本，不展示客户原文、完整模型输入或密钥。</p></div><div className="logs">{logsError ? <p role="alert">{logsError}</p> : logs.length ? logs.map((run) => <div className="bound-item" key={run.id}><div className="bound-item-body"><strong>{run.parent_run_id ? "子 Agent" : "主运行"} · {run.phase ?? run.intent ?? "待复核"} · {run.action}</strong><small>{run.model_provider}/{run.model_name} · {run.config_version ? `v${run.config_version} · ` : ""}{run.latency_ms ?? "—"} ms · trace {run.trace_id?.slice(0, 12) ?? "—"}</small></div><span className="bound-state">{run.status}</span></div>) : <div className="bound-empty">暂无运行记录</div>}</div></section> : null}
         </div></section>
-      <section className="preview" aria-labelledby="previewTitle"><div className="preview-head"><div><h3 id="previewTitle">预览与调试</h3><p>真实模型 · 已绑定知识检索 · 授权会话的只读工具 · 不发送真实消息</p></div><button type="button" className="btn small" onClick={() => { previewRequestId.current++; previewAbort.current?.abort(); setPreviewDrafts({}); setPreviewLines([]); setPreviewResult(null); setPreviewError(""); setPreviewBusy(false); }}>清空</button></div>
+      <section className="preview" aria-labelledby="previewTitle"><div className="preview-head"><div><h3 id="previewTitle">预览与调试</h3><p>真实模型 · 已绑定知识检索 · 授权会话的只读工具 · 不发送真实消息</p></div><button type="button" className="btn small" onClick={cancelPreviewForContext}>清空</button></div>
         <div ref={previewBody} className="preview-body" aria-live="polite">{previewLines.length ? previewLines.map((line, index) => <div className={`preview-bubble ${line.role}`} key={index}>{line.text}</div>) : <p>输入问题，调试当前 Agent 或当前店铺的多 Agent 路由。</p>}{previewBusy ? <p role="status">{Object.keys(previewDrafts).length ? "正在生成 · 草稿待复核" : "正在调用模型、检索和工具…"}</p> : null}{Object.entries(previewDrafts).sort(([a], [b]) => Number(a) - Number(b)).map(([index, text]) => <div className="preview-bubble assistant" aria-label="待复核草稿" key={index}>{text}</div>)}{previewError ? <p role="alert">{previewError}</p> : null}{previewResult ? <div className="preview-diagnostics"><strong>本次运行 · {previewResult.terminal_state}</strong><p>路由：{previewResult.routed_agents?.length ? previewResult.routed_agents.map((item) => item.name).join("、") : "未选择 Agent"}</p><p>工具：{previewResult.tool_events?.length ? previewResult.tool_events.map((item) => `${item.tool_name}（${item.status}）`).join("、") : previewResult.tool_calls.length ? previewResult.tool_calls.map((call) => `${call.tool_name}（${call.status}）`).join("、") : "未调用"}</p><p>引用：{previewResult.citations.length ? previewResult.citations.map((item) => item.source_label).join("、") : "无"}</p>{previewResult.customer_translation?.draft_translation ? <details className="operator-translation"><summary>坐席译文 · {previewResult.customer_translation.target_language === "en" ? "英语" : "简体中文"}</summary><p>{previewResult.customer_translation.draft_translation}</p><small>仅供坐席理解与复核；面向客户的正文见上方。</small></details> : previewResult.customer_translation_error_code ? <p>坐席译文暂不可用，请复核上方客户正文。</p> : null}{previewResult.reason_code ? <p>需复核：{previewResult.reason_code}</p> : null}<small>追踪 ID：{previewResult.trace_id}</small></div> : null}</div>
-        <label className="preview-context">调试范围<select className="field" aria-label="调试范围" value={previewMode} onChange={(event) => setPreviewMode(event.target.value as "single" | "store")}><option value="single">当前 Agent</option><option value="store">当前店铺全部已启用 Agent</option></select></label>
-        <label className="preview-context">只读工具上下文（可选）<select className="field" aria-label="只读工具上下文" value={conversationId} onChange={(event) => setConversationId(event.target.value)}><option value="">不关联会话；仅测试模型与已绑定知识</option>{sessions.map((item) => <option key={item.id} value={item.id}>{item.customer.name || "未命名客户"} · {item.id.slice(0, 8)}</option>)}</select></label><form className="preview-input" onSubmit={(event) => { event.preventDefault(); void preview(); }}><input className="field" maxLength={4000} placeholder="试试：你好 / 我的订单什么时候到？" value={previewInput} onChange={(event) => setPreviewInput(event.target.value)} /><button className="btn primary" type="submit" disabled={previewBusy || dirty || !selected.runtime.available}>运行调试</button></form><p className="preview-note">未绑定知识文件时仍可调试模型与授权只读工具，不会检索整店 FAQ。订单、物流和客户工具需关联当前店铺的授权会话；所有建议须由坐席复核。</p></section>
+        {eventPreview ? <div className="preview-diagnostics"><strong>事件预演 · {eventPreview.status}</strong><p>工具：{eventPreview.tool_calls?.length ? eventPreview.tool_calls.map((item) => `${item.name}（${item.status}）`).join("、") : "未调用"}</p><p>引用：{eventPreview.citations?.length ? eventPreview.citations.join("、") : "无"}</p>{eventPreview.event_at ? <p>已核实节点时间：{eventPreview.event_at}</p> : null}{eventPreview.reason ? <p>需复核：{eventPreview.reason}</p> : null}</div> : null}
+        {!isEventPreview ? <label className="preview-context">调试范围<select className="field" aria-label="调试范围" value={previewMode} onChange={(event) => { cancelPreviewForContext(); setPreviewMode(event.target.value as "single" | "store"); }}><option value="single">当前 Agent</option><option value="store">当前店铺全部已启用 Agent</option></select></label> : null}
+        <label className="preview-context">{isEventPreview ? "物流事件会话" : "只读工具上下文（可选）"}<select className="field" aria-label={isEventPreview ? "物流事件会话" : "只读工具上下文"} value={conversationId} onChange={(event) => { cancelPreviewForContext(); setConversationId(event.target.value); }}><option value="">{isEventPreview ? "选择当前店铺的授权会话" : "不关联会话；仅测试模型与已绑定知识"}</option>{sessions.map((item) => <option key={item.id} value={item.id}>{item.customer.name || "未命名客户"} · {item.id.slice(0, 8)}</option>)}</select></label>
+        {isEventPreview ? <>
+          <label className="preview-context">会话最新 20 笔订单<select className="field" aria-label="物流事件订单" value={eventOrderId} disabled={!conversationId || eventOrdersBusy} onChange={(event) => { cancelPreviewForContext(); setEventOrderId(event.target.value); }}><option value="">{eventOrdersBusy ? "正在核验买家订单…" : "选择已核实订单"}</option>{eventOrders.map((item) => <option key={item.external_order_id} value={item.external_order_id}>{item.external_order_id} · {item.status}</option>)}</select></label>
+          <label className="preview-context">订单包裹<select className="field" aria-label="物流事件包裹" value={eventPackageId} disabled={!eventOrderId || eventPackagesBusy} onChange={(event) => { cancelPreviewForContext(); setEventPackageId(event.target.value); }}><option value="">{eventPackagesBusy ? "正在读取官方包裹…" : "选择最新可核实节点的包裹"}</option>{eventPackageIds.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          <form className="preview-input" onSubmit={(event) => { event.preventDefault(); void previewLogistics(); }}><button className="btn primary" type="submit" disabled={previewBusy || dirty || !selected.runtime.available || !conversationId || !eventOrderId || eventOrdersBusy || eventPackagesBusy}>预演已核实物流事件</button></form>
+          <p className="preview-note">使用当前所选 Agent 和官方最新物流事实。物流通知策略须绑定此 Agent；订单尚未同步时会明确提示。预演不会创建通知、出站消息或历史基线。</p>
+        </> : <><form className="preview-input" onSubmit={(event) => { event.preventDefault(); void preview(); }}><input className="field" maxLength={4000} placeholder="试试：你好 / 我的订单什么时候到？" value={previewInput} onChange={(event) => setPreviewInput(event.target.value)} /><button className="btn primary" type="submit" disabled={previewBusy || dirty || !selected.runtime.available}>运行调试</button></form><p className="preview-note">未绑定知识文件时仍可调试模型与授权只读工具，不会检索整店 FAQ。订单、物流和客户工具需关联当前店铺的授权会话；所有建议须由坐席复核。</p></>}
+        {selected.agent_type === "fallback" ? <p className="preview-note">兜底第三轮只依据关联会话中两个真实、已完成且未解决的正式回合触发。重复点击调试不增加轮数；接管请求和内部备注仅展示工具意图，不保存业务记录。</p> : null}
+      </section>
         <AgentCollaboration key={conversationId} conversationId={conversationId} refreshKey={previewResult?.agent_run_id} />
       </>}
     </main>

@@ -34,6 +34,11 @@ export type ReceptionPolicy = {
   kind: ReceptionKind;
   name: string;
   content: string;
+  content_en: string | null;
+  delivery_mode: "off" | "preview" | "auto";
+  welcome_idle_hours: number;
+  revision: number;
+  authorized_by: string | null;
   timeout_minutes: number | null;
   valid_from: string | null;
   valid_to: string | null;
@@ -41,12 +46,13 @@ export type ReceptionPolicy = {
   enabled: boolean;
   sort_order: number;
   store_ids: string[];
-  delivery_enabled: false;
+  /** Current global and policy mode qualification; this is not a delivery receipt. */
+  delivery_enabled: boolean;
 };
 
 export type NewQuickReplyGroup = Pick<QuickReplyGroup, "store_id" | "scope" | "name"> & { sort_order?: number };
 export type NewQuickReply = Pick<QuickReply, "store_id" | "scope" | "group_id" | "shortcut" | "tags" | "site_code" | "messages"> & { sort_order?: number };
-export type NewReceptionPolicy = Pick<ReceptionPolicy, "kind" | "name" | "content" | "timeout_minutes" | "valid_from" | "valid_to" | "schedule" | "enabled" | "store_ids"> & { sort_order?: number };
+export type NewReceptionPolicy = Pick<ReceptionPolicy, "kind" | "name" | "content" | "timeout_minutes" | "valid_from" | "valid_to" | "schedule" | "enabled" | "store_ids"> & Partial<Pick<ReceptionPolicy, "content_en" | "delivery_mode" | "welcome_idle_hours">> & { sort_order?: number };
 
 const base = "/marketing/reception";
 const itemPath = (collection: string, id: string) => `${base}/${collection}/${encodeURIComponent(id)}`;

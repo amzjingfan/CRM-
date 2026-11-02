@@ -95,7 +95,9 @@ async def test_dynamic_run_respects_deadline_and_does_not_prefetch_latest_order(
         "freeze_debug_context",
         AsyncMock(return_value=SimpleNamespace(snapshot_hash="test", low_sensitive_reference=lambda: {})),
     )
-    monkeypatch.setattr(debug, "load_memory", AsyncMock(return_value=SimpleNamespace(summary="", facts=())))
+    monkeypatch.setattr(
+        debug, "load_memory", AsyncMock(return_value=SimpleNamespace(summary="", facts=(), source_message_ids=()))
+    )
     monkeypatch.setattr(debug, "execute_model_run", slow_run)
     monkeypatch.setattr(debug, "persist_dynamic_result", AsyncMock())
 

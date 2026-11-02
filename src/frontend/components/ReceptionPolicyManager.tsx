@@ -15,6 +15,7 @@ import {
 type ValidityMode = PolicySchedule["mode"];
 type PolicyDraft = {
   name: string; content: string; timeout_minutes: string; store_ids: string[]; enabled: boolean;
+  content_en: string; delivery_mode: ReceptionPolicy["delivery_mode"]; welcome_idle_hours: string;
   validity_mode: ValidityMode; start_date: string; end_date: string;
   daily_start_time: string; daily_end_time: string; legacy_unchanged: boolean;
 };
@@ -23,7 +24,7 @@ const statusLabels: Record<DisplayStatus, string> = {
   active: "生效中", not_started: "未开始", expired: "已过期", disabled: "未启用",
 };
 const blankDraft = (storeId: string): PolicyDraft => ({
-  name: "", content: "", timeout_minutes: "30", store_ids: storeId ? [storeId] : [], enabled: true,
+  name: "", content: "", content_en: "", delivery_mode: "preview", welcome_idle_hours: "24", timeout_minutes: "60", store_ids: storeId ? [storeId] : [], enabled: true,
   validity_mode: "long_term", start_date: "", end_date: "", daily_start_time: "", daily_end_time: "",
   legacy_unchanged: false,
 });
@@ -43,7 +44,7 @@ function policyStatus(policy: ReceptionPolicy, stores: StoreView[], now = new Da
   const schedule = policy.schedule;
   if (schedule) {
     if (schedule.mode === "long_term") return "active";
-    // 多店时只要一家店处于配置时段，就展示为生效中；实际自动发送仍未接入。
+    // 多店列表聚合展示；实际投递按每家店的本地时区复核。
     const perStore = policy.store_ids.map((id): DisplayStatus => {
       const timezone = stores.find((store) => store.id === id)?.timezone || "UTC";
       const local = dateAtStore(now, timezone);
@@ -203,7 +204,9 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     const legacy = !schedule && Boolean(item.valid_from || item.valid_to);
     const timezone = stores.find((store) => store.id === item.store_ids[0])?.timezone || "UTC";
     setDraft({
-      name: item.name, content: item.content, timeout_minutes: String(item.timeout_minutes ?? 30),
+      name: item.name, content: item.content, content_en: item.content_en ?? "",
+      delivery_mode: item.delivery_mode ?? "preview", welcome_idle_hours: String(item.welcome_idle_hours ?? 24),
+      timeout_minutes: String(item.timeout_minutes ?? 60),
       store_ids: [...item.store_ids], enabled: item.enabled,
       validity_mode: schedule?.mode ?? (legacy ? "date_range" : "long_term"),
       start_date: schedule?.start_date ?? (item.valid_from ? dateAtStore(new Date(item.valid_from), timezone).date : ""),
@@ -221,6 +224,8 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     if (!name || !content || content.length > 2000) { setFormError("请填写名称和不超过 2000 字的文本内容。"); return; }
     if (!draft.store_ids.length) { setFormError("请至少选择一个适用店铺。"); return; }
     const minutes = kind === "timeout" ? Number(draft.timeout_minutes) : null;
+    const idleHours = Number(draft.welcome_idle_hours);
+    if (!Number.isInteger(idleHours) || idleHours < 1 || idleHours > 720) { setFormError("欢迎间隔需为 1–720 的整数小时。"); return; }
     if (kind === "timeout" && (!Number.isInteger(minutes) || minutes === null || minutes < 1 || minutes > 43_200)) { setFormError("超时分钟需为 1–43200 的整数。"); return; }
     const legacy = editing !== "new" && draft.legacy_unchanged;
     if (!legacy && draft.validity_mode !== "long_term" && (!draft.start_date || !draft.end_date || draft.end_date < draft.start_date)) {
@@ -238,6 +243,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     };
     const update: Omit<NewReceptionPolicy, "kind"> = {
       name, content, timeout_minutes: minutes, schedule,
+      content_en: draft.content_en.trim() || null, delivery_mode: draft.delivery_mode, welcome_idle_hours: idleHours,
       valid_from: legacy ? editing.valid_from : null, valid_to: legacy ? editing.valid_to : null,
       enabled: draft.enabled, store_ids: draft.store_ids,
     };
@@ -245,7 +251,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     try {
       if (editing === "new") await createReceptionPolicy({ kind, ...update });
       else await updateReceptionPolicy(editing.id, update);
-      setEditing(null); setNotice("配置已保存。自动发送仍未启用。"); setRefreshKey((key) => key + 1);
+      setEditing(null); setNotice("配置已保存，实际投递会再次核对总开关、权限和会话状态。"); setRefreshKey((key) => key + 1);
     } catch (caught) { setFormError(errorText(caught)); }
     finally { setBusy(false); }
   }
@@ -254,6 +260,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     setBusy(true); setError(""); setMenuId(null);
     try {
       await createReceptionPolicy({ kind, name: `${item.name}（副本）`, content: item.content, timeout_minutes: item.timeout_minutes,
+        content_en: item.content_en, delivery_mode: "preview", welcome_idle_hours: item.welcome_idle_hours,
         schedule: item.schedule, valid_from: item.valid_from, valid_to: item.valid_to, enabled: false, store_ids: item.store_ids });
       setNotice("配置已复制，副本的配置开关已关闭。"); setRefreshKey((key) => key + 1);
     } catch (caught) { setError(errorText(caught)); }
@@ -262,7 +269,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
 
   async function toggle(item: ReceptionPolicy) {
     setBusy(true); setError("");
-    try { await updateReceptionPolicy(item.id, { enabled: !item.enabled }); setNotice(`配置开关已${item.enabled ? "关闭" : "开启"}，自动发送仍未启用。`); setRefreshKey((key) => key + 1); }
+    try { await updateReceptionPolicy(item.id, { enabled: !item.enabled }); setNotice(`配置开关已${item.enabled ? "关闭" : "开启"}，投递按所选模式执行。`); setRefreshKey((key) => key + 1); }
     catch (caught) { setError(errorText(caught)); }
     finally { setBusy(false); }
   }
@@ -296,14 +303,14 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
     setBusy(true); setError("");
     try {
       await updateReceptionPolicy(target.id, { store_ids: [...new Set([...target.store_ids, ...bulkStoreIds])] });
-      setBulkOpen(false); setNotice("店铺已加入策略。自动发送仍未启用。"); setRefreshKey((key) => key + 1);
+      setBulkOpen(false); setNotice("店铺已加入策略，投递按所选模式及授权执行。"); setRefreshKey((key) => key + 1);
     } catch (caught) { setError(errorText(caught)); }
     finally { setBusy(false); }
   }
 
   return <AppShell><main className="reception-page reception-policy-page">
     <div className="reception-crumb"><Link href="/marketing">智能营销</Link><span>/</span><span>基础接待</span><span>/</span><strong>{title}</strong></div>
-    <header className="reception-head"><div><span className="reception-eyebrow">BASIC RECEPTION</span><h1>{title}</h1><p>管理适用店铺、有效期及策略状态；自动发送尚未启用。</p></div><label className="reception-policy-search"><input aria-label="按店铺名称或别名搜索" onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="输入店铺名称/别名" value={search} /><MagnifyingGlass aria-hidden="true" size={17} /></label></header>
+    <header className="reception-head"><div><span className="reception-eyebrow">BASIC RECEPTION</span><h1>{title}</h1><p>管理适用店铺、有效期及投递模式。资格仅依据当前开关与模式；实际投递仍核对权限、时段和会话，发送结果以投递回执为准。</p></div><label className="reception-policy-search"><input aria-label="按店铺名称或别名搜索" onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="输入店铺名称/别名" value={search} /><MagnifyingGlass aria-hidden="true" size={17} /></label></header>
     <ReceptionTabs active={kind} />
     {notice ? <p className="reception-notice" role="status">{notice}</p> : null}
     <section className="reception-card reception-policy-card">
@@ -318,7 +325,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
         <div className="reception-table-wrap"><table className="reception-table reception-policy-table"><thead><tr><th>执行顺序</th><th>策略名称</th><th>发送内容</th><th><span className="reception-status-help">策略状态 <Info size={14} aria-label="策略状态说明" tabIndex={0} /><span className="reception-status-tooltip">生效中：开关开启且当前时间在有效期内<br />未开始：开关开启且当前时间在开始时间之前<br />已过期：开关开启且当前时间在结束时间之后<br />未启用：策略开关关闭</span></span></th><th>有效期</th><th>适用店铺</th><th>策略开关</th><th>操作</th></tr></thead><tbody>{visible.map((policy) => {
           const state = policyStatus(policy, stores, now);
           const names = policy.store_ids.map((id) => stores.find((store) => store.id === id)?.alias || stores.find((store) => store.id === id)?.name || id);
-          return <tr key={policy.id}><td>{policies.findIndex((item) => item.id === policy.id) + 1}</td><td><strong>{policy.name}</strong>{kind === "timeout" ? <small className="reception-policy-delay">超时 {policy.timeout_minutes} 分钟</small> : null}</td><td><span className="reception-summary" title={policy.content}>{policy.content}</span></td><td><span className={`reception-policy-status ${state}`}><i />{statusLabels[state]}</span></td><td><span className="reception-policy-validity">{validityText(policy)}</span></td><td><span aria-label={`${names.length} 家店铺：${names.join("、")}`} className="reception-policy-store-count" onBlur={() => setStoreTooltip(null)} onFocus={(event) => showStoreTooltip(policy.id, names, event.currentTarget)} onMouseEnter={(event) => showStoreTooltip(policy.id, names, event.currentTarget)} onMouseLeave={() => setStoreTooltip(null)} tabIndex={0}>{names.length} 家店铺 <span aria-hidden="true">···</span></span></td><td><button aria-label={`${policy.name}配置开关`} aria-pressed={policy.enabled} className={`reception-switch ${policy.enabled ? "on" : ""}`} disabled={!canEdit || busy} onClick={() => void toggle(policy)} title="仅配置状态，不自动发送" type="button"><span />{policy.enabled ? "开" : "关"}</button></td><td><div className="reception-row-actions"><button disabled={!canEdit || busy} onClick={() => openEditor(policy)} type="button">编辑</button><button disabled={!canEdit || busy} onClick={() => void copy(policy)} type="button">复制</button><span className="reception-more-wrap"><button aria-expanded={menuId === policy.id} aria-label={`${policy.name}更多操作`} disabled={!canEdit || busy} onClick={(event) => toggleMenu(policy, event)} type="button"><DotsThree size={17} />更多</button></span></div></td></tr>;
+          return <tr key={policy.id}><td>{policies.findIndex((item) => item.id === policy.id) + 1}</td><td><strong>{policy.name}</strong>{kind === "timeout" ? <small className="reception-policy-delay">超时 {policy.timeout_minutes} 分钟</small> : null}</td><td><span className="reception-summary" title={policy.content}>{policy.content}</span></td><td><span className={`reception-policy-status ${state}`}><i />{statusLabels[state]}</span><small className="reception-policy-delay">{({ off: "关闭", preview: "仅预演", auto: "自动投递" } as const)[policy.delivery_mode ?? "preview"]} · v{policy.revision ?? 1}</small><small className="reception-policy-delay">自动投递资格：{policy.delivery_enabled ? "当前可用" : "当前不可用"}</small></td><td><span className="reception-policy-validity">{validityText(policy)}</span></td><td><span aria-label={`${names.length} 家店铺：${names.join("、")}`} className="reception-policy-store-count" onBlur={() => setStoreTooltip(null)} onFocus={(event) => showStoreTooltip(policy.id, names, event.currentTarget)} onMouseEnter={(event) => showStoreTooltip(policy.id, names, event.currentTarget)} onMouseLeave={() => setStoreTooltip(null)} tabIndex={0}>{names.length} 家店铺 <span aria-hidden="true">···</span></span></td><td><button aria-label={`${policy.name}配置开关`} aria-pressed={policy.enabled} className={`reception-switch ${policy.enabled ? "on" : ""}`} disabled={!canEdit || busy} onClick={() => void toggle(policy)} title="开关与投递模式共同决定是否执行" type="button"><span />{policy.enabled ? "开" : "关"}</button></td><td><div className="reception-row-actions"><button disabled={!canEdit || busy} onClick={() => openEditor(policy)} type="button">编辑</button><button disabled={!canEdit || busy} onClick={() => void copy(policy)} type="button">复制</button><span className="reception-more-wrap"><button aria-expanded={menuId === policy.id} aria-label={`${policy.name}更多操作`} disabled={!canEdit || busy} onClick={(event) => toggleMenu(policy, event)} type="button"><DotsThree size={17} />更多</button></span></div></td></tr>;
         })}</tbody></table></div>
         <div className="reception-pagination"><span>已为您查询到 {shown.length} 条记录</span><button aria-label="上一页" disabled={page <= 1} onClick={() => setPage(page - 1)} type="button">‹</button><strong>{Math.min(page, pages)}</strong><button aria-label="下一页" disabled={page >= pages} onClick={() => setPage(page + 1)} type="button">›</button><select aria-label="每页条数" onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }} value={pageSize}><option value={10}>10 条/页</option><option value={20}>20 条/页</option><option value={50}>50 条/页</option></select></div>
       </> : <EmptyState label={search || filter !== "all" ? "没有符合条件的策略" : `暂无${title}配置`} />}
@@ -326,7 +333,7 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
 
     {storeTooltip ? <div className="reception-store-tooltip" role="tooltip" style={{ top: storeTooltip.top, left: storeTooltip.left }}><strong>适用店铺</strong>{storeTooltip.names.map((name, index) => <span key={`${storeTooltip.id}-${index}`}>{name}</span>)}</div> : null}
     {menuPolicy ? <div className="reception-more-menu reception-policy-floating-menu" style={menuPosition}><button disabled={policies.at(-1)?.id === menuPolicy.id} onClick={() => void reorder(menuPolicy, "down")} type="button">下移</button><button disabled={policies.at(-1)?.id === menuPolicy.id} onClick={() => void reorder(menuPolicy, "bottom")} type="button">置底</button><button onClick={() => { setDeleting(menuPolicy); setMenuId(null); }} type="button">删除</button></div> : null}
-    {editing ? <div className="reception-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}><section aria-label={`${editing === "new" ? "新增" : "编辑"}${title}`} aria-modal="true" className="reception-modal reception-policy-editor" role="dialog"><header><div><h2>{editing === "new" ? "新增" : "编辑"}{title}</h2><p>仅保存策略配置；不会自动向买家发送。</p></div><button aria-label="关闭" className="reception-icon-button" onClick={() => setEditing(null)} type="button"><X size={20} /></button></header><form onSubmit={(event) => void save(event)}><div className="reception-policy-fields">
+    {editing ? <div className="reception-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(null); }}><section aria-label={`${editing === "new" ? "新增" : "编辑"}${title}`} aria-modal="true" className="reception-modal reception-policy-editor" role="dialog"><header><div><h2>{editing === "new" ? "新增" : "编辑"}{title}</h2><p>预演仅记录待发送内容；自动模式会在授权有效时投递。</p></div><button aria-label="关闭" className="reception-icon-button" onClick={() => setEditing(null)} type="button"><X size={20} /></button></header><form onSubmit={(event) => void save(event)}><div className="reception-policy-fields">
       <label className="reception-field">策略名称<input aria-label="策略名称" maxLength={100} onChange={(event) => setDraft({ ...draft, name: event.target.value })} required value={draft.name} /></label>
       {kind === "timeout" ? <label className="reception-field">超时分钟<input aria-label="超时分钟" max={43200} min={1} onChange={(event) => setDraft({ ...draft, timeout_minutes: event.target.value })} required type="number" value={draft.timeout_minutes} /></label> : null}
       <div className="reception-field"><span>适用店铺</span><StoreMultiSelect onChange={(store_ids) => setDraft({ ...draft, store_ids })} selected={draft.store_ids} stores={stores} /></div>
@@ -335,8 +342,11 @@ export function ReceptionPolicyManager({ kind }: { kind: ReceptionKind }) {
         {draft.validity_mode === "fixed_hours" ? <div className="reception-validity-range"><span>每天</span><label>开始时间<input aria-label="每天开始时间" onChange={(event) => setDraft({ ...draft, daily_start_time: event.target.value, legacy_unchanged: false })} required type="time" value={draft.daily_start_time} /></label><span>→</span><label>结束时间<input aria-label="每天结束时间" onChange={(event) => setDraft({ ...draft, daily_end_time: event.target.value, legacy_unchanged: false })} required type="time" value={draft.daily_end_time} /></label></div> : null}
       </fieldset>
       <label className="reception-field">回复内容<textarea aria-label="回复内容" maxLength={2000} onChange={(event) => setDraft({ ...draft, content: event.target.value })} placeholder="输入文本内容" required rows={5} value={draft.content} /><small>{draft.content.length}/2000 字</small></label>
+      <label className="reception-field">英文回复内容<textarea aria-label="英文回复内容" maxLength={2000} onChange={(event) => setDraft({ ...draft, content_en: event.target.value })} placeholder="跟随英文买家；自定义中文需填写已批准的英文版本" rows={3} value={draft.content_en} /></label>
+      <label className="reception-field">投递模式<select aria-label="投递模式" onChange={(event) => setDraft({ ...draft, delivery_mode: event.target.value as ReceptionPolicy["delivery_mode"] })} value={draft.delivery_mode}><option value="off">关闭</option><option value="preview">仅预演</option><option value="auto">自动投递</option></select><small>自动模式仅处理新的可信入站；关闭、撤权或会话暂停会阻止投递。</small></label>
+      {kind === "welcome" ? <label className="reception-field">欢迎新段间隔（小时）<input aria-label="欢迎新段间隔" max={720} min={1} onChange={(event) => setDraft({ ...draft, welcome_idle_hours: event.target.value })} required type="number" value={draft.welcome_idle_hours} /></label> : null}
       <div className="reception-media-row"><span>文本内容</span><button disabled title="本期不支持图片" type="button">图片 · 本期不可用</button><button disabled title="本期不支持视频" type="button">视频 · 本期不可用</button></div>
-      <label className="reception-check"><input checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} type="checkbox" />启用配置开关（不会自动发送）</label>
+      <label className="reception-check"><input checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} type="checkbox" />启用策略（按投递模式执行）</label>
     </div>{formError ? <p className="reception-form-error" role="alert">{formError}</p> : null}<footer className="reception-modal-footer"><button className="secondary-button" onClick={() => setEditing(null)} type="button">取消</button><button className="primary-button" disabled={busy || !canEdit} type="submit">{busy ? "正在保存…" : "保存配置"}</button></footer></form></section></div> : null}
     {bulkOpen ? <div className="reception-modal-backdrop"><section aria-label="批量设置店铺" aria-modal="true" className="reception-modal reception-policy-bulk" role="dialog"><header><h2>批量设置未加入策略的店铺</h2><button aria-label="关闭" className="reception-icon-button" onClick={() => setBulkOpen(false)} type="button"><X size={20} /></button></header><form onSubmit={(event) => void bulkAssign(event)}><div className="reception-policy-fields"><label className="reception-field">选择策略<select aria-label="选择策略" onChange={(event) => setBulkPolicyId(event.target.value)} value={bulkPolicyId}>{policies.map((policy) => <option key={policy.id} value={policy.id}>{policy.name}</option>)}</select></label><div className="reception-field"><span>未加入策略的店铺</span><StoreMultiSelect label="批量适用店铺" onChange={setBulkStoreIds} selected={bulkStoreIds} stores={unassigned} /></div></div><footer className="reception-modal-footer"><button className="secondary-button" onClick={() => setBulkOpen(false)} type="button">取消</button><button className="primary-button" disabled={busy || !bulkStoreIds.length} type="submit">保存设置</button></footer></form></section></div> : null}
     {deleting ? <div className="reception-modal-backdrop"><section aria-label="删除策略" aria-modal="true" className="reception-confirm" role="alertdialog"><h2>删除策略“{deleting.name}”？</h2><p>删除后此配置无法在列表中恢复。</p><div><button className="secondary-button" onClick={() => setDeleting(null)} type="button">取消</button><button className="danger-button" disabled={busy} onClick={() => void remove()} type="button">确认删除</button></div></section></div> : null}

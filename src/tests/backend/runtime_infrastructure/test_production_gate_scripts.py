@@ -612,7 +612,17 @@ def test_default_deploy_rejects_backend_that_kept_g5_model_enabled(
     assert not evidence_file.exists()
 
 
+@pytest.mark.parametrize(
+    "capability",
+    [
+        "AUTO_REPLY_ENABLED",
+        "REAL_TIKTOK_AUTOMATION_ENABLED",
+        "LOGISTICS_NOTIFICATIONS_ENABLED",
+        "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED",
+    ],
+)
 def test_default_deploy_rejects_running_backend_with_auto_reply_enabled(
+    capability: str,
     staging_env_file: Path,
     tmp_path: Path,
 ) -> None:
@@ -626,7 +636,7 @@ def test_default_deploy_rejects_running_backend_with_auto_reply_enabled(
     )
     environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
     environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
-    environment["FAKE_DOCKER_RUNTIME_AUTO_REPLY_ENABLED"] = "true"
+    environment["FAKE_DOCKER_SERVICE_ENV_OVERRIDE"] = json.dumps({"backend": {capability: "true"}})
     evidence_file = tmp_path / "auto-reply-mismatch.json"
     result = run_powershell(
         PREFLIGHT_SCRIPT,
@@ -898,6 +908,273 @@ def test_staging_manual_send_store_scope_is_exact_and_exclusive(staging_env_file
         environment=environment,
     )
     assert mixed.returncode != 0
+
+
+@pytest.fixture
+def customer_automation_gate(staging_env_file: Path, tmp_path: Path) -> tuple[dict[str, str], tuple[str, ...], Path]:
+    """完整客户模式使用四个应用进程和同一固定店铺范围，Docker 始终为替身。"""
+    model_asset_dir = tmp_path / "model-assets"
+    environment, _ = write_fake_compose_runtime(tmp_path, model_asset_dir)
+    config_path = Path(environment["FAKE_DOCKER_CONFIG"])
+    config = json.loads(config_path.read_text("utf-8"))
+    stores = "11111111-1111-4111-8111-111111111111,22222222-2222-4222-8222-222222222222"
+    for service_name in ("backend", "worker", "jobs", "agent-worker"):
+        config["services"][service_name]["environment"].update(
+            {
+                "REAL_TIKTOK_AUTOMATION_ENABLED": "true",
+                "AUTO_REPLY_ENABLED": "true",
+                "LLM_ENABLED": "true",
+                "AGENT_V2_FORMAL_ENABLED": "true",
+                "EMBEDDING_ENABLED": "true",
+                "RETRIEVAL_MODEL_SERVICE_TOKEN": RETRIEVAL_TOKEN_SENTINEL,
+                "RETRIEVAL_MODEL_SERVICE_URL": "http://retrieval-model-service:8010",
+                "LLM_PRIMARY_PROVIDER": "deepseek",
+                "LLM_PRIMARY_MODEL": "deepseek-chat",
+                "DEEPSEEK_API_KEY": "private-test-key",
+                "REAL_TIKTOK_READ_ENABLED": "true",
+                "REAL_TIKTOK_MESSAGE_WRITE_ENABLED": "true",
+                "TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS": stores,
+                "LOGISTICS_NOTIFICATIONS_ENABLED": "true",
+                "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED": "true",
+                "LOGISTICS_NOTIFICATION_POLL_SECONDS": "3600",
+                "TIKTOK_EGRESS_PROXY_URL": "socks5h://tiktok-egress:1080",
+            }
+        )
+    for service_name in ("backend", "worker"):
+        config["services"][service_name]["environment"]["REAL_TIKTOK_WEBHOOK_ENABLED"] = "true"
+    config["services"]["worker"]["environment"]["TIKTOK_CONVERSATION_SYNC_ENABLED"] = "true"
+    config["services"]["agent-worker"]["networks"] = {"default": None, "tiktok-egress": None}
+    config["services"]["agent-worker"]["depends_on"] = {"tiktok-egress": {"condition": "service_healthy"}}
+    config["services"]["retrieval-model-service"]["environment"]["RETRIEVAL_MODEL_SERVICE_TOKEN"] = (
+        RETRIEVAL_TOKEN_SENTINEL
+    )
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    with staging_env_file.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "\nLLM_PRIMARY_PROVIDER=deepseek\nLLM_PRIMARY_MODEL=deepseek-chat\nDEEPSEEK_API_KEY=private-test-key"
+        )
+    args = (
+        "-Environment",
+        "staging",
+        "-EnvFile",
+        str(staging_env_file),
+        *validation_image_arguments(PREFLIGHT_SCRIPT),
+        "-BaseUrl",
+        "https://127.0.0.1:1",
+        "-EvidenceFile",
+        str(tmp_path / "customer-evidence.json"),
+        "-ConfirmTarget",
+        "staging",
+        "-DockerHost",
+        ROOTLESS_DOCKER_HOST,
+        "-EnableTikTokWebhookRead",
+        "-EnableTikTokManualSend",
+        "-EnableAgentSuggestions",
+        "-AllowedTikTokStoreIds",
+        stores,
+        "-EnableCustomerAutomation",
+    )
+    return environment, args, config_path
+
+
+def test_customer_automation_accepts_reviewed_profile_and_records_only_low_sensitive_evidence(
+    customer_automation_gate: tuple[dict[str, str], tuple[str, ...], Path],
+    tmp_path: Path,
+) -> None:
+    environment, args, _ = customer_automation_gate
+    result = run_powershell(PREFLIGHT_SCRIPT, *args, "-ValidateOnly", environment=environment)
+    assert result.returncode == 0, normalized_process_output(result)
+    evidence_text = (tmp_path / "customer-evidence.json").read_text("utf-8-sig")
+    evidence = json.loads(evidence_text)
+    assert evidence["customer_automation_enabled"] is True
+    assert evidence["capability_mode"] == "customer_automation"
+    assert evidence["customer_automation_overlay_sha256"]
+    assert evidence["production_release"] is False
+    assert evidence["runtime_mode_verified"] is False
+    assert RETRIEVAL_TOKEN_SENTINEL not in evidence_text
+    assert "private-test-key" not in evidence_text
+    assert "11111111-1111" not in evidence_text
+    commands = [json.loads(line) for line in Path(environment["FAKE_DOCKER_LOG"]).read_text("utf-8").splitlines()]
+    assert any(arg.endswith("docker-compose.rootless-staging-customer-automation.yml") for arg in commands[-1])
+    assert not any("up" in command or "pull" in command for command in commands)
+
+
+def test_customer_automation_real_compose_merge_passes_gate_without_starting_containers(
+    customer_automation_gate: tuple[dict[str, str], tuple[str, ...], Path],
+    staging_env_file: Path,
+) -> None:
+    """真实 CLI 只解析合并文件，门禁继续使用 fake Docker，不连接 daemon。"""
+    docker = shutil.which("docker")
+    if docker is None:
+        pytest.skip("Docker Compose CLI unavailable")
+    environment, args, config_path = customer_automation_gate
+    with staging_env_file.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "\nTIKTOK_APP_KEY=test-app\nTIKTOK_SERVICE_ID=test-service\nTIKTOK_APP_SECRET=test-platform-secret"
+            "\nTIKTOK_CREDENTIAL_ENCRYPTION_KEY=test-encryption-key-with-32-characters"
+        )
+    environment.update(
+        {
+            "BACKEND_IMAGE": BACKEND_IMAGE,
+            "FRONTEND_IMAGE": FRONTEND_IMAGE,
+            "TIKTOK_EGRESS_IMAGE": BACKEND_IMAGE,
+            "TLS_CERT_DIR": "/__crm_staging_tls_not_used__",
+            "TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS": args[args.index("-AllowedTikTokStoreIds") + 1],
+        }
+    )
+    command = [
+        docker,
+        "compose",
+        "--project-name",
+        "crm-customer-profile-contract",
+        "--profile",
+        "ai",
+        "--env-file",
+        str(staging_env_file),
+    ]
+    for name in (
+        "docker-compose.yml",
+        "docker-compose.prod.yml",
+        "docker-compose.tiktok-egress.yml",
+        "docker-compose.rootless-staging.yml",
+        "docker-compose.rootless-staging-webhook.yml",
+        "docker-compose.rootless-staging-manual-send.yml",
+        "docker-compose.rootless-staging-agent-suggestions.yml",
+        "docker-compose.rootless-staging-customer-automation.yml",
+    ):
+        command.extend(["-f", str(SOURCE_ROOT / "compose" / name)])
+    result = subprocess.run(
+        command + ["config", "--format", "json"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env=environment,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, "Compose could not parse the reviewed customer automation profile"
+    config = json.loads(result.stdout)
+    agent_worker = config["services"]["agent-worker"]
+    assert set(agent_worker["networks"]) == {"default", "tiktok-egress"}
+    assert agent_worker["environment"]["TIKTOK_APP_KEY"] == "test-app"
+    assert config["services"]["worker"]["environment"]["DEEPSEEK_API_KEY"] == "private-test-key"
+    config_path.write_text(result.stdout, encoding="utf-8")
+    gate = run_powershell(PREFLIGHT_SCRIPT, *args, "-ValidateOnly", environment=environment)
+    assert gate.returncode == 0, normalized_process_output(gate)
+
+
+@pytest.mark.parametrize(
+    "removed",
+    ["-EnableCustomerAutomation", "-EnableTikTokWebhookRead", "-EnableTikTokManualSend", "-EnableAgentSuggestions"],
+)
+def test_customer_automation_rejects_missing_explicit_scope(
+    customer_automation_gate: tuple[dict[str, str], tuple[str, ...], Path],
+    removed: str,
+    tmp_path: Path,
+) -> None:
+    environment, args, _ = customer_automation_gate
+    result = run_powershell(
+        PREFLIGHT_SCRIPT, *(arg for arg in args if arg != removed), "-ValidateOnly", environment=environment
+    )
+    assert result.returncode != 0
+    assert not (tmp_path / "customer-evidence.json").exists()
+
+
+@pytest.mark.parametrize("other_mode", ["-EnableG5SSELoadTest", "-EnableG2WebhookProbe"])
+def test_customer_automation_rejects_probe_modes_before_docker(
+    customer_automation_gate: tuple[dict[str, str], tuple[str, ...], Path],
+    other_mode: str,
+) -> None:
+    environment, args, _ = customer_automation_gate
+    result = run_powershell(PREFLIGHT_SCRIPT, *args, other_mode, "-ValidateOnly", environment=environment)
+    assert result.returncode != 0
+    assert not Path(environment["FAKE_DOCKER_LOG"]).exists()
+
+
+@pytest.mark.parametrize("target", ["", "710688832392260838", "11111111-1111-4111-8111-111111111111,"])
+def test_customer_automation_requires_canonical_store_allowlist(
+    customer_automation_gate: tuple[dict[str, str], tuple[str, ...], Path],
+    target: str,
+) -> None:
+    environment, args, _ = customer_automation_gate
+    changed = list(args)
+    index = changed.index("-AllowedTikTokStoreIds")
+    changed[index + 1] = target
+    if target.isdigit():
+        changed[index] = "-AllowedTikTokConversationId"
+    result = run_powershell(PREFLIGHT_SCRIPT, *changed, "-ValidateOnly", environment=environment)
+    assert result.returncode != 0
+    assert not Path(environment["FAKE_DOCKER_LOG"]).exists()
+
+
+@pytest.mark.parametrize("runtime", [False, True])
+@pytest.mark.parametrize(
+    "service_name,name,value",
+    [
+        ("backend", "REAL_TIKTOK_AUTOMATION_ENABLED", "false"),
+        ("worker", "AUTO_REPLY_ENABLED", "false"),
+        ("jobs", "LLM_ENABLED", "false"),
+        ("agent-worker", "AGENT_V2_FORMAL_ENABLED", "false"),
+        ("worker", "EMBEDDING_ENABLED", "false"),
+        ("jobs", "REAL_TIKTOK_READ_ENABLED", "false"),
+        ("agent-worker", "REAL_TIKTOK_MESSAGE_WRITE_ENABLED", "false"),
+        ("jobs", "TIKTOK_MESSAGE_WRITE_ALLOWED_STORE_IDS", "33333333-3333-4333-8333-333333333333"),
+        ("worker", "RETRIEVAL_MODEL_SERVICE_TOKEN", "wrong-token"),
+        ("backend", "RETRIEVAL_MODEL_SERVICE_URL", "http://127.0.0.1:9"),
+        ("worker", "RETRIEVAL_MODEL_SERVICE_URL", "http://127.0.0.1:9"),
+        ("jobs", "RETRIEVAL_MODEL_SERVICE_URL", "http://127.0.0.1:9"),
+        ("agent-worker", "RETRIEVAL_MODEL_SERVICE_URL", "http://127.0.0.1:9"),
+        ("jobs", "LLM_PRIMARY_MODEL", ""),
+        ("worker", "LOGISTICS_NOTIFICATIONS_ENABLED", "false"),
+        ("jobs", "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED", "false"),
+        ("jobs", "LOGISTICS_NOTIFICATION_POLL_SECONDS", "28800"),
+        ("agent-worker", "REAL_TIKTOK_WEBHOOK_ENABLED", "true"),
+        ("jobs", "TIKTOK_CONVERSATION_SYNC_ENABLED", "true"),
+        ("jobs", "AGENT_V2_DEBUG_ENABLED", "true"),
+        ("worker", "WORKSPACE_MESSAGE_TRANSLATION_ENABLED", "true"),
+        ("backend", "REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED", "true"),
+        ("backend", "AI_MARKETING_ENABLED", "true"),
+        ("worker", "APP_ENV", "production"),
+        ("agent-worker", "TIKTOK_EGRESS_PROXY_URL", ""),
+    ],
+)
+def test_customer_automation_rejects_config_and_running_service_drift(
+    customer_automation_gate: tuple[dict[str, str], tuple[str, ...], Path],
+    runtime: bool,
+    service_name: str,
+    name: str,
+    value: str,
+    tmp_path: Path,
+) -> None:
+    environment, args, config_path = customer_automation_gate
+    if runtime:
+        environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+        environment["FAKE_DOCKER_SERVICE_ENV_OVERRIDE"] = json.dumps({service_name: {name: value}})
+    else:
+        config = json.loads(config_path.read_text("utf-8"))
+        config["services"][service_name]["environment"][name] = value
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+    mode = ("-Deploy", "-Confirm:$false") if runtime else ("-ValidateOnly",)
+    result = run_powershell(PREFLIGHT_SCRIPT, *args, *mode, environment=environment)
+    assert result.returncode != 0
+    output = normalized_process_output(result)
+    assert ("runtime" if runtime else "compose") in output, output
+    assert service_name in output, output
+    assert not (tmp_path / "customer-evidence.json").exists()
+    assert RETRIEVAL_TOKEN_SENTINEL not in output
+
+
+def test_customer_automation_checks_every_running_service_before_health(
+    customer_automation_gate: tuple[dict[str, str], tuple[str, ...], Path],
+) -> None:
+    environment, args, _ = customer_automation_gate
+    environment["FAKE_DOCKER_FAIL_UP_NUMBER"] = "999"
+    result = run_powershell(PREFLIGHT_SCRIPT, *args, "-Deploy", "-Confirm:$false", environment=environment)
+    assert result.returncode != 0  # 隔离替身没有公网健康端点，不能记录 passed。
+    commands = [json.loads(line) for line in Path(environment["FAKE_DOCKER_LOG"]).read_text("utf-8").splitlines()]
+    inspected = {command[-1] for command in commands if command[:2] == ["inspect", "--format"]}
+    assert {"candidate-backend", "candidate-worker", "candidate-jobs", "candidate-agent-worker"} <= inspected
+    assert "runtime" not in normalized_process_output(result)
 
 
 @pytest.mark.parametrize(
@@ -1368,6 +1645,9 @@ def staging_env_file(tmp_path: Path) -> Path:
                 "AI_TRANSLATION_ENABLED=false",
                 "AI_MARKETING_ENABLED=false",
                 "AUTO_REPLY_ENABLED=false",
+                "REAL_TIKTOK_AUTOMATION_ENABLED=false",
+                "LOGISTICS_NOTIFICATIONS_ENABLED=false",
+                "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED=false",
                 "ALLOW_MOCK_PLATFORM_ADAPTERS=false",
             ]
         ),
@@ -1435,6 +1715,9 @@ def write_fake_compose_runtime(tmp_path: Path, model_asset_dir: Path) -> tuple[d
         "WORKSPACE_MESSAGE_TRANSLATION_ENABLED": "false",
         "AI_MARKETING_ENABLED": "false",
         "AUTO_REPLY_ENABLED": "false",
+        "REAL_TIKTOK_AUTOMATION_ENABLED": "false",
+        "LOGISTICS_NOTIFICATIONS_ENABLED": "false",
+        "REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED": "false",
     }
     tiktok_application_environment = {
         **application_environment,
@@ -1551,6 +1834,7 @@ if arguments[:2] == ["inspect", "--format"]:
     if arguments[2] == "{{json .Config}}":
         config = json.loads(Path(os.environ["FAKE_DOCKER_CONFIG"]).read_text(encoding="utf-8"))
         service_env = config["services"][service]["environment"].copy()
+        service_env.update(json.loads(os.environ.get("FAKE_DOCKER_SERVICE_ENV_OVERRIDE", "{}" )).get(service, {}))
         if service == "backend" and "FAKE_DOCKER_RUNTIME_QUERY_LIMIT" in os.environ:
             service_env["CHAT_QUERY_LIMIT"] = os.environ["FAKE_DOCKER_RUNTIME_QUERY_LIMIT"]
         if service == "backend" and "FAKE_DOCKER_RUNTIME_LLM_ENABLED" in os.environ:

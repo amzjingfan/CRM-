@@ -95,11 +95,21 @@ class TikTokAdapter(PlatformAdapter):
             return await super().send_message(channel_account, command)
         notification_allowed = (
             command.logistics_notification_authorized
+            and self.settings.tiktok_automation_effective_enabled
+            and self.settings.app_env != "production"
             and command.message_type == "text"
             and self.settings.logistics_notifications_enabled
             and self.settings.real_tiktok_logistics_notifications_enabled
         )
-        if not command.human_confirmed and not notification_allowed:
+        automation_allowed = (
+            command.automation_authorized
+            and self.settings.tiktok_automation_effective_enabled
+            and self.settings.app_env != "production"
+            and command.sender_role in {"ROBOT", "SYSTEM"}
+        )
+        if command.sender_role != "CUSTOMER_SERVICE" and not (automation_allowed or notification_allowed):
+            return SendMessageResult(status="failed", mock=False, error_code="AUTOMATION_IDENTITY_INVALID")
+        if not command.human_confirmed and not notification_allowed and not automation_allowed:
             return SendMessageResult(
                 status="failed",
                 mock=False,

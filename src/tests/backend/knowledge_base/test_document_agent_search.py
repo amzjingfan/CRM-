@@ -60,8 +60,9 @@ async def test_both_file_search_routes_repeat_tenant_version_and_approval_gates(
         assert "knowledge_files.archived_at IS NULL" in sql
         assert "knowledge_files.active_version_number = knowledge_file_versions.version_number" in sql
         assert "knowledge_file_versions.status =" in sql
-        assert "knowledge_file_versions.publication_approval =" in sql
+        assert "knowledge_file_versions.publication_approval IN" in sql
         values = list(compiled.params.values())
+        assert ["approved_for_internal_review", "approved_for_public_reply"] in values
         assert store_id in values
         assert [file_id] in values
 

@@ -16,23 +16,39 @@ from app.stores.models import Store
 @pytest.mark.asyncio
 async def test_global_send_disabled_claims_only_preview_tasks() -> None:
     session = SimpleNamespace(scalar=AsyncMock(return_value=None))
-    await worker.claim_task(session, SimpleNamespace(auto_reply_enabled=False, auto_reply_max_attempts=3))
+    from app.shared.config.settings import Settings
+
+    await worker.claim_task(session, Settings(_env_file=None))
     statement = session.scalar.await_args.args[0]
     compiled = statement.compile(compile_kwargs={"literal_binds": True})
     assert "agent_tasks.mode = 'preview'" in str(compiled)
 
 
 @pytest.mark.asyncio
-async def test_preview_task_uses_current_actor_permissions_and_never_sends(monkeypatch) -> None:
+async def test_preview_task_uses_current_actor_permissions_and_never_sends(
+    monkeypatch,
+) -> None:
     store_id, actor_id = uuid.uuid4(), uuid.uuid4()
     store = Store(
         id=store_id,
         name="测试店",
         code="test",
         status="active",
-        metadata_json={"agent_auto_reply_preview": {"enabled": True, "revision": 1, "actor_id": str(actor_id)}},
+        metadata_json={
+            "agent_auto_reply_preview": {
+                "enabled": True,
+                "revision": 1,
+                "actor_id": str(actor_id),
+            }
+        },
     )
-    actor = User(id=actor_id, login_name="preview-actor", name="坐席", password_hash="synthetic", status="active")
+    actor = User(
+        id=actor_id,
+        login_name="preview-actor",
+        name="坐席",
+        password_hash="synthetic",
+        status="active",
+    )
     task = AgentTask(
         id=uuid.uuid4(),
         store_id=store_id,
@@ -83,7 +99,13 @@ async def test_preview_task_uses_current_actor_permissions_and_never_sends(monke
         )
     )
     monkeypatch.setattr(worker, "run_agent_for_message", run)
-    monkeypatch.setattr(worker, "get_platform_adapter", lambda *_args: pytest.fail("preview attempted platform send"))
+    from app.tools.executor import SqlAlchemyToolExecutor
+
+    monkeypatch.setattr(
+        SqlAlchemyToolExecutor,
+        "execute",
+        AsyncMock(side_effect=AssertionError("preview attempted platform send")),
+    )
 
     await worker.process_task(session, task, SimpleNamespace(auto_reply_enabled=False))
     assert task.status == "human_review"
@@ -95,7 +117,9 @@ async def test_preview_task_uses_current_actor_permissions_and_never_sends(monke
 
 
 @pytest.mark.asyncio
-async def test_disabling_store_policy_cancels_queued_preview_before_model(monkeypatch) -> None:
+async def test_disabling_store_policy_cancels_queued_preview_before_model(
+    monkeypatch,
+) -> None:
     store_id = uuid.uuid4()
     store = Store(id=store_id, name="测试店", code="test", status="active", metadata_json={})
     task = AgentTask(

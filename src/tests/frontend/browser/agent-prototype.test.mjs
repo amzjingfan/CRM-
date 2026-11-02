@@ -33,7 +33,7 @@ async function openAgentPage(options = {}) {
   if (options.notificationAgent) Object.assign(agents[0], { status: "enabled", published_version: 1, enabled_tools: ["notify_logistics_update"] });
   const writes = [];
   let detached = false;
-  const previewPolicies = new Map();
+  const automationPolicies = new Map();
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -54,14 +54,14 @@ async function openAgentPage(options = {}) {
       if (request.method() === "PATCH") { const payload = JSON.parse(request.postData()); writes.push({ policy: payload, store_id: policy.store_id }); Object.assign(policy, payload, { revision: 1 }); }
       data = policy;
     }
-    else if (url.pathname === "/v1/agents/auto-reply-preview") {
+    else if (url.pathname === "/v1/agents/automation") {
       const storeId = url.searchParams.get("store_id");
-      const current = previewPolicies.get(storeId) ?? { store_id: storeId, enabled: false, revision: 0, mode: "review_preview", send_performed: false };
+      const current = automationPolicies.get(storeId) ?? { store_id: storeId, mode: "off", revision: 0, global_enabled: options.automationEnabled ?? false, authorized_by: null, enabled_at: null };
       if (request.method() === "PUT") {
         const payload = request.postDataJSON();
-        writes.push({ auto_preview: payload, store_id: storeId });
-        Object.assign(current, { enabled: payload.enabled, revision: current.revision + 1 });
-        previewPolicies.set(storeId, current);
+        writes.push({ automation: payload, store_id: storeId });
+        Object.assign(current, { mode: payload.mode, revision: current.revision + 1 });
+        automationPolicies.set(storeId, current);
       }
       data = current;
     }
@@ -117,17 +117,45 @@ test("temporary preview auto-send switch is absent and real Agent settings remai
   } finally { await context.close(); }
 });
 
-test("auto suggestion preview toggles only the selected store and never offers buyer delivery", async () => {
+test("one authoritative automation control isolates stores and blocks unavailable modes", async () => {
   const { context, page, writes } = await openAgentPage({ notificationAgent: true });
   try {
-    const switchButton = page.getByRole("button", { name: "开启预演" });
-    await switchButton.click();
-    await page.getByRole("button", { name: "关闭预演" }).waitFor();
-    assert.deepEqual(writes.at(-1), { auto_preview: { enabled: true, expected_revision: 0 }, store_id: us.id });
+    const mode = page.getByRole("combobox", { name: "店铺自动投递模式" });
+    await mode.waitFor();
+    assert.equal(await mode.count(), 1);
+    assert.equal(await page.getByRole("button", { name: "开启预演" }).count(), 0);
+    assert.equal(await mode.inputValue(), "off");
+    // Playwright's enabled-state lookup retargets options to their select; inspect the native option gate.
+    assert.equal(await mode.locator('option[value="auto"]').evaluate((option) => option.disabled), true);
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes("/v1/agents/automation") && response.request().method() === "PUT"),
+      // A buyer-facing automatic mode must be skipped by real keyboard selection when the master is closed.
+      mode.press("End"),
+    ]);
+    assert.deepEqual(writes.at(-1), { automation: { mode: "preview", expected_revision: 0 }, store_id: us.id });
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes("/v1/agents/automation") && response.request().method() === "PUT"),
+      mode.selectOption("off"),
+    ]);
+    assert.deepEqual(writes.at(-1), { automation: { mode: "off", expected_revision: 1 }, store_id: us.id });
     await page.getByLabel("当前店铺", { exact: true }).selectOption(uk.id);
-    await page.getByRole("button", { name: "开启预演" }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "开启预演" }).isDisabled(), true);
-    assert.equal(await page.getByText("当前店铺收到新买家消息后自动生成待审阅建议；不会发送平台消息。").count(), 1);
+    await page.getByRole("combobox", { name: "店铺自动投递模式" }).waitFor();
+    assert.equal(await mode.inputValue(), "off");
+    assert.equal(await mode.locator('option[value="preview"]').evaluate((option) => option.disabled), true);
+  } finally { await context.close(); }
+});
+
+test("global permission exposes automatic delivery through the same revision-bound control", async () => {
+  const { context, page, writes } = await openAgentPage({ notificationAgent: true, automationEnabled: true });
+  try {
+    const mode = page.getByRole("combobox", { name: "店铺自动投递模式" });
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes("/v1/agents/automation") && response.request().method() === "PUT"),
+      mode.selectOption("auto"),
+    ]);
+    assert.deepEqual(writes.at(-1), { automation: { mode: "auto", expected_revision: 0 }, store_id: us.id });
+    assert.equal(await mode.count(), 1);
+    assert.equal(await page.getByRole("button", { name: "关闭预演" }).count(), 0);
   } finally { await context.close(); }
 });
 
@@ -238,7 +266,7 @@ test("Agent prototype tabs, store isolation and bound files", async () => {
     await page.getByText(/已发布 v1/).waitFor();
     await page.getByLabel("确认语义类型：物流说明.pdf").selectOption("policy");
     await page.getByRole("button", { name: "批准内部建议" }).click();
-    await page.getByText("可用于内部建议").waitFor();
+    await page.getByText("仅内部建议", { exact: true }).waitFor();
     assert.equal(writes.at(-1).statement_type, "policy");
     await page.getByRole("button", { name: "撤销审批" }).click();
     await page.getByText("暂不可检索").waitFor();

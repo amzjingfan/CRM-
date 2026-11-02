@@ -493,7 +493,7 @@ async def approve_document_version(
     payload: DocumentVersionApproval,
     idempotency_key: str,
 ) -> DocumentVersionDetail:
-    """人工确认当前已索引文件版本的语义和内部建议使用范围。"""
+    """人工确认文件用途；客户回复须显式审批，不能由内部建议自动提升。"""
     file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
     if file.deleted_at is not None or file.archived_at is not None or file.active_version_number != version_number:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "只能审批当前有效且未归档的文件版本", 409)
@@ -501,6 +501,11 @@ async def approve_document_version(
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "文件版本尚未索引就绪", 409)
     if payload.statement_type == KnowledgeStatementType.UNKNOWN:
         raise AppError(ErrorCode.VALIDATION_ERROR, "审批时必须确认知识语义类型", 422)
+    if payload.purpose == "public_reply" and (
+        payload.statement_type == KnowledgeStatementType.TECHNICAL_ARTIFACT
+        or payload.customer_scope != KnowledgeCustomerScope.GENERIC
+    ):
+        raise AppError(ErrorCode.VALIDATION_ERROR, "客户回复只能使用已确认通用范围的业务知识", 422)
     if payload.customer_scope == KnowledgeCustomerScope.SPECIFIC_CUSTOMER:
         raise AppError(ErrorCode.VALIDATION_ERROR, "客户实例事实不能用于通用知识检索", 422)
     if (
@@ -517,9 +522,15 @@ async def approve_document_version(
             AuditLog.request_id == request_id,
         )
     )
-    expected = {"statement_type": payload.statement_type.value, "customer_scope": payload.customer_scope.value}
+    expected = {
+        "statement_type": payload.statement_type.value,
+        "customer_scope": payload.customer_scope.value,
+        "purpose": payload.purpose,
+    }
     if prior is not None:
-        if prior.after_data is None or any(prior.after_data.get(key) != value for key, value in expected.items()):
+        prior_values = dict(prior.after_data or {})
+        prior_values.setdefault("purpose", "internal_review")
+        if prior.after_data is None or any(prior_values.get(key) != value for key, value in expected.items()):
             raise AppError(ErrorCode.RESOURCE_CONFLICT, "幂等键已用于其他审批", 409)
         await session.rollback()
         return await get_document_version(session, user, file_id, version_number)
@@ -527,7 +538,11 @@ async def approve_document_version(
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "当前版本已审批；如需变更请上传替换版本", 409)
     version.statement_type = payload.statement_type.value
     version.customer_scope = payload.customer_scope.value
-    version.publication_approval = KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW.value
+    version.publication_approval = (
+        KnowledgePublicationApproval.APPROVED_FOR_PUBLIC_REPLY.value
+        if payload.purpose == "public_reply"
+        else KnowledgePublicationApproval.APPROVED_FOR_INTERNAL_REVIEW.value
+    )
     version.approved_by = user.id
     version.approved_at = datetime.now(UTC)
     session.add(

@@ -39,12 +39,12 @@ async def get_auto_preview(session: AsyncSession, user: User, conversation_id: u
         .where(
             AgentTask.store_id == conversation.store_id,
             AgentTask.conversation_id == conversation.id,
-            AgentTask.mode == "preview",
+            AgentTask.mode.in_(("preview", "automation")),
         )
         .order_by(AgentTask.created_at.desc(), AgentTask.id.desc())
         .limit(1)
     )
-    if task is None:
+    if task is None or task.status in {"queued", "succeeded", "cancelled"}:
         return None
     return AutoPreviewView(
         task_id=task.id,

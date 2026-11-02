@@ -169,7 +169,7 @@ test("protected routes quietly handle expected authentication errors", () => {
   assert.match(marketingSource, /!isAuthenticationError\(caught\)/);
 });
 
-test("Agent configuration edits model and seven-section prompt but keeps automated sending unavailable", () => {
+test("Agent configuration keeps model and seven-section editing with one explicit automation policy", () => {
   const agentSource = readRequiredSource("agent");
   const apiSource = readRequiredSource("api");
   const sharedPrompt = readFileSync(new URL("../../../frontend/components/AgentPromptFields.tsx", import.meta.url), "utf8");
@@ -182,4 +182,9 @@ test("Agent configuration edits model and seven-section prompt but keeps automat
   assert.match(apiSource, /\/agents/);
   assert.doesNotMatch(agentSource, /name="llm_model"/);
   assert.doesNotMatch(agentSource, /name="auto_reply_threshold"/);
+  assert.equal((agentSource.match(/<StoreAutomationControls /g) ?? []).length, 1);
+  assert.doesNotMatch(agentSource, /toggleAutoPreview|开启预演|关闭预演/);
+  const automationSource = readFileSync(new URL("../../../frontend/components/AutomationControls.tsx", import.meta.url), "utf8");
+  for (const mode of ["off", "preview", "auto"]) assert.ok(automationSource.includes(`value="${mode}"`));
+  assert.match(automationSource, /global_enabled/);
 });

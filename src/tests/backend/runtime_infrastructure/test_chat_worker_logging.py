@@ -5,6 +5,7 @@ import logging
 import uuid
 from io import StringIO
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -62,6 +63,9 @@ async def test_agent_task_failure_emits_stable_json_event(monkeypatch: pytest.Mo
     async def fail_process_task(*_args: object) -> None:
         raise ValueError("customer-message-sentinel")
 
+    from app.agents.automation import runner
+
+    monkeypatch.setattr(runner, "process_one_delivery", AsyncMock(return_value=False))
     monkeypatch.setattr(worker, "session_factory", lambda: FakeSessionContext(session))
     monkeypatch.setattr(worker, "claim_task", fake_claim_task)
     monkeypatch.setattr(worker, "process_task", fail_process_task)

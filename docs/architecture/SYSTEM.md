@@ -1,5 +1,17 @@
 # 系统架构
 
+## 050 自动投递与接待计时（2026-11-02 候选）
+
+`050_agent_reception_delivery` 顺接 049，新增 `automation_deliveries`、`reception_conversation_states`，扩展接待策略的中英文正文、投递模式、欢迎间隔、revision 和授权人；同时扩展 `agent_tasks` 状态约束，支持 queued/cancelled/preview_cancelled/no_suggestion。旧策略默认 preview，不扫描历史会话补发。没有新增运行服务或消息总线。
+
+每店 `stores.metadata_json.agent_automation` 保存 off/preview/auto、revision、授权人与生效水位；现有 Conversation metadata 保存逐会话暂停状态。可信 Webhook 和增量同步在新买家消息落库后创建任务与计时，初次历史同步和重复消息不触发。Worker 在模型调用前释放事务，以持久任务前驱与 attempt fencing 保证同会话 FIFO；旧租约完成或异常不能覆盖新 owner。每来源分段先文字后卡片，较早 unknown 会阻断后续交付。
+
+自动投递账本按店铺、会话、来源种类/键和段号唯一，保存冻结正文摘要、Agent/文件版本证明、授权人与策略 revision。认领后独立检查当下授权，提交 dispatching 后才调用现有平台适配器；中断的 dispatching 转 unknown，不猜测结果或自动重发。发送前最终远端核查完成后锁定用户、角色、Agent 与引用文件，避免模型或平台等待期间的撤权被旧 ORM 缓存覆盖。物流仍复用其独立事件账本，通过同一发送执行器交付。
+
+有自动投递记录或新增 Agent 任务状态时，050 降级拒绝删除这些事实；回退应用镜像应保留迁移和账本。空隔离测试库可以往返迁移，线上回退必须先备份和核对兼容性。
+
+050 同时为现有 `agent_logistics_notifications` 增加 `authorization_json`（JSONB，默认空对象），不复用严格事件结构 `context_json`。成功独立复核后原子保存正文 hash、原策略 revision/授权人、Agent 发布版本/提示词摘要、实际引用文件版本及实际工具权限；最终远端等待结束后重新核对并锁定相关授权行直至发送结果提交。旧空证明禁止新的 external 投递，旧 unknown 仍可对账；有非空物流证明时降级同样拒绝丢失记录。
+
 ## 2026-10-31 五类 Agent 本地候选
 
 迁移 `049_agent_auto_reply_preview` 顺接 `048_published_reply_profile`，为现有 `agent_tasks` 增加 `mode`、`preview_content` 和店铺/会话查询索引；旧任务以 `legacy` 模式保持兼容。店铺开关存于本店 `stores.metadata_json.agent_auto_reply_preview`，乐观 revision 和审计在 API 层维护；任务由现有入站处理和 Agent Worker 执行，不增加服务、队列或真实发送路径。商品搜索与详情共用上架且正库存投影，未知库存不作为在售。共享模板发布不直接改动店铺 Agent；物流事件与连续无解兜底由既有编排按用途触发。
@@ -102,13 +114,13 @@ Agent 管理页调试走独立内部入口，复用现有分类、文件 RAG、�
 
 TikTok OAuth Token 加密保存，state 哈希绑定并由现有 jobs worker 原子消费。公开 callback 将 state/code 认证加密到短期任务并快速站内回跳；任务按 state 摘要去重，终态清除密文，过期和崩溃不重用一次性 code。状态查询同时核对原发起用户与店铺权限。Webhook 在真实模式只按官方签名验证。消息写入只允许人工确认的普通文本或原生物流卡片；部署范围可选单个平台会话或审核过的店铺 UUID 列表，二者互斥且空范围失败关闭。工作台、工具执行层和 TikTok 写适配器均按范围拦截，工作台还核对店铺有效、渠道已连接、Scope 与凭证有效期。真实发送在持久化 `processing` 前锁定店铺行，同店铺已有 `processing` 或 `unknown` 出站消息时阻断新发送。平台超时或结果不确定时记录 `unknown`，随后按消息标识对账，禁止自动重复发送；进程中断留下的 `processing` 同样保持阻断，待人工核对事实后走受审恢复流程。
 
-基础接待配置独立于会被营销 Worker 扫描的活动表：个人/团队快捷回复按店铺和用户隔离，分组 `enabled` 只决定工作台能否选用该组话术，管理页保留停用分组及内容。超时回复与进店欢迎语只保存策略、店铺关联和按店铺时区解释的日期/每日时段；策略列表只返回对全部关联店铺都有查看权限的记录，多店策略去重分页。旧版 UTC `valid_from/valid_to` 记录保留原语义，新建配置写入独立 `schedule` JSONB。配置开关不接入 Webhook、Worker 或 TikTok 写适配器；工作台仅把文本快捷回复放入当前会话草稿或现有审阅框，实际外发仍须坐席二次确认并走原消息幂等、审计与对账路径。
+基础接待配置独立于会被营销 Worker 扫描的活动表：个人/团队快捷回复按店铺和用户隔离，分组 `enabled` 只决定工作台能否选用该组话术，管理页保留停用分组及内容。超时回复与进店欢迎语保存策略、店铺关联和按店铺时区解释的日期/每日时段，并由本文件050链路处理可信入站与到期投递；策略列表只返回对全部关联店铺都有查看权限的记录，多店策略去重分页。旧版 UTC `valid_from/valid_to` 记录保留原语义，新建配置写入独立 `schedule` JSONB。快捷回复仍只放入当前草稿，由坐席确认；欢迎/超时另需逐策略auto、全局主开关、当前授权和平台窗口，复用同一幂等、审计与unknown对账路径。
 
 买家阶段的人工覆盖值保存在同店 `customers.metadata`，只允许 `pre|during|after`；清除该值恢复前端依据最近已同步订单状态的自动判断。写入通过会话店铺鉴权、CSRF、权限检查、客户行锁与低敏审计，不触发 TikTok 写接口。
 
 买家阶段的人工覆盖值保存在同店 `customers.metadata`，只允许 `pre|during|after`；清除该值恢复前端依据最近已同步订单状态的自动判断。写入通过会话店铺鉴权、CSRF、权限检查、客户行锁与低敏审计，不触发 TikTok 写接口。
 
-`AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 是当前安全基线。Shopee/Amazon 真实适配、公开自动回复、自动营销和高风险写入不属于 v0.1。
+新环境以 `AUTO_REPLY_ENABLED=false` 与 `REAL_TIKTOK_HIGH_RISK_WRITE_ENABLED=false` 为默认基线。本轮两店staging自动化例外见本文件050说明；Shopee/Amazon真实适配、production自动回复、自动营销和高风险写入未放行。
 
 ## 可观测与恢复
 

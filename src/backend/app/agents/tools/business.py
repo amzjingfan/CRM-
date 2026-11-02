@@ -122,11 +122,14 @@ class AgentBusinessExecutor:
         run_id: uuid.UUID,
         permissions: frozenset[str],
         trace_id: str,
+        *,
+        preview_only: bool = False,
     ) -> None:
         self.session, self.snapshot = session, snapshot
         # 跨子会话只携带操作者标识；角色、状态和店铺权限每次从数据库核验。
         self.user = User(id=user.id)
         self.run_id, self.permissions, self.trace_id = run_id, permissions, trace_id
+        self.preview_only = preview_only
         self.orders: dict[str, SidebarOrder] = {}
         self.products: dict[str, str] = {}
         self.return_cases: dict[str, TikTokReturn] = {}
@@ -219,6 +222,18 @@ class AgentBusinessExecutor:
             elif name == "query_conversation_messages":
                 facts = await self.messages(cast(ConversationHistoryArguments, parsed))
             elif name in {"create_handoff_request", "add_internal_note"}:
+                if self.preview_only:
+                    return {
+                        "status": "previewed",
+                        "facts": {
+                            "record_saved": False,
+                            "kind": "handoff_request" if name == "create_handoff_request" else "internal_note",
+                            "is_ai_suggestion": True,
+                            "transfer_performed": False,
+                            "send_performed": False,
+                        },
+                        "source": "debug_preview",
+                    }
                 from app.agents.tools.collaboration import save_collaboration
 
                 entry = await save_collaboration(

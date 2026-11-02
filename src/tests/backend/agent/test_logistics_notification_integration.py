@@ -9,15 +9,33 @@ import pytest
 from pydantic import ValidationError
 
 
-def test_notification_flags_are_independent_closed_by_default_and_poll_floor_is_eight_hours() -> None:
+def test_notification_flags_are_independent_closed_by_default_and_poll_is_one_hour() -> None:
     from app.shared.config.settings import Settings
 
     settings = Settings(_env_file=None)
     assert not settings.logistics_notifications_enabled
     assert not settings.real_tiktok_logistics_notifications_enabled
-    assert settings.logistics_notification_poll_seconds >= 8 * 3600
+    assert settings.logistics_notification_poll_seconds == 3600
     with pytest.raises(ValidationError):
         Settings(_env_file=None, LOGISTICS_NOTIFICATION_POLL_SECONDS=60)
+
+
+@pytest.mark.parametrize("master,automatic", [(False, False), (False, True), (True, False), (True, True)])
+def test_logistics_delivery_view_requires_effective_gate_without_disabling_background_preview(master, automatic):
+    from app.agents.tools.logistics_updates.policy import policy_view
+    from app.shared.config.settings import Settings
+
+    settings = Settings(_env_file=None).model_copy(
+        update={
+            "real_tiktok_automation_enabled": master,
+            "auto_reply_enabled": automatic,
+            "logistics_notifications_enabled": True,
+            "real_tiktok_logistics_notifications_enabled": True,
+        }
+    )
+    view = policy_view(uuid.uuid4(), None, settings)
+    assert view.global_enabled is True
+    assert view.real_delivery_enabled is (master and automatic)
 
 
 @pytest.mark.asyncio
@@ -84,6 +102,7 @@ async def test_native_notification_generation_and_real_independent_review_keep_l
     from app.agents.prompts.sections import legacy_safe_sections
     from app.agents.providers.tool_calling import FunctionCall, ToolTurn
     from app.agents.tools.logistics_updates import BoundLogisticsEvent, LogisticsScope, TrackingEvent
+    from app.agents.tools.logistics_updates.event_agent import EventToolset, build_notification_proposal_tool
     from app.agents.tools.logistics_updates.integration import NativeNotificationModel
     from app.shared.config.settings import Settings
 
@@ -92,8 +111,22 @@ async def test_native_notification_generation_and_real_independent_review_keep_l
     class Model:
         async def complete(self, *, messages, tools, max_output_tokens):
             calls.append((messages, tools))
-            if not tools:
-                return ToolTurn("Your parcel arrived at the hub at 10:00 UTC.", (), {}, 7, 9)
+            if tools[0].name == "notify_logistics_update":
+                if len(calls) == 1:
+                    return ToolTurn(
+                        None,
+                        (
+                            FunctionCall(
+                                "proposal",
+                                "notify_logistics_update",
+                                {"candidate_text": "Your parcel arrived at the hub at 10:00 UTC."},
+                            ),
+                        ),
+                        {},
+                        7,
+                        9,
+                    )
+                return ToolTurn("Proposal prepared.", (), {}, 0, 0)
             payload = json.loads(messages[-1]["content"])
             review = FunctionCall(
                 "review",
@@ -120,8 +153,28 @@ async def test_native_notification_generation_and_real_independent_review_keep_l
         model_name="synthetic",
         prompt_hash=compiled.content_sha256,
         prompt_sections=compiled.sections,
+        tool_names=("notify_logistics_update",),
+        file_ids=(),
     )
-    model = NativeNotificationModel(Settings(_env_file=None, LLM_ENABLED=True), agent, "Where is my parcel?")
+    proposals = []
+
+    @asynccontextmanager
+    async def toolsets(context):
+        yield EventToolset(
+            tools=(build_notification_proposal_tool(proposals),),
+            proposals=proposals,
+            evidence={},
+            citations=[],
+            validate=AsyncMock(return_value=True),
+            audit=AsyncMock(),
+        )
+
+    model = NativeNotificationModel(
+        Settings(_env_file=None, LLM_ENABLED=True),
+        agent,
+        "Where is my parcel?",
+        toolsets=toolsets,
+    )
     context = BoundLogisticsEvent(
         scope=LogisticsScope(
             store_id=uuid.uuid4(),
@@ -139,7 +192,9 @@ async def test_native_notification_generation_and_real_independent_review_keep_l
     decision = await model.review(context, candidate)
     assert decision.status == "approved" and decision.text == "Your parcel arrived at the hub at 10:00 UTC."
     assert model.input_tokens == 18 and model.output_tokens == 22
-    assert len(calls) == 2 and calls[0][1] == () and calls[1][1][0].name == "review_answer_evidence"
+    assert len(calls) == 3
+    assert calls[0][1][0].name == "notify_logistics_update"
+    assert calls[2][1][0].name == "review_answer_evidence"
     assert "Where is my parcel?" in calls[0][0][-1]["content"]
     assert str(context.scope.order_id) not in str(calls)
 
@@ -153,6 +208,7 @@ async def test_persisted_notification_authority_requires_exact_ledger_scope_text
         TrackingEvent,
     )
     from app.agents.tools.logistics_updates.authorization import authorize_persisted_send
+    from app.agents.tools.logistics_updates.proof import NotificationAuthorization, text_sha256
     from app.tools.contracts import SendPlatformMessageArguments, ToolExecutionContext, ToolInvocation
 
     scope = LogisticsScope(
@@ -176,6 +232,17 @@ async def test_persisted_notification_authority_requires_exact_ledger_scope_text
         customer_id=scope.customer_id,
         order_id=scope.order_id,
         conversation_id=scope.conversation_id,
+        authorization_json=NotificationAuthorization(
+            event_key=context.idempotency_key,
+            text_sha256=text_sha256("Arrived"),
+            policy_revision=1,
+            authorized_by=actor,
+            agent_id=uuid.uuid4(),
+            agent_version=1,
+            prompt_hash="0" * 64,
+            file_versions=(),
+            required_permissions=frozenset({"workspace.reply", "orders.view"}),
+        ).model_dump(mode="json"),
     )
     session = SimpleNamespace(
         scalar=AsyncMock(return_value=row), get=AsyncMock(return_value=SimpleNamespace(authorized_by=actor))
@@ -192,6 +259,14 @@ async def test_persisted_notification_authority_requires_exact_ledger_scope_text
     )
     authorize = AsyncMock(return_value=snapshot)
     monkeypatch.setattr("app.agents.tools.logistics_updates.authorization.authorize_event", authorize)
+    monkeypatch.setattr("app.agents.tools.logistics_updates.authorization._lock_authority", AsyncMock())
+    monkeypatch.setattr("app.agents.tools.logistics_updates.authorization._current_proof", AsyncMock(return_value=True))
+    monkeypatch.setattr(
+        "app.agents.tools.logistics_updates.authorization._window_source", AsyncMock(return_value=(object(), object()))
+    )
+    monkeypatch.setattr(
+        "app.agents.tools.logistics_updates.authorization._target_identity", AsyncMock(return_value=("synthetic",))
+    )
     invocation = ToolInvocation(
         tool_name="send_platform_message",
         idempotency_key=context.idempotency_key,
@@ -267,6 +342,7 @@ async def test_failed_native_generation_keeps_provider_reported_numeric_usage(mo
     from app.agents.core.errors import LLMErrorCode, LLMProviderError
     from app.agents.prompts.compiler import compile_prompt
     from app.agents.prompts.sections import legacy_safe_sections
+    from app.agents.tools.logistics_updates.event_agent import EventToolset, build_notification_proposal_tool
     from app.agents.tools.logistics_updates.integration import NativeNotificationModel
     from app.shared.config.settings import Settings
 
@@ -282,6 +358,19 @@ async def test_failed_native_generation_keeps_provider_reported_numeric_usage(mo
 
     monkeypatch.setattr("app.agents.tools.logistics_updates.integration.tool_provider", provider)
     compiled = compile_prompt(legacy_safe_sections())
+    proposals = []
+
+    @asynccontextmanager
+    async def toolsets(context):
+        yield EventToolset(
+            tools=(build_notification_proposal_tool(proposals),),
+            proposals=proposals,
+            evidence={},
+            citations=[],
+            validate=AsyncMock(return_value=True),
+            audit=AsyncMock(),
+        )
+
     model = NativeNotificationModel(
         Settings(_env_file=None, LLM_ENABLED=True),
         SimpleNamespace(
@@ -289,10 +378,12 @@ async def test_failed_native_generation_keeps_provider_reported_numeric_usage(mo
             model_name="synthetic",
             prompt_hash=compiled.content_sha256,
             prompt_sections=compiled.sections,
+            tool_names=("notify_logistics_update",),
         ),
         "Where is my parcel?",
+        toolsets=toolsets,
     )
     monkeypatch.setattr(model, "evidence", lambda context: {})
-    with pytest.raises(LLMProviderError):
+    with pytest.raises(ValueError, match="notification_required_tool_missing"):
         await model.generate(SimpleNamespace(buyer_language="en"))
     assert model.input_tokens == 5 and model.output_tokens == 3

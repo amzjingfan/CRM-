@@ -108,13 +108,14 @@ class Settings(BaseSettings):
         validation_alias="CHAT_SSE_HEARTBEAT_SECONDS",
     )
     sse_load_test_enabled: bool = Field(default=False, validation_alias="SSE_LOAD_TEST_ENABLED")
+    real_tiktok_automation_enabled: bool = Field(default=False, validation_alias="REAL_TIKTOK_AUTOMATION_ENABLED")
     auto_reply_enabled: bool = Field(default=False, validation_alias="AUTO_REPLY_ENABLED")
     logistics_notifications_enabled: bool = Field(default=False, validation_alias="LOGISTICS_NOTIFICATIONS_ENABLED")
     real_tiktok_logistics_notifications_enabled: bool = Field(
         default=False, validation_alias="REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED"
     )
     logistics_notification_poll_seconds: int = Field(
-        default=8 * 3600, ge=8 * 3600, le=7 * 86400, validation_alias="LOGISTICS_NOTIFICATION_POLL_SECONDS"
+        default=3600, ge=3600, le=7 * 86400, validation_alias="LOGISTICS_NOTIFICATION_POLL_SECONDS"
     )
     auto_reply_poll_seconds: float = Field(default=1.0, gt=0, le=60, validation_alias="AUTO_REPLY_POLL_SECONDS")
     auto_reply_max_attempts: int = Field(default=3, ge=1, le=3, validation_alias="AUTO_REPLY_MAX_ATTEMPTS")
@@ -355,8 +356,8 @@ class Settings(BaseSettings):
     def validate_production_runtime(self) -> Self:
         """在进程启动前校验 staging/production 基础安全和真实平台能力门禁。
 
-        业务边界：REAL-FS-04 只放行人工确认的普通消息；高风险写入和
-        自动回复仍属于后续阶段，配置为 true 时必须在启动阶段失败关闭。
+        业务边界：普通消息默认只放行人工确认；获准的非生产客户自动化
+        另需独立主开关和持久发送证明，高风险写入与生产自动化仍失败关闭。
         """
         if self.app_env not in {"development", "test", "integration", "staging", "production"}:
             raise ValueError("APP_ENV 必须为受支持的环境名称")
@@ -451,7 +452,18 @@ class Settings(BaseSettings):
             raise ValueError("启用 TikTok 高风险写入前必须先启用普通消息写入")
         if real_tiktok_enabled:
             self._validate_real_tiktok_prerequisites()
-        if self.real_tiktok_message_write_enabled and self.auto_reply_enabled:
+        if self.real_tiktok_automation_enabled and (
+            self.app_env == "production"
+            or not self.real_tiktok_message_write_enabled
+            or not self.llm_enabled
+            or not self.agent_v2_formal_enabled
+        ):
+            raise ValueError("真实自动投递只允许非生产环境，且须同时启用受控消息写入、LLM 与正式动态 Agent")
+        if (
+            self.real_tiktok_message_write_enabled
+            and self.auto_reply_enabled
+            and not self.real_tiktok_automation_enabled
+        ):
             raise ValueError("REAL-FS-04 真实 TikTok 普通消息仅允许人工确认发送，禁止同时启用自动回复")
         if self.real_tiktok_high_risk_write_enabled:
             raise ValueError("真实 TikTok 高风险写入尚未完成后续灰度，禁止启用")
@@ -641,6 +653,11 @@ class Settings(BaseSettings):
         if self.rag_candidate_top_k > self.rag_dense_top_k + self.rag_lexical_top_k:
             raise ValueError("混合检索候选数量不能超过 Dense 与词法召回数量之和")
         return self
+
+    @property
+    def tiktok_automation_effective_enabled(self) -> bool:
+        """真实自动投递须同时开启能力开关与可独立关闭的自动回复熔断开关。"""
+        return self.real_tiktok_automation_enabled and self.auto_reply_enabled
 
     @property
     def chat_stream_lease_seconds(self) -> int:

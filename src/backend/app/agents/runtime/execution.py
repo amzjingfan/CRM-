@@ -216,14 +216,18 @@ async def persist_dynamic_result(
             digest = hashlib.sha256(f"{run.id}:{agent.id}:{index}:{event.call_id}:{name}".encode()).hexdigest()
             # 知识命中与零命中都是已完成查询，不应记作执行失败。
             knowledge_query_completed = name == "search_knowledge" and event.status in {"retrieved", "no_hits"}
+            preview_completed = mode == "debug" and event.status == "previewed"
             status = (
                 "succeeded"
-                if knowledge_query_completed
+                if knowledge_query_completed or preview_completed
                 else event.status
                 if event.status in {"succeeded", "timeout", "unknown"}
                 else "failed"
             )
             output_summary: dict[str, object] = {"succeeded": status == "succeeded"}
+            if preview_completed:
+                # 现有数据库枚举记录调用成功；明确保留仅预演且未保存，不能冒充业务写入成功。
+                output_summary.update({"result_status": "previewed", "record_saved": False, "preview_only": True})
             if knowledge_query_completed:
                 output_summary["result_status"] = event.status
             # 只保留能力、阶段与配置关联，不复制模型参数、平台响应或正文。
@@ -246,6 +250,32 @@ async def persist_dynamic_result(
                 )
                 .on_conflict_do_nothing(constraint="uq_tool_call_store_idempotency")
             )
+    if mode == "formal":
+        from app.agents.automation.authorization import current_customer_files
+        from app.agents.automation.eligibility import review_eligibility
+
+        proof = review_eligibility(result)
+        selected = {item.agent_id for item in result.specialists}
+        files = sorted(
+            {(str(hit.document_id), hit.document_version) for item in result.specialists for hit in item.knowledge_hits}
+        )
+        if proof.get("review_basis") == "fixed_fallback":
+            files = []
+        proof["agent_versions"] = [[str(agent.id), agent.config_version] for agent in agents if agent.id in selected]
+        proof["file_versions"] = [list(item) for item in files]
+        required = {
+            TOOL_METADATA[name].permission
+            for item in result.specialists
+            for name in item.successful_tools
+            if name in TOOL_METADATA
+        }
+        if files:
+            required.add("knowledge.view")
+        proof["required_permissions"] = sorted(required)
+        if proof["eligible"] and not await current_customer_files(session, snapshot.store_id, proof["file_versions"]):
+            proof["eligible"] = False
+            proof["reason_code"] = "customer_reply_approval_required"
+        run.snapshot_ref = {**(run.snapshot_ref or {}), "automation_eligibility": proof}
     await session.commit()
 
 
@@ -266,6 +296,7 @@ async def execute_model_run(
     memory_facts: tuple[MemoryFact, ...] = (),
     user: User | None = None,
     progress: RunProgress | None = None,
+    preview_only: bool = False,
 ) -> DynamicRunResult:
     """每个子 Agent 独立数据库会话，所有模型和工具共享总截止时间。"""
     rag_service = build_bound_file_rag(settings, runtime) if any(agent.file_ids for agent in agents) else None
@@ -323,7 +354,13 @@ async def execute_model_run(
                     recent_history=recent_history,
                     session_facts=memory_facts,
                     business_executor=AgentBusinessExecutor(
-                        worker_session, user, snapshot, run_id, frozenset(permissions), trace_id
+                        worker_session,
+                        user,
+                        snapshot,
+                        run_id,
+                        frozenset(permissions),
+                        trace_id,
+                        preview_only=preview_only,
                     )
                     if user
                     else None,

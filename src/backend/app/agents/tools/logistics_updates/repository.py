@@ -20,6 +20,7 @@ from .contracts import (
     can_finish,
 )
 from .models import LogisticsNotification, LogisticsObservationRow
+from .proof import NotificationAuthorization, text_sha256
 
 
 def _utc(value: datetime) -> datetime:
@@ -27,8 +28,14 @@ def _utc(value: datetime) -> datetime:
 
 
 class SqlAlchemyLogisticsRepository:
-    def __init__(self, sessions: Callable[[], AbstractAsyncContextManager[AsyncSession]]) -> None:
+    def __init__(
+        self,
+        sessions: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+        *,
+        authorization: Callable[[BoundLogisticsEvent, str], NotificationAuthorization] | None = None,
+    ) -> None:
         self.sessions = sessions
+        self.authorization = authorization
 
     async def record(self, observation: LogisticsObservation) -> LogisticsUpdateResult:
         scope = observation.scope
@@ -179,11 +186,17 @@ class SqlAlchemyLogisticsRepository:
                 return False
             if latest.latest_fingerprint != context.event.fingerprint:
                 return False
+            proof = self.authorization(context, text) if mode == "external" and self.authorization else None
+            if mode == "external" and (
+                proof is None or proof.event_key != context.idempotency_key or proof.text_sha256 != text_sha256(text)
+            ):
+                return False
             # 事务先提交潜在写入，再调用交付端口；进程丢失也不会盲重发。
             row.state = "unknown"
             row.reason = "delivery_in_flight"
             row.reviewed_text = text
             row.mode = mode
+            row.authorization_json = proof.model_dump(mode="json") if proof else {}
             return True
 
     async def finish(

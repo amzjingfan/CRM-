@@ -28,6 +28,7 @@ class DocumentVersionSummary(BaseModel):
 class DocumentVersionApproval(BaseModel):
     statement_type: KnowledgeStatementType
     customer_scope: KnowledgeCustomerScope
+    purpose: Literal["internal_review", "public_reply"] = "internal_review"
 
 
 class DocumentFileSummary(BaseModel):

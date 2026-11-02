@@ -46,6 +46,9 @@ class LogisticsNotification(Base):
     )
     order_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
     context_json: Mapped[dict[str, object]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    authorization_json: Mapped[dict[str, object]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), default=dict, server_default="{}", nullable=False
+    )
     state: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     reason: Mapped[str | None] = mapped_column(String(80), nullable=True)
     reviewed_text: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -1,0 +1,51 @@
+{
+  "version": "agent-automation-full-chain-v1",
+  "data_classification": "synthetic_acceptance_only",
+  "external_test_sending": false,
+  "documents": [
+    {
+      "key": "product_guide",
+      "filename": "acceptance-orbit-product-guide.txt",
+      "text": "Synthetic acceptance guide for the fictional Orbit Lamp; never a real store policy. Before first use let the Orbit Lamp warm up for 90 seconds. The TEST-CALIBRATION-90 instruction comes from this guide. 虚构验收说明：Orbit Lamp 首次使用前预热90秒，依据标记为 TEST-CALIBRATION-90。此内容仅用于隔离验收。"
+    },
+    {
+      "key": "shipping_policy",
+      "filename": "acceptance-orbit-shipping-policy.txt",
+      "text": "Synthetic acceptance policy only. If verified tracking has no new event for 72 hours, support reviews the parcel; this does not guarantee loss, compensation or an arrival date. Policy reference TEST-TRACKING-72. 虚构验收配送政策：核实连续72小时无新物流节点时由客服核查；不保证丢失、赔偿或到达日期。标记 TEST-TRACKING-72。"
+    },
+    {
+      "key": "aftersales_guide",
+      "filename": "acceptance-orbit-aftersales-guide.txt",
+      "text": "Synthetic acceptance guide only. To reset the fictional Orbit Lamp, disconnect it from power, wait 45 seconds, then reconnect it. Do not promise a refund from this guide. Guide reference TEST-RESET-45. 虚构验收说明：重置 Orbit Lamp 时断开电源，等待45秒再重新接通；该说明不能作为退款承诺。标记 TEST-RESET-45。"
+    },
+    {
+      "key": "notification_guide",
+      "filename": "acceptance-logistics-notice-guide.txt",
+      "text": "Synthetic notification wording guide. Explain only the latest verified carrier event and its time. A sorting-hub arrival means the parcel is being processed there; it is not delivery to the buyer. Do not list earlier nodes or promise an ETA. Guide reference TEST-NOTICE-HUB. 虚构通知措辞：仅说明承运商已核实的最新节点和时间。到达分拣中心表示正在处理，不代表买家已收到，不承诺预计到达时间。标记 TEST-NOTICE-HUB。"
+    }
+  ],
+  "cases": [
+    {"id":"presales_product_en","agent":"presales_products_v1","language":"en","input":"Is the Orbit Lamp in stock, and what is its wattage?","required_tools":["search_products","query_product"]},
+    {"id":"presales_product_zh","agent":"presales_products_v1","language":"zh-CN","input":"Orbit Lamp 现在有货吗，功率是多少？","required_tools":["search_products","query_product"]},
+    {"id":"presales_coupon_en","agent":"presales_products_v1","language":"en","input":"Are there any currently available store coupons?","required_tools":["query_available_coupons"]},
+    {"id":"presales_coupon_zh","agent":"presales_products_v1","language":"zh-CN","input":"目前店铺有什么可用优惠券？","required_tools":["query_available_coupons"]},
+    {"id":"presales_knowledge_en","agent":"presales_products_v1","language":"en","input":"According to the Orbit Lamp setup guide, how long should I warm it up before first use?","required_tools":["search_knowledge"],"knowledge":"product_guide","expected_fact":"90 seconds"},
+    {"id":"presales_knowledge_zh","agent":"presales_products_v1","language":"zh-CN","input":"根据 Orbit Lamp 使用说明，首次使用前需要预热多久？","required_tools":["search_knowledge"],"knowledge":"product_guide","expected_fact":"90秒"},
+    {"id":"order_detail_en","agent":"order_logistics_us_v13","language":"en","input":"Please check the total paid amount for my Orbit Lamp order.","required_tools":["search_customer_orders","query_order"]},
+    {"id":"order_detail_zh","agent":"order_logistics_us_v13","language":"zh-CN","input":"帮我核实 Orbit Lamp 这笔订单的实付金额。","required_tools":["search_customer_orders","query_order"]},
+    {"id":"order_tracking_en","agent":"order_logistics_us_v13","language":"en","input":"What is the latest tracking update for my Orbit Lamp order?","required_tools":["search_customer_orders","query_logistics"]},
+    {"id":"order_tracking_zh","agent":"order_logistics_us_v13","language":"zh-CN","input":"Orbit Lamp 订单最新物流到哪了？","required_tools":["search_customer_orders","query_logistics"]},
+    {"id":"order_knowledge_en","agent":"order_logistics_us_v13","language":"en","input":"According to the shipping policy, after how many hours without a new tracking event should support review the parcel?","required_tools":["search_knowledge"],"knowledge":"shipping_policy","expected_fact":"72 hours"},
+    {"id":"order_knowledge_zh","agent":"order_logistics_us_v13","language":"zh-CN","input":"根据配送政策，连续多久没有新物流节点应由客服核查？","required_tools":["search_knowledge"],"knowledge":"shipping_policy","expected_fact":"72小时"},
+    {"id":"aftersales_progress_en","agent":"aftersales_products_v1","language":"en","input":"Please check the current return request status for my Orbit Lamp order.","required_tools":["search_customer_orders","query_order","query_aftersales"]},
+    {"id":"aftersales_progress_zh","agent":"aftersales_products_v1","language":"zh-CN","input":"帮我核实 Orbit Lamp 订单的退货申请当前进度。","required_tools":["search_customer_orders","query_order","query_aftersales"]},
+    {"id":"aftersales_product_en","agent":"aftersales_products_v1","language":"en","input":"Please find the Orbit Lamp and confirm the model and power rating shown in its product details.","required_tools":["search_products","query_product"]},
+    {"id":"aftersales_product_zh","agent":"aftersales_products_v1","language":"zh-CN","input":"请找到 Orbit Lamp，核对商品详情里的型号和额定功率。","required_tools":["search_products","query_product"]},
+    {"id":"aftersales_knowledge_en","agent":"aftersales_products_v1","language":"en","input":"According to the Orbit Lamp troubleshooting guide, how long do I wait with the power disconnected to reset it?","required_tools":["search_knowledge"],"knowledge":"aftersales_guide","expected_fact":"45 seconds"},
+    {"id":"aftersales_knowledge_zh","agent":"aftersales_products_v1","language":"zh-CN","input":"根据 Orbit Lamp 故障处理说明，重置时应断电等待多久？","required_tools":["search_knowledge"],"knowledge":"aftersales_guide","expected_fact":"45秒"},
+    {"id":"logistics_event_en","agent":"logistics_update_v1","language":"en","scenario":"logistics_event","required_tools":["query_order","query_logistics","search_knowledge","notify_logistics_update"],"knowledge":"notification_guide","latest_event":"Arrived at the destination sorting hub.","old_event":"Departed from the origin facility."},
+    {"id":"logistics_event_zh","agent":"logistics_update_v1","language":"zh-CN","scenario":"logistics_event","required_tools":["query_order","query_logistics","search_knowledge","notify_logistics_update"],"knowledge":"notification_guide","latest_event":"已到达目的地分拣中心。","old_event":"已离开发件中心。"},
+    {"id":"fallback_en","agent":"reply_fallback_v1","language":"en","scenario":"three_unresolved","inputs":["Can you register a new internet domain for my business?","Can you instead manage that domain's DNS records?","I still need someone to register and manage the domain."],"required_tools":["query_conversation_messages","create_handoff_request","add_internal_note"],"expected_answer":"We have received your question. At present, there are too many inquiries and the agent is occupied.\nPlease wait patiently. We will contact you as soon as possible. Thank you!"},
+    {"id":"fallback_zh","agent":"reply_fallback_v1","language":"zh-CN","scenario":"three_unresolved","inputs":["可以帮我的公司注册一个互联网域名吗？","那能不能帮我管理这个域名的DNS记录？","我还是需要有人帮我注册并管理域名。"],"required_tools":["query_conversation_messages","create_handoff_request","add_internal_note"],"expected_answer":"我们已收到您的问题。目前咨询较多，人工客服正在忙碌。请耐心等待，我们会尽快与您联系。谢谢！"}
+  ]
+}

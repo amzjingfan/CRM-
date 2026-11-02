@@ -1,5 +1,6 @@
 """集中导入全部 ORM 模型，确保 Alembic 能发现完整 metadata。"""
 
+from app.agents.automation.models import AutomationDelivery
 from app.agents.delivery.models import ReplyBatch
 from app.agents.management.config_models import AgentConfig, AgentTask
 from app.agents.management.models import AgentConfigVersion
@@ -35,6 +36,7 @@ from app.knowledge_base.models import KnowledgeCategory, KnowledgeChunk, Knowled
 from app.marketing.models import CustomerReview, MarketingCampaign, MarketingEvent
 from app.orders.models import Order, OrderItem
 from app.reception.models import (
+    ReceptionConversationState,
     ReceptionGroup,
     ReceptionMutation,
     ReceptionPolicy,
@@ -53,6 +55,7 @@ from app.tools.models import CouponIssuance, ToolCall
 from app.users.models import Department
 
 __all__ = [
+    "AutomationDelivery",
     "ReplyBatch",
     "AgentCollaborationEntry",
     "LogisticsNotification",
@@ -93,6 +96,7 @@ __all__ = [
     "OrderItem",
     "Permission",
     "ReceptionGroup",
+    "ReceptionConversationState",
     "ReceptionMutation",
     "ReceptionPolicy",
     "ReceptionPolicyStore",

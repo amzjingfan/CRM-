@@ -12,7 +12,10 @@ import app.integrations.tiktok_write as tiktok_write_module
 from app.integrations.credential_crypto import encrypt_credential
 from app.integrations.schemas import SendMessageCommand
 from app.integrations.tiktok_oauth import generate_api_signature
-from app.integrations.tiktok_write import SEND_MESSAGE_PATH_TEMPLATE, TikTokMessageClient
+from app.integrations.tiktok_write import (
+    SEND_MESSAGE_PATH_TEMPLATE,
+    TikTokMessageClient,
+)
 from app.shared.config.settings import Settings
 from app.stores.models import ChannelAccount
 from app.tools.contracts import validate_tool_arguments
@@ -87,6 +90,9 @@ async def test_independent_notification_transport_accepts_only_authorized_text_w
     settings = real_write_settings(
         LOGISTICS_NOTIFICATIONS_ENABLED=True,
         REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED=True,
+        REAL_TIKTOK_AUTOMATION_ENABLED=True,
+        AUTO_REPLY_ENABLED=True,
+        AGENT_V2_FORMAL_ENABLED=True,
         LLM_ENABLED=True,
     )
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
@@ -173,7 +179,11 @@ async def test_send_logistics_card_uses_official_message_type_and_identifiers() 
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         result = await TikTokMessageClient(real_write_settings(), connected_channel(), http_client).send_text_message(
-            command(message_type="logistics_card", card_order_id="580874485811283206", card_package_id="123456")
+            command(
+                message_type="logistics_card",
+                card_order_id="580874485811283206",
+                card_package_id="123456",
+            )
         )
     assert result.status == "sent"
 
@@ -191,7 +201,11 @@ async def test_send_order_card_uses_native_type_and_only_verified_order_id() -> 
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         result = await TikTokMessageClient(real_write_settings(), connected_channel(), http_client).send_text_message(
-            command(message_type="order_card", card_order_id="580874485811283206", card_package_id="123456")
+            command(
+                message_type="order_card",
+                card_order_id="580874485811283206",
+                card_package_id="123456",
+            )
         )
     assert result.status == "sent"
 
@@ -205,13 +219,27 @@ async def test_send_order_card_uses_native_type_and_only_verified_order_id() -> 
             "https://p16-oec-va.ibyteimg.com/example.png",
             1280,
             720,
-            {"url": "https://p16-oec-va.ibyteimg.com/example.png", "width": 1280, "height": 720},
+            {
+                "url": "https://p16-oec-va.ibyteimg.com/example.png",
+                "width": 1280,
+                "height": 720,
+            },
         ),
-        ("video", "v10394g5000cd499vc7og65mqn3r3dg0", None, None, {"vid": "v10394g5000cd499vc7og65mqn3r3dg0"}),
+        (
+            "video",
+            "v10394g5000cd499vc7og65mqn3r3dg0",
+            None,
+            None,
+            {"vid": "v10394g5000cd499vc7og65mqn3r3dg0"},
+        ),
     ],
 )
 async def test_send_media_uses_official_message_type_and_platform_resource(
-    message_type: str, media_value: str, width: int | None, height: int | None, expected: dict[str, object]
+    message_type: str,
+    media_value: str,
+    width: int | None,
+    height: int | None,
+    expected: dict[str, object],
 ) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
@@ -222,7 +250,12 @@ async def test_send_media_uses_official_message_type_and_platform_resource(
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         result = await TikTokMessageClient(real_write_settings(), connected_channel(), http_client).send_text_message(
-            command(message_type=message_type, media_value=media_value, media_width=width, media_height=height)
+            command(
+                message_type=message_type,
+                media_value=media_value,
+                media_width=width,
+                media_height=height,
+            )
         )
     assert result.status == "sent"
 
@@ -240,7 +273,11 @@ async def test_image_upload_uses_customer_service_multipart_and_returns_dimensio
             200,
             json={
                 "code": 0,
-                "data": {"url": "https://p16-oec-va.ibyteimg.com/example.png", "width": 640, "height": 480},
+                "data": {
+                    "url": "https://p16-oec-va.ibyteimg.com/example.png",
+                    "width": 640,
+                    "height": 480,
+                },
             },
         )
 
@@ -301,14 +338,24 @@ async def test_video_upload_rejects_non_platform_upload_url_before_put() -> None
         nonlocal calls
         calls += 1
         return httpx.Response(
-            200, json={"code": 0, "data": {"upload_url": "https://127.0.0.1/file/upload", "upload_token": "secret"}}
+            200,
+            json={
+                "code": 0,
+                "data": {
+                    "upload_url": "https://127.0.0.1/file/upload",
+                    "upload_token": "secret",
+                },
+            },
         )
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         client = TikTokMessageClient(real_write_settings(), connected_channel(), http_client)
         with pytest.raises(Exception, match="上传地址无效"):
             await client.upload_video(
-                io.BytesIO(b"0" * (10 * 1024 * 1024)), 10 * 1024 * 1024, "video/mp4", "710688832392260838"
+                io.BytesIO(b"0" * (10 * 1024 * 1024)),
+                10 * 1024 * 1024,
+                "video/mp4",
+                "710688832392260838",
             )
     assert calls == 1
 
@@ -343,7 +390,13 @@ async def test_store_allowlist_sends_two_conversations_but_never_another_store()
     def handler(_request: httpx.Request) -> httpx.Response:
         nonlocal attempts
         attempts += 1
-        return httpx.Response(200, json={"code": 0, "data": {"message_id": str(722323407926368819 + attempts)}})
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "data": {"message_id": str(722323407926368819 + attempts)},
+            },
+        )
 
     channel = connected_channel()
     settings = real_write_settings(
@@ -363,7 +416,9 @@ async def test_store_allowlist_sends_two_conversations_but_never_another_store()
 
 
 @pytest.mark.asyncio
-async def test_write_default_client_uses_fixed_egress_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_write_default_client_uses_fixed_egress_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """默认人工消息发送必须经固定出口工厂且只构造一次客户端。"""
     settings = real_write_settings()
     factory_calls: list[Settings] = []
@@ -390,7 +445,9 @@ async def test_write_default_client_uses_fixed_egress_factory(monkeypatch: pytes
 
 
 @pytest.mark.asyncio
-async def test_write_factory_failure_is_unknown_without_direct_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_write_factory_failure_is_unknown_without_direct_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """固定出口连接失败可能已到达平台边界，只能 unknown 且不得直连重试。"""
     settings = real_write_settings()
     factory_calls: list[Settings] = []
@@ -428,9 +485,18 @@ async def test_write_factory_failure_is_unknown_without_direct_fallback(monkeypa
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "failure_kind",
-    ["timeout", "server", "malformed", "missing-message-id", "internal", "customer-service-internal"],
+    [
+        "timeout",
+        "server",
+        "malformed",
+        "missing-message-id",
+        "internal",
+        "customer-service-internal",
+    ],
 )
-async def test_uncertain_platform_results_are_unknown_and_never_retried(failure_kind: str) -> None:
+async def test_uncertain_platform_results_are_unknown_and_never_retried(
+    failure_kind: str,
+) -> None:
     """可能已经产生副作用的异常只能记 unknown，且始终只调用一次。"""
     attempts = 0
 
@@ -510,3 +576,81 @@ async def test_definite_rejections_are_failed_without_retry(
     assert attempts == 1
     assert result.status == "failed"
     assert result.error_code == expected_error
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["ROBOT", "SYSTEM"])
+async def test_server_authorized_automation_uses_distinct_official_sender_roles(role):
+    settings = real_write_settings().model_copy(
+        update={"real_tiktok_automation_enabled": True, "auto_reply_enabled": True}
+    )
+    captured = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        result = await TikTokMessageClient(settings, connected_channel(), http_client).send_text_message(
+            command(human_confirmed=False, automation_authorized=True, sender_role=role)
+        )
+    assert result.status == "sent"
+    assert captured[0]["sender_role"] == role
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("automatic", [False, True])
+@pytest.mark.parametrize("kind", ["ROBOT", "SYSTEM", "logistics"])
+@pytest.mark.parametrize("layer", ["client", "adapter"])
+async def test_both_automatic_switches_required_before_any_platform_transport(monkeypatch, automatic, kind, layer):
+    from app.integrations import adapters
+
+    # This is a valid constructed configuration, including master-on/emergency-switch-off.
+    settings = real_write_settings(
+        REAL_TIKTOK_AUTOMATION_ENABLED=True,
+        AUTO_REPLY_ENABLED=automatic,
+        LLM_ENABLED=True,
+        AGENT_V2_FORMAL_ENABLED=True,
+        LOGISTICS_NOTIFICATIONS_ENABLED=True,
+        REAL_TIKTOK_LOGISTICS_NOTIFICATIONS_ENABLED=True,
+    )
+    captured = []
+
+    def handler(request):
+        captured.append(request)
+        return httpx.Response(200, json={"code": 0, "data": {"message_id": "722323407926368819"}})
+
+    channel = connected_channel()
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        writer = TikTokMessageClient(settings, channel, http_client)
+        monkeypatch.setattr(adapters, "TikTokMessageClient", lambda *_: writer)
+        send = command(
+            human_confirmed=False,
+            sender_role="SYSTEM" if kind == "SYSTEM" else "ROBOT",
+            automation_authorized=kind != "logistics",
+            logistics_notification_authorized=kind == "logistics",
+        )
+        result = (
+            await writer.send_text_message(send)
+            if layer == "client"
+            else await adapters.TikTokAdapter(settings).send_message(channel, send)
+        )
+        assert result.status == ("sent" if automatic else "failed")
+        assert len(captured) == int(automatic)
+        if not automatic:
+            # The automatic fuse must not block a distinct, human-confirmed manual reply.
+            manual = await adapters.TikTokAdapter(settings).send_message(channel, command())
+            assert manual.status == "sent" and len(captured) == 1
+
+
+@pytest.mark.asyncio
+async def test_robot_role_without_server_authorization_is_blocked_before_http():
+    settings = real_write_settings().model_copy(update={"real_tiktok_automation_enabled": True})
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda _: pytest.fail("unauthorized platform call"))
+    ) as http_client:
+        result = await TikTokMessageClient(settings, connected_channel(), http_client).send_text_message(
+            command(human_confirmed=False, sender_role="ROBOT")
+        )
+    assert result.status == "failed"
+    assert result.error_code == "AUTOMATION_IDENTITY_INVALID"

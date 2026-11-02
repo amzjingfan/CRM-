@@ -1,4 +1,4 @@
-"""基础接待文本配置服务；启用策略只改变本地配置，不触发发送。"""
+"""基础接待策略配置与授权，发送由自动投递账本处理。"""
 
 import hashlib
 import json
@@ -51,6 +51,7 @@ from app.reception.schemas import (
     ReplyUpdate,
     ReplyView,
 )
+from app.shared.config.settings import get_settings
 from app.shared.database.base import Permission, Role, User, role_permissions, user_roles
 from app.shared.exceptions.errors import AppError, ErrorCode
 
@@ -198,8 +199,40 @@ async def list_policies(
         await _ensure_permission(session, user, [store_id], "marketing.view")
     permitted = await _permission_store_ids(session, user, "marketing.view")
     rows, total = await query_policies(session, store_id, kind, permitted, page, page_size)
+    global_enabled = _policy_global_enabled()
     return PolicyPage(
-        items=[PolicyView.model_validate(row) for row in rows], total=total, page=page, page_size=page_size
+        items=[_policy_view(row, global_enabled=global_enabled) for row in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+def _policy_view(value: object, *, global_enabled: bool) -> PolicyView:
+    view = PolicyView.model_validate(value)
+    return view.model_copy(
+        update={
+            "delivery_enabled": bool(global_enabled and view.enabled and view.delivery_mode == "auto"),
+        }
+    )
+
+
+def _policy_global_enabled() -> bool:
+    settings = get_settings()
+    return settings.tiktok_automation_effective_enabled
+
+
+async def _policy_replay_view(session: AsyncSession, user: User, saved: dict[str, object]) -> PolicyView:
+    original = PolicyView.model_validate(saved)
+    policy = await visible_policy(session, user, original.id)
+    await session.refresh(policy, attribute_names=["enabled", "delivery_mode", "authorized_by"])
+    current = _policy_view(policy, global_enabled=_policy_global_enabled())
+    # 幂等响应保留原配置及授权人，只把易变资格按现态刷新；旧响应缺字段时从持久事实补齐。
+    return original.model_copy(
+        update={
+            "delivery_enabled": current.delivery_enabled,
+            "authorized_by": original.authorized_by if "authorized_by" in saved else current.authorized_by,
+        }
     )
 
 
@@ -250,7 +283,7 @@ async def _commit(
                 action=action,
                 resource_type=resource_type,
                 resource_id=resource_id,
-                after_data={"delivery_enabled": False},
+                after_data={"delivery_enabled": bool(response_body.get("delivery_enabled", False))},
                 result="succeeded",
             )
         )
@@ -478,7 +511,7 @@ async def create_policy(session: AsyncSession, user: User, payload: PolicyCreate
     key_hash, request_hash = _key_and_hash(key, "policies:create", payload.model_dump(mode="json"))
     replay = await _replay(session, user, key_hash, request_hash, "marketing.manage")
     if replay is not None:
-        return PolicyView.model_validate(replay)
+        return await _policy_replay_view(session, user, replay)
     await _ensure_stores(session, user, payload.store_ids)
     await _ensure_permission(session, user, payload.store_ids, "marketing.manage")
     await _ensure_permission(session, user, payload.store_ids, "marketing.view")
@@ -487,11 +520,13 @@ async def create_policy(session: AsyncSession, user: User, payload: PolicyCreate
     policy = ReceptionPolicy(
         id=uuid.uuid4(),
         created_by=user.id,
+        authorized_by=user.id,
+        revision=1,
         **attributes,
         stores=[ReceptionPolicyStore(store_id=value) for value in payload.store_ids],
     )
     session.add(policy)
-    body = PolicyView.model_validate(policy).model_dump(mode="json")
+    body = _policy_view(policy, global_enabled=_policy_global_enabled()).model_dump(mode="json")
     saved = await _commit(
         session,
         user,
@@ -504,7 +539,7 @@ async def create_policy(session: AsyncSession, user: User, payload: PolicyCreate
         resource_type="reception_policy",
         resource_id=policy.id,
     )
-    return PolicyView.model_validate(saved)
+    return await _policy_replay_view(session, user, saved)
 
 
 async def update_policy(
@@ -519,14 +554,18 @@ async def update_policy(
     )
     replay = await _replay(session, user, key_hash, request_hash, "marketing.manage")
     if replay is not None:
-        return PolicyView.model_validate(replay)
+        return await _policy_replay_view(session, user, replay)
     policy = await visible_policy(session, user, item_id, write=True)
+    await session.refresh(policy, with_for_update=True)
     old_stores = set(policy.store_ids)
     changes = payload.model_dump(exclude_unset=True)
     merged: dict[str, object] = {
         "kind": policy.kind,
         "name": policy.name,
         "content": policy.content,
+        "content_en": policy.content_en,
+        "delivery_mode": policy.delivery_mode,
+        "welcome_idle_hours": policy.welcome_idle_hours,
         "timeout_minutes": policy.timeout_minutes,
         "valid_from": policy.valid_from,
         "valid_to": policy.valid_to,
@@ -542,14 +581,16 @@ async def update_policy(
     await _ensure_stores(session, user, validated.store_ids)
     await _ensure_permission(session, user, validated.store_ids, "marketing.manage")
     await _ensure_permission(session, user, validated.store_ids, "marketing.view")
-    for field, value in changes.items():
+    for field in changes:
         if field == "store_ids":
             policy.stores = [ReceptionPolicyStore(store_id=store_id) for store_id in validated.store_ids]
         elif field == "schedule":
             policy.schedule = validated.schedule.model_dump(mode="json") if validated.schedule else None
         else:
-            setattr(policy, field, value)
-    body = PolicyView.model_validate(policy).model_dump(mode="json")
+            setattr(policy, field, getattr(validated, field))
+    policy.revision += 1
+    policy.authorized_by = user.id
+    body = _policy_view(policy, global_enabled=_policy_global_enabled()).model_dump(mode="json")
     saved = await _commit(
         session,
         user,
@@ -562,7 +603,7 @@ async def update_policy(
         resource_type="reception_policy",
         resource_id=policy.id,
     )
-    return PolicyView.model_validate(saved)
+    return await _policy_replay_view(session, user, saved)
 
 
 async def delete_policy(session: AsyncSession, user: User, item_id: uuid.UUID, key: str) -> None:

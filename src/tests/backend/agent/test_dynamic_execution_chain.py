@@ -122,7 +122,12 @@ async def test_dynamic_chain_routes_calls_configured_tool_and_aggregates(
         ),
         permits=AsyncMock(return_value=True),
     )
-    monkeypatch.setattr(execution, "AgentBusinessExecutor", lambda *_args: business)
+
+    def business_executor(session, user, snapshot, run_id, permissions, trace_id, *, preview_only=False):
+        assert preview_only is False
+        return business
+
+    monkeypatch.setattr(execution, "AgentBusinessExecutor", business_executor)
     monkeypatch.setattr(execution, "current_permissions", AsyncMock(return_value={"orders.view", "knowledge.view"}))
     result = await execution.execute_model_run(
         snapshot=snapshot,
@@ -290,7 +295,12 @@ async def test_dynamic_chain_combines_order_tool_and_bound_file_rag(monkeypatch,
         invoke=AsyncMock(return_value={"status": "succeeded", "facts": {"status": "shipped"}, "fact_scope": "f" * 16}),
         permits=AsyncMock(return_value=True),
     )
-    monkeypatch.setattr(execution, "AgentBusinessExecutor", lambda *_args: business)
+
+    def business_executor(session, user, snapshot, run_id, permissions, trace_id, *, preview_only=False):
+        assert preview_only is False
+        return business
+
+    monkeypatch.setattr(execution, "AgentBusinessExecutor", business_executor)
     monkeypatch.setattr(execution, "current_permissions", AsyncMock(return_value={"orders.view", "knowledge.view"}))
     monkeypatch.setattr(worker, "revalidate_evidence", revalidate)
     monkeypatch.setattr(execution, "revalidate_evidence", revalidate)

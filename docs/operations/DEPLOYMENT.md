@@ -1,5 +1,15 @@
 # 部署与运行边界
 
+## 两店客户自动化部署配置（2026-11-02 候选，尚未放行运行）
+
+用户批准测试成功后开启两家现有 staging 店铺的普通 Agent 自动回复、欢迎语、60 分钟超时回复和物流新节点通知；production 保持 No-Go。先以真实外发关闭的候选完成五类 Agent、中英文、工具、绑定文件 RAG、流式审阅、模拟物流和接待计时验收，清理本轮合成资产，再应用正式店铺策略和新生效水位。此前版本的人工发送、翻译、Webhook 只读和 Agent 建议开关须显式保留，不能通过默认部署意外关闭。
+
+`Test-StagingProductionGates.ps1 -EnableCustomerAutomation` 必须同时指定 `-EnableTikTokWebhookRead -EnableTikTokManualSend -EnableAgentSuggestions` 与已确认的规范化 `-AllowedTikTokStoreIds`，不能绑定单会话，不能与 G2/G5 诊断或 PreWindowSnapshotFile 组合。它最后叠加 `docker-compose.rootless-staging-customer-automation.yml`，核对配置与四个实际进程 backend/worker/jobs/agent-worker 的精确镜像、staging 环境、模型、内部检索地址/Token、固定平台出口、店铺范围和能力开关。其他模式显式保持新主开关和物流通知关闭。门禁通过不等于模型验收、策略开启或消息送达。
+
+四进程均需要现有 DeepSeek 主模型凭证和内部检索 Token，读取/写入平台所需凭证与固定出口；worker 新增模型配置，agent-worker 新增平台凭证与 egress 网络。凭证仍只由仓库外环境注入，不进入镜像、Git、命令输出或验收证据。自动化配置将 REAL_TIKTOK_AUTOMATION_ENABLED、AUTO_REPLY_ENABLED、LLM_ENABLED、AGENT_V2_FORMAL_ENABLED、EMBEDDING_ENABLED、REAL_TIKTOK_READ_ENABLED、REAL_TIKTOK_MESSAGE_WRITE_ENABLED 及两个物流通知开关在四服务统一开启，物流补查为3600秒；Webhook/同步仍只在原生产者角色开启，调试与翻译仍仅在 backend 按独立批准开关开启。高风险写入、营销等能力继续关闭。
+
+关闭逐店模式可以立即停止新的普通自动回复，逐会话 paused 可暂停当前会话；全局关闭配置会同时阻止客户自动化实际外发。恢复旧镜像须切回已记录精确摘要，并关闭新增能力，保留050迁移、投递账本、unknown 和部署后增量，禁止通过删表或重放任务来“回滚”。
+
 2026-11-02 订单与物流展示统一修复已从已合并主线 `64da0bd76bd705cc0421e4dfcfd33770bc301738` 直接部署 staging 前端；后端、检索和解析镜像保持原精确摘要。私有环境/PostgreSQL/MinIO 备份可读，`ValidateOnly` 与 `Deploy` 通过，049 迁移头、12 服务及五条公网只读路径为 200。原两店人工发送、翻译与 Agent 模式保持，自动回复、营销和高风险写入关闭，零真实买家测试外发、退款或 production 操作。内置浏览器标签重开后绑定仍超时，已登录订单页面验收 `UI_UNAVAILABLE`；见[TR R02](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R02.md)和[低敏发布证据](../../release/evidence/staging/crm-staging-order-tracking-consistency-20261102.json)。回退仅按证据切回旧前端精确摘要，保留部署后业务增量；备份未做恢复演练。未使用 GitHub Actions 部署。
 
 2026-11-02 CBT 增强物流解析修复已从已合并主线 `d856760c138c2884d1bad19f168066998e8eaa9c` 直接部署 staging 前后端与同版 TikTok 出口。私有环境、PostgreSQL、MinIO 备份可读；旧版和候选 `ValidateOnly`、`Deploy`、049 迁移、12 服务及五条公网健康/页面路径通过。原两店人工发送、翻译和 Agent 开关保留，自动回复、营销和高风险写入关闭。一笔此前未查询的 CBT 已送达订单的增强接口返回 1 包裹 16 节点，其中一个节点无运单号；新后端成功解析并映射侧栏模型。内置浏览器绑定 staging 标签页超时，已登录卡片展示仍 `UI_UNAVAILABLE`，见[TR R05](../reports/tests/TR-MVP-G1-LOG-202604-001-20261102-R05.md)与[低敏发布证据](../../release/evidence/staging/crm-staging-cbt-enhanced-tracking-20261102.json)。无买家测试外发、退款或 production 操作；未使用 GitHub Actions 部署。回退须切回证据中旧前后端精确摘要，保留迁移 049 与部署后业务增量。

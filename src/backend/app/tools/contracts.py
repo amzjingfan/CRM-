@@ -282,6 +282,8 @@ class ToolExecutionContext(BaseModel):
     # 工具参数，也不能把普通消息升级为真实平台写操作。
     human_confirmed: bool = False
     # 仅可信物流服务绑定；执行器仍须独立读取通知台账、策略和当前授权。
+    automation_delivery_id: uuid.UUID | None = None
+    automation_claim_token: uuid.UUID | None = None
     logistics_notification_key: str | None = Field(default=None, pattern=r"^logistics:[a-f0-9]{64}$")
 
 

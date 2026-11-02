@@ -13,7 +13,7 @@ const secondStore = { ...store, id: "00000000-0000-4000-8000-0000000000f2", name
 const user = { id: "00000000-0000-4000-8000-000000000001", name: "测试坐席", email: null, login_name: "test_agent", role: "admin", avatar: null, permissions: ["workspace.reply", "workspace.view", "marketing.manage", "marketing.view"], store_ids: [store.id] };
 const group = { id: "00000000-0000-4000-8000-0000000000a1", store_id: store.id, scope: "personal", owner_user_id: user.id, name: "常用话术", enabled: true, reply_count: 1, sort_order: 0 };
 const reply = { id: "00000000-0000-4000-8000-0000000000b1", store_id: store.id, scope: "personal", owner_user_id: user.id, group_id: group.id, shortcut: "hello", tags: ["欢迎"], site_code: "US", messages: ["您好，欢迎咨询。"], sort_order: 0 };
-const policy = { id: "00000000-0000-4000-8000-0000000000c1", kind: "timeout", name: "夜间值守", content: "您好，我们稍后回复。", timeout_minutes: 30, valid_from: null, valid_to: null, enabled: true, sort_order: 0, store_ids: [store.id], delivery_enabled: false };
+const policy = { id: "00000000-0000-4000-8000-0000000000c1", kind: "timeout", name: "夜间值守", content: "您好，我们稍后回复。", timeout_minutes: 30, valid_from: null, valid_to: null, enabled: true, sort_order: 0, store_ids: [store.id], delivery_enabled: false, delivery_mode: "preview", welcome_idle_hours: 24, revision: 1, content_en: null };
 let browser;
 before(async () => { browser = await chromium.launch({ channel: "chrome", headless: true }); });
 after(async () => { await browser?.close(); });
@@ -174,17 +174,20 @@ test("quick reply editor validates text and previews before save", async () => {
   } finally { await context.close(); }
 });
 
-test("policy editor saves configuration only", async () => {
+test("policy editor saves explicit delivery mode and bilingual copy", async () => {
   const { context, tab, writes } = await open("/marketing/reception/timeout");
   try {
-    await tab.getByText("管理适用店铺、有效期及策略状态；自动发送尚未启用。").waitFor();
+    await tab.locator(".reception-head").getByText(/资格仅依据当前开关与模式；实际投递仍核对权限、时段和会话，发送结果以投递回执为准。/).waitFor();
     await tab.getByRole("button", { name: "新增策略" }).click();
     const dialog = tab.getByRole("dialog", { name: "新增超时自动回复" });
+    assert.equal(await dialog.getByLabel("投递模式", { exact: true }).inputValue(), "preview");
+    await dialog.getByLabel("投递模式", { exact: true }).selectOption("auto");
+    await dialog.getByLabel("英文回复内容").fill("Our team will reply shortly.");
     await dialog.getByLabel("策略名称").fill("午间接待");
     await dialog.getByLabel("超时分钟").fill("15");
-    await dialog.getByLabel("回复内容").fill("您好，客服稍后回复。\n请稍候。");
+    await dialog.getByLabel("回复内容", { exact: true }).fill("您好，客服稍后回复。\n请稍候。");
     await dialog.getByRole("button", { name: "保存配置" }).click();
-    assert.equal(writes.some((write) => write.path.endsWith("/policies") && write.body.kind === "timeout" && write.body.store_ids.includes(store.id)), true);
+    assert.equal(writes.some((write) => write.path.endsWith("/policies") && write.body.kind === "timeout" && write.body.store_ids.includes(store.id) && write.body.delivery_mode === "auto" && write.body.content_en === "Our team will reply shortly."), true);
     assert.equal(writes.some((write) => write.path.includes("/messages") || write.path.includes("/campaigns")), false);
   } finally { await context.close(); }
 });
@@ -196,7 +199,7 @@ for (const kind of ["welcome", "timeout"]) {
     try {
       await tab.getByRole("row", { name: /夜间值守/ }).getByRole("button", { name: "编辑" }).click();
       await tab.getByRole("dialog", { name: `编辑${kind === "welcome" ? "进店欢迎语" : "超时自动回复"}` }).getByRole("button", { name: "保存配置" }).click();
-      await tab.getByText("配置已保存。自动发送仍未启用。").waitFor({ timeout: 3000 });
+      await tab.getByText("配置已保存，实际投递会再次核对总开关、权限和会话状态。").waitFor({ timeout: 3000 });
       const updated = writes.find((write) => write.method === "PATCH" && write.path.endsWith(`/policies/${current.id}`));
       assert.equal(Object.hasOwn(updated.body, "kind"), false);
     } finally { await context.close(); }
@@ -320,11 +323,11 @@ test("quick reply search and pagination use the scoped list API", async () => {
   } finally { await context.close(); }
 });
 
-test("policy configuration switch never reports delivery enabled", async () => {
+test("policy switch changes enabled state without sending from the browser", async () => {
   const { context, tab, writes } = await open("/marketing/reception/timeout");
   try {
     await tab.getByRole("button", { name: "夜间值守配置开关" }).click();
-    await tab.getByText("配置开关已关闭，自动发送仍未启用。").waitFor();
+    await tab.getByText("配置开关已关闭，投递按所选模式执行。").waitFor();
     assert.equal(writes.some((write) => write.method === "PATCH" && write.path.endsWith(`/policies/${policy.id}`) && write.body.enabled === false), true);
     assert.equal(writes.some((write) => write.path.includes("/messages") || write.path.includes("/campaigns")), false);
   } finally { await context.close(); }
@@ -337,12 +340,12 @@ for (const [kind, label] of [["timeout", "超时自动回复"], ["welcome", "进
       await tab.getByRole("button", { name: "新增策略" }).click();
       const dialog = tab.getByRole("dialog", { name: `新增${label}` });
       await dialog.getByLabel("策略名称").fill("第二店铺策略");
-      await dialog.getByLabel("回复内容").fill("稍后人工处理。");
+      await dialog.getByLabel("回复内容", { exact: true }).fill("稍后人工处理。");
       await dialog.getByRole("button", { name: "适用店铺" }).click();
       await dialog.getByRole("checkbox", { name: "演示店铺" }).uncheck();
       await dialog.getByRole("checkbox", { name: "第二店铺" }).check();
       await dialog.getByRole("button", { name: "保存配置" }).click();
-      await tab.getByText("配置已保存。自动发送仍未启用。").waitFor();
+      await tab.getByText("配置已保存，实际投递会再次核对总开关、权限和会话状态。").waitFor();
       assert.equal(writes.some((write) => write.method === "POST" && write.path.endsWith("/policies") && write.body.store_ids.length === 1 && write.body.store_ids[0] === secondStore.id), true);
       await tab.getByRole("row", { name: /第二店铺策略/ }).waitFor({ timeout: 3000 });
     } finally { await context.close(); }
@@ -354,7 +357,7 @@ for (const [kind, label] of [["timeout", "超时自动回复"], ["welcome", "进
       await tab.getByRole("button", { name: "新增策略" }).click();
       const dialog = tab.getByRole("dialog", { name: `新增${label}` });
       await dialog.getByLabel("策略名称").fill("固定时段策略");
-      await dialog.getByLabel("回复内容").fill("人工稍后处理");
+      await dialog.getByLabel("回复内容", { exact: true }).fill("人工稍后处理");
       assert.equal(await dialog.getByRole("radio", { name: "长期" }).isChecked(), true);
       await dialog.getByRole("radio", { name: "起止", exact: true }).check();
       assert.equal(await dialog.getByLabel("开始日期").isVisible(), true);
@@ -415,7 +418,7 @@ test("editing an old policy preserves its UTC validity until the user changes it
   try {
     await tab.getByRole("row", { name: /夜间值守/ }).getByRole("button", { name: "编辑" }).click();
     const dialog = tab.getByRole("dialog", { name: "编辑超时自动回复" });
-    await dialog.getByLabel("回复内容").fill("更新文本，不改时间");
+    await dialog.getByLabel("回复内容", { exact: true }).fill("更新文本，不改时间");
     await dialog.getByRole("button", { name: "保存配置" }).click();
     const updated = writes.find((write) => write.method === "PATCH" && write.path.endsWith(`/policies/${old.id}`));
     assert.equal(updated.body.valid_from, old.valid_from);

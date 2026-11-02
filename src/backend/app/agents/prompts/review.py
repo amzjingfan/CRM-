@@ -51,11 +51,11 @@ async def review_prompt_configuration(
         {"role": "user", "content": json.dumps({"untrusted_prompt_sections": dict(sections)}, ensure_ascii=False)},
     )
     try:
-        async with asyncio.timeout(max(0.0, deadline - time.monotonic())):
+        async with asyncio.timeout(max(0.0, deadline - time.monotonic())) as review_timeout:
             turn = await provider.complete(
                 messages=messages, tools=(_review_agent_prompt_configuration,), max_output_tokens=max_output_tokens
             )
-        if time.monotonic() >= deadline:
+        if review_timeout.expired() or time.monotonic() >= deadline:
             raise TimeoutError
         if len(turn.calls) != 1 or turn.calls[0].name != "review_agent_prompt_configuration":
             raise ValueError("invalid_prompt_review_protocol")
