@@ -1,18 +1,5 @@
 import type { SidebarOrder } from "../lib/api";
-
-const statuses: Record<string, { zh: string; en: string }> = {
-  UNPAID: { zh: "未付款", en: "Unpaid" },
-  AWAITING_SHIPMENT: { zh: "待发货", en: "Awaiting shipment" },
-  AWAITING_COLLECTION: { zh: "待揽收", en: "Awaiting collection" },
-  IN_TRANSIT: { zh: "运输中", en: "In transit" },
-  SHIPPED: { zh: "已发货", en: "Shipped" },
-  DELIVERED: { zh: "已送达", en: "Delivered" },
-  COMPLETED: { zh: "已完成", en: "Completed" },
-  CANCELLED: { zh: "已取消", en: "Cancelled" },
-  CANCELED: { zh: "已取消", en: "Cancelled" },
-};
-
-export const orderStatusLabel = (status: string, en: boolean) => statuses[status]?.[en ? "en" : "zh"] ?? status;
+import { orderStatusLabel } from "../lib/order-display";
 
 export function OrderDraftPreview({ order, en }: { order: SidebarOrder; en: boolean }) {
   const item = order.items[0];

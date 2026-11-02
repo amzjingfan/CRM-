@@ -5,6 +5,7 @@ import { ArrowLeft, Copy, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { TrackingTimelinePopover } from "./TrackingTimelinePopover";
 import type { LogisticsCardDraft } from "../lib/api";
 import { buyerAvatarText } from "../lib/message-display";
+import { orderCarrierLabel, orderLogisticsStage, orderStatusLabel, withTrackingPackages } from "../lib/order-display";
 import {
   getCustomerSidebarOrderDetail,
   getCustomerSidebarStandardTracking,
@@ -51,17 +52,6 @@ const statuses: Array<{ value: OrderStatus; zh: string; en: string }> = [
   { value: "done", zh: "已完成", en: "Completed" },
   { value: "cancel", zh: "已取消", en: "Cancelled" },
 ];
-const statusText: Record<string, { zh: string; en: string }> = {
-  UNPAID: { zh: "未付款", en: "Unpaid" },
-  AWAITING_SHIPMENT: { zh: "待出货", en: "To ship" },
-  AWAITING_COLLECTION: { zh: "待揽收", en: "Awaiting collection" },
-  IN_TRANSIT: { zh: "运送中", en: "In transit" },
-  SHIPPED: { zh: "已发货", en: "Shipped" },
-  DELIVERED: { zh: "已送达", en: "Delivered" },
-  COMPLETED: { zh: "已完成", en: "Completed" },
-  CANCELLED: { zh: "已取消", en: "Cancelled" },
-  CANCELED: { zh: "已取消", en: "Cancelled" },
-};
 const logisticsStatusText: Record<string, { zh: string; en: string }> = {
   AWAITING_COLLECTION: { zh: "待揽收", en: "Awaiting collection" },
   PICKED_UP: { zh: "已揽收", en: "Picked up" },
@@ -75,24 +65,6 @@ const logisticsStatusText: Record<string, { zh: string; en: string }> = {
   LOST: { zh: "包裹丢失", en: "Lost" },
   CANCELLED: { zh: "已取消", en: "Cancelled" },
 };
-const logisticsDescriptionStages: Array<[RegExp, string]> = [
-  [/^(?:delivered\b|signed for\b|已签收|已送达)/i, "DELIVERED"],
-  [/^(?:out for delivery\b|派送中|正在派送)/i, "OUT_FOR_DELIVERY"],
-  [/^(?:delivery attempted\b|failed delivery\b|派送失败)/i, "DELIVERY_ATTEMPTED"],
-  [/^(?:returned\b|return to sender\b|已退回)/i, "RETURNED"],
-  [/^(?:exception\b|delivery exception\b|物流异常)/i, "EXCEPTION"],
-  [/^(?:lost\b|包裹丢失)/i, "LOST"],
-  [/^(?:in transit\b|arrived at\b|departed\b|运送中|运输中)/i, "IN_TRANSIT"],
-  [/^(?:shipped\b|dispatched\b|package dispatched\b|已发货)/i, "SHIPPED"],
-  [/^(?:picked up\b|collected\b|已揽收)/i, "PICKED_UP"],
-  [/^(?:awaiting collection\b|label created\b|待揽收)/i, "AWAITING_COLLECTION"],
-];
-function logisticsStage(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const normalized = value.trim().replace(/[\s-]+/g, "_").toUpperCase();
-  if (logisticsStatusText[normalized]) return normalized;
-  return logisticsDescriptionStages.find(([pattern]) => pattern.test(value.trim()))?.[1] ?? null;
-}
 const productStatusText: Record<string, { zh: string; en: string }> = {
   ACTIVATE: { zh: "上架中", en: "Active" },
   INACTIVE: { zh: "未上架", en: "Inactive" },
@@ -174,6 +146,7 @@ function CopyableValue({ value, label, en }: { value: string | null | undefined;
 
 function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrderDraft, onCardDraft, onDetails, scheduleDetail }: { order: SidebarOrder; sessionId: string; en: boolean; trackingTranslationEnabled: boolean; fillOrderDraft: (order: SidebarOrder) => void; onCardDraft: (value: LogisticsCardDraft) => void; onDetails: (order: SidebarOrder, detail: SidebarOrderDetail | null) => void; scheduleDetail: ReturnType<typeof createOrderDetailLimiter> }) {
   const [detail, setDetail] = useState<SidebarOrderDetail | null>(null);
+  const [enhancedPackages, setEnhancedPackages] = useState<SidebarOrderDetail["tracking_packages"] | null>(null);
   const [detailError, setDetailError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [trackingLoading, setTrackingLoading] = useState(false);
@@ -182,6 +155,12 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
   const [showTrackingTranslation, setShowTrackingTranslation] = useState(false);
   const [trackingTranslationError, setTrackingTranslationError] = useState("");
   const [trackingTranslationLoading, setTrackingTranslationLoading] = useState(false);
+  const acceptEnhancedPackages = useCallback((packages: SidebarOrderDetail["tracking_packages"]) => {
+    setEnhancedPackages(packages);
+    setTrackingTranslation("");
+    setShowTrackingTranslation(false);
+    setTrackingTranslationError("");
+  }, []);
   const cardRef = useRef<HTMLElement>(null);
   const detailRequestInFlight = useRef(false);
   const trackingRequestInFlight = useRef(false);
@@ -205,6 +184,7 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
     detailRequestInFlight.current = true;
     setDetailLoading(true);
     setDetail(null);
+    setEnhancedPackages(null);
     setDetailError("");
     setTrackingError("");
     trackingRequestId.current += 1;
@@ -222,13 +202,16 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
       .finally(() => { if (!controller.signal.aborted) { detailRequestInFlight.current = false; setDetailLoading(false); } });
   }, [sessionId, order.external_order_id, order.status, order.tracking_number, order.items, loadTracking, scheduleDetail]);
   async function requestTrackingTranslation() {
-    const source = detail?.latest_tracking_description;
+    const current = detail && enhancedPackages ? withTrackingPackages(detail, enhancedPackages) : detail;
+    const source = current?.latest_tracking_description;
     if (!source || trackingTranslationLoading) return;
+    const enhancedEvent = enhancedPackages?.flatMap((item) => item.events).find((event) =>
+      event.description === source && event.occurred_at === current?.latest_tracking_at);
     const requestId = ++trackingRequestId.current;
     setTrackingTranslationLoading(true);
     setTrackingTranslationError("");
     try {
-      const result = await translateSidebarTracking(sessionId, order.external_order_id);
+      const result = await translateSidebarTracking(sessionId, order.external_order_id, enhancedEvent ? { ...enhancedEvent, enhanced: true } : undefined);
       if (requestId !== trackingRequestId.current) return;
       if (result.source_description !== source || !result.translated_text.trim()) throw new Error("物流描述已更新，请刷新详情后重试");
       setTrackingTranslation(result.translated_text);
@@ -247,12 +230,12 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
     observer.observe(cardRef.current);
     return () => observer.disconnect();
   }, [loadDetail, order.live_detail_available]);
+  const effectiveDetail = detail && enhancedPackages ? withTrackingPackages(detail, enhancedPackages) : detail;
   const first = order.items[0];
-  const label = statusText[order.status]?.[en ? "en" : "zh"] ?? order.status;
+  const label = orderStatusLabel(order.status, en);
   const isCancelled = ["CANCELLED", "CANCELED"].includes(order.status);
   const totalLabel = order.paid_at || order.payment_status?.toUpperCase() === "PAID" ? (en ? "Buyer paid amount" : "买家实付金额") : (en ? "Order amount" : "订单金额");
-  const orderStage = ["IN_TRANSIT", "SHIPPED", "DELIVERED"].includes(order.status) ? order.status : null;
-  const stage = logisticsStage(order.tracking_status) ?? orderStage ?? logisticsStage(detail?.latest_tracking_description);
+  const stage = orderLogisticsStage(order.status, order.tracking_status, effectiveDetail?.latest_tracking_description ?? null);
   const logisticsStatus = stage ? logisticsStatusText[stage][en ? "en" : "zh"] : en ? "Status pending" : "状态待更新";
   const breakdown: Array<{ key: string; zh: string; en: string }> = [
     { key: "original_total_product_price", zh: "商品总价", en: "Original product total" },
@@ -274,17 +257,17 @@ function OrderCard({ order, sessionId, en, trackingTranslationEnabled, fillOrder
     <div className="customer-info-line"><span>{en ? "Payment method" : "支付方式"}</span><span>{detail?.payment_method_name ?? "—"}</span></div>
     <div className="customer-info-line"><span>{en ? "Fulfillment" : "出货状态"}</span><span>{label}</span></div>
     <div className="customer-info-line"><span>{en ? "Ship by" : "最晚发货"}</span><span>—</span></div>
-    <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><div className="customer-logistics-status"><span>{logisticsStatus}</span>{detail?.tracking_loaded ? <TrackingTimelinePopover en={en} enhancedAvailable={detail.enhanced_tracking_available} initialPackages={detail.tracking_packages ?? []} onCardDraft={onCardDraft} order={order} orderId={order.external_order_id} sessionId={sessionId} translationEnabled={trackingTranslationEnabled} /> : null}</div></div>
+    <div className="customer-info-line"><span>{en ? "Logistics status" : "物流状态"}</span><div className="customer-logistics-status"><span>{logisticsStatus}</span>{detail?.tracking_loaded ? <TrackingTimelinePopover en={en} enhancedAvailable={detail.enhanced_tracking_available} initialPackages={detail.tracking_packages ?? []} onCardDraft={onCardDraft} onPackagesResolved={acceptEnhancedPackages} order={order} orderId={order.external_order_id} sessionId={sessionId} translationEnabled={trackingTranslationEnabled} /> : null}</div></div>
     <div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><span title={order.tracking_number ?? ""}>{order.tracking_number ?? "—"}</span></div>
-    <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail?.shipping_provider ?? "—"}</span></div>
-    <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><div className="customer-tracking-detail"><span className={showTrackingTranslation ? "customer-tracking-translation" : undefined}>{showTrackingTranslation ? trackingTranslation : detail?.latest_tracking_description ?? "—"}</span>{!en && trackingTranslationEnabled && detail?.latest_tracking_description && /[A-Za-z]/.test(detail.latest_tracking_description) ? <button disabled={trackingTranslationLoading} onClick={() => { if (trackingTranslation) setShowTrackingTranslation((shown) => !shown); else void requestTrackingTranslation(); }} type="button">{trackingTranslationLoading ? "翻译中…" : trackingTranslation ? showTrackingTranslation ? "查看原文" : "查看译文" : trackingTranslationError ? "重试翻译" : "译成中文"}</button> : null}{trackingTranslationError ? <span className="customer-tracking-error" role="alert">{trackingTranslationError}</span> : null}</div></div>
-    <div className="customer-info-line"><span>{en ? "Latest tracking time" : "最新物流时间"}</span><span>{dateTime(detail?.latest_tracking_at ?? null, en)}</span></div>
+    <div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{orderCarrierLabel(order, effectiveDetail, en)}</span></div>
+    <div className="customer-info-line"><span>{en ? "Latest tracking description" : "最新物流描述"}</span><div className="customer-tracking-detail"><span className={showTrackingTranslation ? "customer-tracking-translation" : undefined}>{showTrackingTranslation ? trackingTranslation : effectiveDetail?.latest_tracking_description ?? "—"}</span>{!en && trackingTranslationEnabled && effectiveDetail?.latest_tracking_description && /[A-Za-z]/.test(effectiveDetail.latest_tracking_description) ? <button disabled={trackingTranslationLoading} onClick={() => { if (trackingTranslation) setShowTrackingTranslation((shown) => !shown); else void requestTrackingTranslation(); }} type="button">{trackingTranslationLoading ? "翻译中…" : trackingTranslation ? showTrackingTranslation ? "查看原文" : "查看译文" : trackingTranslationError ? "重试翻译" : "译成中文"}</button> : null}{trackingTranslationError ? <span className="customer-tracking-error" role="alert">{trackingTranslationError}</span> : null}</div></div>
+    <div className="customer-info-line"><span>{en ? "Latest tracking time" : "最新物流时间"}</span><span>{dateTime(effectiveDetail?.latest_tracking_at ?? null, en)}</span></div>
     {isCancelled ? <><div className="customer-info-line"><span>{en ? "Cancellation reason" : "取消原因"}</span><span>—</span></div><div className="customer-info-line"><span>{en ? "Refund status" : "退款状态"}</span><span>—</span></div></> : null}
     {detailLoading && !detail ? <p className="customer-side-muted" role="status">{en ? "Loading order details…" : "正在读取订单详情…"}</p> : null}
     {trackingLoading ? <p className="customer-side-muted" role="status">{en ? "Loading tracking…" : "正在读取物流…"}</p> : null}
     {trackingError ? <p className="customer-side-muted" role="alert">{trackingError} <button onClick={() => { if (detailController.current) loadTracking(detailController.current); }} type="button">{en ? "Retry tracking" : "重试物流"}</button></p> : null}
     {detailError ? <p className="customer-side-muted" role="alert">{detailError}</p> : null}
-    <div className="customer-card-actions"><button onClick={() => onDetails(order, detail)} type="button">{en ? "Details" : "详情"}</button>{detailError ? <button disabled={detailLoading} onClick={loadDetail} type="button">{en ? "Retry details" : "重试详情"}</button> : null}<button onClick={() => fillOrderDraft(order)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button><span className="customer-unavailable-action">{en ? "Refund unavailable" : "退款暂未开放"}</span></div>
+    <div className="customer-card-actions"><button onClick={() => onDetails(order, effectiveDetail)} type="button">{en ? "Details" : "详情"}</button>{detailError ? <button disabled={detailLoading} onClick={loadDetail} type="button">{en ? "Retry details" : "重试详情"}</button> : null}<button onClick={() => fillOrderDraft(order)} type="button">{en ? "Use in draft" : "填入回复草稿"}</button><span className="customer-unavailable-action">{en ? "Refund unavailable" : "退款暂未开放"}</span></div>
   </article>;
 }
 
@@ -349,7 +332,7 @@ function OrderDetailsView({ order, detail: initialDetail, buyerName, storeName, 
     {detailError ? <p className="customer-side-muted" role="alert">{detailError} <button disabled={detailLoading} onClick={() => setDetailRetry((value) => value + 1)} type="button">{en ? "Retry details" : "重试详情"}</button></p> : null}
     <div className="customer-order-detail-scroll">
       <section id="customer-order-overview"><h3>{en ? "Order" : "订单"}</h3><div className="customer-info-line"><span>{en ? "Order ID" : "订单编号"}</span><span className="customer-order-overview-value"><CopyableValue en={en} label={en ? "order ID" : "订单编号"} value={order.external_order_id} />{detail?.payment_method_name ? <small>[{detail.payment_method_name}]</small> : null}</span></div><div className="customer-info-line"><span>{en ? "Phone" : "电话"}</span><CopyableValue en={en} label={en ? "phone" : "电话"} value={recipient?.phone_number} /></div><div className="customer-info-line customer-order-address-line"><span>{en ? "Shipping address" : "收货地址"}</span><span className="customer-order-address"><span>{recipient?.name ?? "—"}</span><span>{recipient?.phone_number ?? "—"}</span><CopyableValue en={en} label={en ? "shipping address" : "收货地址"} value={recipient?.full_address} /></span></div></section>
-      <section id="customer-order-tracking"><h3>{en ? "Logistics" : "物流"}</h3><div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><CopyableValue en={en} label={en ? "tracking number" : "物流单号"} value={order.tracking_number} /></div><div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{detail?.shipping_provider ?? "—"}</span></div><div className="customer-info-line"><span>{en ? "Latest update" : "最新物流"}</span><span>{detail?.latest_tracking_description ?? "—"}</span></div>{trackingEvents.length ? <><ol className="customer-order-timeline">{(trackingExpanded ? trackingEvents : trackingEvents.slice(0, 2)).map((event, index) => <li key={`${event.occurred_at}-${index}`}><span>{event.description}</span><time>{dateTime(event.occurred_at, en)}</time></li>)}</ol>{trackingEvents.length > 2 ? <button aria-expanded={trackingExpanded} className="customer-order-expand" onClick={() => setTrackingExpanded((value) => !value)} type="button">{trackingExpanded ? (en ? "Show less" : "收起") : (en ? "Show more" : "展开更多")}</button> : null}</> : <p className="customer-side-muted">{en ? "Tracking events are unavailable." : "暂无可用物流节点。"}</p>}</section>
+      <section id="customer-order-tracking"><h3>{en ? "Logistics" : "物流"}</h3><div className="customer-info-line"><span>{en ? "Tracking number" : "物流单号"}</span><CopyableValue en={en} label={en ? "tracking number" : "物流单号"} value={order.tracking_number} /></div><div className="customer-info-line"><span>{en ? "Carrier" : "物流商"}</span><span>{orderCarrierLabel(order, detail, en)}</span></div><div className="customer-info-line"><span>{en ? "Latest update" : "最新物流"}</span><span>{detail?.latest_tracking_description ?? "—"}</span></div>{trackingEvents.length ? <><ol className="customer-order-timeline">{(trackingExpanded ? trackingEvents : trackingEvents.slice(0, 2)).map((event, index) => <li key={`${event.occurred_at}-${index}`}><span>{event.description}</span><time>{dateTime(event.occurred_at, en)}</time></li>)}</ol>{trackingEvents.length > 2 ? <button aria-expanded={trackingExpanded} className="customer-order-expand" onClick={() => setTrackingExpanded((value) => !value)} type="button">{trackingExpanded ? (en ? "Show less" : "收起") : (en ? "Show more" : "展开更多")}</button> : null}</> : <p className="customer-side-muted">{en ? "Tracking events are unavailable." : "暂无可用物流节点。"}</p>}</section>
       <section id="customer-order-items"><h3>{en ? "Items" : "商品"}</h3>{order.items.map((item, index) => <div className="customer-order-detail-item" key={`${item.sku_id ?? item.product_id ?? index}-${index}`}>{item.image_url ? <img alt="" src={item.image_url} /> : <span aria-hidden="true">{item.name.slice(0, 1)}</span>}<div><strong>{item.name}</strong><small>{en ? "Variant" : "规格"}：{item.sku_name ?? "—"}</small><small>{en ? "Seller SKU" : "SKU 货号"}：{item.sku ?? "—"} · ×{item.quantity}</small></div><b>{money(order.currency, item.total_amount)}</b></div>)}</section>
       <section id="customer-order-payment"><h3>{en ? "Payment" : "付款"}</h3><div className="customer-info-line"><span>{en ? "Paid at" : "付款时间"}</span><span>{dateTime(order.paid_at, en)}</span></div><div className="customer-info-line"><span>{en ? "Method" : "支付方式"}</span><span>{detail?.payment_method_name ?? "—"}</span></div>{breakdown.map((row) => <div className="customer-info-line" key={row.key}><span>{row[en ? "en" : "zh"]}</span><span>{money(order.currency, order.payment_breakdown[row.key])}</span></div>)}<div className="customer-info-line customer-order-total"><span>{en ? "Buyer paid" : "买家实付金额"}</span><strong>{money(order.currency, order.total_amount)}</strong></div><button className="customer-receipt-button" disabled={!order.paid_at} onClick={() => setReceiptOpen(true)} type="button">{en ? "Receipt" : "收据"}</button>{!order.paid_at ? <p className="customer-side-muted">{en ? "Receipt preview is available after payment." : "付款后才可查看收据预览。"}</p> : null}</section>
     </div>

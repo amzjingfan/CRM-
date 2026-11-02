@@ -24,7 +24,9 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   const fixtureOptions = typeof messageCount === "object" ? messageCount : {};
   if (typeof messageCount === "object") {
     orderStatus = fixtureOptions.orderStatus ?? orderStatus;
+    latestTrackingDescription = fixtureOptions.latestTrackingDescription ?? latestTrackingDescription;
     translationEnabled = fixtureOptions.translationEnabled ?? translationEnabled;
+    enhancedTracking = fixtureOptions.enhancedTracking ?? enhancedTracking;
     syncedOrderStatus = orderStatus;
     messageCount = fixtureOptions.messageCount ?? 70;
   }
@@ -41,7 +43,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
   calls.extraDetailEvent = fixtureOptions.extraDetailEvent ?? false;
   calls.detailRateLimited = fixtureOptions.detailRateLimited ?? false;
   calls.trackingRateLimited = fixtureOptions.trackingRateLimited ?? false;
-  const trackingData = () => ({ latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", packages: [{ tracking_number: "878696895644", carrier_name: "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }, ...(calls.extraDetailEvent ? [{ description: "Order placed", occurred_at: "2026-10-14T08:00:00Z", tracking_number: null, action_code: 0, action_code_name: null }] : [])] }] });
+  const trackingData = () => ({ latest_tracking_description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), latest_tracking_at: "2026-10-16T23:26:48Z", packages: fixtureOptions.standardPackages ?? [{ tracking_number: "878696895644", carrier_name: fixtureOptions.standardCarrier ?? "Carrier A", events: [{ description: latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), occurred_at: "2026-10-16T23:26:48Z", tracking_number: null, action_code: 2, action_code_name: null }, { description: "Picked up by carrier", occurred_at: "2026-10-15T19:20:00Z", tracking_number: null, action_code: 1, action_code_name: null }, ...(calls.extraDetailEvent ? [{ description: "Order placed", occurred_at: "2026-10-14T08:00:00Z", tracking_number: null, action_code: 0, action_code_name: null }] : [])] }] });
   await context.route("**/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -112,7 +114,7 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
       calls.activeOrderDetails--;
       if (calls.detailRateLimited) return route.fulfill({ status: 429, contentType: "application/json", headers, body: JSON.stringify({ code: 429, message: "平台限流，请稍后重试", data: null }) });
       const tracking = trackingData();
-      data = { payment_method_name: "Card", recipient_address: { name: "A***", phone_number: "***1234", full_address: "Masked Street, TX 78247" }, shipping_provider: "Carrier A", latest_tracking_description: payload.include_tracking === false ? null : tracking.latest_tracking_description, latest_tracking_at: payload.include_tracking === false ? null : tracking.latest_tracking_at, tracking_packages: payload.include_tracking === false ? [] : tracking.packages, enhanced_tracking_available: enhancedTracking, tracking_loaded: payload.include_tracking !== false };
+      data = { payment_method_name: "Card", recipient_address: { name: "A***", phone_number: "***1234", full_address: "Masked Street, TX 78247" }, shipping_provider: fixtureOptions.shippingProvider ?? "Carrier A", latest_tracking_description: payload.include_tracking === false ? null : tracking.latest_tracking_description, latest_tracking_at: payload.include_tracking === false ? null : tracking.latest_tracking_at, tracking_packages: payload.include_tracking === false ? [] : tracking.packages, enhanced_tracking_available: enhancedTracking, tracking_loaded: payload.include_tracking !== false };
     } else if (path.endsWith("/sidebar/orders/standard-tracking") && method === "POST") {
       calls.standardTracking++;
       assert.match(JSON.parse(request.postData()).order_id, /^57760000000000000[1-3]$/);
@@ -122,13 +124,15 @@ async function openWorkspace(messageCount = 70, orderStatus = "IN_TRANSIT", conv
     } else if (path.endsWith("/sidebar/orders/enhanced-tracking") && method === "POST") {
       calls.enhancedTracking++;
       assert.deepEqual(JSON.parse(request.postData()), { order_id: "577600000000000001" });
-      data = { packages: [
+      if (fixtureOptions.enhancedTrackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "增强物流暂不可用，请查看通用轨迹", data: null }) });
+      data = { packages: fixtureOptions.enhancedPackages ?? [
         { package_id: "123456", tracking_number: "NEW-1", carrier_name: "Carrier B", events: [{ description: "Delivered", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "NEW-1", action_code: 2, action_code_name: "signed_personally" }] },
         { package_id: "123457", tracking_number: "OLD-2", carrier_name: "Carrier C", events: [{ description: "Picked up", occurred_at: "2026-10-15T19:20:00Z", tracking_number: "OLD-2", action_code: 1, action_code_name: "pickup_success" }] },
       ] };
     } else if (path.endsWith("/sidebar/orders/tracking-translation") && method === "POST") {
       calls.trackingTranslations++;
       const payload = JSON.parse(request.postData());
+      calls.lastTrackingTranslation = payload;
       assert.equal(payload.order_id, "577600000000000001");
       if (calls.trackingFailure) return route.fulfill({ status: 503, contentType: "application/json", headers, body: JSON.stringify({ code: 503, message: "translation unavailable", data: null }) });
       data = { source_description: payload.event_description ?? latestTrackingDescription ?? (orderStatus === "COMPLETED" ? "Delivered" : "Package dispatched"), translated_text: "已送达" };
@@ -1076,6 +1080,79 @@ test("tracking popover shows every returned event, copies all, and downloads a P
   } finally { await context.close(); }
 });
 
+test("enhanced carrier is reused by the order card and details view", async () => {
+  const { context, page, calls } = await openWorkspace({
+    messageCount: 2, enhancedTracking: true, shippingProvider: "Collections by TikTok", standardCarrier: "Collections by TikTok",
+    enhancedPackages: [{ package_id: "123457", tracking_number: "OLD-2", carrier_name: "SwiftX", events: [{ description: "Package has been delivered!", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "OLD-2", action_code: 2, action_code_name: null }] }],
+  });
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByRole("button", { name: "查看完整物流" }).click();
+    const dialog = page.getByRole("dialog", { name: "物流完整信息" });
+    await dialog.getByText("物流商：SwiftX").waitFor();
+    await card.locator(".customer-info-line").filter({ hasText: "物流商" }).getByText("SwiftX").waitFor();
+    await page.keyboard.press("Escape");
+    await card.getByRole("button", { name: "详情" }).click();
+    await page.getByRole("region", { name: "订单详情" }).locator("#customer-order-tracking").getByText("SwiftX").waitFor();
+    assert.equal(calls.enhancedTracking, 1);
+    assert.equal(calls.send, 0);
+  } finally { await context.close(); }
+});
+
+test("enhanced latest event remains translatable after the carrier is reconciled", async () => {
+  const { context, page, calls } = await openWorkspace({
+    messageCount: 2, enhancedTracking: true, translationEnabled: true,
+    enhancedPackages: [{ package_id: "123457", tracking_number: "OLD-2", carrier_name: "SwiftX", events: [{ description: "Package has been delivered!", occurred_at: "2026-10-16T23:26:48Z", tracking_number: "OLD-2", action_code: 2, action_code_name: null }] }],
+  });
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByRole("button", { name: "查看完整物流" }).click();
+    await page.getByRole("dialog", { name: "物流完整信息" }).getByText("Package has been delivered!").waitFor();
+    await page.keyboard.press("Escape");
+    const description = card.locator(".customer-info-line").filter({ hasText: "最新物流描述" });
+    await description.getByText("Package has been delivered!").waitFor();
+    await description.getByRole("button", { name: "译成中文" }).click();
+    await description.getByText("已送达").waitFor();
+    assert.equal(calls.lastTrackingTranslation.enhanced, true);
+    assert.equal(calls.lastTrackingTranslation.event_description, "Package has been delivered!");
+  } finally { await context.close(); }
+});
+
+test("generic tracking keeps a marketplace shipping method out of the carrier field", async () => {
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, shippingProvider: "Collections by TikTok", standardCarrier: "Collections by TikTok" });
+  try {
+    const card = page.getByTestId("customer-order-card");
+    await card.getByRole("button", { name: "查看完整物流" }).click();
+    const dialog = page.getByRole("dialog", { name: "物流完整信息" });
+    await dialog.getByText("物流商：—").waitFor();
+    assert.equal(await card.locator(".customer-info-line").filter({ hasText: "物流商" }).getByText("—").count(), 1);
+    assert.equal(await dialog.getByRole("status").count(), 0);
+    assert.equal(calls.enhancedTracking, 0);
+  } finally { await context.close(); }
+});
+
+test("usable standard history hides an enhanced-only read failure", async () => {
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, enhancedTracking: true, enhancedTrackingFailure: true });
+  try {
+    const enhancedResponse = page.waitForResponse((response) => response.url().endsWith("/sidebar/orders/enhanced-tracking"));
+    await page.getByTestId("customer-order-card").getByRole("button", { name: "查看完整物流" }).click();
+    await enhancedResponse;
+    const dialog = page.getByRole("dialog", { name: "物流完整信息" });
+    await dialog.getByText("Picked up by carrier").waitFor();
+    assert.equal(await dialog.getByText("增强物流暂不可用，请查看通用轨迹").count(), 0);
+    assert.equal(calls.enhancedTracking, 1);
+  } finally { await context.close(); }
+});
+
+test("enhanced read failure stays visible when standard tracking has no events", async () => {
+  const { context, page, calls } = await openWorkspace({ messageCount: 2, enhancedTracking: true, enhancedTrackingFailure: true, standardPackages: [] });
+  try {
+    await page.getByTestId("customer-order-card").getByRole("button", { name: "查看完整物流" }).click();
+    await page.getByRole("dialog", { name: "物流完整信息" }).getByText("增强物流暂不可用，请查看通用轨迹").waitFor();
+    assert.equal(calls.enhancedTracking, 1);
+  } finally { await context.close(); }
+});
+
 test("cross border tracking translates all parcels and stages a native logistics card", async () => {
   const { context, page, calls } = await openWorkspace(2, "IN_TRANSIT", 2, null, 0, true, "Black", true);
   try {
@@ -1321,6 +1398,7 @@ test("completed order maps common carrier stages to Chinese without treating com
     ["Out for delivery", "派送中"],
     ["In transit to destination", "运送中"],
     ["Delivered, Individual Picked Up at Postal Facility", "已送达"],
+    ["Package has been delivered!", "已送达"],
     ["Returned to sender", "已退回"],
   ]) {
     const { context, page } = await openWorkspace(2, "COMPLETED", 2, description);
@@ -1462,8 +1540,13 @@ test("all order stages keep the same core fields and use native order cards", as
       }
       const expectedPayment = status === "UNPAID" ? "未付款" : ["CANCELLED", "CANCELED"].includes(status) ? "取消前已付款 · 退款待核实" : "已付款";
       assert.match(await card.locator(".customer-info-line").filter({ hasText: "支付状态" }).innerText(), new RegExp(expectedPayment));
+      if (["DELIVERED", "COMPLETED"].includes(status)) {
+        assert.equal(await card.locator(".customer-card-top strong").innerText(), "已完成");
+        assert.equal(await card.locator(".customer-info-line").filter({ hasText: "出货状态" }).getByText("已完成").count(), 1);
+      }
       await card.getByRole("button", { name: "填入回复草稿" }).click();
       await page.getByLabel("订单卡片预览").waitFor();
+      if (["DELIVERED", "COMPLETED"].includes(status)) assert.match(await page.getByLabel("订单卡片预览").innerText(), /已完成/);
       assert.equal(await page.getByRole("textbox", { name: "回复内容" }).count(), 0);
       await page.getByRole("button", { name: "发送订单卡片" }).click();
       await page.getByRole("dialog", { name: "审阅订单卡片" }).waitFor();
