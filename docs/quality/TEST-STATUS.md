@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-11-02 CBT 增强物流修复 [TR R06](../reports/tests/TR-MVP-G1-LOG-202604-001-20261102-R06.md) **PASS（staging 已登录页面）**：从已部署 `d856760c` 只读检查两笔不同 XBM CBT 已送达订单，物流详情分别展开 19 和 16 条节点；另一家 TikTok US 店铺的 USPS 订单显示通用物流轨迹。R05 的独立真实增强响应含空节点单号且解析/投影成功，R04 回归确认保留该节点而不借用其他单号。没有新建测试数据、买家外发、退款或 production 操作。平台错误 `11007009` 的其他订单仍需按单诊断，不能外推全量成功。
+
 2026-11-01 五类共享 Agent 模板与多 Agent 待审阅预演[TR R01](../reports/tests/TR-MVP-AGENT-FIVE-TEMPLATES-AUTO-001-20261101-R01.md)在批准范围内 PASS：本地隔离 PG/pgvector 3169 通过、5 条件跳过，前端契约 78 与生产浏览器 236 通过；staging 从已合并 `433715ec` 手动发布 049，12 服务及三健康通过。正式认证 API 已验证售前商品调试、售前/售后/订单物流真实会话待审阅建议、售后知识引用及只读工具；实时商品目录抽样 5 项均上架且有正库存。首轮和本轮累计 8 Agent、2 文件软删除，五模板保留，测试时段出站消息 0。物流新节点与连续三轮无解在测试店无现场触发条件，仅隔离测试通过；某物流工具调用样本失败，staging 浏览器 `UI_UNAVAILABLE`，均未冒称现场通过。自动真实发送仍关闭、production No-Go；见[低敏证据](../../release/evidence/staging/crm-staging-five-agents-20261031.json)。
 
 2026-10-31 工作台目录与订单一致性修复已从主线 `743eb782` 手动部署 staging：[TR R02](../reports/tests/TR-MVP-WORKSPACE-CATALOG-CONSISTENCY-001-20261031-R02.md)记录私有备份可读、双 `ValidateOnly`、`Deploy`、048、12 服务、固定出口及九条公网只读路径通过；本地行为验证沿用同 subject 的 R01。已登录工作台可见统一导航和 XBM 已取消订单的稳定基础字段；真实商品与优惠券列表因浏览器工具超时为 `UI_UNAVAILABLE`，不能算现场验收通过。两店人工发送范围和自动发送关闭项保持，零真实消息与退款；精确摘要见[低敏证据](../../release/evidence/staging/crm-staging-workspace-catalog-20261031.json)，production No-Go。
