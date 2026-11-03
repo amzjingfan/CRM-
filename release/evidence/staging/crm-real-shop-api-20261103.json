@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-REALSHOP-API-001",
+  "tested_runtime_sha": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+  "evidence_at": "2026-11-03T04:20:35.889428+00:00",
+  "environment": "staging approved TikTok US+XBM",
+  "capability_connectivity": "PASS; sample limits retained",
+  "results": {
+    "api-results.json": {
+      "checked_at": "2026-11-03T03:56:20.798967+00:00",
+      "api_results": {
+        "customer_order_search": {
+          "http": 200,
+          "code": 0,
+          "item_count": 0
+        },
+        "shop_order_search": {
+          "status": "succeeded",
+          "count": 20
+        },
+        "order_detail_202507": {
+          "status": "succeeded",
+          "matching_count": 1
+        },
+        "standard_tracking_202309": {
+          "status": "succeeded",
+          "entry_count": 8
+        },
+        "enhanced_tracking_202604": {
+          "status": "rejected_by_platform",
+          "app_error_code": 50003,
+          "http": 502,
+          "platform_codes": [
+            11007009
+          ]
+        },
+        "agent_debug": {
+          "http": 200,
+          "code": 0,
+          "terminal_state": "review_ready",
+          "content_nonempty": true,
+          "tool_calls": [],
+          "tool_events": [
+            {
+              "tool_name": "search_customer_orders",
+              "status": "succeeded"
+            }
+          ]
+        }
+      },
+      "messages_sent": 0
+    },
+    "xbm-readonly.json": {
+      "checked_at": "2026-11-03T04:11:50.510890+00:00",
+      "store": "xbm",
+      "buyer_alias": "existing_xbm_buyer",
+      "api_results": {
+        "buyer_order_search": {
+          "http": 200,
+          "code": 0,
+          "item_count": 1
+        },
+        "order_detail": {
+          "http": 200,
+          "code": 0,
+          "enhanced_tracking_available": true
+        },
+        "enhanced_tracking_202604": {
+          "http": 200,
+          "code": 0,
+          "package_count": 1,
+          "event_count": 15
+        },
+        "agent_logistics_debug": {
+          "http": 200,
+          "code": 0,
+          "terminal_state": "review_ready",
+          "content_nonempty": true,
+          "tool_events": [
+            {
+              "tool_name": "search_customer_orders",
+              "status": "succeeded"
+            },
+            {
+              "tool_name": "query_logistics",
+              "status": "succeeded"
+            }
+          ],
+          "tool_calls": []
+        }
+      },
+      "messages_sent": 0
+    },
+    "send-receipt.json": {
+      "checked_at": "2026-11-03T04:03:48.401338+00:00",
+      "message_type": "explicit_fictional_demo",
+      "content_sha256": "5ad4923cc6e311e79705f99d979b78803cec33cb3bd07fe0499568275a0bf14e",
+      "message_sent_count": 1,
+      "method": "formal authenticated workspace send API; CUSTOMER_SERVICE; not automatic scheduler",
+      "http": 200,
+      "code": 0,
+      "status": "sent",
+      "delivery_mode": "real",
+      "external_message_id_present": true,
+      "external_message_id_sha256": "2e4f90dedab55fdd2af244777df5d8f045319914df80008b3e02afdc3167dd6f",
+      "platform_history_match": true,
+      "platform_visible": true,
+      "platform_sender_role": "CUSTOMER_SERVICE"
+    },
+    "source_revision": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+    "fixture_cleanup": {
+      "synthetic_orders_created": 0,
+      "temporary_agents_created": 0,
+      "temporary_files_created": 0,
+      "platform_test_messages_sent": 1,
+      "real_message_receipt_and_audit": "retained",
+      "policies_changed": false,
+      "xbm_messages_sent": 0,
+      "jwt": "memory only; processes exited",
+      "automatic_reception_logistics_event_triggers": "not forced; no trusted new buyer inbound fabricated"
+    }
+  },
+  "sample_limits": [
+    "US sample enhanced logistics rejected11007009; application maps502/50003; XBM actual enhanced request200 with1package15events.",
+    "Manual CUSTOMER_SERVICE transport tested; automatic ROBOT/welcome/60minute/logistics event triggers not forced or counted as real deliveries.",
+    "Platformhistory visible does not establish buyer-read confirmation."
+  ],
+  "runner_sha256": {
+    "preflight.py": "8002c3f50523ab434fbdeaaf2faccf9b602f149afd06a6dec0bf83f5fed7e1f1",
+    "check-apis.py": "9f127ed2d375a738859cb66ea3b1994cd09c2c8cf8068b3680d6807a369543bd",
+    "check-apis-v1.py": "a90342ac331fb331c2709a855b322165775c0cbd998b8e7955a377bc0dbf0b77",
+    "send-one.py": "0fe3f3cceb2c0d2f5685a19586bd29d9b317d3bdc6582000b35071e0650ef32d",
+    "xbm-readonly.py": "e4d403d7c6bea8da049bd3b3d953e9ad8a2c7a53d7db3733159b9a19ff48cad0"
+  },
+  "raw_output_sha256": {
+    "preflight.log": "bf6695b6272d57d61a80dbd6d3e4c8efdb3fca420bb95e1937d3fe01c71cb880",
+    "check-apis-v1.log": "c60965627486b3e840731f056a64c8bc253ceba14a4daabcd3bffbada2199a65",
+    "check-apis-v2.log": "104e8e473d3578fac4e6ad7db69e029be4f79b1eda5a2ed75ed97dcd9b02677a",
+    "send-one.log": "db5223fc03001d65d6479e1939d019927749d5a3ada88814c6c4b74eceb6a262",
+    "xbm-readonly.log": "58e139c09df1d47db8d87ddffa04097930bf9e88513503bf3fe487947c4d80d3"
+  },
+  "debug_projection_source": "US tool_events extracted from original saved private-debug.json; check-apis runner directly projected tool_calls only.",
+  "review": "APPROVE: independent readonly runner/evidence review; no blockers"
+}

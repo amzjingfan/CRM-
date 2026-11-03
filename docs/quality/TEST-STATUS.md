@@ -1,5 +1,7 @@
 # 当前测试状态
 
+2026-11-03 真实店铺接口与定向发送[TR](../reports/tests/TR-MVP-AGENT-REALSHOP-API-001-20261103-R01.md)通过：US指定买家查单200空结果、Agent实际搜索后回答；本店订单详情和通用物流8节点；1条标记虚拟的真实消息sent且官方历史可见。XBM真实买家增强物流200/1包裹15节点，Agent查单/查物流并回答，0外发。US增强样本11007009原失败保留；本次不证明买家已读或自动欢迎/超时/节点触发。没有创建假订单/临时Agent/知识文件，真实消息与审计保留；不改策略或部署。
+
 2026-11-03 自动发送共享窗口缺陷已修复并部署：PR#723合并85a2214e，subject `fc5d0c70e3d508b9ba78949a5d609f28ee234559`；详情身份与202309列表窗口分离，保留未知/撤权失败关闭。全后端3678通过/5跳过、实际双CI和独立审查通过。两店线上grant/identity/window全true，XBM只读读到1订单；四项自动化仍开启。隔离测试行已清理、tmpfs停止，staging无新测试业务行、零买家试发；尚无新成功回执，物流仍60分钟扫描。见[本次TR](../reports/tests/TR-MVP-AGENT-AUTOMATION-WINDOW-001-20261103-R01.md)。
 
 2026-11-03 Agent全链路验收与两店自动化已完成：源码PR #719已合并；手动部署subject `20c9103cac541ed43c164a68e7ed2abe03430370`、050及三健康通过。两店各5永久Agent，auto、欢迎24小时咨询段、60分钟超时及60分钟物流轮询external已正式API回读；10测试Agent/8文件软删、139临时消息/12协作清理，原草稿/发布版本及会话记忆保留。88个功能组合中83自动新执行通过、5独立人工事实裁定，原始自动矩阵非全绿；物流为实际模型/BGE的双语模拟，未向真实买家测试发送。长复杂输入仍可被DLP拒绝、模型错误参数失败关闭；现场浏览器UI_UNAVAILABLE；production继续No-Go。见[TR R02](../reports/tests/TR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02.md)和[低敏证据](../../release/evidence/staging/crm-staging-agent-automation-20261103.json)。
