@@ -12,7 +12,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError
 
 from app.integrations.oauth_service import decrypt_tiktok_access_token
 from app.integrations.tiktok_http import create_tiktok_http_client
@@ -363,14 +363,19 @@ class TikTokLatestMessage(TikTokModel):
     id: str = Field(min_length=1, max_length=200, pattern=r"^\d+$")
 
 
-class TikTokConversation(TikTokModel):
-    """Get Conversations 202309 的会话摘要。"""
+class TikTokConversationDetail(TikTokModel):
+    """202601 详情用于身份核验，不提供会话发送窗口。"""
 
     id: str = Field(min_length=1, max_length=200, pattern=r"^\d+$")
     create_time: int
-    unread_count: int = Field(default=0, ge=0)
-    can_send_message: bool = False
     participants: list[TikTokConversationParticipant] = Field(default_factory=list)
+
+
+class TikTokConversation(TikTokConversationDetail):
+    """202309 列表包含发送窗口；字段缺失表示未知。"""
+
+    unread_count: int = Field(default=0, ge=0)
+    can_send_message: StrictBool | None = None
     latest_message: TikTokLatestMessage | None = None
 
 
@@ -768,25 +773,51 @@ class TikTokReadClient:
         data = envelope.data or {}
         items = self._validated_list(data, "conversations", TikTokConversation)
         next_token = data.get("next_page_token")
+        if next_token is not None and not isinstance(next_token, str):
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话分页游标格式异常", 502)
         return (
             [item for item in items if isinstance(item, TikTokConversation)],
             str(next_token) if next_token else None,
             envelope.request_id,
         )
 
-    async def get_conversation(self, conversation_id: str) -> TikTokConversation:
+    async def get_conversation(self, conversation_id: str) -> TikTokConversationDetail:
         """读取单个会话的官方参与者身份，用于安全关联订单域买家 ID。"""
         self._require_scope("seller.customer_service")
         if not conversation_id.isdigit():
             raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 会话 ID 无效", 422)
         envelope = await self._request("GET", f"/customer_service/202601/conversations/{conversation_id}", {})
         try:
-            conversation = TikTokConversation.model_validate((envelope.data or {}).get("conversation"))
+            conversation = TikTokConversationDetail.model_validate((envelope.data or {}).get("conversation"))
         except ValidationError as exc:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 返回数据结构异常", 502) from exc
         if conversation.id != conversation_id:
             raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话身份不匹配", 502)
         return conversation
+
+    async def get_conversation_send_status(self, conversation_id: str) -> TikTokConversation | None:
+        """从官方列表查找本会话窗口；分页共享截止时间，不借用其他会话的许可。"""
+        if not conversation_id.isdigit():
+            raise AppError(ErrorCode.VALIDATION_ERROR, "TikTok 会话 ID 无效", 422)
+        token: str | None = None
+        seen: set[str] = set()
+        try:
+            async with asyncio.timeout(self.settings.request_timeout_seconds):
+                while True:
+                    page, next_token, _ = await self.get_conversations(page_size=20, page_token=token)
+                    matches = [item for item in page if item.id == conversation_id]
+                    if len(matches) > 1:
+                        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话窗口返回重复目标", 502)
+                    if matches:
+                        return matches[0]
+                    if not next_token:
+                        return None
+                    if next_token in seen:
+                        raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话分页游标重复", 502)
+                    seen.add(next_token)
+                    token = next_token
+        except TimeoutError as error:
+            raise AppError(ErrorCode.THIRD_PARTY_ERROR, "TikTok 会话窗口读取超时", 504) from error
 
     async def get_conversation_messages(
         self,

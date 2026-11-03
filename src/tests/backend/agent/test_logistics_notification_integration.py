@@ -320,6 +320,9 @@ async def test_official_window_and_buyer_identity_must_both_be_current(monkeypat
         async def get_conversation(self, conversation_id):
             return remote
 
+        async def get_conversation_send_status(self, conversation_id):
+            return remote
+
     monkeypatch.setattr("app.agents.tools.logistics_updates.authorization.TikTokReadClient", Client)
 
     async def read():
@@ -387,3 +390,39 @@ async def test_failed_native_generation_keeps_provider_reported_numeric_usage(mo
     with pytest.raises(ValueError, match="notification_required_tool_missing"):
         await model.generate(SimpleNamespace(buyer_language="en"))
     assert model.input_tokens == 5 and model.output_tokens == 3
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "window,listed_buyer,expected",
+    [(True, "456", True), (False, "456", False), (None, "456", False), (True, "999", False)],
+)
+async def test_window_uses_list_when_detail_has_no_flag(monkeypatch, window, listed_buyer, expected):
+    from app.agents.tools.logistics_updates import authorization
+    from app.integrations.tiktok_read import TikTokConversation
+
+    detail = TikTokConversation.model_validate(
+        {"id": "123", "create_time": 1, "participants": [{"role": "BUYER", "im_user_id": "456", "user_id": "789"}]}
+    )
+    listed = SimpleNamespace(
+        id="123", can_send_message=window, participants=[SimpleNamespace(role="BUYER", im_user_id=listed_buyer)]
+    )
+    customer = SimpleNamespace(external_customer_id="456")
+    channel = SimpleNamespace(
+        token_expires_at=datetime.now(UTC) + timedelta(days=1),
+        authorization_status=None,
+        authorization_expires_at=None,
+        seller_authorization=None,
+        scopes=["seller.order.info", "seller.customer_service", "seller.logistics"],
+    )
+    client = SimpleNamespace(
+        get_conversation=AsyncMock(return_value=detail), get_conversation_send_status=AsyncMock(return_value=listed)
+    )
+    monkeypatch.setattr(authorization, "TikTokReadClient", lambda *_: client)
+    result = await authorization.verified_remote_window(
+        SimpleNamespace(scalar=AsyncMock(side_effect=[customer, channel])),
+        object(),
+        SimpleNamespace(customer_id=uuid.uuid4(), store_id=uuid.uuid4(), external_conversation_id="123"),
+    )
+    assert result == (True, True, expected)
+    client.get_conversation_send_status.assert_awaited_once_with("123")

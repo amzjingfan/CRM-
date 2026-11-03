@@ -199,6 +199,182 @@ async def enqueue(factory, values):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("source_kind", ["agent", "welcome", "timeout", "logistics_discovery"])
+@pytest.mark.parametrize("window", [True, False, None])
+async def test_official_http_contract_reaches_delivery_only_with_explicit_current_window(
+    automation_db, monkeypatch, source_kind, window
+):
+    """详情缺字段、列表分页的真实解析贯穿数据库和末端发送；只捕获合成消息。"""
+    import httpx
+    from pydantic import SecretStr
+
+    from app.agents.tools.logistics_updates import authorization as remote_auth
+    from app.integrations.credential_crypto import encrypt_credential
+    from app.integrations.tiktok_read import TikTokReadClient
+    from app.reception.models import ReceptionConversationState, ReceptionPolicy, ReceptionPolicyStore
+    from app.tools import executor
+
+    factory, settings, values = automation_db
+    encryption_key = "synthetic-window-encryption-key-at-least-32-characters"
+    settings = settings.model_copy(
+        update={
+            "tiktok_app_key": "synthetic-key",
+            "tiktok_app_secret": SecretStr("synthetic-secret-value"),
+            "tiktok_credential_encryption_key": SecretStr(encryption_key),
+        }
+    )
+    policy_id = None
+    async with factory() as setup:
+        channel = await setup.scalar(select(ChannelAccount).where(ChannelAccount.store_id == values["store_id"]))
+        channel.metadata_json = {"shop_cipher": "synthetic-shop"}
+        channel.access_token_ref = encrypt_credential(
+            "synthetic-token", encryption_key, f"tiktok:{channel.store_id}:{channel.external_store_id}:access"
+        )
+        customer = await setup.scalar(select(Customer).where(Customer.store_id == values["store_id"]))
+        customer.external_customer_id = "800001"
+        if source_kind in {"welcome", "timeout"}:
+            policy_id = uuid.uuid4()
+            at = datetime.now(UTC) - timedelta(minutes=61)
+            trigger = await setup.get(Message, values["trigger_message_id"])
+            trigger.created_at = at
+            setup.add(
+                ReceptionPolicy(
+                    id=policy_id,
+                    kind=source_kind,
+                    name="合成窗口契约验收",
+                    content="Verified reply",
+                    content_en="Verified reply",
+                    delivery_mode="auto",
+                    enabled=True,
+                    revision=1,
+                    timeout_minutes=60 if source_kind == "timeout" else None,
+                    schedule={"mode": "long_term"},
+                    authorized_by=values["authorized_by"],
+                    created_by=values["authorized_by"],
+                    updated_at=at - timedelta(minutes=1),
+                )
+            )
+            await setup.flush()
+            setup.add(ReceptionPolicyStore(policy_id=policy_id, store_id=values["store_id"]))
+            setup.add(
+                ReceptionConversationState(
+                    conversation_id=values["conversation_id"],
+                    store_id=values["store_id"],
+                    segment_id=trigger.id,
+                    last_activity_at=at,
+                    unanswered_message_id=trigger.id,
+                    unanswered_since=at,
+                    timeout_policy_id=policy_id if source_kind == "timeout" else None,
+                    timeout_policy_revision=1 if source_kind == "timeout" else None,
+                )
+            )
+            values = {
+                **values,
+                "source_kind": source_kind,
+                "agent_run_id": None,
+                "authorization_json": {"policy_id": str(policy_id)},
+            }
+        await setup.commit()
+    calls, captured = [], []
+
+    def official(request):
+        assert request.method == "GET"
+        calls.append((request.url.path, request.url.params.get("page_token")))
+        if request.url.path == "/customer_service/202601/conversations/123456789":
+            data = {
+                "conversation": {
+                    "id": "123456789",
+                    "create_time": 1,
+                    "participants": [{"role": "BUYER", "im_user_id": "800001", "user_id": "900001"}],
+                }
+            }
+        elif request.url.path == "/customer_service/202309/conversations":
+            if request.url.params.get("page_token") != "second":
+                data = {"conversations": [], "next_page_token": "second"}
+            else:
+                item = {
+                    "id": "123456789",
+                    "create_time": 1,
+                    "participants": [{"role": "BUYER", "im_user_id": "800001"}],
+                }
+                if window is not None:
+                    item["can_send_message"] = window
+                data = {"conversations": [item]}
+        else:
+            pytest.fail(f"unexpected endpoint {request.url.path}")
+        return httpx.Response(200, json={"code": 0, "message": "Success", "data": data})
+
+    class Capture:
+        real_writes = True
+
+        async def send_message(self, channel, command):
+            captured.append(command)
+            return SendMessageResult(status="sent", mock=False, external_message_id="987654321")
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(official))
+    monkeypatch.setattr(
+        remote_auth,
+        "TikTokReadClient",
+        lambda settings, channel: TikTokReadClient(settings, channel, client=http),
+    )
+    monkeypatch.setattr(executor, "get_message_adapter", lambda _: Capture())
+    monkeypatch.setattr(executor, "get_settings", lambda: settings)
+    try:
+        if source_kind == "logistics_discovery":
+            from decimal import Decimal
+
+            from app.agents.tools.logistics_updates import discovery
+            from app.orders.models import Order
+
+            reader = AsyncMock(
+                return_value=(
+                    SimpleNamespace(
+                        external_order_id="7654321",
+                        status="shipped",
+                        payment_status="paid",
+                        currency="USD",
+                        total_amount=Decimal("25.00"),
+                        ordered_at=datetime.now(UTC),
+                    ),
+                )
+            )
+            monkeypatch.setattr(discovery, "read_verified_buyer_orders", reader)
+            async with factory() as session:
+                conversation = await session.get(Conversation, values["conversation_id"])
+                actor = await session.get(User, values["authorized_by"])
+                count = await discovery.synchronize_conversation_orders(session, actor, conversation, settings)
+                assert count == (1 if window is True else 0)
+                assert reader.await_count == count
+                order = await session.scalar(select(Order).where(Order.store_id == values["store_id"]))
+                assert (order is not None) is (window is True)
+                assert captured == []
+                await session.commit()
+            return
+        row_id = await enqueue(factory, values)
+        async with factory() as session:
+            row = await claim_delivery(session, settings)
+            assert row.id == row_id
+            await process_delivery(session, row, settings)
+            await session.refresh(row)
+            assert row.status == ("succeeded" if window is True else "cancelled")
+            assert len(captured) == (1 if window is True else 0)
+            assert ("/customer_service/202309/conversations", "second") in calls
+            message = await session.scalar(select(Message).where(Message.idempotency_key == f"automation:{row_id}"))
+            if window is True:
+                assert captured[0].sender_role == ("ROBOT" if source_kind == "agent" else "SYSTEM")
+                assert message.external_message_id == "987654321"
+                assert message.raw_payload["automation_source_kind"] == source_kind
+            else:
+                assert message is None
+    finally:
+        await http.aclose()
+        if policy_id:
+            async with factory() as cleanup:
+                await cleanup.execute(delete(ReceptionPolicy).where(ReceptionPolicy.id == policy_id))
+                await cleanup.commit()
+
+
+@pytest.mark.asyncio
 async def test_concurrent_enqueue_and_claim_have_one_persisted_owner(automation_db):
     factory, settings, values = automation_db
     ids = await asyncio.gather(enqueue(factory, values), enqueue(factory, values))
@@ -251,7 +427,11 @@ async def test_persisted_dispatch_rechecks_grant_and_captures_robot_without_huma
         can_send_message=change != "window",
     )
     monkeypatch.setattr(
-        remote_auth, "TikTokReadClient", lambda *_: SimpleNamespace(get_conversation=AsyncMock(return_value=remote))
+        remote_auth,
+        "TikTokReadClient",
+        lambda *_: SimpleNamespace(
+            get_conversation=AsyncMock(return_value=remote), get_conversation_send_status=AsyncMock(return_value=remote)
+        ),
     )
     async with factory() as session:
         row = await claim_delivery(session, settings)
@@ -322,6 +502,13 @@ async def test_policy_revoked_during_preflight_never_reaches_platform(automation
             return SimpleNamespace(
                 id="123456789",
                 participants=[SimpleNamespace(role="BUYER", im_user_id="synthetic-buyer", user_id="platform-buyer")],
+                can_send_message=True,
+            )
+
+        async def get_conversation_send_status(self, _):
+            return SimpleNamespace(
+                id="123456789",
+                participants=[SimpleNamespace(role="BUYER", im_user_id="synthetic-buyer")],
                 can_send_message=True,
             )
 
@@ -441,6 +628,13 @@ async def test_final_remote_preflight_reloads_revoked_local_proof(automation_db,
             return SimpleNamespace(
                 id="123456789",
                 participants=[SimpleNamespace(role="BUYER", im_user_id="synthetic-buyer", user_id="platform-buyer")],
+                can_send_message=True,
+            )
+
+        async def get_conversation_send_status(self, _):
+            return SimpleNamespace(
+                id="123456789",
+                participants=[SimpleNamespace(role="BUYER", im_user_id="synthetic-buyer")],
                 can_send_message=True,
             )
 
@@ -599,7 +793,11 @@ async def test_held_model_a_fences_old_attempt_and_fast_b_waits_for_receipts(aut
         can_send_message=True,
     )
     monkeypatch.setattr(
-        remote_auth, "TikTokReadClient", lambda *_: SimpleNamespace(get_conversation=AsyncMock(return_value=remote))
+        remote_auth,
+        "TikTokReadClient",
+        lambda *_: SimpleNamespace(
+            get_conversation=AsyncMock(return_value=remote), get_conversation_send_status=AsyncMock(return_value=remote)
+        ),
     )
     monkeypatch.setattr(executor, "get_message_adapter", lambda _: Capture())
     monkeypatch.setattr(executor, "get_settings", lambda: settings)
@@ -744,7 +942,11 @@ async def test_final_local_grant_locks_serialize_revoke_with_adapter_receipt(aut
         can_send_message=True,
     )
     monkeypatch.setattr(
-        remote_auth, "TikTokReadClient", lambda *_: SimpleNamespace(get_conversation=AsyncMock(return_value=remote))
+        remote_auth,
+        "TikTokReadClient",
+        lambda *_: SimpleNamespace(
+            get_conversation=AsyncMock(return_value=remote), get_conversation_send_status=AsyncMock(return_value=remote)
+        ),
     )
     monkeypatch.setattr(executor, "get_message_adapter", lambda _: Capture())
     monkeypatch.setattr(executor, "get_settings", lambda: settings)

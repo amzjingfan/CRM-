@@ -1,5 +1,7 @@
 # 部署与运行边界
 
+2026-11-03 自动投递窗口修复发布约束：仅切换后端及同版工作进程，保留当前前端、检索镜像、050 迁移、两店授权策略和自动化开关。现场以只读详情/列表对照及订单发现核对修复，不向真实买家发送测试消息，不重放历史取消/unknown 投递。隔离数据库的发送捕获不等于平台送达；真实送达须以自然业务产生的成功回执另行确认。
+
 2026-11-03 Agent全链路验收与两店自动化已完成：源码PR #719已合并；手动部署subject `20c9103cac541ed43c164a68e7ed2abe03430370`、050及三健康通过。两店各5永久Agent，auto、欢迎24小时咨询段、60分钟超时及60分钟物流轮询external已正式API回读；10测试Agent/8文件软删、139临时消息/12协作清理，原草稿/发布版本及会话记忆保留。88个功能组合中83自动新执行通过、5独立人工事实裁定，原始自动矩阵非全绿；物流为实际模型/BGE的双语模拟，未向真实买家测试发送。长复杂输入仍可被DLP拒绝、模型错误参数失败关闭；现场浏览器UI_UNAVAILABLE；production继续No-Go。见[TR R02](../reports/tests/TR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02.md)和[低敏证据](../../release/evidence/staging/crm-staging-agent-automation-20261103.json)。
 
 2026-11-02 后续承运商自动回显修复 PR #717 已合入 `694c5221`；当前 staging 前端由另一项已合并发布更新为源码修订 `a38f9751`，其中包含本修复，精确摘要与只读检查见[观察证据](../../release/evidence/staging/crm-staging-carrier-autoload-observation-20261102.json)。本任务构建的旧候选未再部署，以免覆盖较新的 Agent 代码。12 容器和四条公网健康/页面路径正常；Codex 内置浏览器绑定超时，真实订单回显尚未验收，见[TR R04](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R04.md)。

@@ -1,5 +1,7 @@
 # 当前 API 契约
 
+平台读取边界更新（2026-11-03）：发送前的 `can_send_message` 来源为 TikTok `GET /customer_service/202309/conversations` 精确分页匹配；`GET /customer_service/202601/conversations/{id}` 仅核验身份，不再为缺失字段补 `false`。管理端公共请求/响应不变；未知、关闭或身份不匹配仍失败关闭。
+
 2026-11-02 现场修复候选不新增公开路径。官方 [Search Returns 202602](https://partner.tiktokshop.com/docv2/page/search-returns-202602) 仍以已核实订单、原授权和分页参数读取；当响应明确 `total_count` 为整数 0、无下一页且省略可选 `return_orders` 时返回空申请列表。缺少总数、非整数/布尔总数、显式 null/畸形列表或仍有分页不能推断“无售后”，权限与平台错误照常失败关闭。两家 staging 店均观察到上述零结果形状，不能误报为解析故障。
 
 Agent 通用订单轨迹中的 `shipping_provider` 保留平台履约服务原值，`carrier_source=not_verified_by_standard_timeline`，未核实的 `carrier` 为 null；不再把揽收/履约服务标签冒充实际末端承运商。增强轨迹提供已核实的包裹承运商并标记 `official_enhanced_tracking`。最新节点、包裹、运单、内部历史分页与原订单归属校验保持。

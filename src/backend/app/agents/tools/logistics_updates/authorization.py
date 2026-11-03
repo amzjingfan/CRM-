@@ -120,7 +120,8 @@ async def verified_remote_window(
     if source is None:
         return False, False, False
     customer, channel = source
-    remote = await TikTokReadClient(settings, channel).get_conversation(conversation.external_conversation_id)
+    client = TikTokReadClient(settings, channel)
+    remote = await client.get_conversation(conversation.external_conversation_id)
     buyers = [item for item in remote.participants if item.role == "BUYER"]
     identity = (
         remote.id == conversation.external_conversation_id
@@ -128,7 +129,19 @@ async def verified_remote_window(
         and buyers[0].im_user_id == customer.external_customer_id
         and bool(buyers[0].user_id)
     )
-    return True, identity, bool(identity and remote.can_send_message)
+    if not identity:
+        return True, False, False
+    # 详情接口没有窗口字段；只有列表中同会话、同买家的明确许可才放行。
+    window = await client.get_conversation_send_status(conversation.external_conversation_id)
+    listed_buyers = [item for item in window.participants if item.role == "BUYER"] if window else []
+    send_allowed = (
+        window is not None
+        and window.id == remote.id
+        and window.can_send_message is True
+        and len(listed_buyers) == 1
+        and listed_buyers[0].im_user_id == customer.external_customer_id
+    )
+    return True, True, send_allowed
 
 
 async def _target_identity(session: AsyncSession, context: BoundLogisticsEvent) -> tuple[object, ...] | None:

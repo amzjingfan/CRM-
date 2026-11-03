@@ -1878,3 +1878,132 @@ async def test_late_message_does_not_regress_conversation_preview(monkeypatch: p
     assert conversation.last_message_id == newer_message_id
     assert conversation.last_message_at == newer_at
     assert conversation.unread_count == 2
+
+
+@pytest.mark.asyncio
+async def test_conversation_detail_does_not_invent_a_send_window() -> None:
+    def handler(_):
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "data": {
+                    "conversation": {
+                        "id": "700001",
+                        "create_time": 1,
+                        "participants": [{"role": "BUYER", "im_user_id": "800001", "user_id": "900001"}],
+                    }
+                },
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+        detail = await TikTokReadClient(real_settings(), connected_channel(), transport).get_conversation("700001")
+    assert not hasattr(detail, "can_send_message")
+
+
+@pytest.mark.asyncio
+async def test_conversation_window_finds_target_on_later_list_page() -> None:
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        assert request.url.path == "/customer_service/202309/conversations" and request.method == "GET"
+        if request.url.params.get("page_token") is None:
+            data = {
+                "conversations": [{"id": "700002", "create_time": 1, "can_send_message": True}],
+                "next_page_token": "next",
+            }
+        else:
+            assert request.url.params["page_token"] == "next"
+            data = {
+                "conversations": [
+                    {
+                        "id": "700001",
+                        "create_time": 1,
+                        "can_send_message": True,
+                        "participants": [{"role": "BUYER", "im_user_id": "800001"}],
+                    }
+                ]
+            }
+        return httpx.Response(200, json={"code": 0, "data": data})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+        result = await TikTokReadClient(real_settings(), connected_channel(), transport).get_conversation_send_status(
+            "700001"
+        )
+    assert result is not None and result.id == "700001" and result.can_send_message is True
+    assert result.participants[0].im_user_id == "800001" and len(calls) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("flag", [False, None])
+async def test_conversation_window_retains_closed_or_unknown(flag) -> None:
+    row = {"id": "700001", "create_time": 1}
+    if flag is not None:
+        row["can_send_message"] = flag
+
+    def handler(_):
+        return httpx.Response(200, json={"code": 0, "data": {"conversations": [row]}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+        result = await TikTokReadClient(real_settings(), connected_channel(), transport).get_conversation_send_status(
+            "700001"
+        )
+    assert result is not None and result.can_send_message is flag
+
+
+@pytest.mark.asyncio
+async def test_conversation_window_never_uses_another_conversation() -> None:
+    def handler(_):
+        return httpx.Response(
+            200,
+            json={"code": 0, "data": {"conversations": [{"id": "700002", "create_time": 1, "can_send_message": True}]}},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+        result = await TikTokReadClient(real_settings(), connected_channel(), transport).get_conversation_send_status(
+            "700001"
+        )
+    assert result is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"conversations": [], "next_page_token": "repeat"},
+        {
+            "conversations": [
+                {"id": "700001", "create_time": 1, "can_send_message": True},
+                {"id": "700001", "create_time": 1, "can_send_message": False},
+            ]
+        },
+        {"conversations": [{"id": "700001", "create_time": 1, "can_send_message": "true"}]},
+        {"conversations": [], "next_page_token": 123},
+    ],
+)
+async def test_conversation_window_rejects_ambiguous_pages(data) -> None:
+    def handler(_):
+        return httpx.Response(200, json={"code": 0, "data": data})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+        with pytest.raises(AppError):
+            await TikTokReadClient(real_settings(), connected_channel(), transport).get_conversation_send_status(
+                "700001"
+            )
+
+
+@pytest.mark.asyncio
+async def test_conversation_window_has_one_deadline() -> None:
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    async def waiting(**_):
+        await asyncio.Event().wait()
+
+    client = TikTokReadClient(real_settings().model_copy(update={"request_timeout_seconds": 0.01}), connected_channel())
+    client.get_conversations = AsyncMock(side_effect=waiting)
+    with pytest.raises(AppError) as error:
+        await client.get_conversation_send_status("700001")
+    assert error.value.status_code == 504
