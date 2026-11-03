@@ -1,0 +1,65 @@
+{
+  "version": "assistant-template-voice-v1",
+  "families": {
+    "orders": {
+      "questions": {
+        "en": "The cancel button is not working. Please help cancel this order.",
+        "zh-CN": "取消按钮用不了，请帮忙取消这个订单。"
+      },
+      "facts": {
+        "order_status": "awaiting_shipment",
+        "cancellation_completed": false,
+        "handoff_saved": false,
+        "needs_human_followup": true
+      }
+    },
+    "presales": {
+      "questions": {
+        "en": "Is this pan stainless steel?",
+        "zh-CN": "这款锅是不锈钢的吗？"
+      },
+      "facts": {
+        "material": "stainless steel",
+        "needs_human_followup": false
+      }
+    },
+    "aftersales": {
+      "questions": {
+        "en": "The return request cannot be submitted. Can the support team handle it?",
+        "zh-CN": "退货申请提交不了，能安排人工客服处理吗？"
+      },
+      "facts": {
+        "return_submitted": false,
+        "handoff_saved": true,
+        "needs_human_followup": true
+      }
+    },
+    "logistics": {
+      "questions": {
+        "en": "What is the latest shipping update?",
+        "zh-CN": "最新物流情况是什么？"
+      },
+      "facts": {
+        "latest_tracking": "in transit at the sorting facility",
+        "eta": null,
+        "needs_human_followup": false
+      }
+    },
+    "fallback": {
+      "questions": {
+        "en": "This is still unresolved. Please arrange human support.",
+        "zh-CN": "这个问题还是没有解决，请安排人工跟进。"
+      },
+      "facts": {
+        "third_unresolved_round": true,
+        "handoff_saved": true,
+        "internal_note_saved": true,
+        "needs_human_followup": true,
+        "fixed_reply": {
+          "en": "We have received your question. At present, there are too many inquiries and the agent is occupied.\nPlease wait patiently. We will contact you as soon as possible. Thank you!",
+          "zh-CN": "已收到您的问题。目前咨询较多，人工客服暂时繁忙。请耐心等待，客服团队会尽快联系您。感谢理解！"
+        }
+      }
+    }
+  }
+}

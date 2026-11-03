@@ -5,6 +5,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Literal
 
 from pydantic import ValidationError
 from sqlalchemy import func, or_, select
@@ -64,6 +65,13 @@ class ToolDispatchError(Exception):
     def __init__(self, error_code: str) -> None:
         self.error_code = error_code
         super().__init__(error_code)
+
+
+@dataclass(slots=True)
+class PlatformMessageDispatchState:
+    """每次调用独立记录平台边界；未跟踪路径仍按结果未知处理。"""
+
+    phase: Literal["untracked", "preparing", "attempted"] = "untracked"
 
 
 class SqlAlchemyToolExecutor:
@@ -174,14 +182,22 @@ class SqlAlchemyToolExecutor:
                 replay_contract_version=replay_contract_version,
             )
 
+        dispatch_state = PlatformMessageDispatchState()
         try:
             outcome = await asyncio.wait_for(
-                self._dispatch(invocation, call.id, arguments),
+                self._dispatch(invocation, call.id, arguments, dispatch_state),
                 timeout=definition.timeout_seconds,
             )
         except TimeoutError:
-            # 平台发送超时无法判断对端是否已接收，必须标记 unknown 且禁止自动重试。
-            status: ToolStatus = "unknown" if invocation.tool_name == "send_platform_message" else "timeout"
+            # 只有本次调用明确尚未触达适配器时，才可证明平台写入未开始。
+            # 平台调用已开始或路径未跟踪时仍保留 unknown，禁止自动重试。
+            status: ToolStatus = (
+                "failed"
+                if invocation.tool_name == "send_platform_message" and dispatch_state.phase == "preparing"
+                else "unknown"
+                if invocation.tool_name == "send_platform_message"
+                else "timeout"
+            )
             error_code = "TOOL_RESULT_UNKNOWN" if status == "unknown" else "TOOL_TIMEOUT"
             await self._finish_after_error(call.id, started_at, status, error_code, invocation)
             return ToolResult(tool_call_id=call.id, status=status, error_code=error_code)
@@ -265,6 +281,7 @@ class SqlAlchemyToolExecutor:
         invocation: ToolInvocation,
         tool_call_id: uuid.UUID,
         arguments: dict[str, object],
+        dispatch_state: PlatformMessageDispatchState | None = None,
     ) -> ToolDispatchOutcome:
         """按白名单名称分派到固定实现，禁止动态导入或模型指定函数。"""
         tool_name = invocation.tool_name
@@ -297,6 +314,7 @@ class SqlAlchemyToolExecutor:
             invocation,
             tool_call_id,
             SendPlatformMessageArguments.model_validate(arguments),
+            dispatch_state,
         )
 
     async def _query_order(
@@ -514,8 +532,11 @@ class SqlAlchemyToolExecutor:
         invocation: ToolInvocation,
         tool_call_id: uuid.UUID,
         arguments: SendPlatformMessageArguments,
+        dispatch_state: PlatformMessageDispatchState | None = None,
     ) -> ToolDispatchOutcome:
         """经平台适配器发送已批准消息，并保存 sent/failed/unknown 状态。"""
+        if dispatch_state is not None:
+            dispatch_state.phase = "preparing"
         conversation = await self.session.scalar(
             select(Conversation)
             .where(
@@ -689,6 +710,8 @@ class SqlAlchemyToolExecutor:
                 self.session, get_settings(), invocation, arguments
             ):
                 raise ToolDispatchError("TOOL_LOGISTICS_NOTIFICATION_NOT_AUTHORIZED")
+        if dispatch_state is not None:
+            dispatch_state.phase = "attempted"
         result = await adapter.send_message(
             channel,
             SendMessageCommand(

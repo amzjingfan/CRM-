@@ -1,5 +1,7 @@
 # 当前 API 契约
 
+2026-11-03工作台状态修复：`GET /workspace/sessions/{id}/auto-preview`保留原status/send_performed，增加mode（preview/automation）和state（waiting/generating/delayed/review_required/failed）；延迟只是显示提示，不把仍运行的任务伪造为失败。queued/succeeded/cancelled仍不返回旧草稿。人工文本发送客户端完整等待预算45秒，覆盖认证刷新及响应读取；超时保留输入并明确结果待确认，不自动重试。服务端原15秒工具预算未增加，平台调用前可证实未发送的超时返回确定失败，平台调用后仍unknown。
+
 平台读取边界更新（2026-11-03）：发送前的 `can_send_message` 来源为 TikTok `GET /customer_service/202309/conversations` 精确分页匹配；`GET /customer_service/202601/conversations/{id}` 仅核验身份，不再为缺失字段补 `false`。管理端公共请求/响应不变；未知、关闭或身份不匹配仍失败关闭。
 
 2026-11-02 现场修复候选不新增公开路径。官方 [Search Returns 202602](https://partner.tiktokshop.com/docv2/page/search-returns-202602) 仍以已核实订单、原授权和分页参数读取；当响应明确 `total_count` 为整数 0、无下一页且省略可选 `return_orders` 时返回空申请列表。缺少总数、非整数/布尔总数、显式 null/畸形列表或仍有分页不能推断“无售后”，权限与平台错误照常失败关闭。两家 staging 店均观察到上述零结果形状，不能误报为解析故障。

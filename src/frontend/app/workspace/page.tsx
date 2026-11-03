@@ -14,7 +14,7 @@ import { resolveQuickReplyShortcut } from "../../lib/reception";
 import { TrackingCard } from "../../components/TrackingCard";
 import { OrderDraftPreview } from "../../components/OrderDraftPreview";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
-import { assignSession, currentUser, getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, sendLogisticsCard, sendOrderCard, sendMessage, sendMessageMedia, uploadMessageMedia, setBuyerStage, setSessionClosed, setSessionStar, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type SidebarOrder, type StoreView, type UserView } from "../../lib/api";
+import { assignSession, currentUser, getSessionMessages, getSessionMessagesPage, listSessionAssignees, listSessions, listStores, markSessionRead, MessageSendWaitError, sendLogisticsCard, sendOrderCard, sendMessage, sendMessageMedia, uploadMessageMedia, setBuyerStage, setSessionClosed, setSessionStar, transferSession, translateDraft, type BuyerStage, type DraftTargetLanguage, type LogisticsCardDraft, type SessionAssignee, type SessionListData, type SessionMessagesData, type SidebarOrder, type StoreView, type UserView } from "../../lib/api";
 import { useLanguage } from "../../lib/i18n";
 import { formatConversationTime } from "../../lib/conversationTime";
 import "./quick-reply.css";
@@ -334,9 +334,7 @@ export default function WorkspacePage() {
               pagination: { ...freshDetail.pagination, page: current.pagination.page },
             };
           });
-          if (freshDetail.session.unread_count && stickToBottomRef.current && document.visibilityState === "visible") {
-            void markSessionRead(selectedId).then(() => setList((current) => markReadInList(current, selectedId))).catch(() => {});
-          }
+          // 后台轮询或机器人外发不能代表坐席已读；只有明确查看/已读操作更新计数。
         }) : Promise.resolve();
         await Promise.allSettled([listRequest, detailRequest]);
       } catch {
@@ -436,7 +434,16 @@ export default function WorkspacePage() {
       if (message.status === "sent") setAnnouncement(message.delivery_mode === "real" ? (en ? "Message sent to the real TikTok customer" : "消息已发送至真实 TikTok 客户") : (en ? "Simulated message sent" : "消息已模拟发送"));
       else if (message.status === "unknown") setAnnouncement(en ? "Delivery result is unknown. Do not retry; reconcile it in TikTok." : "发送结果未知，请勿重试并前往 TikTok 人工对账。");
       else setAnnouncement(en ? "The platform rejected the message" : "平台已拒绝本次消息发送");
-    } catch (caught) { setFailedDraft({ sessionId, content, key }); setAnnouncement(caught instanceof Error ? caught.message : en ? "Send failed" : "发送失败"); }
+    } catch (caught) {
+      if (caught instanceof MessageSendWaitError) {
+        // 超时保留输入，但不提供快捷重试，防止把未知结果当成确定未发送。
+        setFailedDraft(null);
+        setAnnouncement(en ? "Sending timed out and the result is unconfirmed. Check message history before sending again." : "发送等待超时，结果尚未确认。请先核对消息记录，勿重复发送。");
+      } else {
+        setFailedDraft({ sessionId, content, key });
+        setAnnouncement(caught instanceof Error ? caught.message : en ? "Send failed" : "发送失败");
+      }
+    }
     finally { setSending(false); }
   }
 

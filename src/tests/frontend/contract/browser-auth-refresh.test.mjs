@@ -120,3 +120,23 @@ test("failed shared refresh leaves concurrent reads unauthorized and does not re
     restore();
   }
 });
+
+
+test("manual message send settles at its deadline without retrying an uncertain request", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const calls = [];
+  const { api, restore } = await loadApiWithBrowserFetch(async (url, init) => {
+    calls.push({ url, init });
+    return new Promise(() => {});
+  });
+  try {
+    let outcome;
+    void api.sendMessage("synthetic-session", "Synthetic message", "stable-send-key").catch((error) => { outcome = error; });
+    t.mock.timers.tick(45001);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(outcome?.name, "MessageSendWaitError");
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].init.headers.get("Idempotency-Key"), "stable-send-key");
+    assert.equal(calls[0].init.signal.aborted, true);
+  } finally { restore(); t.mock.timers.reset(); }
+});

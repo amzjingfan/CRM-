@@ -142,7 +142,7 @@ async def test_entry_outer_deadline_persists_partial_tool_metadata(monkeypatch, 
         call = formal.run_formal_suggestion(
             session,
             conversation=conversation,
-            trigger=SimpleNamespace(id=trigger_id, content="订单"),
+            trigger=SimpleNamespace(id=trigger_id, content="订单", message_type="text"),
             trace_id="test",
             permissions=set(),
             runtime=None,

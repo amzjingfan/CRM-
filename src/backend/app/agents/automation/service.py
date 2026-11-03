@@ -159,6 +159,8 @@ async def on_agent_inbound(
         or trigger.store_id != conversation.store_id
         or trigger.conversation_id != conversation.id
         or trigger.role != "user"
+        # 平台卡片/媒体的中文展示占位不是买家提问，也不能作为回复语种依据。
+        or trigger.message_type not in {"text", "plain_text"}
     ):
         return True
     if (
@@ -213,6 +215,7 @@ def task_has_predecessor(settings: Settings) -> ColumnElement[bool]:
             AutomationDelivery.store_id == earlier.store_id,
             AutomationDelivery.conversation_id == earlier.conversation_id,
             AutomationDelivery.trigger_message_id == earlier.trigger_message_id,
+            AutomationDelivery.source_kind == "agent",
         )
     )
     unsettled = exists(
@@ -220,6 +223,7 @@ def task_has_predecessor(settings: Settings) -> ColumnElement[bool]:
             AutomationDelivery.store_id == earlier.store_id,
             AutomationDelivery.conversation_id == earlier.conversation_id,
             AutomationDelivery.trigger_message_id == earlier.trigger_message_id,
+            AutomationDelivery.source_kind == "agent",
             AutomationDelivery.status.in_(("pending", "claimed", "dispatching", "unknown")),
         )
     )

@@ -111,13 +111,23 @@ def resolve_store_reply_profile(configuration: Mapping[str, object]) -> AgentRep
     return AgentReplyProfile.model_validate(dict(raw_profile))
 
 
-REPLY_POLICY_VERSION = "published-reply-preferences-v1.0.0"
+REPLY_POLICY_VERSION = "published-reply-preferences-v1.1.1"
+
+ASSISTANT_VOICE_POLICY = (
+    "你是人工客服团队的智能客服助手，以客服团队的服务口吻面向买家，不能冒充某位人工客服。"
+    "避免第一人称单数（我、I、me），用客观表述说明买家问题、已核实情况和下一步。"
+    "无法直接处理时，说明需要人工客服核实跟进，不能让买家自行联系人工客服或另找客服。"
+    "涉及取消、退款或异常时仍只陈述已核实事实，不能把拟跟进说成操作完成；"
+    "只有实际接管或备注工具成功时才可说已转交、已安排；未执行时只说明待人工核实，不能暗示已经进入客服处理队列。"
+    "事实中未提供的状态保持未知，不得将缺失信息推断为未发生；退货、取消、退款是不同状态，不能相互推断。"
+    "不要照抄固定话术；由模型根据本轮问题、实际工具结果和买家语种自然组织简洁回答。"
+)
 
 
 def compile_reply_policy(profile: AgentReplyProfile | None) -> str:
     """有限表达偏好统一编译；不改变七段哈希、工具权限或证据要求。"""
     if profile is None:
-        return ""
+        return f"[{REPLY_POLICY_VERSION}] {ASSISTANT_VOICE_POLICY}客户正文跟随本轮买家的真实文字语种。"
     tone = {
         ReplyTone.FRIENDLY: "亲切自然、有礼貌，避免过度热情和无关寒暄",
         ReplyTone.PROFESSIONAL: "专业准确、措辞稳健，避免口语化和额外承诺",
@@ -130,7 +140,8 @@ def compile_reply_policy(profile: AgentReplyProfile | None) -> str:
         else f"{profile.reply_language}：买家正文统一使用{'中文' if profile.reply_language == 'zh-CN' else '英文'}"
     )
     return (
-        f"[{REPLY_POLICY_VERSION}] 已发布回复偏好优先决定表达，覆盖七段中的冲突语气或语言要求。"
+        f"[{REPLY_POLICY_VERSION}] {ASSISTANT_VOICE_POLICY}"
+        "已发布回复偏好优先决定表达，覆盖七段中的冲突语气或语言要求。"
         f"语气={profile.tone.value}：{tone}。客户回复语言={language}。"
         "只影响表达，不改变事实、隐私、安全或权限。坐席工作语言不影响买家正文；"
         "不要在买家正文添加坐席译文、解释或内部审阅说明。"

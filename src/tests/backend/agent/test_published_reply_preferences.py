@@ -407,3 +407,40 @@ async def test_regeneration_and_output_rewrite_keep_published_preferences(mode):
     )
     assert result.content == "Shipped."
     assert len(seen) == 4 and reviews == 2 and generations == 2
+
+
+@pytest.mark.parametrize("profile", [None, AgentReplyProfile(), AgentReplyProfile(reply_language="en")])
+def test_legacy_and_configured_profiles_instruct_assistant_voice_and_staff_followup(profile):
+    from app.agents.core.reply_policy import compile_reply_policy
+
+    policy = compile_reply_policy(profile)
+    assert "智能客服助手" in policy
+    assert "第一人称单数" in policy
+    assert "买家自行联系" in policy
+    assert "实际接管" in policy
+
+
+@pytest.mark.asyncio
+async def test_formal_generation_rejects_ui_card_placeholder_before_model_routing(monkeypatch):
+    from app.agents.runtime import formal
+    from app.shared.config.settings import Settings
+    from app.shared.exceptions.errors import AppError
+
+    monkeypatch.setattr(
+        formal,
+        "get_settings",
+        lambda: Settings(_env_file=None).model_copy(update={"llm_enabled": True, "agent_v2_formal_enabled": True}),
+    )
+    route = AsyncMock(side_effect=AssertionError("display placeholder is not a buyer question"))
+    monkeypatch.setattr(formal, "list_enabled_agents", route)
+    with pytest.raises(AppError) as caught:
+        await formal.run_formal_suggestion(
+            object(),
+            conversation=SimpleNamespace(store_id=uuid.uuid4()),
+            trigger=SimpleNamespace(message_type="order_card", content="订单卡片"),
+            trace_id="synthetic",
+            permissions=set(),
+            runtime=None,
+        )
+    assert caught.value.status_code == 422
+    route.assert_not_awaited()

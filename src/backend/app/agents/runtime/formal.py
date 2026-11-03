@@ -48,6 +48,8 @@ async def run_formal_suggestion(
     progress: RunProgress | None = None,
 ) -> AgentWorkflowResult:
     """所有候选从同店已启用配置读取；旧 FAQ 路径不参与本次运行。"""
+    if trigger.message_type not in {"text", "plain_text"}:
+        raise AppError(ErrorCode.VALIDATION_ERROR, "卡片和媒体仅作为上下文，请等待买家的文字问题", 422)
     settings = get_settings()
     if not settings.agent_v2_formal_enabled or not settings.llm_enabled:
         raise AppError(ErrorCode.THIRD_PARTY_ERROR, "动态 Agent 正式建议尚未启用", 503)

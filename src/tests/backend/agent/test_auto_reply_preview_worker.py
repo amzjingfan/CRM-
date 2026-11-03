@@ -139,3 +139,22 @@ async def test_disabling_store_policy_cancels_queued_preview_before_model(
     await worker.process_task(session, task, SimpleNamespace(auto_reply_enabled=False))
     assert task.status == "preview_cancelled"
     run.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["order_card", "product_card", "image", "video"])
+async def test_reception_never_uses_display_placeholder_for_welcome_or_timeout_language(kind):
+    from app.reception.automation import on_reception_inbound
+    from app.shared.config.settings import Settings
+
+    session = SimpleNamespace(scalar=AsyncMock(side_effect=AssertionError("nontext is context only")))
+    assert (
+        await on_reception_inbound(
+            session,
+            SimpleNamespace(id=uuid.uuid4(), store_id=uuid.uuid4()),
+            SimpleNamespace(message_type=kind),
+            Settings(_env_file=None),
+        )
+        == []
+    )
+    session.scalar.assert_not_awaited()

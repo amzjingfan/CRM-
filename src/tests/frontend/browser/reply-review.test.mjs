@@ -18,7 +18,8 @@ async function openReview(options = {}) {
   const records = [sessionId, otherId].map((id, index) => ({ id, store_id: "store-1", platform: "tiktok", status: "active", is_starred: false, closed_at: null, unread_count: 0, assigned_user_id: null, last_message_at: "2026-10-29T01:00:00Z", last_message: "Where is my parcel?", customer: { id: `customer-${index}`, name: index ? "Bob" : "Alice", email: null, avatar: null, tags: [], buyer_stage_override: null } }));
   const card = { order_id: "order-1", package_id: "package-1", product_name: "Test parcel", image_url: null, sku_name: null, quantity: 1, unit_price: null, currency: null, tracking_number: "TRACK-1", carrier_name: "Test carrier", latest_description: "Arrived today", latest_at: "2026-10-29T01:00:00Z" };
   const notificationRequests = [];
-  const state = { cardFailure: false, batchStatus: "completed", batchParts: null, orders: options.orders ?? [] };
+  const readRequests = [];
+  const state = { cardFailure: false, batchStatus: "completed", batchParts: null, orders: options.orders ?? [], unreadCount: 0, extraMessages: [] };
   await context.route("**/v1/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -28,9 +29,11 @@ async function openReview(options = {}) {
     let data = [];
     if (path.endsWith("/auth/me")) data = { id: "agent-1", name: "Agent", permissions: ["workspace.view", "workspace.reply"], store_ids: ["store-1"], role: "agent", email: null, avatar: null };
     else if (path.endsWith("/settings/stores")) data = [{ id: "store-1", name: "Test store", alias: null, code: "test", status: "active", timezone: "UTC", currency: "USD", created_at: "2026-10-29T00:00:00Z" }];
-    else if (path.endsWith("/workspace/sessions")) data = { items: records, pagination: { page: 1, page_size: 30, total: 2 }, unread_messages_total: 0 };
+    else if (path.endsWith("/workspace/sessions")) data = { items: records.map((record) => ({ ...record, unread_count: record.id === sessionId ? state.unreadCount : 0 })), pagination: { page: 1, page_size: 30, total: 2 }, unread_messages_total: state.unreadCount };
     else if (path.endsWith("/auto-preview")) data = options.autoPreview ?? null;
-    else if (path.endsWith("/messages") && req.method() === "GET") { const record = records.find((item) => path.includes(item.id)); data = { session: record, customer: record.customer, messages: [{ id: "buyer-1", role: "user", content: "Where is my parcel?", status: "received", created_at: "2026-10-29T01:00:00Z", error_code: null, delivery_mode: "inbound" }], recent_orders: [], ai_suggestion: null, pagination: { page: 1, page_size: 100, total: 1 }, send_mode: "mock", requires_confirmation: true, draft_translation_enabled: true }; }
+    else if (path.endsWith("/messages") && req.method() === "GET") { const record = records.find((item) => path.includes(item.id)); data = { session: { ...record, unread_count: record.id === sessionId ? state.unreadCount : 0 }, customer: record.customer, messages: [{ id: "buyer-1", role: "user", content: "Where is my parcel?", status: "received", created_at: "2026-10-29T01:00:00Z", error_code: null, delivery_mode: "inbound" }, ...state.extraMessages], recent_orders: [], ai_suggestion: null, pagination: { page: 1, page_size: 100, total: 1 }, send_mode: "mock", requires_confirmation: true, draft_translation_enabled: options.translationEnabled ?? true }; }
+    else if (path.endsWith("/read")) { readRequests.push(path); state.unreadCount = 0; data = { unread_count: 0 }; }
+    else if (path.endsWith("/messages") && req.method() === "POST" && options.hangManualSend) return new Promise(() => {});
     else if (path.endsWith("/sidebar/search")) data = { items: state.orders, pagination: { page: 1, page_size: 20, total: state.orders.length } };
     else if (path.endsWith("/logistics-notifications/policy")) data = { store_id: "store-1", agent_id: "agent-1", enabled: true, mode: "preview", enabled_at: "2026-10-29T00:00:00Z", revision: 1, global_enabled: false, real_delivery_enabled: false, last_scan_at: null };
     else if (path.endsWith("/logistics-notifications/preview")) { notificationRequests.push(JSON.parse(req.postData())); data = { status: "previewed", preview_text: "Your parcel arrived today.", event_at: "2026-10-29T01:00:00Z", buyer_language: "en" }; }
@@ -63,8 +66,49 @@ async function openReview(options = {}) {
   await page.getByRole("heading", { name: "Alice", exact: true }).first().waitFor();
   const emit = (event, data) => page.evaluate(({ event, data }) => window.emitReply(event, data), { event, data });
   const finish = async (parts, orders = []) => { await emit("result", { content: parts[0] ?? null, reply_parts: parts, logistics_order_numbers: orders, trigger_message_id: "buyer-1", reason_codes: [] }); await emit("done", { reason: "completed" }); };
-  return { context, page, emit, finish, batches, state, notificationRequests };
+  return { context, page, emit, finish, batches, state, notificationRequests, readRequests };
 }
+
+test("automatic pending replies are shown as waiting rather than generating", async () => {
+  const { context, page } = await openReview({ autoPreview: {
+    task_id: "task-1", trigger_message_id: "buyer-1", agent_run_id: null,
+    mode: "automation", state: "waiting", status: "pending", content: null,
+    processed_at: null, send_performed: false,
+  } });
+  try {
+    const panel = page.getByRole("region", { name: "回复审阅" });
+    await panel.getByText("自动回复已排队，等待后台处理。", { exact: true }).waitFor({ timeout: 5000 });
+    assert.equal(await panel.getByText("正在生成自动建议…", { exact: true }).count(), 0);
+  } finally { await context.close(); }
+});
+
+test("delayed and failed automatic generation have actionable final status", async () => {
+  for (const [state, status, copy] of [["delayed", "processing", "生成时间较长，可先由人工客服处理。"], ["failed", "failed", "自动回复生成失败，可手动生成或由人工客服处理。"]]) {
+    const { context, page } = await openReview({ autoPreview: {
+      task_id: "task-1", trigger_message_id: "buyer-1", agent_run_id: null,
+      mode: "automation", state, status, content: null, processed_at: null, send_performed: false,
+    } });
+    try { await page.getByRole("region", { name: "回复审阅" }).getByText(copy, { exact: true }).waitFor({ timeout: 5000 }); }
+    finally { await context.close(); }
+  }
+});
+
+test("background automatic replies preserve buyer unread count until human opens the conversation", async () => {
+  const { context, page, state, readRequests } = await openReview();
+  try {
+    state.unreadCount = 2;
+    state.extraMessages = [{ id: "robot-1", role: "assistant", content: "Your request is recorded for the support team.", status: "sent", created_at: "2026-10-29T01:02:00Z", error_code: null, delivery_mode: "real" }];
+    await page.getByText("Your request is recorded for the support team.", { exact: true }).waitFor();
+    await page.waitForTimeout(300);
+    assert.equal(readRequests.length, 0);
+    await page.getByLabel("2 条未读消息").waitFor();
+    await page.getByRole("button", { name: /Bob/ }).click();
+    await page.getByRole("button", { name: /Alice/ }).click();
+    await page.waitForFunction(() => document.body.textContent.includes("Alice"));
+    await page.waitForTimeout(300);
+    assert.equal(readRequests.length, 1);
+  } finally { await context.close(); }
+});
 
 test("final stream operator translation stays internal and never enters the reply batch", async () => {
   const { context, page, emit, finish, batches } = await openReview();
@@ -348,5 +392,22 @@ test("batch review keeps keyboard focus inside and Escape cancels without delive
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden", timeout: 1500 });
     assert.equal(batches.length, 0);
+  } finally { await context.close(); }
+});
+
+
+test("manual sending leaves busy state on timeout and retains the exact draft", async () => {
+  const { context, page } = await openReview({ hangManualSend: true, translationEnabled: false });
+  try {
+    await page.clock.install();
+    const draft = page.getByRole("textbox", { name: "回复内容", exact: true });
+    await draft.fill("Synthetic message for timeout test");
+    await draft.press("Enter");
+    await page.getByRole("dialog", { name: "审阅外发消息" }).getByRole("button", { name: "确认并发送" }).click();
+    await page.getByRole("button", { name: /发送中/ }).first().waitFor({ timeout: 5000 });
+    await page.clock.fastForward(45001);
+    await page.getByText("发送等待超时，结果尚未确认。请先核对消息记录，勿重复发送。", { exact: true }).waitFor({ timeout: 5000 });
+    assert.equal(await page.getByRole("button", { name: /发送中/ }).count(), 0);
+    assert.equal(await draft.inputValue(), "Synthetic message for timeout test");
   } finally { await context.close(); }
 });

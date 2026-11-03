@@ -38,3 +38,12 @@ def test_templates_use_only_bound_knowledge_and_no_platform_send_tool() -> None:
     fallback = next(entry["config"] for entry in entries if entry["code"] == "reply_fallback_v1")
     assert fallback["knowledge_slots"] == []
     assert "search_knowledge" not in fallback["tool_names"]
+
+
+def test_every_seeded_template_describes_assistant_voice_and_internal_followup():
+    for entry in json.loads(MANIFEST.read_text(encoding="utf-8")):
+        sections = TemplateConfig.model_validate(entry["config"]).prompt_sections
+        assert "智能客服助手" in sections["identity"]
+        assert "第一人称单数" in sections["language_format"]
+        assert "买家自行联系" in sections["language_format"]
+        assert "实际接管" in sections["escalation"]

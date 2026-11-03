@@ -1,7 +1,7 @@
 """已认证坐席读取当前会话的自动建议预演结果。"""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.management.config_models import AgentTask
 from app.auth.store_access import allowed_store_ids
 from app.conversations.models import Conversation
+from app.shared.config.settings import get_settings
 from app.shared.database.base import User
 from app.shared.exceptions.errors import AppError, ErrorCode
 
@@ -20,6 +21,8 @@ class AutoPreviewView(BaseModel):
     trigger_message_id: uuid.UUID
     agent_run_id: uuid.UUID | None
     status: str
+    mode: Literal["preview", "automation"] = "preview"
+    state: Literal["waiting", "generating", "delayed", "review_required", "failed"] = "review_required"
     content: str | None
     processed_at: datetime | None
     send_performed: Literal[False] = False
@@ -46,11 +49,26 @@ async def get_auto_preview(session: AsyncSession, user: User, conversation_id: u
     )
     if task is None or task.status in {"queued", "succeeded", "cancelled"}:
         return None
+    state: Literal["waiting", "generating", "delayed", "review_required", "failed"] = "review_required"
+    if task.status == "pending":
+        state = "waiting"
+    elif task.status == "processing":
+        updated = task.updated_at.replace(tzinfo=UTC) if task.updated_at.tzinfo is None else task.updated_at
+        # 只说明耗时超过正常生成预算，不伪造任务失败或取消仍有效的Worker。
+        state = (
+            "delayed"
+            if (datetime.now(UTC) - updated).total_seconds() > get_settings().agent_debug_timeout_seconds
+            else "generating"
+        )
+    elif task.status == "failed":
+        state = "failed"
     return AutoPreviewView(
         task_id=task.id,
         trigger_message_id=task.trigger_message_id,
         agent_run_id=task.agent_run_id,
         status=task.status,
+        mode="automation" if task.mode == "automation" else "preview",
+        state=state,
         content=task.preview_content,
         processed_at=task.processed_at,
     )

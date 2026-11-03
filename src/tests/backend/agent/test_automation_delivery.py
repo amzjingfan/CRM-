@@ -115,6 +115,7 @@ async def test_inbound_auto_requires_both_switches_but_preview_remains_available
         conversation_id=conversation_id,
         direction="inbound",
         role="user",
+        message_type="text",
         created_at=now,
     )
     scheduled = []

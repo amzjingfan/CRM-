@@ -1,5 +1,7 @@
 # 测试入口与执行约定
 
+`ai/agent_template_voice_live.py --enable-live --templates <测试临时根候选五模板.json> --policy <候选表达策略.txt> --output <新测试临时结果.jsonl>`仅以五个共享模板及冻结合成事实调用当前模型，逐模板测试中英文助手口吻和真实接管语义。它不查询业务库、不调用平台工具、不发送买家消息，不能替代Agent工具/知识/自动投递验收；模型独立语义评分仍须结合原回答核对，失败原件不得覆盖。
+
 五类 Agent 本地候选的快速回归：`backend/agent/test_five_agent_template_manifest.py` 检查四个新增共享模板的七段提示词与工具清单；`backend/agent/test_fallback_sequence.py` 和 `test_dynamic_run_coordinator.py` 检查普通问题排除事件/兜底及第三轮固定话术；`backend/agent/test_auto_reply_preview_*.py` 检查逐店策略、只读后台预演和工作台读取；`backend/agent/test_agent_business_tools.py`、`backend/domain/test_workspace_catalog_availability.py` 检查有货商品投影。真实迁移、JWT/CSRF、权限与版本锁仍须由隔离 PostgreSQL 脚本运行，前端交互用 `frontend/browser/agent-prototype.test.mjs` 和 `reply-review.test.mjs`。这些合成用例不等于 TikTok US 现场工具、RAG 或零外发验收。
 
 本目录是项目唯一跟踪的测试资产根。项目整体采用 `TEST_LAYOUT: centralized` 布局，测试策略见 [`../../docs/quality/TEST-STRATEGY.md`](../../docs/quality/TEST-STRATEGY.md)。

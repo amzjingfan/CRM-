@@ -201,6 +201,9 @@ async def on_reception_inbound(
     """调用方只传已验证并持久化的入站；与消息接收同事务，不提交。"""
     from app.agents.automation.service import enqueue_delivery
 
+    if trigger.message_type not in {"text", "plain_text"}:
+        # 展示占位不表达买家的语言或问题，等待真实文字后再建立接待计时器。
+        return []
     locked = await _locked_conversation(session, conversation.id, conversation.store_id)
     if locked is None or locked.platform != "tiktok" or locked.status != "active":
         return []

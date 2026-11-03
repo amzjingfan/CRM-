@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.agents.automation.eligibility import content_hash
 from app.agents.automation.models import AutomationDelivery
 from app.agents.automation.service import claim_delivery, enqueue_delivery, process_delivery, recover_expired_deliveries
-from app.agents.management.config_models import AgentConfig
+from app.agents.management.config_models import AgentConfig, AgentTask
 from app.agents.management.models import AgentConfigVersion
 from app.agents.runtime.models import AgentRun
 from app.conversations.models import Conversation, Message
@@ -232,6 +232,8 @@ async def test_official_http_contract_reaches_delivery_only_with_explicit_curren
         )
         customer = await setup.scalar(select(Customer).where(Customer.store_id == values["store_id"]))
         customer.external_customer_id = "800001"
+        conversation = await setup.get(Conversation, values["conversation_id"])
+        conversation.unread_count = 4
         if source_kind in {"welcome", "timeout"}:
             policy_id = uuid.uuid4()
             at = datetime.now(UTC) - timedelta(minutes=61)
@@ -358,6 +360,8 @@ async def test_official_http_contract_reaches_delivery_only_with_explicit_curren
             await session.refresh(row)
             assert row.status == ("succeeded" if window is True else "cancelled")
             assert len(captured) == (1 if window is True else 0)
+            conversation = await session.get(Conversation, values["conversation_id"], populate_existing=True)
+            assert conversation.unread_count == 4
             assert ("/customer_service/202309/conversations", "second") in calls
             message = await session.scalar(select(Message).where(Message.idempotency_key == f"automation:{row_id}"))
             if window is True:
@@ -1050,3 +1054,51 @@ async def test_process_one_old_error_preserves_recovered_owner_and_fifo(automati
         finally:
             release.set()
             await asyncio.wait_for(old_worker, 5)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reception_kind", ["welcome", "timeout"])
+async def test_completed_agent_reply_does_not_wait_for_its_reception_timer(automation_db, reception_kind):
+    from app.chat.worker import claim_task
+
+    factory, settings, values = automation_db
+    tasks = await two_agent_tasks(factory, values)
+    async with factory() as session:
+        first = await session.get(AgentTask, tasks[0].id)
+        first.status = "queued"
+        own = await enqueue_delivery(session, **values)
+        own.status = "succeeded"
+        timer = await enqueue_delivery(
+            session,
+            **{
+                **values,
+                "source_kind": reception_kind,
+                "agent_run_id": None,
+                "not_before": datetime.now(UTC) + timedelta(hours=1),
+            },
+        )
+        assert timer.status == "pending"
+        await session.commit()
+        claimed = await claim_task(session, settings)
+        assert claimed is not None and claimed.id == tasks[1].id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["order_card", "product_card", "image", "video"])
+async def test_nontext_platform_placeholder_never_enqueues_an_automatic_question(automation_db, kind):
+    from app.agents.automation.service import on_agent_inbound
+
+    factory, settings, values = automation_db
+    async with factory() as session:
+        conversation = await session.get(Conversation, values["conversation_id"])
+        trigger = await session.get(Message, values["trigger_message_id"])
+        trigger.message_type = kind
+        trigger.content = "订单卡片"
+        await session.flush()
+        assert await on_agent_inbound(session, conversation, trigger, settings)
+        assert await session.scalar(select(AgentTask).where(AgentTask.trigger_message_id == trigger.id)) is None
+        trigger.message_type = "text"
+        trigger.content = "Please cancel the order I shared."
+        await session.flush()
+        assert await on_agent_inbound(session, conversation, trigger, settings)
+        assert await session.scalar(select(AgentTask).where(AgentTask.trigger_message_id == trigger.id)) is not None

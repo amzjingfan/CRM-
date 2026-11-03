@@ -132,10 +132,8 @@ async def test_specialist_calls_configured_logistics_tool_without_regex_route(
 
     question_data = json.loads(first_call["messages"][-1]["content"])
     system = first_call["messages"][0]["content"]
-    if profile:
-        assert compile_reply_policy(profile) in system
-    else:
-        assert "published-reply-preferences" not in system
+    # 未配置表达偏好的历史版本也必须获得平台助手身份，不能退回人工单数自称。
+    assert compile_reply_policy(profile) in system
     assert question_data["question_language"] == "zh-CN"
     assert question_data["untrusted_question"] == "我的包裹在哪里"
     assert [tool.name for tool in first_call["tools"]] == ["query_logistics"]

@@ -77,7 +77,7 @@ export type AgentRuntime = { available: boolean; llm_provider: string; llm_model
 export type AgentReplyProfile = { tone: "friendly" | "professional" | "concise" | "empathetic"; reply_language: "auto" | "zh-CN" | "en"; operator_language: "zh-CN" | "en"; brand_name: string | null };
 export type AgentConfig = { id: string; store_id: string; name: string; code: string; description: string | null; agent_type: "service" | "operations" | "logistics_event" | "fallback"; status: "enabled" | "disabled"; draft_revision: number; published_version: number | null; model_provider: string | null; model_name: string | null; prompt_sections: Record<string, string>; enabled_tools: string[]; knowledge_file_ids: string[]; knowledge_scope: Record<string, unknown>; reply_profile: AgentReplyProfile; runtime: AgentRuntime; created_at: string; updated_at: string };
 export type AutoReplyPreviewPolicy = { store_id: string; enabled: boolean; revision: number; mode: "review_preview"; send_performed: false };
-export type AutoReplyPreview = { task_id: string; trigger_message_id: string; agent_run_id: string | null; status: string; content: string | null; processed_at: string | null; send_performed: false };
+export type AutoReplyPreview = { task_id: string; trigger_message_id: string; agent_run_id: string | null; status: string; mode?: "preview" | "automation"; state?: "waiting" | "generating" | "delayed" | "review_required" | "failed"; content: string | null; processed_at: string | null; send_performed: false };
 export type AgentRunLog = { id: string; parent_run_id?: string | null; config_version?: number | null; phase?: string | null; status: string; action: string; intent: string | null; final_confidence: number | null; model_provider: string; model_name: string; prompt_version: string | null; latency_ms: number | null; input_tokens: number | null; output_tokens: number | null; error_code: string | null; trace_id: string | null; tool_calls: Array<{ id: string; tool_name: string; status: string; error_code: string | null; latency_ms: number | null; mocked: boolean }>; created_at: string };
 export type AgentRunLogPage = { items: AgentRunLog[]; page: number; page_size: number; total: number };
 export type AgentOperatorTranslation = { target_language: "zh-CN" | "en"; message_translation: string; draft_translation: string | null };
@@ -102,6 +102,10 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+export class MessageSendWaitError extends Error {
+  constructor() { super("Message send result is not confirmed"); this.name = "MessageSendWaitError"; }
 }
 
 export function isAuthenticationError(error: unknown): error is ApiError {
@@ -246,7 +250,23 @@ export const getSessionMessages = async (sessionId: string): Promise<SessionMess
   const newestPage = Math.ceil(first.pagination.total / first.pagination.page_size);
   return newestPage > 1 ? getSessionMessagesPage(sessionId, newestPage) : first;
 };
-export const sendMessage = (sessionId: string, content: string, idempotencyKey: string) => requestApi<MessageView>(`/workspace/sessions/${sessionId}/messages`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ content, confirmed: true }) });
+export async function sendMessage(sessionId: string, content: string, idempotencyKey: string): Promise<MessageView> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // 包含认证刷新和响应读取的完整等待预算；中止浏览器等待不表示平台未收到。
+  const expired = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => { controller.abort(); reject(new MessageSendWaitError()); }, 45000);
+  });
+  try {
+    return await Promise.race([requestApi<MessageView>(`/workspace/sessions/${sessionId}/messages`, {
+      method: "POST", headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify({ content, confirmed: true }), signal: controller.signal,
+    }), expired]);
+  } catch (error) {
+    if (controller.signal.aborted) throw new MessageSendWaitError();
+    throw error;
+  } finally { if (timer !== undefined) clearTimeout(timer); }
+}
 export type MediaUpload = { kind: "image" | "video"; file_name: string; upload_token: string };
 export const uploadMessageMedia = (sessionId: string, file: File, idempotencyKey: string) => { const body = new FormData(); body.set("file", file); return requestApi<MediaUpload>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/media/upload`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body }); };
 export const sendMessageMedia = (sessionId: string, kind: "image" | "video", uploadToken: string, idempotencyKey: string) => requestApi<MessageView>(`/workspace/sessions/${encodeURIComponent(sessionId)}/messages/media`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: JSON.stringify({ kind, upload_token: uploadToken, confirmed: true }) });
