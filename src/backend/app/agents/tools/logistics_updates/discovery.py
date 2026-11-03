@@ -131,9 +131,10 @@ async def discover_eligible_orders(
         user = await policy_authorizer(session, policy)
         if user is None or await bound_agent(session, store_id, policy.agent_id) is None:
             return False
+        actor_id = user.id
         conversations = (
-            await session.scalars(
-                select(Conversation)
+            await session.execute(
+                select(Conversation.id, Conversation.customer_id)
                 .where(
                     Conversation.store_id == store_id,
                     Conversation.platform == "tiktok",
@@ -151,29 +152,46 @@ async def discover_eligible_orders(
                 .order_by(Conversation.last_message_at.desc().nulls_last(), Conversation.id)
             )
         ).all()
-        seen_customers: set[uuid.UUID] = set()
-        count = failures = 0
-        for conversation in conversations:
-            if conversation.customer_id in seen_customers:
-                continue
-            # 每次买家查询前重读策略及授权，撤销不能被循环中的旧快照抵消。
-            await session.refresh(policy)
-            if not policy.enabled or policy.revision != revision or await policy_authorizer(session, policy) is None:
+    seen_customers: set[uuid.UUID] = set()
+    count = failures = 0
+    for conversation_id, customer_id in conversations:
+        if customer_id in seen_customers:
+            continue
+        # 每个买家独立提交；不能跨下一次平台查询继续持有前一笔订单的写锁。
+        async with sessions() as session:
+            policy = await session.get(LogisticsNotificationPolicy, store_id)
+            if policy is None or not policy.enabled or policy.revision != revision:
                 break
+            user = await policy_authorizer(session, policy)
+            if user is None or await bound_agent(session, store_id, policy.agent_id) is None:
+                break
+            conversation = await session.scalar(
+                select(Conversation).where(
+                    Conversation.id == conversation_id,
+                    Conversation.store_id == store_id,
+                    Conversation.customer_id == customer_id,
+                    Conversation.platform == "tiktok",
+                    Conversation.status != "closed",
+                )
+            )
+            if conversation is None:
+                continue
             try:
-                async with session.begin_nested():
-                    imported = await synchronize_conversation_orders(session, user, conversation, settings)
-                    count += imported
+                imported = await synchronize_conversation_orders(session, user, conversation, settings)
+                await session.commit()
+                count += imported
                 if imported:
-                    seen_customers.add(conversation.customer_id)
+                    seen_customers.add(customer_id)
             except Exception as error:
+                await session.rollback()
                 failures += 1
                 logger.warning("logistics_order_discovery_failed", extra={"error_type": type(error).__name__})
+    async with sessions() as session:
         session.add(
             AuditLog(
                 store_id=store_id,
                 actor_type="job",
-                actor_id=user.id,
+                actor_id=actor_id,
                 action="logistics.notification.discover_orders",
                 resource_type="store",
                 resource_id=store_id,

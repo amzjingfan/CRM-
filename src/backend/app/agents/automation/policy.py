@@ -65,14 +65,13 @@ def policy_from_store(store: Store) -> StoreAutomationPolicy:
     return StoreAutomationPolicy.model_validate((store.metadata_json or {}).get(POLICY_KEY, {}))
 
 
-async def authorized_store(session: AsyncSession, user: User, store_id: uuid.UUID, permission: str) -> Store:
+async def authorized_store(
+    session: AsyncSession, user: User, store_id: uuid.UUID, permission: str, *, for_update: bool = False
+) -> Store:
     if store_id not in await allowed_store_ids(session, user, permission):
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "店铺不存在", 404)
-    row = await session.scalar(
-        select(Store)
-        .where(Store.id == store_id, Store.status == "active", Store.deleted_at.is_(None))
-        .with_for_update()
-    )
+    statement = select(Store).where(Store.id == store_id, Store.status == "active", Store.deleted_at.is_(None))
+    row = await session.scalar(statement.with_for_update() if for_update else statement)
     if row is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "店铺不存在", 404)
     return row
@@ -92,7 +91,7 @@ async def get_policy(
 async def set_policy(
     session: AsyncSession, user: User, store_id: uuid.UUID, payload: AutomationPolicyUpdate, settings: Settings
 ) -> AutomationPolicyView:
-    store = await authorized_store(session, user, store_id, "agent.manage")
+    store = await authorized_store(session, user, store_id, "agent.manage", for_update=True)
     old = policy_from_store(store)
     if old.revision != payload.expected_revision:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "自动化策略已更新，请刷新后重试", 409)
@@ -139,11 +138,8 @@ async def conversation_policy(
     session: AsyncSession, user: User, conversation_id: uuid.UUID, payload: ConversationAutomationUpdate | None = None
 ) -> ConversationAutomationView:
     stores = await allowed_store_ids(session, user, "workspace.reply" if payload else "workspace.view")
-    row = await session.scalar(
-        select(Conversation)
-        .where(Conversation.id == conversation_id, Conversation.store_id.in_(stores))
-        .with_for_update()
-    )
+    statement = select(Conversation).where(Conversation.id == conversation_id, Conversation.store_id.in_(stores))
+    row = await session.scalar(statement.with_for_update() if payload is not None else statement)
     if row is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "会话不存在", 404)
     metadata = row.metadata_json or {}

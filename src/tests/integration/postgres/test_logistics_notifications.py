@@ -1057,3 +1057,103 @@ async def test_worker_unknown_only_reconciles_without_model_delivery_or_early_tr
     assert not await process_logistics_notification_cycle(shop.sessions, _settings())
     row = await repo.get(event.context)
     assert row.state == "unknown" and row.reviewed_text == "Original reviewed body"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("first_fails", [False, True])
+async def test_discovery_releases_each_buyer_order_before_next_remote_query(shop, monkeypatch, first_fails):
+    """后续买家的网络读取不能继续持有前一买家的订单写锁。"""
+    from app.agents.tools.logistics_updates import discovery
+
+    second_customer, second_conversation = uuid.uuid4(), uuid.uuid4()
+    async with shop.sessions() as session:
+        session.add(
+            Customer(
+                id=second_customer,
+                store_id=shop.store_id,
+                platform="tiktok",
+                external_customer_id=uuid.uuid4().hex,
+            )
+        )
+        await session.flush()
+        session.add(
+            Conversation(
+                id=second_conversation,
+                store_id=shop.store_id,
+                customer_id=second_customer,
+                platform="tiktok",
+                external_conversation_id=uuid.uuid4().hex,
+                last_message_at=shop.now - timedelta(minutes=1),
+            )
+        )
+        await session.flush()
+        await session.execute(
+            update(Conversation).where(Conversation.id == shop.scope.conversation_id).values(last_message_at=shop.now)
+        )
+        for customer_id, conversation_id in [
+            (shop.scope.customer_id, shop.scope.conversation_id),
+            (second_customer, second_conversation),
+        ]:
+            session.add(
+                Message(
+                    store_id=shop.store_id,
+                    customer_id=customer_id,
+                    conversation_id=conversation_id,
+                    platform="tiktok",
+                    external_message_id=uuid.uuid4().hex,
+                    message_type="text",
+                    role="user",
+                    direction="inbound",
+                    status="received",
+                    content="Synthetic order question",
+                )
+            )
+        await session.commit()
+    second_write_finished = False
+    calls = []
+
+    async def synchronize(session, user, conversation, settings):
+        nonlocal second_write_finished
+        calls.append(conversation.id)
+        if conversation.id == shop.scope.conversation_id:
+            await session.execute(update(Order).where(Order.id == shop.scope.order_id).values(status="first_committed"))
+            if first_fails:
+                raise ValueError("synthetic remote failure")
+            return 1
+        async with shop.sessions() as webhook:
+            from sqlalchemy import text
+
+            await webhook.execute(text("SET LOCAL lock_timeout = '300ms'"))
+            current = await webhook.scalar(select(Order.status).where(Order.id == shop.scope.order_id))
+            assert current == ("IN_TRANSIT" if first_fails else "first_committed")
+            await webhook.execute(update(Order).where(Order.id == shop.scope.order_id).values(status="webhook_updated"))
+            await webhook.commit()
+            second_write_finished = True
+        return 0
+
+    monkeypatch.setattr(discovery, "synchronize_conversation_orders", synchronize)
+    assert await discovery.discover_eligible_orders(shop.sessions, _settings())
+    assert calls == [shop.scope.conversation_id, second_conversation]
+    assert second_write_finished
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("resource", ["store", "conversation"])
+async def test_automation_read_policy_does_not_wait_for_business_row_lock(shop, resource):
+    """读取自动化状态不能申请业务写锁；更新仍由版本和行锁保护。"""
+    from app.agents.automation.policy import conversation_policy, get_policy
+
+    async with shop.sessions() as holder, shop.sessions() as reader:
+        model, key = (Store, shop.store_id) if resource == "store" else (Conversation, shop.scope.conversation_id)
+        await holder.scalar(select(model).where(model.id == key).with_for_update())
+        actor = await reader.get(User, shop.user_id)
+        try:
+            async with asyncio.timeout(1):
+                result = (
+                    await get_policy(reader, actor, key, _settings())
+                    if resource == "store"
+                    else await conversation_policy(reader, actor, key)
+                )
+            assert result is not None
+        finally:
+            await holder.rollback()
