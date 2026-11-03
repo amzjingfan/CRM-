@@ -1,16 +1,14 @@
-# 项目状态与恢复入口
+# 当前项目恢复摘要
 
-2026-11-03 最新真实接口验收：在用户明确指定的US测试买家发送1条标记虚拟的消息，正式接口sent/real，平台同ID可见；US查单空结果及Agent搜索回答通过。XBM只读增强物流200、1包裹15节点及Agent两工具回答通过。US增强样本11007009仍保留为失败；未强制自动欢迎/超时/物流事件，未证明买家已读。无合成订单/临时Agent/文件，真实消息与审计保留。见[本次TR](../reports/tests/TR-MVP-AGENT-REALSHOP-API-001-20261103-R01.md)和[低敏证据](../../release/evidence/staging/crm-real-shop-api-20261103.json)。本次不改产品或部署；证据分支docs/real-shop-api-20261103。
+项目ACTIVE，治理STANDARD；仓库CP11-gh/CRM、主分支main。产品/架构/治理入口以docs/README.md为准，production G8继续No-Go。
 
-2026-11-03 自动发送共享窗口缺陷已修复并手动部署 staging：详情仅核身份，202309列表提供当前窗口；两店真实grant/identity/window均true。旧取消记录保留，未补发；没有真实买家试发或新送达回执证明。当前产品/架构入口见docs/README.md；治理STANDARD，production G8 No-Go。
+- 当前任务MVP-AGENT-LANGUAGE-QUEUE-UI-001的产品修复已由PR #728/#729合并，最后主线976aa94d；运行候选subject `70293cc68d803670345826cf2892d0ff209d0869`，本次证据分支docs/agent-language-queue-evidence-20261103，EVIDENCE_HEAD_SHA=READ_AT_GATE。
+- 最新[IR](../records/implementation/IR-MVP-AGENT-LANGUAGE-QUEUE-UI-001-20261103-R01.md)、[TR](../reports/tests/TR-MVP-AGENT-LANGUAGE-QUEUE-UI-001-20261103-R01.md)、[RR](../reports/reviews/RR-MVP-AGENT-LANGUAGE-QUEUE-UI-001-20261103-R01.md)记录卡片语种、计时器队列、UI状态、人工发送完整等待、机器人不清未读、助手口吻及jobs跨买家持锁修复。最终后端3711通过/5条件跳过，实际前后端CI和独立审查通过。
+- staging后端与工作进程/egress为20d03428…d4de，前端e3593a02…3700，051；检索/解析资产不变。三健康与模板页200，现场PG阻塞/闲置写事务0，精确镜像与模板Prompt hash见[机器证据](../../release/evidence/staging/crm-staging-agent-language-queue-20261103.json)。
+- 五个共享模板已正式发布v2，旧快照保留；模型、工具、知识槽和店铺Agent配置未批量覆盖。统一运行表达策略1.1.1生效，10个中英文合成表达案例最终通过；两轮原始失败保留，不当作真实工具/RAG/发送链路证明。
+- 用户当前US auto、XBM off。XBM最新任务因策略变化cancelled，不再误显生成；未覆盖该开关。欢迎24小时咨询段、60分钟超时和物流external保留。旧unknown/取消任务不重放，未向真实买家试发。
+- 本轮staging创建测试业务行0；本地3148/3149测试前端停止，专用PG/tmpfs容器删除。临时管理员同权限身份仅内存且进程结束，私有数据库/环境/历史恢复资料备份保留。
+- Workspace hygiene: ATTENTION。未知前端AGENTS.md、其他活动worktree及历史待处理凭证副本保留，不清理未知文件；无本轮文件永久删除批次。三索引保持CANDIDATE_VIEW，证据合并后只读核对全部源记录，不另开状态PR。
+- 现场浏览器绑定超时UI_UNAVAILABLE；实际UI行为以本地90项生产浏览器回归为证，不能冒充线上视觉检查。自然新业务送达及用户关闭店铺的恢复开启需要按当前明确范围操作。
 
-- 仓库CP11-gh/CRM；产品subject `fc5d0c70e3d508b9ba78949a5d609f28ee234559`，PR#723合并 `85a2214e1c1618fbb07103f6b6c9fd8316e3ad04`；当前证据分支docs/automation-window-evidence-20261103，EVIDENCE_HEAD_SHA=READ_AT_GATE。
-- 本次任务MVP-AGENT-AUTOMATION-WINDOW-001实现已合并，最终IR/TR/RR为20261103-R01。固定subject隔离PG3678通过/5跳过，静态、类型、锁及实际前后端CI通过，独立审查APPROVE。见[TR](../reports/tests/TR-MVP-AGENT-AUTOMATION-WINDOW-001-20261103-R01.md)和[机器证据](../../release/evidence/staging/crm-staging-automation-window-20261103.json)。三索引从全部源记录重建CANDIDATE_VIEW，合并后只读核对。
-- staging后端及四工作进程/egress为ac640ba7…2efc，前端仍2e6fb84d…2651、检索feeee5a3…2059；050、三健康200。现有两店各5永久Agent和auto/欢迎24小时咨询段/60分钟超时/物流external3600秒配置保留，现权、审批、DLP及unknown边界未放宽。
-- 现场只读：两店身份与发送窗口通过；US所选样本0订单，XBM1订单；核验当时已持久订单/物流基线仍0，下一自然扫描未在本轮强制触发。自动化账本当时没有新成功投递回执；本轮后来定向人工测试的sent回执见顶部，不能据此推断自动调度通过。凭证仅在进程内存，进程结束；staging没有新测试业务数据。
-- 清理：本次fixture自有店铺/策略剩余0，隔离PG容器停止并清除tmpfs；私有环境/数据库及旧验收恢复资料备份保留。旧完整验收的10Agent/8文件、139临时消息/12协作已按原记录清理，不重复创建或删除。
-- 其他证据：承运商自动回显两店视觉核对仍以TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R05为准。本次无UI变化，未重复浏览器/付费模型矩阵。
-- Workspace hygiene: ATTENTION。未知前端AGENTS.md、其他活动worktree、原旧凭证副本均保留；没有自动删除未知资产，无活动文件清理批次。仅清理本任务可识别的测试业务行。
-- 风险：实时分页增加读取延迟，整体受现有请求预算控制；未知/关闭/撤权仍停止发送。自然新消息/物流事件及平台回执需与当前策略一起判断，旧账本不重放。
-
-下一动作：①合并本次证据并只读核对三索引；②以自然新业务回执/下一物流周期确认实际送达，不试发或补发旧任务；③production维持No-Go。
+下一动作：①合并证据并只读核对索引；②按用户当前开关检查自然新消息回执，不补发历史记录；③production保持No-Go。
