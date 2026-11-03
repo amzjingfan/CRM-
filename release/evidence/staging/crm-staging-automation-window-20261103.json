@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-AUTOMATION-WINDOW-001",
+  "checked_at": "2026-11-03T03:06:06.853923+00:00",
+  "subject_sha": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+  "merged_sha": "85a2214e1c1618fbb07103f6b6c9fd8316e3ad04",
+  "source_pr": 723,
+  "ci_run": 41566451806,
+  "ci": {
+    "backend": "success:14 completed steps",
+    "frontend": "success:11 completed steps"
+  },
+  "local": {
+    "backend_passed": 3678,
+    "backend_skipped": 5,
+    "backend_seconds": 416.24,
+    "ruff": "pass",
+    "format": "615 files pass",
+    "mypy": "321 files pass",
+    "lock": "pass",
+    "independent_review": "APPROVE; no blocking findings; readonly review"
+  },
+  "deployment": {
+    "status": "passed",
+    "production_release": false,
+    "backend_image": "ghcr.io/cp11-gh/crm-backend@sha256:ac640ba7c2a50c28c7854902e92553f9fef47a86beb4d51022b3383eeeba2efc",
+    "frontend_image": "ghcr.io/cp11-gh/crm-frontend@sha256:2e6fb84d78d9cc9f98260a7d4a4b306bb90a6219892ebab6306f30ae94d22651",
+    "retrieval_model_image": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+    "database_migration": "heads_applied",
+    "runtime_mode_verified": true,
+    "customer_automation_enabled": true,
+    "health_checks": [
+      {
+        "path": "/healthz",
+        "status_code": 200
+      },
+      {
+        "path": "/v1/health",
+        "status_code": 200
+      },
+      {
+        "path": "/v1/health/ready",
+        "status_code": 200
+      }
+    ]
+  },
+  "runtime": {
+    "runtime": [
+      {
+        "service": "backend",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:ac640ba7c2a50c28c7854902e92553f9fef47a86beb4d51022b3383eeeba2efc",
+        "revision": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+        "flags": {
+          "LOGISTICS_NOTIFICATIONS_ENABLED": "true",
+          "REAL_TIKTOK_AUTOMATION_ENABLED": "true",
+          "APP_ENV": "staging",
+          "LOGISTICS_NOTIFICATION_POLL_SECONDS": "3600",
+          "AUTO_REPLY_ENABLED": "true",
+          "allowed_store_count": 2
+        }
+      },
+      {
+        "service": "worker",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:ac640ba7c2a50c28c7854902e92553f9fef47a86beb4d51022b3383eeeba2efc",
+        "revision": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+        "flags": {
+          "LOGISTICS_NOTIFICATIONS_ENABLED": "true",
+          "REAL_TIKTOK_AUTOMATION_ENABLED": "true",
+          "APP_ENV": "staging",
+          "LOGISTICS_NOTIFICATION_POLL_SECONDS": "3600",
+          "AUTO_REPLY_ENABLED": "true",
+          "allowed_store_count": 2
+        }
+      },
+      {
+        "service": "jobs",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:ac640ba7c2a50c28c7854902e92553f9fef47a86beb4d51022b3383eeeba2efc",
+        "revision": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+        "flags": {
+          "LOGISTICS_NOTIFICATIONS_ENABLED": "true",
+          "REAL_TIKTOK_AUTOMATION_ENABLED": "true",
+          "APP_ENV": "staging",
+          "LOGISTICS_NOTIFICATION_POLL_SECONDS": "3600",
+          "AUTO_REPLY_ENABLED": "true",
+          "allowed_store_count": 2
+        }
+      },
+      {
+        "service": "agent-worker",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:ac640ba7c2a50c28c7854902e92553f9fef47a86beb4d51022b3383eeeba2efc",
+        "revision": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+        "flags": {
+          "LOGISTICS_NOTIFICATIONS_ENABLED": "true",
+          "REAL_TIKTOK_AUTOMATION_ENABLED": "true",
+          "APP_ENV": "staging",
+          "LOGISTICS_NOTIFICATION_POLL_SECONDS": "3600",
+          "AUTO_REPLY_ENABLED": "true",
+          "allowed_store_count": 2
+        }
+      },
+      {
+        "service": "tiktok-egress",
+        "image": "ghcr.io/cp11-gh/crm-backend@sha256:ac640ba7c2a50c28c7854902e92553f9fef47a86beb4d51022b3383eeeba2efc",
+        "revision": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+        "flags": {}
+      },
+      {
+        "service": "frontend",
+        "image": "ghcr.io/cp11-gh/crm-frontend@sha256:2e6fb84d78d9cc9f98260a7d4a4b306bb90a6219892ebab6306f30ae94d22651",
+        "revision": "a38f97516ac0750f064c16fb8738345863acea82",
+        "flags": {}
+      },
+      {
+        "service": "retrieval-model-service",
+        "image": "ghcr.io/cp11-gh/crm-retrieval-model-service@sha256:feeee5a3327bc7d18e49bf534dad431adcb12a3089b025bb068a687662523059",
+        "revision": "33d80bd4acc1dfb9c93ec687086ee466d99682c6",
+        "flags": {}
+      }
+    ],
+    "health": {
+      "/v1/health": 200,
+      "/agents": 200,
+      "/marketing/reception/welcome": 200,
+      "/agents/template-batches": 200,
+      "/healthz": 200,
+      "/v1/health/ready": 200
+    },
+    "probe_notes": [
+      "An exploratory /health request returned404; canonical /healthz and /v1/health/ready were verified instead."
+    ]
+  },
+  "live_readonly": {
+    "schema_version": 1,
+    "checked_at": "2026-11-03T02:48:27.665609+00:00",
+    "source_sha": "fc5d0c70e3d508b9ba78949a5d609f28ee234559",
+    "platform_test_messages_sent": 0,
+    "created_test_business_rows": 0,
+    "stores": {
+      "us": {
+        "agent": "auto",
+        "logistics": "external",
+        "reception": {
+          "welcome": {
+            "mode": "auto",
+            "minutes": null,
+            "idle_hours": 24
+          },
+          "timeout": {
+            "mode": "auto",
+            "minutes": 60,
+            "idle_hours": 24
+          }
+        },
+        "preflight": {
+          "matching_open_local_conversation": true,
+          "grant": true,
+          "identity": true,
+          "send_window": true,
+          "verified_readonly_order_count": 0
+        },
+        "persisted_counts": {
+          "monitored_orders": 0,
+          "tracking_baselines": 0,
+          "notification_rows": 0
+        },
+        "delivery_ledger": []
+      },
+      "xbm": {
+        "agent": "auto",
+        "logistics": "external",
+        "reception": {
+          "welcome": {
+            "mode": "auto",
+            "minutes": null,
+            "idle_hours": 24
+          },
+          "timeout": {
+            "mode": "auto",
+            "minutes": 60,
+            "idle_hours": 24
+          }
+        },
+        "preflight": {
+          "matching_open_local_conversation": true,
+          "grant": true,
+          "identity": true,
+          "send_window": true,
+          "verified_readonly_order_count": 1
+        },
+        "persisted_counts": {
+          "monitored_orders": 0,
+          "tracking_baselines": 0,
+          "notification_rows": 0
+        },
+        "delivery_ledger": [
+          {
+            "kind": "agent",
+            "status": "cancelled",
+            "error_code": "AUTOMATION_AUTHORIZATION_CHANGED",
+            "count": 2
+          },
+          {
+            "kind": "agent",
+            "status": "cancelled",
+            "error_code": "AUTOMATION_PREVIOUS_PART_UNDELIVERED",
+            "count": 3
+          },
+          {
+            "kind": "timeout",
+            "status": "cancelled",
+            "error_code": "AUTOMATION_AUTHORIZATION_CHANGED",
+            "count": 2
+          },
+          {
+            "kind": "welcome",
+            "status": "cancelled",
+            "error_code": "AUTOMATION_AUTHORIZATION_CHANGED",
+            "count": 2
+          }
+        ]
+      }
+    }
+  },
+  "cleanup": {
+    "owned_automation_test_stores_remaining": 0,
+    "owned_contract_test_policies_remaining": 0,
+    "isolated_test_container": "stopped; tmpfs cleared",
+    "staging_test_business_rows_created": 0,
+    "platform_test_messages_sent": 0,
+    "temporary_admin_token": "process memory only; process ended",
+    "recovery_backups": "retained",
+    "historical_cancelled_and_unknown": "not replayed"
+  },
+  "limits": [
+    "Live send-window and readonly order read verified; no realbuyer test delivery or new successful receipt proved.",
+    "Logistics retains3600s polling and first-observation baseline; no forced historical notification.",
+    "Prompt/UI and actual model evaluation not repeated in this contract fix.",
+    "An exploratory /health URL returned404; canonical healthz/health/ready passed."
+  ],
+  "artifact_sha256": {
+    "red.log": "87e5862b22b197be4039cf64c391a8d5ca076d1c22a3c0c45f114a78696920c5",
+    "final-backend.log": "b61f19da92076f41737fc7ed5a9a7c7a1a4e9848a6aca75bab083bc95e37db2c",
+    "final-ruff.log": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "final-format.log": "87734c3bfbf388dd061bd50b413a04a16b60406d3ec7f9c5f53c9cc49632879f",
+    "final-mypy.log": "a76ff70ea64ffa95712531a83b8f577c10e9a2ee4dace912a7a123133ac43caf",
+    "final-lock.log": "8e6c05a35e1a83e2d76d5f34acc308b2546ed3c4805bf163430ae531c9d26cb8",
+    "build.log": "26268594c5cb38512a9e296944f8690156a3882dc93cc4991c14756a5c872a47",
+    "push.log": "9567dfbca520bf2afb405d7936a3b58d7536e5943220bde140cc35fb9cc14a4d",
+    "deploy.log": "8e57ff669257c5691ed1d92389e4960203a316d9e2f17d649f3cbd3b27cb1133",
+    "live-readonly.log": "397c90aec3c150afdd58b1849dc033d22808901a442a93ae60fc21dd94c06547"
+  }
+}
