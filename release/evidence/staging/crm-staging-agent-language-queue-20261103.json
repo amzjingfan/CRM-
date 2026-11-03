@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "task_id": "MVP-AGENT-LANGUAGE-QUEUE-UI-001",
+  "checked_at": "2026-11-03T10:12:32.897023+00:00",
+  "subject_sha": "70293cc68d803670345826cf2892d0ff209d0869",
+  "component_sources": {
+    "backend": "70293cc68d803670345826cf2892d0ff209d0869",
+    "frontend": "af2f4252a62d01dd36f38fdb555f20bf0fec9f8a",
+    "model_prompt_validation": "af2f4252a62d01dd36f38fdb555f20bf0fec9f8a"
+  },
+  "merged_prs": [
+    728,
+    729
+  ],
+  "migration": "051_supervisor_knowledge_manage",
+  "runtime": [
+    {
+      "service": "backend",
+      "image": "ghcr.io/cp11-gh/crm-backend@sha256:20d034286b08ec37ef9889313e8925130e4b65b5ef5c33a59bf03365b29fd4de",
+      "source_revision": "70293cc68d803670345826cf2892d0ff209d0869",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "worker",
+      "image": "ghcr.io/cp11-gh/crm-backend@sha256:20d034286b08ec37ef9889313e8925130e4b65b5ef5c33a59bf03365b29fd4de",
+      "source_revision": "70293cc68d803670345826cf2892d0ff209d0869",
+      "state": "running",
+      "health": null
+    },
+    {
+      "service": "jobs",
+      "image": "ghcr.io/cp11-gh/crm-backend@sha256:20d034286b08ec37ef9889313e8925130e4b65b5ef5c33a59bf03365b29fd4de",
+      "source_revision": "70293cc68d803670345826cf2892d0ff209d0869",
+      "state": "running",
+      "health": null
+    },
+    {
+      "service": "agent-worker",
+      "image": "ghcr.io/cp11-gh/crm-backend@sha256:20d034286b08ec37ef9889313e8925130e4b65b5ef5c33a59bf03365b29fd4de",
+      "source_revision": "70293cc68d803670345826cf2892d0ff209d0869",
+      "state": "running",
+      "health": null
+    },
+    {
+      "service": "tiktok-egress",
+      "image": "ghcr.io/cp11-gh/crm-backend@sha256:20d034286b08ec37ef9889313e8925130e4b65b5ef5c33a59bf03365b29fd4de",
+      "source_revision": "70293cc68d803670345826cf2892d0ff209d0869",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "frontend",
+      "image": "ghcr.io/cp11-gh/crm-frontend@sha256:e3593a021254014c9c8514a7d3b112d20510f9c697a2f341759a8645dbc23700",
+      "source_revision": "af2f4252a62d01dd36f38fdb555f20bf0fec9f8a",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "proxy",
+      "image": "nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "source_revision": null,
+      "state": "running",
+      "health": "healthy"
+    }
+  ],
+  "http_checks": [
+    {
+      "path": "/healthz",
+      "status": 200,
+      "exit_code": 0
+    },
+    {
+      "path": "/v1/health",
+      "status": 200,
+      "exit_code": 0
+    },
+    {
+      "path": "/v1/health/ready",
+      "status": 200,
+      "exit_code": 0
+    },
+    {
+      "path": "/agents/templates",
+      "status": 200,
+      "exit_code": 0
+    }
+  ],
+  "database_locks": {
+    "blocked_transactions": 0,
+    "idle_write_transactions": 0
+  },
+  "validation": {
+    "backend": {
+      "passed": 3711,
+      "skipped": 5,
+      "warnings": 2
+    },
+    "frontend_contract": 86,
+    "frontend_browser": 90,
+    "frontend_component_unchanged_after_test": true,
+    "lint_warnings": 12,
+    "mypy_sources": 321,
+    "actual_ci": "both_jobs_passed_for_each_source_pr",
+    "independent_code_review": "APPROVE",
+    "model_expression_only": {
+      "dataset_sha256": "45d70740062921436570e47a6b8eae794994dc3d00f2650a74d39e83c1d9621f",
+      "criterion_sha256": "dfd2f1d39f5aaa3af56905e038910aae2fba62fe6cc29a6b3c3c49014bcdb69d",
+      "policy_sha256": "d2583db972531959249b2d60da83f7f0e4a8786542fee83c1df2b81042db164c",
+      "final_round": "v3",
+      "passed": 10,
+      "total": 10,
+      "original_failures_retained": true,
+      "v1_direct_read_grounding_rejection": 1,
+      "v2_automatic_handoff_rejection": 1,
+      "answer_read_review": "executing_agent_read_all_10_synthetic_answers",
+      "not_real_tool_rag_or_send_chain": true
+    }
+  },
+  "templates": [
+    {
+      "code": "order_logistics_us_v13",
+      "before_version": 1,
+      "published_version": 2,
+      "draft_revision": 5,
+      "config_sha256": "d21a0864c991a57823be14075219db5356f1e3d901ae09e47ff5b4e07c5c36fc",
+      "prompt_sha256": "c9afd3159407271eb7386172d0de0760aecdc65fd60335bd8e28348be12c7832",
+      "prompt_sections": 7,
+      "model_unchanged": true,
+      "tools_unchanged": true,
+      "knowledge_unchanged": true
+    },
+    {
+      "code": "presales_products_v1",
+      "before_version": 1,
+      "published_version": 2,
+      "draft_revision": 5,
+      "config_sha256": "3f0881bb515cce15cb57597667d0f8b1203cdaf3b71cb442863327c16c7d5501",
+      "prompt_sha256": "3bebee56d8496d0beef4b5cface5a4e2bd2531fd3ae8f106a09b26ed937e60a9",
+      "prompt_sections": 7,
+      "model_unchanged": true,
+      "tools_unchanged": true,
+      "knowledge_unchanged": true
+    },
+    {
+      "code": "aftersales_products_v1",
+      "before_version": 1,
+      "published_version": 2,
+      "draft_revision": 4,
+      "config_sha256": "b3f044c17e9aec7fdcdcfdf42db37c52cebd1126c4bd734e0e200681154722d5",
+      "prompt_sha256": "c981356beba08fe67c0e8976852631d496a96ed62760a4e9322eb5c31bdd856d",
+      "prompt_sections": 7,
+      "model_unchanged": true,
+      "tools_unchanged": true,
+      "knowledge_unchanged": true
+    },
+    {
+      "code": "logistics_update_v1",
+      "before_version": 1,
+      "published_version": 2,
+      "draft_revision": 4,
+      "config_sha256": "5f11025a24daf55fb28d37506ab3575fd5fd89182ea2764d953a6ebeb0420a88",
+      "prompt_sha256": "cacf37f00a5a57005880d294c3d43efc7e0ac154b984732b8facfc77e24d0322",
+      "prompt_sections": 7,
+      "model_unchanged": true,
+      "tools_unchanged": true,
+      "knowledge_unchanged": true
+    },
+    {
+      "code": "reply_fallback_v1",
+      "before_version": 1,
+      "published_version": 2,
+      "draft_revision": 4,
+      "config_sha256": "8114925b9f3464cdbfa0c39ac087f544d1932d824e70775dbbac355ae89f6852",
+      "prompt_sha256": "9fd525a677d83516d282e68f3fd8c965bd6009c0f57f878b528ee7e483c65077",
+      "prompt_sections": 7,
+      "model_unchanged": true,
+      "tools_unchanged": true,
+      "knowledge_unchanged": true
+    }
+  ],
+  "live_readback": {
+    "checked_at": "2026-11-03T10:07:13.960090+00:00",
+    "subject_sha": "70293cc68d803670345826cf2892d0ff209d0869",
+    "reply_policy": "published-reply-preferences-v1.1.1",
+    "test_messages_sent": 0,
+    "created_test_business_rows": 0,
+    "stores": {
+      "us": {
+        "agent": "auto",
+        "logistics": "external",
+        "reception": {
+          "welcome": {
+            "timeout_minutes": null,
+            "welcome_idle_hours": 24
+          },
+          "timeout": {
+            "timeout_minutes": 60,
+            "welcome_idle_hours": 24
+          }
+        }
+      },
+      "xbm": {
+        "agent": "off",
+        "logistics": "external",
+        "reception": {
+          "welcome": {
+            "timeout_minutes": null,
+            "welcome_idle_hours": 24
+          },
+          "timeout": {
+            "timeout_minutes": 60,
+            "welcome_idle_hours": 24
+          }
+        }
+      }
+    },
+    "affected_conversation": {
+      "latest_task_status": "cancelled",
+      "latest_task_error": "AUTOMATION_POLICY_CHANGED",
+      "preview_state": null,
+      "preview_mode": null,
+      "unread_before_get": 0,
+      "latest_blocked_by_agent_predecessor": false,
+      "unread_after_get": 0,
+      "task_status_counts": {
+        "cancelled": 1,
+        "queued": 3
+      },
+      "unknown_delivery_count": 0
+    }
+  },
+  "cleanup": {
+    "local_pg_tmpfs_removed": true,
+    "owned_frontend_3148_stopped": true,
+    "owned_frontend_3149_stopped": true,
+    "staging_test_business_rows_created": 0,
+    "platform_test_messages_sent": 0,
+    "short_lived_identity": "memory_only_process_ended",
+    "private_backups_retained": true,
+    "unknown_frontend_agents_file_preserved": true
+  },
+  "ui_live": "UI_UNAVAILABLE_browser_tab_binding_timeout",
+  "production_release": false,
+  "rollback": {
+    "before_first_rollout_backend": "sha256:ac640ba7c2a50c28c7854902e92553f9fef47a86beb4d51022b3383eeeba2efc",
+    "before_first_rollout_frontend": "sha256:2e6fb84d78d9cc9f98260a7d4a4b306bb90a6219892ebab6306f30ae94d22651",
+    "before_followup_backend": "sha256:671c61c3772d3f99c003aff8c28c01ea79a0dcef62302bf7975243cd80077940",
+    "preserve_business_increments": true,
+    "never_replay_unknown_or_cancelled": true
+  }
+}

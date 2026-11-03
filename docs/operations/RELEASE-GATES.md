@@ -1,5 +1,7 @@
 # 真实环境发布门禁
 
+2026-11-03 本轮Agent客服助手/队列/发送及物流事务修复已手动发布staging：源码PR #728/#729合并，最终后端70293cc6、前端af2f4252，051；五个共享模板正式v2，统一无第一人称单数、跟随买家语言与待人工跟进语义。最终隔离PG3711通过/5条件跳过，前端86契约/90浏览器、五模板10个中英文合成表达场景及实际CI通过；模型早期失败保留，未新测真实工具/RAG或真人送达。现场三健康及模板页200、数据库阻塞/闲置写事务0；本地测试服务/tmpfs清理。US auto、XBM用户当前off均保留；欢迎24小时段、60分钟超时、物流external保持。现场浏览器UI_UNAVAILABLE、零本轮试发、production No-Go。见[TR R01](../reports/tests/TR-MVP-AGENT-LANGUAGE-QUEUE-UI-001-20261103-R01.md)与[机器证据](../../release/evidence/staging/crm-staging-agent-language-queue-20261103.json)。
+
 2026-11-03 Agent全链路验收与两店自动化已完成：源码PR #719已合并；手动部署subject `20c9103cac541ed43c164a68e7ed2abe03430370`、050及三健康通过。两店各5永久Agent，auto、欢迎24小时咨询段、60分钟超时及60分钟物流轮询external已正式API回读；10测试Agent/8文件软删、139临时消息/12协作清理，原草稿/发布版本及会话记忆保留。88个功能组合中83自动新执行通过、5独立人工事实裁定，原始自动矩阵非全绿；物流为实际模型/BGE的双语模拟，未向真实买家测试发送。长复杂输入仍可被DLP拒绝、模型错误参数失败关闭；现场浏览器UI_UNAVAILABLE；production继续No-Go。见[TR R02](../reports/tests/TR-MVP-AGENT-AUTOMATION-FULL-001-20261103-R02.md)和[低敏证据](../../release/evidence/staging/crm-staging-agent-automation-20261103.json)。
 
 2026-11-02 订单与物流商回显修复已在重新打开的 Codex 内置浏览器中完成两店已登录只读验收：[TR R05](../reports/tests/TR-MVP-WORKSPACE-ORDER-TRACKING-CONSISTENCY-001-20261102-R05.md) 记录 TikTok US 的 USPS 及 XBM 的 SwiftX 均在打开详情前出现在可见订单卡；详情和弹层一致。历史部署/健康证据见 R04，本次未重新部署或核验镜像摘要。订单任务现场验收通过；G8 production 继续 No-Go。
