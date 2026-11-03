@@ -162,6 +162,12 @@ DOING/VERIFYING → BLOCKED
 | MAINT-CLEANUP-20261022-001 | 仅清理业务服务器三个超过 30 天、零容器引用的历史 Rootless Docker 镜像，保留当前和回滚镜像，并复核空间与健康 | [清理批次](../operations/cleanup/CLEANUP-20261022-001.md)；`BASE_SHA=218befe0113291d14fd3bde98a4f95a1e9ac8718`；`MERGE_TARGET=origin/main`；用户对三个完整 ID 精确授权；阻塞：PR #511 两次 CI 均零步骤失败，GitHub 注解指向账户账单/支出上限；已尝试重跑一次；本地清理事实记录已合流；按现行零步骤替代门禁完成本地静态验证，但远端 PR #511 仍开放且冲突，待远端 PR 审查与修复；负责人：GitHub 账户管理者 | BLOCKED | [PR #511](https://github.com/CP11-gh/CRM/pull/511)；docs/cleanup-rootless-images-20261022 | none | N/A（服务器 Docker 清理；事实记录在批次） | [现场复核](../operations/cleanup/CLEANUP-20261022-001.md#授权执行与恢复点)：删除步释放 8,166,408,192 B；三个 ID 消失、11 容器和卷列表未变，回环及公网三个健康端点均 200；CI 未执行 | N/A（不改产品代码；保留和恢复风险在批次核对） | |
 | MAINT-CLEANUP-20261022-002 | 按用户指定的十天镜像窗口，清理业务服务器 16 个零容器引用的历史 Rootless Docker 镜像；保留全部活动镜像及上一版检索镜像的受限恢复归档 | [清理批次](../operations/cleanup/CLEANUP-20261022-002.md)与[精确清单](../operations/cleanup/manifests/CLEANUP-20261022-002.json)；`BASE_SHA=64003ad69e3016170fb4836a993f12de4bb8a9cd`；`MERGE_TARGET=origin/main`；用户对本批次 16 个完整 ID 精确授权；本地清理事实记录已合流；远端 PR #511 仍开放且冲突，适用现行零步骤替代门禁后仍需 PR 审查与修复 | BLOCKED | docs/cleanup-rootless-images-20261022；16 个候选镜像已删除，归档保留 | MAINT-CLEANUP-20261022-001 | N/A（服务器 Docker 清理，未改产品行为） | [现场复核](../operations/cleanup/CLEANUP-20261022-002.md#实际执行与复核)：16 个 ID 消失，删除步释放 10,049,413,120 B，11 容器与 5 卷不变，回环及公网三健康端点均 200；CI 待有效执行 | N/A（归档及 GHCR 恢复风险见批次） | |
 
+## 用户文档
+
+| ID | 可验证结果 | 需求/验收或门禁 | 状态 | 分支 | 依赖 | IR | TR | RR | 最终 SHA |
+|---|---|---|---|---|---|---|---|---|---|
+| DOC-CS-GUIDE-001 | 面向客服人员的 TikTok 人工辅助 v0.1 使用指南可从文档入口找到 | 用户 2026-11-03 请求；AC-01 覆盖登录、会话、业务事实、AI/快捷回复、人工发送、交接和异常处理；AC-02 与当前代码和产品/发布范围一致，不把未部署或自动发送写成可用；AC-03 检查链接、格式、敏感信息和 diff。纯静态文档，IR/TR/RR=N/A，检查结果在合并记录与交付说明中；`BASE_SHA=f19b785e5a6785f92cbfd417d8b81513c144e271`，`MERGE_TARGET=main`，执行者 Codex | VERIFYING | docs/customer-service-guide-20261103 | none | N/A（仅新增操作指南） | N/A（静态检查） | N/A（不改运行行为或安全边界） | |
+
 ## 维护规则
 
 1. 开始任务时只选择依赖已满足的最高优先级 `READY` 项，并在同一次更新中写入分支和基线。
