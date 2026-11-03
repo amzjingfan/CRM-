@@ -94,7 +94,8 @@ async def test_failed_published_entry_can_be_requeued(monkeypatch: pytest.Monkey
         statement_type="policy",
     )
 
-    async def fake_allowed_store_ids(_session: object, _user: object) -> set[uuid.UUID]:
+    async def fake_allowed_store_ids(_session: object, _user: object, permission_code: str) -> set[uuid.UUID]:
+        assert permission_code == "knowledge.manage"
         return {store_id}
 
     async def fake_find_document(_session: object, _entry_id: uuid.UUID, _stores: set[uuid.UUID]) -> object:
@@ -124,7 +125,8 @@ async def test_ready_entry_cannot_be_requeued_as_failed(monkeypatch: pytest.Monk
         document_version=1,
     )
 
-    async def fake_allowed_store_ids(_session: object, _user: object) -> set[uuid.UUID]:
+    async def fake_allowed_store_ids(_session: object, _user: object, permission_code: str) -> set[uuid.UUID]:
+        assert permission_code == "knowledge.manage"
         return {store_id}
 
     async def fake_find_document(_session: object, _entry_id: uuid.UUID, _stores: set[uuid.UUID]) -> object:
@@ -148,7 +150,10 @@ async def test_vectorization_status_is_store_scoped(monkeypatch: pytest.MonkeyPa
     store_id = uuid.uuid4()
     access_checked: list[uuid.UUID] = []
 
-    async def fake_ensure_store_access(_session: object, _user: object, checked_store_id: uuid.UUID) -> None:
+    async def fake_ensure_store_access(
+        _session: object, _user: object, checked_store_id: uuid.UUID, permission_code: str
+    ) -> None:
+        assert permission_code == "knowledge.view"
         access_checked.append(checked_store_id)
 
     async def fake_counts(_session: object, checked_store_id: uuid.UUID) -> dict[str, int]:

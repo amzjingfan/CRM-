@@ -77,7 +77,7 @@ async def validate_category_parent(
 
 async def get_categories(session: AsyncSession, user: User, store_id: uuid.UUID | None) -> list[KnowledgeCategory]:
     """获取授权店铺分类。"""
-    stores = await allowed_store_ids(session, user)
+    stores = await allowed_store_ids(session, user, "knowledge.view")
     if store_id and store_id not in stores:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     return await list_categories(session, stores, store_id)
@@ -85,7 +85,7 @@ async def get_categories(session: AsyncSession, user: User, store_id: uuid.UUID 
 
 async def create_category(session: AsyncSession, user: User, payload: CategoryCreate) -> KnowledgeCategory:
     """创建 C 层 FAQ 分类并校验父分类属于同一店铺。"""
-    await ensure_store_access(session, user, payload.store_id)
+    await ensure_store_access(session, user, payload.store_id, "knowledge.manage")
     await validate_category_parent(session, payload.store_id, None, payload.parent_id)
     category = KnowledgeCategory(**payload.model_dump(), layer="C")
     session.add(category)
@@ -102,7 +102,7 @@ async def update_category(
     session: AsyncSession, user: User, category_id: uuid.UUID, payload: CategoryUpdate
 ) -> KnowledgeCategory:
     """更新分类，并拒绝直接或间接的父子循环。"""
-    category = await find_category(session, category_id, await allowed_store_ids(session, user))
+    category = await find_category(session, category_id, await allowed_store_ids(session, user, "knowledge.manage"))
     if category is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "分类不存在", 404)
     if "parent_id" in payload.model_fields_set:
@@ -116,7 +116,7 @@ async def update_category(
 
 async def delete_category(session: AsyncSession, user: User, category_id: uuid.UUID) -> None:
     """仅允许删除空分类，避免 FAQ 或文件被意外脱离运营分类。"""
-    category = await find_category(session, category_id, await allowed_store_ids(session, user))
+    category = await find_category(session, category_id, await allowed_store_ids(session, user, "knowledge.manage"))
     if category is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "分类不存在", 404)
     usage = await session.scalar(
@@ -151,7 +151,7 @@ async def get_entries(
     categorized_only: bool = False,
 ) -> KnowledgePage:
     """返回店铺隔离 FAQ 分页。"""
-    stores = await allowed_store_ids(session, user)
+    stores = await allowed_store_ids(session, user, "knowledge.view")
     if store_id and store_id not in stores:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
     items, total = await list_documents(
@@ -167,7 +167,7 @@ async def get_entries(
 
 async def get_entry(session: AsyncSession, user: User, entry_id: uuid.UUID) -> KnowledgeDocument:
     """按资源 ID 和授权店铺联合获取 FAQ。"""
-    document = await find_document(session, entry_id, await allowed_store_ids(session, user))
+    document = await find_document(session, entry_id, await allowed_store_ids(session, user, "knowledge.view"))
     if document is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "FAQ 不存在", 404)
     return document
@@ -179,7 +179,7 @@ async def get_vectorization_status(
     store_id: uuid.UUID,
 ) -> KnowledgeVectorizationStatus:
     """返回经过店铺权限校验的 BGE 向量化队列汇总。"""
-    await ensure_store_access(session, user, store_id)
+    await ensure_store_access(session, user, store_id, "knowledge.view")
     counts = await count_vectorization_statuses(session, store_id)
     settings = get_settings()
     return KnowledgeVectorizationStatus(
@@ -198,7 +198,7 @@ async def retry_entry_vectorization(
     entry_id: uuid.UUID,
 ) -> KnowledgeDocument:
     """把已发布且向量化失败的 FAQ 安全放回 pending 队列。"""
-    document = await find_document(session, entry_id, await allowed_store_ids(session, user))
+    document = await find_document(session, entry_id, await allowed_store_ids(session, user, "knowledge.manage"))
     if document is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "FAQ 不存在", 404)
     if not get_settings().embedding_enabled:
@@ -233,7 +233,7 @@ async def create_entry(
     session: AsyncSession, user: User, payload: KnowledgeEntryCreate, *, commit: bool = True
 ) -> KnowledgeDocument:
     """创建草稿 FAQ；草稿不参与正式检索。"""
-    await ensure_store_access(session, user, payload.store_id)
+    await ensure_store_access(session, user, payload.store_id, "knowledge.manage")
     if payload.category_id and await find_category(session, payload.category_id, {payload.store_id}) is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "分类不存在", 404)
     document_id = uuid.uuid4()
@@ -273,7 +273,7 @@ async def update_entry(
     session: AsyncSession, user: User, entry_id: uuid.UUID, payload: KnowledgeEntryUpdate
 ) -> KnowledgeDocument:
     """正文变化时递增版本并使旧向量立即失效。"""
-    document = await find_document(session, entry_id, await allowed_store_ids(session, user))
+    document = await find_document(session, entry_id, await allowed_store_ids(session, user, "knowledge.manage"))
     if document is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "FAQ 不存在", 404)
     updates = payload.model_dump(exclude_unset=True)
@@ -343,7 +343,7 @@ async def set_entry_status(
     session: AsyncSession, user: User, entry_id: uuid.UUID, status: str, *, commit: bool = True
 ) -> KnowledgeDocument:
     """发布进入待向量化，归档则立即退出正式检索。"""
-    document = await find_document(session, entry_id, await allowed_store_ids(session, user))
+    document = await find_document(session, entry_id, await allowed_store_ids(session, user, "knowledge.manage"))
     if document is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "FAQ 不存在", 404)
     if status == "published":
@@ -406,7 +406,7 @@ async def set_entry_status(
 
 async def delete_entry(session: AsyncSession, user: User, entry_id: uuid.UUID) -> None:
     """软删除 FAQ，保留审计与历史工具链引用。"""
-    document = await find_document(session, entry_id, await allowed_store_ids(session, user))
+    document = await find_document(session, entry_id, await allowed_store_ids(session, user, "knowledge.manage"))
     if document is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "FAQ 不存在", 404)
     document.deleted_at = datetime.now(UTC)
@@ -423,7 +423,7 @@ async def accept_import(
     content: bytes,
 ) -> KnowledgeImportJob:
     """校验文件边界后存入 MinIO，并创建异步任务。"""
-    await ensure_store_access(session, user, store_id)
+    await ensure_store_access(session, user, store_id, "knowledge.manage")
     settings = get_settings()
     suffix = ALLOWED_IMPORT_TYPES.get(content_type)
     safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", filename)[:255]
@@ -448,7 +448,7 @@ async def accept_import(
 
 async def get_import_job(session: AsyncSession, user: User, job_id: uuid.UUID) -> KnowledgeImportJob:
     """读取授权店铺的导入任务。"""
-    job = await find_import_job(session, job_id, await allowed_store_ids(session, user))
+    job = await find_import_job(session, job_id, await allowed_store_ids(session, user, "knowledge.view"))
     if job is None:
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "导入任务不存在", 404)
     return job

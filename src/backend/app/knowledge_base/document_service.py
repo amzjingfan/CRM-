@@ -215,7 +215,7 @@ async def accept_document_import(
     idempotency_key: str,
 ) -> KnowledgeFileVersion:
     """受理当前店铺的一个完整文件版本；同名变化必须显式替换。"""
-    await ensure_store_access(session, user, store_id)
+    await ensure_store_access(session, user, store_id, "knowledge.manage")
     upload = validate_document_upload(
         filename, media_type, content, max_bytes=get_settings().knowledge_file_import_max_bytes
     )
@@ -360,7 +360,7 @@ async def accept_document_import(
 
 async def get_document_settings(session: AsyncSession, user: User, store_id: uuid.UUID) -> DocumentIndexConfig:
     """读取当前店铺未来导入的默认配置。"""
-    await ensure_store_access(session, user, store_id)
+    await ensure_store_access(session, user, store_id, "knowledge.view")
     settings = await session.get(KnowledgeFileSettings, store_id)
     if settings is None:
         return DocumentIndexConfig()
@@ -384,7 +384,7 @@ async def save_document_settings(
     idempotency_key: str,
 ) -> DocumentIndexConfig:
     """只更新未来任务的店铺默认值；已有版本始终使用冻结快照。"""
-    await ensure_store_access(session, user, store_id)
+    await ensure_store_access(session, user, store_id, "knowledge.manage")
     settings = await session.scalar(
         select(KnowledgeFileSettings).where(KnowledgeFileSettings.store_id == store_id).with_for_update()
     )
@@ -430,8 +430,10 @@ async def save_document_settings(
     return config
 
 
-async def _scoped_file(session: AsyncSession, user: User, file_id: uuid.UUID) -> KnowledgeFile:
-    stores = await allowed_store_ids(session, user)
+async def _scoped_file(
+    session: AsyncSession, user: User, file_id: uuid.UUID, permission_code: str = "knowledge.view"
+) -> KnowledgeFile:
+    stores = await allowed_store_ids(session, user, permission_code)
     file = await session.scalar(
         select(KnowledgeFile).where(
             KnowledgeFile.id == file_id,
@@ -445,9 +447,15 @@ async def _scoped_file(session: AsyncSession, user: User, file_id: uuid.UUID) ->
 
 
 async def _scoped_version(
-    session: AsyncSession, user: User, file_id: uuid.UUID, version_number: int, *, lock: bool = False
+    session: AsyncSession,
+    user: User,
+    file_id: uuid.UUID,
+    version_number: int,
+    *,
+    lock: bool = False,
+    permission_code: str = "knowledge.view",
 ) -> tuple[KnowledgeFile, KnowledgeFileVersion]:
-    file = await _scoped_file(session, user, file_id)
+    file = await _scoped_file(session, user, file_id, permission_code)
     query = select(KnowledgeFileVersion).where(
         KnowledgeFileVersion.file_id == file.id,
         KnowledgeFileVersion.store_id == file.store_id,
@@ -494,7 +502,9 @@ async def approve_document_version(
     idempotency_key: str,
 ) -> DocumentVersionDetail:
     """人工确认文件用途；客户回复须显式审批，不能由内部建议自动提升。"""
-    file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    file, version = await _scoped_version(
+        session, user, file_id, version_number, lock=True, permission_code="knowledge.manage"
+    )
     if file.deleted_at is not None or file.archived_at is not None or file.active_version_number != version_number:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "只能审批当前有效且未归档的文件版本", 409)
     if version.status != "ready":
@@ -567,7 +577,9 @@ async def revoke_document_version(
     session: AsyncSession, user: User, file_id: uuid.UUID, version_number: int, idempotency_key: str
 ) -> DocumentVersionDetail:
     """撤销内部建议授权，下一次检索立即失效。"""
-    file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    file, version = await _scoped_version(
+        session, user, file_id, version_number, lock=True, permission_code="knowledge.manage"
+    )
     request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
     prior = await session.scalar(
         select(AuditLog).where(
@@ -645,7 +657,7 @@ async def list_document_files(
     page_size: int,
     categorized_only: bool = False,
 ) -> DocumentFilePage:
-    await ensure_store_access(session, user, store_id)
+    await ensure_store_access(session, user, store_id, "knowledge.view")
     query = select(KnowledgeFile).where(KnowledgeFile.store_id == store_id, KnowledgeFile.deleted_at.is_(None))
     if category_id is not None:
         query = query.where(KnowledgeFile.category_id == category_id)
@@ -728,7 +740,7 @@ async def change_document_file(
     if action not in {"category_update", "archive", "restore", "delete"}:
         raise ValueError("unsupported file action")
     request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
-    stores = await allowed_store_ids(session, user)
+    stores = await allowed_store_ids(session, user, "knowledge.manage")
     file = await session.scalar(
         select(KnowledgeFile).where(KnowledgeFile.id == file_id, KnowledgeFile.store_id.in_(stores)).with_for_update()
     )
@@ -870,7 +882,9 @@ async def review_document_unit(
     from app.knowledge_base.document_cleaning import clean_unit
     from app.knowledge_base.document_parser import ParsedUnit
 
-    file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    file, version = await _scoped_version(
+        session, user, file_id, version_number, lock=True, permission_code="knowledge.manage"
+    )
     if file.archived_at is not None:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "归档文件请先恢复，再复核", 409)
     request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
@@ -978,7 +992,9 @@ async def retry_document_version(
     version_number: int,
     idempotency_key: str,
 ) -> DocumentVersionDetail:
-    file, version = await _scoped_version(session, user, file_id, version_number, lock=True)
+    file, version = await _scoped_version(
+        session, user, file_id, version_number, lock=True, permission_code="knowledge.manage"
+    )
     if file.archived_at is not None:
         raise AppError(ErrorCode.RESOURCE_CONFLICT, "归档文件请先恢复，再重试", 409)
     request_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()

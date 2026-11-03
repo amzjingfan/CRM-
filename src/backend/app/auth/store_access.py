@@ -95,6 +95,12 @@ async def allowed_store_ids_for_permission(session: AsyncSession, user: User, pe
     ).all()
     if any(code == "admin" and store_id is None for code, store_id in rows):
         return await allowed_store_ids(session, user)
+    if permission_code in {"knowledge.view", "knowledge.manage"}:
+        # 知识权限属于部门负责店铺；单独残留的主管店铺角色不能绕过已撤销的部门成员关系。
+        scoped = {store_id for code, store_id in rows if code != "supervisor" and store_id is not None}
+        if any(code == "supervisor" for code, _ in rows):
+            scoped |= await _department_supervisor_store_ids(session, user)
+        return scoped
     scoped = {store_id for _, store_id in rows if store_id is not None}
     if permission_code in {
         "settings.store_authorize",
@@ -109,9 +115,11 @@ async def allowed_store_ids_for_permission(session: AsyncSession, user: User, pe
     return scoped
 
 
-async def ensure_store_access(session: AsyncSession, user: User, store_id: uuid.UUID) -> None:
+async def ensure_store_access(
+    session: AsyncSession, user: User, store_id: uuid.UUID, permission_code: str | None = None
+) -> None:
     """跨店铺访问统一伪装成资源不存在，避免租户信息泄露。"""
-    if store_id not in await allowed_store_ids(session, user):
+    if store_id not in await allowed_store_ids(session, user, permission_code):
         raise AppError(ErrorCode.RESOURCE_NOT_FOUND, "资源不存在", 404)
 
 
